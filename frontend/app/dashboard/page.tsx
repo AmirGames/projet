@@ -1,195 +1,237 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
 
-interface Product {
+interface Store {
   id: string;
   name: string;
-  sku: string;
-  price: number;
-  stock: number;
-  status: string;
+  slug: string;
+  description?: string;
 }
 
-export default function DashboardPage() {
+interface Order {
+  id: string;
+  customerName: string;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+export default function Dashboard() {
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [storeId, setStoreId] = useState("");
+  const [stores, setStores] = useState<Store[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newProduct, setNewProduct] = useState({
-    sku: "",
-    name: "",
-    price: "",
-    stock: "",
-  });
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
+    const loadDashboard = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+          router.push("/login");
+          return;
+        }
 
-    // For demo, use the store from Jour 4
-    const demoStoreId = "19c84158-7858-453f-9955-e95c01c4e895";
-    setStoreId(demoStoreId);
-    loadProducts(demoStoreId);
-  }, [router]);
+        // Get user data
+        const meRes = await fetch(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-  const loadProducts = async (store: string) => {
-    try {
-      const response = await api.getProducts(store);
-      setProducts(response.products || []);
-    } catch (err) {
-      console.error("Erreur:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (!meRes.ok) {
+          localStorage.removeItem("accessToken");
+          router.push("/login");
+          return;
+        }
 
-  const handleAddProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = localStorage.getItem("accessToken");
+        const meData = await meRes.json();
+        if (!meData.organizations || meData.organizations.length === 0) {
+          router.push("/login");
+          return;
+        }
 
-    if (!token) return;
+        const org = meData.organizations[0];
 
-    try {
-      await api.createProduct(
-        storeId,
-        newProduct.sku,
-        newProduct.name,
-        parseFloat(newProduct.price),
-        parseInt(newProduct.stock),
-        token
-      );
+        // Get stores
+        const storesRes = await fetch(`${API_URL}/api/stores?orgId=${org.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      // Reload products
-      await loadProducts(storeId);
-      setNewProduct({ sku: "", name: "", price: "", stock: "" });
-    } catch (err) {
-      console.error("Erreur:", err);
-    }
-  };
+        if (storesRes.ok) {
+          const storesData = await storesRes.json();
+          setStores(storesData.stores || storesData || []);
+        }
 
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    router.push("/login");
-  };
+        // Get recent orders
+        if (stores.length > 0) {
+          const ordersRes = await fetch(
+            `${API_URL}/api/orders/store/${stores[0].id}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (ordersRes.ok) {
+            const ordersData = await ordersRes.json();
+            setOrders(ordersData.orders || ordersData || []);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, [router, stores.length]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <p className="text-white text-lg">Chargement du tableau de bord...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+      <header className="bg-gray-800 border-b border-gray-700 p-6">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Tableau de Bord</h1>
           <button
-            onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg"
+            onClick={() => {
+              localStorage.removeItem("accessToken");
+              localStorage.removeItem("refreshToken");
+              router.push("/");
+            }}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold"
           >
             Déconnexion
           </button>
         </div>
-      </div>
+      </header>
 
+      {/* Main Content */}
       <div className="max-w-6xl mx-auto p-6">
-        {/* Add Product Form */}
-        <div className="bg-gray-800 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-bold mb-4">Ajouter un produit</h2>
-          <form onSubmit={handleAddProduct} className="grid grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="SKU"
-              value={newProduct.sku}
-              onChange={(e) =>
-                setNewProduct({ ...newProduct, sku: e.target.value })
-              }
-              className="px-4 py-2 bg-gray-700 text-white rounded-lg"
-              required
-            />
-            <input
-              type="text"
-              placeholder="Nom du produit"
-              value={newProduct.name}
-              onChange={(e) =>
-                setNewProduct({ ...newProduct, name: e.target.value })
-              }
-              className="px-4 py-2 bg-gray-700 text-white rounded-lg"
-              required
-            />
-            <input
-              type="number"
-              placeholder="Prix"
-              value={newProduct.price}
-              onChange={(e) =>
-                setNewProduct({ ...newProduct, price: e.target.value })
-              }
-              className="px-4 py-2 bg-gray-700 text-white rounded-lg"
-              required
-            />
-            <input
-              type="number"
-              placeholder="Stock"
-              value={newProduct.stock}
-              onChange={(e) =>
-                setNewProduct({ ...newProduct, stock: e.target.value })
-              }
-              className="px-4 py-2 bg-gray-700 text-white rounded-lg"
-              required
-            />
-            <button
-              type="submit"
-              className="col-span-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-bold"
+        {/* Stores Section */}
+        <section className="mb-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Mes Boutiques</h2>
+            <Link
+              href="/store"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold"
             >
-              Ajouter le produit
-            </button>
-          </form>
-        </div>
+              + Créer une boutique
+            </Link>
+          </div>
 
-        {/* Products List */}
-        <div className="bg-gray-800 p-6 rounded-lg">
-          <h2 className="text-xl font-bold mb-4">Produits</h2>
-
-          {loading ? (
-            <p className="text-gray-400">Chargement...</p>
-          ) : products.length === 0 ? (
-            <p className="text-gray-400">Aucun produit</p>
+          {stores.length === 0 ? (
+            <div className="bg-gray-800 p-8 rounded-lg text-center border border-gray-700">
+              <p className="text-gray-400 mb-4 text-lg">Aucune boutique créée</p>
+              <Link
+                href="/store"
+                className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
+              >
+                Créer votre première boutique
+              </Link>
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="pb-3">SKU</th>
-                    <th className="pb-3">Nom</th>
-                    <th className="pb-3">Prix</th>
-                    <th className="pb-3">Stock</th>
-                    <th className="pb-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((product) => (
-                    <tr
-                      key={product.id}
-                      className="border-b border-gray-700 hover:bg-gray-700"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {stores.map((store) => (
+                <div
+                  key={store.id}
+                  className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:border-blue-500 transition"
+                >
+                  <h3 className="text-xl font-bold mb-2">{store.name}</h3>
+                  <p className="text-gray-400 mb-4">
+                    {store.description || "Pas de description"}
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">/{store.slug}</span>
+                    <Link
+                      href={`/store/${store.id}`}
+                      className="text-blue-400 hover:text-blue-300 font-semibold"
                     >
-                      <td className="py-3">{product.sku}</td>
-                      <td className="py-3">{product.name}</td>
-                      <td className="py-3">${product.price}</td>
-                      <td className="py-3">{product.stock}</td>
-                      <td className="py-3">
-                        <span className="px-2 py-1 bg-green-600 rounded-full text-sm">
-                          {product.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      Gérer →
+                    </Link>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-        </div>
+        </section>
+
+        {/* Recent Orders */}
+        {stores.length > 0 && (
+          <section>
+            <h2 className="text-2xl font-bold mb-6">Commandes Récentes</h2>
+
+            {orders.length === 0 ? (
+              <div className="bg-gray-800 p-8 rounded-lg text-center border border-gray-700">
+                <p className="text-gray-400">Aucune commande pour le moment</p>
+              </div>
+            ) : (
+              <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+                <table className="w-full">
+                  <thead className="bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">
+                        Client
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">
+                        Montant
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">
+                        Statut
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">
+                        Date
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr
+                        key={order.id}
+                        className="border-t border-gray-700 hover:bg-gray-700"
+                      >
+                        <td className="px-6 py-4 font-medium">
+                          {order.customerName}
+                        </td>
+                        <td className="px-6 py-4 font-semibold">
+                          €{order.totalAmount.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                              order.status === "COMPLETED"
+                                ? "bg-green-600 text-white"
+                                : order.status === "PENDING"
+                                ? "bg-yellow-600 text-white"
+                                : "bg-red-600 text-white"
+                            }`}
+                          >
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-400 text-sm">
+                          {new Date(order.createdAt).toLocaleDateString(
+                            "fr-FR"
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );

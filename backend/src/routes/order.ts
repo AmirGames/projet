@@ -2,12 +2,13 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { OrderService } from "../services/order.service.js";
 import { ApiError } from "../middleware/errorHandler.js";
+import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { logger } from "../config/logger.js";
 
 const router = Router();
 
 const createOrderSchema = z.object({
-  storeId: z.string().uuid(),
+  storeId: z.string().cuid(),
   customerName: z.string().min(2, "Nom minimum 2 caractères"),
   customerEmail: z.string().email("Email invalide"),
   customerPhone: z.string().min(9, "Téléphone invalide"),
@@ -25,7 +26,7 @@ const updateOrderStatusSchema = z.object({
   status: z.enum(["PENDING", "ACCEPTED", "REJECTED", "READY", "COMPLETED"]),
 });
 
-// POST /orders - Create order
+// POST /orders - Create order (public, for guest checkout)
 router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = createOrderSchema.parse(req.body);

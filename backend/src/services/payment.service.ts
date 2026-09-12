@@ -1,6 +1,7 @@
 import { stripe, STRIPE_CONFIG } from "../config/stripe.js";
 import { db } from "./db.js";
 import { logger } from "../config/logger.js";
+import { ApiError } from "../middleware/errorHandler.js";
 
 export interface PaymentData {
   orderId: string;
@@ -13,7 +14,6 @@ export interface PaymentData {
 }
 
 export class PaymentService {
-  // Create payment intent
   static async createPaymentIntent(data: PaymentData) {
     try {
       logger.info("Creating payment intent", {
@@ -22,7 +22,7 @@ export class PaymentService {
       });
 
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(data.amount * 100), // Convert to cents
+        amount: Math.round(data.amount * 100),
         currency: data.currency || STRIPE_CONFIG.currency,
         description: data.description || `Order ${data.orderId}`,
         metadata: {
@@ -32,10 +32,18 @@ export class PaymentService {
         receipt_email: data.customerEmail,
       });
 
-      // Save payment intent ID to order
-      db.prepare(
-        `UPDATE "Order" SET "paymentId" = ? WHERE id = ?`
-      ).run(paymentIntent.id, data.orderId);
+      // Save payment to database
+      const payment = await db.payment.create({
+        data: {
+          orderId: data.orderId,
+          amount: data.amount,
+          currency: data.currency || STRIPE_CONFIG.currency,
+          status: "PENDING" as any,
+          stripePaymentIntentId: paymentIntent.id,
+          stripeClientSecret: paymentIntent.client_secret,
+          stripeStatus: paymentIntent.status,
+        },
+      });
 
       return {
         clientSecret: paymentIntent.client_secret,
@@ -47,106 +55,107 @@ export class PaymentService {
     }
   }
 
-  // Confirm payment
   static async confirmPayment(paymentIntentId: string) {
     try {
       logger.info("Confirming payment", { paymentIntentId });
 
-      const paymentIntent = await stripe.paymentIntents.retrieve(
-        paymentIntentId
-      );
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-      // In demo mode, accept requires_payment_method as success
       if (
         paymentIntent.status === "succeeded" ||
         paymentIntent.status === "requires_payment_method"
       ) {
-        // Find order by payment ID
-        const order = db
-          .prepare('SELECT * FROM "Order" WHERE "paymentId" = ?')
-          .get(paymentIntentId);
+        const payment = await db.payment.findUnique({
+          where: { stripePaymentIntentId: paymentIntentId },
+        });
 
-        if (order) {
-          // Update order payment status to PAID
-          db.prepare(
-            `UPDATE "Order" SET "paymentStatus" = ? WHERE id = ?`
-          ).run("PAID", order.id);
+        if (payment) {
+          await db.order.update({
+            where: { id: payment.orderId },
+            data: { paymentStatus: "SUCCEEDED" as any },
+          });
 
-          logger.info("Payment confirmed", { orderId: order.id });
+          await db.payment.update({
+            where: { id: payment.id },
+            data: { status: "SUCCEEDED" as any, paidAt: new Date() },
+          });
+
+          logger.info("Payment confirmed", { orderId: payment.orderId });
         }
 
         return { success: true, status: paymentIntent.status };
       }
 
-      return { success: false, status: paymentIntent.status };
+      throw new ApiError(400, "Payment not completed", "PAYMENT_INCOMPLETE");
     } catch (err) {
       logger.error("Payment confirmation failed", { error: err });
       throw err;
     }
   }
 
-  // Get payment status
-  static async getPaymentStatus(paymentIntentId: string) {
-    try {
-      const paymentIntent = await stripe.paymentIntents.retrieve(
-        paymentIntentId
-      );
+  static async getPaymentByOrderId(orderId: string) {
+    const payment = await db.payment.findUnique({
+      where: { orderId },
+    });
 
-      return {
-        status: paymentIntent.status,
-        amount: paymentIntent.amount,
-        currency: paymentIntent.currency,
-      };
-    } catch (err) {
-      logger.error("Payment status retrieval failed", { error: err });
-      throw err;
+    if (!payment) {
+      throw new ApiError(404, "Payment not found", "PAYMENT_NOT_FOUND");
     }
+
+    return payment;
   }
 
-  // Refund payment
-  static async refundPayment(paymentIntentId: string, amountCents?: number) {
+  static async handleWebhook(event: any) {
     try {
-      logger.info("Processing refund", { paymentIntentId });
+      if (event.type === "payment_intent.succeeded") {
+        const paymentIntent = event.data.object;
+        await this.confirmPayment(paymentIntent.id);
+      } else if (event.type === "payment_intent.payment_failed") {
+        const paymentIntent = event.data.object;
+        const payment = await db.payment.findUnique({
+          where: { stripePaymentIntentId: paymentIntent.id },
+        });
 
-      const refund = await stripe.refunds.create({
-        payment_intent: paymentIntentId,
-        amount: amountCents,
-      });
-
-      return {
-        refundId: refund.id,
-        status: refund.status,
-        amount: refund.amount,
-      };
-    } catch (err) {
-      logger.error("Refund failed", { error: err });
-      throw err;
-    }
-  }
-
-  // Handle webhook event
-  static async handleWebhookEvent(event: any) {
-    try {
-      logger.info("Processing webhook event", { type: event.type });
-
-      switch (event.type) {
-        case "payment_intent.succeeded":
-          await this.confirmPayment(event.data.object.id);
-          break;
-
-        case "payment_intent.payment_failed":
-          logger.warn("Payment failed", {
-            paymentIntentId: event.data.object.id,
+        if (payment) {
+          await db.payment.update({
+            where: { id: payment.id },
+            data: { status: "FAILED" as any },
           });
-          break;
 
-        default:
-          logger.info("Unhandled webhook event", { type: event.type });
+          await db.order.update({
+            where: { id: payment.orderId },
+            data: { paymentStatus: "FAILED" as any },
+          });
+        }
       }
 
-      return { received: true };
+      return { success: true };
     } catch (err) {
       logger.error("Webhook handling failed", { error: err });
+      throw err;
+    }
+  }
+
+  static async refundPayment(paymentIntentId: string) {
+    try {
+      const refund = await stripe.refunds.create({
+        payment_intent: paymentIntentId,
+      });
+
+      const payment = await db.payment.findUnique({
+        where: { stripePaymentIntentId: paymentIntentId },
+      });
+
+      if (payment) {
+        await db.payment.update({
+          where: { id: payment.id },
+          data: { status: "REFUNDED" as any },
+        });
+      }
+
+      return refund;
+    } catch (err) {
+      logger.error("Refund failed", { error: err });
       throw err;
     }
   }

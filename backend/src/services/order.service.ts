@@ -1,7 +1,7 @@
-import { randomUUID } from "crypto";
 import { db } from "./db.js";
 import { EmailService } from "./email.service.js";
 import { logger } from "../config/logger.js";
+import { ApiError } from "../middleware/errorHandler.js";
 
 export interface OrderData {
   storeId: string;
@@ -16,144 +16,148 @@ export interface OrderData {
   totalAmount: number;
   taxAmount?: number;
   feesAmount?: number;
+  customerId?: string;
+  notes?: string;
 }
 
 export class OrderService {
-  // Create order
   static async create(data: OrderData) {
     try {
-      const orderId = randomUUID();
+      const order = await db.order.create({
+        data: {
+          storeId: data.storeId,
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          customerPhone: data.customerPhone,
+          deliveryType: data.deliveryType as any,
+          pickupTime: data.pickupTime ? new Date(data.pickupTime) : null,
+          deliveryAddress: data.deliveryAddress,
+          deliveryCity: data.deliveryCity,
+          deliveryPostal: data.deliveryPostal,
+          totalAmount: data.totalAmount,
+          taxAmount: data.taxAmount || 0,
+          feesAmount: data.feesAmount || 0,
+          customerId: data.customerId,
+          notes: data.notes,
+          status: "PENDING" as any,
+          paymentStatus: "PENDING" as any,
+        },
+        include: {
+          items: {
+            include: { product: true, variant: true },
+          },
+        },
+      });
 
-      db.prepare(
-        `INSERT INTO "Order" (id, "storeId", "customerName", "customerEmail", "customerPhone", "deliveryType", "pickupTime", "deliveryAddress", "deliveryCity", "deliveryPostal", "totalAmount", "taxAmount", "feesAmount", status, "paymentStatus", "createdAt", "updatedAt") 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
-      ).run(
-        orderId,
-        data.storeId,
-        data.customerName,
-        data.customerEmail,
-        data.customerPhone,
-        data.deliveryType,
-        data.pickupTime || null,
-        data.deliveryAddress || null,
-        data.deliveryCity || null,
-        data.deliveryPostal || null,
-        data.totalAmount,
-        data.taxAmount || 0,
-        data.feesAmount || 0,
-        "PENDING",
-        "PENDING"
-      );
-
-      // Send confirmation email
       try {
-        const createdOrder = await this.getById(orderId);
-        await EmailService.sendOrderConfirmation(createdOrder);
+        await EmailService.sendOrderConfirmation(order);
       } catch (emailErr) {
         logger.warn("Email notification failed, but order was created", { error: emailErr });
       }
 
-      return this.getById(orderId);
-    } catch (err) {
-      throw err;
+      return order;
+    } catch (error: any) {
+      throw error;
     }
   }
 
-  // Get order by ID
   static async getById(id: string) {
-    const result = db
-      .prepare('SELECT * FROM "Order" WHERE id = ?')
-      .get(id);
-    return result;
+    const order = await db.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: { product: true, variant: true },
+        },
+        payments: true,
+      },
+    });
+
+    if (!order) {
+      throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
+    }
+
+    return order;
   }
 
-  // Get orders by store
   static async getByStoreId(storeId: string, limit: number = 100, offset: number = 0) {
-    const result = db
-      .prepare(
-        'SELECT * FROM "Order" WHERE "storeId" = ? ORDER BY "createdAt" DESC LIMIT ? OFFSET ?'
-      )
-      .all(storeId, limit, offset);
-    return result;
+    return await db.order.findMany({
+      where: { storeId },
+      include: {
+        items: { include: { product: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
+    });
   }
 
-  // Get orders by status
-  static async getByStatus(storeId: string, status: string) {
-    const result = db
-      .prepare(
-        'SELECT * FROM "Order" WHERE "storeId" = ? AND status = ? ORDER BY "createdAt" DESC'
-      )
-      .all(storeId, status);
-    return result;
+  static async getByStatus(storeId: string, status: string, limit: number = 50) {
+    return await db.order.findMany({
+      where: { storeId, status: status as any },
+      include: {
+        items: { include: { product: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
   }
 
-  // Update order status
   static async updateStatus(id: string, status: string) {
     try {
-      const validStatuses = ["PENDING", "ACCEPTED", "REJECTED", "READY", "COMPLETED"];
-      
-      if (!validStatuses.includes(status)) {
-        throw new Error(`Invalid status: ${status}`);
+      return await db.order.update({
+        where: { id },
+        data: { status: status as any },
+        include: {
+          items: true,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
-
-      const result = db
-        .prepare(
-          `UPDATE "Order" SET status = ?, "updatedAt" = datetime('now') WHERE id = ? RETURNING *`
-        )
-        .get(status, id);
-
-      // Send status update email
-      if (result) {
-        try {
-          await EmailService.sendOrderStatusUpdate(result, status);
-        } catch (emailErr) {
-          logger.warn("Status email notification failed", { error: emailErr });
-        }
-      }
-
-      return result;
-    } catch (err) {
-      throw err;
+      throw error;
     }
   }
 
-  // Update payment status
-  static async updatePaymentStatus(id: string, paymentStatus: string) {
-    try {
-      const result = db
-        .prepare(
-          `UPDATE "Order" SET "paymentStatus" = ?, "updatedAt" = datetime('now') WHERE id = ? RETURNING *`
-        )
-        .get(paymentStatus, id);
+  static async addOrderItem(
+    orderId: string,
+    productId: string,
+    quantity: number,
+    price: number,
+    variantId?: string,
+    selectedOptions?: Record<string, string>
+  ) {
+    const product = await db.product.findUnique({ where: { id: productId } });
+    if (!product) throw new ApiError(404, "Product not found", "PRODUCT_NOT_FOUND");
 
-      return result;
-    } catch (err) {
-      throw err;
-    }
+    const total = price * quantity;
+
+    return await db.orderItem.create({
+      data: {
+        orderId,
+        productId,
+        variantId,
+        quantity,
+        price,
+        total,
+        selectedOptions: selectedOptions || {},
+      },
+      include: { product: true },
+    });
   }
 
-  // Delete order
-  static async delete(id: string) {
-    db.prepare('DELETE FROM "Order" WHERE id = ?').run(id);
-  }
-
-  // Get total count by store
   static async countByStoreId(storeId: string) {
-    const result = db
-      .prepare('SELECT COUNT(*) as count FROM "Order" WHERE "storeId" = ?')
-      .get(storeId) as { count: number };
-    return result.count;
+    return await db.order.count({ where: { storeId } });
   }
 
-  // Get order with items
-  static async getOrderWithItems(id: string) {
-    const order = this.getById(id);
-    if (!order) return null;
-
-    const items = db
-      .prepare('SELECT * FROM "OrderItem" WHERE "orderId" = ?')
-      .all(id);
-
-    return { ...order, items };
+  static async getRecentOrders(storeId: string, days: number = 7) {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    return await db.order.findMany({
+      where: {
+        storeId,
+        createdAt: { gte: since },
+      },
+      orderBy: { createdAt: "desc" },
+    });
   }
 }
