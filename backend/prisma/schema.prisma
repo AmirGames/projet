@@ -406,7 +406,7 @@ model Order {
   store           Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
   customer        Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   payments        Payment[]
-  delivery        OrderDelivery? @relation(fields: [id], references: [orderId])
+  delivery        OrderDelivery?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -748,7 +748,6 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([email])
   @@index([status])
   @@index([createdAt])
 }
