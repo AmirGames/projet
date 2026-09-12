@@ -11,6 +11,7 @@ import productRouter from "./routes/product.js";
 import categoryRouter from "./routes/category.js";
 import orderRouter from "./routes/order.js";
 import paymentRouter from "./routes/payment.js";
+import adminRouter from "./routes/admin.js";
 
 export function createApp(): Express {
   const app = express();
@@ -49,6 +50,7 @@ export function createApp(): Express {
   app.use("/api/categories", categoryRouter);
   app.use("/api/orders", orderRouter);
   app.use("/api/payments", paymentRouter);
+  app.use("/api/admin", adminRouter);
 
   // ===== Error handling (must be last) =====
   setupErrorHandling(app);

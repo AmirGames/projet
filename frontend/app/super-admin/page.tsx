@@ -1,0 +1,171 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Users, ShoppingCart, TrendingUp, AlertCircle } from 'lucide-react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+interface Stats {
+  merchants: { total: number; active: number; suspended: number };
+  stores: number;
+  orders: number;
+  revenue: number;
+  tickets: { open: number };
+  config: { platformFeePercent: number; maintenanceMode: boolean };
+}
+
+export default function SuperAdminDashboard() {
+  const router = useRouter();
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkAdmin();
+    fetchStats();
+  }, []);
+
+  const checkAdmin = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      router.push('/login');
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/admin/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        router.push('/login');
+        return;
+      }
+
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error('Erreur chargement stats:', error);
+      router.push('/login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading)
+    return <div className="text-center py-8">Chargement...</div>;
+
+  if (!stats)
+    return <div className="text-center py-8 text-red-400">Erreur d'accès</div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold">Tableau de bord</h1>
+        <p className="text-gray-400 mt-1">Vue d'ensemble du système</p>
+      </div>
+
+      {/* Maintenance Mode Alert */}
+      {stats.config.maintenanceMode && (
+        <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle size={20} className="text-yellow-400" />
+          <span className="text-yellow-400">Mode maintenance activé</span>
+        </div>
+      )}
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Merchants */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-gray-400 text-sm">Commerçants Actifs</p>
+            <Users size={20} className="text-blue-500" />
+          </div>
+          <p className="text-3xl font-bold">{stats.merchants.active}</p>
+          <p className="text-sm text-gray-400 mt-2">sur {stats.merchants.total} total</p>
+        </div>
+
+        {/* Stores */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-gray-400 text-sm">Boutiques</p>
+            <ShoppingCart size={20} className="text-green-500" />
+          </div>
+          <p className="text-3xl font-bold">{stats.stores}</p>
+          <p className="text-sm text-gray-400 mt-2">points de vente</p>
+        </div>
+
+        {/* Orders */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-gray-400 text-sm">Commandes</p>
+            <TrendingUp size={20} className="text-purple-500" />
+          </div>
+          <p className="text-3xl font-bold">{stats.orders}</p>
+          <p className="text-sm text-gray-400 mt-2">total</p>
+        </div>
+
+        {/* Revenue */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-gray-400 text-sm">Revenu</p>
+            <TrendingUp size={20} className="text-yellow-500" />
+          </div>
+          <p className="text-3xl font-bold">{stats.revenue.toFixed(2)} €</p>
+          <p className="text-sm text-gray-400 mt-2">Commission: {stats.config.platformFeePercent}%</p>
+        </div>
+      </div>
+
+      {/* Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Suspended Merchants */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <AlertCircle size={20} className="text-red-500" />
+            Commerçants suspendus
+          </h2>
+          <p className="text-3xl font-bold text-red-400">{stats.merchants.suspended}</p>
+          <p className="text-sm text-gray-400 mt-2">À investiguer</p>
+        </div>
+
+        {/* Open Tickets */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <AlertCircle size={20} className="text-orange-500" />
+            Support en attente
+          </h2>
+          <p className="text-3xl font-bold text-orange-400">{stats.tickets.open}</p>
+          <p className="text-sm text-gray-400 mt-2">Tickets ouverts</p>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <h2 className="text-lg font-bold mb-4">Actions rapides</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <a
+            href="/super-admin/merchants"
+            className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
+          >
+            Gérer les commerçants
+          </a>
+          <a
+            href="/super-admin/tickets"
+            className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
+          >
+            Voir le support
+          </a>
+          <a
+            href="/super-admin/settings"
+            className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
+          >
+            Paramètres système
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
