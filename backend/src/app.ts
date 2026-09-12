@@ -31,6 +31,7 @@ import productTagRouter from "./routes/product-tag.js";
 import adminRouter from "./routes/admin.js";
 import superAdminRouter from "./routes/super-admin.js";
 import superOwnerRouter from "./routes/superowner.js";
+import clientRouter from "./routes/client.js";
 
 export function createApp(): Express {
   const app = express();
@@ -89,6 +90,7 @@ export function createApp(): Express {
   app.use("/api/admin", adminRouter);
   app.use("/api/super-admin", superAdminRouter);
   app.use("/api/superowner", superOwnerRouter);
+  app.use("/api/client", clientRouter);
 
   // ===== Error handling (must be last) =====
   setupErrorHandling(app);
