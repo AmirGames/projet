@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Trash2, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
+import { StripePayment } from '@/components/stripe-payment';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -22,7 +23,7 @@ interface Customer {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, getCartTotal, getDeliveryFee, getTotalWithDelivery, removeFromCart, updateQuantity } = useCart();
+  const { cart, getCartTotal, getDeliveryFee, getTotalWithDelivery, removeFromCart, updateQuantity, clearCart } = useCart();
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -30,7 +31,9 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('cash');
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   useEffect(() => {
     loadCustomerInfo();
@@ -117,43 +120,31 @@ export default function CheckoutPage() {
       }
 
       const orderData = await orderResponse.json();
-      const orderId = orderData.data.id;
+      const createdOrderId = orderData.data.id;
+      setOrderId(createdOrderId);
 
-      // If card payment, redirect to payment
+      // If card payment, show payment form
       if (paymentMethod === 'card') {
-        // Create payment session with Stripe
-        const paymentResponse = await fetch(`${API_URL}/api/payments`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            orderId,
-            amount: getTotalWithDelivery(),
-            method: 'card'
-          })
-        });
-
-        if (!paymentResponse.ok) {
-          throw new Error('Payment initialization failed');
-        }
-
-        const paymentData = await paymentResponse.json();
-        // Redirect to Stripe or payment page
-        if (paymentData.data.checkoutUrl) {
-          router.push(paymentData.data.checkoutUrl);
-        } else {
-          router.push(`/client/orders/${orderId}`);
-        }
+        setShowPaymentForm(true);
       } else {
         // Cash payment - show order confirmation
-        router.push(`/client/orders/${orderId}`);
+        clearCart();
+        router.push(`/client/orders/${createdOrderId}`);
       }
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePaymentComplete = (success: boolean) => {
+    if (success && orderId) {
+      clearCart();
+      router.push(`/client/orders/${orderId}`);
+    } else {
+      setError('Erreur lors du paiement');
+      setShowPaymentForm(false);
     }
   };
 
@@ -314,37 +305,47 @@ export default function CheckoutPage() {
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-bold text-white mb-4">Méthode de paiement</h2>
 
-              <div className="space-y-3">
-                <label className="flex items-center p-4 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="card"
-                    checked={paymentMethod === 'card'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'card' | 'cash')}
-                    className="mr-3"
-                  />
-                  <div>
-                    <p className="text-white font-semibold">Carte bancaire</p>
-                    <p className="text-gray-400 text-sm">Visa, Mastercard</p>
-                  </div>
-                </label>
+              {!showPaymentForm ? (
+                <div className="space-y-3">
+                  <label className="flex items-center p-4 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="card"
+                      checked={paymentMethod === 'card'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'card' | 'cash')}
+                      className="mr-3"
+                    />
+                    <div>
+                      <p className="text-white font-semibold">Carte bancaire</p>
+                      <p className="text-gray-400 text-sm">Visa, Mastercard</p>
+                    </div>
+                  </label>
 
-                <label className="flex items-center p-4 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="cash"
-                    checked={paymentMethod === 'cash'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'card' | 'cash')}
-                    className="mr-3"
-                  />
-                  <div>
-                    <p className="text-white font-semibold">À la livraison</p>
-                    <p className="text-gray-400 text-sm">Paiement en espèces</p>
-                  </div>
-                </label>
-              </div>
+                  <label className="flex items-center p-4 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="cash"
+                      checked={paymentMethod === 'cash'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'card' | 'cash')}
+                      className="mr-3"
+                    />
+                    <div>
+                      <p className="text-white font-semibold">À la livraison</p>
+                      <p className="text-gray-400 text-sm">Paiement en espèces</p>
+                    </div>
+                  </label>
+                </div>
+              ) : (
+                <StripePayment
+                  orderId={orderId || ''}
+                  amount={getTotalWithDelivery()}
+                  customerEmail={customer?.email || ''}
+                  customerName={customer?.name || ''}
+                  onPaymentComplete={handlePaymentComplete}
+                />
+              )}
             </div>
           </div>
 
