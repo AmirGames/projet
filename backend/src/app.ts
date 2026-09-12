@@ -7,6 +7,7 @@ import { setupErrorHandling } from "./middleware/errorHandler.js";
 import authRouter from "./routes/auth.js";
 import organizationRouter from "./routes/organization.js";
 import storeRouter from "./routes/store.js";
+import storeSettingsRouter from "./routes/store-settings.js";
 import storeHoursRouter from "./routes/store-hours.js";
 import deliveryZoneRouter from "./routes/delivery-zone.js";
 import staffRouter from "./routes/staff.js";
@@ -53,6 +54,7 @@ export function createApp(): Express {
   app.use("/api/auth", authRouter);
   app.use("/api/organizations", organizationRouter);
   app.use("/api/stores", storeRouter);
+  app.use("/api/store-settings", storeSettingsRouter);
   app.use("/api/store-hours", storeHoursRouter);
   app.use("/api/delivery-zones", deliveryZoneRouter);
   app.use("/api/staff", staffRouter);
