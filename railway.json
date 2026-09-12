@@ -1,9 +1,7 @@
 {
   "services": {
     "backend": {
-      "root": "backend",
-      "buildCommand": "npm run build",
-      "startCommand": "node dist/app.js"
+      "root": "backend"
     }
   }
 }
