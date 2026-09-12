@@ -101,4 +101,25 @@ export class CategoryService {
       where: { storeId },
     });
   }
+
+  static async getByOrgId(orgId: string) {
+    return await db.category.findMany({
+      where: {
+        store: { orgId },
+      },
+      include: {
+        products: true,
+        store: true,
+      },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
+    });
+  }
+
+  static async countByOrgId(orgId: string) {
+    return await db.category.count({
+      where: {
+        store: { orgId },
+      },
+    });
+  }
 }
