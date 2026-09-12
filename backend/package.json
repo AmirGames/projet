@@ -24,6 +24,7 @@
     "jsonwebtoken": "latest",
     "nodemailer": "^10.0.9",
     "redis": "latest",
+    "socket.io": "^4.7.2",
     "stripe": "^22.6.2",
     "winston": "latest",
     "zod": "latest"

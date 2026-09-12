@@ -4,6 +4,7 @@ import { OrderService } from "../services/order.service.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { logger } from "../config/logger.js";
+import { emitOrderUpdate } from "../config/socket.js";
 
 const router = Router();
 
@@ -147,6 +148,8 @@ router.patch("/:id/status", authMiddleware, async (req: Request, res: Response, 
     if (!order) {
       throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
     }
+
+    emitOrderUpdate(id, body.status, { updatedAt: new Date().toISOString() });
 
     res.json({
       message: "Statut de la commande mis à jour",
