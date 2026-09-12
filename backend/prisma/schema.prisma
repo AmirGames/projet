@@ -211,6 +211,8 @@ model Store {
   campaigns     MarketingCampaign[] @relation("CampaignToStore")
   taxSettings   TaxSetting[] @relation("TaxSettingToStore")
   paymentMethods PaymentMethod[] @relation("PaymentMethodToStore")
+  notifications Notification[] @relation("NotificationToStore")
+  tags          ProductTag[] @relation("TagToStore")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -250,6 +252,8 @@ model Product {
   variants    ProductVariant[]
   orderItems  OrderItem[]
   reviews     Review[] @relation("ReviewToProduct")
+  media       ProductMedia[] @relation("MediaToProduct")
+  seo         ProductSeo? @relation("SeoToProduct")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -781,8 +785,115 @@ model PaymentMethod {
 }
 
 // ============================================================================
-// FUTURE MODELS (NOT IN MVP)
+// NOTIFICATIONS
 // ============================================================================
-// - Notification (audit + notification logs, future)
-// - TerminalDevice (Android terminal, future)
-// - ThemeVersion (version history, future)
+
+enum NotificationType {
+  ORDER_PLACED
+  ORDER_DELIVERED
+  PROMOTION_AVAILABLE
+  STOCK_LOW
+  REVIEW_RECEIVED
+  PAYMENT_FAILED
+  PAYMENT_SUCCEEDED
+}
+
+model Notification {
+  id              String            @id @default(cuid())
+  storeId         String
+
+  type            NotificationType
+  title           String
+  message         String
+  recipientEmail  String
+
+  // Status
+  isRead          Boolean           @default(false)
+  sentAt          DateTime?
+  readAt          DateTime?
+
+  // Metadata
+  relatedOrderId  String?
+  relatedProductId String?
+
+  // Relations
+  store           Store             @relation("NotificationToStore", fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([isRead])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// PRODUCT VARIANTS & MEDIA
+// ============================================================================
+
+model ProductMedia {
+  id              String  @id @default(cuid())
+  productId       String
+
+  url             String
+  alt             String?
+  type            String  @default("image") // image, video
+  displayOrder    Int     @default(0)
+
+  // Relations
+  product         Product @relation("MediaToProduct", fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+
+  @@index([productId])
+  @@index([displayOrder])
+}
+
+// ============================================================================
+// PRODUCT SEO & TAGS
+// ============================================================================
+
+model ProductSeo {
+  id              String  @id @default(cuid())
+  productId       String  @unique
+
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+
+  slug            String
+  ogImage         String?
+  ogDescription   String?
+
+  // Relations
+  product         Product @relation("SeoToProduct", fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([productId])
+  @@unique([slug])
+}
+
+model ProductTag {
+  id              String  @id @default(cuid())
+  storeId         String
+
+  name            String
+  slug            String
+  description     String?
+  color           String? // Hex color for UI
+
+  // Product association (JSON array of product IDs)
+  productIds      String[] @default([])
+
+  // Relations
+  store           Store   @relation("TagToStore", fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([storeId, slug])
+  @@index([storeId])
+}
