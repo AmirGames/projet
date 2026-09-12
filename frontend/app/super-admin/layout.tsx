@@ -15,6 +15,11 @@ import {
   Menu,
   X,
   Home,
+  FileText,
+  Download,
+  Shield,
+  Bell,
+  Eye,
 } from 'lucide-react';
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
@@ -43,8 +48,14 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     { label: 'Dashboard', icon: Home, href: '/super-admin' },
     { label: 'Commerçants', icon: Users, href: '/super-admin/merchants' },
     { label: 'Support', icon: AlertCircle, href: '/super-admin/tickets' },
-    { label: 'Commissions', icon: CreditCard, href: '/super-admin/commissions' },
     { label: 'Analytics', icon: BarChart3, href: '/super-admin/analytics' },
+    { label: 'Commissions', icon: CreditCard, href: '/super-admin/commissions' },
+    { label: 'Utilisateurs', icon: Shield, href: '/super-admin/user-management' },
+    { label: 'Admins', icon: Users, href: '/super-admin/admin-management' },
+    { label: 'Audit', icon: FileText, href: '/super-admin/audit-logs' },
+    { label: 'Accès', icon: Eye, href: '/super-admin/access-logs' },
+    { label: 'Export', icon: Download, href: '/super-admin/exports' },
+    { label: 'Notifications', icon: Bell, href: '/super-admin/notifications' },
     { label: 'Paramètres', icon: Settings, href: '/super-admin/settings' },
   ];
 
