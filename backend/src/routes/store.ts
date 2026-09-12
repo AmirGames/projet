@@ -27,6 +27,11 @@ const updateStoreSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email().optional(),
   description: z.string().optional(),
+  logo: z.string().optional(),
+  primaryColor: z.string().optional(),
+  secondaryColor: z.string().optional(),
+  timezone: z.string().optional(),
+  currency: z.string().optional(),
 });
 
 // POST /stores - Create store

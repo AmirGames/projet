@@ -28,16 +28,20 @@ export default function AdminAnalytics() {
 
   const fetchAnalytics = async () => {
     try {
-      const [orders, products] = await Promise.all([
-        apiClient.getOrders(),
-        apiClient.getProducts(),
+      const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
+      const token = localStorage.getItem('accessToken') || '';
+      const [ordersRes, productsRes] = await Promise.all([
+        apiClient.getOrders(storeId, token),
+        apiClient.getProducts(storeId),
       ]);
+
+      const orders = Array.isArray(ordersRes) ? ordersRes : ordersRes.orders || [];
+      const products = Array.isArray(productsRes) ? productsRes : productsRes.products || [];
 
       const totalRevenue = orders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
       const totalOrders = orders.length;
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-      // Groupe par jour
       const dailyRevenue: Record<string, number> = {};
       orders.forEach((order: any) => {
         const date = new Date(order.createdAt).toLocaleDateString('fr-FR');

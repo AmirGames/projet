@@ -25,8 +25,10 @@ export default function AdminOrders() {
 
   const fetchOrders = async () => {
     try {
-      const data = await apiClient.getOrders();
-      setOrders(data);
+      const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
+      const token = localStorage.getItem('accessToken') || '';
+      const data = await apiClient.getOrders(storeId, token);
+      setOrders(Array.isArray(data) ? data : data.orders || []);
     } catch (error) {
       console.error('Erreur chargement commandes:', error);
     } finally {

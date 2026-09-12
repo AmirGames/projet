@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
 interface Order {
   id: string;
   customerName: string;
@@ -20,8 +22,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("PENDING");
 
-  // Use demo store
-  const storeId = "19c84158-7858-453f-9955-e95c01c4e895";
+  // Get store from localStorage
+  const storeId = typeof window !== "undefined" ? localStorage.getItem("storeId") || "19c84158-7858-453f-9955-e95c01c4e895" : "19c84158-7858-453f-9955-e95c01c4e895";
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -35,11 +37,19 @@ export default function AdminPage() {
 
   const loadOrders = async () => {
     try {
+      const token = localStorage.getItem("accessToken");
       const response = await fetch(
-        `http://localhost:3001/api/orders/status/${storeId}?status=${selectedStatus}`
+        `${API_URL}/api/orders/store/${storeId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       const data = await response.json();
-      setOrders(data.orders || []);
+      const allOrders = Array.isArray(data) ? data : data.orders || [];
+      const filtered = selectedStatus === "PENDING"
+        ? allOrders
+        : allOrders.filter((o: Order) => o.status === selectedStatus);
+      setOrders(filtered);
     } catch (err) {
       console.error("Erreur:", err);
     } finally {
@@ -52,7 +62,7 @@ export default function AdminPage() {
     if (!token) return;
 
     try {
-      await fetch(`http://localhost:3001/api/orders/${orderId}/status`, {
+      await fetch(`${API_URL}/api/orders/${orderId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -61,7 +71,6 @@ export default function AdminPage() {
         body: JSON.stringify({ status: newStatus }),
       });
 
-      // Reload orders
       loadOrders();
     } catch (err) {
       console.error("Erreur:", err);
@@ -71,6 +80,7 @@ export default function AdminPage() {
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    localStorage.removeItem("storeId");
     router.push("/login");
   };
 

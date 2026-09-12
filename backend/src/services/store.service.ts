@@ -73,17 +73,27 @@ export class StoreService {
 
   static async update(id: string, data: any) {
     try {
+      const settingsFields = ['logo', 'primaryColor', 'secondaryColor', 'timezone', 'currency'];
+      const settings: any = {};
+
+      settingsFields.forEach(field => {
+        if (field in data) {
+          settings[field] = data[field];
+        }
+      });
+
       return await db.store.update({
         where: { id },
         data: {
           ...(data.name && { name: data.name }),
+          ...(data.slug && { slug: data.slug }),
           ...(data.address && { address: data.address }),
           ...(data.city && { city: data.city }),
           ...(data.postalCode && { postalCode: data.postalCode }),
           ...(data.phone && { phone: data.phone }),
           ...(data.email && { email: data.email }),
           ...(data.description && { description: data.description }),
-          ...(data.settings && { settings: data.settings }),
+          ...(Object.keys(settings).length > 0 && { settings }),
           ...(data.pickupSlots && { pickupSlots: data.pickupSlots }),
         },
         include: {

@@ -1,8 +1,16 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+const getAuthHeaders = () => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+  return {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+};
+
 export const api = {
   // Auth endpoints
-    signup: async (email: string, password: string, name: string) => {
+  signup: async (email: string, password: string, name: string) => {
     const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -25,6 +33,13 @@ export const api = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
+    });
+    return response.json();
+  },
+
+  getMe: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      headers: getAuthHeaders(),
     });
     return response.json();
   },
@@ -64,6 +79,18 @@ export const api = {
 
   getStore: async (id: string) => {
     const response = await fetch(`${API_BASE_URL}/api/stores/${id}`);
+    return response.json();
+  },
+
+  updateStore: async (id: string, data: any, token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/stores/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
     return response.json();
   },
 
@@ -173,4 +200,30 @@ export const api = {
     });
     return response.json();
   },
+
+  deleteProduct: async (id: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    const response = await fetch(`${API_BASE_URL}/api/products/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+    return response.json();
+  },
+
+  deleteCategory: async (id: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    const response = await fetch(`${API_BASE_URL}/api/categories/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+    return response.json();
+  },
 };
+
+export const apiClient = api;

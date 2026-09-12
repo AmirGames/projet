@@ -40,11 +40,23 @@ export default function AdminSettings() {
 
   const fetchSettings = async () => {
     try {
-      // TODO: Récupérer les settings du store depuis l'API
       const storeId = localStorage.getItem('storeId');
       if (storeId) {
-        // const data = await apiClient.getStore(storeId);
-        // setSettings(data);
+        const data = await apiClient.getStore(storeId);
+        const storeSettings = typeof data.settings === 'object' ? data.settings : {};
+        setSettings(prev => ({
+          ...prev,
+          name: data.name || '',
+          description: data.description || '',
+          address: data.address || '',
+          phone: data.phone || '',
+          email: data.email || '',
+          logo: storeSettings.logo || '',
+          primaryColor: storeSettings.primaryColor || '#3b82f6',
+          secondaryColor: storeSettings.secondaryColor || '#10b981',
+          timezone: storeSettings.timezone || 'Europe/Paris',
+          currency: storeSettings.currency || 'EUR',
+        }));
       }
     } catch (error) {
       console.error('Erreur chargement settings:', error);
@@ -62,10 +74,15 @@ export default function AdminSettings() {
     e.preventDefault();
     setSaving(true);
     try {
-      // TODO: Sauvegarder les settings
-      setMessage('✅ Paramètres sauvegardés avec succès!');
-      setTimeout(() => setMessage(''), 3000);
+      const storeId = localStorage.getItem('storeId');
+      const token = localStorage.getItem('accessToken') || '';
+      if (storeId) {
+        await apiClient.updateStore(storeId, settings, token);
+        setMessage('✅ Paramètres sauvegardés avec succès!');
+        setTimeout(() => setMessage(''), 3000);
+      }
     } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
       setMessage('❌ Erreur lors de la sauvegarde');
       setTimeout(() => setMessage(''), 3000);
     } finally {

@@ -24,8 +24,9 @@ export default function AdminCategories() {
 
   const fetchCategories = async () => {
     try {
-      const data = await apiClient.getCategories();
-      setCategories(data);
+      const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
+      const data = await apiClient.getCategories(storeId);
+      setCategories(Array.isArray(data) ? data : data.categories || []);
     } catch (error) {
       console.error('Erreur chargement catégories:', error);
     } finally {
@@ -36,10 +37,9 @@ export default function AdminCategories() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiClient.createCategory({
-        name: newCategory.name,
-        description: newCategory.description,
-      });
+      const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
+      const token = localStorage.getItem('accessToken') || '';
+      await apiClient.createCategory(storeId, newCategory.name, token);
       setNewCategory({ name: '', description: '' });
       setShowForm(false);
       fetchCategories();

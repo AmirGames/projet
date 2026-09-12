@@ -56,13 +56,13 @@ export default function Dashboard() {
         const org = meData.organizations[0];
 
         // Get stores
-        const storesRes = await fetch(`${API_URL}/api/stores?orgId=${org.id}`, {
+        const storesRes = await fetch(`${API_URL}/api/stores/org/${org.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (storesRes.ok) {
           const storesData = await storesRes.json();
-          setStores(storesData.stores || storesData || []);
+          setStores(Array.isArray(storesData) ? storesData : storesData.stores || []);
         }
 
         // Get recent orders
@@ -123,7 +123,7 @@ export default function Dashboard() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">Mes Boutiques</h2>
             <Link
-              href="/store"
+              href="/store/new"
               className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold"
             >
               + Créer une boutique
@@ -134,7 +134,7 @@ export default function Dashboard() {
             <div className="bg-gray-800 p-8 rounded-lg text-center border border-gray-700">
               <p className="text-gray-400 mb-4 text-lg">Aucune boutique créée</p>
               <Link
-                href="/store"
+                href="/store/new"
                 className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
               >
                 Créer votre première boutique

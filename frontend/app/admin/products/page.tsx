@@ -25,8 +25,9 @@ export default function AdminProducts() {
 
   const fetchProducts = async () => {
     try {
-      const data = await apiClient.getProducts();
-      setProducts(data);
+      const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
+      const data = await apiClient.getProducts(storeId);
+      setProducts(data.products || data || []);
     } catch (error) {
       console.error('Erreur chargement produits:', error);
     } finally {

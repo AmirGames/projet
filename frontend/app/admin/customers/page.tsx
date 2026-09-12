@@ -24,11 +24,14 @@ export default function AdminCustomers() {
 
   const fetchCustomers = async () => {
     try {
-      const orders = await apiClient.getOrders();
-      
+      const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
+      const token = localStorage.getItem('accessToken') || '';
+      const data = await apiClient.getOrders(storeId, token);
+      const orders = Array.isArray(data) ? data : data.orders || [];
+
       // Groupe les commandes par client
       const customerMap = new Map<string, Customer>();
-      
+
       orders.forEach((order: any) => {
         if (!customerMap.has(order.customerEmail)) {
           customerMap.set(order.customerEmail, {
@@ -40,7 +43,7 @@ export default function AdminCustomers() {
             totalSpent: 0,
           });
         }
-        
+
         const customer = customerMap.get(order.customerEmail)!;
         customer.orders += 1;
         customer.totalSpent += order.totalAmount || 0;

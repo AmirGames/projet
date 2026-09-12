@@ -3,6 +3,7 @@ import { signupSchema, loginSchema, refreshTokenSchema } from "../utils/validati
 import { AuthService } from "../services/auth.service.js";
 import { UserService } from "../services/user.service.js";
 import { ApiError } from "../middleware/errorHandler.js";
+import { authMiddleware } from "../middleware/auth.js";
 import { logger } from "../config/logger.js";
 import { generateSlug } from "../utils/validation.js";
 
@@ -145,7 +146,7 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
 });
 
 // GET /auth/me - Get current user (requires auth)
-router.get("/me", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/me", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).userId;
 
