@@ -1,7 +1,9 @@
 {
   "services": {
     "backend": {
-      "root": "backend"
+      "root": "backend",
+      "buildCommand": "npm ci && npm run build",
+      "startCommand": "npm start"
     }
   }
 }
