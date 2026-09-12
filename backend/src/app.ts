@@ -8,6 +8,7 @@ import authRouter from "./routes/auth.js";
 import organizationRouter from "./routes/organization.js";
 import storeRouter from "./routes/store.js";
 import storeHoursRouter from "./routes/store-hours.js";
+import deliveryZoneRouter from "./routes/delivery-zone.js";
 import productRouter from "./routes/product.js";
 import categoryRouter from "./routes/category.js";
 import orderRouter from "./routes/order.js";
@@ -51,6 +52,7 @@ export function createApp(): Express {
   app.use("/api/organizations", organizationRouter);
   app.use("/api/stores", storeRouter);
   app.use("/api/store-hours", storeHoursRouter);
+  app.use("/api/delivery-zones", deliveryZoneRouter);
   app.use("/api/products", productRouter);
   app.use("/api/categories", categoryRouter);
   app.use("/api/orders", orderRouter);
