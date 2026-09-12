@@ -1,71 +1,75 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { Mail, Phone } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { Search, Mail, Phone, Trash2, Lock, Eye } from 'lucide-react';
+import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Customer {
+  id: string;
   name: string;
   email: string;
-  phone: string;
-  orderCount: number;
+  phone?: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  totalOrders: number;
   totalSpent: number;
-  lastOrderDate: string;
+  status: string;
+  lastOrderDate?: string;
+  createdAt: string;
 }
 
 export default function CustomersPage() {
   const params = useParams();
+  const router = useRouter();
   const orgId = params?.orgId as string;
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'name' | 'orders' | 'spent'>('name');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const itemsPerPage = 20;
 
   useEffect(() => {
     if (orgId) {
       fetchCustomers();
     }
-  }, [orgId]);
+  }, [orgId, search, page]);
 
   const fetchCustomers = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/orders?orgId=${orgId}`, {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      const skip = page * itemsPerPage;
+      const query = new URLSearchParams({
+        skip: skip.toString(),
+        take: itemsPerPage.toString(),
+        ...(search && { search }),
+      });
+
+      const response = await fetch(`${API_URL}/api/customers/${orgId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const orders = data.orders || [];
-
-        const customersMap = new Map<string, Customer>();
-
-        orders.forEach((order: any) => {
-          const key = order.customerEmail;
-          const existing = customersMap.get(key);
-
-          if (existing) {
-            existing.orderCount++;
-            existing.totalSpent += order.totalAmount || 0;
-            if (new Date(order.createdAt) > new Date(existing.lastOrderDate)) {
-              existing.lastOrderDate = order.createdAt;
-            }
-          } else {
-            customersMap.set(key, {
-              name: order.customerName,
-              email: order.customerEmail,
-              phone: order.customerPhone,
-              orderCount: 1,
-              totalSpent: order.totalAmount || 0,
-              lastOrderDate: order.createdAt,
-            });
-          }
-        });
-
-        setCustomers(Array.from(customersMap.values()));
+      if (!response.ok) {
+        throw new Error('Failed to fetch customers');
       }
+
+      const data = await response.json();
+      setCustomers(data.data || []);
+      setTotal(data.total || 0);
     } catch (error) {
       console.error('Error fetching customers:', error);
     } finally {
@@ -73,25 +77,60 @@ export default function CustomersPage() {
     }
   };
 
-  const sortedCustomers = [...customers].sort((a, b) => {
-    switch (sortBy) {
-      case 'orders':
-        return b.orderCount - a.orderCount;
-      case 'spent':
-        return b.totalSpent - a.totalSpent;
-      case 'name':
-      default:
-        return a.name.localeCompare(b.name);
+  const handleDelete = async (customerId: string) => {
+    try {
+      setDeleting(true);
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+
+      const response = await fetch(`${API_URL}/api/customers/${orgId}/${customerId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete customer');
+      }
+
+      setCustomers(customers.filter(c => c.id !== customerId));
+      setShowDeleteModal(null);
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+    } finally {
+      setDeleting(false);
     }
-  });
+  };
+
+  const handleBlockCustomer = async (customerId: string) => {
+    try {
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+
+      const response = await fetch(`${API_URL}/api/customers/${orgId}/${customerId}/block`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to block customer');
+      }
+
+      const updatedCustomer = await response.json();
+      setCustomers(customers.map(c => c.id === customerId ? updatedCustomer.customer : c));
+    } catch (error) {
+      console.error('Error blocking customer:', error);
+    }
+  };
+
+  const totalPages = Math.ceil(total / itemsPerPage);
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-gray-900">
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">Chargement des clients...</p>
+      <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+              <p className="text-gray-400">Chargement des clients...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -100,100 +139,208 @@ export default function CustomersPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">👥 Gestion des Clients</h1>
-          <p className="text-gray-400 mt-1">Consultez vos clients et leurs historiques de commandes</p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Total Clients</p>
-            <p className="text-3xl font-bold">{customers.length}</p>
-          </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Total Commandes</p>
-            <p className="text-3xl font-bold text-blue-400">{customers.reduce((sum, c) => sum + c.orderCount, 0)}</p>
-          </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Revenu Clients</p>
-            <p className="text-3xl font-bold text-green-400">${(customers.reduce((sum, c) => sum + c.totalSpent, 0) / 100).toFixed(0)}</p>
-          </div>
-        </div>
-
-        {/* Sort */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-400">Trier par:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-red-500"
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-bold">Clients</h1>
+            <Link
+              href={`/merchant/${orgId}/dashboard`}
+              className="text-gray-400 hover:text-gray-300 text-sm"
             >
-              <option value="name">Nom</option>
-              <option value="orders">Nombre de commandes</option>
-              <option value="spent">Revenu généré</option>
-            </select>
+              ← Retour au tableau de bord
+            </Link>
+          </div>
+          <p className="text-gray-400">Gérez et suivez vos clients</p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+            <p className="text-gray-400 text-sm mb-1">Total Clients</p>
+            <p className="text-3xl font-bold">{total}</p>
+          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+            <p className="text-gray-400 text-sm mb-1">Clients Actifs</p>
+            <p className="text-3xl font-bold">{customers.filter(c => c.status === 'ACTIVE').length}</p>
+          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+            <p className="text-gray-400 text-sm mb-1">Clients Bloqués</p>
+            <p className="text-3xl font-bold text-red-400">{customers.filter(c => c.status === 'BLOCKED').length}</p>
           </div>
         </div>
 
-        {/* Customers List */}
-        <div className="space-y-3">
-          {sortedCustomers.length === 0 ? (
-            <div className="text-center py-12 bg-gray-800 border border-gray-700 rounded-lg">
-              <p className="text-gray-400">Aucun client trouvé</p>
-            </div>
-          ) : (
-            sortedCustomers.map((customer, index) => (
-              <div
-                key={index}
-                className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-red-600 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center font-bold">
-                        {customer.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-bold text-lg">{customer.name}</p>
-                        <p className="text-xs text-gray-500">Client depuis le {new Date(customer.lastOrderDate).toLocaleDateString('fr-FR')}</p>
-                      </div>
-                    </div>
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-4 top-3 text-gray-500" size={20} />
+            <input
+              type="text"
+              placeholder="Rechercher par nom, email ou téléphone..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
+              className="w-full pl-12 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
+            />
+          </div>
+        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail size={16} className="text-gray-500" />
-                          <span className="text-gray-300">{customer.email}</span>
+        {/* Customers Table */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-700 border-b border-gray-600">
+                <tr>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Nom</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Téléphone</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Commandes</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Dépense</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">Statut</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
+                      Aucun client trouvé
+                    </td>
+                  </tr>
+                ) : (
+                  customers.map((customer) => (
+                    <tr key={customer.id} className="border-b border-gray-700 hover:bg-gray-700/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <Link
+                          href={`/merchant/${orgId}/customers/${customer.id}`}
+                          className="text-red-400 hover:text-red-300 font-medium"
+                        >
+                          {customer.name}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex items-center gap-2 text-gray-300">
+                          <Mail size={16} />
+                          {customer.email}
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Phone size={16} className="text-gray-500" />
-                          <span className="text-gray-300">{customer.phone}</span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-300">
+                        {customer.phone ? (
+                          <div className="flex items-center gap-2">
+                            <Phone size={16} />
+                            {customer.phone}
+                          </div>
+                        ) : (
+                          <span className="text-gray-500">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-300">
+                        {customer.totalOrders}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-300">
+                        ${(customer.totalSpent / 100).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          customer.status === 'ACTIVE'
+                            ? 'bg-green-600/20 text-green-400'
+                            : customer.status === 'BLOCKED'
+                            ? 'bg-red-600/20 text-red-400'
+                            : 'bg-gray-600/20 text-gray-400'
+                        }`}>
+                          {customer.status === 'ACTIVE' && '✓ Actif'}
+                          {customer.status === 'BLOCKED' && '✕ Bloqué'}
+                          {customer.status === 'INACTIVE' && '⊘ Inactif'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Link
+                            href={`/merchant/${orgId}/customers/${customer.id}`}
+                            className="p-1 hover:bg-gray-600 rounded transition-colors"
+                            title="Voir détails"
+                          >
+                            <Eye size={18} className="text-blue-400" />
+                          </Link>
+                          {customer.status === 'ACTIVE' && (
+                            <button
+                              onClick={() => handleBlockCustomer(customer.id)}
+                              className="p-1 hover:bg-gray-600 rounded transition-colors"
+                              title="Bloquer client"
+                            >
+                              <Lock size={18} className="text-orange-400" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setShowDeleteModal(customer.id)}
+                            className="p-1 hover:bg-gray-600 rounded transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 size={18} className="text-red-400" />
+                          </button>
                         </div>
-                      </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-                      <div className="space-y-2 md:text-right">
-                        <div className="flex items-center justify-between md:justify-end gap-4">
-                          <div>
-                            <p className="text-gray-400 text-xs">Commandes</p>
-                            <p className="text-xl font-bold text-blue-400">{customer.orderCount}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400 text-xs">Dépenses</p>
-                            <p className="text-xl font-bold text-green-400">${(customer.totalSpent / 100).toFixed(2)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
+              <p className="text-sm text-gray-400">
+                Page {page + 1} sur {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage(Math.max(0, page - 1))}
+                  disabled={page === 0}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
+                >
+                  Précédent
+                </button>
+                <button
+                  onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                  disabled={page === totalPages - 1}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
+                >
+                  Suivant
+                </button>
               </div>
-            ))
+            </div>
           )}
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-sm mx-4">
+              <h3 className="text-xl font-bold mb-4">Confirmer la suppression</h3>
+              <p className="text-gray-400 mb-6">
+                Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteModal(null)}
+                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => handleDelete(showDeleteModal)}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 rounded-lg font-medium transition-colors"
+                >
+                  {deleting ? 'Suppression...' : 'Supprimer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
