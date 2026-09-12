@@ -11,6 +11,7 @@ import productRouter from "./routes/product.js";
 import categoryRouter from "./routes/category.js";
 import orderRouter from "./routes/order.js";
 import paymentRouter from "./routes/payment.js";
+import promotionRouter from "./routes/promotion.js";
 import adminRouter from "./routes/admin.js";
 import superAdminRouter from "./routes/super-admin.js";
 import superOwnerRouter from "./routes/superowner.js";
@@ -52,6 +53,7 @@ export function createApp(): Express {
   app.use("/api/categories", categoryRouter);
   app.use("/api/orders", orderRouter);
   app.use("/api/payments", paymentRouter);
+  app.use("/api/promotions", promotionRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api/super-admin", superAdminRouter);
   app.use("/api/superowner", superOwnerRouter);

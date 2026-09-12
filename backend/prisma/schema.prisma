@@ -197,6 +197,7 @@ model Store {
   orders        Order[]
   theme         Theme? @relation("ThemeToStore")
   deliveryZones DeliveryZone[]
+  promotions    Promotion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -485,10 +486,52 @@ model DeliveryZone {
 }
 
 // ============================================================================
+// PROMOTIONS
+// ============================================================================
+
+enum PromotionType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+model Promotion {
+  id          String          @id @default(cuid())
+  storeId     String
+  code        String
+  description String?
+  type        PromotionType
+  discountValue Decimal       @db.Decimal(10, 2)
+
+  // Scope: which products/categories apply to
+  applicableToAll Boolean      @default(true)
+  productIds  String[]        @default([])
+  categoryIds String[]        @default([])
+
+  // Validity
+  startDate   DateTime?
+  endDate     DateTime?
+
+  // Limits
+  maxUses     Int?            // null = unlimited
+  currentUses Int             @default(0)
+
+  status      String          @default("ACTIVE") // ACTIVE, INACTIVE, EXPIRED
+
+  // Relations
+  store       Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, code])
+  @@index([storeId])
+  @@index([status])
+}
+
+// ============================================================================
 // FUTURE MODELS (NOT IN MVP)
 // ============================================================================
 // - Customer (loyalty program, future)
-// - Promotion (discount codes, future)
 // - Notification (audit + notification logs, future)
 // - TerminalDevice (Android terminal, future)
 // - ThemeVersion (version history, future)
