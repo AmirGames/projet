@@ -185,10 +185,17 @@ model Store {
   
   // Store settings (JSON)
   settings      Json      @default("{}")
-  
+
+  // Operating hours (JSON object by day of week)
+  // Example: { "MON": { "open": "09:00", "close": "22:00", "closed": false }, ... }
+  operatingHours Json     @default("{}")
+
   // Pickup slots (JSON array)
   // Example: [{ start: "11:00", end: "13:00", maxOrders: 10 }, ...]
   pickupSlots   Json      @default("[]")
+
+  // Quick store status
+  isOpen        Boolean   @default(true)
 
   // Relations
   org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)

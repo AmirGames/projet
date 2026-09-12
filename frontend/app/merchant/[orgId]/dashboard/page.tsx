@@ -119,6 +119,7 @@ export default function MerchantDashboard() {
     { label: 'Tableau de Bord', href: `/merchant/${orgId}/dashboard`, icon: '📊' },
     { label: 'Commandes', href: `/merchant/${orgId}/orders`, icon: '📦' },
     { label: 'Produits', href: `/merchant/${orgId}/products`, icon: '🛍️' },
+    { label: 'Horaires', href: `/merchant/${orgId}/store-hours`, icon: '⏰' },
     { label: 'Clients', href: `/merchant/${orgId}/customers`, icon: '👥' },
     { label: 'Rapports', href: `/merchant/${orgId}/analytics`, icon: '📈' },
     { label: 'Paramètres', href: `/merchant/${orgId}/settings`, icon: '⚙️' },
