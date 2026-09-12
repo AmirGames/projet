@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { ShoppingCart, MapPin, Phone, Clock, Star } from 'lucide-react';
+import { ShoppingCart, MapPin, Phone, Clock, Star, AlertCircle, Check } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -34,6 +34,11 @@ interface Category {
   products: Product[];
 }
 
+interface OrderConfirmation {
+  id: string;
+  orderNumber: string;
+}
+
 export default function StorefrontPage() {
   const params = useParams();
   const slug = params?.slug as string;
@@ -43,6 +48,21 @@ export default function StorefrontPage() {
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [orderConfirmation, setOrderConfirmation] = useState<OrderConfirmation | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+
+  const [checkoutForm, setCheckoutForm] = useState({
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
+    deliveryType: 'DELIVERY' as 'PICKUP' | 'DELIVERY',
+    deliveryAddress: '',
+    deliveryCity: '',
+    pickupTime: '',
+    notes: '',
+  });
 
   useEffect(() => {
     if (slug) {
@@ -120,6 +140,83 @@ export default function StorefrontPage() {
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const cartServiceFee = cartTotal * 0.1;
+  const cartGrandTotal = cartTotal + cartServiceFee;
+
+  const handleCheckout = async () => {
+    setCheckoutError('');
+
+    if (!checkoutForm.customerName || !checkoutForm.customerEmail || !checkoutForm.customerPhone) {
+      setCheckoutError('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    if (checkoutForm.deliveryType === 'DELIVERY' && (!checkoutForm.deliveryAddress || !checkoutForm.deliveryCity)) {
+      setCheckoutError('Veuillez remplir l\'adresse de livraison');
+      return;
+    }
+
+    if (checkoutForm.deliveryType === 'PICKUP' && !checkoutForm.pickupTime) {
+      setCheckoutError('Veuillez sélectionner une heure de retrait');
+      return;
+    }
+
+    if (cart.length === 0) {
+      setCheckoutError('Votre panier est vide');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      if (!store) {
+        setCheckoutError('Erreur: boutique non trouvée');
+        return;
+      }
+
+      const orderData = {
+        storeId: store.id,
+        customerName: checkoutForm.customerName,
+        customerEmail: checkoutForm.customerEmail,
+        customerPhone: checkoutForm.customerPhone,
+        deliveryType: checkoutForm.deliveryType,
+        deliveryAddress: checkoutForm.deliveryAddress || undefined,
+        deliveryCity: checkoutForm.deliveryCity || undefined,
+        pickupTime: checkoutForm.pickupTime || undefined,
+        notes: checkoutForm.notes || undefined,
+        totalAmount: Math.round(cartGrandTotal * 100),
+        taxAmount: 0,
+        feesAmount: Math.round(cartServiceFee * 100),
+      };
+
+      const response = await fetch(`${API_URL}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        setCheckoutError(error.message || 'Erreur lors de la création de la commande');
+        return;
+      }
+
+      const orderResponse = await response.json();
+      setOrderConfirmation({
+        id: orderResponse.order.id,
+        orderNumber: orderResponse.order.id.slice(-8).toUpperCase(),
+      });
+
+      setCart([]);
+      setShowCheckout(false);
+      setShowCart(false);
+    } catch (error) {
+      console.error('Checkout error:', error);
+      setCheckoutError('Erreur de connexion. Veuillez réessayer.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -322,10 +419,13 @@ export default function StorefrontPage() {
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-3">
                     <span>Total</span>
-                    <span>${((cartTotal * 1.1) / 100).toFixed(2)}</span>
+                    <span>${(cartGrandTotal / 100).toFixed(2)}</span>
                   </div>
 
-                  <button className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors mt-4">
+                  <button
+                    onClick={() => setShowCheckout(true)}
+                    className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors mt-4"
+                  >
                     Passer la Commande
                   </button>
                 </div>
@@ -334,6 +434,244 @@ export default function StorefrontPage() {
           </aside>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {orderConfirmation && (
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full text-center p-8 space-y-6">
+            <div className="flex justify-center">
+              <div className="w-16 h-16 bg-green-600/20 border border-green-600 rounded-full flex items-center justify-center">
+                <Check size={32} className="text-green-400" />
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Commande Confirmée!</h2>
+              <p className="text-gray-400">Votre commande a été créée avec succès</p>
+            </div>
+
+            <div className="bg-gray-700 rounded-lg p-4">
+              <p className="text-gray-400 text-sm mb-1">Numéro de commande</p>
+              <p className="text-2xl font-bold text-red-400">#{orderConfirmation.orderNumber}</p>
+            </div>
+
+            <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
+              <p className="text-blue-400 text-sm">
+                Vous recevrez bientôt un email de confirmation avec les détails de votre commande.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  setOrderConfirmation(null);
+                  setCheckoutForm({
+                    customerName: '',
+                    customerEmail: '',
+                    customerPhone: '',
+                    deliveryType: 'DELIVERY',
+                    deliveryAddress: '',
+                    deliveryCity: '',
+                    pickupTime: '',
+                    notes: '',
+                  });
+                }}
+                className="w-full py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors"
+              >
+                Retour à la boutique
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Checkout Modal */}
+      {showCheckout && !orderConfirmation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-2xl w-full my-8">
+            <div className="border-b border-gray-700 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Informations de Livraison</h2>
+              <button
+                onClick={() => setShowCheckout(false)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 max-h-96 overflow-y-auto">
+              {checkoutError && (
+                <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 flex gap-3">
+                  <AlertCircle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-red-400 text-sm">{checkoutError}</p>
+                </div>
+              )}
+
+              {/* Customer Info */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-lg">Vos Informations</h3>
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">Nom complet *</label>
+                  <input
+                    type="text"
+                    value={checkoutForm.customerName}
+                    onChange={(e) => setCheckoutForm({ ...checkoutForm, customerName: e.target.value })}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                    placeholder="Jean Dupont"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">Email *</label>
+                  <input
+                    type="email"
+                    value={checkoutForm.customerEmail}
+                    onChange={(e) => setCheckoutForm({ ...checkoutForm, customerEmail: e.target.value })}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                    placeholder="jean@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">Téléphone *</label>
+                  <input
+                    type="tel"
+                    value={checkoutForm.customerPhone}
+                    onChange={(e) => setCheckoutForm({ ...checkoutForm, customerPhone: e.target.value })}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                    placeholder="+33 6 12 34 56 78"
+                  />
+                </div>
+              </div>
+
+              {/* Delivery Type */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-lg">Mode de Livraison</h3>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 p-3 bg-gray-700 rounded cursor-pointer hover:bg-gray-600 transition-colors">
+                    <input
+                      type="radio"
+                      name="deliveryType"
+                      value="DELIVERY"
+                      checked={checkoutForm.deliveryType === 'DELIVERY'}
+                      onChange={(e) => setCheckoutForm({ ...checkoutForm, deliveryType: e.target.value as any })}
+                      className="w-4 h-4"
+                    />
+                    <div className="flex-1">
+                      <p className="font-semibold">Livraison à domicile</p>
+                      <p className="text-xs text-gray-400">Livraison à votre adresse</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-gray-700 rounded cursor-pointer hover:bg-gray-600 transition-colors">
+                    <input
+                      type="radio"
+                      name="deliveryType"
+                      value="PICKUP"
+                      checked={checkoutForm.deliveryType === 'PICKUP'}
+                      onChange={(e) => setCheckoutForm({ ...checkoutForm, deliveryType: e.target.value as any })}
+                      className="w-4 h-4"
+                    />
+                    <div className="flex-1">
+                      <p className="font-semibold">Retrait sur place</p>
+                      <p className="text-xs text-gray-400">Récupérez votre commande à la boutique</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Delivery Address */}
+              {checkoutForm.deliveryType === 'DELIVERY' && (
+                <div className="space-y-4">
+                  <h3 className="font-bold text-lg">Adresse de Livraison</h3>
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">Adresse *</label>
+                    <input
+                      type="text"
+                      value={checkoutForm.deliveryAddress}
+                      onChange={(e) => setCheckoutForm({ ...checkoutForm, deliveryAddress: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                      placeholder="123 Rue de la Paix"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">Ville *</label>
+                    <input
+                      type="text"
+                      value={checkoutForm.deliveryCity}
+                      onChange={(e) => setCheckoutForm({ ...checkoutForm, deliveryCity: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                      placeholder="Paris"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Pickup Time */}
+              {checkoutForm.deliveryType === 'PICKUP' && (
+                <div className="space-y-4">
+                  <h3 className="font-bold text-lg">Heure de Retrait</h3>
+                  <div>
+                    <label className="text-sm text-gray-400 block mb-2">Sélectionnez une heure *</label>
+                    <input
+                      type="datetime-local"
+                      value={checkoutForm.pickupTime}
+                      onChange={(e) => setCheckoutForm({ ...checkoutForm, pickupTime: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-lg">Notes (Optionnel)</h3>
+                <textarea
+                  value={checkoutForm.notes}
+                  onChange={(e) => setCheckoutForm({ ...checkoutForm, notes: e.target.value })}
+                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500 h-20"
+                  placeholder="Instructions spéciales, allergies, etc..."
+                />
+              </div>
+
+              {/* Order Summary */}
+              <div className="bg-gray-700 rounded-lg p-4 space-y-2">
+                <h3 className="font-bold mb-3">Résumé de la Commande</h3>
+                <div className="flex justify-between text-sm">
+                  <span>Sous-total</span>
+                  <span>${(cartTotal / 100).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Frais de service (10%)</span>
+                  <span>${(cartServiceFee / 100).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg border-t border-gray-600 pt-2">
+                  <span>Total</span>
+                  <span className="text-red-400">${(cartGrandTotal / 100).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="border-t border-gray-700 p-6 flex gap-3">
+              <button
+                onClick={() => setShowCheckout(false)}
+                className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCheckout}
+                disabled={submitting}
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors disabled:opacity-50"
+              >
+                {submitting ? 'Traitement...' : 'Confirmer la Commande'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
