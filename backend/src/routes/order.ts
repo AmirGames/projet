@@ -2,7 +2,6 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { OrderService } from "../services/order.service.js";
 import { ApiError } from "../middleware/errorHandler.js";
-import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { logger } from "../config/logger.js";
 
 const router = Router();
@@ -47,7 +46,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
 // GET /orders/:id - Get order by ID
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const order = await OrderService.getOrderWithItems(id);
 
@@ -64,9 +63,9 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 // GET /orders/store/:storeId - Get orders by store
 router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { storeId } = req.params;
-    const limit = parseInt(req.query.limit as string) || 100;
-    const offset = parseInt(req.query.offset as string) || 0;
+    const storeId = req.params.storeId as string;
+    const limit = parseInt((req.query.limit as string) || "100") || 100;
+    const offset = parseInt((req.query.offset as string) || "0") || 0;
 
     const orders = await OrderService.getByStoreId(storeId, limit, offset);
     const total = await OrderService.countByStoreId(storeId);
@@ -87,10 +86,10 @@ router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunc
 // GET /orders/status/:storeId - Get orders by status
 router.get("/status/:storeId", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { storeId } = req.params;
-    const { status } = req.query;
+    const storeId = req.params.storeId as string;
+    const status = (req.query.status as string) || "";
 
-    if (!status || typeof status !== "string") {
+    if (!status) {
       throw new ApiError(400, "Paramètre 'status' requis", "INVALID_INPUT");
     }
 
@@ -109,7 +108,7 @@ router.get("/status/:storeId", async (req: Request, res: Response, next: NextFun
 // PATCH /orders/:id/status - Update order status
 router.patch("/:id/status", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const body = updateOrderStatusSchema.parse(req.body);
 
     logger.info("Updating order status", { id, status: body.status });
@@ -132,7 +131,7 @@ router.patch("/:id/status", async (req: Request, res: Response, next: NextFuncti
 // DELETE /orders/:id - Delete order
 router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const order = await OrderService.getById(id);
 

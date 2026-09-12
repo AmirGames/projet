@@ -32,8 +32,7 @@ export class PaymentService {
         receipt_email: data.customerEmail,
       });
 
-      // Save payment to database
-      const payment = await db.payment.create({
+      await db.payment.create({
         data: {
           orderId: data.orderId,
           amount: data.amount,
@@ -65,7 +64,7 @@ export class PaymentService {
         paymentIntent.status === "succeeded" ||
         paymentIntent.status === "requires_payment_method"
       ) {
-        const payment = await db.payment.findUnique({
+        const payment = await db.payment.findFirst({
           where: { stripePaymentIntentId: paymentIntentId },
         });
 
@@ -105,6 +104,25 @@ export class PaymentService {
     return payment;
   }
 
+  static async getPaymentStatus(paymentIntentId: string) {
+    const payment = await db.payment.findFirst({
+      where: { stripePaymentIntentId: paymentIntentId },
+    });
+
+    if (!payment) {
+      throw new ApiError(404, "Payment not found", "PAYMENT_NOT_FOUND");
+    }
+
+    const stripePayment = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    return {
+      status: stripePayment.status,
+      amount: payment.amount,
+      currency: payment.currency,
+      paidAt: payment.paidAt,
+    };
+  }
+
   static async handleWebhook(event: any) {
     try {
       if (event.type === "payment_intent.succeeded") {
@@ -112,7 +130,7 @@ export class PaymentService {
         await this.confirmPayment(paymentIntent.id);
       } else if (event.type === "payment_intent.payment_failed") {
         const paymentIntent = event.data.object;
-        const payment = await db.payment.findUnique({
+        const payment = await db.payment.findFirst({
           where: { stripePaymentIntentId: paymentIntent.id },
         });
 
@@ -136,13 +154,16 @@ export class PaymentService {
     }
   }
 
-  static async refundPayment(paymentIntentId: string) {
+  static async refundPayment(paymentIntentId: string, amount?: number) {
     try {
-      const refund = await stripe.refunds.create({
-        payment_intent: paymentIntentId,
-      });
+      const refundData: any = { payment_intent: paymentIntentId };
+      if (amount) {
+        refundData.amount = amount;
+      }
 
-      const payment = await db.payment.findUnique({
+      const refund = await stripe.refunds.create(refundData);
+
+      const payment = await db.payment.findFirst({
         where: { stripePaymentIntentId: paymentIntentId },
       });
 

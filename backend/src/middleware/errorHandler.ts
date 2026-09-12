@@ -17,7 +17,7 @@ export const errorHandler = (
   err: Error | ApiError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   logger.error("Error caught", {
     name: err.name,
@@ -42,7 +42,7 @@ export const errorHandler = (
   }
 
   // Fallback error
-  res.status(500).json({
+  return res.status(500).json({
     error: "Internal server error",
     message: process.env.NODE_ENV === "development" ? err.message : undefined,
   });

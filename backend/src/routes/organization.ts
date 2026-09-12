@@ -43,7 +43,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
 // GET /organizations/:id - Get organization by ID
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const org = await OrganizationService.getById(id);
 
@@ -60,7 +60,7 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 // GET /organizations/slug/:slug - Get by slug
 router.get("/slug/:slug", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { slug } = req.params;
+    const slug = req.params.slug as string;
 
     const org = await OrganizationService.getBySlug(slug);
 
@@ -90,7 +90,7 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
 // PUT /organizations/:id - Update organization
 router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const body = updateOrgSchema.parse(req.body);
 
     logger.info("Updating organization", { id });
@@ -113,7 +113,7 @@ router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
 // DELETE /organizations/:id - Delete organization
 router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const org = await OrganizationService.getById(id);
 

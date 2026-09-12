@@ -160,4 +160,29 @@ export class OrderService {
       orderBy: { createdAt: "desc" },
     });
   }
+
+  static async getOrderWithItems(id: string) {
+    return await db.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: { product: true, variant: true },
+        },
+        payments: true,
+      },
+    });
+  }
+
+  static async delete(id: string) {
+    try {
+      return await db.order.delete({
+        where: { id },
+      });
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
+      }
+      throw error;
+    }
+  }
 }

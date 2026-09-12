@@ -21,8 +21,8 @@ const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
   SENTRY_DSN: z.string().url().optional(),
-  ENABLE_STRIPE: z.string().transform((v) => v === "true").default("true"),
-  ENABLE_EMAIL_VERIFICATION: z.string().transform((v) => v === "true").default("true"),
+  ENABLE_STRIPE: z.string().default("true").transform((v) => v === "true"),
+  ENABLE_EMAIL_VERIFICATION: z.string().default("true").transform((v) => v === "true"),
 });
 
 export type Env = z.infer<typeof envSchema>;

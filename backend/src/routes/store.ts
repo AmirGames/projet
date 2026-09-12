@@ -50,7 +50,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
 // GET /stores/:id - Get store by ID
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const store = await StoreService.getById(id);
 
@@ -67,7 +67,7 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 // GET /stores/org/:orgId - Get stores by organization
 router.get("/org/:orgId", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { orgId } = req.params;
+    const orgId = req.params.orgId as string;
 
     const stores = await StoreService.getByOrgId(orgId);
 
@@ -80,7 +80,7 @@ router.get("/org/:orgId", async (req: Request, res: Response, next: NextFunction
 // PUT /stores/:id - Update store
 router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const body = updateStoreSchema.parse(req.body);
 
     logger.info("Updating store", { id });
@@ -103,7 +103,7 @@ router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
 // DELETE /stores/:id - Delete store
 router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const store = await StoreService.getById(id);
 

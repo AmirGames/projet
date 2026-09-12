@@ -48,7 +48,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
 // GET /products/:id - Get product by ID
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const product = await ProductService.getById(id);
 
@@ -65,7 +65,7 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 // GET /products/store/:storeId - Get products by store
 router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { storeId } = req.params;
+    const storeId = req.params.storeId as string;
     const limit = parseInt(req.query.limit as string) || 100;
     const offset = parseInt(req.query.offset as string) || 0;
 
@@ -88,7 +88,7 @@ router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunc
 // GET /products/category/:categoryId - Get products by category
 router.get("/category/:categoryId", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { categoryId } = req.params;
+    const categoryId = req.params.categoryId as string;
     const limit = parseInt(req.query.limit as string) || 100;
     const offset = parseInt(req.query.offset as string) || 0;
 
@@ -109,10 +109,10 @@ router.get("/category/:categoryId", async (req: Request, res: Response, next: Ne
 // GET /products/search/:storeId - Search products
 router.get("/search/:storeId", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { storeId } = req.params;
-    const { q } = req.query;
+    const storeId = req.params.storeId as string;
+    const q = req.query.q as string;
 
-    if (!q || typeof q !== "string") {
+    if (!q) {
       throw new ApiError(400, "Paramètre 'q' requis", "INVALID_INPUT");
     }
 
@@ -131,7 +131,7 @@ router.get("/search/:storeId", async (req: Request, res: Response, next: NextFun
 // PUT /products/:id - Update product
 router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const body = updateProductSchema.parse(req.body);
 
     logger.info("Updating product", { id });
@@ -154,7 +154,7 @@ router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
 // PATCH /products/:id/stock - Update product stock
 router.patch("/:id/stock", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { quantity } = req.body;
 
     if (typeof quantity !== "number") {
@@ -181,7 +181,7 @@ router.patch("/:id/stock", async (req: Request, res: Response, next: NextFunctio
 // DELETE /products/:id - Delete product
 router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const product = await ProductService.getById(id);
 

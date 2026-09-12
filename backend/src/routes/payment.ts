@@ -73,7 +73,7 @@ router.get(
   "/status/:paymentIntentId",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { paymentIntentId } = req.params;
+      const paymentIntentId = req.params.paymentIntentId as string;
 
       const status = await PaymentService.getPaymentStatus(paymentIntentId);
 
@@ -126,13 +126,13 @@ router.post(
         throw new ApiError(400, "Missing stripe signature", "INVALID_INPUT");
       }
 
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-        apiVersion: "2024-06-20",
+      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+        apiVersion: "2026-08-26.dahlia" as any,
       });
 
       let event;
       try {
-        event = stripe.webhooks.constructEvent(
+        event = stripeClient.webhooks.constructEvent(
           req.body,
           signature as string,
           STRIPE_CONFIG.webhookSecret
@@ -144,7 +144,7 @@ router.post(
 
       logger.info("Webhook event received", { type: event.type });
 
-      await PaymentService.handleWebhookEvent(event);
+      await PaymentService.handleWebhook(event);
 
       res.json({ received: true });
     } catch (err) {

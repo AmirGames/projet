@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
+export function authMiddleware(req: Request, _res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
 
@@ -38,7 +38,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
 }
 
 export function requireRole(...roles: string[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.role || !roles.includes(req.role)) {
       return next(new ApiError(403, "Insufficient permissions", "FORBIDDEN"));
     }
@@ -46,7 +46,7 @@ export function requireRole(...roles: string[]) {
   };
 }
 
-export function requireStore(req: Request, res: Response, next: NextFunction) {
+export function requireStore(req: Request, _res: Response, next: NextFunction) {
   const storeId = req.query.storeId as string;
 
   if (!storeId || !req.storeIds?.includes(storeId)) {

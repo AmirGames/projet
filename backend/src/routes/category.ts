@@ -38,7 +38,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
 // GET /categories/:id - Get category by ID
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const category = await CategoryService.getById(id);
 
@@ -55,7 +55,7 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 // GET /categories/store/:storeId - Get categories by store
 router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { storeId } = req.params;
+    const storeId = req.params.storeId as string;
 
     const categories = await CategoryService.getByStoreId(storeId);
     const total = await CategoryService.countByStoreId(storeId);
@@ -72,7 +72,7 @@ router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunc
 // PUT /categories/:id - Update category
 router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const body = updateCategorySchema.parse(req.body);
 
     logger.info("Updating category", { id });
@@ -117,7 +117,7 @@ router.post("/reorder", async (req: Request, res: Response, next: NextFunction) 
 // DELETE /categories/:id - Delete category
 router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const category = await CategoryService.getById(id);
 

@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { loadEnv, getEnv } from "./config/env.js";
+import { loadEnv } from "./config/env.js";
 import { logger } from "./config/logger.js";
 import { createApp } from "./app.js";
 import { db } from "./services/db.js";

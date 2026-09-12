@@ -2,7 +2,7 @@ import express, { Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { getEnv } from "./config/env.js";
-import { logger, requestLogger } from "./config/logger.js";
+import { requestLogger } from "./config/logger.js";
 import { setupErrorHandling } from "./middleware/errorHandler.js";
 import authRouter from "./routes/auth.js";
 import organizationRouter from "./routes/organization.js";
@@ -37,7 +37,7 @@ export function createApp(): Express {
   app.use(requestLogger);
 
   // ===== Health check =====
-  app.get("/health", (req, res) => {
+  app.get("/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 

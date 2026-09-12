@@ -1,5 +1,5 @@
-import { randomUUID } from "crypto";
 import { db } from "./db.js";
+import { ApiError } from "../middleware/errorHandler.js";
 
 export interface CategoryData {
   storeId: string;
@@ -8,100 +8,97 @@ export interface CategoryData {
 }
 
 export class CategoryService {
-  // Create category
   static async create(data: CategoryData) {
     try {
-      const categoryId = randomUUID();
-      const displayOrder = data.displayOrder || 0;
-
-      db.prepare(
-        `INSERT INTO "Category" (id, "storeId", name, "displayOrder", "createdAt", "updatedAt") 
-         VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`
-      ).run(
-        categoryId,
-        data.storeId,
-        data.name,
-        displayOrder
-      );
-
-      return this.getById(categoryId);
-    } catch (err) {
+      const category = await db.category.create({
+        data: {
+          storeId: data.storeId,
+          name: data.name,
+          displayOrder: data.displayOrder || 0,
+        },
+      });
+      return category;
+    } catch (err: any) {
+      if (err.code === "P2002") {
+        throw new ApiError(400, "Category name already exists for this store", "DUPLICATE_NAME");
+      }
       throw err;
     }
   }
 
-  // Get category by ID
   static async getById(id: string) {
-    const result = db
-      .prepare('SELECT * FROM "Category" WHERE id = ?')
-      .get(id);
-    return result;
-  }
+    const category = await db.category.findUnique({
+      where: { id },
+      include: { products: true },
+    });
 
-  // Get categories by store (ordered by displayOrder)
-  static async getByStoreId(storeId: string) {
-    const result = db
-      .prepare(
-        'SELECT * FROM "Category" WHERE "storeId" = ? ORDER BY "displayOrder" ASC, "createdAt" ASC'
-      )
-      .all(storeId);
-    return result;
-  }
-
-  // Update category
-  static async update(id: string, data: Partial<CategoryData>) {
-    const updates: string[] = [];
-    const values: any[] = [];
-
-    const allowedFields = ["name", "displayOrder"];
-
-    for (const field of allowedFields) {
-      if (field in data) {
-        updates.push(`"${field}" = ?`);
-        values.push((data as any)[field]);
-      }
+    if (!category) {
+      throw new ApiError(404, "Category not found", "CATEGORY_NOT_FOUND");
     }
 
-    if (updates.length === 0) return null;
-
-    updates.push(`"updatedAt" = datetime('now')`);
-    values.push(id);
-
-    const result = db
-      .prepare(
-        `UPDATE "Category" SET ${updates.join(", ")} WHERE id = ? RETURNING *`
-      )
-      .get(...values);
-
-    return result;
+    return category;
   }
 
-  // Reorder categories (displayOrder)
+  static async getByStoreId(storeId: string) {
+    return await db.category.findMany({
+      where: { storeId },
+      include: { products: true },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
+    });
+  }
+
+  static async update(id: string, data: Partial<CategoryData>) {
+    try {
+      return await db.category.update({
+        where: { id },
+        data: {
+          name: data.name,
+          displayOrder: data.displayOrder,
+        },
+        include: { products: true },
+      });
+    } catch (err: any) {
+      if (err.code === "P2025") {
+        throw new ApiError(404, "Category not found", "CATEGORY_NOT_FOUND");
+      }
+      if (err.code === "P2002") {
+        throw new ApiError(400, "Category name already exists for this store", "DUPLICATE_NAME");
+      }
+      throw err;
+    }
+  }
+
   static async reorder(storeId: string, ordering: { id: string; displayOrder: number }[]) {
     try {
-      const stmt = db.prepare(`UPDATE "Category" SET "displayOrder" = ?, "updatedAt" = datetime('now') WHERE id = ?`);
-
       for (const item of ordering) {
-        stmt.run(item.displayOrder, item.id);
+        await db.category.update({
+          where: { id: item.id },
+          data: { displayOrder: item.displayOrder },
+        });
       }
 
-      // Return all categories in new order
-      return this.getByStoreId(storeId);
+      return await this.getByStoreId(storeId);
     } catch (err) {
       throw err;
     }
   }
 
-  // Delete category
   static async delete(id: string) {
-    db.prepare('DELETE FROM "Category" WHERE id = ?').run(id);
+    try {
+      await db.category.delete({
+        where: { id },
+      });
+    } catch (err: any) {
+      if (err.code === "P2025") {
+        throw new ApiError(404, "Category not found", "CATEGORY_NOT_FOUND");
+      }
+      throw err;
+    }
   }
 
-  // Get total count by store
   static async countByStoreId(storeId: string) {
-    const result = db
-      .prepare('SELECT COUNT(*) as count FROM "Category" WHERE "storeId" = ?')
-      .get(storeId) as { count: number };
-    return result.count;
+    return await db.category.count({
+      where: { storeId },
+    });
   }
 }
