@@ -1,143 +1,187 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { CreditCard, DollarSign, TrendingUp, Download } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CreditCard } from 'lucide-react';
+
+interface BillingData {
+  id: string;
+  organization: string;
+  tier: string;
+  amount: number;
+  status: 'PAID' | 'PENDING' | 'OVERDUE';
+  period: string;
+  nextBillingDate: string;
+  createdAt: string;
+}
+
+interface BillingResponse {
+  billings: BillingData[];
+  summary: {
+    totalRevenue: number;
+    pendingAmount: number;
+    activeSubscriptions: number;
+  };
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+  };
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface BillingData {
-  totalRevenue: number;
-  monthlyRecurring: number;
-  pendingInvoices: number;
-  paidInvoices: number;
-  subscriptionPlans: Array<{ name: string; count: number; price: number }>;
-  topSubscribers: Array<{ name: string; plan: string; revenue: number }>;
-}
-
 export default function BillingPage() {
-  const [data, setData] = useState<BillingData | null>(null);
+  const [billings, setBillings] = useState<BillingData[]>([]);
+  const [summary, setSummary] = useState({ totalRevenue: 0, pendingAmount: 0, activeSubscriptions: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const limit = 20;
 
   useEffect(() => {
-    fetchBillingData();
-  }, []);
+    fetchBillings();
+  }, [offset]);
 
-  const fetchBillingData = async () => {
+  const fetchBillings = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/superowner/billing`, {
+      const query = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(),
+      });
+
+      const res = await fetch(`${API_URL}/api/superowner/billing?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) throw new Error('Failed to fetch');
-      const result = await response.json();
-      setData(result.data);
-    } catch (error) {
-      console.error('Erreur:', error);
+      if (!res.ok) throw new Error('Erreur lors du chargement de la facturation');
+      const data: BillingResponse = await res.json();
+      setBillings(data.billings);
+      setSummary(data.summary);
+      setTotal(data.pagination.total);
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
+  const getStatusColor = (status: string) => {
+    const colors: { [key: string]: string } = {
+      PAID: 'bg-green-500/10 text-green-400 border-green-500/20',
+      PENDING: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+      OVERDUE: 'bg-red-500/10 text-red-400 border-red-500/20',
+    };
+    return colors[status] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Facturation & Abonnements</h1>
-          <p className="text-gray-400 mt-1">Gestion des revenus et paiements</p>
-        </div>
-        <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 rounded-lg px-4 py-2 font-medium transition-colors">
-          <Download size={20} />
-          Exporter Rapports
-        </button>
+      <div>
+        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <CreditCard className="w-8 h-8" />
+          Facturation & Abonnements
+        </h1>
+        <p className="text-gray-400 mt-2">Gestion des abonnements et des revenus</p>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="p-3 rounded-lg bg-green-600/20 text-green-400">
-              <DollarSign size={24} />
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm mb-1">Revenu Total</p>
-          <p className="text-3xl font-bold text-green-400">${((data?.totalRevenue || 0) / 100).toFixed(0)}</p>
+      {error && (
+        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-6">
+          <p className="text-sm text-green-400 mb-2">Revenu Total</p>
+          <p className="text-3xl font-bold text-green-400">${(summary.totalRevenue / 100).toFixed(2)}</p>
+          <p className="text-xs text-green-400/60 mt-2">Tous les abonnements</p>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="p-3 rounded-lg bg-blue-600/20 text-blue-400">
-              <TrendingUp size={24} />
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm mb-1">MRR</p>
-          <p className="text-3xl font-bold text-blue-400">${((data?.monthlyRecurring || 0) / 100).toFixed(0)}</p>
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-6">
+          <p className="text-sm text-yellow-400 mb-2">Montant En Attente</p>
+          <p className="text-3xl font-bold text-yellow-400">${(summary.pendingAmount / 100).toFixed(2)}</p>
+          <p className="text-xs text-yellow-400/60 mt-2">À collecter</p>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="p-3 rounded-lg bg-yellow-600/20 text-yellow-400">
-              <CreditCard size={24} />
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm mb-1">Factures En Attente</p>
-          <p className="text-3xl font-bold text-yellow-400">{data?.pendingInvoices || 0}</p>
-        </div>
-
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="p-3 rounded-lg bg-purple-600/20 text-purple-400">
-              <CreditCard size={24} />
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm mb-1">Factures Payées</p>
-          <p className="text-3xl font-bold text-purple-400">{data?.paidInvoices || 0}</p>
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
+          <p className="text-sm text-blue-400 mb-2">Abonnements Actifs</p>
+          <p className="text-3xl font-bold text-blue-400">{summary.activeSubscriptions}</p>
+          <p className="text-xs text-blue-400/60 mt-2">Organisations</p>
         </div>
       </div>
 
-      {/* Subscription Plans */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Plans d'Abonnement</h2>
-        <div className="space-y-3">
-          {data?.subscriptionPlans.map((plan, idx) => (
-            <div key={idx} className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
-              <div>
-                <p className="font-medium">{plan.name}</p>
-                <p className="text-sm text-gray-400">${(plan.price / 100).toFixed(2)}/mois</p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-2xl">{plan.count}</p>
-                <p className="text-xs text-gray-400">abonnés</p>
-              </div>
-            </div>
-          ))}
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
-      </div>
-
-      {/* Top Subscribers */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Top Abonnés</h2>
-        <div className="space-y-2">
-          {data?.topSubscribers.map((sub, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3 bg-gray-700/50 rounded">
-              <div>
-                <p className="font-medium">{sub.name}</p>
-                <p className="text-xs text-gray-400">{sub.plan}</p>
-              </div>
-              <p className="font-bold text-green-400">${(sub.revenue / 100).toFixed(2)}</p>
-            </div>
-          ))}
+      ) : billings.length === 0 ? (
+        <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700/50">
+          <CreditCard className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-400">Aucune facturation trouvée</p>
         </div>
-      </div>
+      ) : (
+        <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-900/50 border-b border-gray-700/50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Organisation</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Plan</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Période</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Montant</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Status</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Prochain Paiement</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700/50">
+                {billings.map((billing) => (
+                  <tr key={billing.id} className="hover:bg-gray-700/20 transition">
+                    <td className="px-6 py-4 text-sm text-white font-medium">{billing.organization}</td>
+                    <td className="px-6 py-4 text-sm text-gray-400">{billing.tier}</td>
+                    <td className="px-6 py-4 text-sm text-gray-400">{billing.period}</td>
+                    <td className="px-6 py-4 text-right">
+                      <p className="font-bold text-green-400">${(billing.amount / 100).toFixed(2)}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(billing.status)}`}>
+                        {billing.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {new Date(billing.nextBillingDate).toLocaleDateString('fr-FR')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-      {/* Info */}
-      <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
-        <p className="text-blue-400 text-sm">
-          💡 Tous les revenus incluent les frais de plateforme. Les données se mettent à jour toutes les 24 heures.
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-400">
+          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur {total}
         </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setOffset(Math.max(0, offset - limit))}
+            disabled={offset === 0}
+            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
+          >
+            Précédent
+          </button>
+          <button
+            onClick={() => setOffset(offset + limit)}
+            disabled={offset + limit >= total}
+            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
+          >
+            Suivant
+          </button>
+        </div>
       </div>
     </div>
   );

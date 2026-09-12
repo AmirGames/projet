@@ -1,191 +1,169 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { FileText, Calendar } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { useState, useEffect } from 'react';
+import { BarChart3, Calendar } from 'lucide-react';
 
 interface FinancialReport {
   id: string;
   period: string;
   totalRevenue: number;
-  platformFee: number;
-  commissions: number;
-  taxes: number;
+  platformFees: number;
+  refunds: number;
   netRevenue: number;
-  transactions: number;
-  status: 'FINALIZED' | 'DRAFT' | 'PENDING';
+  transactionCount: number;
+  averageOrderValue: number;
+  createdAt: string;
 }
+
+interface ReportsResponse {
+  reports: FinancialReport[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+  };
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function FinancialReportsPage() {
   const [reports, setReports] = useState<FinancialReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState('month');
+  const [error, setError] = useState('');
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const limit = 20;
 
   useEffect(() => {
     fetchReports();
-  }, [dateRange]);
+  }, [offset]);
 
   const fetchReports = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/superowner/financial-reports?range=${dateRange}`, {
+      const query = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(),
+      });
+
+      const res = await fetch(`${API_URL}/api/superowner/financial-reports?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
-      setReports(data.reports || []);
-    } catch (error) {
-      console.error('Erreur:', error);
+      if (!res.ok) throw new Error('Erreur lors du chargement des rapports');
+      const data: ReportsResponse = await res.json();
+      setReports(data.reports);
+      setTotal(data.pagination.total);
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
     } finally {
       setLoading(false);
     }
   };
 
-  const downloadReport = (reportId: string, format: 'pdf' | 'csv') => {
-    const link = document.createElement('a');
-    link.href = `${API_URL}/api/superowner/financial-reports/${reportId}/download?format=${format}`;
-    link.download = `report-${reportId}.${format}`;
-    link.click();
+  const getPeriodLabel = (period: string) => {
+    const [year, month] = period.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   };
-
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
-
-  const totalRevenue = reports.reduce((sum, r) => sum + r.totalRevenue, 0);
-  const totalCommissions = reports.reduce((sum, r) => sum + r.commissions, 0);
-  const totalTaxes = reports.reduce((sum, r) => sum + r.taxes, 0);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <FileText size={32} />
+        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <BarChart3 className="w-8 h-8" />
           Rapports Financiers
         </h1>
-        <p className="text-gray-400 mt-1">Analyses détaillées des revenus et dépenses</p>
+        <p className="text-gray-400 mt-2">Analyse détaillée des revenus et des transactions</p>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Revenu Total</p>
-          <p className="text-3xl font-bold text-green-400">${(totalRevenue / 100).toFixed(0)}</p>
+      {error && (
+        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+          {error}
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Commissions</p>
-          <p className="text-3xl font-bold text-blue-400">${(totalCommissions / 100).toFixed(0)}</p>
-        </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Impôts</p>
-          <p className="text-3xl font-bold text-yellow-400">${(totalTaxes / 100).toFixed(0)}</p>
-        </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Rapports Totaux</p>
-          <p className="text-3xl font-bold text-purple-400">{reports.length}</p>
-        </div>
-      </div>
+      )}
 
-      {/* Filters */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-        <div className="flex items-center gap-2">
-          <Calendar size={20} className="text-gray-400" />
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-          >
-            <option value="month">Ce mois</option>
-            <option value="quarter">Ce trimestre</option>
-            <option value="year">Cette année</option>
-            <option value="all">Tous les rapports</option>
-          </select>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
-      </div>
-
-      {/* Reports Table */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-        {reports.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">
-            Aucun rapport trouvé.
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-700 border-b border-gray-600">
-              <tr>
-                <th className="px-6 py-4 text-left">Période</th>
-                <th className="px-6 py-4 text-right">Revenu</th>
-                <th className="px-6 py-4 text-right">Frais Plateforme</th>
-                <th className="px-6 py-4 text-right">Commissions</th>
-                <th className="px-6 py-4 text-right">Impôts</th>
-                <th className="px-6 py-4 text-right">Net</th>
-                <th className="px-6 py-4 text-center">Statut</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reports.map((report) => (
-                <tr key={report.id} className="border-b border-gray-700 hover:bg-gray-700/50">
-                  <td className="px-6 py-4 font-medium">{report.period}</td>
-                  <td className="px-6 py-4 text-right font-bold text-green-400">
-                    ${(report.totalRevenue / 100).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 text-right text-gray-400">
-                    ${(report.platformFee / 100).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 text-right text-blue-400">
-                    ${(report.commissions / 100).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 text-right text-yellow-400">
-                    ${(report.taxes / 100).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 text-right font-bold">
-                    ${(report.netRevenue / 100).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        report.status === 'FINALIZED'
-                          ? 'bg-green-600/20 text-green-400'
-                          : report.status === 'DRAFT'
-                          ? 'bg-yellow-600/20 text-yellow-400'
-                          : 'bg-blue-600/20 text-blue-400'
-                      }`}
-                    >
-                      {report.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => downloadReport(report.id, 'pdf')}
-                        className="p-2 hover:bg-gray-600 rounded transition-colors text-red-400 text-xs"
-                        title="PDF"
-                      >
-                        PDF
-                      </button>
-                      <button
-                        onClick={() => downloadReport(report.id, 'csv')}
-                        className="p-2 hover:bg-gray-600 rounded transition-colors text-green-400 text-xs"
-                        title="CSV"
-                      >
-                        CSV
-                      </button>
-                    </div>
-                  </td>
+      ) : reports.length === 0 ? (
+        <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700/50">
+          <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-400">Aucun rapport trouvé</p>
+        </div>
+      ) : (
+        <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-900/50 border-b border-gray-700/50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Période</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Revenu Total</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Frais Plateforme</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Remboursements</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Revenu Net</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">Transactions</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Valeur Moyenne</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody className="divide-y divide-gray-700/50">
+                {reports.map((report) => (
+                  <tr key={report.id} className="hover:bg-gray-700/20 transition">
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-semibold text-white">{getPeriodLabel(report.period)}</p>
+                        <p className="text-xs text-gray-500 mt-1">{report.period}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <p className="font-bold text-green-400">${(report.totalRevenue / 100).toFixed(2)}</p>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <p className="text-blue-400">${(report.platformFees / 100).toFixed(2)}</p>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <p className="text-red-400">-${(report.refunds / 100).toFixed(2)}</p>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <p className="font-bold text-purple-400">${(report.netRevenue / 100).toFixed(2)}</p>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <p className="text-gray-400">{report.transactionCount}</p>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <p className="text-gray-400">${(report.averageOrderValue / 100).toFixed(2)}</p>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-      {/* Info */}
-      <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
-        <p className="text-blue-400 text-sm">
-          💡 Les rapports financiers sont générés automatiquement à la fin de chaque période. Les données incluent tous les revenus, commissions et taxes.
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-400">
+          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur {total}
         </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setOffset(Math.max(0, offset - limit))}
+            disabled={offset === 0}
+            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
+          >
+            Précédent
+          </button>
+          <button
+            onClick={() => setOffset(offset + limit)}
+            disabled={offset + limit >= total}
+            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
+          >
+            Suivant
+          </button>
+        </div>
       </div>
     </div>
   );

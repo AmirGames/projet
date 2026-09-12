@@ -1,161 +1,185 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Search, Plus, Trash2, Edit2, Eye } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { useState, useEffect } from 'react';
+import { Building2, Users } from 'lucide-react';
 
 interface Organization {
   id: string;
   name: string;
   email: string;
-  status: 'ACTIVE' | 'SUSPENDED' | 'INACTIVE';
-  usersCount: number;
-  revenue: number;
-  commission: number;
+  status: 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
+  tier: 'FREE' | 'PREMIUM' | 'PRO';
   createdAt: string;
-  subscriptionPlan: string;
+  activeUsers: number;
+  revenue: number;
 }
+
+interface OrganizationsResponse {
+  organizations: Organization[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+  };
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function OrganizationsPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED' | 'INACTIVE'>('ALL');
+  const [error, setError] = useState('');
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const limit = 20;
 
   useEffect(() => {
     fetchOrganizations();
-  }, []);
+  }, [offset]);
 
   const fetchOrganizations = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/superowner/organizations`, {
+      const query = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(),
+      });
+
+      const res = await fetch(`${API_URL}/api/superowner/organizations?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
-      setOrganizations(data.organizations || []);
-    } catch (error) {
-      console.error('Erreur:', error);
+      if (!res.ok) throw new Error('Erreur lors du chargement des organisations');
+      const data: OrganizationsResponse = await res.json();
+      setOrganizations(data.organizations);
+      setTotal(data.pagination.total);
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredOrganizations = organizations.filter(org => {
-    const matchesSearch = org.name.toLowerCase().includes(search.toLowerCase()) ||
-                         org.email.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || org.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const getStatusColor = (status: string) => {
+    const colors: { [key: string]: string } = {
+      ACTIVE: 'bg-green-500/10 text-green-400 border-green-500/20',
+      SUSPENDED: 'bg-red-500/10 text-red-400 border-red-500/20',
+      CLOSED: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+    };
+    return colors[status] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+  };
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
+  const getTierColor = (tier: string) => {
+    const colors: { [key: string]: string } = {
+      FREE: 'bg-gray-600',
+      PREMIUM: 'bg-blue-600',
+      PRO: 'bg-purple-600',
+    };
+    return colors[tier] || 'bg-gray-600';
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Gestion des Organisations</h1>
-          <p className="text-gray-400 mt-1">Créer et gérer les organisations</p>
-        </div>
-        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 rounded-lg px-4 py-2 font-medium transition-colors">
-          <Plus size={20} />
-          Créer Organisation
-        </button>
+      <div>
+        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <Building2 className="w-8 h-8" />
+          Organisations
+        </h1>
+        <p className="text-gray-400 mt-2">Gestion de toutes les organisations de la plateforme</p>
       </div>
 
-      {/* Filters */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-center gap-2">
-            <Search size={20} className="text-gray-400" />
-            <input
-              type="text"
-              placeholder="Chercher par nom ou email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-          >
-            <option value="ALL">Tous les statuts</option>
-            <option value="ACTIVE">Actifs</option>
-            <option value="SUSPENDED">Suspendus</option>
-            <option value="INACTIVE">Inactifs</option>
-          </select>
+      {error && (
+        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+          {error}
         </div>
-      </div>
+      )}
 
-      {/* Organizations Table */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-        {filteredOrganizations.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">
-            Aucune organisation trouvée.
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-700 border-b border-gray-600">
-              <tr>
-                <th className="px-6 py-4 text-left">Nom</th>
-                <th className="px-6 py-4 text-left">Email</th>
-                <th className="px-6 py-4 text-center">Statut</th>
-                <th className="px-6 py-4 text-right">Utilisateurs</th>
-                <th className="px-6 py-4 text-right">Revenu</th>
-                <th className="px-6 py-4 text-right">Plan</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrganizations.map((org) => (
-                <tr key={org.id} className="border-b border-gray-700 hover:bg-gray-700/50">
-                  <td className="px-6 py-4 font-medium">{org.name}</td>
-                  <td className="px-6 py-4 text-gray-400">{org.email}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        org.status === 'ACTIVE'
-                          ? 'bg-green-600/20 text-green-400'
-                          : org.status === 'SUSPENDED'
-                          ? 'bg-red-600/20 text-red-400'
-                          : 'bg-gray-600/20 text-gray-400'
-                      }`}
-                    >
-                      {org.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right text-gray-400">{org.usersCount}</td>
-                  <td className="px-6 py-4 text-right font-bold text-green-400">${(org.revenue / 100).toFixed(2)}</td>
-                  <td className="px-6 py-4 text-right text-blue-400">{org.subscriptionPlan}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex gap-2 justify-end">
-                      <button className="p-2 hover:bg-gray-700 rounded transition-colors text-blue-400">
-                        <Eye size={18} />
-                      </button>
-                      <button className="p-2 hover:bg-gray-700 rounded transition-colors text-yellow-400">
-                        <Edit2 size={18} />
-                      </button>
-                      <button className="p-2 hover:bg-gray-700 rounded transition-colors text-red-400">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : organizations.length === 0 ? (
+        <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700/50">
+          <Building2 className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-400">Aucune organisation trouvée</p>
+        </div>
+      ) : (
+        <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-900/50 border-b border-gray-700/50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Nom</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Email</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Plan</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Status</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">Utilisateurs</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Revenu</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody className="divide-y divide-gray-700/50">
+                {organizations.map((org) => (
+                  <tr key={org.id} className="hover:bg-gray-700/20 transition">
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-semibold text-white">{org.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">{org.id.slice(0, 8)}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-400">{org.email}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded text-xs font-semibold ${getTierColor(org.tier)} text-white`}>
+                        {org.tier}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(org.status)}`}>
+                        {org.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <Users size={16} className="text-blue-400" />
+                        <span className="text-sm text-gray-400">{org.activeUsers}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <p className="font-bold text-green-400">${(org.revenue / 100).toFixed(2)}</p>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {new Date(org.createdAt).toLocaleDateString('fr-FR')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-      <div className="text-gray-400 text-sm">
-        Total: <strong>{filteredOrganizations.length}</strong> organisation(s)
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-400">
+          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur {total}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setOffset(Math.max(0, offset - limit))}
+            disabled={offset === 0}
+            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
+          >
+            Précédent
+          </button>
+          <button
+            onClick={() => setOffset(offset + limit)}
+            disabled={offset + limit >= total}
+            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
+          >
+            Suivant
+          </button>
+        </div>
       </div>
     </div>
   );
