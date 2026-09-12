@@ -53,6 +53,23 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
   }
 });
 
+// GET /stores/slug/:slug - Get store by slug (public)
+router.get("/slug/:slug", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const slug = req.params.slug as string;
+
+    const store = await StoreService.getBySlug(slug);
+
+    if (!store) {
+      throw new ApiError(404, "Store non trouvée", "NOT_FOUND");
+    }
+
+    res.json({ store });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /stores/:id - Get store by ID
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {

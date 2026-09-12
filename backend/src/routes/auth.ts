@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { z } from "zod";
 import { signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation.js";
 import { AuthService } from "../services/auth.service.js";
 import { UserService } from "../services/user.service.js";
@@ -6,6 +7,7 @@ import { ApiError } from "../middleware/errorHandler.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { logger } from "../config/logger.js";
 import { generateSlug } from "../utils/validation.js";
+import { db } from "../services/db.js";
 
 const router = Router();
 
@@ -168,6 +170,158 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         name: m.org.name,
         role: m.role,
       })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /auth/merchant-register - Merchant registration with automatic store creation
+router.post("/merchant-register", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const schema = z.object({
+      businessName: z.string().min(1).max(200),
+      email: z.string().email(),
+      password: z.string().min(8),
+      businessType: z.string().min(1).max(50),
+      phone: z.string().min(1).max(20),
+      address: z.string().min(1).max(500),
+      city: z.string().min(1).max(100),
+      postalCode: z.string().min(1).max(20),
+      website: z.string().url().optional().nullable(),
+      description: z.string().min(1).max(1000),
+      storeName: z.string().min(1).max(200),
+      storeSlug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+    });
+
+    const body = schema.parse(req.body);
+
+    logger.info("Merchant registration attempt", { email: body.email, businessName: body.businessName });
+
+    // Check if email already exists
+    const existingUser = await db.user.findUnique({
+      where: { email: body.email },
+    });
+
+    if (existingUser) {
+      throw new ApiError(400, "Cet email est déjà utilisé", "EMAIL_EXISTS");
+    }
+
+    // Check if organization slug exists
+    const existingOrg = await db.organization.findUnique({
+      where: { slug: body.storeSlug },
+    });
+
+    if (existingOrg) {
+      throw new ApiError(400, "Cette URL est déjà utilisée", "SLUG_EXISTS");
+    }
+
+    // Hash password
+    const passwordHash = await AuthService.hashPassword(body.password);
+
+    // Create user
+    const user = await db.user.create({
+      data: {
+        email: body.email,
+        name: body.businessName,
+        passwordHash,
+        emailVerified: false,
+        status: "ACTIVE",
+      },
+    });
+
+    // Create organization
+    const organization = await db.organization.create({
+      data: {
+        name: body.businessName,
+        email: body.email,
+        slug: body.storeSlug,
+        tier: "FREE",
+        plan: "STARTER",
+        status: "ACTIVE",
+      },
+    });
+
+    // Create membership
+    await db.membership.create({
+      data: {
+        userId: user.id,
+        orgId: organization.id,
+        role: "ADMIN",
+        storeIds: [],
+      },
+    });
+
+    // Create store
+    const store = await db.store.create({
+      data: {
+        orgId: organization.id,
+        name: body.storeName,
+        slug: body.storeSlug,
+        address: body.address,
+        city: body.city,
+        postalCode: body.postalCode,
+        phone: body.phone,
+        email: body.email,
+        description: body.description,
+        settings: {
+          businessType: body.businessType,
+          website: body.website || null,
+          createdAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    // Update membership with store ID
+    await db.membership.update({
+      where: {
+        userId_orgId: {
+          userId: user.id,
+          orgId: organization.id,
+        },
+      },
+      data: {
+        storeIds: [store.id],
+      },
+    });
+
+    // Generate tokens
+    const accessToken = AuthService.generateAccessToken({
+      userId: user.id,
+      orgId: organization.id,
+      storeIds: [store.id],
+      role: "ADMIN",
+    });
+
+    const refreshToken = AuthService.generateRefreshToken(user.id);
+
+    logger.info("Merchant registered successfully", {
+      userId: user.id,
+      organizationId: organization.id,
+      storeId: store.id,
+    });
+
+    res.status(201).json({
+      message: "Inscription réussie et boutique créée!",
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+      organization: {
+        id: organization.id,
+        name: organization.name,
+        slug: organization.slug,
+      },
+      store: {
+        id: store.id,
+        name: store.name,
+        slug: store.slug,
+        url: `/store/${store.slug}`,
+      },
+      organizationId: organization.id,
     });
   } catch (err) {
     next(err);
