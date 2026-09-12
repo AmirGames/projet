@@ -3,12 +3,25 @@ import { z } from "zod";
 import { db } from "../services/db.js";
 import { ApiError } from "../middleware/errorHandler.js";
 import { authMiddleware } from "../middleware/auth.js";
-import { logger } from "../config/logger.js";
 
 const router = Router();
 
+// Helper to safely get string query params
+const getQueryString = (value: any, defaultValue: string): string => {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value[0] || defaultValue;
+  return defaultValue;
+};
+
+// Helper to safely get numeric query params
+const getQueryNumber = (value: any, defaultValue: number): number => {
+  const str = getQueryString(value, String(defaultValue));
+  const num = parseInt(str, 10);
+  return isNaN(num) ? defaultValue : num;
+};
+
 // Middleware to check if user is system admin
-const isSystemAdmin = async (req: Request, res: Response, next: NextFunction) => {
+const isSystemAdmin = async (req: Request, _res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).userId;
     const user = await db.user.findUnique({
@@ -30,7 +43,7 @@ const isSystemAdmin = async (req: Request, res: Response, next: NextFunction) =>
 // ============================================================================
 
 // GET /admin/config - Get system configuration
-router.get("/config", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/config", authMiddleware, isSystemAdmin, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     let config = await db.systemConfig.findFirst();
 
@@ -55,7 +68,6 @@ router.put("/config", authMiddleware, isSystemAdmin, async (req: Request, res: R
       maxOrderAmount: z.number().optional(),
       maintenanceMode: z.boolean().optional(),
       maintenanceMessage: z.string().optional(),
-      settings: z.record(z.any()).optional(),
     });
 
     const body = schema.parse(req.body);
@@ -76,7 +88,7 @@ router.put("/config", authMiddleware, isSystemAdmin, async (req: Request, res: R
         adminId,
         action: "UPDATE_SYSTEM_CONFIG",
         target: "SYSTEM_CONFIG",
-        changes: body,
+        changes: body as any,
       },
     });
 
@@ -93,14 +105,14 @@ router.put("/config", authMiddleware, isSystemAdmin, async (req: Request, res: R
 // GET /admin/merchants - List all merchants
 router.get("/merchants", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = parseInt((req.query.limit as string) || "20") || 20;
-    const offset = parseInt((req.query.offset as string) || "0") || 0;
-    const status = req.query.status as string;
+    const limit = getQueryNumber(req.query.limit, 20);
+    const offset = getQueryNumber(req.query.offset, 0);
+    const status = getQueryString(req.query.status, "");
 
     const where: any = {};
     if (status) where.status = status;
 
-    const merchants = await db.organization.findMany({
+    const merchants = (await db.organization.findMany({
       where,
       skip: offset,
       take: limit,
@@ -109,7 +121,7 @@ router.get("/merchants", authMiddleware, isSystemAdmin, async (req: Request, res
         memberships: { select: { id: true, role: true, user: { select: { email: true } } } },
       },
       orderBy: { createdAt: "desc" },
-    });
+    })) as any[];
 
     const total = await db.organization.count({ where });
 
@@ -125,7 +137,7 @@ router.get("/merchants", authMiddleware, isSystemAdmin, async (req: Request, res
 // GET /admin/merchants/:orgId - Get merchant details
 router.get("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const orgId = req.params.orgId;
+    const orgId = req.params.orgId as string;
 
     const merchant = await db.organization.findUnique({
       where: { id: orgId },
@@ -139,17 +151,18 @@ router.get("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Reque
         tickets: { take: 5, orderBy: { createdAt: "desc" } },
         commissionHistory: { take: 12, orderBy: { period: "desc" } },
       },
-    });
+    }) as any;
 
     if (!merchant) {
       throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
     }
 
     // Get revenue stats
+    const storeIds = (merchant.stores || []).map((s: any) => s.id);
     const orders = await db.order.findMany({
       where: {
         storeId: {
-          in: merchant.stores.map(s => s.id),
+          in: storeIds,
         },
       },
       select: { totalAmount: true, createdAt: true },
@@ -157,7 +170,8 @@ router.get("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Reque
 
     const totalRevenue = orders.reduce((sum, o) => sum + Number(o.totalAmount), 0);
     const platformFee = await db.systemConfig.findFirst();
-    const commission = (totalRevenue * (platformFee?.platformFeePercent || 5)) / 100;
+    const feePercent = platformFee?.platformFeePercent || 5;
+    const commission = totalRevenue * (Number(feePercent) / 100);
 
     res.json({
       ...merchant,
@@ -175,7 +189,7 @@ router.get("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Reque
 // PATCH /admin/merchants/:orgId - Update merchant status
 router.patch("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const orgId = req.params.orgId;
+    const orgId = req.params.orgId as string;
     const schema = z.object({
       status: z.enum(["ACTIVE", "SUSPENDED", "CLOSED"]).optional(),
       tier: z.enum(["FREE", "PREMIUM", "PRO"]).optional(),
@@ -194,7 +208,7 @@ router.patch("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Req
         adminId,
         action: "UPDATE_MERCHANT",
         target: orgId,
-        changes: body,
+        changes: body as any,
       },
     });
 
@@ -211,16 +225,16 @@ router.patch("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Req
 // GET /admin/tickets - List all tickets
 router.get("/tickets", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = parseInt((req.query.limit as string) || "20") || 20;
-    const offset = parseInt((req.query.offset as string) || "0") || 0;
-    const status = req.query.status as string;
-    const priority = req.query.priority as string;
+    const limit = getQueryNumber(req.query.limit, 20);
+    const offset = getQueryNumber(req.query.offset, 0);
+    const status = getQueryString(req.query.status, "");
+    const priority = getQueryString(req.query.priority, "");
 
     const where: any = {};
     if (status) where.status = status;
     if (priority) where.priority = priority;
 
-    const tickets = await db.merchantTicket.findMany({
+    const tickets = (await db.merchantTicket.findMany({
       where,
       skip: offset,
       take: limit,
@@ -231,7 +245,7 @@ router.get("/tickets", authMiddleware, isSystemAdmin, async (req: Request, res: 
         { priority: "desc" },
         { createdAt: "desc" },
       ],
-    });
+    })) as any[];
 
     const total = await db.merchantTicket.count({ where });
 
@@ -247,7 +261,7 @@ router.get("/tickets", authMiddleware, isSystemAdmin, async (req: Request, res: 
 // PATCH /admin/tickets/:ticketId - Update ticket
 router.patch("/tickets/:ticketId", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const ticketId = req.params.ticketId;
+    const ticketId = req.params.ticketId as string;
     const schema = z.object({
       status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]).optional(),
       priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
@@ -270,7 +284,7 @@ router.patch("/tickets/:ticketId", authMiddleware, isSystemAdmin, async (req: Re
         adminId,
         action: "UPDATE_TICKET",
         target: ticketId,
-        changes: body,
+        changes: body as any,
       },
     });
 
@@ -287,20 +301,20 @@ router.patch("/tickets/:ticketId", authMiddleware, isSystemAdmin, async (req: Re
 // GET /admin/commissions - Get commission history
 router.get("/commissions", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = parseInt((req.query.limit as string) || "20") || 20;
-    const offset = parseInt((req.query.offset as string) || "0") || 0;
-    const period = req.query.period as string;
+    const limit = getQueryNumber(req.query.limit, 20);
+    const offset = getQueryNumber(req.query.offset, 0);
+    const period = getQueryString(req.query.period, "");
 
     const where: any = {};
     if (period) where.period = period;
 
-    const commissions = await db.commissionHistory.findMany({
+    const commissions = (await db.commissionHistory.findMany({
       where,
       skip: offset,
       take: limit,
       include: { org: { select: { id: true, name: true } } },
       orderBy: { period: "desc" },
-    });
+    })) as any[];
 
     const total = await db.commissionHistory.count({ where });
     const totalAmount = await db.commissionHistory.aggregate({
@@ -326,7 +340,7 @@ router.get("/commissions", authMiddleware, isSystemAdmin, async (req: Request, r
 // ============================================================================
 
 // GET /admin/stats - Get system statistics
-router.get("/stats", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/stats", authMiddleware, isSystemAdmin, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const totalMerchants = await db.organization.count();
     const activeMerchants = await db.organization.count({
@@ -373,8 +387,8 @@ router.get("/stats", authMiddleware, isSystemAdmin, async (req: Request, res: Re
 // GET /admin/audit-logs - Get audit logs
 router.get("/audit-logs", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const limit = parseInt((req.query.limit as string) || "50") || 50;
-    const offset = parseInt((req.query.offset as string) || "0") || 0;
+    const limit = getQueryNumber(req.query.limit, 50);
+    const offset = getQueryNumber(req.query.offset, 0);
 
     const logs = await db.systemAuditLog.findMany({
       skip: offset,
