@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { useProtectedRoute } from "@/lib/use-protected-route";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -18,22 +20,18 @@ interface Order {
 
 export default function AdminPage() {
   const router = useRouter();
+  const { logout } = useAuth();
+  const { isReady } = useProtectedRoute();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("PENDING");
 
-  // Get store from localStorage
   const storeId = typeof window !== "undefined" ? localStorage.getItem("storeId") || "19c84158-7858-453f-9955-e95c01c4e895" : "19c84158-7858-453f-9955-e95c01c4e895";
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-
+    if (!isReady) return;
     loadOrders();
-  }, [router, selectedStatus]);
+  }, [isReady, selectedStatus]);
 
   const loadOrders = async () => {
     try {
@@ -78,9 +76,7 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("storeId");
+    logout();
     router.push("/login");
   };
 

@@ -1,53 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X, LogOut, User, Home, BarChart3, Shield } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-interface UserInfo {
-  id: string;
-  email: string;
-  name?: string;
-  isSystemAdmin?: boolean;
-}
+import { useAuth } from '@/lib/auth-context';
 
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    fetchUserInfo();
-  }, []);
-
-  const fetchUserInfo = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data);
-      }
-    } catch (error) {
-      console.error('Erreur:', error);
-    }
-  };
-
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('storeId');
+    logout();
     router.push('/login');
   };
 
