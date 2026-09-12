@@ -207,6 +207,10 @@ model Store {
   deliveryZones DeliveryZone[]
   promotions    Promotion[]
   staff         Staff[]
+  reviews       Review[] @relation("ReviewToStore")
+  campaigns     MarketingCampaign[] @relation("CampaignToStore")
+  taxSettings   TaxSetting[] @relation("TaxSettingToStore")
+  paymentMethods PaymentMethod[] @relation("PaymentMethodToStore")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -245,6 +249,7 @@ model Product {
   options     ProductOption[]
   variants    ProductVariant[]
   orderItems  OrderItem[]
+  reviews     Review[] @relation("ReviewToProduct")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -604,6 +609,7 @@ model Customer {
   // Relations
   store           Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
   orders          Order[]
+  reviews         Review[] @relation("ReviewToCustomer")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -612,6 +618,166 @@ model Customer {
   @@index([storeId])
   @@index([status])
   @@index([createdAt])
+}
+
+// ============================================================================
+// REVIEWS & RATINGS
+// ============================================================================
+
+model Review {
+  id          String  @id @default(cuid())
+  storeId     String
+  productId   String
+  customerId  String?
+
+  rating      Int     @default(5) // 1-5 stars
+  comment     String?
+  helpfulCount Int    @default(0)
+
+  status      String  @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  // Relations
+  store       Store   @relation("ReviewToStore", fields: [storeId], references: [id], onDelete: Cascade)
+  product     Product @relation("ReviewToProduct", fields: [productId], references: [id], onDelete: Cascade)
+  customer    Customer? @relation("ReviewToCustomer", fields: [customerId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([productId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// MARKETING CAMPAIGNS
+// ============================================================================
+
+enum CampaignType {
+  EMAIL
+  SMS
+  PUSH
+  INAPP
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+model MarketingCampaign {
+  id              String        @id @default(cuid())
+  storeId         String
+
+  name            String
+  description     String?
+  type            CampaignType
+  message         String
+
+  // Target audience
+  targetAudience  String        @default("all") // all, new, returning, inactive
+
+  // Scheduling
+  status          CampaignStatus @default(DRAFT)
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+
+  // Statistics
+  sentCount       Int           @default(0)
+  openCount       Int           @default(0)
+  clickCount      Int           @default(0)
+  conversionCount Int           @default(0)
+
+  // Relations
+  store           Store         @relation("CampaignToStore", fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// TAX SETTINGS
+// ============================================================================
+
+model TaxSetting {
+  id              String  @id @default(cuid())
+  storeId         String
+
+  name            String  // "VAT 20%", "TVA"
+  rate            Decimal @db.Decimal(5, 2) // 20.00 for 20%
+
+  // Scope
+  applicableTo    String  @default("all") // all, categories, products
+  categoryIds     String[] @default([])
+  productIds      String[] @default([])
+
+  // Status
+  status          String  @default("ACTIVE") // ACTIVE, INACTIVE
+
+  // Relations
+  store           Store   @relation("TaxSettingToStore", fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([status])
+}
+
+// ============================================================================
+// PAYMENT METHODS
+// ============================================================================
+
+enum PaymentMethodType {
+  CREDIT_CARD
+  DEBIT_CARD
+  PAYPAL
+  STRIPE
+  BANK_TRANSFER
+  CASH
+  APPLE_PAY
+  GOOGLE_PAY
+}
+
+model PaymentMethod {
+  id              String          @id @default(cuid())
+  storeId         String
+
+  type            PaymentMethodType
+  name            String          // "Stripe Card", "PayPal"
+
+  // Configuration (JSON)
+  // For Stripe: { apiKey, secretKey, webhookSecret }
+  // For PayPal: { clientId, clientSecret }
+  // For Bank: { accountNumber, routingNumber, bankName }
+  config          Json            @default("{}")
+
+  // Status
+  isDefault       Boolean         @default(false)
+  isActive        Boolean         @default(true)
+
+  // Commission/fees
+  commissionPercent Decimal       @default(0) @db.Decimal(5, 2)
+  fixedFee        Decimal         @default(0) @db.Decimal(10, 2)
+
+  // Relations
+  store           Store           @relation("PaymentMethodToStore", fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([isActive])
 }
 
 // ============================================================================
