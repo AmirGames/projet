@@ -6,16 +6,15 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
 import {
-  BarChart3,
-  ShoppingCart,
-  Package,
-  Folder,
-  Users,
   Settings,
   LogOut,
   Menu,
   X,
   Home,
+  Store,
+  AlertCircle,
+  DollarSign,
+  History,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -41,13 +40,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const navItems = [
-    { label: 'Overview', icon: Home, href: '/admin' },
-    { label: 'Commandes', icon: ShoppingCart, href: '/admin/orders' },
-    { label: 'Produits', icon: Package, href: '/admin/products' },
-    { label: 'Catégories', icon: Folder, href: '/admin/categories' },
-    { label: 'Clients', icon: Users, href: '/admin/customers' },
-    { label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
-    { label: 'Settings', icon: Settings, href: '/admin/settings' },
+    { label: 'Dashboard', icon: Home, href: '/admin/dashboard' },
+    { label: 'Commerçants', icon: Store, href: '/admin/merchants' },
+    { label: 'Tickets', icon: AlertCircle, href: '/admin/tickets' },
+    { label: 'Commissions', icon: DollarSign, href: '/admin/commissions' },
+    { label: 'Logs d\'Audit', icon: History, href: '/admin/audit-logs' },
+    { label: 'Configuration', icon: Settings, href: '/admin/settings/admin-settings' },
   ];
 
   return (
