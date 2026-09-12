@@ -34,3 +34,6 @@ data/
 
 # Docker
 docker-compose.override.yml
+
+# Claude markdown files
+md claude/
