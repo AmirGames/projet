@@ -185,4 +185,39 @@ export class OrderService {
       throw error;
     }
   }
+
+  static async getByOrgId(orgId: string, status?: string, limit: number = 100, offset: number = 0) {
+    const whereClause: any = {
+      store: { orgId },
+    };
+
+    if (status && status !== "ALL") {
+      whereClause.status = status;
+    }
+
+    return await db.order.findMany({
+      where: whereClause,
+      include: {
+        items: {
+          include: { product: true },
+        },
+        store: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
+    });
+  }
+
+  static async countByOrgId(orgId: string, status?: string) {
+    const whereClause: any = {
+      store: { orgId },
+    };
+
+    if (status && status !== "ALL") {
+      whereClause.status = status;
+    }
+
+    return await db.order.count({ where: whereClause });
+  }
 }

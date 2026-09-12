@@ -63,6 +63,34 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+// GET /products?orgId=:orgId - Get products by organization (protected)
+router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.query.orgId as string;
+
+    if (!orgId) {
+      throw new ApiError(400, "Paramètre 'orgId' requis", "MISSING_PARAM");
+    }
+
+    const limit = parseInt((req.query.limit as string) || "100") || 100;
+    const offset = parseInt((req.query.offset as string) || "0") || 0;
+
+    const products = await ProductService.getByOrgId(orgId, limit, offset);
+    const total = await ProductService.countByOrgId(orgId);
+
+    res.json({
+      products,
+      pagination: {
+        total,
+        limit,
+        offset,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /products/store/:storeId - Get products by store
 router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunction) => {
   try {

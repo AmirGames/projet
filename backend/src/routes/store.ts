@@ -35,6 +35,10 @@ const updateStoreSchema = z.object({
   currency: z.string().optional(),
 });
 
+const storeStatusSchema = z.object({
+  status: z.enum(["OPEN", "CLOSED", "TEMPORARILY_CLOSED"]),
+});
+
 // POST /stores - Create store (protected)
 router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -116,6 +120,51 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
 
     res.json({
       message: "Store mise à jour",
+      store,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /stores/:id/status - Toggle store status (protected)
+router.patch("/:id/status", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const body = storeStatusSchema.parse(req.body);
+
+    logger.info("Setting store status", { id, status: body.status });
+
+    const store = await StoreService.setStatus(id, body.status);
+
+    if (!store) {
+      throw new ApiError(404, "Store non trouvée", "NOT_FOUND");
+    }
+
+    res.json({
+      message: "Statut de la boutique mis à jour",
+      store,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /stores/:id/toggle - Toggle store open/closed (protected)
+router.patch("/:id/toggle", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+
+    logger.info("Toggling store status", { id });
+
+    const store = await StoreService.toggleStatus(id);
+
+    if (!store) {
+      throw new ApiError(404, "Store non trouvée", "NOT_FOUND");
+    }
+
+    res.json({
+      message: "Statut de la boutique basculé",
       store,
     });
   } catch (err) {

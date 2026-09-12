@@ -7,6 +7,34 @@ import { logger } from "../config/logger.js";
 
 const router = Router();
 
+// GET /orders - Get orders by orgId (protected)
+router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.query.orgId as string;
+    const status = req.query.status as string | undefined;
+    const limit = parseInt((req.query.limit as string) || "100") || 100;
+    const offset = parseInt((req.query.offset as string) || "0") || 0;
+
+    if (!orgId) {
+      throw new ApiError(400, "Paramètre 'orgId' requis", "MISSING_PARAM");
+    }
+
+    const orders = await OrderService.getByOrgId(orgId, status, limit, offset);
+    const total = await OrderService.countByOrgId(orgId, status);
+
+    res.json({
+      orders,
+      pagination: {
+        total,
+        limit,
+        offset,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 const createOrderSchema = z.object({
   storeId: z.string().cuid(),
   customerName: z.string().min(2, "Nom minimum 2 caractères"),

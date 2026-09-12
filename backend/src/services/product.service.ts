@@ -174,4 +174,28 @@ export class ProductService {
       where: { storeId },
     });
   }
+
+  static async getByOrgId(orgId: string, limit: number = 100, offset: number = 0) {
+    return await db.product.findMany({
+      where: {
+        store: { orgId },
+      },
+      include: {
+        category: true,
+        images: { orderBy: { order: "asc" } },
+        store: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
+    });
+  }
+
+  static async countByOrgId(orgId: string) {
+    return await db.product.count({
+      where: {
+        store: { orgId },
+      },
+    });
+  }
 }

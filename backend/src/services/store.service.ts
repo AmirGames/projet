@@ -139,4 +139,77 @@ export class StoreService {
       throw error;
     }
   }
+
+  static async toggleStatus(id: string) {
+    try {
+      const store = await db.store.findUnique({
+        where: { id },
+      });
+
+      if (!store) {
+        throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
+      }
+
+      const settings = typeof store.settings === 'string'
+        ? JSON.parse(store.settings)
+        : (store.settings || {});
+
+      const currentStatus = settings.status || 'OPEN';
+      const newStatus = currentStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
+
+      return await db.store.update({
+        where: { id },
+        data: {
+          settings: {
+            ...settings,
+            status: newStatus,
+          },
+        },
+        include: {
+          products: true,
+          categories: true,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
+      }
+      throw error;
+    }
+  }
+
+  static async setStatus(id: string, status: 'OPEN' | 'CLOSED' | 'TEMPORARILY_CLOSED') {
+    try {
+      const store = await db.store.findUnique({
+        where: { id },
+      });
+
+      if (!store) {
+        throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
+      }
+
+      const settings = typeof store.settings === 'string'
+        ? JSON.parse(store.settings)
+        : (store.settings || {});
+
+      return await db.store.update({
+        where: { id },
+        data: {
+          settings: {
+            ...settings,
+            status,
+          },
+        },
+        include: {
+          products: true,
+          categories: true,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
+      }
+      throw error;
+    }
+  }
 }
