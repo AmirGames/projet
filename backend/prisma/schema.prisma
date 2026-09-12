@@ -205,6 +205,7 @@ model Store {
   theme         Theme? @relation("ThemeToStore")
   deliveryZones DeliveryZone[]
   promotions    Promotion[]
+  staff         Staff[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -531,6 +532,44 @@ model Promotion {
   updatedAt DateTime @updatedAt
 
   @@unique([storeId, code])
+  @@index([storeId])
+  @@index([status])
+}
+
+// ============================================================================
+// STAFF MANAGEMENT
+// ============================================================================
+
+enum StaffRole {
+  MANAGER
+  CASHIER
+  KITCHEN
+  DELIVERY
+  SUPPORT
+}
+
+model Staff {
+  id          String    @id @default(cuid())
+  storeId     String
+  name        String
+  email       String
+  phone       String?
+  role        StaffRole @default(CASHIER)
+  status      String    @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+
+  // Optional: link to user account if staff has login
+  userId      String?
+
+  // Permissions (JSON array of action strings)
+  permissions Json      @default("[]")
+
+  // Relations
+  store       Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, email])
   @@index([storeId])
   @@index([status])
 }

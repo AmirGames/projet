@@ -121,6 +121,7 @@ export default function MerchantDashboard() {
     { label: 'Produits', href: `/merchant/${orgId}/products`, icon: '🛍️' },
     { label: 'Horaires', href: `/merchant/${orgId}/store-hours`, icon: '⏰' },
     { label: 'Livraison', href: `/merchant/${orgId}/delivery-zones`, icon: '🚚' },
+    { label: 'Équipe', href: `/merchant/${orgId}/staff`, icon: '👨‍💼' },
     { label: 'Clients', href: `/merchant/${orgId}/customers`, icon: '👥' },
     { label: 'Rapports', href: `/merchant/${orgId}/analytics`, icon: '📈' },
     { label: 'Paramètres', href: `/merchant/${orgId}/settings`, icon: '⚙️' },
