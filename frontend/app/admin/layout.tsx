@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import { useProtectedRoute } from '@/lib/use-protected-route';
 import {
   BarChart3,
   ShoppingCart,
@@ -19,13 +21,24 @@ import {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const router = useRouter();
+  const { logout } = useAuth();
+  const { isReady } = useProtectedRoute();
 
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('storeId');
+    logout();
     router.push('/login');
   };
+
+  if (!isReady) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   const navItems = [
     { label: 'Overview', icon: Home, href: '/admin' },
