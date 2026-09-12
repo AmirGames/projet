@@ -5,18 +5,7 @@ import { AlertCircle } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface SystemConfig {
-  id: string;
-  platformFeePercent: number;
-  minOrderAmount: number;
-  maxOrderAmount: number;
-  maintenanceMode: boolean;
-  maintenanceMessage: string | null;
-  settings: Record<string, any>;
-}
-
 export default function SettingsPage() {
-  const [config, setConfig] = useState<SystemConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -43,7 +32,6 @@ export default function SettingsPage() {
       if (!response.ok) throw new Error('Failed to fetch');
 
       const data = await response.json();
-      setConfig(data);
       setFormData({
         platformFeePercent: data.platformFeePercent,
         minOrderAmount: data.minOrderAmount,

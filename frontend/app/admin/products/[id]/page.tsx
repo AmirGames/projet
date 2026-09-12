@@ -6,16 +6,6 @@ import { ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  sku: string;
-  status: string;
-  createdAt: string;
-}
-
 export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -23,7 +13,6 @@ export default function ProductDetailPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [product, setProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',

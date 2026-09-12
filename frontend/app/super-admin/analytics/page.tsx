@@ -26,17 +26,15 @@ interface CommissionData {
 export default function AnalyticsPage() {
   const [data, setData] = useState<CommissionData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedPeriod, setSelectedPeriod] = useState('');
 
   useEffect(() => {
     fetchCommissions();
-  }, [selectedPeriod]);
+  }, []);
 
   const fetchCommissions = async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const url = new URL(`${API_URL}/api/admin/commissions`);
-      if (selectedPeriod) url.searchParams.append('period', selectedPeriod);
 
       const response = await fetch(url.toString(), {
         headers: { Authorization: `Bearer ${token}` },

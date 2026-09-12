@@ -22,7 +22,6 @@ export default function MerchantsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('ALL');
-  const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMerchants();

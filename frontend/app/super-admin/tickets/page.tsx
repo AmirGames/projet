@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertCircle } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -20,20 +19,18 @@ export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('OPEN');
-  const [priorityFilter, setPriorityFilter] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [newStatus, setNewStatus] = useState('');
 
   useEffect(() => {
     fetchTickets();
-  }, [statusFilter, priorityFilter]);
+  }, [statusFilter]);
 
   const fetchTickets = async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const url = new URL(`${API_URL}/api/admin/tickets`);
       url.searchParams.append('status', statusFilter);
-      if (priorityFilter) url.searchParams.append('priority', priorityFilter);
 
       const response = await fetch(url.toString(), {
         headers: { Authorization: `Bearer ${token}` },

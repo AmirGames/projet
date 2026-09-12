@@ -224,98 +224,98 @@ export const api = {
     });
     return response.json();
   },
-};
 
-// Admin endpoints
-api.adminGetStats = async (token: string) => {
-  const response = await fetch(`${API_BASE_URL}/api/admin/stats`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.json();
-};
+  // Admin endpoints
+  adminGetStats: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.json();
+  },
 
-api.adminGetMerchants = async (token: string, status?: string) => {
-  const url = new URL(`${API_BASE_URL}/api/admin/merchants`);
-  if (status) url.searchParams.append('status', status);
-  const response = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.json();
-};
+  adminGetMerchants: async (token: string, status?: string) => {
+    const url = new URL(`${API_BASE_URL}/api/admin/merchants`);
+    if (status) url.searchParams.append('status', status);
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.json();
+  },
 
-api.adminGetMerchant = async (orgId: string, token: string) => {
-  const response = await fetch(`${API_BASE_URL}/api/admin/merchants/${orgId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.json();
-};
+  adminGetMerchant: async (orgId: string, token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/merchants/${orgId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.json();
+  },
 
-api.adminUpdateMerchant = async (orgId: string, data: any, token: string) => {
-  const response = await fetch(`${API_BASE_URL}/api/admin/merchants/${orgId}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-  return response.json();
-};
+  adminUpdateMerchant: async (orgId: string, data: any, token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/merchants/${orgId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
 
-api.adminGetTickets = async (token: string, status?: string) => {
-  const url = new URL(`${API_BASE_URL}/api/admin/tickets`);
-  if (status) url.searchParams.append('status', status);
-  const response = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.json();
-};
+  adminGetTickets: async (token: string, status?: string) => {
+    const url = new URL(`${API_BASE_URL}/api/admin/tickets`);
+    if (status) url.searchParams.append('status', status);
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.json();
+  },
 
-api.adminUpdateTicket = async (ticketId: string, data: any, token: string) => {
-  const response = await fetch(`${API_BASE_URL}/api/admin/tickets/${ticketId}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-  return response.json();
-};
+  adminUpdateTicket: async (ticketId: string, data: any, token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tickets/${ticketId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
 
-api.adminGetConfig = async (token: string) => {
-  const response = await fetch(`${API_BASE_URL}/api/admin/config`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.json();
-};
+  adminGetConfig: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/config`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.json();
+  },
 
-api.adminUpdateConfig = async (data: any, token: string) => {
-  const response = await fetch(`${API_BASE_URL}/api/admin/config`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-  return response.json();
-};
+  adminUpdateConfig: async (data: any, token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/config`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
 
-api.adminGetCommissions = async (token: string, period?: string) => {
-  const url = new URL(`${API_BASE_URL}/api/admin/commissions`);
-  if (period) url.searchParams.append('period', period);
-  const response = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.json();
-};
+  adminGetCommissions: async (token: string, period?: string) => {
+    const url = new URL(`${API_BASE_URL}/api/admin/commissions`);
+    if (period) url.searchParams.append('period', period);
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.json();
+  },
 
-api.adminGetAuditLogs = async (token: string) => {
-  const response = await fetch(`${API_BASE_URL}/api/admin/audit-logs`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.json();
+  adminGetAuditLogs: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/audit-logs`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.json();
+  },
 };
 
 export const apiClient = api;

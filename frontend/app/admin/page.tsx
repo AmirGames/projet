@@ -84,14 +84,6 @@ export default function AdminPage() {
     router.push("/login");
   };
 
-  const statusColors = {
-    PENDING: "bg-yellow-600",
-    ACCEPTED: "bg-blue-600",
-    READY: "bg-green-600",
-    COMPLETED: "bg-gray-600",
-    REJECTED: "bg-red-600",
-  };
-
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}

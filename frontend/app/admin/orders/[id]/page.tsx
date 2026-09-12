@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
@@ -18,7 +18,6 @@ interface Order {
 }
 
 export default function OrderDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const orderId = params.id as string;
 

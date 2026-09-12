@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, LogOut, User, Home, BarChart3, ShieldAdmin } from 'lucide-react';
+import { Menu, X, LogOut, User, Home, BarChart3, Shield } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -19,7 +19,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchUserInfo();
@@ -29,7 +28,6 @@ export default function Navbar() {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        setLoading(false);
         return;
       }
 
@@ -43,8 +41,6 @@ export default function Navbar() {
       }
     } catch (error) {
       console.error('Erreur:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -111,7 +107,7 @@ export default function Navbar() {
                       : 'text-gray-300 hover:bg-gray-700'
                   }`}
                 >
-                  <ShieldAdmin size={18} />
+                  <Shield size={18} />
                   <span>Admin</span>
                 </Link>
 
@@ -125,7 +121,7 @@ export default function Navbar() {
                         : 'text-gray-300 hover:bg-gray-700'
                     }`}
                   >
-                    <ShieldAdmin size={18} />
+                    <Shield size={18} />
                     <span className="font-bold">Super Admin</span>
                   </Link>
                 )}
@@ -209,7 +205,7 @@ export default function Navbar() {
                   : 'text-gray-300 hover:bg-gray-700'
               }`}
             >
-              <ShieldAdmin size={18} />
+              <Shield size={18} />
               <span>Admin</span>
             </Link>
 
@@ -223,7 +219,7 @@ export default function Navbar() {
                     : 'text-gray-300 hover:bg-gray-700'
                 }`}
               >
-                <ShieldAdmin size={18} />
+                <Shield size={18} />
                 <span className="font-bold">Super Admin</span>
               </Link>
             )}

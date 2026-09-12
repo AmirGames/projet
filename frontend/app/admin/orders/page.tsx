@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Eye, MoreVertical } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 
 interface Order {
