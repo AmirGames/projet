@@ -33,6 +33,7 @@ import superAdminRouter from "./routes/super-admin.js";
 import superOwnerRouter from "./routes/superowner.js";
 import clientRouter from "./routes/client.js";
 import mapsRouter from "./routes/maps.js";
+import driversRouter from "./routes/drivers.js";
 
 export function createApp(): Express {
   const app = express();
@@ -93,6 +94,7 @@ export function createApp(): Express {
   app.use("/api/superowner", superOwnerRouter);
   app.use("/api/client", clientRouter);
   app.use("/api/maps", mapsRouter);
+  app.use("/api/drivers", driversRouter);
 
   // ===== Error handling (must be last) =====
   setupErrorHandling(app);
