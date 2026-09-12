@@ -23,6 +23,8 @@ model User {
   emailToken    String?   @unique
   emailTokenExpiresAt DateTime?
   isSystemAdmin Boolean   @default(false)
+  isSuperOwner  Boolean   @default(false)
+  status        String    @default("ACTIVE") // ACTIVE, BANNED, SUSPENDED
 
   // Relations
   memberships   Membership[]
@@ -47,9 +49,11 @@ enum OrganizationTier {
 model Organization {
   id       String            @id @default(cuid())
   name     String
+  email    String?
   slug     String            @unique
   tier     OrganizationTier  @default(FREE)
-  status   String            @default("ACTIVE") // ACTIVE, SUSPENDED, CLOSED
+  plan     String            @default("STARTER") // STARTER, PROFESSIONAL, ENTERPRISE
+  status   String            @default("ACTIVE") // ACTIVE, SUSPENDED, CLOSED, INACTIVE
 
   // Relations
   stores              Store[]

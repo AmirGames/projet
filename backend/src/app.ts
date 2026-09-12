@@ -12,6 +12,8 @@ import categoryRouter from "./routes/category.js";
 import orderRouter from "./routes/order.js";
 import paymentRouter from "./routes/payment.js";
 import adminRouter from "./routes/admin.js";
+import superAdminRouter from "./routes/super-admin.js";
+import superOwnerRouter from "./routes/superowner.js";
 
 export function createApp(): Express {
   const app = express();
@@ -51,6 +53,8 @@ export function createApp(): Express {
   app.use("/api/orders", orderRouter);
   app.use("/api/payments", paymentRouter);
   app.use("/api/admin", adminRouter);
+  app.use("/api/super-admin", superAdminRouter);
+  app.use("/api/superowner", superOwnerRouter);
 
   // ===== Error handling (must be last) =====
   setupErrorHandling(app);
