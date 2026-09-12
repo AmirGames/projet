@@ -1,8 +1,14 @@
 {
-  "dependencies": {
-    "pg": "^8.23.0"
-  },
-  "devDependencies": {
-    "@types/pg": "^8.23.1"
+  "name": "saas-project",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "start": "cd backend && npm run start",
+    "dev": "cd backend && npm run dev",
+    "build": "cd backend && npm run build"
   }
 }
