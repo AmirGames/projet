@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { StoreService } from "../services/store.service.js";
 import { ApiError } from "../middleware/errorHandler.js";
+import { authMiddleware } from "../middleware/auth.js";
 import { logger } from "../config/logger.js";
 
 const router = Router();
@@ -34,8 +35,8 @@ const updateStoreSchema = z.object({
   currency: z.string().optional(),
 });
 
-// POST /stores - Create store
-router.post("/", async (req: Request, res: Response, next: NextFunction) => {
+// POST /stores - Create store (protected)
+router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = createStoreSchema.parse(req.body);
 
@@ -82,8 +83,8 @@ router.get("/org/:orgId", async (req: Request, res: Response, next: NextFunction
   }
 });
 
-// PUT /stores/:id - Update store
-router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// PUT /stores/:id - Update store (protected)
+router.put("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const body = updateStoreSchema.parse(req.body);
@@ -105,8 +106,8 @@ router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// DELETE /stores/:id - Delete store
-router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// DELETE /stores/:id - Delete store (protected)
+router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 

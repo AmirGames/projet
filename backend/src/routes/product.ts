@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ProductService } from "../services/product.service.js";
 import { ApiError } from "../middleware/errorHandler.js";
+import { authMiddleware } from "../middleware/auth.js";
 import { logger } from "../config/logger.js";
 
 const router = Router();
@@ -27,8 +28,8 @@ const updateProductSchema = z.object({
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).optional(),
 });
 
-// POST /products - Create product
-router.post("/", async (req: Request, res: Response, next: NextFunction) => {
+// POST /products - Create product (protected)
+router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = createProductSchema.parse(req.body);
 
@@ -128,8 +129,8 @@ router.get("/search/:storeId", async (req: Request, res: Response, next: NextFun
   }
 });
 
-// PUT /products/:id - Update product
-router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// PUT /products/:id - Update product (protected)
+router.put("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const body = updateProductSchema.parse(req.body);
@@ -151,8 +152,8 @@ router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// PATCH /products/:id/stock - Update product stock
-router.patch("/:id/stock", async (req: Request, res: Response, next: NextFunction) => {
+// PATCH /products/:id/stock - Update product stock (protected)
+router.patch("/:id/stock", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const { quantity } = req.body;
@@ -178,8 +179,8 @@ router.patch("/:id/stock", async (req: Request, res: Response, next: NextFunctio
   }
 });
 
-// DELETE /products/:id - Delete product
-router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// DELETE /products/:id - Delete product (protected)
+router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 

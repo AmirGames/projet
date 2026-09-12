@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { OrderService } from "../services/order.service.js";
 import { ApiError } from "../middleware/errorHandler.js";
+import { authMiddleware } from "../middleware/auth.js";
 import { logger } from "../config/logger.js";
 
 const router = Router();
@@ -60,8 +61,8 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// GET /orders/store/:storeId - Get orders by store
-router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunction) => {
+// GET /orders/store/:storeId - Get orders by store (protected)
+router.get("/store/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const limit = parseInt((req.query.limit as string) || "100") || 100;
@@ -83,8 +84,8 @@ router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunc
   }
 });
 
-// GET /orders/status/:storeId - Get orders by status
-router.get("/status/:storeId", async (req: Request, res: Response, next: NextFunction) => {
+// GET /orders/status/:storeId - Get orders by status (protected)
+router.get("/status/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const status = (req.query.status as string) || "";
@@ -105,8 +106,8 @@ router.get("/status/:storeId", async (req: Request, res: Response, next: NextFun
   }
 });
 
-// PATCH /orders/:id/status - Update order status
-router.patch("/:id/status", async (req: Request, res: Response, next: NextFunction) => {
+// PATCH /orders/:id/status - Update order status (protected)
+router.patch("/:id/status", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const body = updateOrderStatusSchema.parse(req.body);
@@ -128,8 +129,8 @@ router.patch("/:id/status", async (req: Request, res: Response, next: NextFuncti
   }
 });
 
-// DELETE /orders/:id - Delete order
-router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// DELETE /orders/:id - Delete order (protected)
+router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 

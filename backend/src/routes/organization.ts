@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { OrganizationService } from "../services/organization.service.js";
 import { ApiError } from "../middleware/errorHandler.js";
+import { authMiddleware } from "../middleware/auth.js";
 import { logger } from "../config/logger.js";
 
 const router = Router();
@@ -17,8 +18,8 @@ const updateOrgSchema = z.object({
   tier: z.enum(["FREE", "PREMIUM", "PRO"]).optional(),
 });
 
-// POST /organizations - Create organization
-router.post("/", async (req: Request, res: Response, next: NextFunction) => {
+// POST /organizations - Create organization (protected)
+router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = createOrgSchema.parse(req.body);
     const userId = body.userId || "user-123";
@@ -87,8 +88,8 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// PUT /organizations/:id - Update organization
-router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// PUT /organizations/:id - Update organization (protected)
+router.put("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const body = updateOrgSchema.parse(req.body);
@@ -110,8 +111,8 @@ router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// DELETE /organizations/:id - Delete organization
-router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// DELETE /organizations/:id - Delete organization (protected)
+router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 

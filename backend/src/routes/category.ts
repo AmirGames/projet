@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { CategoryService } from "../services/category.service.js";
 import { ApiError } from "../middleware/errorHandler.js";
+import { authMiddleware } from "../middleware/auth.js";
 import { logger } from "../config/logger.js";
 
 const router = Router();
@@ -17,8 +18,8 @@ const updateCategorySchema = z.object({
   displayOrder: z.number().int().min(0).optional(),
 });
 
-// POST /categories - Create category
-router.post("/", async (req: Request, res: Response, next: NextFunction) => {
+// POST /categories - Create category (protected)
+router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = createCategorySchema.parse(req.body);
 
@@ -69,8 +70,8 @@ router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunc
   }
 });
 
-// PUT /categories/:id - Update category
-router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// PUT /categories/:id - Update category (protected)
+router.put("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const body = updateCategorySchema.parse(req.body);
@@ -92,8 +93,8 @@ router.put("/:id", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// POST /categories/reorder - Reorder categories
-router.post("/reorder", async (req: Request, res: Response, next: NextFunction) => {
+// POST /categories/reorder - Reorder categories (protected)
+router.post("/reorder", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { storeId, ordering } = req.body;
 
@@ -114,8 +115,8 @@ router.post("/reorder", async (req: Request, res: Response, next: NextFunction) 
   }
 });
 
-// DELETE /categories/:id - Delete category
-router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+// DELETE /categories/:id - Delete category (protected)
+router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 
