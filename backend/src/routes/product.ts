@@ -266,6 +266,50 @@ router.get("/low-stock/by-org/:orgId", authMiddleware, async (req: Request, res:
   }
 });
 
+// POST /products/reorder - Reorder products (protected)
+router.post("/reorder", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { storeId, ordering } = req.body;
+
+    if (!storeId || !Array.isArray(ordering)) {
+      throw new ApiError(400, "storeId et ordering requis", "INVALID_INPUT");
+    }
+
+    logger.info("Reordering products", { storeId });
+
+    const products = await ProductService.reorder(storeId, ordering);
+
+    res.json({
+      message: "Produits réordonnés",
+      products,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /products/reorder-by-category - Reorder products by category (protected)
+router.post("/reorder-by-category", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { categoryId, ordering } = req.body;
+
+    if (!categoryId || !Array.isArray(ordering)) {
+      throw new ApiError(400, "categoryId et ordering requis", "INVALID_INPUT");
+    }
+
+    logger.info("Reordering products by category", { categoryId });
+
+    const products = await ProductService.reorderByCategory(categoryId, ordering);
+
+    res.json({
+      message: "Produits réordonnés",
+      products,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // DELETE /products/:id - Delete product (protected)
 router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {

@@ -3,6 +3,23 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -13,6 +30,85 @@ interface Category {
   storeId: string;
   products?: Array<{ id: string; name: string }>;
   createdAt: string;
+}
+
+function SortableCategory({ category, onEdit, onDelete }: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-red-600 transition-colors ${
+        isDragging ? 'shadow-lg shadow-red-600' : ''
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 flex-1">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing text-gray-600 hover:text-gray-400"
+            title="Glissez pour réorganiser"
+          >
+            <GripVertical size={18} />
+          </button>
+          <div>
+            <p className="font-bold text-lg">{category.name}</p>
+            <p className="text-xs text-gray-500">
+              {category.products?.length || 0} produit{category.products?.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => onEdit(category)}
+            className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            title="Modifier"
+          >
+            <Edit2 size={16} />
+          </button>
+          <button
+            onClick={() => onDelete(category.id)}
+            className="p-2 bg-red-600 hover:bg-red-700 rounded transition-colors"
+            title="Supprimer"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+
+      {category.products && category.products.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-700">
+          <p className="text-xs text-gray-400 mb-2">Produits:</p>
+          <div className="flex flex-wrap gap-2">
+            {category.products.map((product: any) => (
+              <span
+                key={product.id}
+                className="bg-gray-700 px-2 py-1 rounded text-xs text-gray-300"
+              >
+                {product.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function CategoriesPage() {
@@ -28,6 +124,14 @@ export default function CategoriesPage() {
     name: '',
   });
   const [message, setMessage] = useState('');
+  const [isReordering, setIsReordering] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     if (orgId) {
@@ -39,7 +143,6 @@ export default function CategoriesPage() {
     try {
       const token = localStorage.getItem('accessToken');
 
-      // Fetch store first
       const storeResponse = await fetch(`${API_URL}/api/stores/${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -49,20 +152,59 @@ export default function CategoriesPage() {
         const fetchedStoreId = storeData.store?.id || storeData.id;
         setStoreId(fetchedStoreId);
 
-        // Then fetch categories
         const categoriesResponse = await fetch(`${API_URL}/api/categories?orgId=${orgId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (categoriesResponse.ok) {
           const data = await categoriesResponse.json();
-          setCategories(data.categories || []);
+          const sorted = (data.categories || []).sort((a: Category, b: Category) => a.displayOrder - b.displayOrder);
+          setCategories(sorted);
         }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = categories.findIndex(c => c.id === active.id);
+      const newIndex = categories.findIndex(c => c.id === over.id);
+
+      const newOrder = arrayMove(categories, oldIndex, newIndex);
+      setCategories(newOrder);
+
+      setIsReordering(true);
+      try {
+        const token = localStorage.getItem('accessToken');
+        const ordering = newOrder.map((cat, index) => ({
+          id: cat.id,
+          displayOrder: index,
+        }));
+
+        await fetch(`${API_URL}/api/categories/reorder`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ storeId, ordering }),
+        });
+
+        setMessage('✅ Catégories réorganisées');
+        setTimeout(() => setMessage(''), 3000);
+      } catch (error) {
+        console.error('Error reordering:', error);
+        setMessage('❌ Erreur lors de la réorganisation');
+        fetchStoreAndCategories();
+      } finally {
+        setIsReordering(false);
+      }
     }
   };
 
@@ -184,21 +326,20 @@ export default function CategoriesPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">📂 Gestion des Catégories</h1>
-            <p className="text-gray-400 mt-1">Organisez vos produits par catégories</p>
+            <p className="text-gray-400 mt-1">Organisez vos produits par catégories (glissez pour réorganiser)</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors"
+            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors disabled:opacity-50"
+            disabled={isReordering}
           >
             <Plus size={20} /> Ajouter Catégorie
           </button>
         </div>
 
-        {/* Message */}
         {message && (
           <div className={`p-4 rounded-lg ${
             message.includes('✅')
@@ -209,83 +350,47 @@ export default function CategoriesPage() {
           </div>
         )}
 
-        {/* Stats */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
           <p className="text-gray-400 text-sm">Total de catégories</p>
           <p className="text-3xl font-bold">{categories.length}</p>
         </div>
 
-        {/* Categories List */}
         <div className="space-y-3">
           {categories.length === 0 ? (
             <div className="text-center py-12 bg-gray-800 border border-gray-700 rounded-lg">
               <p className="text-gray-400">Aucune catégorie créée. Commencez à en créer une!</p>
             </div>
           ) : (
-            categories.map((category) => (
-              <div
-                key={category.id}
-                className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-red-600 transition-colors"
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={categories.map(c => c.id)}
+                strategy={verticalListSortingStrategy}
+                disabled={isReordering}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    <GripVertical size={18} className="text-gray-600 cursor-move" />
-                    <div>
-                      <p className="font-bold text-lg">{category.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {category.products?.length || 0} produit{category.products?.length !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEdit(category)}
-                      className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-                      title="Modifier"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(category.id)}
-                      className="p-2 bg-red-600 hover:bg-red-700 rounded transition-colors"
-                      title="Supprimer"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Products in Category */}
-                {category.products && category.products.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-700">
-                    <p className="text-xs text-gray-400 mb-2">Produits:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {category.products.map(product => (
-                        <span
-                          key={product.id}
-                          className="bg-gray-700 px-2 py-1 rounded text-xs text-gray-300"
-                        >
-                          {product.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))
+                {categories.map(category => (
+                  <SortableCategory
+                    key={category.id}
+                    category={category}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           )}
         </div>
 
-        {/* Info */}
         <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
           <p className="text-blue-400 text-sm">
-            💡 Les catégories aident à organiser votre catalogue et améiorent l'expérience d'achat de vos clients.
+            💡 Les catégories aident à organiser votre catalogue. Glissez les catégories pour les réorganiser.
           </p>
         </div>
       </div>
 
-      {/* Category Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full">

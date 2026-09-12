@@ -253,4 +253,34 @@ export class ProductService {
       throw error;
     }
   }
+
+  static async reorder(storeId: string, ordering: { id: string; displayOrder: number }[]) {
+    try {
+      for (const item of ordering) {
+        await db.product.update({
+          where: { id: item.id },
+          data: { displayOrder: item.displayOrder },
+        });
+      }
+
+      return await this.getByStoreId(storeId);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async reorderByCategory(categoryId: string, ordering: { id: string; displayOrder: number }[]) {
+    try {
+      for (const item of ordering) {
+        await db.product.update({
+          where: { id: item.id },
+          data: { displayOrder: item.displayOrder },
+        });
+      }
+
+      return await this.getByCategoryId(categoryId);
+    } catch (err) {
+      throw err;
+    }
+  }
 }
