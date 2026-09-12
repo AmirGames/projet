@@ -10,6 +10,7 @@ import storeRouter from "./routes/store.js";
 import storeHoursRouter from "./routes/store-hours.js";
 import deliveryZoneRouter from "./routes/delivery-zone.js";
 import staffRouter from "./routes/staff.js";
+import reportsRouter from "./routes/reports.js";
 import productRouter from "./routes/product.js";
 import categoryRouter from "./routes/category.js";
 import orderRouter from "./routes/order.js";
@@ -55,6 +56,7 @@ export function createApp(): Express {
   app.use("/api/store-hours", storeHoursRouter);
   app.use("/api/delivery-zones", deliveryZoneRouter);
   app.use("/api/staff", staffRouter);
+  app.use("/api/reports", reportsRouter);
   app.use("/api/products", productRouter);
   app.use("/api/categories", categoryRouter);
   app.use("/api/orders", orderRouter);

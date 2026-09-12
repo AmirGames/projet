@@ -123,7 +123,7 @@ export default function MerchantDashboard() {
     { label: 'Livraison', href: `/merchant/${orgId}/delivery-zones`, icon: '🚚' },
     { label: 'Équipe', href: `/merchant/${orgId}/staff`, icon: '👨‍💼' },
     { label: 'Clients', href: `/merchant/${orgId}/customers`, icon: '👥' },
-    { label: 'Rapports', href: `/merchant/${orgId}/analytics`, icon: '📈' },
+    { label: 'Rapports', href: `/merchant/${orgId}/reports`, icon: '📈' },
     { label: 'Paramètres', href: `/merchant/${orgId}/settings`, icon: '⚙️' },
   ];
 
