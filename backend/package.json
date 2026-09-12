@@ -15,9 +15,7 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@prisma/client": "latest",
     "bcrypt": "latest",
-    "better-sqlite3": "^13.0.3",
     "bull": "latest",
     "cors": "latest",
     "dotenv": "latest",
@@ -31,8 +29,8 @@
     "zod": "latest"
   },
   "devDependencies": {
+    "@prisma/client": "^5.22.0",
     "@types/bcrypt": "latest",
-    "@types/better-sqlite3": "^9.6.0",
     "@types/cors": "latest",
     "@types/express": "latest",
     "@types/jsonwebtoken": "latest",
@@ -43,7 +41,7 @@
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
     "prettier": "latest",
-    "prisma": "latest",
+    "prisma": "^5.22.0",
     "tsx": "latest",
     "typescript": "latest"
   },

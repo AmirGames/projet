@@ -15,7 +15,7 @@ const start = async () => {
   try {
     // Test database connection
     logger.info("Testing database connection...");
-    const result = db.prepare("SELECT 1").all();
+    await db.$queryRaw`SELECT 1`;
     logger.info("✅ Database connected");
 
     // Start listening
@@ -31,7 +31,7 @@ const start = async () => {
       server.close(() => {
         logger.info("Server closed");
       });
-      db.close();
+      await db.$disconnect();
       logger.info("Database disconnected");
       process.exit(0);
     };

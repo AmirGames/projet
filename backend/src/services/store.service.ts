@@ -1,8 +1,7 @@
-import { randomUUID } from "crypto";
 import { db } from "./db.js";
+import { ApiError } from "../middleware/errorHandler.js";
 
 export class StoreService {
-  // Create store
   static async create(data: {
     orgId: string;
     name: string;
@@ -15,79 +14,101 @@ export class StoreService {
     description?: string;
   }) {
     try {
-      const storeId = randomUUID();
-
-      db.prepare(
-        'INSERT INTO "Store" (id, "orgId", name, slug, address, city, "postalCode", phone, email, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      ).run(
-        storeId,
-        data.orgId,
-        data.name,
-        data.slug,
-        data.address || null,
-        data.city || null,
-        data.postalCode || null,
-        data.phone || null,
-        data.email || null,
-        data.description || null
-      );
-
-      const store = db
-        .prepare('SELECT * FROM "Store" WHERE id = ?')
-        .get(storeId);
+      const store = await db.store.create({
+        data: {
+          orgId: data.orgId,
+          name: data.name,
+          slug: data.slug,
+          address: data.address,
+          city: data.city,
+          postalCode: data.postalCode,
+          phone: data.phone,
+          email: data.email,
+          description: data.description,
+        },
+        include: {
+          products: true,
+          categories: true,
+          theme: true,
+        },
+      });
 
       return store;
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  // Get store by ID
-  static async getById(id: string) {
-    const result = db
-      .prepare('SELECT * FROM "Store" WHERE id = ?')
-      .get(id);
-    return result;
-  }
-
-  // Get stores by organization
-  static async getByOrgId(orgId: string) {
-    const result = db
-      .prepare('SELECT * FROM "Store" WHERE "orgId" = ?')
-      .all(orgId);
-    return result;
-  }
-
-  // Update store
-  static async update(id: string, data: any) {
-    const updates: string[] = [];
-    const values: any[] = [];
-
-    const allowedFields = ['name', 'slug', 'address', 'city', 'postalCode', 'phone', 'email', 'description'];
-    
-    for (const field of allowedFields) {
-      if (field in data) {
-        updates.push(`${field} = ?`);
-        values.push(data[field]);
+    } catch (error: any) {
+      if (error.code === "P2002") {
+        throw new ApiError(409, "Store slug already exists in organization", "SLUG_EXISTS");
       }
+      throw error;
     }
-
-    if (updates.length === 0) return null;
-
-    updates.push('"updatedAt" = CURRENT_TIMESTAMP');
-    values.push(id);
-
-    const result = db
-      .prepare(
-        `UPDATE "Store" SET ${updates.join(", ")} WHERE id = ? RETURNING *`
-      )
-      .get(...values);
-
-    return result;
   }
 
-  // Delete store
+  static async getById(id: string) {
+    const store = await db.store.findUnique({
+      where: { id },
+      include: {
+        products: { where: { status: "ACTIVE" } },
+        categories: true,
+        theme: true,
+        orders: { take: 10, orderBy: { createdAt: "desc" } },
+      },
+    });
+
+    if (!store) {
+      throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
+    }
+
+    return store;
+  }
+
+  static async getByOrgId(orgId: string) {
+    return await db.store.findMany({
+      where: { orgId },
+      include: {
+        products: true,
+        categories: true,
+        theme: true,
+      },
+    });
+  }
+
+  static async update(id: string, data: any) {
+    try {
+      return await db.store.update({
+        where: { id },
+        data: {
+          ...(data.name && { name: data.name }),
+          ...(data.address && { address: data.address }),
+          ...(data.city && { city: data.city }),
+          ...(data.postalCode && { postalCode: data.postalCode }),
+          ...(data.phone && { phone: data.phone }),
+          ...(data.email && { email: data.email }),
+          ...(data.description && { description: data.description }),
+          ...(data.settings && { settings: data.settings }),
+          ...(data.pickupSlots && { pickupSlots: data.pickupSlots }),
+        },
+        include: {
+          products: true,
+          categories: true,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
+      }
+      throw error;
+    }
+  }
+
   static async delete(id: string) {
-    db.prepare('DELETE FROM "Store" WHERE id = ?').run(id);
+    try {
+      return await db.store.delete({
+        where: { id },
+      });
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
+      }
+      throw error;
+    }
   }
 }
