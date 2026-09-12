@@ -1,205 +1,126 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, LogOut, User, Home, BarChart3, Shield } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { LogOut, Menu } from 'lucide-react';
+import { useState } from 'react';
 
 export default function Navbar() {
   const router = useRouter();
-  const pathname = usePathname();
   const { user, logout } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
 
-  const isActive = (path: string) => pathname === path;
-
-  // Ne pas montrer la navbar sur les pages login/signup
-  if (pathname.includes('/login') || pathname.includes('/signup')) {
-    return null;
-  }
-
   return (
     <nav className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo & Brand */}
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                🚀
-              </div>
-              <span className="hidden sm:inline">SaaS Shop</span>
-            </Link>
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-sm">
+              ST
+            </div>
+            <span className="font-bold text-lg hidden sm:inline">SaaS</span>
+          </Link>
 
-            {/* Desktop Menu */}
-            {user && (
-              <div className="hidden md:flex items-center gap-4">
-                <Link
-                  href="/"
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                    isActive('/')
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
-                  <Home size={18} />
-                  <span>Accueil</span>
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-6">
+            {!user ? (
+              <>
+                <Link href="/restaurants" className="text-gray-300 hover:text-white transition">
+                  Restaurants
                 </Link>
-
-                <Link
-                  href="/dashboard"
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                    isActive('/dashboard')
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
-                  <BarChart3 size={18} />
-                  <span>Dashboard</span>
+                <Link href="/login" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">
+                  Connexion
                 </Link>
-
-                {/* Admin Panel */}
-                <Link
-                  href="/admin"
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                    pathname.includes('/admin') && !pathname.includes('/super-admin')
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
-                  <Shield size={18} />
-                  <span>Admin</span>
+                <Link href="/signup" className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition font-medium">
+                  S'inscrire
                 </Link>
-
-                {/* Super Admin */}
+              </>
+            ) : (
+              <>
+                <Link href="/dashboard" className="text-gray-300 hover:text-white transition">
+                  Dashboard
+                </Link>
                 {user.isSystemAdmin && (
-                  <Link
-                    href="/super-admin"
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                      pathname.includes('/super-admin')
-                        ? 'bg-red-600 text-white'
-                        : 'text-gray-300 hover:bg-gray-700'
-                    }`}
-                  >
-                    <Shield size={18} />
-                    <span className="font-bold">Super Admin</span>
+                  <Link href="/admin/super-owner" className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition font-medium text-sm">
+                    👑 Super Owner
                   </Link>
                 )}
-              </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition text-white"
+                >
+                  <LogOut size={18} />
+                  Logout
+                </button>
+              </>
             )}
           </div>
 
-          {/* Right Side */}
-          <div className="flex items-center gap-4">
-            {/* User Info */}
-            {user && (
-              <div className="hidden sm:flex items-center gap-3">
-                <div className="text-sm text-right">
-                  <p className="font-medium">{user.name || user.email}</p>
-                  {user.isSystemAdmin && (
-                    <p className="text-xs text-red-400 font-bold">Super Admin</p>
-                  )}
-                </div>
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <User size={16} />
-                </div>
-              </div>
-            )}
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-2 hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-
-            {/* Logout */}
-            {user && (
-              <button
-                onClick={handleLogout}
-                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors"
-              >
-                <LogOut size={18} />
-                <span>Déco</span>
-              </button>
-            )}
-          </div>
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 hover:bg-gray-700 rounded-lg"
+          >
+            <Menu size={24} />
+          </button>
         </div>
 
-        {/* Mobile Menu */}
-        {isOpen && user && (
-          <div className="md:hidden pb-4 space-y-2 border-t border-gray-700 pt-4">
-            <Link
-              href="/"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                isActive('/')
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              <Home size={18} />
-              <span>Accueil</span>
-            </Link>
-
-            <Link
-              href="/dashboard"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                isActive('/dashboard')
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              <BarChart3 size={18} />
-              <span>Dashboard</span>
-            </Link>
-
-            <Link
-              href="/admin"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                pathname.includes('/admin') && !pathname.includes('/super-admin')
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              <Shield size={18} />
-              <span>Admin</span>
-            </Link>
-
-            {user.isSystemAdmin && (
-              <Link
-                href="/super-admin"
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  pathname.includes('/super-admin')
-                    ? 'bg-red-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-700'
-                }`}
-              >
-                <Shield size={18} />
-                <span className="font-bold">Super Admin</span>
-              </Link>
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="md:hidden pb-4 space-y-2">
+            {!user ? (
+              <>
+                <Link
+                  href="/restaurants"
+                  className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
+                >
+                  Restaurants
+                </Link>
+                <Link
+                  href="/login"
+                  className="block px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium"
+                >
+                  Connexion
+                </Link>
+                <Link
+                  href="/signup"
+                  className="block px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium"
+                >
+                  S'inscrire
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
+                >
+                  Dashboard
+                </Link>
+                {user.isSystemAdmin && (
+                  <Link
+                    href="/admin/super-owner"
+                    className="block px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-white"
+                  >
+                    👑 Super Owner
+                  </Link>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
+                >
+                  <LogOut size={18} />
+                  Logout
+                </button>
+              </>
             )}
-
-            <button
-              onClick={() => {
-                handleLogout();
-                setIsOpen(false);
-              }}
-              className="w-full flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors"
-            >
-              <LogOut size={18} />
-              <span>Déconnexion</span>
-            </button>
           </div>
         )}
       </div>

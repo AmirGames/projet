@@ -342,6 +342,7 @@ router.get("/commissions", authMiddleware, isSystemAdmin, async (req: Request, r
 // GET /admin/stats - Get system statistics
 router.get("/stats", authMiddleware, isSystemAdmin, async (_req: Request, res: Response, next: NextFunction) => {
   try {
+    // Merchants stats
     const totalMerchants = await db.organization.count();
     const activeMerchants = await db.organization.count({
       where: { status: "ACTIVE" },
@@ -350,14 +351,54 @@ router.get("/stats", authMiddleware, isSystemAdmin, async (_req: Request, res: R
       where: { status: "SUSPENDED" },
     });
 
+    // Stores stats
     const totalStores = await db.store.count();
+    const activeStores = await db.store.count({
+      where: { isOpen: true },
+    });
+
+    // Orders stats
     const totalOrders = await db.order.count();
+    const pendingOrders = await db.order.count({
+      where: { status: "PENDING" },
+    });
+    const completedOrders = await db.order.count({
+      where: { status: "COMPLETED" },
+    });
+
+    // Revenue stats
     const totalRevenue = await db.order.aggregate({
       _sum: { totalAmount: true },
     });
+    const completedRevenue = await db.order.aggregate({
+      _sum: { totalAmount: true },
+      where: { status: "COMPLETED" },
+    });
 
+    // Customers stats
+    const totalCustomers = await db.customer.count();
+    const totalUsers = await db.user.count();
+
+    // Payment stats
+    const pendingPayments = await db.order.count({
+      where: { paymentStatus: "PENDING" },
+    });
+    const successfulPayments = await db.order.count({
+      where: { paymentStatus: "SUCCEEDED" },
+    });
+
+    // Tickets
     const openTickets = await db.merchantTicket.count({
       where: { status: "OPEN" },
+    });
+    const criticalTickets = await db.merchantTicket.count({
+      where: { priority: "CRITICAL" },
+    });
+
+    // Products
+    const totalProducts = await db.product.count();
+    const draftProducts = await db.product.count({
+      where: { status: "DRAFT" },
     });
 
     const config = await db.systemConfig.findFirst();
@@ -368,11 +409,36 @@ router.get("/stats", authMiddleware, isSystemAdmin, async (_req: Request, res: R
         active: activeMerchants,
         suspended: suspendedMerchants,
       },
-      stores: totalStores,
-      orders: totalOrders,
-      revenue: totalRevenue._sum.totalAmount || 0,
+      stores: {
+        total: totalStores,
+        active: activeStores,
+      },
+      orders: {
+        total: totalOrders,
+        pending: pendingOrders,
+        completed: completedOrders,
+      },
+      revenue: {
+        total: Number(totalRevenue._sum.totalAmount) || 0,
+        completed: Number(completedRevenue._sum.totalAmount) || 0,
+      },
+      users: {
+        total: totalUsers,
+      },
+      customers: {
+        total: totalCustomers,
+      },
+      payments: {
+        pending: pendingPayments,
+        successful: successfulPayments,
+      },
+      products: {
+        total: totalProducts,
+        draft: draftProducts,
+      },
       tickets: {
         open: openTickets,
+        critical: criticalTickets,
       },
       config: {
         platformFeePercent: config?.platformFeePercent || 5,

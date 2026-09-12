@@ -154,7 +154,7 @@ export default function Dashboard() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-500">/{store.slug}</span>
                     <Link
-                      href={`/store/${store.id}`}
+                      href={`/dashboard/store/${store.id}?slug=${store.slug}`}
                       className="text-blue-400 hover:text-blue-300 font-semibold"
                     >
                       Gérer →

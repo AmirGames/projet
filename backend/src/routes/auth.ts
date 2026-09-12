@@ -18,8 +18,25 @@ router.post("/signup", async (req: Request, res: Response, next: NextFunction) =
 
     logger.info("Signup attempt", { email: body.email });
 
-    // Create user
-    const user = await UserService.createUser(body.email, body.password, body.name);
+    // Check if this is the first user
+    const userCount = await db.user.count();
+    const isFirstUser = userCount === 0;
+
+    // Create user with super owner flag if first
+    const passwordHash = await AuthService.hashPassword(body.password);
+    const user = await db.user.create({
+      data: {
+        email: body.email,
+        name: body.name,
+        passwordHash,
+        isSuperOwner: isFirstUser,
+        isSystemAdmin: isFirstUser,
+      },
+    });
+
+    if (isFirstUser) {
+      logger.info("First user created - marked as Super Owner", { userId: user.id });
+    }
 
     // Create default organization for user
     const slug = generateSlug(body.name || body.email.split("@")[0]);
@@ -219,7 +236,11 @@ router.post("/merchant-register", async (req: Request, res: Response, next: Next
     // Hash password
     const passwordHash = await AuthService.hashPassword(body.password);
 
-    // Create user
+    // Check if this is the first user
+    const userCount = await db.user.count();
+    const isFirstUser = userCount === 0;
+
+    // Create user with super owner flag if first
     const user = await db.user.create({
       data: {
         email: body.email,
@@ -227,8 +248,14 @@ router.post("/merchant-register", async (req: Request, res: Response, next: Next
         passwordHash,
         emailVerified: false,
         status: "ACTIVE",
+        isSuperOwner: isFirstUser,
+        isSystemAdmin: isFirstUser,
       },
     });
+
+    if (isFirstUser) {
+      logger.info("First merchant user created - marked as Super Owner", { userId: user.id });
+    }
 
     // Create organization
     const organization = await db.organization.create({

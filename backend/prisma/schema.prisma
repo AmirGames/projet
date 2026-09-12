@@ -182,7 +182,11 @@ model Store {
   phone         String?
   email         String?
   description   String?
-  
+
+  // GÉOLOCALISATION - Pour Uber Eats like
+  latitude      Float?    // Pour trouver restaurants proches
+  longitude     Float?
+
   // Store settings (JSON)
   settings      Json      @default("{}")
 
@@ -197,12 +201,21 @@ model Store {
   // Quick store status
   isOpen        Boolean   @default(true)
 
+  // Delivery options
+  acceptsDelivery Boolean @default(true)   // Accept delivery orders
+  acceptsPickup   Boolean @default(true)   // Accept pickup orders
+  deliveryCost    Decimal @default(0) @db.Decimal(10, 2)
+  minDeliveryAmount Decimal @default(0) @db.Decimal(10, 2)
+
+  // Rating
+  rating        Decimal   @default(5.0) @db.Decimal(3, 2)
+  totalRatings  Int       @default(0)
+
   // Relations
   org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   products      Product[]
   categories    Category[]
   orders        Order[]
-  customers     Customer[]
   theme         Theme? @relation("ThemeToStore")
   deliveryZones DeliveryZone[]
   promotions    Promotion[]
@@ -213,6 +226,7 @@ model Store {
   paymentMethods PaymentMethod[] @relation("PaymentMethodToStore")
   notifications Notification[] @relation("NotificationToStore")
   tags          ProductTag[] @relation("TagToStore")
+  favorites     FavoriteStore[] @relation("StoreFavorites")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -392,6 +406,7 @@ model Order {
   store           Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
   customer        Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   payments        Payment[]
+  delivery        OrderDelivery? @relation(fields: [id], references: [orderId])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -480,7 +495,100 @@ model Theme {
 }
 
 // ============================================================================
-// DELIVERY
+// DELIVERY & DRIVERS
+// ============================================================================
+
+model Driver {
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  phone           String
+  vehicleType     String    // car, scooter, bike
+  vehiclePlate    String?
+
+  // Location
+  latitude        Float?
+  longitude       Float?
+  lastLocationUpdate DateTime?
+
+  // Status
+  status          String    @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, OFFLINE
+  isOnline        Boolean   @default(false)
+  currentOrderId  String?   // Current delivery
+
+  // Ratings
+  rating          Decimal   @default(5.0) @db.Decimal(3, 2)
+  totalRatings    Int       @default(0)
+
+  // Financial
+  totalEarnings   Decimal   @default(0) @db.Decimal(10, 2)
+
+  // Relations
+  deliveries      OrderDelivery[]
+  documents       DriverDocument[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([isOnline])
+}
+
+model DriverDocument {
+  id              String    @id @default(cuid())
+  driverId        String
+  type            String    // license, insurance, vehicle_registration
+  documentUrl     String
+  expiryDate      DateTime?
+  status          String    @default("PENDING") // PENDING, APPROVED, REJECTED, EXPIRED
+
+  // Relations
+  driver          Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([driverId])
+  @@index([status])
+}
+
+model OrderDelivery {
+  id              String    @id @default(cuid())
+  orderId         String    @unique
+  driverId        String?
+
+  // Delivery details
+  pickupTime      DateTime?
+  deliveryTime    DateTime?
+  estimatedTime   DateTime?
+  actualTime      DateTime?
+
+  // Location tracking
+  pickupLat       Float?
+  pickupLng       Float?
+  deliveryLat     Float?
+  deliveryLng     Float?
+
+  // Status
+  status          String    @default("PENDING") // PENDING, ACCEPTED, PICKED_UP, DELIVERED, FAILED
+
+  // Proof
+  proofPhoto      String?   // Photo de livraison
+
+  // Relations
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driver          Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([driverId])
+  @@index([status])
+}
+
+// ============================================================================
+// DELIVERY ZONES
 // ============================================================================
 
 model DeliveryZone {
@@ -586,18 +694,40 @@ model Staff {
 }
 
 // ============================================================================
-// CUSTOMERS
+// FAVORITES & PREFERENCES
+// ============================================================================
+
+model FavoriteStore {
+  id        String  @id @default(cuid())
+  customerId String
+  storeId   String
+
+  // Relations
+  customer  Customer @relation("CustomerFavorites", fields: [customerId], references: [id], onDelete: Cascade)
+  store     Store   @relation("StoreFavorites", fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([customerId, storeId])
+  @@index([customerId])
+  @@index([storeId])
+}
+
+// ============================================================================
+// CUSTOMERS (GLOBAL - SHARED ACROSS ALL STORES)
 // ============================================================================
 
 model Customer {
   id              String    @id @default(cuid())
-  storeId         String
+  // GLOBAL CLIENT - peut commander chez tous les restaurants
   name            String
-  email           String
+  email           String    @unique
   phone           String?
   address         String?
   city            String?
   postalCode      String?
+  latitude        Float?    // Géolocalisation optionnelle
+  longitude       Float?
 
   // Customer info
   totalOrders     Int       @default(0)
@@ -611,15 +741,14 @@ model Customer {
   status          String    @default("ACTIVE") // ACTIVE, BLOCKED, INACTIVE
 
   // Relations
-  store           Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
   orders          Order[]
   reviews         Review[] @relation("ReviewToCustomer")
+  favorites       FavoriteStore[] @relation("CustomerFavorites")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([storeId, email])
-  @@index([storeId])
+  @@unique([email])
   @@index([status])
   @@index([createdAt])
 }
