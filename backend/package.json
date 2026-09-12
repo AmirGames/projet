@@ -1,0 +1,53 @@
+{
+  "name": "saas-backend",
+  "version": "0.1.0",
+  "description": "SaaS Backend - Digitalisation Commerces Locaux",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:studio": "npx prisma studio",
+    "format": "prettier --write .",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@prisma/client": "latest",
+    "bcrypt": "latest",
+    "better-sqlite3": "^13.0.3",
+    "bull": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "helmet": "latest",
+    "jsonwebtoken": "latest",
+    "nodemailer": "^10.0.9",
+    "redis": "latest",
+    "stripe": "^22.6.2",
+    "winston": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "latest",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/cors": "latest",
+    "@types/express": "latest",
+    "@types/jsonwebtoken": "latest",
+    "@types/node": "latest",
+    "@types/nodemailer": "^8.0.1",
+    "@types/stripe": "^8.0.416",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "latest",
+    "prettier": "latest",
+    "prisma": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

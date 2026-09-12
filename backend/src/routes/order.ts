@@ -1,0 +1,154 @@
+import { Router, Request, Response, NextFunction } from "express";
+import { z } from "zod";
+import { OrderService } from "../services/order.service.js";
+import { ApiError } from "../middleware/errorHandler.js";
+import { logger } from "../config/logger.js";
+
+const router = Router();
+
+const createOrderSchema = z.object({
+  storeId: z.string().uuid(),
+  customerName: z.string().min(2, "Nom minimum 2 caractères"),
+  customerEmail: z.string().email("Email invalide"),
+  customerPhone: z.string().min(9, "Téléphone invalide"),
+  deliveryType: z.enum(["PICKUP", "DELIVERY"]),
+  pickupTime: z.string().optional(),
+  deliveryAddress: z.string().optional(),
+  deliveryCity: z.string().optional(),
+  deliveryPostal: z.string().optional(),
+  totalAmount: z.number().positive("Total doit être positif"),
+  taxAmount: z.number().optional(),
+  feesAmount: z.number().optional(),
+});
+
+const updateOrderStatusSchema = z.object({
+  status: z.enum(["PENDING", "ACCEPTED", "REJECTED", "READY", "COMPLETED"]),
+});
+
+// POST /orders - Create order
+router.post("/", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = createOrderSchema.parse(req.body);
+
+    logger.info("Creating order", { customerName: body.customerName, storeId: body.storeId });
+
+    const order = await OrderService.create(body);
+
+    res.status(201).json({
+      message: "Commande créée",
+      order,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /orders/:id - Get order by ID
+router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const order = await OrderService.getOrderWithItems(id);
+
+    if (!order) {
+      throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
+    }
+
+    res.json(order);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /orders/store/:storeId - Get orders by store
+router.get("/store/:storeId", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { storeId } = req.params;
+    const limit = parseInt(req.query.limit as string) || 100;
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const orders = await OrderService.getByStoreId(storeId, limit, offset);
+    const total = await OrderService.countByStoreId(storeId);
+
+    res.json({
+      orders,
+      pagination: {
+        total,
+        limit,
+        offset,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /orders/status/:storeId - Get orders by status
+router.get("/status/:storeId", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { storeId } = req.params;
+    const { status } = req.query;
+
+    if (!status || typeof status !== "string") {
+      throw new ApiError(400, "Paramètre 'status' requis", "INVALID_INPUT");
+    }
+
+    const orders = await OrderService.getByStatus(storeId, status);
+
+    res.json({
+      status,
+      orders,
+      count: orders.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /orders/:id/status - Update order status
+router.patch("/:id/status", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const body = updateOrderStatusSchema.parse(req.body);
+
+    logger.info("Updating order status", { id, status: body.status });
+
+    const order = await OrderService.updateStatus(id, body.status);
+
+    if (!order) {
+      throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
+    }
+
+    res.json({
+      message: "Statut de la commande mis à jour",
+      order,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /orders/:id - Delete order
+router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const order = await OrderService.getById(id);
+
+    if (!order) {
+      throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
+    }
+
+    logger.info("Deleting order", { id });
+
+    await OrderService.delete(id);
+
+    res.json({
+      message: "Commande supprimée",
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;

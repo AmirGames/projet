@@ -1,0 +1,408 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// USERS & AUTHENTICATION
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String
+  emailVerified Boolean   @default(false)
+  emailToken    String?   @unique
+  emailTokenExpiresAt DateTime?
+
+  // Relations
+  memberships   Membership[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+// ============================================================================
+// ORGANIZATIONS & MULTI-TENANCY
+// ============================================================================
+
+enum OrganizationTier {
+  FREE
+  PREMIUM
+  PRO
+}
+
+model Organization {
+  id       String            @id @default(cuid())
+  name     String
+  slug     String            @unique
+  tier     OrganizationTier  @default(FREE)
+
+  // Relations
+  stores    Store[]
+  memberships Membership[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}
+
+enum MembershipRole {
+  ADMIN
+  STORE_MANAGER
+  STORE_STAFF
+}
+
+model Membership {
+  id      String         @id @default(cuid())
+  userId  String
+  orgId   String
+  role    MembershipRole
+  storeIds String[]      @default([]) // JSON array of store IDs this user can access
+
+  // Relations
+  user    User           @relation(fields: [userId], onDelete: Cascade)
+  org     Organization   @relation(fields: [orgId], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+  @@index([userId])
+}
+
+// ============================================================================
+// STORES (ESTABLISHMENTS)
+// ============================================================================
+
+model Store {
+  id            String    @id @default(cuid())
+  orgId         String
+  name          String
+  slug          String
+  address       String?
+  city          String?
+  postalCode    String?
+  phone         String?
+  email         String?
+  description   String?
+  
+  // Store settings (JSON)
+  settings      Json      @default("{}")
+  
+  // Pickup slots (JSON array)
+  // Example: [{ start: "11:00", end: "13:00", maxOrders: 10 }, ...]
+  pickupSlots   Json      @default("[]")
+
+  // Relations
+  org           Organization @relation(fields: [orgId], onDelete: Cascade)
+  products      Product[]
+  categories    Category[]
+  orders        Order[]
+  theme         Theme?
+  deliveryZones DeliveryZone[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, slug])
+  @@index([orgId])
+}
+
+// ============================================================================
+// PRODUCTS & CATALOG
+// ============================================================================
+
+enum ProductStatus {
+  ACTIVE
+  DRAFT
+  ARCHIVED
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  storeId     String
+  sku         String
+  name        String
+  description String?
+  price       Decimal       @db.Decimal(10, 2)
+  categoryId  String?
+  stock       Int           @default(0)
+  status      ProductStatus @default(DRAFT)
+
+  // Relations
+  store       Store         @relation(fields: [storeId], onDelete: Cascade)
+  category    Category?     @relation(fields: [categoryId], onDelete: SetNull)
+  images      ProductImage[]
+  options     ProductOption[]
+  variants    ProductVariant[]
+  orderItems  OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, sku])
+  @@index([storeId])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  url       String
+  order     Int     @default(0)
+
+  // Relations
+  product   Product @relation(fields: [productId], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([order])
+}
+
+model Category {
+  id          String  @id @default(cuid())
+  storeId     String
+  name        String
+  displayOrder Int    @default(0)
+
+  // Relations
+  store       Store   @relation(fields: [storeId], onDelete: Cascade)
+  products    Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, name])
+  @@index([storeId])
+}
+
+model ProductOption {
+  id          String  @id @default(cuid())
+  productId   String
+  name        String  // "Taille", "Extra topping"
+  // choices is JSON array: ["S", "M", "L"]
+  choices     Json    @default("[]")
+  isRequired  Boolean @default(false)
+  pricingType String  @default("none") // "none" | "fixed" | "percentage"
+
+  // Relations
+  product     Product @relation(fields: [productId], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+model ProductVariant {
+  id          String  @id @default(cuid())
+  productId   String
+  sku         String
+  // combination is JSON: { optionId: choiceId }
+  combination Json
+  price       Decimal? @db.Decimal(10, 2)
+  stock       Int     @default(0)
+
+  // Relations
+  product     Product @relation(fields: [productId], onDelete: Cascade)
+  orderItems  OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, sku])
+  @@index([productId])
+}
+
+// ============================================================================
+// ORDERS
+// ============================================================================
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  READY
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum DeliveryType {
+  PICKUP
+  DELIVERY
+}
+
+model Order {
+  id              String       @id @default(cuid())
+  storeId         String
+  customerId      String?      // nullable for guest checkout
+  
+  // Items
+  items           OrderItem[]
+  
+  // Customer contact
+  customerName    String
+  customerEmail   String
+  customerPhone   String
+  
+  // Delivery info
+  deliveryType    DeliveryType
+  pickupTime      DateTime?    // if PICKUP
+  deliveryAddress String?      // if DELIVERY
+  deliveryCity    String?
+  deliveryPostal  String?
+  
+  // Status
+  status          OrderStatus  @default(PENDING)
+  
+  // Payment
+  totalAmount     Decimal      @db.Decimal(10, 2)
+  taxAmount       Decimal      @db.Decimal(10, 2)
+  feesAmount      Decimal      @db.Decimal(10, 2)
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentId       String?      // Stripe payment intent ID
+  
+  notes           String?
+  
+  // Relations
+  store           Store        @relation(fields: [storeId], onDelete: Cascade)
+  payments        Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id              String  @id @default(cuid())
+  orderId         String
+  productId       String
+  variantId       String?
+  quantity        Int
+  // selectedOptions is JSON: { optionId: choiceId }
+  selectedOptions Json    @default("{}")
+  price           Decimal @db.Decimal(10, 2)
+  total           Decimal @db.Decimal(10, 2)
+
+  // Relations
+  order           Order   @relation(fields: [orderId], onDelete: Cascade)
+  product         Product @relation(fields: [productId], onDelete: Restrict)
+  variant         ProductVariant? @relation(fields: [variantId], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// ============================================================================
+// PAYMENTS
+// ============================================================================
+
+model Payment {
+  id              String       @id @default(cuid())
+  orderId         String
+  amount          Decimal      @db.Decimal(10, 2)
+  currency        String       @default("EUR")
+  status          PaymentStatus @default(PENDING)
+  
+  // Stripe info
+  stripePaymentIntentId String?
+  stripeClientSecret String?
+  stripeStatus    String?      // requires_payment_method, succeeded, etc.
+  
+  paidAt          DateTime?
+  
+  // Relations
+  order           Order        @relation(fields: [orderId], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orderId])
+  @@index([stripePaymentIntentId])
+}
+
+// ============================================================================
+// THEME & CUSTOMIZATION
+// ============================================================================
+
+model Theme {
+  id      String  @id @default(cuid())
+  storeId String  @unique
+  
+  // Design tokens (JSON)
+  // {
+  //   "colors": { "primary": "#FF0000", "secondary": "..." },
+  //   "fonts": { "body": "Inter", "heading": "Poppins" }
+  // }
+  config  Json    @default("{}")
+  
+  // CSS (future: MVP uses only colors + fonts)
+  customCss String?
+  
+  status  String  @default("draft") // draft | published
+  
+  // Relations
+  store   Store   @relation(fields: [storeId], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================================
+// DELIVERY
+// ============================================================================
+
+model DeliveryZone {
+  id        String  @id @default(cuid())
+  storeId   String
+  name      String
+  
+  // Polygon GeoJSON (simple for MVP: just center + radius or boundaries)
+  // Example: { type: "Point", coordinates: [lat, lon] }
+  polygon   Json?
+  
+  baseFee   Decimal @db.Decimal(10, 2)
+  minOrder  Decimal @db.Decimal(10, 2)
+
+  // Relations
+  store     Store   @relation(fields: [storeId], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId])
+}
+
+// ============================================================================
+// FUTURE MODELS (NOT IN MVP)
+// ============================================================================
+// - Customer (loyalty program, future)
+// - Promotion (discount codes, future)
+// - Notification (audit + notification logs, future)
+// - TerminalDevice (Android terminal, future)
+// - ThemeVersion (version history, future)

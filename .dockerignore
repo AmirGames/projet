@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+.github
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Build
+dist
+build
+.next
+
+# Testing
+coverage
+.jest
+
+# Environment
+.env.local
+.env.development
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+README.md
+LICENSE
