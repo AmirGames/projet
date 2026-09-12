@@ -3,26 +3,6 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
-      {/* Navigation */}
-      <nav className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">SaaS Local Commerce</h1>
-          <div className="flex gap-4">
-            <Link
-              href="/login"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg"
-            >
-              Connexion
-            </Link>
-            <Link
-              href="/signup"
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg"
-            >
-              Inscription
-            </Link>
-          </div>
-        </div>
-      </nav>
 
       {/* Hero Section */}
       <div className="max-w-6xl mx-auto px-6 py-20 text-center">
