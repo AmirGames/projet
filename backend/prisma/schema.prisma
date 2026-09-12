@@ -72,8 +72,8 @@ model Membership {
   storeIds String[]      @default([]) // JSON array of store IDs this user can access
 
   // Relations
-  user    User           @relation(fields: [userId], onDelete: Cascade)
-  org     Organization   @relation(fields: [orgId], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org     Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -107,11 +107,11 @@ model Store {
   pickupSlots   Json      @default("[]")
 
   // Relations
-  org           Organization @relation(fields: [orgId], onDelete: Cascade)
+  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   products      Product[]
   categories    Category[]
   orders        Order[]
-  theme         Theme?
+  theme         Theme? @relation("ThemeToStore")
   deliveryZones DeliveryZone[]
 
   createdAt DateTime @default(now())
@@ -143,8 +143,8 @@ model Product {
   status      ProductStatus @default(DRAFT)
 
   // Relations
-  store       Store         @relation(fields: [storeId], onDelete: Cascade)
-  category    Category?     @relation(fields: [categoryId], onDelete: SetNull)
+  store       Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category    Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   images      ProductImage[]
   options     ProductOption[]
   variants    ProductVariant[]
@@ -166,7 +166,7 @@ model ProductImage {
   order     Int     @default(0)
 
   // Relations
-  product   Product @relation(fields: [productId], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -181,7 +181,7 @@ model Category {
   displayOrder Int    @default(0)
 
   // Relations
-  store       Store   @relation(fields: [storeId], onDelete: Cascade)
+  store       Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
   products    Product[]
 
   createdAt DateTime @default(now())
@@ -201,7 +201,7 @@ model ProductOption {
   pricingType String  @default("none") // "none" | "fixed" | "percentage"
 
   // Relations
-  product     Product @relation(fields: [productId], onDelete: Cascade)
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -218,7 +218,7 @@ model ProductVariant {
   stock       Int     @default(0)
 
   // Relations
-  product     Product @relation(fields: [productId], onDelete: Cascade)
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItems  OrderItem[]
 
   createdAt DateTime @default(now())
@@ -282,9 +282,9 @@ model Order {
   paymentId       String?      // Stripe payment intent ID
   
   notes           String?
-  
+
   // Relations
-  store           Store        @relation(fields: [storeId], onDelete: Cascade)
+  store           Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
   payments        Payment[]
 
   createdAt DateTime @default(now())
@@ -308,9 +308,9 @@ model OrderItem {
   total           Decimal @db.Decimal(10, 2)
 
   // Relations
-  order           Order   @relation(fields: [orderId], onDelete: Cascade)
-  product         Product @relation(fields: [productId], onDelete: Restrict)
-  variant         ProductVariant? @relation(fields: [variantId], onDelete: SetNull)
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variant         ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
@@ -335,9 +335,9 @@ model Payment {
   stripeStatus    String?      // requires_payment_method, succeeded, etc.
   
   paidAt          DateTime?
-  
+
   // Relations
-  order           Order        @relation(fields: [orderId], onDelete: Cascade)
+  order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -365,9 +365,9 @@ model Theme {
   customCss String?
   
   status  String  @default("draft") // draft | published
-  
+
   // Relations
-  store   Store   @relation(fields: [storeId], onDelete: Cascade)
+  store   Store   @relation("ThemeToStore", fields: [storeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -390,7 +390,7 @@ model DeliveryZone {
   minOrder  Decimal @db.Decimal(10, 2)
 
   // Relations
-  store     Store   @relation(fields: [storeId], onDelete: Cascade)
+  store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
