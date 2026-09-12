@@ -130,9 +130,23 @@ export class OrderService {
     const product = await db.product.findUnique({ where: { id: productId } });
     if (!product) throw new ApiError(404, "Product not found", "PRODUCT_NOT_FOUND");
 
+    let availableStock = product.stock;
+    if (variantId) {
+      const variant = await db.productVariant.findUnique({ where: { id: variantId } });
+      if (variant) availableStock = variant.stock;
+    }
+
+    if (availableStock < quantity) {
+      throw new ApiError(
+        400,
+        `Pas assez de stock. Disponible: ${availableStock}`,
+        "INSUFFICIENT_STOCK"
+      );
+    }
+
     const total = price * quantity;
 
-    return await db.orderItem.create({
+    const orderItem = await db.orderItem.create({
       data: {
         orderId,
         productId,
@@ -144,6 +158,20 @@ export class OrderService {
       },
       include: { product: true },
     });
+
+    if (variantId) {
+      await db.productVariant.update({
+        where: { id: variantId },
+        data: { stock: { decrement: quantity } },
+      });
+    } else {
+      await db.product.update({
+        where: { id: productId },
+        data: { stock: { decrement: quantity } },
+      });
+    }
+
+    return orderItem;
   }
 
   static async countByStoreId(storeId: string) {

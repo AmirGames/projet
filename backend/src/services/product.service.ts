@@ -198,4 +198,59 @@ export class ProductService {
       },
     });
   }
+
+  static async isStockAvailable(productId: string, quantity: number) {
+    const product = await db.product.findUnique({ where: { id: productId } });
+    if (!product) throw new ApiError(404, "Product not found", "PRODUCT_NOT_FOUND");
+    return product.stock >= quantity;
+  }
+
+  static async getLowStockProducts(storeId: string) {
+    return await db.product.findMany({
+      where: {
+        storeId,
+        status: "ACTIVE",
+        stock: {
+          lte: db.product.fields.lowStockThreshold,
+        },
+      },
+      include: {
+        category: true,
+      },
+      orderBy: { stock: "asc" },
+    });
+  }
+
+  static async getLowStockProductsByOrgId(orgId: string) {
+    return await db.product.findMany({
+      where: {
+        store: { orgId },
+        status: "ACTIVE",
+      },
+      include: {
+        category: true,
+        store: true,
+      },
+    }).then(products =>
+      products.filter(p => p.stock <= p.lowStockThreshold).sort((a, b) => a.stock - b.stock)
+    );
+  }
+
+  static async setLowStockThreshold(id: string, threshold: number) {
+    try {
+      return await db.product.update({
+        where: { id },
+        data: { lowStockThreshold: threshold },
+        include: {
+          category: true,
+          images: true,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        throw new ApiError(404, "Product not found", "PRODUCT_NOT_FOUND");
+      }
+      throw error;
+    }
+  }
 }

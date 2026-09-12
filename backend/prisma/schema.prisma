@@ -224,6 +224,7 @@ model Product {
   price       Decimal       @db.Decimal(10, 2)
   categoryId  String?
   stock       Int           @default(0)
+  lowStockThreshold Int     @default(10)
   status      ProductStatus @default(DRAFT)
 
   // Relations

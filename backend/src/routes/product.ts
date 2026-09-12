@@ -207,6 +207,65 @@ router.patch("/:id/stock", authMiddleware, async (req: Request, res: Response, n
   }
 });
 
+// PATCH /products/:id/low-stock-threshold - Update low stock threshold (protected)
+router.patch("/:id/low-stock-threshold", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const { threshold } = req.body;
+
+    if (typeof threshold !== "number" || threshold < 0) {
+      throw new ApiError(400, "Seuil invalide", "INVALID_INPUT");
+    }
+
+    logger.info("Updating low stock threshold", { id, threshold });
+
+    const product = await ProductService.setLowStockThreshold(id, threshold);
+
+    res.json({
+      message: "Seuil de stock bas mis à jour",
+      product,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /products/low-stock/by-store/:storeId - Get low stock products (protected)
+router.get("/low-stock/by-store/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const storeId = req.params.storeId as string;
+
+    logger.info("Fetching low stock products", { storeId });
+
+    const products = await ProductService.getLowStockProducts(storeId);
+
+    res.json({
+      products,
+      count: products.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /products/low-stock/by-org/:orgId - Get low stock products by organization (protected)
+router.get("/low-stock/by-org/:orgId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+
+    logger.info("Fetching low stock products by org", { orgId });
+
+    const products = await ProductService.getLowStockProductsByOrgId(orgId);
+
+    res.json({
+      products,
+      count: products.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // DELETE /products/:id - Delete product (protected)
 router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
