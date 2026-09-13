@@ -1,22 +1,23 @@
 import { db } from "./db";
 
 export const notificationService = {
-  async create(userId: string, title: string, message: string, type: string, relatedId?: string) {
+  async create(storeId: string, recipientEmail: string, title: string, message: string, type: string, relatedOrderId?: string) {
     return db.notification.create({
       data: {
-        userId,
+        storeId,
+        recipientEmail,
         title,
         message,
         type,
-        relatedId,
-        read: false,
+        relatedOrderId,
+        isRead: false,
       },
     });
   },
 
-  async getUserNotifications(userId: string, limit = 20) {
+  async getUserNotifications(recipientEmail: string, limit = 20) {
     return db.notification.findMany({
-      where: { userId },
+      where: { recipientEmail },
       orderBy: { createdAt: "desc" },
       take: limit,
     });
@@ -25,18 +26,18 @@ export const notificationService = {
   async markAsRead(notificationId: string) {
     return db.notification.update({
       where: { id: notificationId },
-      data: { read: true },
+      data: { isRead: true },
     });
   },
 
-  async markAllAsRead(userId: string) {
+  async markAllAsRead(recipientEmail: string) {
     return db.notification.updateMany({
-      where: { userId, read: false },
-      data: { read: true },
+      where: { recipientEmail, isRead: false },
+      data: { isRead: true },
     });
   },
 
-  async sendOrderNotification(orderId: string, customerId: string, status: string) {
+  async sendOrderNotification(orderId: string, storeId: string, recipientEmail: string, status: string) {
     const messages: Record<string, string> = {
       PENDING: "Votre commande a été créée",
       CONFIRMED: "Votre commande a été confirmée",
@@ -48,7 +49,8 @@ export const notificationService = {
     };
 
     return this.create(
-      customerId,
+      storeId,
+      recipientEmail,
       "Mise à jour de commande",
       messages[status] || "Mise à jour de votre commande",
       "ORDER_UPDATE",
@@ -56,7 +58,7 @@ export const notificationService = {
     );
   },
 
-  async sendDriverNotification(driverId: string, title: string, message: string) {
-    return this.create(driverId, title, message, "DELIVERY", undefined);
+  async sendDriverNotification(storeId: string, recipientEmail: string, title: string, message: string) {
+    return this.create(storeId, recipientEmail, title, message, "DELIVERY", undefined);
   },
 };
