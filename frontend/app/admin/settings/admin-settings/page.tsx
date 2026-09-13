@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Settings, AlertTriangle } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface SystemConfig {
   id: string;
   platformFeePercent: number;
@@ -31,9 +33,9 @@ export default function AdminSettingsPage() {
 
   const fetchConfig = async () => {
     try {
-      const res = await fetch("/api/admin/config", {
+      const res = await fetch(`${API_URL}/api/admin/config`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
@@ -72,11 +74,11 @@ export default function AdminSettingsPage() {
   const saveConfig = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/config", {
+      const res = await fetch(`${API_URL}/api/admin/config`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
         body: JSON.stringify(formData),
       });

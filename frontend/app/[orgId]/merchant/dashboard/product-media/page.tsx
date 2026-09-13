@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Image as ImageIcon, Trash2, GripVertical } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface Media {
   id: string;
   url: string;
@@ -39,9 +41,9 @@ export default function ProductMediaPage({
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/product-media/${storeId}/${productId}`, {
+      const res = await fetch(`${API_URL}/api/product-media/${storeId}/${productId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
@@ -63,11 +65,11 @@ export default function ProductMediaPage({
     }
 
     try {
-      const res = await fetch(`/api/product-media/${storeId}/${productId}`, {
+      const res = await fetch(`${API_URL}/api/product-media/${storeId}/${productId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
         body: JSON.stringify({
           url: mediaUrl,
@@ -89,10 +91,10 @@ export default function ProductMediaPage({
 
   const deleteMedia = async (mediaId: string) => {
     try {
-      const res = await fetch(`/api/product-media/${storeId}/${mediaId}`, {
+      const res = await fetch(`${API_URL}/api/product-media/${storeId}/${mediaId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
@@ -112,7 +114,7 @@ export default function ProductMediaPage({
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
           body: JSON.stringify({ mediaOrder }),
         }

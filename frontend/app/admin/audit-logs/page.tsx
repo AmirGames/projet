@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { History } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface AuditLog {
   id: string;
   action: string;
@@ -41,9 +43,9 @@ export default function AuditLogsPage() {
         offset: offset.toString(),
       });
 
-      const res = await fetch(`/api/admin/audit-logs?${query}`, {
+      const res = await fetch(`${API_URL}/api/admin/audit-logs?${query}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 

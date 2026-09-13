@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface ProductSeo {
   id: string;
   productId: string;
@@ -42,9 +44,9 @@ export default function ProductSeoPage({
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/product-seo/${storeId}/${productId}`, {
+      const res = await fetch(`${API_URL}/api/product-seo/${storeId}/${productId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
@@ -69,11 +71,11 @@ export default function ProductSeoPage({
   const updateSeo = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/product-seo/${storeId}/${productId}`, {
+      const res = await fetch(`${API_URL}/api/product-seo/${storeId}/${productId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
         body: JSON.stringify(formData),
       });

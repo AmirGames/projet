@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { DollarSign } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface Commission {
   id: string;
   period: string;
@@ -45,9 +47,9 @@ export default function CommissionsPage() {
         offset: offset.toString(),
       });
 
-      const res = await fetch(`/api/admin/commissions?${query}`, {
+      const res = await fetch(`${API_URL}/api/admin/commissions?${query}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 

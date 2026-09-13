@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Bell, Trash2, Check } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface Notification {
   id: string;
   type: string;
@@ -53,9 +55,9 @@ export default function NotificationsPage({
         ...(isRead !== undefined && { isRead: isRead.toString() }),
       });
 
-      const res = await fetch(`/api/notifications/${storeId}?${query}`, {
+      const res = await fetch(`${API_URL}/api/notifications/${storeId}?${query}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
@@ -73,9 +75,9 @@ export default function NotificationsPage({
 
   const fetchUnreadCount = async () => {
     try {
-      const res = await fetch(`/api/notifications/${storeId}/unread/count`, {
+      const res = await fetch(`${API_URL}/api/notifications/${storeId}/unread/count`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
@@ -95,7 +97,7 @@ export default function NotificationsPage({
         {
           method: "PATCH",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
         }
       );
@@ -110,10 +112,10 @@ export default function NotificationsPage({
 
   const markAllAsRead = async () => {
     try {
-      const res = await fetch(`/api/notifications/${storeId}/read-all`, {
+      const res = await fetch(`${API_URL}/api/notifications/${storeId}/read-all`, {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
@@ -132,7 +134,7 @@ export default function NotificationsPage({
         {
           method: "DELETE",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
         }
       );

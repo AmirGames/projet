@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Store } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface Merchant {
   id: string;
   name: string;
@@ -49,9 +51,9 @@ export default function MerchantsPage() {
         ...(filterStatus && { status: filterStatus }),
       });
 
-      const res = await fetch(`/api/admin/merchants?${query}`, {
+      const res = await fetch(`${API_URL}/api/admin/merchants?${query}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 

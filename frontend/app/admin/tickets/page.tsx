@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface Ticket {
   id: string;
   subject: string;
@@ -47,9 +49,9 @@ export default function TicketsPage() {
         ...(filterPriority && { priority: filterPriority }),
       });
 
-      const res = await fetch(`/api/admin/tickets?${query}`, {
+      const res = await fetch(`${API_URL}/api/admin/tickets?${query}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
@@ -70,11 +72,11 @@ export default function TicketsPage() {
     updates: { status?: string; priority?: string }
   ) => {
     try {
-      const res = await fetch(`/api/admin/tickets/${ticketId}`, {
+      const res = await fetch(`${API_URL}/api/admin/tickets/${ticketId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
         body: JSON.stringify(updates),
       });

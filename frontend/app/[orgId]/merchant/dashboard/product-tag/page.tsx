@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Tag, Plus, Trash2, Edit2 } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface ProductTag {
   id: string;
   name: string;
@@ -53,9 +55,9 @@ export default function ProductTagPage({
         take: take.toString(),
       });
 
-      const res = await fetch(`/api/product-tags/${storeId}?${query}`, {
+      const res = await fetch(`${API_URL}/api/product-tags/${storeId}?${query}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
@@ -122,7 +124,7 @@ export default function ProductTagPage({
         method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
         body: JSON.stringify(formData),
       });
@@ -142,10 +144,10 @@ export default function ProductTagPage({
       return;
 
     try {
-      const res = await fetch(`/api/product-tags/${storeId}/${tagId}`, {
+      const res = await fetch(`${API_URL}/api/product-tags/${storeId}/${tagId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
