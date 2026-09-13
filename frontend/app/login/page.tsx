@@ -30,12 +30,19 @@ export default function LoginPage() {
       localStorage.setItem("refreshToken", result.refreshToken);
       localStorage.setItem("isSuperOwner", result.user?.isSuperOwner ? "true" : "false");
 
+      console.log("Tokens saved:", {
+        hasAccessToken: !!localStorage.getItem("accessToken"),
+        isSuperOwner: result.user?.isSuperOwner,
+        userId: result.user?.id,
+      });
+
       // Redirect based on role
-      if (result.user?.isSuperOwner) {
-        router.push("/super-admin");
-      } else {
-        router.push("/dashboard");
-      }
+      const redirectPath = result.user?.isSuperOwner ? "/super-admin" : "/dashboard";
+      console.log("Redirecting to:", redirectPath);
+
+      setTimeout(() => {
+        router.push(redirectPath);
+      }, 100);
     } catch (err) {
       setError("Erreur de connexion");
       console.error(err);

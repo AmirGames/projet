@@ -21,9 +21,17 @@ export default function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAdmin();
+    const token = localStorage.getItem('accessToken');
+    console.log("Super-admin page loaded, token exists:", !!token);
+
+    if (!token) {
+      console.log("No token, redirecting to login");
+      router.push('/login');
+      return;
+    }
+
     fetchStats();
-  }, []);
+  }, [router]);
 
   const checkAdmin = async () => {
     const token = localStorage.getItem('accessToken');
