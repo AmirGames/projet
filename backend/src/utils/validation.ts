@@ -70,3 +70,7 @@ export const generateSlug = (text: string): string => {
     .replace(/-+/g, "-")
     .slice(0, 100);
 };
+
+export const signupSchema = ValidationSchemas.signupSchema;
+export const loginSchema = ValidationSchemas.loginSchema;
+export const refreshTokenSchema = ValidationSchemas.refreshTokenSchema;
