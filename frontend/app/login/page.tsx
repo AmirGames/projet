@@ -29,8 +29,12 @@ export default function LoginPage() {
       localStorage.setItem("accessToken", result.accessToken);
       localStorage.setItem("refreshToken", result.refreshToken);
 
-      // Redirect to dashboard
-      router.push("/dashboard");
+      // Redirect based on role
+      if (result.user?.isSuperOwner) {
+        router.push("/super-admin");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err) {
       setError("Erreur de connexion");
       console.error(err);

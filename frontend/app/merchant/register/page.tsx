@@ -187,7 +187,11 @@ export default function MerchantRegisterPage() {
 
       // Redirect after 2 seconds
       setTimeout(() => {
-        router.push(`/merchant/${data.organizationId}/dashboard`);
+        if (data.user?.isSuperOwner) {
+          router.push('/super-admin');
+        } else {
+          router.push(`/merchant/${data.organizationId}/dashboard`);
+        }
       }, 2000);
     } catch (error) {
       setApiError('Une erreur est survenue. Veuillez réessayer.');

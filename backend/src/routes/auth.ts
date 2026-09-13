@@ -64,6 +64,8 @@ router.post("/signup", async (req: Request, res: Response, next: NextFunction) =
         id: user.id,
         email: user.email,
         name: user.name,
+        isSuperOwner: user.isSuperOwner,
+        isSystemAdmin: user.isSystemAdmin,
       },
       organization: {
         id: org.id,
@@ -340,6 +342,8 @@ router.post("/merchant-register", async (req: Request, res: Response, next: Next
         id: user.id,
         email: user.email,
         name: user.name,
+        isSuperOwner: user.isSuperOwner,
+        isSystemAdmin: user.isSystemAdmin,
       },
       organization: {
         id: organization.id,

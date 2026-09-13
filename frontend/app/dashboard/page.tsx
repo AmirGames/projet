@@ -48,6 +48,13 @@ export default function Dashboard() {
         }
 
         const meData = await meRes.json();
+
+        // Redirect super owners to admin dashboard
+        if (meData.user?.isSuperOwner) {
+          router.push("/super-admin");
+          return;
+        }
+
         if (!meData.organizations || meData.organizations.length === 0) {
           router.push("/login");
           return;

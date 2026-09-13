@@ -7,6 +7,7 @@ interface User {
   email: string;
   name?: string;
   isSystemAdmin?: boolean;
+  isSuperOwner?: boolean;
 }
 
 interface AuthContextType {
