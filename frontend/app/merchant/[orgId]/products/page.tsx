@@ -319,11 +319,6 @@ export default function ProductsPage() {
       return;
     }
 
-    if (!formData.sku.trim()) {
-      setMessage('❌ Le SKU du produit est requis');
-      return;
-    }
-
     if (!formData.price || parseFloat(formData.price) <= 0) {
       setMessage('❌ Le prix doit être supérieur à 0');
       return;
@@ -364,11 +359,16 @@ export default function ProductsPage() {
           setMessage('❌ Erreur lors de la mise à jour');
         }
       } else {
-        const storeResponse = await fetch(`${API_URL}/api/stores/${orgId}`, {
+        const storeResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const storeData = await storeResponse.json();
-        const storeId = storeData.store?.id || storeData.id;
+        const stores = await storeResponse.json();
+        const storeId = stores[0]?.id;
+
+        if (!storeId) {
+          setMessage('❌ Aucune boutique trouvée pour cette organisation');
+          return;
+        }
 
         const payload: any = {
           storeId,
@@ -400,7 +400,9 @@ export default function ProductsPage() {
           resetForm();
           setTimeout(() => setMessage(''), 3000);
         } else {
-          setMessage('❌ Erreur lors de la création');
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.message || 'Erreur lors de la création';
+          setMessage(`❌ ${errorMsg}`);
         }
       }
     } catch (error) {
@@ -662,14 +664,13 @@ export default function ProductsPage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">SKU *</label>
+                <label className="text-sm text-gray-400 block mb-2">SKU (optionnel)</label>
                 <input
                   type="text"
                   value={formData.sku}
                   onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                   className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                  placeholder="Ex: PIZZA-001"
-                  required
+                  placeholder="Ex: PIZZA-001 (auto-généré si vide)"
                 />
               </div>
 

@@ -143,23 +143,26 @@ export default function CategoriesPage() {
     try {
       const token = localStorage.getItem('accessToken');
 
-      const storeResponse = await fetch(`${API_URL}/api/stores/${orgId}`, {
+      const storeResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (storeResponse.ok) {
-        const storeData = await storeResponse.json();
-        const fetchedStoreId = storeData.store?.id || storeData.id;
-        setStoreId(fetchedStoreId);
+        const stores = await storeResponse.json();
+        const fetchedStoreId = stores[0]?.id;
 
-        const categoriesResponse = await fetch(`${API_URL}/api/categories?orgId=${orgId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        if (fetchedStoreId) {
+          setStoreId(fetchedStoreId);
 
-        if (categoriesResponse.ok) {
-          const data = await categoriesResponse.json();
-          const sorted = (data.categories || []).sort((a: Category, b: Category) => a.displayOrder - b.displayOrder);
-          setCategories(sorted);
+          const categoriesResponse = await fetch(`${API_URL}/api/categories?orgId=${orgId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (categoriesResponse.ok) {
+            const data = await categoriesResponse.json();
+            const sorted = (data.categories || []).sort((a: Category, b: Category) => a.displayOrder - b.displayOrder);
+            setCategories(sorted);
+          }
         }
       }
     } catch (error) {
@@ -236,7 +239,9 @@ export default function CategoriesPage() {
           resetForm();
           setTimeout(() => setMessage(''), 3000);
         } else {
-          setMessage('❌ Erreur lors de la mise à jour');
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.message || 'Erreur lors de la mise à jour';
+          setMessage(`❌ ${errorMsg}`);
         }
       } else {
         if (!storeId) {
@@ -264,7 +269,9 @@ export default function CategoriesPage() {
           resetForm();
           setTimeout(() => setMessage(''), 3000);
         } else {
-          setMessage('❌ Erreur lors de la création');
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.message || 'Erreur lors de la création';
+          setMessage(`❌ ${errorMsg}`);
         }
       }
     } catch (error) {
@@ -290,7 +297,9 @@ export default function CategoriesPage() {
         setMessage('✅ Catégorie supprimée');
         setTimeout(() => setMessage(''), 3000);
       } else {
-        setMessage('❌ Erreur lors de la suppression');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.message || 'Erreur lors de la suppression';
+        setMessage(`❌ ${errorMsg}`);
       }
     } catch (error) {
       console.error('Error deleting category:', error);
