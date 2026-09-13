@@ -36,6 +36,7 @@ import mapsRouter from "./routes/maps";
 import driversRouter from "./routes/drivers";
 import notificationsApiRouter from "./routes/notifications-api";
 import paymentMethodsApiRouter from "./routes/payment-methods-api";
+import supportRouter from "./routes/support";
 
 export function createApp(): Express {
   const app = express();
@@ -99,6 +100,7 @@ export function createApp(): Express {
   app.use("/api/drivers", driversRouter);
   app.use("/api/notifications", notificationsApiRouter);
   app.use("/api/payment-methods", paymentMethodsApiRouter);
+  app.use("/api/support", supportRouter);
 
   // ===== Error handling (must be last) =====
   setupErrorHandling(app);
