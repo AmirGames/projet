@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, Trash2, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
 import { StripePayment } from '@/components/stripe-payment';
-import PromoCode from './promo-code';
-import PaymentMethods from './payment-methods';
+import { PromoCode } from './promo-code';
+import { PaymentMethods } from './payment-methods';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -269,7 +269,8 @@ export default function CheckoutPage() {
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-bold text-white mb-4">Code Promo</h2>
               <PromoCode
-                onApply={(discountAmt, promoCode) => {
+                orderAmount={subtotal}
+                onApply={(promoCode, discountAmt) => {
                   setDiscountAmount(discountAmt);
                   setAppliedPromoCode(promoCode);
                 }}
