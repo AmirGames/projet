@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Clock, Archive, CheckCircle2, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -13,6 +13,13 @@ interface MerchantDetail {
   slug: string;
   tier: string;
   status: string;
+  suspensionReason?: string;
+  suspensionDate?: string;
+  closureReason?: string;
+  closureDate?: string;
+  closedUntil?: string;
+  archiveBackupId?: string;
+  isArchivedPermanently?: boolean;
   stores: any[];
   memberships: any[];
   tickets: any[];
@@ -34,6 +41,8 @@ export default function MerchantDetailPage() {
   const [newStatus, setNewStatus] = useState('');
   const [newTier, setNewTier] = useState('');
   const [saving, setSaving] = useState(false);
+  const [actionReason, setActionReason] = useState('');
+  const [showActionModal, setShowActionModal] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMerchant();
@@ -88,6 +97,118 @@ export default function MerchantDetailPage() {
     }
   };
 
+  const handleSuspend = async () => {
+    if (!merchant || !actionReason) return;
+    setSaving(true);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/suspend`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason: actionReason }),
+      });
+
+      if (!response.ok) throw new Error('Failed to suspend');
+
+      setActionReason('');
+      setShowActionModal(null);
+      fetchMerchant();
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUnsuspend = async () => {
+    if (!merchant) return;
+    setSaving(true);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/unsuspend`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to unsuspend');
+
+      setShowActionModal(null);
+      fetchMerchant();
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleClose = async () => {
+    if (!merchant || !actionReason) return;
+    setSaving(true);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/close`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason: actionReason }),
+      });
+
+      if (!response.ok) throw new Error('Failed to close');
+
+      setActionReason('');
+      setShowActionModal(null);
+      fetchMerchant();
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!merchant) return;
+    setSaving(true);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/restore-from-backup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to restore');
+
+      setShowActionModal(null);
+      fetchMerchant();
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getDaysUntilHardDelete = () => {
+    if (!merchant?.closedUntil) return null;
+    const now = new Date();
+    const deadline = new Date(merchant.closedUntil);
+    const days = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, days);
+  };
+
   if (loading) return <div className="text-center py-8">Chargement...</div>;
   if (!merchant) return <div className="text-center py-8 text-red-400">Commerçant non trouvé</div>;
 
@@ -104,17 +225,117 @@ export default function MerchantDetailPage() {
         </div>
       </div>
 
-      {/* Status Alert */}
+      {/* Status Alert & Timeline */}
       {merchant.status !== 'ACTIVE' && (
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex items-center gap-3">
-          <AlertCircle size={20} className="text-red-400" />
-          <span className="text-red-400">Statut: {merchant.status}</span>
+        <div className={`${
+          merchant.status === 'SUSPENDED' ? 'bg-yellow-500/20 border-yellow-500/50' : 'bg-red-500/20 border-red-500/50'
+        } border rounded-lg p-4 space-y-3`}>
+          <div className="flex items-center gap-3">
+            <AlertCircle size={20} className={merchant.status === 'SUSPENDED' ? 'text-yellow-400' : 'text-red-400'} />
+            <span className={merchant.status === 'SUSPENDED' ? 'text-yellow-400' : 'text-red-400'}>
+              Statut: {merchant.status}
+            </span>
+          </div>
+
+          {merchant.status === 'SUSPENDED' && merchant.suspensionReason && (
+            <div className="text-sm text-gray-300 ml-8">
+              <p className="font-medium mb-1">Raison:</p>
+              <p>{merchant.suspensionReason}</p>
+              {merchant.suspensionDate && (
+                <p className="text-gray-400 mt-1">Depuis le {new Date(merchant.suspensionDate).toLocaleDateString('fr-FR')}</p>
+              )}
+            </div>
+          )}
+
+          {merchant.status === 'CLOSED' && merchant.closureReason && (
+            <div className="text-sm text-gray-300 ml-8 space-y-2">
+              <p className="font-medium">Raison de fermeture:</p>
+              <p>{merchant.closureReason}</p>
+              {merchant.closureDate && (
+                <p className="text-gray-400">Fermé le {new Date(merchant.closureDate).toLocaleDateString('fr-FR')}</p>
+              )}
+
+              {/* Timeline */}
+              <div className="mt-4 space-y-2 pt-2 border-t border-gray-700">
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="text-gray-400" />
+                  <span className="text-sm">
+                    {getDaysUntilHardDelete()}j avant suppression permanente
+                  </span>
+                </div>
+
+                {merchant.closedUntil && (
+                  <p className="text-sm text-gray-400">
+                    Suppression prévue le {new Date(merchant.closedUntil).toLocaleDateString('fr-FR')}
+                  </p>
+                )}
+
+                {!merchant.isArchivedPermanently && merchant.archiveBackupId && (
+                  <p className="text-sm text-green-400 flex items-center gap-2">
+                    <Archive size={16} />
+                    Backup disponible pour restauration
+                  </p>
+                )}
+
+                {merchant.isArchivedPermanently && (
+                  <p className="text-sm text-red-400 flex items-center gap-2">
+                    <XCircle size={16} />
+                    Données définitivement supprimées
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
+      {/* Quick Actions */}
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+        <h2 className="text-lg font-bold">Actions rapides</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {merchant.status === 'ACTIVE' && (
+            <>
+              <button
+                onClick={() => setShowActionModal('suspend')}
+                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors font-medium text-sm"
+              >
+                Suspendre
+              </button>
+              <button
+                onClick={() => setShowActionModal('close')}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors font-medium text-sm"
+              >
+                Fermer le compte
+              </button>
+            </>
+          )}
+
+          {merchant.status === 'SUSPENDED' && (
+            <button
+              onClick={handleUnsuspend}
+              disabled={saving}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors font-medium text-sm col-span-2"
+            >
+              {saving ? 'Réactivation...' : 'Réactiver'}
+            </button>
+          )}
+
+          {merchant.status === 'CLOSED' && !merchant.isArchivedPermanently && (
+            <button
+              onClick={() => setShowActionModal('restore')}
+              disabled={saving}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors font-medium text-sm col-span-2"
+            >
+              {saving ? 'Restauration...' : 'Restaurer depuis backup'}
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Controls */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
-        <h2 className="text-lg font-bold">Gestion du commerçant</h2>
+        <h2 className="text-lg font-bold">Gestion générale</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -154,6 +375,66 @@ export default function MerchantDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Action Modal */}
+      {showActionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full space-y-4">
+            <h3 className="text-xl font-bold">
+              {showActionModal === 'suspend' && 'Suspendre le compte'}
+              {showActionModal === 'close' && 'Fermer le compte'}
+              {showActionModal === 'restore' && 'Restaurer le compte'}
+            </h3>
+
+            {showActionModal === 'restore' ? (
+              <p className="text-gray-300">
+                Êtes-vous sûr de vouloir restaurer ce compte ? Les données supprimées seront restaurées et le statut passera à ACTIVE.
+              </p>
+            ) : (
+              <>
+                <p className="text-gray-300 text-sm">
+                  {showActionModal === 'suspend' && 'Le commerçant ne pourra plus accéder à son compte'}
+                  {showActionModal === 'close' && 'Les données seront sauvegardées et progressivement supprimées'}
+                </p>
+                <textarea
+                  placeholder="Raison..."
+                  value={actionReason}
+                  onChange={(e) => setActionReason(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 resize-none"
+                  rows={3}
+                />
+              </>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowActionModal(null);
+                  setActionReason('');
+                }}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => {
+                  if (showActionModal === 'suspend') handleSuspend();
+                  else if (showActionModal === 'close') handleClose();
+                  else if (showActionModal === 'restore') handleRestore();
+                }}
+                disabled={saving || (showActionModal !== 'restore' && !actionReason)}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors font-medium ${
+                  showActionModal === 'suspend' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                  showActionModal === 'close' ? 'bg-red-600 hover:bg-red-700' :
+                  'bg-green-600 hover:bg-green-700'
+                } disabled:opacity-50`}
+              >
+                {saving ? 'Traitement...' : 'Confirmer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

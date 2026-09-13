@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Edit2, Lock, Unlock } from 'lucide-react';
+import { Search, Edit2, Lock, Unlock, Clock } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -12,6 +12,8 @@ interface Merchant {
   slug: string;
   tier: string;
   status: string;
+  closedUntil?: string;
+  isArchivedPermanently?: boolean;
   stores: Array<{ id: string; name: string }>;
   createdAt: string;
 }
@@ -77,10 +79,18 @@ export default function MerchantsPage() {
 
   if (loading) return <div className="text-center py-8">Chargement...</div>;
 
+  const getDaysUntilDelete = (closedUntil?: string) => {
+    if (!closedUntil) return null;
+    const now = new Date();
+    const deadline = new Date(closedUntil);
+    const days = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, days);
+  };
+
   const statusColors: Record<string, string> = {
     ACTIVE: 'bg-green-500/20 text-green-400',
-    SUSPENDED: 'bg-red-500/20 text-red-400',
-    CLOSED: 'bg-gray-500/20 text-gray-400',
+    SUSPENDED: 'bg-yellow-500/20 text-yellow-400',
+    CLOSED: 'bg-red-500/20 text-red-400',
   };
 
   const tierColors: Record<string, string> = {
@@ -159,9 +169,17 @@ export default function MerchantsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[merchant.status] || statusColors['ACTIVE']}`}>
-                      {merchant.status}
-                    </span>
+                    <div className="space-y-1">
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusColors[merchant.status] || statusColors['ACTIVE']}`}>
+                        {merchant.status}
+                      </span>
+                      {merchant.status === 'CLOSED' && merchant.closedUntil && (
+                        <div className="text-xs text-gray-400 flex items-center gap-1">
+                          <Clock size={12} />
+                          <span>{getDaysUntilDelete(merchant.closedUntil)}j restant</span>
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4">{merchant.stores.length}</td>
                   <td className="px-6 py-4 text-gray-400">
