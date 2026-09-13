@@ -8,7 +8,7 @@ export const notificationService = {
         recipientEmail,
         title,
         message,
-        type,
+        type: type as any,
         relatedOrderId,
         isRead: false,
       },

@@ -121,7 +121,7 @@ export class OrderManagementService {
 
       const updated = await db.order.update({
         where: { id: orderId },
-        data: { status },
+        data: { status: status as any },
         include: {
           items: {
             include: {

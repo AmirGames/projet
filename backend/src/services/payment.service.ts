@@ -24,7 +24,7 @@ export const paymentService = {
     const saved = await db.paymentMethod.create({
       data: {
         userId: customerId,
-        type: paymentMethod.type,
+        type: paymentMethod.type as any,
         stripePaymentMethodId: paymentMethodId,
         last4: paymentMethod.card?.last4,
         brand: paymentMethod.card?.brand,

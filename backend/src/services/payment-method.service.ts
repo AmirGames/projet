@@ -66,7 +66,7 @@ export class PaymentMethodService {
       const method = await db.paymentMethod.create({
         data: {
           storeId,
-          type: data.type,
+          type: data.type as any,
           name: data.name,
           config: data.config || {},
           isDefault: data.isDefault || false,

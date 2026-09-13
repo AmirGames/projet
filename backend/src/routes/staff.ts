@@ -56,7 +56,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
 });
 
 // GET /staff?storeId=:storeId - Get staff by store (protected)
-router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.query.storeId as string;
     const orgId = req.query.orgId as string;

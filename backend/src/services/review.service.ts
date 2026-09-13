@@ -165,7 +165,7 @@ export class ReviewService {
       };
 
       reviews.forEach((review) => {
-        ratingBreakdown[review.rating as keyof typeof ratingBreakdown]++;
+        ratingBreakdown[String(review.rating) as keyof typeof ratingBreakdown]++;
       });
 
       return {

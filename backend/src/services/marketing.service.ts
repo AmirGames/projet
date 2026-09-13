@@ -65,7 +65,7 @@ export class MarketingService {
           storeId,
           name: data.name,
           description: data.description,
-          type: data.type,
+          type: data.type as any,
           message: data.message,
           targetAudience: data.targetAudience || "all",
           status: "DRAFT",
