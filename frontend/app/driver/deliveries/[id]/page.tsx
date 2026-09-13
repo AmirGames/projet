@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Phone, Navigation2, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
