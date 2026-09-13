@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Plus, Settings, Package, Trash2, Edit2, Clock, Tag, ShoppingCart, X, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
@@ -48,10 +48,8 @@ interface HourlyStats {
 }
 
 export default function StoreManagementPage() {
-  const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const storeId = params?.id as string;
   const slug = searchParams?.get('slug') as string;
 
   const [store, setStore] = useState<Store | null>(null);

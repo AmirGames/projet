@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Star, Clock, MapPin, Heart, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Heart, Plus, Minus, ShoppingCart } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -380,7 +380,7 @@ export default function RestaurantDetail() {
                     onClick={() => router.push('/client/checkout')}
                     disabled={
                       cart.length === 0 ||
-                      (store.minDeliveryAmount && cartTotal < store.minDeliveryAmount)
+                      !!(store.minDeliveryAmount && cartTotal < store.minDeliveryAmount)
                     }
                     className="w-full mt-6 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2"
                   >
