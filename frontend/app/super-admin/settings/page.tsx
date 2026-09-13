@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { AVAILABLE_THEMES, applyTheme, getTheme } from '@/lib/theme-config';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -16,6 +17,7 @@ export default function SettingsPage() {
     maxOrderAmount: 9999.99,
     maintenanceMode: false,
     maintenanceMessage: '',
+    selectedTheme: 'dark',
   });
 
   useEffect(() => {
@@ -38,7 +40,10 @@ export default function SettingsPage() {
         maxOrderAmount: data.maxOrderAmount,
         maintenanceMode: data.maintenanceMode,
         maintenanceMessage: data.maintenanceMessage || '',
+        selectedTheme: data.selectedTheme || 'dark',
       });
+      // Apply saved theme
+      applyTheme(getTheme(data.selectedTheme || 'dark'));
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
@@ -46,7 +51,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
@@ -54,6 +59,11 @@ export default function SettingsPage() {
       ...prev,
       [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) : value,
     }));
+
+    // Apply theme immediately when changed
+    if (name === 'selectedTheme') {
+      applyTheme(getTheme(value));
+    }
   };
 
   const handleSave = async () => {
@@ -153,7 +163,53 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Section 2: Maintenance */}
+        {/* Section 2: Thème */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+          <h2 className="text-lg font-bold">Thème de l'interface</h2>
+
+          <div>
+            <label className="block text-sm font-medium mb-3">Choisir un thème</label>
+            <select
+              name="selectedTheme"
+              value={formData.selectedTheme}
+              onChange={handleChange}
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+            >
+              {Object.entries(AVAILABLE_THEMES).map(([id, theme]) => (
+                <option key={id} value={id}>
+                  {theme.name} - {theme.description}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm text-gray-400 mt-2">
+              Le thème change immédiatement. Les modifications sont appliquées à votre session.
+            </p>
+          </div>
+
+          {/* Theme Preview */}
+          <div className="mt-6">
+            <p className="text-sm font-medium mb-3">Aperçu du thème actuel</p>
+            <div className="grid grid-cols-3 gap-3">
+              {['primary', 'secondary', 'accent', 'success', 'error', 'warning'].map((colorType) => {
+                const theme = getTheme(formData.selectedTheme);
+                const colorKey = `${colorType}Color` as keyof Theme;
+                const color = theme[colorKey] as string;
+                return (
+                  <div key={colorType} className="flex flex-col items-center">
+                    <div
+                      className="w-12 h-12 rounded-lg border border-gray-600 mb-2"
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className="text-xs text-gray-400 capitalize">{colorType}</span>
+                    <span className="text-xs text-gray-500">{color}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Maintenance */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-bold">Mode maintenance</h2>
 
