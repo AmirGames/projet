@@ -8,12 +8,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Ticket {
   id: string;
-  subject: string;
+  title: string;
   description: string;
-  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  category: string;
   createdAt: string;
   updatedAt: string;
+  resolvedAt: string | null;
 }
 
 export default function SupportPage() {
@@ -224,7 +226,7 @@ export default function SupportPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     {getStatusIcon(ticket.status)}
-                    <h3 className="text-white font-semibold">{ticket.subject}</h3>
+                    <h3 className="text-white font-semibold">{ticket.title}</h3>
                   </div>
                   <p className="text-gray-400 text-sm mb-2">{ticket.description}</p>
                   <div className="flex items-center gap-3 text-xs text-gray-500">
