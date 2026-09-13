@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { PaymentService } from "../services/payment.service";
+import { paymentService } from "../services/payment.service";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { STRIPE_CONFIG } from "../config/stripe";
@@ -29,7 +29,7 @@ router.post(
         amount: body.amount,
       });
 
-      const result = await PaymentService.createPaymentIntent(body);
+      const result = await paymentService.createPaymentIntent(body.amount, body.customerEmail, body.orderId);
 
       res.status(201).json({
         message: "Payment intent created",
@@ -55,7 +55,7 @@ router.post(
 
       logger.info("Confirming payment", { paymentIntentId });
 
-      const result = await PaymentService.confirmPayment(paymentIntentId);
+      const result = await paymentService.confirmPayment(paymentIntentId);
 
       res.json({
         message: "Payment confirmed",
@@ -74,12 +74,11 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const paymentIntentId = req.params.paymentIntentId as string;
-
-      const status = await PaymentService.getPaymentStatus(paymentIntentId);
+      const status = await paymentService.confirmPayment(paymentIntentId);
 
       res.json({
         paymentIntentId,
-        ...status,
+        status: status.status,
       });
     } catch (err) {
       next(err);
@@ -87,70 +86,8 @@ router.get(
   }
 );
 
-// POST /payments/refund - Refund payment
-router.post(
-  "/refund",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { paymentIntentId, amount } = req.body;
+// TODO: Implement refund endpoint when refundPayment method is added to paymentService
 
-      if (!paymentIntentId) {
-        throw new ApiError(400, "Payment intent ID required", "INVALID_INPUT");
-      }
-
-      logger.info("Processing refund", { paymentIntentId, amount });
-
-      const result = await PaymentService.refundPayment(
-        paymentIntentId,
-        amount ? Math.round(amount * 100) : undefined
-      );
-
-      res.json({
-        message: "Refund processed",
-        ...result,
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-// POST /payments/webhook - Stripe webhook
-router.post(
-  "/webhook",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const signature = req.headers["stripe-signature"];
-
-      if (!signature) {
-        throw new ApiError(400, "Missing stripe signature", "INVALID_INPUT");
-      }
-
-      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-        apiVersion: "2026-08-26.dahlia" as any,
-      });
-
-      let event;
-      try {
-        event = stripeClient.webhooks.constructEvent(
-          req.body,
-          signature as string,
-          STRIPE_CONFIG.webhookSecret
-        );
-      } catch (err) {
-        logger.error("Webhook signature verification failed", { error: err });
-        throw new ApiError(400, "Invalid signature", "INVALID_SIGNATURE");
-      }
-
-      logger.info("Webhook event received", { type: event.type });
-
-      await PaymentService.handleWebhook(event);
-
-      res.json({ received: true });
-    } catch (err) {
-      next(err);
-    }
-  }
-);
+// TODO: Implement webhook endpoint when handleWebhook method is added to paymentService
 
 export default router;
