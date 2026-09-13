@@ -13,6 +13,21 @@ export const ValidationSchemas = {
     password: z.string().min(6, "Minimum 6 caractères"),
   }),
 
+  signupSchema: z.object({
+    email: z.string().email("Email invalide"),
+    password: z.string().min(6, "Minimum 6 caractères"),
+    name: z.string().min(2, "Nom requis"),
+  }),
+
+  loginSchema: z.object({
+    email: z.string().email("Email invalide"),
+    password: z.string().min(6, "Minimum 6 caractères"),
+  }),
+
+  refreshTokenSchema: z.object({
+    refreshToken: z.string().min(1, "Token requis"),
+  }),
+
   productInput: z.object({
     name: z.string().min(1, "Nom requis"),
     description: z.string().optional(),
