@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { prisma } from "../config/database";
+import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
@@ -26,7 +26,7 @@ router.post("/tickets", authMiddleware, async (req: Request, res: Response, next
       priority: body.priority
     });
 
-    const ticket = await prisma.merchantTicket.create({
+    const ticket = await db.merchantTicket.create({
       data: {
         orgId: body.orgId,
         title: body.subject,
@@ -57,7 +57,7 @@ router.get("/tickets", authMiddleware, async (req: Request, res: Response, next:
 
     logger.info("Fetching support tickets", { orgId });
 
-    const tickets = await prisma.merchantTicket.findMany({
+    const tickets = await db.merchantTicket.findMany({
       where: {
         orgId,
       },
@@ -80,7 +80,7 @@ router.get("/tickets/:id", async (req: Request, res: Response, next: NextFunctio
   try {
     const id = req.params.id as string;
 
-    const ticket = await prisma.merchantTicket.findUnique({
+    const ticket = await db.merchantTicket.findUnique({
       where: { id },
     });
 
@@ -107,7 +107,7 @@ router.patch("/tickets/:id/status", authMiddleware, async (req: Request, res: Re
 
     logger.info("Updating ticket status", { id, status });
 
-    const ticket = await prisma.merchantTicket.update({
+    const ticket = await db.merchantTicket.update({
       where: { id },
       data: {
         status,
@@ -129,7 +129,7 @@ router.delete("/tickets/:id", authMiddleware, async (req: Request, res: Response
   try {
     const id = req.params.id as string;
 
-    const ticket = await prisma.merchantTicket.findUnique({
+    const ticket = await db.merchantTicket.findUnique({
       where: { id },
     });
 
@@ -139,7 +139,7 @@ router.delete("/tickets/:id", authMiddleware, async (req: Request, res: Response
 
     logger.info("Deleting support ticket", { id });
 
-    await prisma.merchantTicket.delete({
+    await db.merchantTicket.delete({
       where: { id },
     });
 
