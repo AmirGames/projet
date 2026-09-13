@@ -182,6 +182,7 @@ export default function ProductsPage() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -196,6 +197,7 @@ export default function ProductsPage() {
     lowStockThreshold: '10',
     sku: '',
     status: 'ACTIVE' as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
+    categoryId: '',
   });
 
   const sensors = useSensors(
@@ -209,8 +211,25 @@ export default function ProductsPage() {
     if (orgId) {
       fetchProducts();
       fetchLowStockProducts();
+      fetchCategories();
     }
   }, [orgId]);
+
+  const fetchCategories = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/categories?orgId=${orgId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.categories || []);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -317,6 +336,7 @@ export default function ProductsPage() {
             stock: parseInt(formData.stock),
             sku: formData.sku,
             status: formData.status,
+            categoryId: formData.categoryId || undefined,
           }),
         });
 
@@ -354,6 +374,7 @@ export default function ProductsPage() {
             stock: parseInt(formData.stock),
             sku: formData.sku,
             status: formData.status,
+            categoryId: formData.categoryId || undefined,
           }),
         });
 
@@ -447,6 +468,7 @@ export default function ProductsPage() {
       lowStockThreshold: product.lowStockThreshold.toString(),
       sku: product.sku,
       status: product.status,
+      categoryId: product.category?.id || '',
     });
     setShowForm(true);
   };
@@ -462,6 +484,7 @@ export default function ProductsPage() {
       lowStockThreshold: '10',
       sku: '',
       status: 'ACTIVE',
+      categoryId: '',
     });
   };
 
@@ -633,6 +656,20 @@ export default function ProductsPage() {
                   placeholder="Ex: PIZZA-001"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">Catégorie</label>
+                <select
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                >
+                  <option value="">Sélectionner une catégorie</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

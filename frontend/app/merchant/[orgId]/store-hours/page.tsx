@@ -78,6 +78,8 @@ export default function StoreHoursPage() {
       if (response.ok) {
         const data = await response.json();
         setStoreId(data.store?.id || data.id);
+      } else {
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error fetching store:', error);
