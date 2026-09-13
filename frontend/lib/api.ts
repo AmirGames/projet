@@ -11,21 +11,37 @@ const getAuthHeaders = () => {
 export const api = {
   // Auth endpoints
   signup: async (email: string, password: string, name: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name, confirmPassword: password }),
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name, confirmPassword: password }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { error: true, message: data.message || "Erreur d'inscription" };
+      }
+      return data;
+    } catch (error) {
+      return { error: true, message: "Erreur de connexion au serveur" };
+    }
   },
 
   login: async (email: string, password: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { error: true, message: data.message || "Erreur de connexion" };
+      }
+      return data;
+    } catch (error) {
+      return { error: true, message: "Erreur de connexion au serveur" };
+    }
   },
 
   refresh: async (refreshToken: string) => {

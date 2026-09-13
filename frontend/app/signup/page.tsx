@@ -33,9 +33,13 @@ export default function SignupPage() {
         return;
       }
 
-      // Save tokens
+      // Save tokens and user role
       localStorage.setItem("accessToken", result.accessToken);
       localStorage.setItem("refreshToken", result.refreshToken);
+      localStorage.setItem("isSuperOwner", result.user?.isSuperOwner ? "true" : "false");
+
+      // Show success message briefly
+      setError("");
 
       // Redirect based on role
       if (result.user?.isSuperOwner) {
