@@ -82,7 +82,10 @@ export default function UserManagementPage() {
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error('Erreur lors de la création');
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Erreur lors de la création');
+      }
       setFormData({ email: '', name: '', role: 'ADMIN' });
       setShowForm(false);
       fetchAdmins();
@@ -101,7 +104,10 @@ export default function UserManagementPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors de la suppression');
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Erreur lors de la suppression');
+      }
       setAdmins(admins.filter(a => a.id !== adminId));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');

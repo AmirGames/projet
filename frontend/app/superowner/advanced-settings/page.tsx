@@ -48,7 +48,7 @@ export default function AdvancedSettingsPage() {
 
       if (!res.ok) throw new Error('Erreur lors du chargement des paramètres');
       const data = await res.json();
-      setSettings(data);
+      setSettings(data.settings);
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
@@ -72,7 +72,13 @@ export default function AdvancedSettingsPage() {
         body: JSON.stringify(settings),
       });
 
-      if (!res.ok) throw new Error('Erreur lors de la sauvegarde');
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Erreur lors de la sauvegarde');
+      }
+
+      const data = await res.json();
+      setSettings(data.settings);
       setSuccess('Paramètres sauvegardés avec succès');
       setError('');
       setTimeout(() => setSuccess(''), 3000);

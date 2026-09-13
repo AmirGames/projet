@@ -134,7 +134,7 @@ export default function AnalyticsDashboard() {
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
               <p className="text-gray-400 text-sm mb-1">Revenu Total</p>
               <p className="text-3xl font-bold text-white">
-                €{((summary?.totalRevenue || 0) / 100).toFixed(2)}
+                {(summary?.totalRevenue || 0).toFixed(2)} €
               </p>
               <p className="text-xs text-gray-500 mt-2">Période sélectionnée</p>
             </div>
@@ -148,7 +148,7 @@ export default function AnalyticsDashboard() {
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
               <p className="text-gray-400 text-sm mb-1">Panier Moyen</p>
               <p className="text-3xl font-bold text-white">
-                €{((summary?.averageOrderValue || 0) / 100).toFixed(2)}
+                {(summary?.averageOrderValue || 0).toFixed(2)} €
               </p>
               <p className="text-xs text-gray-500 mt-2">AOV</p>
             </div>
@@ -181,11 +181,11 @@ export default function AnalyticsDashboard() {
                   {data.map((item, idx) => (
                     <tr key={idx} className="hover:bg-gray-700/50 transition">
                       <td className="px-6 py-4 text-sm">{item.period}</td>
-                      <td className="px-6 py-4 text-sm">€{(item.totalRevenue / 100).toFixed(2)}</td>
-                      <td className="px-6 py-4 text-sm">€{(item.platformFees / 100).toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm">{item.totalRevenue.toFixed(2)} €</td>
+                      <td className="px-6 py-4 text-sm">{item.platformFees.toFixed(2)} €</td>
                       <td className="px-6 py-4 text-sm">{item.activeUsers}</td>
                       <td className="px-6 py-4 text-sm">{item.transactions}</td>
-                      <td className="px-6 py-4 text-sm">€{(item.averageOrderValue / 100).toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm">{item.averageOrderValue.toFixed(2)} €</td>
                       <td className={`px-6 py-4 text-sm font-semibold ${getGrowthColor(item.growthRate)}`}>
                         {item.growthRate >= 0 ? '+' : ''}{item.growthRate.toFixed(2)}%
                       </td>
