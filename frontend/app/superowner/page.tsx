@@ -81,7 +81,7 @@ export default function SuperOwnerDashboard() {
             ) : null}
           </div>
           <p className="text-gray-400 text-sm mb-1">Revenu Total</p>
-          <p className="text-3xl font-bold">${(stats?.totalRevenue || 0 / 100).toFixed(0)}</p>
+          <p className="text-3xl font-bold">${((stats?.totalRevenue || 0) / 100).toFixed(0)}</p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
