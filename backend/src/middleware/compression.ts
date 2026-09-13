@@ -19,12 +19,12 @@ export const cacheHeaders = (req: Request, res: Response, next: NextFunction) =>
   next();
 };
 
-export const compressionHeaders = (req: Request, res: Response, next: NextFunction) => {
+export const compressionHeaders = (_req: Request, res: Response, next: NextFunction) => {
   res.set("Content-Encoding", "gzip");
   next();
 };
 
-export const securityHeaders = (req: Request, res: Response, next: NextFunction) => {
+export const securityHeaders = (_req: Request, res: Response, next: NextFunction) => {
   res.set("X-Content-Type-Options", "nosniff");
   res.set("X-Frame-Options", "DENY");
   res.set("X-XSS-Protection", "1; mode=block");

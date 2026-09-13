@@ -1,13 +1,11 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { StaffService, StaffRole } from "../services/staff.service";
+import { StaffService } from "../services/staff.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 
 const router = Router();
-
-const staffRoles: StaffRole[] = ["MANAGER", "CASHIER", "KITCHEN", "DELIVERY", "SUPPORT"];
 
 const createStaffSchema = z.object({
   storeId: z.string().cuid(),

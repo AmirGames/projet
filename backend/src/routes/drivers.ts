@@ -1,9 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
-import { logger } from "../config/logger";
 import { emitDeliveryUpdate } from "../config/socket";
 
 const router = Router();
@@ -52,7 +50,7 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
     const driverId = req.query.driverId as string;
     const status = (req.query.status as string) || "PENDING";
 
-    const deliveries = await db.delivery.findMany({
+    const deliveries = await db.orderDelivery.findMany({
       where: {
         ...(driverId ? { driverId } : {}),
         status: status as any
@@ -70,7 +68,7 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
       orderBy: { createdAt: "desc" }
     });
 
-    const formatted = deliveries.map(d => ({
+    const formatted = deliveries.map((d: any) => ({
       id: d.id,
       orderId: d.orderId,
       status: d.status,
@@ -79,7 +77,6 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
       customerName: d.order?.customerName || "",
       customerPhone: d.order?.customerPhone || "",
       totalAmount: d.order?.totalAmount || 0,
-      distance: d.distance,
       estimatedTime: d.estimatedTime,
       items: d.order?.items || []
     }));
@@ -98,7 +95,7 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
   try {
     const deliveryId = req.params.id as string;
 
-    const delivery = await db.delivery.findUnique({
+    const delivery = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
       include: {
         order: {
@@ -124,10 +121,9 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
         customerName: delivery.order?.customerName,
         customerPhone: delivery.order?.customerPhone,
         totalAmount: delivery.order?.totalAmount,
-        distance: delivery.distance,
         estimatedTime: delivery.estimatedTime,
-        latitude: delivery.latitude,
-        longitude: delivery.longitude,
+        latitude: delivery.deliveryLat,
+        longitude: delivery.deliveryLng,
         items: delivery.order?.items || []
       }
     });
@@ -150,12 +146,11 @@ router.patch(
         throw new ApiError(404, "Driver not found", "DRIVER_NOT_FOUND");
       }
 
-      const delivery = await db.delivery.update({
+      const delivery = await db.orderDelivery.update({
         where: { id: deliveryId },
         data: {
           driverId: driver.id,
-          status: "ACCEPTED" as any,
-          acceptedAt: new Date()
+          status: "ACCEPTED"
         },
         include: { order: true }
       });
@@ -189,11 +184,11 @@ router.patch(
         throw new ApiError(400, "Status required", "INVALID_INPUT");
       }
 
-      const delivery = await db.delivery.update({
+      const delivery = await db.orderDelivery.update({
         where: { id: deliveryId },
         data: {
           status: status as any,
-          ...(status === "DELIVERED" && { deliveredAt: new Date() })
+          ...(status === "DELIVERED" && { deliveryTime: new Date() })
         }
       });
 
@@ -226,12 +221,11 @@ router.patch(
         throw new ApiError(400, "Latitude and longitude required", "INVALID_INPUT");
       }
 
-      const delivery = await db.delivery.update({
+      const delivery = await db.orderDelivery.update({
         where: { id: deliveryId },
         data: {
-          latitude,
-          longitude,
-          lastLocationUpdate: new Date()
+          deliveryLat: latitude,
+          deliveryLng: longitude
         }
       });
 

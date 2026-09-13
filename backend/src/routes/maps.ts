@@ -1,7 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
-import { logger } from "../config/logger";
 
 const router = Router();
 
@@ -50,12 +49,12 @@ router.get("/nearby-stores", async (req: Request, res: Response, next: NextFunct
     // Get all active stores with location
     const stores = await db.store.findMany({
       where: {
-        status: "OPEN",
+        isOpen: true,
         latitude: { not: null },
         longitude: { not: null }
       },
       include: {
-        organization: {
+        org: {
           select: { id: true, name: true, slug: true }
         },
         products: {
@@ -178,6 +177,9 @@ router.get("/delivery-zone", async (req: Request, res: Response, next: NextFunct
     const isInZone = distance <= 10 && store.acceptsDelivery;
     const estimatedTime = estimateDeliveryTime(distance);
 
+    const deliveryCostNum = Number(store.deliveryCost);
+    const minDeliveryAmountNum = Number(store.minDeliveryAmount);
+
     res.json({
       success: true,
       store: {
@@ -190,10 +192,10 @@ router.get("/delivery-zone", async (req: Request, res: Response, next: NextFunct
         distanceFormatted: `${distance} km`,
         estimatedTime,
         estimatedTimeFormatted: `${estimatedTime} minutes`,
-        deliveryCost: store.deliveryCost,
-        deliveryCostFormatted: `€${(store.deliveryCost / 100).toFixed(2)}`,
-        minDeliveryAmount: store.minDeliveryAmount,
-        minDeliveryAmountFormatted: `€${(store.minDeliveryAmount / 100).toFixed(2)}`
+        deliveryCost: deliveryCostNum,
+        deliveryCostFormatted: `€${(deliveryCostNum / 100).toFixed(2)}`,
+        minDeliveryAmount: minDeliveryAmountNum,
+        minDeliveryAmountFormatted: `€${(minDeliveryAmountNum / 100).toFixed(2)}`
       },
       message: isInZone
         ? `Delivery available in ${estimatedTime} minutes`

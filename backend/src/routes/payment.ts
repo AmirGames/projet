@@ -3,8 +3,6 @@ import { z } from "zod";
 import { paymentService } from "../services/payment.service";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
-import { STRIPE_CONFIG } from "../config/stripe";
-import Stripe from "stripe";
 
 const router = Router();
 
@@ -33,8 +31,8 @@ router.post(
 
       res.status(201).json({
         message: "Payment intent created",
-        clientSecret: result.clientSecret,
-        paymentIntentId: result.paymentIntentId,
+        clientSecret: (result as any).client_secret,
+        paymentIntentId: (result as any).id,
       });
     } catch (err) {
       next(err);
@@ -59,8 +57,8 @@ router.post(
 
       res.json({
         message: "Payment confirmed",
-        success: result.success,
-        status: result.status,
+        success: (result as any).status === "succeeded",
+        status: (result as any).status,
       });
     } catch (err) {
       next(err);

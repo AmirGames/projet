@@ -39,7 +39,10 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
 
     logger.info("Creating delivery zone", { name: body.name, storeId: body.storeId });
 
-    const zone = await DeliveryZoneService.create(body);
+    const zone = await DeliveryZoneService.create({
+      ...body,
+      polygon: body.polygon ? (body.polygon as any) : undefined,
+    });
 
     res.status(201).json({
       message: "Delivery zone created",
@@ -100,7 +103,10 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
 
     logger.info("Updating delivery zone", { id });
 
-    const zone = await DeliveryZoneService.update(id, body);
+    const zone = await DeliveryZoneService.update(id, {
+      ...body,
+      polygon: body.polygon ? (body.polygon as any) : undefined,
+    });
 
     res.json({
       message: "Delivery zone updated",

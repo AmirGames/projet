@@ -1,7 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { StoreHoursService, DayHours, PickupSlot } from "../services/store-hours.service";
-import { ApiError } from "../middleware/errorHandler";
+import { StoreHoursService } from "../services/store-hours.service";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 

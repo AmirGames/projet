@@ -15,7 +15,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
     res.json({
       success: true,
       data: notifications,
-      unreadCount: notifications.filter((n) => !n.read).length,
+      unreadCount: notifications.filter((n) => !n.isRead).length,
     });
   } catch (err) {
     next(err);

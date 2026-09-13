@@ -19,12 +19,13 @@ const promotionInput = z.object({
 // GET /promotions/validate - Validate coupon code
 router.post("/validate", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { code, orderAmount } = req.body;
-    
+    const { code, orderAmount, storeId } = req.body;
+
     if (!code) throw new ApiError(400, "Code requis", "INVALID_INPUT");
+    if (!storeId) throw new ApiError(400, "storeId requis", "INVALID_INPUT");
 
     const promotion = await db.promotion.findUnique({
-      where: { code: code.toUpperCase() },
+      where: { storeId_code: { storeId, code: code.toUpperCase() } },
     });
 
     if (!promotion) {
@@ -39,10 +40,11 @@ router.post("/validate", authMiddleware, async (req: Request, res: Response, nex
       throw new ApiError(400, "Code expiré", "PROMOTION_EXPIRED");
     }
 
-    if (promotion.minOrderAmount && orderAmount < promotion.minOrderAmount) {
+    const minOrderAmountNum = promotion.minOrderAmount ? Number(promotion.minOrderAmount) : null;
+    if (minOrderAmountNum && orderAmount < minOrderAmountNum) {
       throw new ApiError(
         400,
-        `Commande minimum: €${(promotion.minOrderAmount / 100).toFixed(2)}`,
+        `Commande minimum: €${(minOrderAmountNum / 100).toFixed(2)}`,
         "MINIMUM_ORDER_NOT_MET"
       );
     }
@@ -51,10 +53,11 @@ router.post("/validate", authMiddleware, async (req: Request, res: Response, nex
       throw new ApiError(400, "Code limite atteinte", "PROMOTION_LIMIT_REACHED");
     }
 
+    const discountValueNum = Number(promotion.discountValue);
     const discount =
       promotion.discountType === "PERCENTAGE"
-        ? Math.round((orderAmount * promotion.discountValue) / 100)
-        : Math.round(promotion.discountValue * 100);
+        ? Math.round((orderAmount * discountValueNum) / 100)
+        : Math.round(discountValueNum * 100);
 
     res.json({
       success: true,
@@ -74,17 +77,22 @@ router.post("/validate", authMiddleware, async (req: Request, res: Response, nex
 // POST /promotions - Create promotion (admin only)
 router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const input = promotionInput.parse(req.body);
+    const { storeId, ...input } = req.body;
+    if (!storeId) throw new ApiError(400, "storeId requis", "INVALID_INPUT");
+
+    const validated = promotionInput.parse(input);
 
     const promotion = await db.promotion.create({
       data: {
-        code: input.code.toUpperCase(),
-        discountType: input.discountType,
-        discountValue: input.discountValue,
-        maxUses: input.maxUses,
-        minOrderAmount: input.minOrderAmount,
-        expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
-        description: input.description,
+        storeId,
+        code: validated.code.toUpperCase(),
+        type: validated.discountType === "PERCENTAGE" ? "PERCENTAGE" : "FIXED_AMOUNT",
+        discountType: validated.discountType,
+        discountValue: validated.discountValue,
+        maxUses: validated.maxUses,
+        minOrderAmount: validated.minOrderAmount,
+        expiresAt: validated.expiresAt ? new Date(validated.expiresAt) : null,
+        description: validated.description,
         isActive: true,
       },
     });
@@ -96,7 +104,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
 });
 
 // GET /promotions - List promotions
-router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/", authMiddleware, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const promotions = await db.promotion.findMany({
       where: { isActive: true },
