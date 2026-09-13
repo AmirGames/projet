@@ -19,19 +19,64 @@ import {
   X,
   Home,
   Star,
+  AlertCircle,
+  Clock,
 } from 'lucide-react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+interface OrgStatus {
+  id: string;
+  status: string;
+  suspensionReason?: string;
+  suspensionDate?: string;
+  closureReason?: string;
+  closureDate?: string;
+  closedUntil?: string;
+}
 
 export default function MerchantStoreLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [orgStatus, setOrgStatus] = useState<OrgStatus | null>(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
   const router = useRouter();
   const params = useParams();
   const orgId = params?.orgId as string;
+
+  useEffect(() => {
+    fetchOrgStatus();
+  }, [orgId]);
+
+  const fetchOrgStatus = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/organizations/${orgId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      setOrgStatus(data);
+    } catch (error) {
+      console.error('Error fetching org status:', error);
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('currentOrgId');
     router.push('/login');
+  };
+
+  const getDaysUntilDelete = () => {
+    if (!orgStatus?.closedUntil) return null;
+    const now = new Date();
+    const deadline = new Date(orgStatus.closedUntil);
+    const days = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, days);
   };
 
   const navItems = [
@@ -105,6 +150,49 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
           </button>
           <div className="text-sm text-gray-400">Gestion du Commerce</div>
         </header>
+
+        {/* Status Banner */}
+        {!loadingStatus && orgStatus && orgStatus.status !== 'ACTIVE' && (
+          <div className={`${
+            orgStatus.status === 'SUSPENDED'
+              ? 'bg-yellow-500/10 border-yellow-500/50'
+              : 'bg-red-500/10 border-red-500/50'
+          } border-b px-6 py-4`}>
+            <div className="flex items-start gap-3">
+              <AlertCircle
+                size={20}
+                className={orgStatus.status === 'SUSPENDED' ? 'text-yellow-400' : 'text-red-400 mt-1'}
+              />
+              <div className="flex-1">
+                <h3 className={`font-bold ${orgStatus.status === 'SUSPENDED' ? 'text-yellow-400' : 'text-red-400'}`}>
+                  {orgStatus.status === 'SUSPENDED'
+                    ? 'Compte temporairement suspendu'
+                    : 'Compte fermé'}
+                </h3>
+                <p className="text-sm text-gray-300 mt-1">
+                  {orgStatus.status === 'SUSPENDED'
+                    ? `Raison: ${orgStatus.suspensionReason || 'Non spécifiée'}`
+                    : `Raison: ${orgStatus.closureReason || 'Non spécifiée'}`}
+                </p>
+
+                {orgStatus.status === 'CLOSED' && orgStatus.closedUntil && (
+                  <div className="text-sm text-gray-300 mt-2 flex items-center gap-2">
+                    <Clock size={16} />
+                    <span>
+                      Données supprimées dans {getDaysUntilDelete()} jours. Contactez le support pour restaurer votre compte.
+                    </span>
+                  </div>
+                )}
+
+                {orgStatus.status === 'SUSPENDED' && (
+                  <p className="text-sm text-gray-300 mt-2">
+                    Veuillez contacter le support pour réactiver votre compte.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Page Content */}
         <main className="flex-1 p-6 overflow-auto">
