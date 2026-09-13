@@ -410,36 +410,11 @@ router.get("/stats", authMiddleware, isSystemAdmin, async (_req: Request, res: R
         active: activeMerchants,
         suspended: suspendedMerchants,
       },
-      stores: {
-        total: totalStores,
-        active: activeStores,
-      },
-      orders: {
-        total: totalOrders,
-        pending: pendingOrders,
-        completed: completedOrders,
-      },
-      revenue: {
-        total: Number(totalRevenue._sum.totalAmount) || 0,
-        completed: Number(completedRevenue._sum.totalAmount) || 0,
-      },
-      users: {
-        total: totalUsers,
-      },
-      customers: {
-        total: totalCustomers,
-      },
-      payments: {
-        pending: pendingPayments,
-        successful: successfulPayments,
-      },
-      products: {
-        total: totalProducts,
-        draft: draftProducts,
-      },
+      stores: totalStores,
+      orders: totalOrders,
+      revenue: Number(totalRevenue._sum.totalAmount) || 0,
       tickets: {
         open: openTickets,
-        critical: criticalTickets,
       },
       config: {
         platformFeePercent: config?.platformFeePercent || 5,
