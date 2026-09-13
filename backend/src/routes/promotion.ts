@@ -75,7 +75,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
 });
 
 // GET /promotions?storeId=:storeId - Get promotions by store (protected)
-router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const storeId = req.query.storeId as string;
     const orgId = req.query.orgId as string;

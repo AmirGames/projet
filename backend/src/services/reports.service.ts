@@ -1,5 +1,4 @@
 import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
 
 export interface ReportFilters {
   storeId?: string;
@@ -219,7 +218,7 @@ export class ReportsService {
     }
   }
 
-  static exportToCSV(data: any[], filename: string): string {
+  static exportToCSV(data: any[], _filename: string): string {
     if (!data || data.length === 0) {
       return "";
     }
