@@ -24,6 +24,7 @@ export default function MerchantsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('ALL');
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     fetchMerchants();
@@ -75,12 +76,13 @@ export default function MerchantsPage() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        throw new Error(data?.message || 'Failed to update');
+        throw new Error(data?.error || data?.message || 'Échec de la mise à jour');
       }
 
+      setActionError('');
       fetchMerchants();
     } catch (error) {
-      console.error('Erreur:', error);
+      setActionError(error instanceof Error ? error.message : 'Échec de la mise à jour');
     }
   };
 
@@ -118,6 +120,12 @@ export default function MerchantsPage() {
         <h1 className="text-3xl font-bold">Commerçants</h1>
         <p className="text-gray-400 mt-1">{merchants.length} commerçants</p>
       </div>
+
+      {actionError && (
+        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
+          {actionError}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">

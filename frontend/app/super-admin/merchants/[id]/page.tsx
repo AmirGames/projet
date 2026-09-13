@@ -42,6 +42,15 @@ export default function MerchantDetailPage() {
   const [saving, setSaving] = useState(false);
   const [actionReason, setActionReason] = useState('');
   const [showActionModal, setShowActionModal] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
+
+  // Le backend renvoie { error, code } : sans ce mapping le message réel est perdu.
+  const ensureOk = async (response: Response, fallback: string) => {
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.error || data?.message || fallback);
+    }
+  };
 
   useEffect(() => {
     fetchMerchant();
@@ -82,11 +91,11 @@ export default function MerchantDetailPage() {
         body: JSON.stringify({ tier: newTier }),
       });
 
-      if (!response.ok) throw new Error('Failed to update');
+      await ensureOk(response, 'Échec de la mise à jour');
 
       fetchMerchant();
     } catch (error) {
-      console.error('Erreur:', error);
+      setActionError(error instanceof Error ? error.message : 'Action impossible');
     } finally {
       setSaving(false);
     }
@@ -107,13 +116,13 @@ export default function MerchantDetailPage() {
         body: JSON.stringify({ reason: actionReason }),
       });
 
-      if (!response.ok) throw new Error('Failed to suspend');
+      await ensureOk(response, 'Échec de la suspension');
 
       setActionReason('');
       setShowActionModal(null);
       fetchMerchant();
     } catch (error) {
-      console.error('Erreur:', error);
+      setActionError(error instanceof Error ? error.message : 'Action impossible');
     } finally {
       setSaving(false);
     }
@@ -133,12 +142,12 @@ export default function MerchantDetailPage() {
         },
       });
 
-      if (!response.ok) throw new Error('Failed to unsuspend');
+      await ensureOk(response, 'Échec de la réactivation');
 
       setShowActionModal(null);
       fetchMerchant();
     } catch (error) {
-      console.error('Erreur:', error);
+      setActionError(error instanceof Error ? error.message : 'Action impossible');
     } finally {
       setSaving(false);
     }
@@ -159,13 +168,13 @@ export default function MerchantDetailPage() {
         body: JSON.stringify({ reason: actionReason }),
       });
 
-      if (!response.ok) throw new Error('Failed to close');
+      await ensureOk(response, 'Échec de la fermeture');
 
       setActionReason('');
       setShowActionModal(null);
       fetchMerchant();
     } catch (error) {
-      console.error('Erreur:', error);
+      setActionError(error instanceof Error ? error.message : 'Action impossible');
     } finally {
       setSaving(false);
     }
@@ -185,12 +194,12 @@ export default function MerchantDetailPage() {
         },
       });
 
-      if (!response.ok) throw new Error('Failed to restore');
+      await ensureOk(response, 'Échec de la restauration');
 
       setShowActionModal(null);
       fetchMerchant();
     } catch (error) {
-      console.error('Erreur:', error);
+      setActionError(error instanceof Error ? error.message : 'Action impossible');
     } finally {
       setSaving(false);
     }
@@ -219,6 +228,12 @@ export default function MerchantDetailPage() {
           <p className="text-gray-400 mt-1">{merchant.slug}</p>
         </div>
       </div>
+
+      {actionError && (
+        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
+          {actionError}
+        </div>
+      )}
 
       {/* Status Alert & Timeline */}
       {merchant.status !== 'ACTIVE' && (
@@ -393,6 +408,7 @@ export default function MerchantDetailPage() {
                 onClick={() => {
                   setShowActionModal(null);
                   setActionReason('');
+                  setActionError('');
                 }}
                 className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors font-medium"
               >

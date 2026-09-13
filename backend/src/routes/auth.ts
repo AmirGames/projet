@@ -192,6 +192,9 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         id: m.org.id,
         name: m.org.name,
         role: m.role,
+        status: m.org.status,
+        suspensionReason: m.org.suspensionReason,
+        closureReason: m.org.closureReason,
       })),
     });
   } catch (err) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -10,6 +10,7 @@ export default function CreateStorePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [orgBlocked, setOrgBlocked] = useState<{ status: string; reason?: string } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -20,6 +21,33 @@ export default function CreateStorePage() {
     phone: '',
     email: '',
   });
+
+  useEffect(() => {
+    const checkOrgStatus = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const org = data.organizations?.[0];
+        if (org && org.status !== 'ACTIVE') {
+          setOrgBlocked({
+            status: org.status,
+            reason: org.suspensionReason || org.closureReason,
+          });
+        }
+      } catch {
+        // Le backend reste la garantie : il refuse la création si le compte est bloqué.
+      }
+    };
+
+    checkOrgStatus();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -93,8 +121,8 @@ export default function CreateStorePage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.message || 'Erreur lors de la création');
+        const errorData = await response.json().catch(() => null);
+        setError(errorData?.error || errorData?.message || 'Erreur lors de la création');
         return;
       }
 
@@ -123,6 +151,24 @@ export default function CreateStorePage() {
           {error && (
             <div className="bg-red-600 text-white p-4 rounded-lg mb-6">
               {error}
+            </div>
+          )}
+
+          {orgBlocked && (
+            <div
+              className={`${
+                orgBlocked.status === 'SUSPENDED' ? 'bg-yellow-500/20 border-yellow-500/50' : 'bg-red-500/20 border-red-500/50'
+              } border p-4 rounded-lg mb-6`}
+            >
+              <p className={`font-bold ${orgBlocked.status === 'SUSPENDED' ? 'text-yellow-400' : 'text-red-400'}`}>
+                {orgBlocked.status === 'SUSPENDED'
+                  ? 'Compte temporairement suspendu'
+                  : 'Compte fermé'}
+              </p>
+              <p className="text-sm text-gray-300 mt-1">
+                Vous ne pouvez pas créer de boutique. Raison : {orgBlocked.reason || 'non spécifiée'}.
+                Contactez le support pour rétablir votre compte.
+              </p>
             </div>
           )}
 
@@ -261,8 +307,8 @@ export default function CreateStorePage() {
             <div className="flex gap-4 pt-6">
               <button
                 type="submit"
-                disabled={loading}
-                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-lg"
+                disabled={loading || orgBlocked !== null}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg"
               >
                 {loading ? 'Création en cours...' : 'Créer la boutique'}
               </button>
