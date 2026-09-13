@@ -31,7 +31,7 @@ export default function SuperAdminDashboard() {
     }
 
     fetchStats();
-  }, [router]);
+  }, []);
 
   const checkAdmin = async () => {
     const token = localStorage.getItem('accessToken');
