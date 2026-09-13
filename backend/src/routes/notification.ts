@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { NotificationService } from "../services/notification.service";
+import { notificationService } from "../services/notification.service";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 
@@ -18,32 +18,18 @@ const createNotificationSchema = z.object({
 router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
-    const skip = req.query.skip ? parseInt(req.query.skip as string) : 0;
     const take = req.query.take ? parseInt(req.query.take as string) : 50;
-    const isRead = req.query.isRead ? req.query.isRead === "true" : undefined;
 
-    logger.info("Fetching notifications", { storeId, skip, take });
+    logger.info("Fetching notifications", { storeId, take });
 
-    const result = await NotificationService.getNotifications(storeId, { skip, take, isRead });
-    res.json(result);
+    const notifications = await notificationService.getUserNotifications(storeId, take);
+    res.json({ data: notifications });
   } catch (err) {
     next(err);
   }
 });
 
-router.get("/:storeId/:notificationId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const storeId = req.params.storeId as string;
-    const notificationId = req.params.notificationId as string;
-
-    logger.info("Fetching notification", { storeId, notificationId });
-
-    const notification = await NotificationService.getNotification(storeId, notificationId);
-    res.json(notification);
-  } catch (err) {
-    next(err);
-  }
-});
+// TODO: Implement get single notification endpoint
 
 router.post("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -52,7 +38,13 @@ router.post("/:storeId", authMiddleware, async (req: Request, res: Response, nex
 
     logger.info("Creating notification", { storeId });
 
-    const notification = await NotificationService.createNotification(storeId, body);
+    const notification = await notificationService.create(
+      storeId,
+      body.title,
+      body.message,
+      body.type,
+      body.relatedOrderId
+    );
     res.status(201).json({
       message: "Notification created successfully",
       notification,
@@ -64,12 +56,11 @@ router.post("/:storeId", authMiddleware, async (req: Request, res: Response, nex
 
 router.patch("/:storeId/:notificationId/read", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const storeId = req.params.storeId as string;
     const notificationId = req.params.notificationId as string;
 
-    logger.info("Marking notification as read", { storeId, notificationId });
+    logger.info("Marking notification as read", { notificationId });
 
-    const notification = await NotificationService.markAsRead(storeId, notificationId);
+    const notification = await notificationService.markAsRead(notificationId);
     res.json({
       message: "Notification marked as read",
       notification,
@@ -85,7 +76,7 @@ router.patch("/:storeId/read-all", authMiddleware, async (req: Request, res: Res
 
     logger.info("Marking all notifications as read", { storeId });
 
-    await NotificationService.markAllAsRead(storeId);
+    await notificationService.markAllAsRead(storeId);
     res.json({
       message: "All notifications marked as read",
     });
@@ -94,33 +85,8 @@ router.patch("/:storeId/read-all", authMiddleware, async (req: Request, res: Res
   }
 });
 
-router.delete("/:storeId/:notificationId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const storeId = req.params.storeId as string;
-    const notificationId = req.params.notificationId as string;
+// TODO: Implement delete notification endpoint
 
-    logger.info("Deleting notification", { storeId, notificationId });
-
-    await NotificationService.deleteNotification(storeId, notificationId);
-    res.json({
-      message: "Notification deleted successfully",
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.get("/:storeId/unread/count", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const storeId = req.params.storeId as string;
-
-    logger.info("Getting unread count", { storeId });
-
-    const result = await NotificationService.getUnreadCount(storeId);
-    res.json(result);
-  } catch (err) {
-    next(err);
-  }
-});
+// TODO: Implement unread count endpoint
 
 export default router;
