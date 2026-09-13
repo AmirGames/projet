@@ -233,10 +233,9 @@ export default function CategoriesPage() {
         });
 
         if (response.ok) {
-          const updated = await response.json();
-          setCategories(prev => prev.map(c => c.id === editingCategory.id ? updated.category : c));
           setMessage('✅ Catégorie mise à jour avec succès');
           resetForm();
+          await fetchStoreAndCategories();
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
@@ -263,10 +262,9 @@ export default function CategoriesPage() {
         });
 
         if (response.ok) {
-          const created = await response.json();
-          setCategories(prev => [created.category, ...prev]);
           setMessage('✅ Catégorie créée avec succès');
           resetForm();
+          await fetchStoreAndCategories();
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
@@ -293,8 +291,8 @@ export default function CategoriesPage() {
       });
 
       if (response.ok) {
-        setCategories(prev => prev.filter(c => c.id !== categoryId));
         setMessage('✅ Catégorie supprimée');
+        await fetchStoreAndCategories();
         setTimeout(() => setMessage(''), 3000);
       } else {
         const errorData = await response.json().catch(() => ({}));

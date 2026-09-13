@@ -346,17 +346,17 @@ export default function ProductsPage() {
         });
 
         if (response.ok) {
-          const updated = await response.json();
-          setProducts(prev => prev.map(p => p.id === editingProduct.id ? updated.product : p));
           setMessage('✅ Produit mis à jour');
           resetForm();
-          setTimeout(() => setMessage(''), 3000);
-
+          await fetchProducts();
           if (parseInt(formData.stock) <= parseInt(formData.lowStockThreshold)) {
             await updateLowStockThreshold(editingProduct.id, parseInt(formData.lowStockThreshold));
           }
+          setTimeout(() => setMessage(''), 3000);
         } else {
-          setMessage('❌ Erreur lors de la mise à jour');
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.message || 'Erreur lors de la mise à jour';
+          setMessage(`❌ ${errorMsg}`);
         }
       } else {
         const storeResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
@@ -394,10 +394,9 @@ export default function ProductsPage() {
         });
 
         if (response.ok) {
-          const created = await response.json();
-          setProducts(prev => [created.product, ...prev]);
           setMessage('✅ Produit créé');
           resetForm();
+          await fetchProducts();
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
@@ -424,11 +423,13 @@ export default function ProductsPage() {
       });
 
       if (response.ok) {
-        setProducts(prev => prev.filter(p => p.id !== productId));
         setMessage('✅ Produit supprimé');
+        await fetchProducts();
         setTimeout(() => setMessage(''), 3000);
       } else {
-        setMessage('❌ Erreur lors de la suppression');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.message || 'Erreur lors de la suppression';
+        setMessage(`❌ ${errorMsg}`);
       }
     } catch (error) {
       console.error('Error deleting product:', error);
