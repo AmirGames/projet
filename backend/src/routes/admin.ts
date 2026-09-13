@@ -189,14 +189,23 @@ router.get("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Reque
   }
 });
 
-// PATCH /admin/merchants/:orgId - Update merchant status
+// PATCH /admin/merchants/:orgId - Update merchant tier
+// Le statut passe obligatoirement par /suspend, /unsuspend et /close : eux seuls
+// créent le backup, la raison et l'échéance de suppression.
 router.patch("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = req.params.orgId as string;
     const schema = z.object({
-      status: z.enum(["ACTIVE", "SUSPENDED", "CLOSED"]).optional(),
       tier: z.enum(["FREE", "PREMIUM", "PRO"]).optional(),
     });
+
+    if (req.body?.status !== undefined) {
+      throw new ApiError(
+        400,
+        "Le statut se change via /suspend, /unsuspend, /close ou /restore-from-backup",
+        "USE_STATUS_ENDPOINTS"
+      );
+    }
 
     const body = schema.parse(req.body);
     const adminId = (req as any).userId;

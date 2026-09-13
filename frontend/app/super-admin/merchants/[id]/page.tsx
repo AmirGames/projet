@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, AlertCircle, Clock, Archive, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -38,7 +38,6 @@ export default function MerchantDetailPage() {
 
   const [merchant, setMerchant] = useState<MerchantDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [newStatus, setNewStatus] = useState('');
   const [newTier, setNewTier] = useState('');
   const [saving, setSaving] = useState(false);
   const [actionReason, setActionReason] = useState('');
@@ -59,7 +58,6 @@ export default function MerchantDetailPage() {
 
       const data = await response.json();
       setMerchant(data);
-      setNewStatus(data.status);
       setNewTier(data.tier);
     } catch (error) {
       console.error('Erreur:', error);
@@ -81,10 +79,7 @@ export default function MerchantDetailPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          status: newStatus,
-          tier: newTier,
-        }),
+        body: JSON.stringify({ tier: newTier }),
       });
 
       if (!response.ok) throw new Error('Failed to update');
@@ -337,20 +332,7 @@ export default function MerchantDetailPage() {
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
         <h2 className="text-lg font-bold">Gestion générale</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Statut</label>
-            <select
-              value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-            >
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="SUSPENDED">SUSPENDED</option>
-              <option value="CLOSED">CLOSED</option>
-            </select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">Plan</label>
             <select

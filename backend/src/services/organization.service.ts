@@ -37,7 +37,9 @@ export class OrganizationService {
       where: { id },
       include: {
         stores: true,
-        memberships: { include: { user: true } },
+        memberships: {
+          include: { user: { select: { id: true, email: true, name: true } } },
+        },
       },
     });
 
@@ -53,7 +55,9 @@ export class OrganizationService {
       where: { slug },
       include: {
         stores: true,
-        memberships: { include: { user: true } },
+        memberships: {
+          include: { user: { select: { id: true, email: true, name: true } } },
+        },
       },
     });
 
@@ -73,7 +77,9 @@ export class OrganizationService {
       },
       include: {
         stores: true,
-        memberships: { include: { user: true } },
+        memberships: {
+          include: { user: { select: { id: true, email: true, name: true } } },
+        },
       },
     });
   }
@@ -89,7 +95,9 @@ export class OrganizationService {
         data: updateData,
         include: {
           stores: true,
-          memberships: { include: { user: true } },
+          memberships: {
+          include: { user: { select: { id: true, email: true, name: true } } },
+        },
         },
       });
     } catch (err: any) {

@@ -9,13 +9,13 @@ const router = Router();
 router.get("/stores", async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const stores = await db.store.findMany({
-      where: { isOpen: true },
+      where: { isOpen: true, deletedAt: null, org: { status: "ACTIVE" } },
       include: {
         org: {
           select: { id: true, name: true, slug: true }
         },
         products: {
-          where: { status: "ACTIVE" },
+          where: { status: "ACTIVE", deletedAt: null },
           take: 5
         }
       },
@@ -47,13 +47,19 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
 
     // Récupérer tous les stores avec localisation
     const stores = await db.store.findMany({
-      where: { isOpen: true, latitude: { not: null }, longitude: { not: null } },
+      where: {
+        isOpen: true,
+        deletedAt: null,
+        org: { status: "ACTIVE" },
+        latitude: { not: null },
+        longitude: { not: null },
+      },
       include: {
         org: {
           select: { id: true, name: true, slug: true }
         },
         products: {
-          where: { status: "ACTIVE" },
+          where: { status: "ACTIVE", deletedAt: null },
           take: 3
         }
       }
@@ -107,6 +113,8 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
     const stores = await db.store.findMany({
       where: {
         isOpen: true,
+        deletedAt: null,
+        org: { status: "ACTIVE" },
         OR: [
           { name: { contains: searchQuery, mode: "insensitive" } },
           { description: { contains: searchQuery, mode: "insensitive" } },
@@ -118,7 +126,7 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
           select: { id: true, name: true, slug: true }
         },
         products: {
-          where: { status: "ACTIVE" },
+          where: { status: "ACTIVE", deletedAt: null },
           take: 3
         }
       },
@@ -144,10 +152,10 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
       where: { id: id as string },
       include: {
         org: {
-          select: { id: true, name: true, slug: true, email: true }
+          select: { id: true, name: true, slug: true, email: true, status: true }
         },
         products: {
-          where: { status: "ACTIVE" },
+          where: { status: "ACTIVE", deletedAt: null },
           include: {
             category: true,
             media: true,
@@ -169,6 +177,10 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
 
     if (!store) {
       throw new ApiError(404, "Restaurant non trouvé", "NOT_FOUND");
+    }
+
+    if (store.org?.status !== "ACTIVE" || store.deletedAt) {
+      throw new ApiError(423, "Boutique temporairement fermée", "STORE_TEMPORARILY_CLOSED");
     }
 
     // Group products by category
@@ -209,7 +221,9 @@ router.get("/stores/:id/menu", async (req: Request, res: Response, next: NextFun
     const products = await db.product.findMany({
       where: {
         storeId: id as string,
-        status: "ACTIVE"
+        status: "ACTIVE",
+        deletedAt: null,
+        store: { deletedAt: null, org: { status: "ACTIVE" } }
       },
       include: {
         category: true,
@@ -250,7 +264,7 @@ router.get("/me/favorites", authMiddleware, async (req: Request, res: Response, 
             store: {
               include: {
                 products: {
-                  where: { status: "ACTIVE" },
+                  where: { status: "ACTIVE", deletedAt: null },
                   take: 3
                 }
               }

@@ -7,7 +7,7 @@ export interface ProductData {
   name: string;
   description?: string;
   price: number;
-  categoryId?: string;
+  categoryId?: string | null;
   stock?: number;
   status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
 }
@@ -63,7 +63,7 @@ export class ProductService {
 
   static async getByStoreId(storeId: string, limit: number = 100, offset: number = 0) {
     return await db.product.findMany({
-      where: { storeId },
+      where: { storeId, deletedAt: null },
       include: {
         category: true,
         images: { take: 1 },
@@ -161,7 +161,7 @@ export class ProductService {
     return await db.product.createMany({
       data: data.map((item) => ({
         storeId: item.storeId,
-        sku: item.sku,
+        sku: item.sku || `SKU-${Date.now()}-${Math.random().toString(36).slice(2, 11).toUpperCase()}`,
         name: item.name,
         description: item.description,
         price: item.price,
@@ -182,6 +182,7 @@ export class ProductService {
     return await db.product.findMany({
       where: {
         store: { orgId },
+        deletedAt: null,
       },
       include: {
         category: true,

@@ -52,19 +52,31 @@ export default function MerchantsPage() {
     }
   };
 
-  const handleStatusChange = async (merchantId: string, newStatus: string) => {
+  const handleToggleSuspension = async (merchant: Merchant) => {
+    const suspending = merchant.status === 'ACTIVE';
+    let reason = '';
+
+    if (suspending) {
+      reason = window.prompt('Raison de la suspension :')?.trim() || '';
+      if (!reason) return;
+    }
+
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}`, {
-        method: 'PATCH',
+      const action = suspending ? 'suspend' : 'unsuspend';
+      const response = await fetch(`${API_URL}/api/admin/merchants/${merchant.id}/${action}`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: suspending ? JSON.stringify({ reason }) : undefined,
       });
 
-      if (!response.ok) throw new Error('Failed to update');
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.message || 'Failed to update');
+      }
 
       fetchMerchants();
     } catch (error) {
@@ -187,20 +199,22 @@ export default function MerchantsPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const newStatus = merchant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-                          handleStatusChange(merchant.id, newStatus);
-                        }}
-                        className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        {merchant.status === 'ACTIVE' ? (
-                          <Lock size={18} className="text-orange-400" />
-                        ) : (
-                          <Unlock size={18} className="text-green-400" />
-                        )}
-                      </button>
+                      {merchant.status !== 'CLOSED' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleSuspension(merchant);
+                          }}
+                          title={merchant.status === 'ACTIVE' ? 'Suspendre' : 'Réactiver'}
+                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                        >
+                          {merchant.status === 'ACTIVE' ? (
+                            <Lock size={18} className="text-orange-400" />
+                          ) : (
+                            <Unlock size={18} className="text-green-400" />
+                          )}
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

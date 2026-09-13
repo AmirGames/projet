@@ -2,77 +2,79 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 
+const HARD_DELETE_DELAY_DAYS = 60;
+const RESTORATION_WINDOW_DAYS = 180;
+
+function asRecords(value: unknown): Record<string, any>[] {
+  return Array.isArray(value) ? (value as Record<string, any>[]) : [];
+}
+
+function withoutTimestamps(row: Record<string, any>) {
+  const { createdAt, updatedAt, deletedAt, ...rest } = row;
+  return rest;
+}
+
+function addDays(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
 export class MerchantClosureService {
   // ============================================================================
   // SUSPENSION
   // ============================================================================
 
   static async suspend(orgId: string, reason: string) {
-    try {
-      const org = await db.organization.findUnique({
-        where: { id: orgId },
-      });
+    const org = await db.organization.findUnique({ where: { id: orgId } });
 
-      if (!org) {
-        throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
-      }
-
-      if (org.status === "CLOSED") {
-        throw new ApiError(
-          400,
-          "Impossible de suspendre un compte fermé",
-          "INVALID_STATUS"
-        );
-      }
-
-      const updated = await db.organization.update({
-        where: { id: orgId },
-        data: {
-          status: "SUSPENDED",
-          suspensionReason: reason,
-          suspensionDate: new Date(),
-        },
-      });
-
-      logger.info("Merchant suspended", { orgId, reason });
-      return updated;
-    } catch (err) {
-      throw err;
+    if (!org) {
+      throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
     }
+
+    if (org.status === "CLOSED") {
+      throw new ApiError(400, "Impossible de suspendre un compte fermé", "INVALID_STATUS");
+    }
+
+    if (org.status === "SUSPENDED") {
+      throw new ApiError(400, "Ce compte est déjà suspendu", "INVALID_STATUS");
+    }
+
+    const updated = await db.organization.update({
+      where: { id: orgId },
+      data: {
+        status: "SUSPENDED",
+        suspensionReason: reason,
+        suspensionDate: new Date(),
+      },
+    });
+
+    logger.info("Merchant suspended", { orgId, reason });
+    return updated;
   }
 
   static async unsuspend(orgId: string) {
-    try {
-      const org = await db.organization.findUnique({
-        where: { id: orgId },
-      });
+    const org = await db.organization.findUnique({ where: { id: orgId } });
 
-      if (!org) {
-        throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
-      }
-
-      if (org.status !== "SUSPENDED") {
-        throw new ApiError(
-          400,
-          "Ce compte n'est pas suspendu",
-          "INVALID_STATUS"
-        );
-      }
-
-      const updated = await db.organization.update({
-        where: { id: orgId },
-        data: {
-          status: "ACTIVE",
-          suspensionReason: null,
-          suspensionDate: null,
-        },
-      });
-
-      logger.info("Merchant unsuspended", { orgId });
-      return updated;
-    } catch (err) {
-      throw err;
+    if (!org) {
+      throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
     }
+
+    if (org.status !== "SUSPENDED") {
+      throw new ApiError(400, "Ce compte n'est pas suspendu", "INVALID_STATUS");
+    }
+
+    const updated = await db.organization.update({
+      where: { id: orgId },
+      data: {
+        status: "ACTIVE",
+        suspensionReason: null,
+        suspensionDate: null,
+      },
+    });
+
+    logger.info("Merchant unsuspended", { orgId });
+    return updated;
   }
 
   // ============================================================================
@@ -80,60 +82,77 @@ export class MerchantClosureService {
   // ============================================================================
 
   static async close(orgId: string, reason: string) {
-    try {
-      const org = await db.organization.findUnique({
-        where: { id: orgId },
-        include: {
-          stores: true,
-        },
-      });
+    const org = await db.organization.findUnique({
+      where: { id: orgId },
+      include: { stores: true },
+    });
 
-      if (!org) {
-        throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
-      }
-
-      // Calculer la date limite de restauration (180 jours)
-      const restorationDeadline = new Date();
-      restorationDeadline.setDate(restorationDeadline.getDate() + 180);
-
-      // Calculer la date de suppression hard-delete (60 jours)
-      const closedUntil = new Date();
-      closedUntil.setDate(closedUntil.getDate() + 60);
-
-      // Créer un backup des données
-      const archiveData = {
-        organization: org,
-        storesCount: org.stores.length,
-      };
-
-      const archive = await db.merchantArchive.create({
-        data: {
-          organizationId: orgId,
-          reason,
-          closureDate: new Date(),
-          restorationDeadline,
-          organizationData: org as any,
-          storesData: org.stores,
-        },
-      });
-
-      // Mettre à jour l'organisation
-      const updated = await db.organization.update({
-        where: { id: orgId },
-        data: {
-          status: "CLOSED",
-          closureReason: reason,
-          closureDate: new Date(),
-          closedUntil,
-          archiveBackupId: archive.id,
-        },
-      });
-
-      logger.info("Merchant closed", { orgId, reason, archiveId: archive.id });
-      return { updated, archive };
-    } catch (err) {
-      throw err;
+    if (!org) {
+      throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
     }
+
+    if (org.status === "CLOSED") {
+      throw new ApiError(400, "Ce compte est déjà fermé", "INVALID_STATUS");
+    }
+
+    const storeIds = org.stores.map((s) => s.id);
+
+    // Snapshot complet avant toute suppression
+    const [categories, products, orders, customers] = await Promise.all([
+      db.category.findMany({ where: { storeId: { in: storeIds } } }),
+      db.product.findMany({ where: { storeId: { in: storeIds } } }),
+      db.order.findMany({ where: { storeId: { in: storeIds } }, include: { items: true } }),
+      db.customer.findMany({ where: { orders: { some: { storeId: { in: storeIds } } } } }),
+    ]);
+
+    const closureDate = new Date();
+    const closedUntil = addDays(HARD_DELETE_DELAY_DAYS);
+    const restorationDeadline = addDays(RESTORATION_WINDOW_DAYS);
+
+    const archive = await db.merchantArchive.upsert({
+      where: { organizationId: orgId },
+      create: {
+        organizationId: orgId,
+        reason,
+        closureDate,
+        restorationDeadline,
+        organizationData: org as any,
+        storesData: org.stores as any,
+        productsData: { categories, products } as any,
+        ordersData: orders as any,
+        customersData: customers as any,
+      },
+      update: {
+        reason,
+        closureDate,
+        restorationDeadline,
+        organizationData: org as any,
+        storesData: org.stores as any,
+        productsData: { categories, products } as any,
+        ordersData: orders as any,
+        customersData: customers as any,
+        isRestored: false,
+        restoredAt: null,
+        restoredByAdminId: null,
+      },
+    });
+
+    const updated = await db.organization.update({
+      where: { id: orgId },
+      data: {
+        status: "CLOSED",
+        closureReason: reason,
+        closureDate,
+        closedUntil,
+        archiveBackupId: archive.id,
+      },
+    });
+
+    // Masque les données sans les détruire : restaurables jusqu'au hard-delete
+    await this.softDeleteMerchantData(orgId);
+
+    logger.info("Merchant closed", { orgId, reason, archiveId: archive.id });
+    return { updated, archive };
   }
 
   // ============================================================================
@@ -141,50 +160,30 @@ export class MerchantClosureService {
   // ============================================================================
 
   static async softDeleteMerchantData(orgId: string) {
-    try {
-      const org = await db.organization.findUnique({
-        where: { id: orgId },
-        include: { stores: { select: { id: true } } },
-      });
+    const stores = await db.store.findMany({
+      where: { orgId },
+      select: { id: true },
+    });
+    const storeIds = stores.map((s) => s.id);
+    const deletedAt = new Date();
 
-      if (!org) {
-        throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
-      }
+    await db.product.updateMany({
+      where: { storeId: { in: storeIds }, deletedAt: null },
+      data: { deletedAt },
+    });
 
-      const storeIds = org.stores.map((s) => s.id);
+    await db.order.updateMany({
+      where: { storeId: { in: storeIds }, deletedAt: null },
+      data: { deletedAt },
+    });
 
-      // Soft-delete des produits
-      await db.product.updateMany({
-        where: {
-          storeId: { in: storeIds },
-          deletedAt: null,
-        },
-        data: { deletedAt: new Date() },
-      });
+    await db.store.updateMany({
+      where: { orgId, deletedAt: null },
+      data: { deletedAt },
+    });
 
-      // Soft-delete des commandes
-      await db.order.updateMany({
-        where: {
-          storeId: { in: storeIds },
-          deletedAt: null,
-        },
-        data: { deletedAt: new Date() },
-      });
-
-      // Soft-delete des boutiques
-      await db.store.updateMany({
-        where: {
-          orgId,
-          deletedAt: null,
-        },
-        data: { deletedAt: new Date() },
-      });
-
-      logger.info("Merchant data soft-deleted", { orgId });
-      return true;
-    } catch (err) {
-      throw err;
-    }
+    logger.info("Merchant data soft-deleted", { orgId, storeCount: storeIds.length });
+    return true;
   }
 
   // ============================================================================
@@ -192,57 +191,33 @@ export class MerchantClosureService {
   // ============================================================================
 
   static async hardDeleteMerchantData(orgId: string) {
-    try {
-      const org = await db.organization.findUnique({
-        where: { id: orgId },
-        include: { stores: { select: { id: true } } },
-      });
+    const org = await db.organization.findUnique({
+      where: { id: orgId },
+      include: { stores: { select: { id: true } } },
+    });
 
-      if (!org) {
-        throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
-      }
-
-      const storeIds = org.stores.map((s) => s.id);
-
-      // Hard-delete des produits
-      await db.product.deleteMany({
-        where: {
-          storeId: { in: storeIds },
-        },
-      });
-
-      // Hard-delete des commandes
-      await db.order.deleteMany({
-        where: {
-          storeId: { in: storeIds },
-        },
-      });
-
-      // Hard-delete des catégories
-      await db.category.deleteMany({
-        where: {
-          storeId: { in: storeIds },
-        },
-      });
-
-      // Hard-delete des boutiques
-      await db.store.deleteMany({
-        where: {
-          orgId,
-        },
-      });
-
-      // Marquer l'archive comme définitivement archivée
-      await db.merchantArchive.update({
-        where: { organizationId: orgId },
-        data: { isArchivedPermanently: true },
-      });
-
-      logger.info("Merchant data hard-deleted", { orgId });
-      return true;
-    } catch (err) {
-      throw err;
+    if (!org) {
+      throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
     }
+
+    const storeIds = org.stores.map((s) => s.id);
+
+    // Ordre imposé par les FK : OrderItem.product est en Restrict, donc les
+    // commandes (et leurs items en cascade) partent avant les produits.
+    await db.order.deleteMany({ where: { storeId: { in: storeIds } } });
+    await db.product.deleteMany({ where: { storeId: { in: storeIds } } });
+    await db.category.deleteMany({ where: { storeId: { in: storeIds } } });
+    await db.store.deleteMany({ where: { orgId } });
+
+    // Les Customer sont globaux (partagés entre commerçants) : jamais supprimés ici.
+
+    await db.organization.update({
+      where: { id: orgId },
+      data: { isArchivedPermanently: true },
+    });
+
+    logger.info("Merchant data hard-deleted", { orgId, storeCount: storeIds.length });
+    return true;
   }
 
   // ============================================================================
@@ -250,124 +225,160 @@ export class MerchantClosureService {
   // ============================================================================
 
   static async restoreFromBackup(orgId: string, adminId: string) {
-    try {
-      const archive = await db.merchantArchive.findUnique({
-        where: { organizationId: orgId },
-      });
+    const org = await db.organization.findUnique({ where: { id: orgId } });
 
-      if (!archive) {
-        throw new ApiError(
-          404,
-          "Backup non trouvé pour ce commerçant",
-          "NOT_FOUND"
-        );
-      }
-
-      if (archive.isArchivedPermanently) {
-        throw new ApiError(
-          410,
-          "Ce backup a été définitivement supprimé",
-          "BACKUP_EXPIRED"
-        );
-      }
-
-      if (archive.restorationDeadline < new Date()) {
-        throw new ApiError(
-          410,
-          "La date limite de restauration a expiré",
-          "RESTORATION_DEADLINE_PASSED"
-        );
-      }
-
-      // Restaurer tous les soft-deleted records
-      const storeIds = archive.storesData?.map((s: any) => s.id) || [];
-
-      // Restaurer les produits
-      await db.product.updateMany({
-        where: {
-          storeId: { in: storeIds },
-          deletedAt: { not: null },
-        },
-        data: { deletedAt: null },
-      });
-
-      // Restaurer les commandes
-      await db.order.updateMany({
-        where: {
-          storeId: { in: storeIds },
-          deletedAt: { not: null },
-        },
-        data: { deletedAt: null },
-      });
-
-      // Restaurer les boutiques
-      await db.store.updateMany({
-        where: {
-          orgId,
-          deletedAt: { not: null },
-        },
-        data: { deletedAt: null },
-      });
-
-      // Mettre à jour l'organisation
-      const updated = await db.organization.update({
-        where: { id: orgId },
-        data: {
-          status: "ACTIVE",
-          closureReason: null,
-          closureDate: null,
-          closedUntil: null,
-          archiveBackupId: null,
-        },
-      });
-
-      // Marquer le backup comme restauré
-      await db.merchantArchive.update({
-        where: { organizationId: orgId },
-        data: {
-          isRestored: true,
-          restoredAt: new Date(),
-          restoredByAdminId: adminId,
-        },
-      });
-
-      logger.info("Merchant restored from backup", { orgId, adminId });
-      return updated;
-    } catch (err) {
-      throw err;
+    if (!org) {
+      throw new ApiError(404, "Commerçant non trouvé", "NOT_FOUND");
     }
+
+    const archive = await db.merchantArchive.findUnique({
+      where: { organizationId: orgId },
+    });
+
+    if (!archive) {
+      throw new ApiError(404, "Backup non trouvé pour ce commerçant", "NOT_FOUND");
+    }
+
+    if (archive.isRestored) {
+      throw new ApiError(400, "Ce backup a déjà été restauré", "ALREADY_RESTORED");
+    }
+
+    if (archive.restorationDeadline < new Date()) {
+      throw new ApiError(410, "La date limite de restauration a expiré", "RESTORATION_DEADLINE_PASSED");
+    }
+
+    if (org.isArchivedPermanently) {
+      await this.recreateFromArchive(orgId, archive);
+    } else {
+      await this.undoSoftDelete(orgId);
+    }
+
+    const updated = await db.organization.update({
+      where: { id: orgId },
+      data: {
+        status: "ACTIVE",
+        closureReason: null,
+        closureDate: null,
+        closedUntil: null,
+        archiveBackupId: null,
+        isArchivedPermanently: false,
+      },
+    });
+
+    await db.merchantArchive.update({
+      where: { organizationId: orgId },
+      data: {
+        isRestored: true,
+        restoredAt: new Date(),
+        restoredByAdminId: adminId,
+      },
+    });
+
+    logger.info("Merchant restored from backup", { orgId, adminId, recreated: org.isArchivedPermanently });
+    return updated;
+  }
+
+  private static async undoSoftDelete(orgId: string) {
+    const stores = await db.store.findMany({
+      where: { orgId },
+      select: { id: true },
+    });
+    const storeIds = stores.map((s) => s.id);
+
+    await db.store.updateMany({
+      where: { orgId, deletedAt: { not: null } },
+      data: { deletedAt: null },
+    });
+
+    await db.product.updateMany({
+      where: { storeId: { in: storeIds }, deletedAt: { not: null } },
+      data: { deletedAt: null },
+    });
+
+    await db.order.updateMany({
+      where: { storeId: { in: storeIds }, deletedAt: { not: null } },
+      data: { deletedAt: null },
+    });
+  }
+
+  // Recrée le catalogue après un hard-delete. Les commandes restent dans
+  // l'archive JSON : les rejouer dupliquerait paiements et factures.
+  private static async recreateFromArchive(
+    orgId: string,
+    archive: { storesData: unknown; productsData: unknown }
+  ) {
+    const stores = asRecords(archive.storesData);
+    const catalog = (archive.productsData ?? {}) as Record<string, unknown>;
+    const categories = asRecords(catalog.categories);
+    const products = asRecords(catalog.products);
+
+    if (stores.length === 0) {
+      throw new ApiError(422, "Le backup ne contient aucune boutique à restaurer", "EMPTY_BACKUP");
+    }
+
+    await db.store.createMany({
+      data: stores.map((store) => ({ ...withoutTimestamps(store), orgId })) as any,
+      skipDuplicates: true,
+    });
+
+    if (categories.length > 0) {
+      await db.category.createMany({
+        data: categories.map(withoutTimestamps) as any,
+        skipDuplicates: true,
+      });
+    }
+
+    if (products.length > 0) {
+      await db.product.createMany({
+        data: products.map(withoutTimestamps) as any,
+        skipDuplicates: true,
+      });
+    }
+
+    logger.info("Merchant catalog recreated from archive", {
+      orgId,
+      stores: stores.length,
+      categories: categories.length,
+      products: products.length,
+    });
   }
 
   // ============================================================================
-  // CHECK STATUS
+  // JOB AUTOMATIQUE
   // ============================================================================
 
   static async checkAndApplyAutomaticActions() {
-    try {
-      const now = new Date();
+    const now = new Date();
 
-      // Trouver les comptes CLOSED depuis 60j (softer delete)
-      const closedOrgs = await db.organization.findMany({
-        where: {
-          status: "CLOSED",
-          closedUntil: { lte: now },
-          isArchivedPermanently: false,
-        },
-        include: { stores: { select: { id: true } } },
-      });
+    const closedOrgs = await db.organization.findMany({
+      where: {
+        status: "CLOSED",
+        closedUntil: { lte: now },
+        isArchivedPermanently: false,
+      },
+      select: { id: true },
+    });
 
-      for (const org of closedOrgs) {
-        logger.info("Auto-triggering hard delete for organization", {
-          orgId: org.id,
-        });
+    let processed = 0;
+
+    for (const org of closedOrgs) {
+      try {
+        logger.info("Auto-triggering hard delete for organization", { orgId: org.id });
         await this.hardDeleteMerchantData(org.id);
+        processed += 1;
+      } catch (err) {
+        // Un échec sur un commerçant ne doit pas bloquer les suivants
+        logger.error("Hard delete failed for organization", {
+          orgId: org.id,
+          error: err instanceof Error ? err.message : err,
+        });
       }
-
-      logger.info("Automatic closure actions completed", { count: closedOrgs.length });
-      return closedOrgs.length;
-    } catch (err) {
-      logger.error("Error in automatic closure actions", { error: err });
-      throw err;
     }
+
+    logger.info("Automatic closure actions completed", {
+      candidates: closedOrgs.length,
+      processed,
+    });
+    return processed;
   }
 }

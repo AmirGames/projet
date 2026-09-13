@@ -62,9 +62,9 @@ export class StoreService {
 
   static async getByOrgId(orgId: string) {
     return await db.store.findMany({
-      where: { orgId },
+      where: { orgId, deletedAt: null },
       include: {
-        products: true,
+        products: { where: { deletedAt: null } },
         categories: true,
         theme: true,
       },
@@ -73,9 +73,9 @@ export class StoreService {
 
   static async getBySlug(slug: string) {
     const store = await db.store.findFirst({
-      where: { slug },
+      where: { slug, deletedAt: null },
       include: {
-        products: { where: { status: "ACTIVE" } },
+        products: { where: { status: "ACTIVE", deletedAt: null } },
         categories: true,
         theme: true,
         org: true,
