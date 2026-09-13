@@ -68,6 +68,7 @@ router.put("/config", authMiddleware, isSystemAdmin, async (req: Request, res: R
       maxOrderAmount: z.number().optional(),
       maintenanceMode: z.boolean().optional(),
       maintenanceMessage: z.string().optional(),
+      selectedTheme: z.string().optional(),
     });
 
     const body = schema.parse(req.body);

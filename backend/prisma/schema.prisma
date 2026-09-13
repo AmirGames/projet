@@ -105,6 +105,7 @@ model SystemConfig {
   maxOrderAmount      Decimal   @default(9999.99) @db.Decimal(10, 2)
   maintenanceMode     Boolean   @default(false)
   maintenanceMessage  String?
+  selectedTheme       String    @default("dark")
 
   // Settings JSON for additional configurations
   settings            Json      @default("{}")

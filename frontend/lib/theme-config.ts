@@ -124,3 +124,44 @@ export const loadSavedTheme = () => {
   applyTheme(theme);
   return theme;
 };
+
+export const loadThemeFromAPI = async (apiUrl: string, token: string) => {
+  try {
+    const response = await fetch(`${apiUrl}/api/admin/config`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const themeName = data.selectedTheme || 'dark';
+      const theme = getTheme(themeName);
+      applyTheme(theme);
+      return theme;
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement du thème:', error);
+  }
+
+  return loadSavedTheme();
+};
+
+export const saveThemeToAPI = async (themeId: string, apiUrl: string, token: string) => {
+  try {
+    const response = await fetch(`${apiUrl}/api/admin/config`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ selectedTheme: themeId }),
+    });
+
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde du thème:', error);
+  }
+
+  return null;
+};

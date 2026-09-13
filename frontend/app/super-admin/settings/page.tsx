@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
-import { AVAILABLE_THEMES, applyTheme, getTheme } from '@/lib/theme-config';
+import { AVAILABLE_THEMES, applyTheme, getTheme, saveThemeToAPI } from '@/lib/theme-config';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -94,6 +94,22 @@ export default function SettingsPage() {
     }
   };
 
+  const handleThemeChange = async (themeId: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      await saveThemeToAPI(themeId, API_URL, token || '');
+
+      setFormData(prev => ({
+        ...prev,
+        selectedTheme: themeId,
+      }));
+
+      applyTheme(getTheme(themeId));
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
   if (loading) return <div className="text-center py-8">Chargement...</div>;
 
   return (
@@ -172,7 +188,7 @@ export default function SettingsPage() {
             <select
               name="selectedTheme"
               value={formData.selectedTheme}
-              onChange={handleChange}
+              onChange={(e) => handleThemeChange(e.target.value)}
               className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
             >
               {Object.entries(AVAILABLE_THEMES).map(([id, theme]) => (
@@ -182,7 +198,7 @@ export default function SettingsPage() {
               ))}
             </select>
             <p className="text-sm text-gray-400 mt-2">
-              Le thème change immédiatement. Les modifications sont appliquées à votre session.
+              Le thème change immédiatement et est sauvegardé automatiquement.
             </p>
           </div>
 

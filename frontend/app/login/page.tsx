@@ -28,6 +28,7 @@ export default function LoginPage() {
       // Save tokens
       localStorage.setItem("accessToken", result.accessToken);
       localStorage.setItem("refreshToken", result.refreshToken);
+      localStorage.setItem("isSuperOwner", result.user?.isSuperOwner ? "true" : "false");
 
       // Redirect based on role
       if (result.user?.isSuperOwner) {
