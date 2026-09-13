@@ -70,7 +70,7 @@ export default function StoreHoursPage() {
 
   const fetchStore = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/stores/${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -89,7 +89,7 @@ export default function StoreHoursPage() {
 
   const fetchHours = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/store-hours/${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -125,7 +125,7 @@ export default function StoreHoursPage() {
   const handleUpdateDay = async (day: string, hours: DayHours) => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/store-hours/${storeId}/day/${day}`, {
         method: 'PUT',
         headers: {
@@ -150,7 +150,7 @@ export default function StoreHoursPage() {
     if (!data) return;
     setSaving(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/store-hours/${storeId}/status`, {
         method: 'PATCH',
         headers: {
@@ -173,7 +173,7 @@ export default function StoreHoursPage() {
   const handleAddPickupSlot = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/store-hours/${storeId}/pickup-slots`, {
         method: 'POST',
         headers: {
@@ -199,7 +199,7 @@ export default function StoreHoursPage() {
     if (!slotId) return;
     setSaving(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/store-hours/${storeId}/pickup-slots/${slotId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

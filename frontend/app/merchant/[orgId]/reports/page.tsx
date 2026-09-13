@@ -76,7 +76,7 @@ export default function ReportsPage() {
 
   const fetchStore = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/stores/${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -94,7 +94,7 @@ export default function ReportsPage() {
   const fetchAllReports = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const params = new URLSearchParams({ storeId });
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
@@ -129,7 +129,7 @@ export default function ReportsPage() {
   const handleExport = async (type: string) => {
     setExporting(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const params = new URLSearchParams({ storeId });
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
