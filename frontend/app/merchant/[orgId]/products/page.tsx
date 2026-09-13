@@ -218,7 +218,7 @@ export default function ProductsPage() {
   const fetchCategories = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/categories?orgId=${orgId}`, {
+      const response = await fetch(`${API_URL}/api/categories?storeId=${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -234,7 +234,7 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/products?orgId=${orgId}`, {
+      const response = await fetch(`${API_URL}/api/products?storeId=${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

@@ -53,17 +53,26 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// GET /categories?orgId=:orgId - Get categories by organization (protected)
+// GET /categories?orgId=:orgId or ?storeId=:storeId - Get categories by organization or store (protected)
 router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = req.query.orgId as string;
+    const storeId = req.query.storeId as string;
 
-    if (!orgId) {
-      throw new ApiError(400, "Paramètre 'orgId' requis", "MISSING_PARAM");
+    if (!orgId && !storeId) {
+      throw new ApiError(400, "Paramètre 'orgId' ou 'storeId' requis", "MISSING_PARAM");
     }
 
-    const categories = await CategoryService.getByOrgId(orgId);
-    const total = await CategoryService.countByOrgId(orgId);
+    let categories;
+    let total;
+
+    if (storeId) {
+      categories = await CategoryService.getByStoreId(storeId);
+      total = await CategoryService.countByStoreId(storeId);
+    } else {
+      categories = await CategoryService.getByOrgId(orgId);
+      total = await CategoryService.countByOrgId(orgId);
+    }
 
     res.json({
       categories,

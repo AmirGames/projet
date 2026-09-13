@@ -154,7 +154,7 @@ export default function CategoriesPage() {
         if (fetchedStoreId) {
           setStoreId(fetchedStoreId);
 
-          const categoriesResponse = await fetch(`${API_URL}/api/categories?orgId=${orgId}`, {
+          const categoriesResponse = await fetch(`${API_URL}/api/categories?storeId=${orgId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 

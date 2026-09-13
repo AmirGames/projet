@@ -8,20 +8,29 @@ import { emitOrderUpdate } from "../config/socket";
 
 const router = Router();
 
-// GET /orders - Get orders by orgId (protected)
+// GET /orders - Get orders by orgId or storeId (protected)
 router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = req.query.orgId as string;
+    const storeId = req.query.storeId as string;
     const status = req.query.status as string | undefined;
     const limit = parseInt((req.query.limit as string) || "100") || 100;
     const offset = parseInt((req.query.offset as string) || "0") || 0;
 
-    if (!orgId) {
-      throw new ApiError(400, "Paramètre 'orgId' requis", "MISSING_PARAM");
+    if (!orgId && !storeId) {
+      throw new ApiError(400, "Paramètre 'orgId' ou 'storeId' requis", "MISSING_PARAM");
     }
 
-    const orders = await OrderService.getByOrgId(orgId, status, limit, offset);
-    const total = await OrderService.countByOrgId(orgId, status);
+    let orders;
+    let total;
+
+    if (storeId) {
+      orders = await OrderService.getByStoreId(storeId, limit, offset);
+      total = await OrderService.countByStoreId(storeId);
+    } else {
+      orders = await OrderService.getByOrgId(orgId, status, limit, offset);
+      total = await OrderService.countByOrgId(orgId, status);
+    }
 
     res.json({
       orders,
