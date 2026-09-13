@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { HelpCircle, Plus, MessageSquare, Clock, AlertCircle } from 'lucide-react';
+import { HelpCircle, MessageSquare, Clock, AlertCircle } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -104,21 +104,6 @@ export default function SupportTicketsPage() {
         return 'bg-green-600 text-white';
       default:
         return 'bg-gray-600 text-white';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'OPEN':
-        return 'text-red-400';
-      case 'IN_PROGRESS':
-        return 'text-blue-400';
-      case 'RESOLVED':
-        return 'text-green-400';
-      case 'CLOSED':
-        return 'text-gray-400';
-      default:
-        return 'text-gray-400';
     }
   };
 

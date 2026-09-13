@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Package, Clock, DollarSign, LogOut, Fuel, Navigation2 } from 'lucide-react';
+import { MapPin, Package, Clock, DollarSign, LogOut } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -254,7 +254,7 @@ export default function DriverDashboard() {
                   <div className="space-y-3 pt-4 border-t border-gray-600">
                     <Link href={`/driver/deliveries/${activeDelivery.id}`} className="block">
                       <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2">
-                        <Navigation2 size={20} />
+                        <MapPin size={20} />
                         Commencer la livraison
                       </button>
                     </Link>

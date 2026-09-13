@@ -33,13 +33,6 @@ export default function SuperAdminDashboard() {
     fetchStats();
   }, []);
 
-  const checkAdmin = async () => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/login');
-    }
-  };
-
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('accessToken');

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Clock, ChevronRight, Bell, AlertCircle, CheckCircle, Timer } from 'lucide-react';
+import { ChevronRight, Bell, AlertCircle, CheckCircle, Timer } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -100,12 +100,6 @@ export default function MerchantOrdersPage() {
     } catch (err) {
       console.error('Error updating order status:', err);
     }
-  };
-
-  const getNextStatus = (currentStatus: string) => {
-    const workflow = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'DELIVERED'];
-    const currentIndex = workflow.indexOf(currentStatus);
-    return currentIndex >= 0 && currentIndex < workflow.length - 1 ? workflow[currentIndex + 1] : null;
   };
 
   const filteredOrders = orders.filter(order => {
