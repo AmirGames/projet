@@ -56,17 +56,32 @@ model Organization {
   plan     String            @default("STARTER") // STARTER, PROFESSIONAL, ENTERPRISE
   status   String            @default("ACTIVE") // ACTIVE, SUSPENDED, CLOSED, INACTIVE
 
+  // Suspension info
+  suspensionReason    String?
+  suspensionDate      DateTime?
+
+  // Closure info
+  closureReason       String?
+  closureDate         DateTime?
+  closedUntil         DateTime?   // Auto-suppression le jour X (60j après fermeture)
+
+  // Archive info
+  archiveBackupId     String?     // ID du backup MerchantArchive
+  isArchivedPermanently Boolean   @default(false)
+
   // Relations
   stores              Store[]
   memberships         Membership[]
   tickets             MerchantTicket[]
   commissionHistory   CommissionHistory[]
+  archive             MerchantArchive?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([slug])
   @@index([status])
+  @@index([closedUntil])
 }
 
 enum MembershipRole {
@@ -170,6 +185,41 @@ model SystemAuditLog {
 }
 
 // ============================================================================
+// MERCHANT ARCHIVE & CLOSURE
+// ============================================================================
+
+model MerchantArchive {
+  id                      String    @id @default(cuid())
+  organizationId          String    @unique
+
+  // Backup data (complete snapshot)
+  organizationData        Json      // Entire Organization object
+  storesData              Json?     // Array of Store objects
+  productsData            Json?     // Array of Product objects
+  ordersData              Json?     // Array of Order objects
+  customersData           Json?     // Array of Customer objects
+
+  // Archive metadata
+  reason                  String    // Why archived (closure reason)
+  closureDate             DateTime
+  restorationDeadline     DateTime  // After this date, no restore possible
+
+  // Status
+  isRestored              Boolean   @default(false)
+  restoredAt              DateTime?
+  restoredByAdminId       String?
+
+  // Relations
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt               DateTime  @default(now())
+
+  @@index([organizationId])
+  @@index([closureDate])
+  @@index([restorationDeadline])
+}
+
+// ============================================================================
 // STORES (ESTABLISHMENTS)
 // ============================================================================
 
@@ -213,6 +263,9 @@ model Store {
   rating        Decimal   @default(5.0) @db.Decimal(3, 2)
   totalRatings  Int       @default(0)
 
+  // Soft delete
+  deletedAt     DateTime?
+
   // Relations
   org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   products      Product[]
@@ -235,6 +288,7 @@ model Store {
 
   @@unique([orgId, slug])
   @@index([orgId])
+  @@index([deletedAt])
 }
 
 // ============================================================================
@@ -260,6 +314,9 @@ model Product {
   displayOrder Int          @default(0)
   status      ProductStatus @default(DRAFT)
 
+  // Soft delete
+  deletedAt   DateTime?
+
   // Relations
   store       Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
   category    Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -278,6 +335,7 @@ model Product {
   @@index([storeId])
   @@index([categoryId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model ProductImage {
@@ -376,33 +434,36 @@ model Order {
   id              String       @id @default(cuid())
   storeId         String
   customerId      String?      // nullable for guest checkout
-  
+
   // Items
   items           OrderItem[]
-  
+
   // Customer contact
   customerName    String
   customerEmail   String
   customerPhone   String
-  
+
   // Delivery info
   deliveryType    DeliveryType
   pickupTime      DateTime?    // if PICKUP
   deliveryAddress String?      // if DELIVERY
   deliveryCity    String?
   deliveryPostal  String?
-  
+
   // Status
   status          OrderStatus  @default(PENDING)
-  
+
   // Payment
   totalAmount     Decimal      @db.Decimal(10, 2)
   taxAmount       Decimal      @db.Decimal(10, 2)
   feesAmount      Decimal      @db.Decimal(10, 2)
   paymentStatus   PaymentStatus @default(PENDING)
   paymentId       String?      // Stripe payment intent ID
-  
+
   notes           String?
+
+  // Soft delete
+  deletedAt       DateTime?
 
   // Relations
   store           Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -417,6 +478,7 @@ model Order {
   @@index([status])
   @@index([paymentStatus])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 model OrderItem {
@@ -754,6 +816,9 @@ model Customer {
   // Status
   status          String    @default("ACTIVE") // ACTIVE, BLOCKED, INACTIVE
 
+  // Soft delete
+  deletedAt       DateTime?
+
   // Relations
   orders          Order[]
   reviews         Review[] @relation("ReviewToCustomer")
@@ -764,6 +829,7 @@ model Customer {
 
   @@index([status])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 // ============================================================================
