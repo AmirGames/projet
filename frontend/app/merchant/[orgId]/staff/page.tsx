@@ -59,6 +59,7 @@ export default function StaffPage() {
     role: 'CASHIER' as StaffRole,
   });
   const [stats, setStats] = useState({ total: 0, active: 0 });
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     if (orgId) {
@@ -74,7 +75,7 @@ export default function StaffPage() {
 
   const fetchStore = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/stores/${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -91,7 +92,7 @@ export default function StaffPage() {
 
   const fetchStaff = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/staff?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -109,14 +110,26 @@ export default function StaffPage() {
   };
 
   const handleSaveStaff = async () => {
-    if (!formData.name || !formData.email) {
-      alert('Please fill in name and email');
+    setFormError('');
+
+    if (!formData.name.trim()) {
+      setFormError('Le nom est requis');
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setFormError('L\'email est requis');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setFormError('Email invalide');
       return;
     }
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const payload = {
         storeId,
         ...formData,
@@ -153,7 +166,7 @@ export default function StaffPage() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/staff/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -174,7 +187,7 @@ export default function StaffPage() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/staff/${id}/status`, {
         method: 'PATCH',
         headers: {
@@ -202,12 +215,14 @@ export default function StaffPage() {
       phone: s.phone || '',
       role: s.role,
     });
+    setFormError('');
     setShowForm(true);
   };
 
   const handleAddStaff = () => {
     setEditingStaff(null);
     setFormData({ name: '', email: '', phone: '', role: 'CASHIER' });
+    setFormError('');
     setShowForm(true);
   };
 
@@ -264,6 +279,11 @@ export default function StaffPage() {
             <h2 className="text-xl font-bold text-white mb-4">
               {editingStaff ? 'Modifier Membre' : 'Nouveau Membre'}
             </h2>
+            {formError && (
+              <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 mb-4 text-red-200">
+                {formError}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="text-slate-300 text-sm block mb-2">Nom</label>
