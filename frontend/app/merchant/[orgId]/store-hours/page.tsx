@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Plus, Trash2, Clock, Power } from 'lucide-react';
+import { useCurrentStore } from '@/lib/current-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -45,10 +45,8 @@ const DAY_NAMES: { [key: string]: string } = {
 };
 
 export default function StoreHoursPage() {
-  const params = useParams();
-  const orgId = params.orgId as string;
 
-  const [storeId, setStoreId] = useState<string>('');
+  const { storeId } = useCurrentStore();
   const [data, setData] = useState<StoreHoursData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,35 +55,10 @@ export default function StoreHoursPage() {
   const [showNewSlotForm, setShowNewSlotForm] = useState(false);
 
   useEffect(() => {
-    if (orgId) {
-      fetchStore();
-    }
-  }, [orgId]);
-
-  useEffect(() => {
     if (storeId) {
       fetchHours();
     }
   }, [storeId]);
-
-  const fetchStore = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const stores = await response.json();
-        setStoreId(stores[0]?.id || '');
-      } else {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('Error fetching store:', error);
-      setLoading(false);
-    }
-  }
 
   const fetchHours = async () => {
     try {

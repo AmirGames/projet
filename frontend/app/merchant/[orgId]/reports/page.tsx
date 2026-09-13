@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Download, TrendingUp, DollarSign, ShoppingCart, Users } from 'lucide-react';
+import { useCurrentStore } from '@/lib/current-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -46,10 +46,8 @@ interface RevenueData {
 type TabType = 'sales' | 'revenue' | 'products' | 'customers';
 
 export default function ReportsPage() {
-  const params = useParams();
-  const orgId = params.orgId as string;
 
-  const [storeId, setStoreId] = useState<string>('');
+  const { storeId } = useCurrentStore();
   const [activeTab, setActiveTab] = useState<TabType>('sales');
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -62,11 +60,6 @@ export default function ReportsPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  useEffect(() => {
-    if (orgId) {
-      fetchStore();
-    }
-  }, [orgId]);
 
   useEffect(() => {
     if (storeId) {
@@ -74,22 +67,6 @@ export default function ReportsPage() {
     }
   }, [storeId, startDate, endDate]);
 
-  const fetchStore = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const stores = await response.json();
-        setStoreId(stores[0]?.id || '');
-      }
-    } catch (error) {
-      console.error('Error fetching store:', error);
-      setLoading(false);
-    }
-  };
 
   const fetchAllReports = async () => {
     setLoading(true);

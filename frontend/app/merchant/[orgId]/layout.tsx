@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { NotificationBell } from '@/components/NotificationBell';
+import { StoreSwitcher } from '@/components/StoreSwitcher';
+import { CurrentStoreProvider } from '@/lib/current-store';
 import {
   Package,
   ShoppingCart,
@@ -132,6 +134,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
   ];
 
   return (
+    <CurrentStoreProvider orgId={orgId}>
     <div className="flex min-h-screen bg-gray-900 text-gray-100">
       {/* Sidebar */}
       <aside
@@ -208,8 +211,8 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           <div className="flex items-center gap-4">
+            <StoreSwitcher />
             <NotificationBell />
-            <span className="text-sm text-gray-400">Gestion du Commerce</span>
           </div>
         </header>
 
@@ -262,5 +265,6 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
         </main>
       </div>
     </div>
+    </CurrentStoreProvider>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useCurrentStore } from '@/lib/current-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -44,6 +45,7 @@ export default function StoreSettings() {
   const router = useRouter();
   const orgId = params?.orgId as string;
 
+  const { storeId } = useCurrentStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -74,10 +76,10 @@ export default function StoreSettings() {
   });
 
   useEffect(() => {
-    if (orgId) {
+    if (storeId) {
       fetchSettings();
     }
-  }, [orgId]);
+  }, [storeId]);
 
   const fetchSettings = async () => {
     try {
@@ -87,7 +89,7 @@ export default function StoreSettings() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/store-settings/${orgId}`, {
+      const response = await fetch(`${API_URL}/api/store-settings/${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -154,7 +156,7 @@ export default function StoreSettings() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/store-settings/${orgId}`, {
+      const response = await fetch(`${API_URL}/api/store-settings/${storeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

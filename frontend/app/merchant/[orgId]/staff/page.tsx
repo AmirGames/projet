@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Plus, Edit2, Trash2, Search, Users } from 'lucide-react';
+import { useCurrentStore } from '@/lib/current-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -42,10 +42,8 @@ const STATUS_COLORS: { [key in StaffStatus]: string } = {
 };
 
 export default function StaffPage() {
-  const params = useParams();
-  const orgId = params.orgId as string;
 
-  const [storeId, setStoreId] = useState<string>('');
+  const { storeId } = useCurrentStore();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,11 +59,6 @@ export default function StaffPage() {
   const [stats, setStats] = useState({ total: 0, active: 0 });
   const [formError, setFormError] = useState('');
 
-  useEffect(() => {
-    if (orgId) {
-      fetchStore();
-    }
-  }, [orgId]);
 
   useEffect(() => {
     if (storeId) {
@@ -73,22 +66,6 @@ export default function StaffPage() {
     }
   }, [storeId]);
 
-  const fetchStore = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const stores = await response.json();
-        setStoreId(stores[0]?.id || '');
-      }
-    } catch (error) {
-      console.error('Error fetching store:', error);
-      setLoading(false);
-    }
-  };
 
   const fetchStaff = async () => {
     try {

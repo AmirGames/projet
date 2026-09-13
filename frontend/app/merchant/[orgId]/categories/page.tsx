@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react';
 import {
   DndContext,
@@ -20,6 +19,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useCurrentStore } from '@/lib/current-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -112,14 +112,11 @@ function SortableCategory({ category, onEdit, onDelete }: any) {
 }
 
 export default function CategoriesPage() {
-  const params = useParams();
-  const orgId = params?.orgId as string;
-
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [storeId, setStoreId] = useState<string | null>(null);
+  const { storeId } = useCurrentStore();
   const [formData, setFormData] = useState({
     name: '',
   });
@@ -134,36 +131,25 @@ export default function CategoriesPage() {
   );
 
   useEffect(() => {
-    if (orgId) {
+    if (storeId) {
       fetchStoreAndCategories();
     }
-  }, [orgId]);
+  }, [storeId]);
 
   const fetchStoreAndCategories = async () => {
+    if (!storeId) return;
+
     try {
       const token = localStorage.getItem('accessToken');
 
-      const storeResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
+      const categoriesResponse = await fetch(`${API_URL}/api/categories?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (storeResponse.ok) {
-        const stores = await storeResponse.json();
-        const fetchedStoreId = stores[0]?.id;
-
-        if (fetchedStoreId) {
-          setStoreId(fetchedStoreId);
-
-          const categoriesResponse = await fetch(`${API_URL}/api/categories?storeId=${fetchedStoreId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (categoriesResponse.ok) {
-            const data = await categoriesResponse.json();
-            const sorted = (data.categories || []).sort((a: Category, b: Category) => a.displayOrder - b.displayOrder);
-            setCategories(sorted);
-          }
-        }
+      if (categoriesResponse.ok) {
+        const data = await categoriesResponse.json();
+        const sorted = (data.categories || []).sort((a: Category, b: Category) => a.displayOrder - b.displayOrder);
+        setCategories(sorted);
       }
     } catch (error) {
       console.error('Error fetching data:', error);

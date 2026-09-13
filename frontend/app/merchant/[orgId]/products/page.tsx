@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Plus, Edit2, Trash2, Search, AlertCircle, Package, GripVertical } from 'lucide-react';
 import {
   DndContext,
@@ -20,6 +19,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useCurrentStore } from '@/lib/current-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -177,9 +177,7 @@ function SortableProduct({ product, onEdit, onDelete, isLowStock, adjustStock }:
 }
 
 export default function ProductsPage() {
-  const params = useParams();
-  const orgId = params?.orgId as string;
-
+  const { storeId } = useCurrentStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
@@ -208,17 +206,17 @@ export default function ProductsPage() {
   );
 
   useEffect(() => {
-    if (orgId) {
+    if (storeId) {
       fetchProducts();
       fetchLowStockProducts();
       fetchCategories();
     }
-  }, [orgId]);
+  }, [storeId]);
 
   const fetchCategories = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/categories?orgId=${orgId}`, {
+      const response = await fetch(`${API_URL}/api/categories?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -234,7 +232,7 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/products?orgId=${orgId}`, {
+      const response = await fetch(`${API_URL}/api/products?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -253,7 +251,7 @@ export default function ProductsPage() {
   const fetchLowStockProducts = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/products/low-stock/by-org/${orgId}`, {
+      const response = await fetch(`${API_URL}/api/products/low-stock/by-store/${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -279,11 +277,6 @@ export default function ProductsPage() {
       setIsReordering(true);
       try {
         const token = localStorage.getItem('accessToken');
-        const storeResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const storeList = await storeResponse.json();
-        const storeId = storeList[0]?.id;
 
         const ordering = newOrder.map((prod, index) => ({
           id: prod.id,
@@ -359,14 +352,8 @@ export default function ProductsPage() {
           setMessage(`❌ ${errorMsg}`);
         }
       } else {
-        const storeResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const stores = await storeResponse.json();
-        const storeId = stores[0]?.id;
-
         if (!storeId) {
-          setMessage('❌ Aucune boutique trouvée pour cette organisation');
+          setMessage('❌ Aucune boutique sélectionnée');
           return;
         }
 

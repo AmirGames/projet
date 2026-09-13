@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Plus, Edit2, Trash2, Search, MapPin } from 'lucide-react';
+import { useCurrentStore } from '@/lib/current-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -19,10 +19,8 @@ interface DeliveryZone {
 }
 
 export default function DeliveryZonesPage() {
-  const params = useParams();
-  const orgId = params.orgId as string;
 
-  const [storeId, setStoreId] = useState<string>('');
+  const { storeId } = useCurrentStore();
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,11 +34,6 @@ export default function DeliveryZonesPage() {
   });
   const [formError, setFormError] = useState('');
 
-  useEffect(() => {
-    if (orgId) {
-      fetchStore();
-    }
-  }, [orgId]);
 
   useEffect(() => {
     if (storeId) {
@@ -48,22 +41,6 @@ export default function DeliveryZonesPage() {
     }
   }, [storeId]);
 
-  const fetchStore = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const stores = await response.json();
-        setStoreId(stores[0]?.id || '');
-      }
-    } catch (error) {
-      console.error('Error fetching store:', error);
-      setLoading(false);
-    }
-  };
 
   const fetchZones = async () => {
     try {

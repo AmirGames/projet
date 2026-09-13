@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Plus, Edit2, Trash2, Search, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
+import { useCurrentStore } from '@/lib/current-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,9 +24,8 @@ interface Promotion {
 }
 
 export default function PromotionsPage() {
-  const params = useParams();
-  const orgId = params?.orgId as string;
 
+  const { storeId } = useCurrentStore();
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,15 +44,15 @@ export default function PromotionsPage() {
   });
 
   useEffect(() => {
-    if (orgId) {
+    if (storeId) {
       fetchPromotions();
     }
-  }, [orgId]);
+  }, [storeId]);
 
   const fetchPromotions = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/promotions?orgId=${orgId}`, {
+      const response = await fetch(`${API_URL}/api/promotions?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -83,11 +82,6 @@ export default function PromotionsPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const storeResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const storeList = await storeResponse.json();
-      const storeId = storeList[0]?.id;
 
       const payload = {
         storeId,
