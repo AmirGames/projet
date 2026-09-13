@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { AuthService, JwtPayload } from "../services/auth.service.js";
-import { ApiError } from "./errorHandler.js";
+import { AuthService, JwtPayload } from "../services/auth.service";
+import { ApiError } from "./errorHandler";
 
 declare global {
   namespace Express {

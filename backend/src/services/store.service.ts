@@ -1,5 +1,5 @@
-import { db } from "./db.js";
-import { ApiError } from "../middleware/errorHandler.js";
+import { db } from "./db";
+import { ApiError } from "../middleware/errorHandler";
 
 export class StoreService {
   static async create(data: {

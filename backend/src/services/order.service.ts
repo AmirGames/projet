@@ -1,7 +1,7 @@
-import { db } from "./db.js";
-import { EmailService } from "./email.service.js";
-import { logger } from "../config/logger.js";
-import { ApiError } from "../middleware/errorHandler.js";
+import { db } from "./db";
+import { EmailService } from "./email.service";
+import { logger } from "../config/logger";
+import { ApiError } from "../middleware/errorHandler";
 
 export interface OrderData {
   storeId: string;

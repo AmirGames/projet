@@ -1,10 +1,10 @@
 import 'dotenv/config';
 import http from 'http';
-import { loadEnv } from "./config/env.js";
-import { logger } from "./config/logger.js";
-import { createApp } from "./app.js";
-import { initializeSocket } from "./config/socket.js";
-import { db } from "./services/db.js";
+import { loadEnv } from "./config/env";
+import { logger } from "./config/logger";
+import { createApp } from "./app";
+import { initializeSocket } from "./config/socket";
+import { db } from "./services/db";
 
 // Load environment variables
 const env = loadEnv();

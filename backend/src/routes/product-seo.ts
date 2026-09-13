@@ -1,8 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { ProductSeoService } from "../services/product-seo.service.js";
-import { authMiddleware } from "../middleware/auth.js";
-import { logger } from "../config/logger.js";
+import { ProductSeoService } from "../services/product-seo.service";
+import { authMiddleware } from "../middleware/auth";
+import { logger } from "../config/logger";
 
 const router = Router();
 

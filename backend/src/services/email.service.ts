@@ -1,5 +1,5 @@
-import { emailTransporter, EMAIL_CONFIG } from "../config/email.js";
-import { logger } from "../config/logger.js";
+import { emailTransporter, EMAIL_CONFIG } from "../config/email";
+import { logger } from "../config/logger";
 
 export interface EmailData {
   to: string;

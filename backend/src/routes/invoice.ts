@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { InvoiceService } from "../services/invoice.service.js";
-import { authMiddleware } from "../middleware/auth.js";
-import { logger } from "../config/logger.js";
+import { InvoiceService } from "../services/invoice.service";
+import { authMiddleware } from "../middleware/auth";
+import { logger } from "../config/logger";
 
 const router = Router();
 

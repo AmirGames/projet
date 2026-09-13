@@ -1,13 +1,13 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation.js";
-import { AuthService } from "../services/auth.service.js";
-import { UserService } from "../services/user.service.js";
-import { ApiError } from "../middleware/errorHandler.js";
-import { authMiddleware } from "../middleware/auth.js";
-import { logger } from "../config/logger.js";
-import { generateSlug } from "../utils/validation.js";
-import { db } from "../services/db.js";
+import { signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation";
+import { AuthService } from "../services/auth.service";
+import { UserService } from "../services/user.service";
+import { ApiError } from "../middleware/errorHandler";
+import { authMiddleware } from "../middleware/auth";
+import { logger } from "../config/logger";
+import { generateSlug } from "../utils/validation";
+import { db } from "../services/db";
 
 const router = Router();
 

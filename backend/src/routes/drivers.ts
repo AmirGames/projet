@@ -1,10 +1,10 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { db } from "../config/db.js";
-import { ApiError } from "../middleware/errorHandler.js";
-import { authMiddleware } from "../middleware/auth.js";
-import { logger } from "../config/logger.js";
-import { emitDeliveryUpdate } from "../config/socket.js";
+import { db } from "../config/db";
+import { ApiError } from "../middleware/errorHandler";
+import { authMiddleware } from "../middleware/auth";
+import { logger } from "../config/logger";
+import { emitDeliveryUpdate } from "../config/socket";
 
 const router = Router();
 

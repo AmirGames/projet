@@ -1,6 +1,6 @@
-import { db } from "./db.js";
-import { AuthService } from "./auth.service.js";
-import { ApiError } from "../middleware/errorHandler.js";
+import { db } from "./db";
+import { AuthService } from "./auth.service";
+import { ApiError } from "../middleware/errorHandler";
 
 export class UserService {
   static async createUser(email: string, password: string, name?: string) {

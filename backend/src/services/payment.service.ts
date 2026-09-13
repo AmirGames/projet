@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { db } from "./db.js";
+import { db } from "./db";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 

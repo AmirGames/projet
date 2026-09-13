@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { authMiddleware } from "../middleware/auth.js";
-import { paymentService } from "../services/payment.service.js";
+import { authMiddleware } from "../middleware/auth";
+import { paymentService } from "../services/payment.service";
 import { z } from "zod";
 
 const router = Router();

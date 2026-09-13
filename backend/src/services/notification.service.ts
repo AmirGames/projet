@@ -1,4 +1,4 @@
-import { db } from "./db.js";
+import { db } from "./db";
 
 export const notificationService = {
   async create(userId: string, title: string, message: string, type: string, relatedId?: string) {

@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { db } from "../services/db.js";
-import { ApiError } from "../middleware/errorHandler.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { db } from "../services/db";
+import { ApiError } from "../middleware/errorHandler";
+import { authMiddleware } from "../middleware/auth";
 import { z } from "zod";
 
 const router = Router();

@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { PaymentService } from "../services/payment.service.js";
-import { ApiError } from "../middleware/errorHandler.js";
-import { logger } from "../config/logger.js";
-import { STRIPE_CONFIG } from "../config/stripe.js";
+import { PaymentService } from "../services/payment.service";
+import { ApiError } from "../middleware/errorHandler";
+import { logger } from "../config/logger";
+import { STRIPE_CONFIG } from "../config/stripe";
 import Stripe from "stripe";
 
 const router = Router();

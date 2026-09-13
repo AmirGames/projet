@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { StaffService, StaffRole } from "../services/staff.service.js";
-import { ApiError } from "../middleware/errorHandler.js";
-import { authMiddleware } from "../middleware/auth.js";
-import { logger } from "../config/logger.js";
+import { StaffService, StaffRole } from "../services/staff.service";
+import { ApiError } from "../middleware/errorHandler";
+import { authMiddleware } from "../middleware/auth";
+import { logger } from "../config/logger";
 
 const router = Router();
 

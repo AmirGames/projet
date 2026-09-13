@@ -1,6 +1,6 @@
-import { db } from "./db.js";
-import { ApiError } from "../middleware/errorHandler.js";
-import { Decimal } from "@prisma/client/runtime/library.js";
+import { db } from "./db";
+import { ApiError } from "../middleware/errorHandler";
+import { Decimal } from "@prisma/client/runtime/library";
 
 export interface PaymentMethodData {
   type: string;

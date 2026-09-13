@@ -1,4 +1,4 @@
-import { db } from "../services/db.js";
+import { db } from "../services/db";
 
 export const queryOptimizers = {
   // Get orders with items and store details efficiently

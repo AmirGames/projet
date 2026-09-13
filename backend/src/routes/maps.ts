@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { db } from "../config/db.js";
-import { ApiError } from "../middleware/errorHandler.js";
-import { logger } from "../config/logger.js";
+import { db } from "../config/db";
+import { ApiError } from "../middleware/errorHandler";
+import { logger } from "../config/logger";
 
 const router = Router();
 

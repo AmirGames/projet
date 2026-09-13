@@ -1,5 +1,5 @@
 import winston from "winston";
-import { getEnv } from "./env.js";
+import { getEnv } from "./env";
 
 const colors = {
   error: "\x1b[31m",
