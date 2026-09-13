@@ -319,6 +319,16 @@ export default function ProductsPage() {
       return;
     }
 
+    if (!formData.sku.trim()) {
+      setMessage('❌ Le SKU du produit est requis');
+      return;
+    }
+
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      setMessage('❌ Le prix doit être supérieur à 0');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('accessToken');
 
@@ -360,22 +370,27 @@ export default function ProductsPage() {
         const storeData = await storeResponse.json();
         const storeId = storeData.store?.id || storeData.id;
 
+        const payload: any = {
+          storeId,
+          name: formData.name,
+          description: formData.description || undefined,
+          price: parseFloat(formData.price),
+          stock: parseInt(formData.stock) || 0,
+          sku: formData.sku,
+          status: formData.status,
+        };
+
+        if (formData.categoryId && formData.categoryId.trim()) {
+          payload.categoryId = formData.categoryId;
+        }
+
         const response = await fetch(`${API_URL}/api/products`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            storeId,
-            name: formData.name,
-            description: formData.description,
-            price: parseFloat(formData.price),
-            stock: parseInt(formData.stock),
-            sku: formData.sku,
-            status: formData.status,
-            categoryId: formData.categoryId || undefined,
-          }),
+          body: JSON.stringify(payload),
         });
 
         if (response.ok) {
