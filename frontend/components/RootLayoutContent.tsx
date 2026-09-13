@@ -16,18 +16,23 @@ export default function RootLayoutContent({
 
   useEffect(() => {
     const initializeTheme = async () => {
-      const token = localStorage.getItem('accessToken');
-      const isSuperOwner = localStorage.getItem('isSuperOwner') === 'true';
+      try {
+        const token = localStorage.getItem('accessToken');
+        const isSuperOwner = localStorage.getItem('isSuperOwner') === 'true';
 
-      if (token && isSuperOwner) {
-        await loadThemeFromAPI(API_URL, token);
-      } else {
+        if (token && isSuperOwner) {
+          await loadThemeFromAPI(API_URL, token);
+        } else {
+          loadSavedTheme();
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement du thème:', error);
         loadSavedTheme();
       }
     };
 
     initializeTheme();
-  }, []);
+  }, [API_URL]);
 
   // Don't show Navbar for admin/merchant/client/superowner/driver routes (they have their own layouts)
   const hideNavbar = pathname?.startsWith('/admin') ||
