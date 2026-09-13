@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, Trash2, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
 import { StripePayment } from '@/components/stripe-payment';
+import PromoCode from './promo-code';
+import PaymentMethods from './payment-methods';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -34,6 +36,9 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('cash');
   const [orderId, setOrderId] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string | null>(null);
 
   useEffect(() => {
     loadCustomerInfo();
@@ -98,6 +103,7 @@ export default function CheckoutPage() {
       }));
 
       // For multi-restaurant order, we create one parent order
+      const totalAmount = getTotalWithDelivery() - discountAmount;
       const orderResponse = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
         headers: {
@@ -106,11 +112,14 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           orders: ordersByStore,
-          totalAmount: getTotalWithDelivery(),
+          totalAmount: Math.max(0, totalAmount),
           deliveryAddress,
           phone,
           notes,
-          paymentMethod
+          paymentMethod,
+          promoCode: appliedPromoCode,
+          discountAmount,
+          paymentMethodId: selectedPaymentMethodId
         })
       });
 
@@ -172,7 +181,8 @@ export default function CheckoutPage() {
 
   const cartTotal = getCartTotal();
   const deliveryFee = getDeliveryFee();
-  const total = getTotalWithDelivery();
+  const subtotal = getTotalWithDelivery();
+  const total = Math.max(0, subtotal - discountAmount);
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -255,6 +265,17 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {/* Promo Code */}
+            <div className="bg-gray-800 rounded-lg p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Code Promo</h2>
+              <PromoCode
+                onApply={(discountAmt, promoCode) => {
+                  setDiscountAmount(discountAmt);
+                  setAppliedPromoCode(promoCode);
+                }}
+              />
+            </div>
+
             {/* Delivery Information */}
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-bold text-white mb-4">Informations de livraison</h2>
@@ -306,41 +327,55 @@ export default function CheckoutPage() {
               <h2 className="text-xl font-bold text-white mb-4">Méthode de paiement</h2>
 
               {!showPaymentForm ? (
-                <div className="space-y-3">
-                  <label className="flex items-center p-4 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="card"
-                      checked={paymentMethod === 'card'}
-                      onChange={(e) => setPaymentMethod(e.target.value as 'card' | 'cash')}
-                      className="mr-3"
+                <div className="space-y-6">
+                  {/* Saved Payment Methods */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-300 mb-3">Cartes enregistrées</h3>
+                    <PaymentMethods
+                      onSelect={(methodId) => setSelectedPaymentMethodId(methodId)}
                     />
-                    <div>
-                      <p className="text-white font-semibold">Carte bancaire</p>
-                      <p className="text-gray-400 text-sm">Visa, Mastercard</p>
-                    </div>
-                  </label>
+                  </div>
 
-                  <label className="flex items-center p-4 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="cash"
-                      checked={paymentMethod === 'cash'}
-                      onChange={(e) => setPaymentMethod(e.target.value as 'card' | 'cash')}
-                      className="mr-3"
-                    />
-                    <div>
-                      <p className="text-white font-semibold">À la livraison</p>
-                      <p className="text-gray-400 text-sm">Paiement en espèces</p>
+                  {/* Payment Method Selection */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-300 mb-3">Mode de paiement</h3>
+                    <div className="space-y-3">
+                      <label className="flex items-center p-4 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600">
+                        <input
+                          type="radio"
+                          name="payment"
+                          value="card"
+                          checked={paymentMethod === 'card'}
+                          onChange={(e) => setPaymentMethod(e.target.value as 'card' | 'cash')}
+                          className="mr-3"
+                        />
+                        <div>
+                          <p className="text-white font-semibold">Carte bancaire</p>
+                          <p className="text-gray-400 text-sm">Visa, Mastercard</p>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center p-4 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600">
+                        <input
+                          type="radio"
+                          name="payment"
+                          value="cash"
+                          checked={paymentMethod === 'cash'}
+                          onChange={(e) => setPaymentMethod(e.target.value as 'card' | 'cash')}
+                          className="mr-3"
+                        />
+                        <div>
+                          <p className="text-white font-semibold">À la livraison</p>
+                          <p className="text-gray-400 text-sm">Paiement en espèces</p>
+                        </div>
+                      </label>
                     </div>
-                  </label>
+                  </div>
                 </div>
               ) : (
                 <StripePayment
                   orderId={orderId || ''}
-                  amount={getTotalWithDelivery()}
+                  amount={total}
                   customerEmail={customer?.email || ''}
                   customerName={customer?.name || ''}
                   onPaymentComplete={handlePaymentComplete}
@@ -363,6 +398,12 @@ export default function CheckoutPage() {
                   <span>Frais de livraison</span>
                   <span>€{(deliveryFee / 100).toFixed(2)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-green-400">
+                    <span>Remise</span>
+                    <span>-€{(discountAmount / 100).toFixed(2)}</span>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-gray-600 pt-4 mb-6">

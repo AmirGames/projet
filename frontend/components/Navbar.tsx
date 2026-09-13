@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { LogOut, Menu } from 'lucide-react';
 import { useState } from 'react';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const router = useRouter();
@@ -52,6 +53,7 @@ export default function Navbar() {
                     👑 Super Owner
                   </Link>
                 )}
+                <NotificationBell />
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition text-white"
