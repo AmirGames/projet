@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, MapPin, Star, Clock, TrendingUp, Heart } from 'lucide-react';
 
@@ -56,6 +56,21 @@ export default function ClientHomePage() {
     }
   }, []);
 
+  const loadNearbyStores = useCallback(async (lat: number, lng: number) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/api/client/stores/nearby?latitude=${lat}&longitude=${lng}&maxDistance=10`);
+      if (!response.ok) throw new Error('Failed to load nearby stores');
+
+      const data = await response.json();
+      setStores(data.data || []);
+    } catch (err) {
+      console.error('Error loading nearby stores:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const getLocationByGPS = useCallback(() => {
     if (!navigator.geolocation) {
       alert('Géolocalisation non supportée');
@@ -74,42 +89,7 @@ export default function ClientHomePage() {
         alert('Impossible d\'accéder à votre localisation');
       }
     );
-  };
-
-  const loadNearbyStores = useCallback(async (lat: number, lng: number) => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_URL}/api/client/stores/nearby?latitude=${lat}&longitude=${lng}&maxDistance=10`);
-      if (!response.ok) throw new Error('Failed to load nearby stores');
-
-      const data = await response.json();
-      setStores(data.data || []);
-    } catch (err) {
-      console.error('Error loading nearby stores:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const searchStores = async (query: string) => {
-    if (!query.trim()) {
-      loadStores();
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_URL}/api/client/stores/search?q=${encodeURIComponent(query)}`);
-      if (!response.ok) throw new Error('Search failed');
-
-      const data = await response.json();
-      setStores(data.data || []);
-    } catch (err) {
-      console.error('Search error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [loadNearbyStores]);
 
   const filterAndSortStores = () => {
     let filtered = stores;
