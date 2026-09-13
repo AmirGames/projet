@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refreshAuth } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -47,11 +49,12 @@ export default function LoginPage() {
         : orgId
           ? `/merchant/${orgId}/dashboard`
           : "/dashboard";
-      console.log("Redirecting to:", redirectPath);
 
-      setTimeout(() => {
-        router.push(redirectPath);
-      }, 100);
+      // Sans cela le contexte reste sur l'état déconnecté et les pages
+      // protégées renvoient aussitôt vers /login.
+      await refreshAuth();
+
+      router.push(redirectPath);
     } catch (err) {
       setError("Erreur de connexion");
       console.error(err);

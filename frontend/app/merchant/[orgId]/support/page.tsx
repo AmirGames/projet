@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { MessageCircle, Plus, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { MessageCircle, Plus, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { TicketConversation } from '@/components/TicketConversation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -16,6 +17,8 @@ interface Ticket {
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;
+  archivedAt?: string | null;
+  _count?: { messages: number };
 }
 
 export default function SupportPage() {
@@ -31,16 +34,18 @@ export default function SupportPage() {
     priority: 'MEDIUM',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [openTicketId, setOpenTicketId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     fetchTickets();
-  }, [orgId]);
+  }, [orgId, showArchived]);
 
   const fetchTickets = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/support/tickets?orgId=${orgId}`, {
+      const response = await fetch(`${API_URL}/api/support/tickets?orgId=${orgId}&archived=${showArchived}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -122,13 +127,24 @@ export default function SupportPage() {
           </h1>
           <p className="text-gray-400 mt-2">Gérez vos tickets de support</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg"
-        >
-          <Plus size={20} />
-          Nouveau ticket
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setShowArchived(!showArchived);
+              setOpenTicketId(null);
+            }}
+            className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm"
+          >
+            {showArchived ? 'Voir les tickets actifs' : 'Voir les archives'}
+          </button>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg"
+          >
+            <Plus size={20} />
+            Nouveau ticket
+          </button>
+        </div>
       </div>
 
       {/* New Ticket Form */}
@@ -222,22 +238,50 @@ export default function SupportPage() {
               key={ticket.id}
               className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    {getStatusIcon(ticket.status)}
-                    <h3 className="text-white font-semibold">{ticket.title}</h3>
+              <button
+                onClick={() => setOpenTicketId(openTicketId === ticket.id ? null : ticket.id)}
+                className="w-full text-left"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      {getStatusIcon(ticket.status)}
+                      <h3 className="text-white font-semibold">{ticket.title}</h3>
+                    </div>
+                    <p className="text-gray-400 text-sm mb-2">{ticket.description}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+                      <span>{new Date(ticket.createdAt).toLocaleDateString('fr-FR')}</span>
+                      <span className={`px-2 py-1 rounded ${getPriorityColor(ticket.priority)}`}>
+                        {ticket.priority}
+                      </span>
+                      <span className="capitalize">{ticket.status}</span>
+                      {(ticket._count?.messages ?? 0) > 0 && (
+                        <span className="flex items-center gap-1 text-blue-400">
+                          <MessageCircle size={12} />
+                          {ticket._count?.messages}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-gray-400 text-sm mb-2">{ticket.description}</p>
-                  <div className="flex items-center gap-3 text-xs text-gray-500">
-                    <span>{new Date(ticket.createdAt).toLocaleDateString('fr-FR')}</span>
-                    <span className={`px-2 py-1 rounded ${getPriorityColor(ticket.priority)}`}>
-                      {ticket.priority}
-                    </span>
-                    <span className="capitalize">{ticket.status}</span>
-                  </div>
+                  {openTicketId === ticket.id ? (
+                    <ChevronDown size={20} className="text-gray-400 flex-shrink-0" />
+                  ) : (
+                    <ChevronRight size={20} className="text-gray-400 flex-shrink-0" />
+                  )}
                 </div>
-              </div>
+              </button>
+
+              {openTicketId === ticket.id && (
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <TicketConversation
+                    basePath="/api/support/tickets"
+                    ticketId={ticket.id}
+                    viewerRole="MERCHANT"
+                    readOnly={!!ticket.archivedAt}
+                    onSent={fetchTickets}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>

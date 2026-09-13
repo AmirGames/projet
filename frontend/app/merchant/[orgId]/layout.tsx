@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { NotificationBell } from '@/components/NotificationBell';
 import {
   Package,
   ShoppingCart,
@@ -154,7 +155,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-4 overflow-y-auto no-scrollbar">
           {navSections.map((section, index) => (
             <div key={section.title ?? `section-${index}`} className="space-y-1">
               {sidebarOpen && section.title && (
@@ -206,7 +207,10 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <div className="text-sm text-gray-400">Gestion du Commerce</div>
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+            <span className="text-sm text-gray-400">Gestion du Commerce</span>
+          </div>
         </header>
 
         {/* Status Banner */}

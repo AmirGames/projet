@@ -30,6 +30,7 @@ model User {
   memberships   Membership[]
   auditLogs     SystemAuditLog[]
   driver        Driver?
+  ticketMessages TicketMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -138,8 +139,12 @@ model MerchantTicket {
   priority        String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
   category        String    // TECHNICAL, BILLING, ACCOUNT, OTHER
 
+  // Archivage (uniquement pour les tickets fermés)
+  archivedAt      DateTime?
+
   // Relations
   org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  messages        TicketMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -147,6 +152,26 @@ model MerchantTicket {
 
   @@index([orgId])
   @@index([status])
+  @@index([createdAt])
+  @@index([archivedAt])
+}
+
+model TicketMessage {
+  id          String   @id @default(cuid())
+  ticketId    String
+  authorId    String
+  authorName  String
+  // MERCHANT ou ADMIN : détermine le côté affiché dans la conversation
+  authorRole  String
+  body        String
+
+  // Relations
+  ticket      MerchantTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
   @@index([createdAt])
 }
 
@@ -1010,16 +1035,21 @@ enum NotificationType {
   REVIEW_RECEIVED
   PAYMENT_FAILED
   PAYMENT_SUCCEEDED
+  TICKET_MESSAGE
 }
 
 model Notification {
   id              String            @id @default(cuid())
-  storeId         String
+  // Optionnel : une notification de ticket ne dépend d'aucune boutique
+  storeId         String?
 
   type            NotificationType
   title           String
   message         String
   recipientEmail  String
+
+  // Lien profond ouvert au clic sur la notification
+  link            String?
 
   // Status
   isRead          Boolean           @default(false)
@@ -1031,7 +1061,7 @@ model Notification {
   relatedProductId String?
 
   // Relations
-  store           Store             @relation("NotificationToStore", fields: [storeId], references: [id], onDelete: Cascade)
+  store           Store?            @relation("NotificationToStore", fields: [storeId], references: [id], onDelete: Cascade)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

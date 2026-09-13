@@ -4,8 +4,28 @@ import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
+import { TicketMessageService } from "../services/ticket-message.service";
 
 const router = Router();
+
+// Un membre ne peut agir que sur les tickets de son organisation.
+async function assertTicketAccess(ticketId: string, req: Request) {
+  const ticket = await db.merchantTicket.findUnique({ where: { id: ticketId } });
+
+  if (!ticket) {
+    throw new ApiError(404, "Ticket non trouvé", "NOT_FOUND");
+  }
+
+  const membership = await db.membership.findFirst({
+    where: { userId: req.userId, orgId: ticket.orgId },
+  });
+
+  if (!membership) {
+    throw new ApiError(403, "Accès refusé à ce ticket", "FORBIDDEN");
+  }
+
+  return ticket;
+}
 
 const createTicketSchema = z.object({
   orgId: z.string().min(1, "orgId requis"),
@@ -57,10 +77,14 @@ router.get("/tickets", authMiddleware, async (req: Request, res: Response, next:
 
     logger.info("Fetching support tickets", { orgId });
 
+    const archived = req.query.archived === "true";
+
     const tickets = await db.merchantTicket.findMany({
       where: {
         orgId,
+        archivedAt: archived ? { not: null } : null,
       },
+      include: { _count: { select: { messages: true } } },
       orderBy: {
         createdAt: "desc",
       },
@@ -119,6 +143,42 @@ router.patch("/tickets/:id/status", authMiddleware, async (req: Request, res: Re
       message: "Statut du ticket mis à jour",
       data: ticket,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /support/tickets/:id/messages - Conversation du ticket (protected)
+router.get("/tickets/:id/messages", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    await assertTicketAccess(id, req);
+
+    const messages = await TicketMessageService.list(id);
+
+    res.json({ data: messages, count: messages.length });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /support/tickets/:id/messages - Répondre en tant que commerçant (protected)
+router.post("/tickets/:id/messages", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const schema = z.object({ body: z.string().min(1, "Message requis") });
+    const body = schema.parse(req.body);
+
+    await assertTicketAccess(id, req);
+
+    const message = await TicketMessageService.add({
+      ticketId: id,
+      authorId: req.userId as string,
+      authorRole: "MERCHANT",
+      body: body.body,
+    });
+
+    res.status(201).json({ message: "Réponse envoyée", data: message });
   } catch (err) {
     next(err);
   }

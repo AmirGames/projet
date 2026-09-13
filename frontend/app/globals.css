@@ -85,3 +85,13 @@ a {
     @apply block text-sm font-medium text-gray-700 mb-1;
   }
 }
+
+/* Défilement conservé, barre masquée (menus latéraux) */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

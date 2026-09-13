@@ -7,7 +7,8 @@ interface Notification {
   title: string;
   message: string;
   type: string;
-  read: boolean;
+  isRead: boolean;
+  link?: string | null;
   createdAt: string;
 }
 
@@ -49,7 +50,7 @@ export function useNotifications() {
       });
 
       setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
@@ -67,7 +68,7 @@ export function useNotifications() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
       console.error('Error marking all as read:', err);

@@ -4,6 +4,7 @@ import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { MerchantClosureService } from "../services/merchant-closure.service";
+import { TicketMessageService } from "../services/ticket-message.service";
 import { logger } from "../config/logger";
 
 const router = Router();
@@ -351,7 +352,9 @@ router.get("/tickets", authMiddleware, isSystemAdmin, async (req: Request, res: 
     const status = getQueryString(req.query.status, "");
     const priority = getQueryString(req.query.priority, "");
 
-    const where: any = {};
+    const archived = getQueryString(req.query.archived, "") === "true";
+
+    const where: any = { archivedAt: archived ? { not: null } : null };
     if (status) where.status = status;
     if (priority) where.priority = priority;
 
@@ -361,6 +364,7 @@ router.get("/tickets", authMiddleware, isSystemAdmin, async (req: Request, res: 
       take: limit,
       include: {
         org: { select: { id: true, name: true } },
+        _count: { select: { messages: true } },
       },
       orderBy: [
         { priority: "desc" },
@@ -410,6 +414,73 @@ router.patch("/tickets/:ticketId", authMiddleware, isSystemAdmin, async (req: Re
     });
 
     res.json(ticket);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /admin/tickets/:ticketId/messages - Conversation du ticket
+router.get("/tickets/:ticketId/messages", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ticketId = req.params.ticketId as string;
+    const messages = await TicketMessageService.list(ticketId);
+
+    res.json({ data: messages, count: messages.length });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/tickets/:ticketId/messages - Répondre au commerçant
+router.post("/tickets/:ticketId/messages", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ticketId = req.params.ticketId as string;
+    const schema = z.object({ body: z.string().min(1, "Message requis") });
+    const body = schema.parse(req.body);
+
+    const message = await TicketMessageService.add({
+      ticketId,
+      authorId: (req as any).userId,
+      authorRole: "ADMIN",
+      body: body.body,
+    });
+
+    res.status(201).json({ message: "Réponse envoyée", data: message });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/tickets/:ticketId/archive - Archiver un ticket fermé
+router.post("/tickets/:ticketId/archive", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ticketId = req.params.ticketId as string;
+    const adminId = (req as any).userId;
+
+    const ticket = await TicketMessageService.archive(ticketId);
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId,
+        action: "ARCHIVE_TICKET",
+        target: ticketId,
+        changes: {} as any,
+      },
+    });
+
+    res.json({ message: "Ticket archivé", data: ticket });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/tickets/:ticketId/unarchive - Sortir un ticket des archives
+router.post("/tickets/:ticketId/unarchive", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ticketId = req.params.ticketId as string;
+    const ticket = await TicketMessageService.unarchive(ticketId);
+
+    res.json({ message: "Ticket désarchivé", data: ticket });
   } catch (err) {
     next(err);
   }

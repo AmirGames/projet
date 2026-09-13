@@ -2,11 +2,21 @@
 
 import { useState } from 'react';
 import { Bell } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/lib/use-notifications';
 
 export function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+
+  const handleClick = (notif: { id: string; isRead: boolean; link?: string | null }) => {
+    if (!notif.isRead) markAsRead(notif.id);
+    if (notif.link) {
+      setOpen(false);
+      router.push(notif.link);
+    }
+  };
 
   return (
     <div className="relative">
@@ -44,11 +54,9 @@ export function NotificationBell() {
               {notifications.map((notif) => (
                 <div
                   key={notif.id}
-                  onClick={() => !notif.read && markAsRead(notif.id)}
+                  onClick={() => handleClick(notif)}
                   className={`p-3 cursor-pointer transition ${
-                    notif.read
-                      ? 'bg-gray-800 hover:bg-gray-750'
-                      : 'bg-gray-750 hover:bg-gray-700'
+                    notif.isRead ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-700/60 hover:bg-gray-700'
                   }`}
                 >
                   <div className="flex justify-between items-start gap-2">
@@ -56,10 +64,10 @@ export function NotificationBell() {
                       <p className="font-semibold text-white text-sm">{notif.title}</p>
                       <p className="text-gray-400 text-xs mt-1">{notif.message}</p>
                       <p className="text-gray-500 text-xs mt-2">
-                        {new Date(notif.createdAt).toLocaleTimeString()}
+                        {new Date(notif.createdAt).toLocaleString('fr-FR')}
                       </p>
                     </div>
-                    {!notif.read && <div className="w-2 h-2 bg-orange-500 rounded-full mt-1" />}
+                    {!notif.isRead && <div className="w-2 h-2 bg-orange-500 rounded-full mt-1 flex-shrink-0" />}
                   </div>
                 </div>
               ))}

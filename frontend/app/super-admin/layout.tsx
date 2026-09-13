@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
+import { NotificationBell } from '@/components/NotificationBell';
 import {
   BarChart3,
   Users,
@@ -113,7 +114,10 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <div className="text-sm text-gray-400">Super Admin - Gestion Système</div>
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+            <span className="text-sm text-gray-400">Super Admin - Gestion Système</span>
+          </div>
         </header>
 
         {/* Page Content */}
