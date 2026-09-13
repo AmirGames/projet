@@ -48,8 +48,8 @@ export default function Navbar() {
                 <Link href="/dashboard" className="text-gray-300 hover:text-white transition">
                   Dashboard
                 </Link>
-                {user.isSystemAdmin && (
-                  <Link href="/admin/super-owner" className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition font-medium text-sm">
+                {user.isSuperOwner && (
+                  <Link href="/superowner" className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition font-medium text-sm">
                     👑 Super Owner
                   </Link>
                 )}
@@ -106,9 +106,9 @@ export default function Navbar() {
                 >
                   Dashboard
                 </Link>
-                {user.isSystemAdmin && (
+                {user.isSuperOwner && (
                   <Link
-                    href="/admin/super-owner"
+                    href="/superowner"
                     className="block px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-white"
                   >
                     👑 Super Owner

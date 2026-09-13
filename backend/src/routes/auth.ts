@@ -120,6 +120,8 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
         id: user.id,
         email: user.email,
         name: user.name,
+        isSuperOwner: user.isSuperOwner,
+        isSystemAdmin: user.isSystemAdmin,
       },
       organization: {
         id: primaryMembership.org.id,
@@ -181,6 +183,8 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         id: user.id,
         email: user.email,
         name: user.name,
+        isSuperOwner: user.isSuperOwner,
+        isSystemAdmin: user.isSystemAdmin,
       },
       organizations: memberships.map((m) => ({
         id: m.org.id,
