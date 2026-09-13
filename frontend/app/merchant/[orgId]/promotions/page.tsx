@@ -83,11 +83,11 @@ export default function PromotionsPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const storeResponse = await fetch(`${API_URL}/api/stores/${orgId}`, {
+      const storeResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const storeData = await storeResponse.json();
-      const storeId = storeData.store?.id || storeData.id;
+      const storeList = await storeResponse.json();
+      const storeId = storeList[0]?.id;
 
       const payload = {
         storeId,

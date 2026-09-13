@@ -76,13 +76,13 @@ export default function StaffPage() {
   const fetchStore = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/stores/${orgId}`, {
+      const response = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setStoreId(data.store?.id || data.id);
+        const stores = await response.json();
+        setStoreId(stores[0]?.id || '');
       }
     } catch (error) {
       console.error('Error fetching store:', error);

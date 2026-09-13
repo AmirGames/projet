@@ -218,7 +218,7 @@ export default function ProductsPage() {
   const fetchCategories = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/categories?storeId=${orgId}`, {
+      const response = await fetch(`${API_URL}/api/categories?orgId=${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -234,7 +234,7 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/products?storeId=${orgId}`, {
+      const response = await fetch(`${API_URL}/api/products?orgId=${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -279,11 +279,11 @@ export default function ProductsPage() {
       setIsReordering(true);
       try {
         const token = localStorage.getItem('accessToken');
-        const storeResponse = await fetch(`${API_URL}/api/stores/${orgId}`, {
+        const storeResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const storeData = await storeResponse.json();
-        const storeId = storeData.store?.id || storeData.id;
+        const storeList = await storeResponse.json();
+        const storeId = storeList[0]?.id;
 
         const ordering = newOrder.map((prod, index) => ({
           id: prod.id,

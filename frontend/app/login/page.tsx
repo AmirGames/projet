@@ -37,7 +37,16 @@ export default function LoginPage() {
       });
 
       // Redirect based on role
-      const redirectPath = result.user?.isSuperOwner ? "/super-admin" : "/dashboard";
+      const orgId = result.organization?.id;
+      if (orgId) {
+        localStorage.setItem("currentOrgId", orgId);
+      }
+
+      const redirectPath = result.user?.isSuperOwner
+        ? "/super-admin"
+        : orgId
+          ? `/merchant/${orgId}/dashboard`
+          : "/dashboard";
       console.log("Redirecting to:", redirectPath);
 
       setTimeout(() => {
