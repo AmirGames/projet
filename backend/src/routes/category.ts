@@ -8,7 +8,7 @@ import { logger } from "../config/logger";
 const router = Router();
 
 const createCategorySchema = z.object({
-  storeId: z.string().uuid(),
+  storeId: z.string().min(1, "storeId requis"),
   name: z.string().min(2, "Nom minimum 2 caractères"),
   displayOrder: z.number().int().min(0).optional(),
 });

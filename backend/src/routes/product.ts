@@ -8,12 +8,12 @@ import { logger } from "../config/logger";
 const router = Router();
 
 const createProductSchema = z.object({
-  storeId: z.string().uuid(),
-  sku: z.string().min(1, "SKU requis"),
+  storeId: z.string().min(1, "storeId requis"),
+  sku: z.string().min(1, "SKU requis").optional(),
   name: z.string().min(2, "Nom minimum 2 caractères"),
   description: z.string().optional(),
   price: z.number().positive("Prix doit être positif"),
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.string().min(1, "categoryId invalide").optional().nullable(),
   stock: z.number().int().min(0, "Stock minimum 0").optional(),
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).optional(),
 });
@@ -23,7 +23,7 @@ const updateProductSchema = z.object({
   name: z.string().min(2).optional(),
   description: z.string().optional(),
   price: z.number().positive().optional(),
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.string().min(1).optional().nullable(),
   stock: z.number().int().min(0).optional(),
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).optional(),
 });
