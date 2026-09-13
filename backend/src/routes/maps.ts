@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { db } from "../config/db";
+import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 
