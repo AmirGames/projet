@@ -29,6 +29,7 @@ model User {
   // Relations
   memberships   Membership[]
   auditLogs     SystemAuditLog[]
+  driver        Driver?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -500,11 +501,13 @@ model Theme {
 
 model Driver {
   id              String    @id @default(cuid())
+  userId          String?   @unique // Link to User account (optional)
   name            String
   email           String    @unique
   phone           String
   vehicleType     String    // car, scooter, bike
   vehiclePlate    String?
+  licensePlate    String?   // Alias for vehiclePlate
 
   // Location
   latitude        Float?
@@ -514,6 +517,7 @@ model Driver {
   // Status
   status          String    @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, OFFLINE
   isOnline        Boolean   @default(false)
+  isAvailable     Boolean   @default(true)
   currentOrderId  String?   // Current delivery
 
   // Ratings
@@ -522,8 +526,10 @@ model Driver {
 
   // Financial
   totalEarnings   Decimal   @default(0) @db.Decimal(10, 2)
+  totalDeliveries Int       @default(0)
 
   // Relations
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   deliveries      OrderDelivery[]
   documents       DriverDocument[]
 
@@ -532,6 +538,7 @@ model Driver {
 
   @@index([status])
   @@index([isOnline])
+  @@index([userId])
 }
 
 model DriverDocument {
@@ -627,6 +634,7 @@ model Promotion {
   code        String
   description String?
   type        PromotionType
+  discountType String         @default("PERCENTAGE") // PERCENTAGE, FIXED_AMOUNT
   discountValue Decimal       @db.Decimal(10, 2)
 
   // Scope: which products/categories apply to
@@ -637,10 +645,15 @@ model Promotion {
   // Validity
   startDate   DateTime?
   endDate     DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean         @default(true)
 
   // Limits
+  minOrderAmount Decimal?     @db.Decimal(10, 2)
   maxUses     Int?            // null = unlimited
+  maxUsesPerCustomer Int?
   currentUses Int             @default(0)
+  timesUsed   Int             @default(0)
 
   status      String          @default("ACTIVE") // ACTIVE, INACTIVE, EXPIRED
 
@@ -884,9 +897,14 @@ enum PaymentMethodType {
 model PaymentMethod {
   id              String          @id @default(cuid())
   storeId         String
+  userId          String?         // For customer payment methods
 
   type            PaymentMethodType
   name            String          // "Stripe Card", "PayPal"
+
+  // Stripe specific
+  stripePaymentMethodId String?   @unique
+  stripeCustomerId String?
 
   // Configuration (JSON)
   // For Stripe: { apiKey, secretKey, webhookSecret }
@@ -910,6 +928,7 @@ model PaymentMethod {
 
   @@index([storeId])
   @@index([isActive])
+  @@index([userId])
 }
 
 // ============================================================================

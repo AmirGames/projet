@@ -1,7 +1,8 @@
 import { Server as HTTPServer } from 'http';
-import { Server as SocketIOServer, Socket } from 'socket.io';
+import { Server as SocketIOServer } from 'socket.io';
 import { logger } from './logger';
 import { verifyToken } from '../middleware/auth';
+import { AuthenticatedSocket } from '../types/socket';
 
 export let io: SocketIOServer;
 
@@ -14,7 +15,7 @@ export function initializeSocket(httpServer: HTTPServer) {
     transports: ['websocket', 'polling'],
   });
 
-  io.use((socket, next) => {
+  io.use((socket: AuthenticatedSocket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) {
       return next(new Error('Authentication token required'));
@@ -31,7 +32,7 @@ export function initializeSocket(httpServer: HTTPServer) {
     }
   });
 
-  io.on('connection', (socket: Socket) => {
+  io.on('connection', (socket: AuthenticatedSocket) => {
     logger.info('User connected', { userId: socket.userId, socketId: socket.id });
 
     socket.on('join-order', (orderId: string) => {
