@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   Package,
@@ -21,12 +21,18 @@ import {
   Star,
   AlertCircle,
   Clock,
+  Percent,
+  Megaphone,
+  Receipt,
+  BarChart3,
+  Timer,
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface OrgStatus {
   id: string;
+  name?: string;
   status: string;
   suspensionReason?: string;
   suspensionDate?: string;
@@ -41,6 +47,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
   const [loadingStatus, setLoadingStatus] = useState(true);
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const orgId = params?.orgId as string;
 
   useEffect(() => {
@@ -79,19 +86,48 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
     return Math.max(0, days);
   };
 
-  const navItems = [
-    { label: 'Dashboard', icon: Home, href: '/merchant' },
-    { label: 'Produits', icon: Package, href: `/merchant/${orgId}/products` },
-    { label: 'Catégories', icon: Zap, href: `/merchant/${orgId}/categories` },
-    { label: 'Commandes', icon: ShoppingCart, href: `/merchant/${orgId}/orders` },
-    { label: 'Clients', icon: Users, href: `/merchant/${orgId}/customers` },
-    { label: 'Avis', icon: Star, href: `/merchant/${orgId}/reviews` },
-    { label: 'Zones de livraison', icon: MapPin, href: `/merchant/${orgId}/delivery-zones` },
-    { label: 'Méthodes de paiement', icon: CreditCard, href: `/merchant/${orgId}/payment-methods` },
-    { label: 'Staff', icon: Users2, href: `/merchant/${orgId}/staff` },
-    { label: 'Factures', icon: FileText, href: `/merchant/${orgId}/invoices` },
-    { label: 'Support', icon: MessageCircle, href: `/merchant/${orgId}/support` },
-    { label: 'Paramètres', icon: Settings, href: `/merchant/${orgId}/settings` },
+  const navSections = [
+    {
+      title: null,
+      items: [{ label: 'Dashboard', icon: Home, href: `/merchant/${orgId}/dashboard` }],
+    },
+    {
+      title: 'Ventes',
+      items: [
+        { label: 'Commandes', icon: ShoppingCart, href: `/merchant/${orgId}/orders` },
+        { label: 'Clients', icon: Users, href: `/merchant/${orgId}/customers` },
+        { label: 'Avis', icon: Star, href: `/merchant/${orgId}/reviews` },
+      ],
+    },
+    {
+      title: 'Catalogue',
+      items: [
+        { label: 'Produits', icon: Package, href: `/merchant/${orgId}/products` },
+        { label: 'Catégories', icon: Zap, href: `/merchant/${orgId}/categories` },
+        { label: 'Promotions', icon: Percent, href: `/merchant/${orgId}/promotions` },
+      ],
+    },
+    {
+      title: 'Boutique',
+      items: [
+        { label: 'Horaires', icon: Timer, href: `/merchant/${orgId}/store-hours` },
+        { label: 'Zones de livraison', icon: MapPin, href: `/merchant/${orgId}/delivery-zones` },
+        { label: 'Méthodes de paiement', icon: CreditCard, href: `/merchant/${orgId}/payment-methods` },
+        { label: 'Taxes', icon: Receipt, href: `/merchant/${orgId}/tax-settings` },
+      ],
+    },
+    {
+      title: 'Gestion',
+      items: [
+        { label: 'Analytics', icon: BarChart3, href: `/merchant/${orgId}/analytics` },
+        { label: 'Rapports', icon: FileText, href: `/merchant/${orgId}/reports` },
+        { label: 'Marketing', icon: Megaphone, href: `/merchant/${orgId}/marketing` },
+        { label: 'Staff', icon: Users2, href: `/merchant/${orgId}/staff` },
+        { label: 'Factures', icon: FileText, href: `/merchant/${orgId}/invoices` },
+        { label: 'Support', icon: MessageCircle, href: `/merchant/${orgId}/support` },
+        { label: 'Paramètres', icon: Settings, href: `/merchant/${orgId}/settings` },
+      ],
+    },
   ];
 
   return (
@@ -105,24 +141,46 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
         {/* Logo */}
         <div className="p-6 border-b border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center font-bold">
-              M
+            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+              {orgStatus?.name?.charAt(0).toUpperCase() || 'M'}
             </div>
-            {sidebarOpen && <span className="font-bold text-lg">Merchant</span>}
+            {sidebarOpen && (
+              <div className="min-w-0">
+                <p className="font-bold text-sm truncate">{orgStatus?.name || 'Ma Boutique'}</p>
+                <p className="text-xs text-gray-400">Commerçant</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white"
-            >
-              <item.icon size={20} className="flex-shrink-0" />
-              {sidebarOpen && <span className="truncate">{item.label}</span>}
-            </Link>
+        <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+          {navSections.map((section, index) => (
+            <div key={section.title ?? `section-${index}`} className="space-y-1">
+              {sidebarOpen && section.title && (
+                <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  {section.title}
+                </p>
+              )}
+              {section.items.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    title={sidebarOpen ? undefined : item.label}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-orange-600/20 text-orange-400 font-medium'
+                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    }`}
+                  >
+                    <item.icon size={20} className="flex-shrink-0" />
+                    {sidebarOpen && <span className="truncate">{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
           ))}
         </nav>
 

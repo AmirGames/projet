@@ -174,7 +174,7 @@ export class ProductService {
 
   static async countByStoreId(storeId: string) {
     return await db.product.count({
-      where: { storeId },
+      where: { storeId, deletedAt: null },
     });
   }
 
@@ -199,6 +199,7 @@ export class ProductService {
     return await db.product.count({
       where: {
         store: { orgId },
+        deletedAt: null,
       },
     });
   }

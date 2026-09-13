@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   Package,
@@ -21,9 +21,13 @@ import {
   Star,
 } from 'lucide-react';
 
+// Pages directes de /merchant ; tout autre segment est un orgId.
+const STATIC_SEGMENTS = ['orders', 'register'];
+
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
   const [orgId, setOrgId] = useState<string>('');
 
   useEffect(() => {
@@ -39,6 +43,13 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
     localStorage.removeItem('currentOrgId');
     router.push('/login');
   };
+
+  // Les routes /merchant/[orgId]/* ont déjà leur propre navigation : sans cela,
+  // les deux layouts s'empilent et affichent deux barres latérales.
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length > 1 && !STATIC_SEGMENTS.includes(segments[1])) {
+    return <>{children}</>;
+  }
 
   const navItems = [
     { label: 'Dashboard', icon: Home, href: '/merchant' },

@@ -122,7 +122,7 @@ export default function MerchantDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Revenu Total</p>
-              <p className="text-3xl font-bold text-white mt-2">€{stats.totalRevenue.toFixed(2)}</p>
+              <p className="text-3xl font-bold text-white mt-2">{Number(stats.totalRevenue).toFixed(2)} €</p>
             </div>
             <TrendingUp size={32} className="text-orange-600" />
           </div>
@@ -202,7 +202,7 @@ export default function MerchantDashboard() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-white font-bold">€{order.totalAmount.toFixed(2)}</p>
+                    <p className="text-white font-bold">{Number(order.totalAmount).toFixed(2)} €</p>
                     <div
                       className={`text-xs px-2 py-1 rounded mt-2 ${
                         order.status === 'DELIVERED'

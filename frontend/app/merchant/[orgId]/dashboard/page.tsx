@@ -2,29 +2,43 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ShoppingCart, Users, Wallet, LogOut, Menu, X, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import {
+  ShoppingCart,
+  Users,
+  Wallet,
+  Package,
+  AlertCircle,
+  TrendingUp,
+  Store as StoreIcon,
+  ExternalLink,
+} from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 interface Store {
   id: string;
   name: string;
   slug: string;
-  email?: string | null;
-  phone?: string | null;
-  address?: string | null;
   city?: string | null;
-  postalCode?: string | null;
-  createdAt: string;
+  isOpen: boolean;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  status: string;
+  stores: Store[];
 }
 
 interface DashboardStats {
   totalOrders: number;
   totalRevenue: number;
-  activeCustomers: number;
+  uniqueCustomers: number;
   averageOrderValue: number;
   pendingOrders: number;
+  totalProducts: number;
 }
 
 export default function MerchantDashboard() {
@@ -32,306 +46,219 @@ export default function MerchantDashboard() {
   const router = useRouter();
   const orgId = params?.orgId as string;
 
-  const [store, setStore] = useState<Store | null>(null);
+  const [org, setOrg] = useState<Organization | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [userName, setUserName] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const userEmail = localStorage.getItem('userEmail');
-    if (userEmail) {
-      setUserName(userEmail.split('@')[0]);
-    }
-
-    if (orgId) {
-      fetchDashboardData();
-    }
+    if (orgId) fetchDashboardData();
   }, [orgId]);
 
   const fetchDashboardData = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    const auth = { Authorization: `Bearer ${token}` };
+
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
+      const [orgRes, ordersRes, productsRes] = await Promise.all([
+        fetch(`${API_URL}/api/organizations/${orgId}`, { headers: auth }),
+        fetch(`${API_URL}/api/orders?orgId=${orgId}`, { headers: auth }),
+        fetch(`${API_URL}/api/products?orgId=${orgId}`, { headers: auth }),
+      ]);
 
-      // Fetch store data
-      const storeResponse = await fetch(`${API_URL}/api/stores/${orgId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      if (orgRes.ok) setOrg(await orgRes.json());
+
+      const ordersData = ordersRes.ok ? await ordersRes.json() : { orders: [] };
+      const productsData = productsRes.ok ? await productsRes.json() : { pagination: { total: 0 } };
+      const orders = ordersData.orders || [];
+
+      // totalAmount est un Decimal en euros : aucune conversion de centimes.
+      const totalRevenue = orders.reduce(
+        (sum: number, o: any) => sum + Number(o.totalAmount || 0),
+        0
+      );
+      const customerKeys = new Set(
+        orders.map((o: any) => o.customerId || o.customerEmail).filter(Boolean)
+      );
+
+      setStats({
+        totalOrders: ordersData.pagination?.total ?? orders.length,
+        totalRevenue,
+        uniqueCustomers: customerKeys.size,
+        averageOrderValue: orders.length > 0 ? totalRevenue / orders.length : 0,
+        pendingOrders: orders.filter((o: any) => o.status === 'PENDING').length,
+        totalProducts: productsData.pagination?.total ?? 0,
       });
-
-      if (storeResponse.ok) {
-        const storeData = await storeResponse.json();
-        setStore(storeData.store);
-      }
-
-      // Fetch orders for stats
-      const ordersResponse = await fetch(`${API_URL}/api/orders?orgId=${orgId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (ordersResponse.ok) {
-        const ordersData = await ordersResponse.json();
-        const orders = ordersData.orders || [];
-
-        const totalRevenue = orders.reduce((sum: number, o: any) => sum + Number(o.totalAmount || 0), 0);
-        const pendingOrders = orders.filter((o: any) => o.status === 'PENDING').length;
-
-        setStats({
-          totalOrders: orders.length,
-          totalRevenue,
-          activeCustomers: orders.length > 0 ? Math.ceil(orders.length * 0.7) : 0,
-          averageOrderValue: orders.length > 0 ? totalRevenue / orders.length : 0,
-          pendingOrders,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+    } catch (err) {
+      setError('Impossible de charger les données du tableau de bord');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('userEmail');
-    router.push('/login');
-  };
+  if (loading) return <div className="text-center py-8">Chargement...</div>;
 
-  const storeUrl = store ? `http://localhost:3000/store/${store.slug}` : '';
-
-  if (loading) {
-    return (
-      <div className="flex h-screen bg-gray-900">
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">Chargement du tableau de bord...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const menuItems = [
-    { label: 'Tableau de Bord', href: `/merchant/${orgId}/dashboard`, icon: '📊' },
-    { label: 'Commandes', href: `/merchant/${orgId}/orders`, icon: '📦' },
-    { label: 'Produits', href: `/merchant/${orgId}/products`, icon: '🛍️' },
-    { label: 'Horaires', href: `/merchant/${orgId}/store-hours`, icon: '⏰' },
-    { label: 'Livraison', href: `/merchant/${orgId}/delivery-zones`, icon: '🚚' },
-    { label: 'Équipe', href: `/merchant/${orgId}/staff`, icon: '👨‍💼' },
-    { label: 'Clients', href: `/merchant/${orgId}/customers`, icon: '👥' },
-    { label: 'Rapports', href: `/merchant/${orgId}/reports`, icon: '📈' },
-    { label: 'Paramètres', href: `/merchant/${orgId}/settings`, icon: '⚙️' },
-  ];
+  const euro = (value: number) =>
+    value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <div className="flex h-screen bg-gray-900 text-gray-100">
-      {/* Sidebar */}
-      <aside
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } bg-gray-800 border-r border-gray-700 transition-all duration-300 flex flex-col`}
-      >
-        {/* Logo */}
-        <div className="p-6 border-b border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center font-bold text-sm">
-              {store?.name.charAt(0) || 'M'}
-            </div>
-            {sidebarOpen && (
-              <div>
-                <p className="font-bold text-sm">{store?.name || 'Ma Boutique'}</p>
-                <p className="text-xs text-gray-400">Commerçant</p>
-              </div>
-            )}
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold">Tableau de bord</h1>
+        <p className="text-gray-400 mt-1">
+          {org?.name ? `Vue d'ensemble de ${org.name}` : 'Vue d\'ensemble de votre commerce'}
+        </p>
+      </div>
+
+      {error && (
+        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
+          {error}
+        </div>
+      )}
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-gray-400 text-sm">Commandes</p>
+            <ShoppingCart size={20} className="text-blue-500" />
           </div>
+          <p className="text-3xl font-bold">{stats?.totalOrders ?? 0}</p>
+          <p className="text-sm text-gray-400 mt-2">depuis le début</p>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-          {menuItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors text-sm"
-            >
-              <span className="text-lg">{item.icon}</span>
-              {sidebarOpen && <span>{item.label}</span>}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Logout */}
-        <div className="p-4 border-t border-gray-700">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-900/20 transition-colors text-red-400 text-sm"
-          >
-            <LogOut size={20} />
-            {sidebarOpen && <span>Déconnexion</span>}
-          </button>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-gray-400 text-sm">Chiffre d'affaires</p>
+            <Wallet size={20} className="text-green-500" />
+          </div>
+          <p className="text-3xl font-bold">{euro(stats?.totalRevenue ?? 0)} €</p>
+          <p className="text-sm text-gray-400 mt-2">
+            Panier moyen : {euro(stats?.averageOrderValue ?? 0)} €
+          </p>
         </div>
-      </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar */}
-        <header className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-gray-400 text-sm">Clients</p>
+            <Users size={20} className="text-purple-500" />
+          </div>
+          <p className="text-3xl font-bold">{stats?.uniqueCustomers ?? 0}</p>
+          <p className="text-sm text-gray-400 mt-2">clients uniques</p>
+        </div>
+
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-gray-400 text-sm">Produits</p>
+            <Package size={20} className="text-yellow-500" />
+          </div>
+          <p className="text-3xl font-bold">{stats?.totalProducts ?? 0}</p>
+          <p className="text-sm text-gray-400 mt-2">au catalogue</p>
+        </div>
+      </div>
+
+      {/* Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <AlertCircle size={20} className="text-orange-500" />
+            Commandes en attente
+          </h2>
+          <p className="text-3xl font-bold text-orange-400">{stats?.pendingOrders ?? 0}</p>
+          <p className="text-sm text-gray-400 mt-2">à traiter</p>
+        </div>
+
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <TrendingUp size={20} className="text-green-500" />
+            Panier moyen
+          </h2>
+          <p className="text-3xl font-bold text-green-400">{euro(stats?.averageOrderValue ?? 0)} €</p>
+          <p className="text-sm text-gray-400 mt-2">par commande</p>
+        </div>
+      </div>
+
+      {/* Stores */}
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <StoreIcon size={20} className="text-blue-500" />
+          Mes boutiques ({org?.stores?.length ?? 0})
+        </h2>
+        {org?.stores && org.stores.length > 0 ? (
+          <div className="space-y-2">
+            {org.stores.map((store) => (
+              <div
+                key={store.id}
+                className="p-3 bg-gray-700 rounded-lg flex items-center justify-between gap-4"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{store.name}</p>
+                  <p className="text-sm text-gray-400 truncate">
+                    {store.city || 'Ville non renseignée'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      store.isOpen
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}
+                  >
+                    {store.isOpen ? 'Ouverte' : 'Fermée'}
+                  </span>
+                  <a
+                    href={`${SITE_URL}/store/${store.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 flex items-center gap-1 text-sm"
+                  >
+                    Voir <ExternalLink size={14} />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-400">Aucune boutique pour le moment</p>
+        )}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <h2 className="text-lg font-bold mb-4">Actions rapides</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Link
+            href={`/merchant/${orgId}/orders`}
+            className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-          <div className="text-sm text-gray-400">
-            Connecté en tant que <span className="text-red-400 font-semibold">{userName}</span>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-auto p-6 space-y-6">
-          {/* Header */}
-          <div>
-            <h1 className="text-3xl font-bold">Bienvenue, {store?.name}! 👋</h1>
-            <p className="text-gray-400 mt-1">Gérez votre boutique et vos commandes</p>
-          </div>
-
-          {/* Store Info Card */}
-          {store && (
-            <div className="bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-600/50 rounded-lg p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h2 className="text-lg font-bold mb-3">Votre Boutique</h2>
-                  <div className="space-y-2 text-sm">
-                    <p>
-                      <span className="text-gray-400">Nom:</span> <span className="font-semibold">{store.name}</span>
-                    </p>
-                    <p>
-                      <span className="text-gray-400">Adresse:</span> <span className="font-semibold">{store.address}{store.postalCode ? ', ' + store.postalCode : ''}{store.city ? ' ' + store.city : ''}</span>
-                    </p>
-                    <p>
-                      <span className="text-gray-400">Téléphone:</span> <span className="font-semibold">{store.phone}</span>
-                    </p>
-                    <p>
-                      <span className="text-gray-400">Email:</span> <span className="font-semibold">{store.email}</span>
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-bold mb-3">Lien de votre boutique</h3>
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 mb-3">
-                    <p className="text-xs text-gray-400 mb-1">URL publique:</p>
-                    <a
-                      href={storeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-red-400 hover:text-red-300 break-all font-mono text-sm"
-                    >
-                      {storeUrl}
-                    </a>
-                  </div>
-                  <button className="w-full py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold transition-colors">
-                    👁️ Voir ma boutique
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* KPI Cards */}
-          {stats && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-lg bg-blue-600/20 text-blue-400">
-                    <ShoppingCart size={24} />
-                  </div>
-                </div>
-                <p className="text-gray-400 text-sm mb-1">Total Commandes</p>
-                <p className="text-3xl font-bold">{stats.totalOrders}</p>
-                <p className="text-xs text-gray-500 mt-2">Depuis le début</p>
-              </div>
-
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-lg bg-green-600/20 text-green-400">
-                    <Wallet size={24} />
-                  </div>
-                </div>
-                <p className="text-gray-400 text-sm mb-1">Revenu Total</p>
-                <p className="text-3xl font-bold">${(stats.totalRevenue / 100).toFixed(0)}</p>
-                <p className="text-xs text-gray-500 mt-2">Revenu généré</p>
-              </div>
-
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-lg bg-purple-600/20 text-purple-400">
-                    <Users size={24} />
-                  </div>
-                </div>
-                <p className="text-gray-400 text-sm mb-1">Clients Actifs</p>
-                <p className="text-3xl font-bold">{stats.activeCustomers}</p>
-                <p className="text-xs text-gray-500 mt-2">Clients uniques</p>
-              </div>
-
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-lg bg-orange-600/20 text-orange-400">
-                    <AlertCircle size={24} className={stats.pendingOrders > 0 ? 'text-orange-400' : 'text-gray-500'} />
-                  </div>
-                </div>
-                <p className="text-gray-400 text-sm mb-1">Commandes en Attente</p>
-                <p className="text-3xl font-bold text-orange-400">{stats.pendingOrders}</p>
-                <p className="text-xs text-gray-500 mt-2">À traiter</p>
-              </div>
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <h2 className="text-lg font-bold mb-4">Actions Rapides</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Link
-                href={`/merchant/${orgId}/orders`}
-                className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors"
-              >
-                <p className="text-2xl mb-2">📦</p>
-                <p className="text-sm font-medium">Voir Commandes</p>
-              </Link>
-              <Link
-                href={`/merchant/${orgId}/products`}
-                className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors"
-              >
-                <p className="text-2xl mb-2">🛍️</p>
-                <p className="text-sm font-medium">Ajouter Produit</p>
-              </Link>
-              <Link
-                href={`/merchant/${orgId}/analytics`}
-                className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors"
-              >
-                <p className="text-2xl mb-2">📈</p>
-                <p className="text-sm font-medium">Analytics</p>
-              </Link>
-              <Link
-                href={`/merchant/${orgId}/settings`}
-                className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors"
-              >
-                <p className="text-2xl mb-2">⚙️</p>
-                <p className="text-sm font-medium">Paramètres</p>
-              </Link>
-            </div>
-          </div>
-
-          {/* Info */}
-          <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
-            <p className="text-blue-400 text-sm">
-              ℹ️ Votre boutique est en direct et prête à recevoir des commandes. Complétez votre catalogue de produits pour augmenter vos ventes!
-            </p>
-          </div>
-        </main>
+            Voir les commandes
+          </Link>
+          <Link
+            href={`/merchant/${orgId}/products`}
+            className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
+          >
+            Gérer le catalogue
+          </Link>
+          <Link
+            href={`/merchant/${orgId}/analytics`}
+            className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
+          >
+            Voir les statistiques
+          </Link>
+          <Link
+            href={`/merchant/${orgId}/settings`}
+            className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
+          >
+            Paramètres
+          </Link>
+        </div>
       </div>
     </div>
   );
