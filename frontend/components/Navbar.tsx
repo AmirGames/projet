@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { LogOut, Menu } from 'lucide-react';
 import { useState } from 'react';
-import NotificationBell from './NotificationBell';
+import { NotificationBell } from './NotificationBell';
 
 export default function Navbar() {
   const router = useRouter();
