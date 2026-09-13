@@ -3,6 +3,8 @@ import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
+import { MerchantClosureService } from "../services/merchant-closure.service";
+import { logger } from "../config/logger";
 
 const router = Router();
 
@@ -214,6 +216,115 @@ router.patch("/merchants/:orgId", authMiddleware, isSystemAdmin, async (req: Req
     });
 
     res.json(merchant);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/merchants/:orgId/suspend - Suspend merchant account
+router.post("/merchants/:orgId/suspend", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+    const schema = z.object({
+      reason: z.string().min(1, "La raison est requise"),
+    });
+
+    const body = schema.parse(req.body);
+    const adminId = (req as any).userId;
+
+    const updated = await MerchantClosureService.suspend(orgId, body.reason);
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId,
+        action: "SUSPEND_MERCHANT",
+        target: orgId,
+        changes: { reason: body.reason } as any,
+      },
+    });
+
+    logger.info("Merchant suspended by admin", { orgId, adminId, reason: body.reason });
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/merchants/:orgId/unsuspend - Unsuspend merchant account
+router.post("/merchants/:orgId/unsuspend", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+    const adminId = (req as any).userId;
+
+    const updated = await MerchantClosureService.unsuspend(orgId);
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId,
+        action: "UNSUSPEND_MERCHANT",
+        target: orgId,
+        changes: {} as any,
+      },
+    });
+
+    logger.info("Merchant unsuspended by admin", { orgId, adminId });
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/merchants/:orgId/close - Close merchant account
+router.post("/merchants/:orgId/close", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+    const schema = z.object({
+      reason: z.string().min(1, "La raison est requise"),
+    });
+
+    const body = schema.parse(req.body);
+    const adminId = (req as any).userId;
+
+    const result = await MerchantClosureService.close(orgId, body.reason);
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId,
+        action: "CLOSE_MERCHANT",
+        target: orgId,
+        changes: {
+          reason: body.reason,
+          archiveId: result.archive.id,
+        } as any,
+      },
+    });
+
+    logger.info("Merchant closed by admin", { orgId, adminId, reason: body.reason, archiveId: result.archive.id });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/merchants/:orgId/restore-from-backup - Restore merchant from backup
+router.post("/merchants/:orgId/restore-from-backup", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+    const adminId = (req as any).userId;
+
+    const updated = await MerchantClosureService.restoreFromBackup(orgId, adminId);
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId,
+        action: "RESTORE_MERCHANT",
+        target: orgId,
+        changes: {} as any,
+      },
+    });
+
+    logger.info("Merchant restored from backup by admin", { orgId, adminId });
+    res.json(updated);
   } catch (err) {
     next(err);
   }

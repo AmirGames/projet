@@ -5,6 +5,7 @@ import { logger } from "./config/logger";
 import { createApp } from "./app";
 import { initializeSocket } from "./config/socket";
 import { db } from "./services/db";
+import { ClosureJobs } from "./jobs/closure-jobs";
 
 // Load environment variables
 const env = loadEnv();
@@ -34,9 +35,13 @@ const start = async () => {
       logger.info(`🔌 WebSocket enabled`);
     });
 
+    // Start background jobs
+    ClosureJobs.startJobs();
+
     // Graceful shutdown
     const gracefulShutdown = async () => {
       logger.info("Shutting down gracefully...");
+      ClosureJobs.stopJobs();
       httpServer.close(() => {
         logger.info("Server closed");
       });

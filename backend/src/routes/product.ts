@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ProductService } from "../services/product.service";
 import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware } from "../middleware/auth";
+import { authMiddleware, checkOrgStatus } from "../middleware/auth";
 import { logger } from "../config/logger";
 
 const router = Router();
@@ -29,7 +29,7 @@ const updateProductSchema = z.object({
 });
 
 // POST /products - Create product (protected)
-router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/", authMiddleware, checkOrgStatus, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = createProductSchema.parse(req.body);
 

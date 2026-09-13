@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthService, JwtPayload } from "../services/auth.service";
 import { ApiError } from "./errorHandler";
+import { db } from "../services/db";
 
 declare global {
   namespace Express {
@@ -58,4 +59,33 @@ export function requireStore(req: Request, _res: Response, next: NextFunction) {
 
 export function verifyToken(token: string) {
   return AuthService.verifyAccessToken(token);
+}
+
+export async function checkOrgStatus(req: Request, _res: Response, next: NextFunction) {
+  try {
+    const orgId = req.orgId;
+    if (!orgId) {
+      return next(new ApiError(401, "Organisation non identifiée", "MISSING_ORG"));
+    }
+
+    const org = await db.organization.findUnique({
+      where: { id: orgId },
+    });
+
+    if (!org) {
+      return next(new ApiError(404, "Organisation non trouvée", "NOT_FOUND"));
+    }
+
+    if (org.status === "SUSPENDED") {
+      return next(new ApiError(403, "Ce compte est temporairement suspendu", "ACCOUNT_SUSPENDED"));
+    }
+
+    if (org.status === "CLOSED") {
+      return next(new ApiError(403, "Ce compte est fermé", "ACCOUNT_CLOSED"));
+    }
+
+    next();
+  } catch (err) {
+    next(err);
+  }
 }
