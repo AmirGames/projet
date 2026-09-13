@@ -80,7 +80,12 @@ export default function AdminSettingsPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          platformFeePercent: Number(formData.platformFeePercent),
+          minOrderAmount: Number(formData.minOrderAmount),
+          maxOrderAmount: Number(formData.maxOrderAmount),
+        }),
       });
 
       if (!res.ok) throw new Error("Erreur lors de la sauvegarde");

@@ -77,7 +77,12 @@ export default function SettingsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          platformFeePercent: Number(formData.platformFeePercent),
+          minOrderAmount: Number(formData.minOrderAmount),
+          maxOrderAmount: Number(formData.maxOrderAmount),
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to save');
