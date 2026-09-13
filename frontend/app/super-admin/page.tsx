@@ -114,7 +114,7 @@ export default function SuperAdminDashboard() {
             <p className="text-gray-400 text-sm">Revenu</p>
             <TrendingUp size={20} className="text-yellow-500" />
           </div>
-          <p className="text-3xl font-bold">{stats.revenue.toFixed(2)} €</p>
+          <p className="text-3xl font-bold">{Number(stats.revenue).toFixed(2)} €</p>
           <p className="text-sm text-gray-400 mt-2">Commission: {stats.config.platformFeePercent}%</p>
         </div>
       </div>
