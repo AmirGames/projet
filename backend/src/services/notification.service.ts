@@ -1,144 +1,62 @@
 import { db } from "./db.js";
-import { ApiError } from "../middleware/errorHandler.js";
 
-export interface NotificationData {
-  type: string;
-  title: string;
-  message: string;
-  recipientEmail: string;
-  relatedOrderId?: string;
-  relatedProductId?: string;
-}
+export const notificationService = {
+  async create(userId: string, title: string, message: string, type: string, relatedId?: string) {
+    return db.notification.create({
+      data: {
+        userId,
+        title,
+        message,
+        type,
+        relatedId,
+        read: false,
+      },
+    });
+  },
 
-export class NotificationService {
-  static async getNotifications(storeId: string, options?: { skip?: number; take?: number; isRead?: boolean }) {
-    try {
-      const skip = options?.skip || 0;
-      const take = options?.take || 50;
+  async getUserNotifications(userId: string, limit = 20) {
+    return db.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+  },
 
-      const whereClause: any = { storeId };
-      if (options?.isRead !== undefined) {
-        whereClause.isRead = options.isRead;
-      }
+  async markAsRead(notificationId: string) {
+    return db.notification.update({
+      where: { id: notificationId },
+      data: { read: true },
+    });
+  },
 
-      const [notifications, total] = await Promise.all([
-        db.notification.findMany({
-          where: whereClause,
-          skip,
-          take,
-          orderBy: { createdAt: "desc" },
-        }),
-        db.notification.count({ where: whereClause }),
-      ]);
+  async markAllAsRead(userId: string) {
+    return db.notification.updateMany({
+      where: { userId, read: false },
+      data: { read: true },
+    });
+  },
 
-      return { data: notifications, total, skip, take };
-    } catch (error) {
-      throw error;
-    }
-  }
+  async sendOrderNotification(orderId: string, customerId: string, status: string) {
+    const messages: Record<string, string> = {
+      PENDING: "Votre commande a été créée",
+      CONFIRMED: "Votre commande a été confirmée",
+      PREPARING: "Votre commande est en préparation",
+      READY: "Votre commande est prête",
+      PICKED_UP: "Votre commande est en route",
+      DELIVERED: "Votre commande a été livrée",
+      CANCELLED: "Votre commande a été annulée",
+    };
 
-  static async getNotification(storeId: string, notificationId: string) {
-    try {
-      const notification = await db.notification.findUnique({
-        where: { id: notificationId },
-      });
+    return this.create(
+      customerId,
+      "Mise à jour de commande",
+      messages[status] || "Mise à jour de votre commande",
+      "ORDER_UPDATE",
+      orderId
+    );
+  },
 
-      if (!notification || notification.storeId !== storeId) {
-        throw new ApiError(404, "Notification not found", "NOTIFICATION_NOT_FOUND");
-      }
-
-      return notification;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async createNotification(storeId: string, data: NotificationData) {
-    try {
-      const notification = await db.notification.create({
-        data: {
-          storeId,
-          type: data.type,
-          title: data.title,
-          message: data.message,
-          recipientEmail: data.recipientEmail,
-          relatedOrderId: data.relatedOrderId,
-          relatedProductId: data.relatedProductId,
-        },
-      });
-
-      return notification;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async markAsRead(storeId: string, notificationId: string) {
-    try {
-      const notification = await db.notification.findUnique({
-        where: { id: notificationId },
-      });
-
-      if (!notification || notification.storeId !== storeId) {
-        throw new ApiError(404, "Notification not found", "NOTIFICATION_NOT_FOUND");
-      }
-
-      const updated = await db.notification.update({
-        where: { id: notificationId },
-        data: {
-          isRead: true,
-          readAt: new Date(),
-        },
-      });
-
-      return updated;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async markAllAsRead(storeId: string) {
-    try {
-      const result = await db.notification.updateMany({
-        where: { storeId, isRead: false },
-        data: { isRead: true, readAt: new Date() },
-      });
-
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async deleteNotification(storeId: string, notificationId: string) {
-    try {
-      const notification = await db.notification.findUnique({
-        where: { id: notificationId },
-      });
-
-      if (!notification || notification.storeId !== storeId) {
-        throw new ApiError(404, "Notification not found", "NOTIFICATION_NOT_FOUND");
-      }
-
-      await db.notification.delete({
-        where: { id: notificationId },
-      });
-
-      return { success: true };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async getUnreadCount(storeId: string) {
-    try {
-      const count = await db.notification.count({
-        where: { storeId, isRead: false },
-      });
-
-      return { unreadCount: count };
-    } catch (error) {
-      throw error;
-    }
-  }
-}
+  async sendDriverNotification(driverId: string, title: string, message: string) {
+    return this.create(driverId, title, message, "DELIVERY", undefined);
+  },
+};

@@ -34,6 +34,8 @@ import superOwnerRouter from "./routes/superowner.js";
 import clientRouter from "./routes/client.js";
 import mapsRouter from "./routes/maps.js";
 import driversRouter from "./routes/drivers.js";
+import notificationsApiRouter from "./routes/notifications-api.js";
+import paymentMethodsApiRouter from "./routes/payment-methods-api.js";
 
 export function createApp(): Express {
   const app = express();
@@ -95,6 +97,8 @@ export function createApp(): Express {
   app.use("/api/client", clientRouter);
   app.use("/api/maps", mapsRouter);
   app.use("/api/drivers", driversRouter);
+  app.use("/api/notifications", notificationsApiRouter);
+  app.use("/api/payment-methods", paymentMethodsApiRouter);
 
   // ===== Error handling (must be last) =====
   setupErrorHandling(app);
