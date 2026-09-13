@@ -3,7 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 
 export interface ProductData {
   storeId: string;
-  sku: string;
+  sku?: string;
   name: string;
   description?: string;
   price: number;
@@ -15,10 +15,13 @@ export interface ProductData {
 export class ProductService {
   static async create(data: ProductData) {
     try {
+      // Generate SKU if not provided
+      const sku = data.sku || `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
       const product = await db.product.create({
         data: {
           storeId: data.storeId,
-          sku: data.sku,
+          sku: sku,
           name: data.name,
           description: data.description,
           price: data.price,
