@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Tag, AlertCircle, Check } from 'lucide-react';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 interface PromoCodeProps {
   orderAmount: number;
   onApply: (code: string, discount: number) => void;
@@ -23,7 +25,7 @@ export function PromoCode({ orderAmount, onApply }: PromoCodeProps) {
     setSuccess(false);
 
     try {
-      const response = await fetch('/api/promotions/validate', {
+      const response = await fetch(`${API_URL}/api/promotions/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, orderAmount }),
