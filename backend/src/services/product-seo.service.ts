@@ -91,13 +91,11 @@ export class ProductSeoService {
       const seo = await db.productSeo.findUnique({
         where: { slug },
         include: {
-          product: {
-            where: { storeId },
-          },
+          product: true,
         },
       });
 
-      if (!seo || !seo.product) {
+      if (!seo || !seo.product || seo.product.storeId !== storeId) {
         throw new ApiError(404, "Product not found", "PRODUCT_NOT_FOUND");
       }
 

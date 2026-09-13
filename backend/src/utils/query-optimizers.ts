@@ -45,7 +45,7 @@ export const queryOptimizers = {
       skip,
       take,
       include: {
-        productImages: { select: { id: true, url: true } },
+        images: { select: { id: true, url: true } },
         category: { select: { id: true, name: true } },
       }
     });

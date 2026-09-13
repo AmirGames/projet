@@ -18,16 +18,20 @@ export const paymentService = {
     return stripe.paymentIntents.retrieve(paymentIntentId);
   },
 
-  async savePaymentMethod(customerId: string, paymentMethodId: string, isDefault = false) {
+  async savePaymentMethod(customerId: string, paymentMethodId: string, storeId: string, isDefault = false) {
     const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
 
     const saved = await db.paymentMethod.create({
       data: {
+        storeId,
         userId: customerId,
         type: paymentMethod.type as any,
+        name: paymentMethod.card?.brand || "Card",
         stripePaymentMethodId: paymentMethodId,
-        last4: paymentMethod.card?.last4,
-        brand: paymentMethod.card?.brand,
+        config: {
+          last4: paymentMethod.card?.last4,
+          brand: paymentMethod.card?.brand,
+        },
         isDefault,
       },
     });

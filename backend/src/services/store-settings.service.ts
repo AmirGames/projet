@@ -65,7 +65,7 @@ export class StoreSettingsService {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
 
-      const currentSettings = store.settings || {};
+      const currentSettings = (typeof store.settings === 'object' && store.settings ? store.settings : {}) as Record<string, any>;
       const updatedSettings = {
         ...currentSettings,
         ...(data.timezone && { timezone: data.timezone }),
@@ -124,7 +124,7 @@ export class StoreSettingsService {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
 
-      const settings = store.settings || {};
+      const settings = (typeof store.settings === 'object' && store.settings ? store.settings : {}) as Record<string, any>;
       settings.logo = logoUrl;
 
       return await db.store.update({
@@ -146,7 +146,7 @@ export class StoreSettingsService {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
 
-      const settings = store.settings || {};
+      const settings = (typeof store.settings === 'object' && store.settings ? store.settings : {}) as Record<string, any>;
       settings.banner = bannerUrl;
 
       return await db.store.update({

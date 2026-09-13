@@ -83,7 +83,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
       active,
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

@@ -7,6 +7,7 @@ const router = Router();
 
 const paymentMethodInput = z.object({
   paymentMethodId: z.string().min(1),
+  storeId: z.string().min(1),
   isDefault: z.boolean().optional(),
 });
 
@@ -31,6 +32,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
     const method = await paymentService.savePaymentMethod(
       userId,
       input.paymentMethodId,
+      input.storeId,
       input.isDefault
     );
 

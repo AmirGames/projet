@@ -92,7 +92,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
       total: zones.length,
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

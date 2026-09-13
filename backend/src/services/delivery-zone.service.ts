@@ -23,7 +23,7 @@ export class DeliveryZoneService {
         data: {
           storeId: data.storeId,
           name: data.name,
-          polygon: data.polygon || null,
+          polygon: (data.polygon || null) as any,
           baseFee: data.baseFee,
           minOrder: data.minOrder || 0,
         },

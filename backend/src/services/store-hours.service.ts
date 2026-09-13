@@ -47,12 +47,12 @@ export class StoreHoursService {
       throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
     }
 
-    const hours = store.operatingHours || {};
+    const hours = (typeof store.operatingHours === 'object' && store.operatingHours ? store.operatingHours : {}) as Partial<OperatingHours>;
 
     return {
       operatingHours: { ...DEFAULT_HOURS, ...hours },
       isOpen: store.isOpen,
-      pickupSlots: (store.pickupSlots as PickupSlot[]) || [],
+      pickupSlots: (store.pickupSlots as unknown as PickupSlot[]) || [],
     };
   }
 
@@ -62,7 +62,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { operatingHours: updated },
+      data: { operatingHours: updated as any },
       select: { operatingHours: true },
     });
   }
@@ -82,7 +82,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { operatingHours: updated },
+      data: { operatingHours: updated as any },
       select: { operatingHours: true },
     });
   }
@@ -105,7 +105,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { operatingHours: updated },
+      data: { operatingHours: updated as any },
       select: { operatingHours: true },
     });
   }
@@ -134,7 +134,7 @@ export class StoreHoursService {
       throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
     }
 
-    const slots = (store.pickupSlots as PickupSlot[]) || [];
+    const slots = (store.pickupSlots as unknown as PickupSlot[]) || [];
     const newSlot = {
       id: `slot_${Date.now()}`,
       start: slot.start,
@@ -144,7 +144,7 @@ export class StoreHoursService {
 
     return await db.store.update({
       where: { id: storeId },
-      data: { pickupSlots: [...slots, newSlot] },
+      data: { pickupSlots: [...slots, newSlot] as any },
       select: { pickupSlots: true },
     });
   }
@@ -165,14 +165,14 @@ export class StoreHoursService {
       throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
     }
 
-    const slots = (store.pickupSlots as PickupSlot[]) || [];
+    const slots = (store.pickupSlots as unknown as PickupSlot[]) || [];
     const updated = slots.map((s) =>
       s.id === slotId ? { id: slotId, ...slot } : s
     );
 
     return await db.store.update({
       where: { id: storeId },
-      data: { pickupSlots: updated },
+      data: { pickupSlots: updated as any },
       select: { pickupSlots: true },
     });
   }
@@ -187,12 +187,12 @@ export class StoreHoursService {
       throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
     }
 
-    const slots = (store.pickupSlots as PickupSlot[]) || [];
+    const slots = (store.pickupSlots as unknown as PickupSlot[]) || [];
     const updated = slots.filter((s) => s.id !== slotId);
 
     return await db.store.update({
       where: { id: storeId },
-      data: { pickupSlots: updated },
+      data: { pickupSlots: updated as any },
       select: { pickupSlots: true },
     });
   }
