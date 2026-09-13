@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell, X } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { useNotifications } from '@/lib/use-notifications';
 
 export function NotificationBell() {
