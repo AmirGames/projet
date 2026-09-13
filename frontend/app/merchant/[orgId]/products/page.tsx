@@ -513,6 +513,18 @@ export default function ProductsPage() {
 
   const isLowStock = (product: Product) => product.stock <= product.lowStockThreshold;
 
+  const groupedProducts = filteredProducts.reduce((acc, product) => {
+    const categoryId = product.category?.id || 'uncategorized';
+    if (!acc[categoryId]) {
+      acc[categoryId] = {
+        category: product.category || { id: 'uncategorized', name: 'Sans catégorie' },
+        products: [],
+      };
+    }
+    acc[categoryId].products.push(product);
+    return acc;
+  }, {} as Record<string, { category: { id: string; name: string }; products: Product[] }>);
+
   if (loading) {
     return (
       <div className="flex h-screen bg-gray-900">
@@ -604,7 +616,7 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-6">
           {filteredProducts.length === 0 ? (
             <div className="text-center py-12 bg-gray-800 border border-gray-700 rounded-lg">
               <p className="text-gray-400">Aucun produit trouvé</p>
@@ -620,15 +632,25 @@ export default function ProductsPage() {
                 strategy={verticalListSortingStrategy}
                 disabled={isReordering}
               >
-                {filteredProducts.map(product => (
-                  <SortableProduct
-                    key={product.id}
-                    product={product}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    isLowStock={isLowStock}
-                    adjustStock={adjustStock}
-                  />
+                {Object.values(groupedProducts).map(group => (
+                  <div key={group.category.id} className="space-y-3">
+                    <div className="flex items-center gap-3 pt-2">
+                      <h2 className="text-xl font-bold">{group.category.name}</h2>
+                      <span className="text-sm text-gray-400">({group.products.length} produit{group.products.length !== 1 ? 's' : ''})</span>
+                    </div>
+                    <div className="space-y-3 pl-4 border-l-2 border-red-600">
+                      {group.products.map(product => (
+                        <SortableProduct
+                          key={product.id}
+                          product={product}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          isLowStock={isLowStock}
+                          adjustStock={adjustStock}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </SortableContext>
             </DndContext>
