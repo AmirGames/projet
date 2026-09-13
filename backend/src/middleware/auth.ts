@@ -55,3 +55,7 @@ export function requireStore(req: Request, _res: Response, next: NextFunction) {
 
   next();
 }
+
+export function verifyToken(token: string) {
+  return AuthService.verifyAccessToken(token);
+}

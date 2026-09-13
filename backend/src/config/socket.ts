@@ -1,7 +1,7 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import { logger } from './logger.js';
-import { verifyToken } from '../middleware/auth.js';
+import { logger } from './logger';
+import { verifyToken } from '../middleware/auth';
 
 export let io: SocketIOServer;
 
