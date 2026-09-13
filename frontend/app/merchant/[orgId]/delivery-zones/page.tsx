@@ -34,6 +34,7 @@ export default function DeliveryZonesPage() {
     baseFee: '',
     minOrder: '',
   });
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     if (orgId) {
@@ -49,7 +50,7 @@ export default function DeliveryZonesPage() {
 
   const fetchStore = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/stores/${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -66,7 +67,7 @@ export default function DeliveryZonesPage() {
 
   const fetchZones = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/delivery-zones?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -83,8 +84,21 @@ export default function DeliveryZonesPage() {
   };
 
   const handleSaveZone = async () => {
-    if (!formData.name || !formData.baseFee) {
-      alert('Please fill in all required fields');
+    setFormError('');
+
+    if (!formData.name.trim()) {
+      setFormError('Le nom de la zone est requis');
+      return;
+    }
+
+    if (!formData.baseFee) {
+      setFormError('Les frais de base sont requis');
+      return;
+    }
+
+    const baseFeeNum = parseFloat(formData.baseFee);
+    if (baseFeeNum < 0) {
+      setFormError('Les frais de base doivent être positifs');
       return;
     }
 
@@ -129,7 +143,7 @@ export default function DeliveryZonesPage() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/delivery-zones/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -152,12 +166,14 @@ export default function DeliveryZonesPage() {
       baseFee: zone.baseFee.toString(),
       minOrder: zone.minOrder?.toString() || '',
     });
+    setFormError('');
     setShowForm(true);
   };
 
   const handleAddZone = () => {
     setEditingZone(null);
     setFormData({ name: '', baseFee: '', minOrder: '' });
+    setFormError('');
     setShowForm(true);
   };
 
@@ -202,6 +218,11 @@ export default function DeliveryZonesPage() {
             <h2 className="text-xl font-bold text-white mb-4">
               {editingZone ? 'Modifier Zone' : 'Nouvelle Zone de Livraison'}
             </h2>
+            {formError && (
+              <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 mb-4 text-red-200">
+                {formError}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
                 <label className="text-slate-300 text-sm block mb-2">Nom de la Zone</label>
