@@ -190,7 +190,7 @@ export default function AdvancedSettingsPage() {
                 <label key={feature.id} className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={settings.enabledFeatures.includes(feature.id)}
+                    checked={settings?.enabledFeatures?.includes(feature.id) ?? false}
                     onChange={() => toggleFeature(feature.id)}
                     className="w-5 h-5 rounded border-gray-600"
                   />
