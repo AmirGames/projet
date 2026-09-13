@@ -15,10 +15,10 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
       where: { userId },
       include: {
         user: {
-          select: { id: true, email: true, name: true, phone: true }
+          select: { id: true, email: true, name: true }
         }
       }
-    });
+    }) as any;
 
     if (!driver) {
       throw new ApiError(404, "Driver not found", "DRIVER_NOT_FOUND");
@@ -28,9 +28,8 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
       success: true,
       data: {
         id: driver.id,
-        name: driver.user.name,
-        email: driver.user.email,
-        phone: driver.user.phone,
+        name: driver.user?.name,
+        email: driver.user?.email,
         rating: driver.rating,
         totalEarnings: driver.totalEarnings,
         completedDeliveries: driver.totalDeliveries,

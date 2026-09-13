@@ -77,7 +77,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
     const total = await StaffService.countByStoreId(storeId);
     const active = await StaffService.countActiveByStoreId(storeId);
 
-    res.json({
+    return res.json({
       staff,
       total,
       active,

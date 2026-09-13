@@ -6,7 +6,7 @@ import { authMiddleware } from "../middleware/auth";
 const router = Router();
 
 // GET /api/client/stores - Get all stores (public)
-router.get("/stores", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/stores", async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const stores = await db.store.findMany({
       where: { isOpen: true },
@@ -141,7 +141,7 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
     const { id } = req.params;
 
     const store = await db.store.findUnique({
-      where: { id },
+      where: { id: id as string },
       include: {
         org: {
           select: { id: true, name: true, slug: true, email: true }
@@ -165,7 +165,7 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
           }
         }
       }
-    });
+    }) as any;
 
     if (!store) {
       throw new ApiError(404, "Restaurant non trouvé", "NOT_FOUND");
@@ -208,7 +208,7 @@ router.get("/stores/:id/menu", async (req: Request, res: Response, next: NextFun
 
     const products = await db.product.findMany({
       where: {
-        storeId: id,
+        storeId: id as string,
         status: "ACTIVE"
       },
       include: {
@@ -319,7 +319,7 @@ router.delete("/me/favorites/:storeId", authMiddleware, async (req: Request, res
     const { storeId } = req.params;
 
     await db.favoriteStore.deleteMany({
-      where: { customerId: userId, storeId }
+      where: { customerId: userId, storeId: storeId as string }
     });
 
     res.json({

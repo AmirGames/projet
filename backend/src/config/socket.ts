@@ -24,8 +24,8 @@ export function initializeSocket(httpServer: HTTPServer) {
     try {
       const decoded = verifyToken(token);
       socket.userId = decoded.userId;
-      socket.userRole = decoded.userRole;
-      socket.organizationId = decoded.organizationId;
+      socket.userRole = decoded.role;
+      socket.organizationId = decoded.orgId;
       next();
     } catch (err) {
       next(new Error('Invalid token'));
@@ -66,11 +66,10 @@ export function emitOrderUpdate(orderId: string, status: string, data?: any) {
   });
 }
 
-export function emitDeliveryUpdate(orderId: string, location: any, eta?: number) {
+export function emitDeliveryUpdate(orderId: string, data: any) {
   io.to(`order-${orderId}`).emit('delivery-update', {
     orderId,
-    location,
-    eta,
     timestamp: new Date().toISOString(),
+    ...data,
   });
 }

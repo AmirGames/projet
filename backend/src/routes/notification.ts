@@ -43,7 +43,7 @@ router.post("/:storeId", authMiddleware, async (req: Request, res: Response, nex
       body.title,
       body.message,
       body.type,
-      body.relatedOrderId
+      body.relatedOrderId || ""
     );
     res.status(201).json({
       message: "Notification created successfully",

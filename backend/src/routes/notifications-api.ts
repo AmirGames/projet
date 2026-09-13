@@ -25,7 +25,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
 // PATCH /notifications/:id/read - Mark notification as read
 router.patch("/:id/read", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const notificationId = req.params.id;
+    const notificationId = req.params.id as string;
 
     await notificationService.markAsRead(notificationId);
 

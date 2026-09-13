@@ -41,6 +41,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
 
     const zone = await DeliveryZoneService.create({
       ...body,
+      minOrder: body.minOrder ?? 0,
       polygon: body.polygon ? (body.polygon as any) : undefined,
     });
 
@@ -86,7 +87,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
 
     const zones = await DeliveryZoneService.getByStoreId(storeId);
 
-    res.json({
+    return res.json({
       zones,
       total: zones.length,
     });
@@ -105,6 +106,7 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
 
     const zone = await DeliveryZoneService.update(id, {
       ...body,
+      minOrder: body.minOrder ?? undefined,
       polygon: body.polygon ? (body.polygon as any) : undefined,
     });
 

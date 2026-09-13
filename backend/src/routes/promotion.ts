@@ -97,7 +97,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
     const promotions = await PromotionService.getByStoreId(storeId);
     const total = await PromotionService.countByStoreId(storeId);
 
-    res.json({
+    return res.json({
       promotions,
       total,
     });
