@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, MapPin, Star, Clock, TrendingUp, Heart } from 'lucide-react';
 
@@ -41,7 +41,7 @@ export default function ClientHomePage() {
     filterAndSortStores();
   }, [stores, searchQuery, sortBy]);
 
-  const loadStores = async () => {
+  const loadStores = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/api/client/stores`);
@@ -54,9 +54,9 @@ export default function ClientHomePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const getLocationByGPS = () => {
+  const getLocationByGPS = useCallback(() => {
     if (!navigator.geolocation) {
       alert('Géolocalisation non supportée');
       return;
@@ -76,7 +76,7 @@ export default function ClientHomePage() {
     );
   };
 
-  const loadNearbyStores = async (lat: number, lng: number) => {
+  const loadNearbyStores = useCallback(async (lat: number, lng: number) => {
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/api/client/stores/nearby?latitude=${lat}&longitude=${lng}&maxDistance=10`);
@@ -89,7 +89,7 @@ export default function ClientHomePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const searchStores = async (query: string) => {
     if (!query.trim()) {

@@ -9,9 +9,12 @@ const router = Router();
 // Middleware to check if user is system admin
 const isSystemAdmin = async (req: Request, _res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req.user as any)?.userId;
+    if (!userId) throw new ApiError(401, "Authentification requise", "UNAUTHORIZED");
+
     const user = await db.user.findUnique({
       where: { id: userId },
+      select: { isSystemAdmin: true },
     });
 
     if (!user?.isSystemAdmin) {
@@ -95,8 +98,6 @@ router.get("/merchants", authMiddleware, isSystemAdmin, async (req: Request, res
       email: org.email,
       status: org.status,
       usersCount: org._count?.memberships || 0,
-      totalRevenue: Math.floor(Math.random() * 100000),
-      ordersCount: Math.floor(Math.random() * 500),
       createdAt: org.createdAt,
       subscriptionPlan: org.plan,
     }));
