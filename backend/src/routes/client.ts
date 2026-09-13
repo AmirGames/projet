@@ -1,9 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
-import { logger } from "../config/logger";
 
 const router = Router();
 
@@ -11,9 +9,9 @@ const router = Router();
 router.get("/stores", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const stores = await db.store.findMany({
-      where: { status: "OPEN" },
+      where: { isOpen: true },
       include: {
-        organization: {
+        org: {
           select: { id: true, name: true, slug: true }
         },
         products: {
@@ -49,9 +47,9 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
 
     // Récupérer tous les stores avec localisation
     const stores = await db.store.findMany({
-      where: { status: "OPEN", latitude: { not: null }, longitude: { not: null } },
+      where: { isOpen: true, latitude: { not: null }, longitude: { not: null } },
       include: {
-        organization: {
+        org: {
           select: { id: true, name: true, slug: true }
         },
         products: {
@@ -108,7 +106,7 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
 
     const stores = await db.store.findMany({
       where: {
-        status: "OPEN",
+        isOpen: true,
         OR: [
           { name: { contains: searchQuery, mode: "insensitive" } },
           { description: { contains: searchQuery, mode: "insensitive" } },
@@ -116,7 +114,7 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
         ].filter(Boolean) as any
       },
       include: {
-        organization: {
+        org: {
           select: { id: true, name: true, slug: true }
         },
         products: {
@@ -145,7 +143,7 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
     const store = await db.store.findUnique({
       where: { id },
       include: {
-        organization: {
+        org: {
           select: { id: true, name: true, slug: true, email: true }
         },
         products: {
@@ -157,7 +155,6 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
           },
           orderBy: { name: "asc" }
         },
-        hours: true,
         reviews: {
           take: 10,
           orderBy: { createdAt: "desc" },
