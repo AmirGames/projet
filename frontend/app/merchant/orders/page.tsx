@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight, Bell, AlertCircle, CheckCircle, Timer } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
@@ -197,7 +199,7 @@ export default function MerchantOrdersPage() {
                     <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                       <div>
                         <p className="text-gray-400">Montant</p>
-                        <p className="text-white font-semibold">€{(order.totalAmount / 100).toFixed(2)}</p>
+                        <p className="text-white font-semibold">{euro(order.totalAmount)}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-gray-400">Commande à</p>
@@ -250,7 +252,7 @@ export default function MerchantOrdersPage() {
                               <p className="text-gray-400">x{item.quantity}</p>
                             </div>
                             <p className="text-orange-400 font-semibold">
-                              €{((item.price * item.quantity) / 100).toFixed(2)}
+                              {euro((item.price * item.quantity))}
                             </p>
                           </div>
                         ))}

@@ -172,7 +172,7 @@ export default function MerchantRegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setApiError(data.message || 'Erreur lors de l\'inscription');
+        setApiError(data.error || data.message || 'Erreur lors de l\'inscription');
         return;
       }
 

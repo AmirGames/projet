@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Star, MapPin, Heart, Plus, Minus, ShoppingCart } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Product {
@@ -166,7 +168,7 @@ export default function RestaurantDetail() {
     }
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartTotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * item.quantity, 0);
   const deliveryFee = store?.deliveryCost || 0;
   const total = cartTotal + deliveryFee;
 
@@ -248,7 +250,7 @@ export default function RestaurantDetail() {
                 )}
                 {store.deliveryCost !== undefined && (
                   <div className="text-gray-400">
-                    Livraison: €{(store.deliveryCost / 100).toFixed(2)}
+                    Livraison: {euro(store.deliveryCost)}
                   </div>
                 )}
               </div>
@@ -288,7 +290,7 @@ export default function RestaurantDetail() {
                       <h3 className="text-white font-semibold">{product.name}</h3>
                       <p className="text-gray-400 text-sm mt-1">{product.description}</p>
                       <p className="text-orange-500 font-bold mt-2">
-                        €{(product.price / 100).toFixed(2)}
+                        {euro(product.price)}
                       </p>
                     </div>
                     <button
@@ -347,7 +349,7 @@ export default function RestaurantDetail() {
                             </button>
                           </div>
                           <span className="text-orange-400 font-semibold">
-                            €{((item.price * item.quantity) / 100).toFixed(2)}
+                            {euro((item.price * item.quantity))}
                           </span>
                         </div>
                       </div>
@@ -358,20 +360,20 @@ export default function RestaurantDetail() {
                   <div className="border-t border-gray-600 pt-4 space-y-2">
                     <div className="flex justify-between text-gray-400">
                       <span>Sous-total</span>
-                      <span>€{(cartTotal / 100).toFixed(2)}</span>
+                      <span>{euro(cartTotal)}</span>
                     </div>
                     <div className="flex justify-between text-gray-400">
                       <span>Livraison</span>
-                      <span>€{(deliveryFee / 100).toFixed(2)}</span>
+                      <span>{euro(deliveryFee)}</span>
                     </div>
                     <div className="flex justify-between text-white font-bold text-lg pt-2 border-t border-gray-600">
                       <span>Total</span>
-                      <span className="text-orange-500">€{(total / 100).toFixed(2)}</span>
+                      <span className="text-orange-500">{euro(total)}</span>
                     </div>
 
                     {store.minDeliveryAmount && cartTotal < store.minDeliveryAmount && (
                       <p className="text-red-400 text-sm mt-3">
-                        Minimum de commande: €{(store.minDeliveryAmount / 100).toFixed(2)}
+                        Minimum de commande: {euro(store.minDeliveryAmount)}
                       </p>
                     )}
                   </div>
@@ -401,7 +403,7 @@ export default function RestaurantDetail() {
             <h2 className="text-2xl font-bold text-white mb-2">{selectedProduct.name}</h2>
             <p className="text-gray-400 mb-4">{selectedProduct.description}</p>
             <p className="text-3xl font-bold text-orange-500 mb-6">
-              €{(selectedProduct.price / 100).toFixed(2)}
+              {euro(selectedProduct.price)}
             </p>
 
             <div className="flex gap-3">

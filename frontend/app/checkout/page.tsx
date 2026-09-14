@@ -50,7 +50,7 @@ export default function CheckoutPage() {
       );
 
       if (orderResult.error) {
-        setError(orderResult.message || "Erreur lors de la création de la commande");
+        setError(orderResult.error || orderResult.message || "Erreur lors de la création de la commande");
         return;
       }
 

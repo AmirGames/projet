@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Plus, Edit2, Trash2, Search, MapPin } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface DeliveryZone {
@@ -343,7 +345,7 @@ export default function DeliveryZonesPage() {
             <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
               <p className="text-slate-400 text-sm">Frais Moyen</p>
               <p className="text-2xl font-bold text-white mt-1">
-                {(zones.reduce((sum, z) => sum + z.baseFee, 0) / zones.length).toFixed(2)} €
+                {euro(zones.length > 0 ? zones.reduce((sum, z) => sum + Number(z.baseFee || 0), 0) / zones.length : 0)}
               </p>
             </div>
             <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">

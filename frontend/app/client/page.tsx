@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, MapPin, Star, Clock, TrendingUp, Heart } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Store {
@@ -252,7 +254,7 @@ export default function ClientHomePage() {
                         {store.deliveryCost !== undefined && (
                           <div className="mt-3 pt-3 border-t border-gray-700">
                             <span className="text-orange-400 font-semibold">
-                              Frais: €{(store.deliveryCost / 100).toFixed(2)}
+                              Frais: {euro(store.deliveryCost)}
                             </span>
                           </div>
                         )}

@@ -26,9 +26,32 @@ export default function AdminAnalytics() {
     fetchAnalytics();
   }, []);
 
+  // Agrège les lignes de toutes les commandes pour classer les produits.
+  const meilleuresVentes = (orders: any[], products: any[]) => {
+    const parProduit = new Map<string, { name: string; sales: number; revenue: number }>();
+
+    for (const order of orders) {
+      for (const item of order.items || []) {
+        const produit = products.find((p: any) => p.id === item.productId);
+        const nom = produit?.name || item.product?.name || 'Produit supprimé';
+        const actuel = parProduit.get(item.productId) || { name: nom, sales: 0, revenue: 0 };
+
+        actuel.sales += Number(item.quantity || 0);
+        actuel.revenue += Number(item.total || 0);
+        parProduit.set(item.productId, actuel);
+      }
+    }
+
+    return [...parProduit.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  };
+
   const fetchAnalytics = async () => {
     try {
-      const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
+      const storeId = localStorage.getItem('storeId');
+      if (!storeId) {
+        setLoading(false);
+        return;
+      }
       const token = localStorage.getItem('accessToken') || '';
       const [ordersRes, productsRes] = await Promise.all([
         apiClient.getOrders(storeId, token),
@@ -38,25 +61,21 @@ export default function AdminAnalytics() {
       const orders = Array.isArray(ordersRes) ? ordersRes : ordersRes.orders || [];
       const products = Array.isArray(productsRes) ? productsRes : productsRes.products || [];
 
-      const totalRevenue = orders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
+      const totalRevenue = orders.reduce((sum: number, order: any) => sum + Number(order.totalAmount || 0), 0);
       const totalOrders = orders.length;
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
       const dailyRevenue: Record<string, number> = {};
       orders.forEach((order: any) => {
         const date = new Date(order.createdAt).toLocaleDateString('fr-FR');
-        dailyRevenue[date] = (dailyRevenue[date] || 0) + (order.totalAmount || 0);
+        dailyRevenue[date] = (dailyRevenue[date] || 0) + Number(order.totalAmount || 0);
       });
 
       setAnalytics({
         totalRevenue,
         totalOrders,
         averageOrderValue,
-        topProducts: products.slice(0, 5).map((p: any) => ({
-          name: p.name,
-          sales: Math.floor(Math.random() * 100),
-          revenue: p.price * Math.floor(Math.random() * 100),
-        })),
+        topProducts: meilleuresVentes(orders, products),
         dailyRevenue: Object.entries(dailyRevenue).map(([date, amount]) => ({
           date,
           amount,

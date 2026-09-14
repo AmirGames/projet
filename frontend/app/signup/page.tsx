@@ -29,7 +29,7 @@ export default function SignupPage() {
       const result = await api.signup(email, password, name);
 
       if (result.error) {
-        setError(result.message || "Erreur d'inscription");
+        setError(result.error || result.message || "Erreur d'inscription");
         return;
       }
 

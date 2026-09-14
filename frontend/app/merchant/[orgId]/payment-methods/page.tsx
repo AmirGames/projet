@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { Trash2, Edit2, Power } from 'lucide-react';
 import Link from 'next/link';
 
+import { useCurrentStore } from '@/lib/current-store';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface PaymentMethod {
@@ -19,6 +21,7 @@ interface PaymentMethod {
 }
 
 export default function PaymentMethodsPage() {
+  const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
   const orgId = params?.orgId as string;
@@ -31,8 +34,8 @@ export default function PaymentMethodsPage() {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    if (orgId) fetchPaymentMethods();
-  }, [orgId, page]);
+    if (storeId) fetchPaymentMethods();
+  }, [storeId, page]);
 
   const fetchPaymentMethods = async () => {
     try {
@@ -45,7 +48,7 @@ export default function PaymentMethodsPage() {
 
       const skip = page * itemsPerPage;
       const response = await fetch(
-        `${API_URL}/api/payment-methods/${orgId}?skip=${skip}&take=${itemsPerPage}`,
+        `${API_URL}/api/payment-methods/${storeId}?skip=${skip}&take=${itemsPerPage}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -64,7 +67,7 @@ export default function PaymentMethodsPage() {
   const handleToggle = async (methodId: string) => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/payment-methods/${orgId}/${methodId}/toggle`, {
+      const response = await fetch(`${API_URL}/api/payment-methods/${storeId}/${methodId}/toggle`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -80,7 +83,7 @@ export default function PaymentMethodsPage() {
   const handleDelete = async (methodId: string) => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/payment-methods/${orgId}/${methodId}`, {
+      const response = await fetch(`${API_URL}/api/payment-methods/${storeId}/${methodId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

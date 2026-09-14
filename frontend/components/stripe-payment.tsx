@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { euro } from '@/lib/format';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -109,7 +110,7 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
         disabled={loading}
         className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-semibold py-3 rounded-lg transition"
       >
-        {loading ? 'Traitement...' : `Payer €${(amount / 100).toFixed(2)}`}
+        {loading ? 'Traitement...' : `Payer ${euro(amount)}`}
       </button>
     </form>
   );

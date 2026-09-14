@@ -23,7 +23,7 @@ export default function LoginPage() {
       const result = await api.login(email, password);
 
       if (result.error) {
-        setError(result.message || "Erreur de connexion");
+        setError(result.error || result.message || "Erreur de connexion");
         return;
       }
 

@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { TrendingUp, Calendar, DollarSign, ShoppingCart, Users, Clock } from 'lucide-react';
+
+import { useCurrentStore } from '@/lib/current-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
   id: string;
-  totalAmount: number;
+  totalAmount: number | string;
   status: string;
   createdAt: string;
 }
@@ -27,23 +28,31 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
-  const params = useParams();
-  const orgId = params?.orgId as string;
+  const { storeId } = useCurrentStore();
+
+  // Les montants sont déjà en euros : aucune division par 100.
+  const euro = (valeur: number, decimales = 2) =>
+    Number(valeur || 0).toLocaleString('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: decimales,
+      maximumFractionDigits: decimales,
+    });
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30');
 
   useEffect(() => {
-    if (orgId) {
+    if (storeId) {
       fetchAnalytics();
     }
-  }, [orgId, timeRange]);
+  }, [storeId, timeRange]);
 
   const fetchAnalytics = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/orders?orgId=${orgId}`, {
+      const response = await fetch(`${API_URL}/api/orders?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -59,8 +68,8 @@ export default function AnalyticsPage() {
         const ordersInRange = orders.filter(o => new Date(o.createdAt) >= startDate);
         const ordersThisMonth = orders.filter(o => new Date(o.createdAt) >= thisMonthStart);
 
-        const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-        const revenueThisMonth = ordersThisMonth.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+        const totalRevenue = orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+        const revenueThisMonth = ordersThisMonth.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
 
         const statusBreakdown = [
           { status: 'PENDING', count: orders.filter(o => o.status === 'PENDING').length },
@@ -73,7 +82,7 @@ export default function AnalyticsPage() {
         const dailyData: { [key: string]: number } = {};
         ordersInRange.forEach(order => {
           const date = new Date(order.createdAt).toLocaleDateString('fr-FR');
-          dailyData[date] = (dailyData[date] || 0) + (order.totalAmount || 0);
+          dailyData[date] = (dailyData[date] || 0) + Number(order.totalAmount || 0);
         });
 
         const dailyRevenue = Object.entries(dailyData).map(([date, revenue]) => ({
@@ -165,7 +174,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <p className="text-gray-400 text-sm mb-1">Revenu Total</p>
-            <p className="text-3xl font-bold">${(analytics.totalRevenue / 100).toFixed(0)}</p>
+            <p className="text-3xl font-bold">{euro(analytics.totalRevenue, 0)}</p>
             <p className="text-xs text-gray-500 mt-2">Depuis le début</p>
           </div>
 
@@ -176,7 +185,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <p className="text-gray-400 text-sm mb-1">Ticket Moyen</p>
-            <p className="text-3xl font-bold">${(analytics.averageOrderValue / 100).toFixed(2)}</p>
+            <p className="text-3xl font-bold">{euro(analytics.averageOrderValue)}</p>
             <p className="text-xs text-gray-500 mt-2">Par commande</p>
           </div>
 
@@ -244,7 +253,7 @@ export default function AnalyticsPage() {
                     <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50">
                       <td className="py-2">{item.date}</td>
                       <td className="text-right font-semibold text-green-400">
-                        ${(item.revenue / 100).toFixed(2)}
+                        {euro(item.revenue)}
                       </td>
                     </tr>
                   ))}

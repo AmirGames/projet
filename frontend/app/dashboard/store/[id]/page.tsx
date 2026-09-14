@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Plus, Settings, Package, Trash2, Edit2, Clock, Tag, ShoppingCart, X, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Store {
@@ -102,7 +104,7 @@ export default function StoreManagementPage() {
       if (orderDate.getTime() === today.getTime()) {
         const hour = new Date(order.createdAt).getHours();
         stats[hour].count += 1;
-        stats[hour].revenue += order.totalAmount;
+        stats[hour].revenue += Number(order.totalAmount || 0);
         stats[hour].orders.push(order);
       }
     });
@@ -207,7 +209,9 @@ export default function StoreManagementPage() {
           storeId: store.id,
           name: productForm.name,
           description: productForm.description,
-          price: parseInt(productForm.price) * 100,
+          // Le prix est saisi en euros et stocké tel quel ; parseInt aurait
+          // supprimé les centimes (2,50 € devenait 2 €).
+          price: parseFloat(productForm.price),
           stock: parseInt(productForm.stock),
           categoryId: productForm.categoryId || null,
         }),
@@ -428,11 +432,11 @@ export default function StoreManagementPage() {
                     <div>
                       <h3 className="font-bold">{product.name}</h3>
                       <p className="text-gray-400 text-sm">{product.description}</p>
-                      <p className="text-green-400 text-sm mt-1">€{(product.price / 100).toFixed(2)} • Stock: {product.stock}</p>
+                      <p className="text-green-400 text-sm mt-1">{euro(product.price)} • Stock: {product.stock}</p>
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => { setEditingProduct(product); setProductForm({ name: product.name, description: product.description, price: String(product.price / 100), stock: String(product.stock), categoryId: product.categoryId || '' }); setShowProductModal(true); }}
+                        onClick={() => { setEditingProduct(product); setProductForm({ name: product.name, description: product.description, price: String(product.price), stock: String(product.stock), categoryId: product.categoryId || '' }); setShowProductModal(true); }}
                         className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg"
                       >
                         <Edit2 size={18} />
@@ -522,14 +526,17 @@ export default function StoreManagementPage() {
               </div>
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
                 <p className="text-gray-400 text-sm">Chiffre d'Affaires</p>
-                <p className="text-3xl font-bold text-green-400 mt-2">€{(getHourlyStats().reduce((sum, h) => sum + h.revenue, 0) / 100).toFixed(2)}</p>
+                <p className="text-3xl font-bold text-green-400 mt-2">{euro(getHourlyStats().reduce((sum, h) => sum + Number(h.revenue || 0), 0))}</p>
               </div>
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
                 <p className="text-gray-400 text-sm">Panier Moyen</p>
                 <p className="text-3xl font-bold mt-2">
-                  €{getHourlyStats().reduce((sum, h) => sum + h.count, 0) > 0
-                    ? (getHourlyStats().reduce((sum, h) => sum + h.revenue, 0) / getHourlyStats().reduce((sum, h) => sum + h.count, 0) / 100).toFixed(2)
-                    : '0.00'}
+                  {euro(
+                    getHourlyStats().reduce((sum, h) => sum + h.count, 0) > 0
+                      ? getHourlyStats().reduce((sum, h) => sum + Number(h.revenue || 0), 0) /
+                          getHourlyStats().reduce((sum, h) => sum + h.count, 0)
+                      : 0
+                  )}
                 </p>
               </div>
             </div>
@@ -550,7 +557,7 @@ export default function StoreManagementPage() {
                     <tr key={stat.hour} className="border-t border-gray-700 hover:bg-gray-700">
                       <td className="px-6 py-4 font-medium">{String(stat.hour).padStart(2, '0')}:00</td>
                       <td className="px-6 py-4">{stat.count}</td>
-                      <td className="px-6 py-4 text-green-400">€{(stat.revenue / 100).toFixed(2)}</td>
+                      <td className="px-6 py-4 text-green-400">{euro(stat.revenue)}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <div className="w-32 bg-gray-700 rounded-full h-2 overflow-hidden">
@@ -583,14 +590,14 @@ export default function StoreManagementPage() {
                         <h4 className="font-bold text-lg">{String(stat.hour).padStart(2, '0')}:00 - {String(stat.hour + 1).padStart(2, '0')}:00</h4>
                         <div className="text-right">
                           <p className="text-gray-400 text-sm">{stat.count} commande{stat.count > 1 ? 's' : ''}</p>
-                          <p className="text-green-400 font-medium">€{(stat.revenue / 100).toFixed(2)}</p>
+                          <p className="text-green-400 font-medium">{euro(stat.revenue)}</p>
                         </div>
                       </div>
                       <div className="space-y-2">
                         {stat.orders.map((order) => (
                           <div key={order.id} className="flex justify-between text-sm bg-gray-700 p-2 rounded">
                             <span className="text-gray-300">{order.customerName}</span>
-                            <span className="text-green-400">€{(order.totalAmount / 100).toFixed(2)}</span>
+                            <span className="text-green-400">{euro(order.totalAmount)}</span>
                           </div>
                         ))}
                       </div>
@@ -627,7 +634,7 @@ export default function StoreManagementPage() {
                     orders.map((order) => (
                       <tr key={order.id} className="border-t border-gray-700">
                         <td className="px-6 py-4">{order.customerName}</td>
-                        <td className="px-6 py-4">€{(order.totalAmount / 100).toFixed(2)}</td>
+                        <td className="px-6 py-4">{euro(order.totalAmount)}</td>
                         <td className="px-6 py-4">
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                             order.status === 'COMPLETED' ? 'bg-green-900 text-green-300' :

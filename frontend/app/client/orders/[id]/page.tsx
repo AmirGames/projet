@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, MapPin, Clock, Phone, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { useOrderTracking } from '@/lib/use-order-tracking';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
@@ -296,7 +298,7 @@ export default function OrderTrackingPage() {
                         <p className="text-gray-400 text-sm">x{item.quantity}</p>
                       </div>
                       <p className="text-orange-400 font-bold">
-                        €{((item.price * item.quantity) / 100).toFixed(2)}
+                        {euro((item.price * item.quantity))}
                       </p>
                     </div>
                   ))}
@@ -332,7 +334,7 @@ export default function OrderTrackingPage() {
               <div className="pt-4 border-t border-gray-700">
                 <p className="text-gray-400 text-sm mb-2">Total</p>
                 <p className="text-white text-2xl font-bold">
-                  €{(order.totalAmount / 100).toFixed(2)}
+                  {euro(order.totalAmount)}
                 </p>
               </div>
 

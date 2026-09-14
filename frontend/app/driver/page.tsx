@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Package, Clock, DollarSign, LogOut } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Delivery {
@@ -177,7 +179,7 @@ export default function DriverDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400 text-sm">Revenus du jour</p>
-                <p className="text-white text-3xl font-bold">€{(earnings / 100).toFixed(2)}</p>
+                <p className="text-white text-3xl font-bold">{euro(earnings)}</p>
               </div>
               <DollarSign size={32} className="text-green-500" />
             </div>
@@ -246,7 +248,7 @@ export default function DriverDashboard() {
                     </div>
                     <div className="bg-gray-700 rounded-lg p-4">
                       <p className="text-gray-400 text-sm mb-2">Montant</p>
-                      <p className="text-white text-2xl font-bold">€{((activeDelivery.totalAmount || 0) / 100).toFixed(2)}</p>
+                      <p className="text-white text-2xl font-bold">{euro((activeDelivery.totalAmount || 0))}</p>
                     </div>
                   </div>
 
@@ -290,7 +292,7 @@ export default function DriverDashboard() {
                             <p className="text-gray-400 text-sm">{delivery.customerName}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-orange-400 font-bold">€{((delivery.totalAmount || 0) / 100).toFixed(2)}</p>
+                            <p className="text-orange-400 font-bold">{euro((delivery.totalAmount || 0))}</p>
                             {delivery.distance && (
                               <p className="text-gray-400 text-sm">{delivery.distance} km</p>
                             )}

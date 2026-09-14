@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { Trash2, Send } from 'lucide-react';
 import Link from 'next/link';
 
+import { useCurrentStore } from '@/lib/current-store';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Campaign {
@@ -21,6 +23,7 @@ interface Campaign {
 }
 
 export default function MarketingPage() {
+  const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
   const orgId = params?.orgId as string;
@@ -34,10 +37,10 @@ export default function MarketingPage() {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    if (orgId) {
+    if (storeId) {
       fetchCampaigns();
     }
-  }, [orgId, filter, page]);
+  }, [storeId, filter, page]);
 
   const fetchCampaigns = async () => {
     try {
@@ -55,7 +58,7 @@ export default function MarketingPage() {
         ...(filter !== 'ALL' && { status: filter }),
       });
 
-      const response = await fetch(`${API_URL}/api/marketing/${orgId}?${query}`, {
+      const response = await fetch(`${API_URL}/api/marketing/${storeId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -74,7 +77,7 @@ export default function MarketingPage() {
   const handleDeleteCampaign = async (campaignId: string) => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/marketing/${orgId}/${campaignId}`, {
+      const response = await fetch(`${API_URL}/api/marketing/${storeId}/${campaignId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

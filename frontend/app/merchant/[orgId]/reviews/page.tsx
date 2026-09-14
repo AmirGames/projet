@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { Star, Trash2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
+import { useCurrentStore } from '@/lib/current-store';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Review {
@@ -21,6 +23,7 @@ interface Review {
 }
 
 export default function ReviewsPage() {
+  const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
   const orgId = params?.orgId as string;
@@ -35,10 +38,10 @@ export default function ReviewsPage() {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    if (orgId) {
+    if (storeId) {
       fetchReviews();
     }
-  }, [orgId, status, page]);
+  }, [storeId, status, page]);
 
   const fetchReviews = async () => {
     try {
@@ -56,7 +59,7 @@ export default function ReviewsPage() {
         ...(status !== 'ALL' && { status }),
       });
 
-      const response = await fetch(`${API_URL}/api/reviews/${orgId}?${query}`, {
+      const response = await fetch(`${API_URL}/api/reviews/${storeId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -79,7 +82,7 @@ export default function ReviewsPage() {
       setUpdating(reviewId);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/reviews/${orgId}/${reviewId}/status`, {
+      const response = await fetch(`${API_URL}/api/reviews/${storeId}/${reviewId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -106,7 +109,7 @@ export default function ReviewsPage() {
       setUpdating(reviewId);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/reviews/${orgId}/${reviewId}`, {
+      const response = await fetch(`${API_URL}/api/reviews/${storeId}/${reviewId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

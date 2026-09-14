@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ShoppingCart, MapPin, Phone, Clock, Star, AlertCircle, Check } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Store {
@@ -139,7 +141,7 @@ export default function StorefrontPage() {
     }
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const cartTotal = cart.reduce((sum, item) => sum + Number(item.product.price || 0) * item.quantity, 0);
   const cartServiceFee = cartTotal * 0.1;
   const cartGrandTotal = cartTotal + cartServiceFee;
 
@@ -184,9 +186,10 @@ export default function StorefrontPage() {
         deliveryCity: checkoutForm.deliveryCity || undefined,
         pickupTime: checkoutForm.pickupTime || undefined,
         notes: checkoutForm.notes || undefined,
-        totalAmount: Math.round(cartGrandTotal * 100),
+        // L'API attend des euros (Decimal 10,2), pas des centimes.
+        totalAmount: Number(cartGrandTotal.toFixed(2)),
         taxAmount: 0,
-        feesAmount: Math.round(cartServiceFee * 100),
+        feesAmount: Number(cartServiceFee.toFixed(2)),
       };
 
       const response = await fetch(`${API_URL}/api/orders`, {
@@ -197,7 +200,7 @@ export default function StorefrontPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        setCheckoutError(error.message || 'Erreur lors de la création de la commande');
+        setCheckoutError(error.error || 'Erreur lors de la création de la commande');
         return;
       }
 
@@ -336,7 +339,7 @@ export default function StorefrontPage() {
                           {/* Price & Stock */}
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-2xl font-bold text-red-400">${(product.price / 100).toFixed(2)}</p>
+                              <p className="text-2xl font-bold text-red-400">{euro(product.price)}</p>
                               <p className="text-xs text-gray-500">
                                 {product.stock > 0 ? `${product.stock} en stock` : 'Rupture'}
                               </p>
@@ -380,7 +383,7 @@ export default function StorefrontPage() {
                     <div key={item.product.id} className="bg-gray-700 rounded-lg p-4 space-y-2">
                       <h3 className="font-semibold">{item.product.name}</h3>
                       <div className="flex items-center justify-between">
-                        <p className="text-red-400">${(item.product.price / 100).toFixed(2)}</p>
+                        <p className="text-red-400">{euro(item.product.price)}</p>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
@@ -411,15 +414,15 @@ export default function StorefrontPage() {
                 <div className="border-t border-gray-700 pt-4 space-y-3">
                   <div className="flex justify-between">
                     <span>Sous-total</span>
-                    <span>${(cartTotal / 100).toFixed(2)}</span>
+                    <span>{euro(cartTotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Frais de service</span>
-                    <span>${((cartTotal * 0.1) / 100).toFixed(2)}</span>
+                    <span>{euro((cartTotal * 0.1))}</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-3">
                     <span>Total</span>
-                    <span>${(cartGrandTotal / 100).toFixed(2)}</span>
+                    <span>{euro(cartGrandTotal)}</span>
                   </div>
 
                   <button
@@ -640,15 +643,15 @@ export default function StorefrontPage() {
                 <h3 className="font-bold mb-3">Résumé de la Commande</h3>
                 <div className="flex justify-between text-sm">
                   <span>Sous-total</span>
-                  <span>${(cartTotal / 100).toFixed(2)}</span>
+                  <span>{euro(cartTotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Frais de service (10%)</span>
-                  <span>${(cartServiceFee / 100).toFixed(2)}</span>
+                  <span>{euro(cartServiceFee)}</span>
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t border-gray-600 pt-2">
                   <span>Total</span>
-                  <span className="text-red-400">${(cartGrandTotal / 100).toFixed(2)}</span>
+                  <span className="text-red-400">{euro(cartGrandTotal)}</span>
                 </div>
               </div>
             </div>

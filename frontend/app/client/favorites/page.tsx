@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Star, MapPin, Heart, Trash2 } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface FavoriteStore {
@@ -158,7 +160,7 @@ export default function FavoritesPage() {
 
                       {store.deliveryCost !== undefined && (
                         <div className="text-gray-400">
-                          Frais: €{(store.deliveryCost / 100).toFixed(2)}
+                          Frais: {euro(store.deliveryCost)}
                         </div>
                       )}
                     </div>

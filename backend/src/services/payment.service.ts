@@ -4,9 +4,12 @@ import { db } from "./db";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
 export const paymentService = {
+  // `amount` est exprimé en euros, comme partout dans l'API. Stripe attend la
+  // plus petite unité monétaire : sans cette conversion, une commande de 12 €
+  // serait débitée 0,12 €.
   async createPaymentIntent(amount: number, customerId: string, orderId: string) {
     return stripe.paymentIntents.create({
-      amount,
+      amount: Math.round(amount * 100),
       currency: "eur",
       customer: customerId,
       metadata: { orderId },

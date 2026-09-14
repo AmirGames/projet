@@ -9,6 +9,8 @@ import { StripePayment } from '@/components/stripe-payment';
 import { PromoCode } from './promo-code';
 import { PaymentMethods } from './payment-methods';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Customer {
@@ -125,7 +127,7 @@ export default function CheckoutPage() {
 
       if (!orderResponse.ok) {
         const error = await orderResponse.json();
-        throw new Error(error.message || 'Failed to create order');
+        throw new Error(error.error || error.message || 'Failed to create order');
       }
 
       const orderData = await orderResponse.json();
@@ -223,7 +225,7 @@ export default function CheckoutPage() {
                           <div className="flex-1">
                             <p className="text-white font-semibold">{item.name}</p>
                             <p className="text-gray-400 text-sm">
-                              €{(item.price / 100).toFixed(2)} x {item.quantity}
+                              {euro(item.price)} x {item.quantity}
                             </p>
                           </div>
 
@@ -247,7 +249,7 @@ export default function CheckoutPage() {
                             </div>
 
                             <span className="text-orange-400 font-bold min-w-20 text-right">
-                              €{((item.price * item.quantity) / 100).toFixed(2)}
+                              {euro((item.price * item.quantity))}
                             </span>
 
                             <button
@@ -393,16 +395,16 @@ export default function CheckoutPage() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-400">
                   <span>Articles</span>
-                  <span>€{(cartTotal / 100).toFixed(2)}</span>
+                  <span>{euro(cartTotal)}</span>
                 </div>
                 <div className="flex justify-between text-gray-400">
                   <span>Frais de livraison</span>
-                  <span>€{(deliveryFee / 100).toFixed(2)}</span>
+                  <span>{euro(deliveryFee)}</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-green-400">
                     <span>Remise</span>
-                    <span>-€{(discountAmount / 100).toFixed(2)}</span>
+                    <span>-{euro(discountAmount)}</span>
                   </div>
                 )}
               </div>
@@ -410,7 +412,7 @@ export default function CheckoutPage() {
               <div className="border-t border-gray-600 pt-4 mb-6">
                 <div className="flex justify-between text-white text-xl font-bold">
                   <span>Total</span>
-                  <span className="text-orange-500">€{(total / 100).toFixed(2)}</span>
+                  <span className="text-orange-500">{euro(total)}</span>
                 </div>
               </div>
 

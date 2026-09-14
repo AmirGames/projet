@@ -21,6 +21,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useCurrentStore } from '@/lib/current-store';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Product {
@@ -98,7 +100,7 @@ function SortableProduct({ product, onEdit, onDelete, isLowStock, adjustStock }:
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
               <div>
                 <p className="text-gray-500">Prix</p>
-                <p className="font-semibold text-red-400">${(product.price / 100).toFixed(2)}</p>
+                <p className="font-semibold text-red-400">{euro(product.price)}</p>
               </div>
               <div>
                 <p className="text-gray-500">SKU</p>
@@ -348,7 +350,7 @@ export default function ProductsPage() {
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.message || 'Erreur lors de la mise à jour';
+          const errorMsg = errorData.error || errorData.message || 'Erreur lors de la mise à jour';
           setMessage(`❌ ${errorMsg}`);
         }
       } else {
@@ -387,7 +389,7 @@ export default function ProductsPage() {
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.message || 'Erreur lors de la création';
+          const errorMsg = errorData.error || errorData.message || 'Erreur lors de la création';
           setMessage(`❌ ${errorMsg}`);
         }
       }
@@ -415,7 +417,7 @@ export default function ProductsPage() {
         setTimeout(() => setMessage(''), 3000);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.message || 'Erreur lors de la suppression';
+        const errorMsg = errorData.error || errorData.message || 'Erreur lors de la suppression';
         setMessage(`❌ ${errorMsg}`);
       }
     } catch (error) {

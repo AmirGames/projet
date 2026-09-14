@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Search, Download, Filter } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Commission {
@@ -55,10 +57,10 @@ export default function CommissionsPage() {
   const periods = Array.from(new Set(commissions.map(c => c.period)));
 
   const stats = {
-    total: commissions.reduce((sum, c) => sum + c.amount, 0),
-    paid: commissions.filter(c => c.status === 'PAID').reduce((sum, c) => sum + c.amount, 0),
-    pending: commissions.filter(c => c.status === 'PENDING').reduce((sum, c) => sum + c.amount, 0),
-    processing: commissions.filter(c => c.status === 'PROCESSING').reduce((sum, c) => sum + c.amount, 0),
+    total: commissions.reduce((sum, c) => sum + Number(c.amount || 0), 0),
+    paid: commissions.filter(c => c.status === 'PAID').reduce((sum, c) => sum + Number(c.amount || 0), 0),
+    pending: commissions.filter(c => c.status === 'PENDING').reduce((sum, c) => sum + Number(c.amount || 0), 0),
+    processing: commissions.filter(c => c.status === 'PROCESSING').reduce((sum, c) => sum + Number(c.amount || 0), 0),
   };
 
   const exportCommissions = () => {
@@ -99,19 +101,19 @@ export default function CommissionsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
           <p className="text-gray-400 text-sm mb-2">Montant Total</p>
-          <p className="text-2xl font-bold text-green-400">${(stats.total / 100).toFixed(2)}</p>
+          <p className="text-2xl font-bold text-green-400">{euro(stats.total)}</p>
         </div>
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
           <p className="text-gray-400 text-sm mb-2">Payées</p>
-          <p className="text-2xl font-bold text-blue-400">${(stats.paid / 100).toFixed(2)}</p>
+          <p className="text-2xl font-bold text-blue-400">{euro(stats.paid)}</p>
         </div>
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
           <p className="text-gray-400 text-sm mb-2">En Attente</p>
-          <p className="text-2xl font-bold text-yellow-400">${(stats.pending / 100).toFixed(2)}</p>
+          <p className="text-2xl font-bold text-yellow-400">{euro(stats.pending)}</p>
         </div>
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
           <p className="text-gray-400 text-sm mb-2">En Traitement</p>
-          <p className="text-2xl font-bold text-purple-400">${(stats.processing / 100).toFixed(2)}</p>
+          <p className="text-2xl font-bold text-purple-400">{euro(stats.processing)}</p>
         </div>
       </div>
 
@@ -191,7 +193,7 @@ export default function CommissionsPage() {
                   <td className="px-6 py-4 font-medium">{commission.period}</td>
                   <td className="px-6 py-4">{commission.orgName}</td>
                   <td className="px-6 py-4 text-right font-bold text-green-400">
-                    ${(commission.amount / 100).toFixed(2)}
+                    {euro(commission.amount)}
                   </td>
                   <td className="px-6 py-4 text-right">{commission.percentage}%</td>
                   <td className="px-6 py-4 text-center">
@@ -210,7 +212,7 @@ export default function CommissionsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right text-gray-400">{commission.ordersCount}</td>
-                  <td className="px-6 py-4 text-right text-gray-400">${(commission.totalRevenue / 100).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-right text-gray-400">{euro(commission.totalRevenue)}</td>
                 </tr>
               ))}
             </tbody>

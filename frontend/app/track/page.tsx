@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface OrderItem {
@@ -295,7 +297,7 @@ export default function TrackOrderPage() {
                       <p className="font-semibold">{item.name}</p>
                       <p className="text-sm text-gray-400">Quantité: {item.quantity}</p>
                     </div>
-                    <p className="text-red-400 font-semibold">${(item.price / 100).toFixed(2)}</p>
+                    <p className="text-red-400 font-semibold">{euro(item.price)}</p>
                   </div>
                 ))}
               </div>
@@ -305,7 +307,7 @@ export default function TrackOrderPage() {
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
               <div className="flex justify-between items-center text-lg font-bold">
                 <span>Montant Total</span>
-                <span className="text-red-400 text-2xl">${(order.totalAmount / 100).toFixed(2)}</span>
+                <span className="text-red-400 text-2xl">{euro(order.totalAmount)}</span>
               </div>
             </div>
 

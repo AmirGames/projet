@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Clock, MapPin, ChevronRight } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
@@ -165,7 +167,7 @@ export default function OrdersPage() {
                       <div className="text-right">
                         <p className="text-gray-400 text-sm mb-1">Montant</p>
                         <p className="text-orange-400 font-bold text-lg">
-                          €{(order.totalAmount / 100).toFixed(2)}
+                          {euro(order.totalAmount)}
                         </p>
                       </div>
                     </div>

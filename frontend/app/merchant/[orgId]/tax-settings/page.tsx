@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { Trash2, Edit2 } from 'lucide-react';
 import Link from 'next/link';
 
+import { useCurrentStore } from '@/lib/current-store';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface TaxSetting {
@@ -18,6 +20,7 @@ interface TaxSetting {
 }
 
 export default function TaxSettingsPage() {
+  const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
   const orgId = params?.orgId as string;
@@ -30,8 +33,8 @@ export default function TaxSettingsPage() {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    if (orgId) fetchTaxSettings();
-  }, [orgId, page]);
+    if (storeId) fetchTaxSettings();
+  }, [storeId, page]);
 
   const fetchTaxSettings = async () => {
     try {
@@ -44,7 +47,7 @@ export default function TaxSettingsPage() {
 
       const skip = page * itemsPerPage;
       const response = await fetch(
-        `${API_URL}/api/tax-settings/${orgId}?skip=${skip}&take=${itemsPerPage}`,
+        `${API_URL}/api/tax-settings/${storeId}?skip=${skip}&take=${itemsPerPage}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -63,7 +66,7 @@ export default function TaxSettingsPage() {
   const handleDelete = async (taxId: string) => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/tax-settings/${orgId}/${taxId}`, {
+      const response = await fetch(`${API_URL}/api/tax-settings/${storeId}/${taxId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

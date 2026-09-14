@@ -5,6 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { Download, Eye } from 'lucide-react';
 import Link from 'next/link';
 
+import { useCurrentStore } from '@/lib/current-store';
+
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Invoice {
@@ -26,6 +30,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function InvoicesPage() {
+  const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
   const orgId = params?.orgId as string;
@@ -40,11 +45,11 @@ export default function InvoicesPage() {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    if (orgId) {
+    if (storeId) {
       fetchInvoices();
       fetchStats();
     }
-  }, [orgId, page, filter]);
+  }, [storeId, page, filter]);
 
   const fetchInvoices = async () => {
     try {
@@ -61,7 +66,7 @@ export default function InvoicesPage() {
         take: itemsPerPage.toString(),
       });
 
-      const response = await fetch(`${API_URL}/api/invoices/${orgId}?${query}`, {
+      const response = await fetch(`${API_URL}/api/invoices/${storeId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -83,7 +88,7 @@ export default function InvoicesPage() {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/invoices/${orgId}/stats/revenue`, {
+      const response = await fetch(`${API_URL}/api/invoices/${storeId}/stats/revenue`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -102,7 +107,7 @@ export default function InvoicesPage() {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/invoices/${orgId}/${orderId}`, {
+      const response = await fetch(`${API_URL}/api/invoices/${storeId}/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -199,11 +204,11 @@ export default function InvoicesPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
               <p className="text-gray-400 text-sm mb-1">Revenu Total</p>
-              <p className="text-3xl font-bold text-green-400">${(stats.totalRevenue / 100).toFixed(2)}</p>
+              <p className="text-3xl font-bold text-green-400">{euro(stats.totalRevenue)}</p>
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
               <p className="text-gray-400 text-sm mb-1">Revenu Net</p>
-              <p className="text-3xl font-bold">${(stats.netRevenue / 100).toFixed(2)}</p>
+              <p className="text-3xl font-bold">{euro(stats.netRevenue)}</p>
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
               <p className="text-gray-400 text-sm mb-1">Nombre Factures</p>
@@ -211,7 +216,7 @@ export default function InvoicesPage() {
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
               <p className="text-gray-400 text-sm mb-1">Moyenne/Facture</p>
-              <p className="text-3xl font-bold">${(stats.averageInvoiceAmount / 100).toFixed(2)}</p>
+              <p className="text-3xl font-bold">{euro(stats.averageInvoiceAmount)}</p>
             </div>
           </div>
         )}
@@ -271,7 +276,7 @@ export default function InvoicesPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 font-bold text-green-400">
-                        ${(invoice.amount / 100).toFixed(2)}
+                        {euro(invoice.amount)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-400">
                         {invoice.itemCount} article{invoice.itemCount > 1 ? 's' : ''}

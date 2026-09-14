@@ -21,8 +21,43 @@ export interface OrderData {
 }
 
 export class OrderService {
+  /**
+   * Rattache la commande à une fiche client, créée au besoin.
+   *
+   * Les clients sont globaux et identifiés par leur e-mail : une commande
+   * passée sans compte doit tout de même alimenter la clientèle du commerçant,
+   * sans quoi son carnet d'adresses reste vide.
+   */
+  private static async resoudreClient(data: OrderData) {
+    if (data.customerId) return data.customerId;
+    if (!data.customerEmail) return undefined;
+
+    const existant = await db.customer.findUnique({
+      where: { email: data.customerEmail },
+      select: { id: true },
+    });
+
+    if (existant) return existant.id;
+
+    const cree = await db.customer.create({
+      data: {
+        name: data.customerName,
+        email: data.customerEmail,
+        phone: data.customerPhone,
+        address: data.deliveryAddress,
+        city: data.deliveryCity,
+        postalCode: data.deliveryPostal,
+      },
+      select: { id: true },
+    });
+
+    return cree.id;
+  }
+
   static async create(data: OrderData) {
     try {
+      const customerId = await this.resoudreClient(data);
+
       const order = await db.order.create({
         data: {
           storeId: data.storeId,
@@ -37,7 +72,7 @@ export class OrderService {
           totalAmount: data.totalAmount,
           taxAmount: data.taxAmount || 0,
           feesAmount: data.feesAmount || 0,
-          customerId: data.customerId,
+          customerId,
           notes: data.notes,
           status: "PENDING" as any,
           paymentStatus: "PENDING" as any,

@@ -28,7 +28,7 @@ export default function DriverLoginPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || 'Login failed');
+        throw new Error(data.error || data.message || 'Login failed');
       }
 
       const data = await response.json();

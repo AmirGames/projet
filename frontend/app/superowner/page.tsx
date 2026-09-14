@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Users, DollarSign, AlertCircle, Server, Lock } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface DashboardStats {
@@ -81,7 +83,7 @@ export default function SuperOwnerDashboard() {
             ) : null}
           </div>
           <p className="text-gray-400 text-sm mb-1">Revenu Total</p>
-          <p className="text-3xl font-bold">${((stats?.totalRevenue || 0) / 100).toFixed(0)}</p>
+          <p className="text-3xl font-bold">{euro((stats?.totalRevenue || 0), 0)}</p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
@@ -91,7 +93,7 @@ export default function SuperOwnerDashboard() {
             </div>
           </div>
           <p className="text-gray-400 text-sm mb-1">Frais Plateforme</p>
-          <p className="text-3xl font-bold text-blue-400">${((stats?.platformFee || 0) / 100).toFixed(0)}</p>
+          <p className="text-3xl font-bold text-blue-400">{euro((stats?.platformFee || 0), 0)}</p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
@@ -127,7 +129,7 @@ export default function SuperOwnerDashboard() {
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <p className="text-gray-400 text-sm mb-2">Revenu Récurrent (MRR)</p>
-          <p className="text-4xl font-bold text-green-400">${((stats?.monthlyRecurring || 0) / 100).toFixed(0)}</p>
+          <p className="text-4xl font-bold text-green-400">{euro((stats?.monthlyRecurring || 0), 0)}</p>
           <p className="text-xs text-gray-500 mt-2">Revenue mensuel récurrent</p>
         </div>
       </div>

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, BarChart3, Store, ShoppingCart, Users, TrendingUp, AlertCircle, Package } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface StatsData {
@@ -144,7 +146,7 @@ export default function SuperOwnerDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-yellow-300 text-sm">Chiffre d'Affaires</p>
-                <p className="text-4xl font-bold mt-2">€{(stats.revenue.total / 100).toFixed(2)}</p>
+                <p className="text-4xl font-bold mt-2">{euro(stats.revenue.total)}</p>
                 <p className="text-yellow-300 text-xs mt-2">Total brut</p>
               </div>
               <TrendingUp size={40} className="text-yellow-400 opacity-50" />
@@ -183,15 +185,15 @@ export default function SuperOwnerDashboard() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-400">Chiffre brut</span>
-                <span className="font-bold">€{(stats.revenue.total / 100).toFixed(2)}</span>
+                <span className="font-bold">{euro(stats.revenue.total)}</span>
               </div>
               <div className="flex justify-between text-green-400">
                 <span className="text-gray-400">Complétées</span>
-                <span className="font-bold">€{(stats.revenue.completed / 100).toFixed(2)}</span>
+                <span className="font-bold">{euro(stats.revenue.completed)}</span>
               </div>
               <div className="flex justify-between text-orange-400">
                 <span className="text-gray-400">Commission ({platformFeePercent}%)</span>
-                <span className="font-bold">€{(platformCommission / 100).toFixed(2)}</span>
+                <span className="font-bold">{euro(platformCommission)}</span>
               </div>
             </div>
           </div>

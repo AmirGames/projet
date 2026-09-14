@@ -132,7 +132,7 @@ export default function PromotionsPage() {
           setTimeout(() => setMessage(''), 3000);
         } else {
           const error = await response.json();
-          setMessage(`❌ ${error.message || 'Erreur lors de la création'}`);
+          setMessage(`❌ ${error.error || error.message || 'Erreur lors de la création'}`);
         }
       }
     } catch (error) {

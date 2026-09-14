@@ -5,6 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { Clock, CheckCircle, AlertCircle, Package, Eye } from 'lucide-react';
 import Link from 'next/link';
 
+import { useCurrentStore } from '@/lib/current-store';
+
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface OrderItem {
@@ -49,6 +53,7 @@ const statusIcons: Record<string, any> = {
 };
 
 export default function OrdersPage() {
+  const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
   const orgId = params?.orgId as string;
@@ -64,11 +69,11 @@ export default function OrdersPage() {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    if (orgId) {
+    if (storeId) {
       fetchOrders();
       fetchStats();
     }
-  }, [orgId, filter, page]);
+  }, [storeId, filter, page]);
 
   const fetchOrders = async () => {
     try {
@@ -86,7 +91,7 @@ export default function OrdersPage() {
         ...(filter !== 'ALL' && { status: filter }),
       });
 
-      const response = await fetch(`${API_URL}/api/order-management/${orgId}?${query}`, {
+      const response = await fetch(`${API_URL}/api/order-management/${storeId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -108,7 +113,7 @@ export default function OrdersPage() {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/order-management/${orgId}/stats/overview`, {
+      const response = await fetch(`${API_URL}/api/order-management/${storeId}/stats/overview`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -128,7 +133,7 @@ export default function OrdersPage() {
       setUpdating(orderId);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/order-management/${orgId}/${orderId}/status`, {
+      const response = await fetch(`${API_URL}/api/order-management/${storeId}/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -210,7 +215,7 @@ export default function OrdersPage() {
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
               <p className="text-gray-400 text-xs mb-1">Revenu</p>
-              <p className="text-2xl font-bold">${(stats.totalRevenue / 100).toFixed(0)}</p>
+              <p className="text-2xl font-bold">{euro(stats.totalRevenue, 0)}</p>
             </div>
           </div>
         )}
@@ -266,7 +271,7 @@ export default function OrdersPage() {
                           <span className="font-semibold text-gray-300">{order.items.length}</span> article{order.items.length > 1 ? 's' : ''}
                         </p>
                         <p className="text-gray-400">
-                          Montant: <span className="text-green-400 font-bold">${(order.totalAmount / 100).toFixed(2)}</span>
+                          Montant: <span className="text-green-400 font-bold">{euro(order.totalAmount)}</span>
                         </p>
                         <p className="text-gray-400 text-xs mt-2">
                           {new Date(order.createdAt).toLocaleDateString('fr-FR', {

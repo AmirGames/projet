@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Tag, AlertCircle, Check } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface PromoCodeProps {
@@ -38,7 +40,7 @@ export function PromoCode({ orderAmount, onApply }: PromoCodeProps) {
         onApply(code, data.data.discount);
       } else {
         const data = await response.json();
-        setError(data.message || 'Code invalide');
+        setError(data.error || data.message || 'Code invalide');
       }
     } catch (err) {
       setError('Erreur lors de la validation');
@@ -57,7 +59,7 @@ export function PromoCode({ orderAmount, onApply }: PromoCodeProps) {
       {success ? (
         <div className="flex items-center gap-2 p-3 bg-green-900/30 border border-green-700 rounded-lg text-green-200">
           <Check size={18} />
-          <span>Code appliqué ! Économie: €{(discount / 100).toFixed(2)}</span>
+          <span>Code appliqué ! Économie: {euro(discount)}</span>
         </div>
       ) : (
         <div className="flex gap-2">

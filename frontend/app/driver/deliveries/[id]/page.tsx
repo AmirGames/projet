@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Phone, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Delivery {
@@ -337,7 +339,7 @@ export default function DeliveryTrackingPage() {
 
               <div>
                 <p className="text-gray-400 text-sm mb-2">Montant</p>
-                <p className="text-green-400 text-2xl font-bold">€{((delivery.totalAmount || 0) / 100).toFixed(2)}</p>
+                <p className="text-green-400 text-2xl font-bold">{euro((delivery.totalAmount || 0))}</p>
               </div>
 
               {/* Action Button */}

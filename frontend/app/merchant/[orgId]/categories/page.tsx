@@ -225,7 +225,7 @@ export default function CategoriesPage() {
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.message || 'Erreur lors de la mise à jour';
+          const errorMsg = errorData.error || errorData.message || 'Erreur lors de la mise à jour';
           setMessage(`❌ ${errorMsg}`);
         }
       } else {
@@ -254,7 +254,7 @@ export default function CategoriesPage() {
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.message || 'Erreur lors de la création';
+          const errorMsg = errorData.error || errorData.message || 'Erreur lors de la création';
           setMessage(`❌ ${errorMsg}`);
         }
       }
@@ -282,7 +282,7 @@ export default function CategoriesPage() {
         setTimeout(() => setMessage(''), 3000);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.message || 'Erreur lors de la suppression';
+        const errorMsg = errorData.error || errorData.message || 'Erreur lors de la suppression';
         setMessage(`❌ ${errorMsg}`);
       }
     } catch (error) {

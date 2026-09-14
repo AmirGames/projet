@@ -5,6 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { Search, Mail, Phone, Trash2, Lock, Eye } from 'lucide-react';
 import Link from 'next/link';
 
+import { useCurrentStore } from '@/lib/current-store';
+
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Customer {
@@ -23,6 +27,7 @@ interface Customer {
 }
 
 export default function CustomersPage() {
+  const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
   const orgId = params?.orgId as string;
@@ -38,10 +43,10 @@ export default function CustomersPage() {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    if (orgId) {
+    if (storeId) {
       fetchCustomers();
     }
-  }, [orgId, search, page]);
+  }, [storeId, search, page]);
 
   const fetchCustomers = async () => {
     try {
@@ -59,7 +64,7 @@ export default function CustomersPage() {
         ...(search && { search }),
       });
 
-      const response = await fetch(`${API_URL}/api/customers/${orgId}?${query}`, {
+      const response = await fetch(`${API_URL}/api/customers/${storeId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -82,7 +87,7 @@ export default function CustomersPage() {
       setDeleting(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/customers/${orgId}/${customerId}`, {
+      const response = await fetch(`${API_URL}/api/customers/${storeId}/${customerId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -104,7 +109,7 @@ export default function CustomersPage() {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/customers/${orgId}/${customerId}/block`, {
+      const response = await fetch(`${API_URL}/api/customers/${storeId}/${customerId}/block`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -240,7 +245,7 @@ export default function CustomersPage() {
                         {customer.totalOrders}
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-gray-300">
-                        ${(customer.totalSpent / 100).toFixed(2)}
+                        {euro(customer.totalSpent)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${

@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
@@ -92,7 +94,7 @@ export default function ReviewPage() {
         }, 2000);
       } else {
         const data = await response.json();
-        setError(data.message || 'Erreur lors de la soumission de l\'avis');
+        setError(data.error || data.message || 'Erreur lors de la soumission de l\'avis');
       }
     } catch (err) {
       setError('Erreur lors de la soumission de l\'avis');
@@ -205,7 +207,7 @@ export default function ReviewPage() {
                     {order.items.map((item: any) => (
                       <div key={item.id} className="flex justify-between">
                         <span>{item.name} x{item.quantity}</span>
-                        <span>€{((item.price * item.quantity) / 100).toFixed(2)}</span>
+                        <span>{euro((item.price * item.quantity))}</span>
                       </div>
                     ))}
                   </div>

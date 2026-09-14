@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface AdminStats {
@@ -102,7 +104,7 @@ export default function AdminDashboard() {
             </div>
             <div className="bg-gray-800 rounded-lg p-6">
               <p className="text-gray-400">Revenus</p>
-              <p className="text-white text-3xl font-bold">€{(stats.totalRevenue / 100).toFixed(0)}</p>
+              <p className="text-white text-3xl font-bold">{euro(stats.totalRevenue, 0)}</p>
             </div>
           </div>
         )}
