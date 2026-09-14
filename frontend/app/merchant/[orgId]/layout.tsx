@@ -41,12 +41,21 @@ interface OrgStatus {
   id: string;
   name?: string;
   status: string;
+  // Formule d'abonnement : FREE, PREMIUM ou PRO
+  tier?: 'FREE' | 'PREMIUM' | 'PRO';
   suspensionReason?: string;
   suspensionDate?: string;
   closureReason?: string;
   closureDate?: string;
   closedUntil?: string;
 }
+
+// Chaque formule a sa couleur, pour être identifiable d'un coup d'œil.
+const FORMULES: Record<string, { libelle: string; classe: string }> = {
+  FREE: { libelle: 'Gratuit', classe: 'bg-gray-600/40 text-gray-300 border-gray-500/40' },
+  PREMIUM: { libelle: 'Premium', classe: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  PRO: { libelle: 'Pro', classe: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+};
 
 export default function MerchantStoreLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -159,7 +168,19 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
             {sidebarOpen && (
               <div className="min-w-0">
                 <p className="font-bold text-sm truncate">{orgStatus?.name || 'Ma Boutique'}</p>
-                <p className="text-xs text-gray-400">Commerçant</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs text-gray-400">Commerçant</span>
+                  {orgStatus?.tier && (
+                    <span
+                      title={`Formule ${FORMULES[orgStatus.tier]?.libelle || orgStatus.tier}`}
+                      className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold uppercase tracking-wide ${
+                        FORMULES[orgStatus.tier]?.classe || FORMULES.FREE.classe
+                      }`}
+                    >
+                      {FORMULES[orgStatus.tier]?.libelle || orgStatus.tier}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Trash2, Send } from 'lucide-react';
+import { Trash2, Send, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 
 import { useCurrentStore } from '@/lib/current-store';
@@ -35,6 +35,89 @@ export default function MarketingPage() {
   const [total, setTotal] = useState(0);
 
   const itemsPerPage = 20;
+
+  // La page annonçait « Créez et gérez vos campagnes » sans permettre d'en
+  // créer une seule : seule la suppression existait.
+  const [modaleOuverte, setModaleOuverte] = useState(false);
+  const [message, setMessage] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const [formulaire, setFormulaire] = useState({
+    name: '',
+    type: 'EMAIL',
+    message: '',
+    description: '',
+    targetAudience: 'all',
+  });
+
+  // Lancer une campagne : le bouton « Envoyer » était purement décoratif.
+  const changerStatut = async (campagne: Campaign, statut: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(
+        `${API_URL}/api/marketing/${storeId}/${campagne.id}/status`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: statut }),
+        }
+      );
+
+      const donnees = await response.json();
+
+      if (!response.ok) {
+        setMessage(`❌ ${donnees.error || 'Changement de statut impossible'}`);
+        setModaleOuverte(true);
+        return;
+      }
+
+      fetchCampaigns();
+    } catch {
+      setMessage('❌ Erreur de connexion au serveur');
+      setModaleOuverte(true);
+    }
+  };
+
+  const creerCampagne = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (formulaire.name.trim().length < 2 || !formulaire.message.trim()) {
+      setMessage('❌ Renseignez un nom et le contenu du message');
+      return;
+    }
+
+    setEnvoi(true);
+    setMessage('');
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/marketing/${storeId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: formulaire.name.trim(),
+          type: formulaire.type,
+          message: formulaire.message.trim(),
+          description: formulaire.description.trim() || undefined,
+          targetAudience: formulaire.targetAudience,
+        }),
+      });
+
+      const donnees = await response.json();
+
+      if (!response.ok) {
+        setMessage(`❌ ${donnees.error || 'Création impossible'}`);
+        return;
+      }
+
+      setModaleOuverte(false);
+      setFormulaire({ name: '', type: 'EMAIL', message: '', description: '', targetAudience: 'all' });
+      fetchCampaigns();
+    } catch {
+      setMessage('❌ Erreur de connexion au serveur');
+    } finally {
+      setEnvoi(false);
+    }
+  };
 
   useEffect(() => {
     if (storeId) {
@@ -112,9 +195,17 @@ export default function MarketingPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl font-bold">Campagnes Marketing</h1>
-            <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-400 hover:text-gray-300 text-sm">
-              ← Retour
-            </Link>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => { setMessage(''); setModaleOuverte(true); }}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-medium transition-colors"
+              >
+                <Plus size={18} /> Nouvelle campagne
+              </button>
+              <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-400 hover:text-gray-300 text-sm">
+                ← Retour
+              </Link>
+            </div>
           </div>
           <p className="text-gray-400">Créez et gérez vos campagnes marketing</p>
         </div>
@@ -179,10 +270,24 @@ export default function MarketingPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <button className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded text-xs hover:bg-blue-600/30 transition">
-                    <Send size={14} className="inline mr-1" />
-                    Envoyer
-                  </button>
+                  {campaign.status === 'ACTIVE' ? (
+                    <button
+                      onClick={() => changerStatut(campaign, 'COMPLETED')}
+                      className="px-3 py-1 bg-green-600/20 text-green-400 rounded text-xs hover:bg-green-600/30 transition"
+                    >
+                      Terminer
+                    </button>
+                  ) : campaign.status === 'COMPLETED' ? (
+                    <span className="px-3 py-1 text-gray-500 text-xs">Terminée</span>
+                  ) : (
+                    <button
+                      onClick={() => changerStatut(campaign, 'ACTIVE')}
+                      className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded text-xs hover:bg-blue-600/30 transition"
+                    >
+                      <Send size={14} className="inline mr-1" />
+                      Envoyer
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDeleteCampaign(campaign.id)}
                     className="px-3 py-1 bg-red-600/20 text-red-400 rounded text-xs hover:bg-red-600/30 transition"
@@ -215,6 +320,113 @@ export default function MarketingPage() {
                 Suivant
               </button>
             </div>
+          </div>
+        )}
+
+        {modaleOuverte && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+            <form
+              onSubmit={creerCampagne}
+              className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Nouvelle campagne</h2>
+                <button
+                  type="button"
+                  onClick={() => setModaleOuverte(false)}
+                  className="p-1 hover:bg-gray-700 rounded"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {message && <div className="bg-gray-700 rounded-lg p-3 text-sm">{message}</div>}
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Nom de la campagne</label>
+                <input
+                  type="text"
+                  required
+                  minLength={2}
+                  value={formulaire.name}
+                  onChange={(e) => setFormulaire({ ...formulaire, name: e.target.value })}
+                  placeholder="Ex : Offre de rentrée"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Canal</label>
+                  <select
+                    value={formulaire.type}
+                    onChange={(e) => setFormulaire({ ...formulaire, type: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                  >
+                    <option value="EMAIL">E-mail</option>
+                    <option value="SMS">SMS</option>
+                    <option value="PUSH">Notification push</option>
+                    <option value="INAPP">Dans l&apos;application</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Destinataires</label>
+                  <select
+                    value={formulaire.targetAudience}
+                    onChange={(e) =>
+                      setFormulaire({ ...formulaire, targetAudience: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                  >
+                    <option value="all">Tous les clients</option>
+                    <option value="new">Nouveaux clients</option>
+                    <option value="returning">Clients fidèles</option>
+                    <option value="inactive">Clients inactifs</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">
+                  Description <span className="text-gray-500">(interne, facultative)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formulaire.description}
+                  onChange={(e) => setFormulaire({ ...formulaire, description: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Message envoyé</label>
+                <textarea
+                  required
+                  rows={5}
+                  value={formulaire.message}
+                  onChange={(e) => setFormulaire({ ...formulaire, message: e.target.value })}
+                  placeholder="Bonjour, profitez de -10 % sur votre prochaine commande..."
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={envoi}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
+                >
+                  {envoi ? 'Création...' : 'Créer la campagne'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModaleOuverte(false)}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
           </div>
         )}
       </div>

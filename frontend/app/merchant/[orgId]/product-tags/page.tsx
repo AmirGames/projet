@@ -115,8 +115,8 @@ export default function ProductTagPage() {
 
     try {
       const url = editingId
-        ? `/api/product-tags/${storeId}/${editingId}`
-        : `/api/product-tags/${storeId}`;
+        ? `${API_URL}/api/product-tags/${storeId}/${editingId}`
+        : `${API_URL}/api/product-tags/${storeId}`;
       const method = editingId ? "PATCH" : "POST";
 
       const res = await fetch(url, {

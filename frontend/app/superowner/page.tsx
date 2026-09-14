@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Users, DollarSign, AlertCircle, Server, Lock } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -138,22 +139,34 @@ export default function SuperOwnerDashboard() {
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
         <h2 className="text-lg font-bold mb-4">Actions Rapides</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <button className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors">
+          <Link
+            href="/superowner/organizations"
+            className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
+          >
             <p className="text-2xl mb-2">🏢</p>
             <p className="text-sm font-medium">Organisations</p>
-          </button>
-          <button className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors">
+          </Link>
+          <Link
+            href="/superowner/billing"
+            className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
+          >
             <p className="text-2xl mb-2">💳</p>
             <p className="text-sm font-medium">Facturation</p>
-          </button>
-          <button className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors">
+          </Link>
+          <Link
+            href="/superowner/system-config"
+            className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
+          >
             <p className="text-2xl mb-2">⚙️</p>
             <p className="text-sm font-medium">Configuration</p>
-          </button>
-          <button className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors">
+          </Link>
+          <Link
+            href="/superowner/security-audit"
+            className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
+          >
             <p className="text-2xl mb-2">🔒</p>
             <p className="text-sm font-medium">Audit Sécurité</p>
-          </button>
+          </Link>
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Trash2, Edit2 } from 'lucide-react';
+import { Trash2, Edit2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 
 import { useCurrentStore } from '@/lib/current-store';
@@ -31,6 +31,69 @@ export default function TaxSettingsPage() {
   const [total, setTotal] = useState(0);
 
   const itemsPerPage = 20;
+
+  // La page ne permettait que de supprimer : aucune taxe ne pouvait être
+  // créée ni modifiée, alors que l'API le propose.
+  const [modaleOuverte, setModaleOuverte] = useState(false);
+  const [enEdition, setEnEdition] = useState<TaxSetting | null>(null);
+  const [message, setMessage] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const [formulaire, setFormulaire] = useState({ name: '', rate: '', applicableTo: 'all' });
+
+  const ouvrirModale = (taxe?: TaxSetting) => {
+    setEnEdition(taxe || null);
+    setFormulaire({
+      name: taxe?.name || '',
+      rate: taxe ? String(taxe.rate) : '',
+      applicableTo: taxe?.applicableTo || 'all',
+    });
+    setMessage('');
+    setModaleOuverte(true);
+  };
+
+  const enregistrer = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const taux = Number(formulaire.rate);
+    if (!formulaire.name.trim() || Number.isNaN(taux) || taux < 0 || taux > 100) {
+      setMessage('❌ Indiquez un nom et un taux compris entre 0 et 100');
+      return;
+    }
+
+    setEnvoi(true);
+    setMessage('');
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const url = enEdition
+        ? `${API_URL}/api/tax-settings/${storeId}/${enEdition.id}`
+        : `${API_URL}/api/tax-settings/${storeId}`;
+
+      const response = await fetch(url, {
+        method: enEdition ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: formulaire.name.trim(),
+          rate: taux,
+          applicableTo: formulaire.applicableTo,
+        }),
+      });
+
+      const donnees = await response.json();
+
+      if (!response.ok) {
+        setMessage(`❌ ${donnees.error || 'Enregistrement impossible'}`);
+        return;
+      }
+
+      setModaleOuverte(false);
+      fetchTaxSettings();
+    } catch {
+      setMessage('❌ Erreur de connexion au serveur');
+    } finally {
+      setEnvoi(false);
+    }
+  };
 
   useEffect(() => {
     if (storeId) fetchTaxSettings();
@@ -99,9 +162,17 @@ export default function TaxSettingsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl font-bold">Paramètres Fiscaux</h1>
-            <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-400 hover:text-gray-300 text-sm">
-              ← Retour
-            </Link>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => ouvrirModale()}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-medium transition-colors"
+              >
+                <Plus size={18} /> Nouvelle taxe
+              </button>
+              <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-400 hover:text-gray-300 text-sm">
+                ← Retour
+              </Link>
+            </div>
           </div>
           <p className="text-gray-400">Configurez les taux de taxe pour votre magasin</p>
         </div>
@@ -146,7 +217,11 @@ export default function TaxSettingsPage() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <button className="p-1 hover:bg-gray-600 rounded transition">
+                          <button
+                            onClick={() => ouvrirModale(tax)}
+                            title="Modifier cette taxe"
+                            className="p-1 hover:bg-gray-600 rounded transition"
+                          >
                             <Edit2 size={16} className="text-blue-400" />
                           </button>
                           <button
@@ -186,6 +261,90 @@ export default function TaxSettingsPage() {
             </div>
           )}
         </div>
+
+        {modaleOuverte && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+            <form
+              onSubmit={enregistrer}
+              className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">
+                  {enEdition ? 'Modifier la taxe' : 'Nouvelle taxe'}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setModaleOuverte(false)}
+                  className="p-1 hover:bg-gray-700 rounded"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {message && (
+                <div className="bg-gray-700 rounded-lg p-3 text-sm">{message}</div>
+              )}
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Nom</label>
+                <input
+                  type="text"
+                  required
+                  minLength={2}
+                  value={formulaire.name}
+                  onChange={(e) => setFormulaire({ ...formulaire, name: e.target.value })}
+                  placeholder="Ex : TVA restauration"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Taux (%)</label>
+                <input
+                  type="number"
+                  required
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={formulaire.rate}
+                  onChange={(e) => setFormulaire({ ...formulaire, rate: e.target.value })}
+                  placeholder="Ex : 10"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Applicable à</label>
+                <select
+                  value={formulaire.applicableTo}
+                  onChange={(e) => setFormulaire({ ...formulaire, applicableTo: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                >
+                  <option value="all">Tous les produits</option>
+                  <option value="categories">Certaines catégories</option>
+                  <option value="products">Certains produits</option>
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={envoi}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
+                >
+                  {envoi ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModaleOuverte(false)}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );
