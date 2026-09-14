@@ -63,7 +63,10 @@ export default function DriverDashboard() {
       if (driverResponse.ok) {
         const driverData = await driverResponse.json();
         setDriver(driverData.data);
-        setEarnings(driverData.data.totalEarnings || 0);
+        setEarnings(Number(driverData.data.totalEarnings || 0));
+        // Reprendre la disponibilité enregistrée plutôt que de supposer
+        // « disponible » à chaque rechargement.
+        setIsAvailable(driverData.data.isAvailable ?? true);
       } else {
         throw new Error('Failed to load driver info');
       }
@@ -83,6 +86,28 @@ export default function DriverDashboard() {
     } catch (err) {
       console.error('Error loading driver data:', err);
       router.push('/driver/login');
+    }
+  };
+
+  const basculerDisponibilite = async () => {
+    const token = localStorage.getItem('driverToken');
+    if (!token) return;
+
+    const nouvelEtat = !isAvailable;
+    setIsAvailable(nouvelEtat); // retour visuel immédiat
+
+    try {
+      const reponse = await fetch(`${API_URL}/api/drivers/availability`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ isAvailable: nouvelEtat }),
+      });
+
+      if (!reponse.ok) {
+        setIsAvailable(!nouvelEtat); // le serveur a refusé : on revient en arrière
+      }
+    } catch {
+      setIsAvailable(!nouvelEtat);
     }
   };
 
@@ -332,7 +357,7 @@ export default function DriverDashboard() {
 
               <div className="pt-6 border-t border-gray-700 space-y-4">
                 <button
-                  onClick={() => setIsAvailable(!isAvailable)}
+                  onClick={basculerDisponibilite}
                   className={`w-full font-semibold py-2 rounded-lg transition ${
                     isAvailable
                       ? 'bg-green-600 hover:bg-green-700 text-white'

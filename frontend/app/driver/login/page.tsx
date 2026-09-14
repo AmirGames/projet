@@ -32,8 +32,9 @@ export default function DriverLoginPage() {
       }
 
       const data = await response.json();
-      localStorage.setItem('driverToken', data.data.token);
-      localStorage.setItem('driverUser', JSON.stringify(data.data.user));
+      localStorage.setItem('driverToken', data.accessToken);
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('driverUser', JSON.stringify(data.user));
 
       router.push('/driver');
     } catch (err) {

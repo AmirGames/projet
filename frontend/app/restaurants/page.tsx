@@ -37,13 +37,26 @@ export default function RestaurantsPage() {
   const fetchRestaurants = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/public/restaurants`, {
+      const res = await fetch(`${API_URL}/api/client/stores`, {
         headers: { 'Content-Type': 'application/json' },
       });
 
       if (!res.ok) throw new Error('Erreur lors du chargement');
       const data = await res.json();
-      setRestaurants(data.restaurants || []);
+
+      setRestaurants(
+        (data.data || []).map((boutique: any) => ({
+          id: boutique.id,
+          name: boutique.name,
+          description: boutique.description || '',
+          cuisine: boutique.city || '',
+          rating: Number(boutique.rating || 0),
+          deliveryTime: 30,
+          deliveryFee: Number(boutique.deliveryCost || 0),
+          address: [boutique.address, boutique.city].filter(Boolean).join(', '),
+          isOpen: boutique.isOpen,
+        }))
+      );
     } catch (err) {
       console.error('Erreur:', err);
       setRestaurants([]);

@@ -115,19 +115,25 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
     // Get user's organizations
     const memberships = await UserService.getUserOrganizations(user.id);
 
-    if (memberships.length === 0) {
-      throw new ApiError(400, "User has no organization", "NO_ORGANIZATION");
-    }
-
+    // Tous les comptes n'appartiennent pas à une organisation : un livreur,
+    // par exemple, n'en a aucune. Le refuser ici l'empêchait de se connecter.
     const primaryMembership = memberships[0];
-    const storeIds = primaryMembership.org.stores.map((s) => s.id);
+    const storeIds = primaryMembership ? primaryMembership.org.stores.map((s) => s.id) : [];
+
+    const livreur = primaryMembership
+      ? null
+      : await db.driver.findUnique({ where: { userId: user.id }, select: { id: true } });
+
+    if (!primaryMembership && !livreur && !user.isSuperOwner && !user.isSystemAdmin) {
+      throw new ApiError(403, "Ce compte n'est rattaché à aucun espace", "NO_WORKSPACE");
+    }
 
     // Generate tokens
     const accessToken = AuthService.generateAccessToken({
       userId: user.id,
-      orgId: primaryMembership.org.id,
+      orgId: primaryMembership?.org.id || "",
       storeIds,
-      role: primaryMembership.role as any,
+      role: (primaryMembership?.role || (livreur ? "DRIVER" : "ADMIN")) as any,
     });
 
     const refreshToken = AuthService.generateRefreshToken(user.id);
@@ -143,10 +149,10 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
         isSuperOwner: user.isSuperOwner,
         isSystemAdmin: user.isSystemAdmin,
       },
-      organization: {
-        id: primaryMembership.org.id,
-        name: primaryMembership.org.name,
-      },
+      organization: primaryMembership
+        ? { id: primaryMembership.org.id, name: primaryMembership.org.name }
+        : null,
+      driver: livreur ? { id: livreur.id } : null,
     });
   } catch (err) {
     next(err);
@@ -166,18 +172,24 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
     const user = await UserService.getUserById(decoded.userId);
     const memberships = await UserService.getUserOrganizations(decoded.userId);
 
-    if (memberships.length === 0) {
-      throw new ApiError(400, "User has no organization", "NO_ORGANIZATION");
-    }
-
+    // Tous les comptes n'appartiennent pas à une organisation : un livreur,
+    // par exemple, n'en a aucune. Le refuser ici l'empêchait de se connecter.
     const primaryMembership = memberships[0];
-    const storeIds = primaryMembership.org.stores.map((s) => s.id);
+    const storeIds = primaryMembership ? primaryMembership.org.stores.map((s) => s.id) : [];
+
+    const livreur = primaryMembership
+      ? null
+      : await db.driver.findUnique({ where: { userId: user.id }, select: { id: true } });
+
+    if (!primaryMembership && !livreur && !user.isSuperOwner && !user.isSystemAdmin) {
+      throw new ApiError(403, "Ce compte n'est rattaché à aucun espace", "NO_WORKSPACE");
+    }
 
     const accessToken = AuthService.generateAccessToken({
       userId: user.id,
-      orgId: primaryMembership.org.id,
+      orgId: primaryMembership?.org.id || "",
       storeIds,
-      role: primaryMembership.role as any,
+      role: (primaryMembership?.role || (livreur ? "DRIVER" : "ADMIN")) as any,
     });
 
     res.json({ accessToken });

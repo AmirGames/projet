@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ReviewService } from "../services/review.service";
 import { authMiddleware } from "../middleware/auth";
+import { ApiError } from "../middleware/errorHandler";
+import { db } from "../services/db";
 import { logger } from "../config/logger";
 
 const router = Router();
@@ -15,6 +17,79 @@ const createReviewSchema = z.object({
 
 const updateReviewStatusSchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED"]),
+});
+
+const avisCommandeSchema = z.object({
+  orderId: z.string().min(1, "orderId requis"),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().max(2000).optional(),
+});
+
+// POST /reviews - Déposer un avis depuis une commande (client connecté)
+router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = avisCommandeSchema.parse(req.body);
+
+    const userId = req.userId || (req as any).user?.userId;
+    const utilisateur = userId
+      ? await db.user.findUnique({ where: { id: userId }, select: { email: true } })
+      : null;
+
+    if (!utilisateur) {
+      throw new ApiError(401, "Session invalide", "UNAUTHORIZED");
+    }
+
+    const client = await db.customer.findUnique({ where: { email: utilisateur.email } });
+
+    if (!client) {
+      throw new ApiError(404, "Aucune fiche client pour ce compte", "CUSTOMER_NOT_FOUND");
+    }
+
+    const commande = await db.order.findFirst({
+      where: { id: body.orderId, customerId: client.id, deletedAt: null },
+      include: { items: { select: { productId: true } } },
+    });
+
+    if (!commande) {
+      throw new ApiError(404, "Commande introuvable", "ORDER_NOT_FOUND");
+    }
+
+    if (commande.status !== "COMPLETED") {
+      throw new ApiError(400, "Vous pourrez donner votre avis une fois la commande terminée", "ORDER_NOT_COMPLETED");
+    }
+
+    const produits = [...new Set(commande.items.map((i) => i.productId))];
+
+    if (produits.length === 0) {
+      throw new ApiError(400, "Cette commande ne contient aucun produit à évaluer", "NO_ITEMS");
+    }
+
+    const dejaDepose = await db.review.findFirst({
+      where: { customerId: client.id, productId: { in: produits }, storeId: commande.storeId },
+    });
+
+    if (dejaDepose) {
+      throw new ApiError(409, "Vous avez déjà donné votre avis sur cette commande", "REVIEW_EXISTS");
+    }
+
+    await db.review.createMany({
+      data: produits.map((productId) => ({
+        storeId: commande.storeId,
+        productId,
+        customerId: client.id,
+        rating: body.rating,
+        comment: body.comment,
+        status: "PENDING",
+      })),
+    });
+
+    res.status(201).json({
+      message: "Merci pour votre avis, il sera publié après validation",
+      count: produits.length,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {

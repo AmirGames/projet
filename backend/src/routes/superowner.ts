@@ -39,33 +39,56 @@ const isSuperOwner = async (req: Request, _res: Response, next: NextFunction) =>
 // GET /superowner/dashboard - Superowner dashboard stats
 router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
   try {
+    const maintenant = new Date();
+    const debutMois = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1);
+    const debutMoisPrecedent = new Date(maintenant.getFullYear(), maintenant.getMonth() - 1, 1);
+
     const [
       organizations,
       users,
-      orders,
+      revenusTotaux,
+      revenusMois,
+      revenusMoisPrecedent,
+      alertesCritiques,
       systemConfig,
       auditLogs,
     ] = await Promise.all([
-      db.organization.findMany(),
+      db.organization.findMany({ select: { status: true } }),
       db.user.count(),
-      db.order.findMany({ take: 10, orderBy: { createdAt: "desc" } }),
+      // Agréger en base : sommer les 10 dernières commandes donnait un
+      // chiffre d'affaires faux dès la onzième commande.
+      db.order.aggregate({ where: { deletedAt: null }, _sum: { totalAmount: true } }),
+      db.order.aggregate({
+        where: { deletedAt: null, createdAt: { gte: debutMois } },
+        _sum: { totalAmount: true },
+      }),
+      db.order.aggregate({
+        where: { deletedAt: null, createdAt: { gte: debutMoisPrecedent, lt: debutMois } },
+        _sum: { totalAmount: true },
+      }),
+      db.merchantTicket.count({ where: { status: "OPEN", priority: "CRITICAL" } }),
       db.systemConfig.findFirst(),
       db.systemAuditLog.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
     ]);
 
-    const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+    const totalRevenue = Number(revenusTotaux._sum.totalAmount) || 0;
+    const caMois = Number(revenusMois._sum.totalAmount) || 0;
+    const caMoisPrecedent = Number(revenusMoisPrecedent._sum.totalAmount) || 0;
     const platformFee = Number(systemConfig?.platformFeePercent || 5);
-    const platformFeeAmount = totalRevenue * (platformFee / 100);
 
     const stats = {
       totalRevenue,
-      platformFee: platformFeeAmount,
-      activeOrganizations: organizations.filter((o: any) => o.status === "ACTIVE").length,
+      platformFee: totalRevenue * (platformFee / 100),
+      activeOrganizations: organizations.filter((o) => o.status === "ACTIVE").length,
       totalUsers: users,
-      systemHealth: 95,
-      criticalAlerts: 0,
-      monthlyRecurring: totalRevenue * 12,
-      growth: 12.5,
+      criticalAlerts: alertesCritiques,
+      // Revenu du mois en cours, et non une extrapolation du total sur 12 mois.
+      monthlyRecurring: caMois,
+      // Croissance réelle d'un mois sur l'autre.
+      growth:
+        caMoisPrecedent > 0
+          ? Number((((caMois - caMoisPrecedent) / caMoisPrecedent) * 100).toFixed(1))
+          : 0,
     };
 
     res.json({ stats, recentLogs: auditLogs });
@@ -463,43 +486,6 @@ router.get("/webhooks/:webhookId/deliveries", authMiddleware, isSuperOwner, asyn
 // ============================================================================
 // FINANCIAL REPORTS
 // ============================================================================
-
-// GET /superowner/financial-reports - Financial reports
-router.get("/financial-reports", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const orders = await db.order.findMany();
-    const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
-
-    const reports = [
-      {
-        id: "report_001",
-        period: "2024-01",
-        totalRevenue: totalRevenue * 0.3,
-        platformFee: totalRevenue * 0.03,
-        commissions: totalRevenue * 0.05,
-        taxes: totalRevenue * 0.02,
-        netRevenue: totalRevenue * 0.2,
-        transactions: 245,
-        status: "FINALIZED",
-      },
-      {
-        id: "report_002",
-        period: "2024-02",
-        totalRevenue: totalRevenue * 0.35,
-        platformFee: totalRevenue * 0.035,
-        commissions: totalRevenue * 0.055,
-        taxes: totalRevenue * 0.025,
-        netRevenue: totalRevenue * 0.235,
-        transactions: 312,
-        status: "FINALIZED",
-      },
-    ];
-
-    res.json({ reports });
-  } catch (err) {
-    next(err);
-  }
-});
 
 // ============================================================================
 // DATA MANAGEMENT

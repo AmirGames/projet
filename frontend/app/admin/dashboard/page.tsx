@@ -13,9 +13,9 @@ interface AdminStats {
   totalOrders: number;
   totalRevenue: number;
   totalStores: number;
-  activeDrivers: number;
-  totalDeliveries: number;
-  averageOrderValue: number;
+  totalCustomers: number;
+  totalProducts: number;
+  openTickets: number;
   platformCommission: number;
 }
 
@@ -37,14 +37,29 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/superowner/stats`, {
+      const response = await fetch(`${API_URL}/api/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data.data);
+      if (!response.ok) {
+        const donnees = await response.json().catch(() => ({}));
+        setError(donnees.error || 'Erreur lors du chargement');
+        setLoading(false);
+        return;
       }
+
+      const data = await response.json();
+      setStats({
+        totalUsers: data.users?.total ?? 0,
+        totalOrders: data.orders?.total ?? 0,
+        totalRevenue: data.revenue?.total ?? 0,
+        totalStores: data.stores?.total ?? 0,
+        totalCustomers: data.customers?.total ?? 0,
+        totalProducts: data.products?.total ?? 0,
+        openTickets: data.tickets?.open ?? 0,
+        platformCommission:
+          (data.revenue?.total ?? 0) * ((data.config?.platformFeePercent ?? 5) / 100),
+      });
       setLoading(false);
     } catch (err) {
       console.error('Error:', err);
@@ -109,10 +124,26 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-white mb-4">Plateforme opérationnelle</h2>
-          <p className="text-gray-400">Tableau de bord complet avec gestion des utilisateurs, commandes et statistiques</p>
-        </div>
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-gray-800 rounded-lg p-6">
+              <p className="text-gray-400">Clients</p>
+              <p className="text-white text-3xl font-bold">{stats.totalCustomers}</p>
+            </div>
+            <div className="bg-gray-800 rounded-lg p-6">
+              <p className="text-gray-400">Produits</p>
+              <p className="text-white text-3xl font-bold">{stats.totalProducts}</p>
+            </div>
+            <div className="bg-gray-800 rounded-lg p-6">
+              <p className="text-gray-400">Tickets ouverts</p>
+              <p className="text-white text-3xl font-bold">{stats.openTickets}</p>
+            </div>
+            <div className="bg-gray-800 rounded-lg p-6">
+              <p className="text-gray-400">Commission plateforme</p>
+              <p className="text-white text-3xl font-bold">{euro(stats.platformCommission)}</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

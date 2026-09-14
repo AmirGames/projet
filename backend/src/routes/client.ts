@@ -252,12 +252,125 @@ router.get("/stores/:id/menu", async (req: Request, res: Response, next: NextFun
 });
 
 // GET /api/client/me/favorites - Get customer favorites (protected)
+/**
+ * Résout la fiche client du compte connecté.
+ *
+ * `User` et `Customer` sont deux tables distinctes sans clé étrangère entre
+ * elles ; l'e-mail, unique des deux côtés, fait le lien — c'est aussi la clé
+ * utilisée à la création d'une commande.
+ */
+async function clientConnecte(req: Request) {
+  const userId = req.userId || (req as any).user?.userId;
+
+  const utilisateur = userId
+    ? await db.user.findUnique({ where: { id: userId }, select: { email: true } })
+    : null;
+
+  if (!utilisateur) {
+    throw new ApiError(401, "Session invalide", "UNAUTHORIZED");
+  }
+
+  const client = await db.customer.findUnique({ where: { email: utilisateur.email } });
+
+  if (!client || client.deletedAt) {
+    throw new ApiError(404, "Aucune fiche client pour ce compte", "CUSTOMER_NOT_FOUND");
+  }
+
+  return client;
+}
+
+// GET /api/client/me/orders - Historique des commandes du client connecté
+router.get("/me/orders", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+
+    const commandes = await db.order.findMany({
+      where: { customerId: client.id, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        store: { select: { id: true, name: true, slug: true, city: true } },
+        items: { include: { product: { select: { name: true } } } },
+        delivery: { select: { status: true, deliveryTime: true } },
+      },
+    });
+
+    res.json({
+      success: true,
+      data: commandes.map((c) => ({
+        id: c.id,
+        status: c.status,
+        paymentStatus: c.paymentStatus,
+        deliveryType: c.deliveryType,
+        totalAmount: Number(c.totalAmount),
+        createdAt: c.createdAt,
+        store: c.store,
+        deliveryStatus: c.delivery?.status || null,
+        items: c.items.map((i) => ({
+          name: i.product?.name || "Produit supprimé",
+          quantity: i.quantity,
+          price: Number(i.price),
+          total: Number(i.total),
+        })),
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/client/deliveries/:orderId - Suivi de livraison d'une commande
+router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    const orderId = req.params.orderId as string;
+
+    const commande = await db.order.findFirst({
+      where: { id: orderId, customerId: client.id, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (!commande) {
+      throw new ApiError(404, "Commande introuvable", "ORDER_NOT_FOUND");
+    }
+
+    const course = await db.orderDelivery.findUnique({
+      where: { orderId },
+      include: {
+        driver: { select: { name: true, phone: true, vehicleType: true, rating: true } },
+      },
+    });
+
+    if (!course) {
+      res.json({ success: true, data: null });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: course.id,
+        status: course.status,
+        estimatedTime: course.estimatedTime,
+        deliveryTime: course.deliveryTime,
+        latitude: course.deliveryLat,
+        longitude: course.deliveryLng,
+        driver: course.driver
+          ? { ...course.driver, rating: Number(course.driver.rating) }
+          : null,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/me/favorites", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).user.id;
+    const client = await clientConnecte(req);
 
     const customer = await db.customer.findUnique({
-      where: { id: userId },
+      where: { id: client.id },
       include: {
         favorites: {
           include: {
@@ -286,7 +399,8 @@ router.get("/me/favorites", authMiddleware, async (req: Request, res: Response, 
 // POST /api/client/me/favorites - Add to favorites (protected)
 router.post("/me/favorites", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).user.id;
+    const client = await clientConnecte(req);
+    const userId = client.id;
     const { storeId } = req.body;
 
     if (!storeId) {
@@ -329,11 +443,11 @@ router.post("/me/favorites", authMiddleware, async (req: Request, res: Response,
 // DELETE /api/client/me/favorites/:storeId - Remove from favorites (protected)
 router.delete("/me/favorites/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).user.id;
+    const client = await clientConnecte(req);
     const { storeId } = req.params;
 
     await db.favoriteStore.deleteMany({
-      where: { customerId: userId, storeId: storeId as string }
+      where: { customerId: client.id, storeId: storeId as string }
     });
 
     res.json({

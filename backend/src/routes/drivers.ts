@@ -3,8 +3,167 @@ import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { emitDeliveryUpdate } from "../config/socket";
+import { AuthService } from "../services/auth.service";
+import { z } from "zod";
 
 const router = Router();
+
+// Résout le livreur rattaché au compte connecté. Sans ce contrôle, n'importe
+// quel utilisateur authentifié pourrait manipuler les courses des autres.
+async function livreurConnecte(req: Request) {
+  const userId = req.user?.userId as string;
+  const livreur = await db.driver.findUnique({ where: { userId } });
+
+  if (!livreur) {
+    throw new ApiError(404, "Aucun profil livreur associé à ce compte", "DRIVER_NOT_FOUND");
+  }
+
+  return livreur;
+}
+
+// Vérifie que la course appartient bien au livreur connecté.
+async function courseDuLivreur(req: Request, deliveryId: string) {
+  const livreur = await livreurConnecte(req);
+
+  const course = await db.orderDelivery.findUnique({ where: { id: deliveryId } });
+
+  if (!course) {
+    throw new ApiError(404, "Course introuvable", "DELIVERY_NOT_FOUND");
+  }
+
+  if (course.driverId && course.driverId !== livreur.id) {
+    throw new ApiError(403, "Cette course est attribuée à un autre livreur", "FORBIDDEN");
+  }
+
+  return { livreur, course };
+}
+
+const inscriptionSchema = z.object({
+  name: z.string().min(2, "Nom minimum 2 caractères"),
+  email: z.string().email("Email invalide"),
+  password: z.string().min(8, "Mot de passe : 8 caractères minimum"),
+  phone: z.string().min(9, "Téléphone invalide"),
+  vehicleType: z.enum(["car", "scooter", "bike"]),
+  vehiclePlate: z.string().optional(),
+});
+
+// POST /drivers/register - Inscription d'un livreur
+router.post("/register", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = inscriptionSchema.parse(req.body);
+
+    const [compteExistant, livreurExistant] = await Promise.all([
+      db.user.findUnique({ where: { email: body.email } }),
+      db.driver.findUnique({ where: { email: body.email } }),
+    ]);
+
+    if (compteExistant || livreurExistant) {
+      throw new ApiError(409, "Cette adresse e-mail est déjà utilisée", "EMAIL_EXISTS");
+    }
+
+    const passwordHash = await AuthService.hashPassword(body.password);
+
+    const utilisateur = await db.user.create({
+      data: { email: body.email, name: body.name, passwordHash },
+    });
+
+    const livreur = await db.driver.create({
+      data: {
+        userId: utilisateur.id,
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+        vehicleType: body.vehicleType,
+        vehiclePlate: body.vehiclePlate,
+        licensePlate: body.vehiclePlate,
+      },
+    });
+
+    // Un livreur n'appartient à aucune organisation : le jeton ne porte donc
+    // ni orgId ni boutique.
+    const accessToken = AuthService.generateAccessToken({
+      userId: utilisateur.id,
+      orgId: "",
+      storeIds: [],
+      role: "DRIVER" as any,
+    });
+    const refreshToken = AuthService.generateRefreshToken(utilisateur.id);
+
+    res.status(201).json({
+      message: "Inscription réussie",
+      accessToken,
+      refreshToken,
+      driver: { id: livreur.id, name: livreur.name, email: livreur.email },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /drivers/earnings - Revenus du livreur connecté
+router.get("/earnings", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+
+    const courses = await db.orderDelivery.findMany({
+      where: { driverId: livreur.id, status: "DELIVERED" },
+      include: { order: { select: { totalAmount: true, feesAmount: true } } },
+      orderBy: { deliveryTime: "desc" },
+    });
+
+    const maintenant = new Date();
+    const debutJour = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate());
+    const debutSemaine = new Date(debutJour);
+    debutSemaine.setDate(debutJour.getDate() - ((debutJour.getDay() + 6) % 7));
+    const debutMois = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1);
+
+    // La rémunération du livreur correspond aux frais de livraison encaissés.
+    const gain = (c: (typeof courses)[number]) => Number(c.order?.feesAmount || 0);
+    const depuis = (date: Date) =>
+      courses
+        .filter((c) => (c.deliveryTime || c.updatedAt) >= date)
+        .reduce((somme, c) => somme + gain(c), 0);
+
+    res.json({
+      total: courses.reduce((somme, c) => somme + gain(c), 0),
+      today: depuis(debutJour),
+      week: depuis(debutSemaine),
+      month: depuis(debutMois),
+      deliveryCount: courses.length,
+      rating: Number(livreur.rating),
+      deliveries: courses.slice(0, 30).map((c) => ({
+        id: c.id,
+        orderId: c.orderId,
+        deliveredAt: c.deliveryTime || c.updatedAt,
+        orderAmount: Number(c.order?.totalAmount || 0),
+        earning: gain(c),
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /drivers/availability - Se déclarer disponible ou non
+router.patch("/availability", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const { isAvailable } = req.body;
+
+    if (typeof isAvailable !== "boolean") {
+      throw new ApiError(400, "Le champ isAvailable doit être un booléen", "INVALID_INPUT");
+    }
+
+    const misAJour = await db.driver.update({
+      where: { id: livreur.id },
+      data: { isAvailable, isOnline: isAvailable },
+    });
+
+    res.json({ isAvailable: misAJour.isAvailable, isOnline: misAJour.isOnline });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // GET /drivers/me - Get current driver info (protected)
 router.get("/me", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
@@ -138,24 +297,23 @@ router.patch(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const deliveryId = req.params.id as string;
-      const driverId = req.user?.userId as string;
+      const { livreur, course } = await courseDuLivreur(req, deliveryId);
 
-      const driver = await db.driver.findUnique({ where: { userId: driverId } });
-      if (!driver) {
-        throw new ApiError(404, "Driver not found", "DRIVER_NOT_FOUND");
+      if (course.driverId === livreur.id) {
+        throw new ApiError(409, "Vous avez déjà accepté cette course", "ALREADY_ACCEPTED");
       }
 
       const delivery = await db.orderDelivery.update({
         where: { id: deliveryId },
         data: {
-          driverId: driver.id,
+          driverId: livreur.id,
           status: "ACCEPTED"
         },
         include: { order: true }
       });
 
       emitDeliveryUpdate(delivery.orderId, {
-        driverId: driver.id,
+        driverId: livreur.id,
         status: "ACCEPTED"
       });
 
@@ -179,8 +337,15 @@ router.patch(
       const deliveryId = req.params.id as string;
       const { status } = req.body;
 
-      if (!status) {
-        throw new ApiError(400, "Status required", "INVALID_INPUT");
+      const STATUTS = ["PENDING", "ACCEPTED", "PICKED_UP", "DELIVERED", "FAILED"];
+      if (!status || !STATUTS.includes(status)) {
+        throw new ApiError(400, `Statut invalide (attendu : ${STATUTS.join(", ")})`, "INVALID_INPUT");
+      }
+
+      const { livreur, course } = await courseDuLivreur(req, deliveryId);
+
+      if (course.driverId !== livreur.id) {
+        throw new ApiError(403, "Acceptez d'abord cette course", "NOT_ASSIGNED");
       }
 
       const delivery = await db.orderDelivery.update({
@@ -188,8 +353,21 @@ router.patch(
         data: {
           status: status as any,
           ...(status === "DELIVERED" && { deliveryTime: new Date() })
-        }
+        },
+        include: { order: { select: { feesAmount: true } } }
       });
+
+      // Une course livrée alimente les compteurs du livreur.
+      if (status === "DELIVERED" && course.status !== "DELIVERED") {
+        await db.driver.update({
+          where: { id: livreur.id },
+          data: {
+            totalDeliveries: { increment: 1 },
+            totalEarnings: { increment: Number(delivery.order?.feesAmount || 0) },
+            currentOrderId: null,
+          },
+        });
+      }
 
       emitDeliveryUpdate(delivery.orderId, {
         driverId: delivery.driverId,
@@ -216,9 +394,11 @@ router.patch(
       const deliveryId = req.params.id as string;
       const { latitude, longitude } = req.body;
 
-      if (!latitude || !longitude) {
-        throw new ApiError(400, "Latitude and longitude required", "INVALID_INPUT");
+      if (typeof latitude !== "number" || typeof longitude !== "number") {
+        throw new ApiError(400, "Latitude et longitude requises", "INVALID_INPUT");
       }
+
+      await courseDuLivreur(req, deliveryId);
 
       const delivery = await db.orderDelivery.update({
         where: { id: deliveryId },

@@ -349,6 +349,57 @@ router.post("/merchants/:orgId/restore-from-backup", authMiddleware, isSystemAdm
 // ============================================================================
 
 // GET /admin/tickets - List all tickets
+// GET /admin/stores - Toutes les boutiques de la plateforme
+router.get("/stores", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const recherche = (req.query.search as string) || "";
+    const limit = Math.min(parseInt((req.query.limit as string) || "50") || 50, 200);
+    const offset = parseInt((req.query.offset as string) || "0") || 0;
+
+    const where: any = { deletedAt: null };
+
+    if (recherche) {
+      where.OR = [
+        { name: { contains: recherche, mode: "insensitive" } },
+        { city: { contains: recherche, mode: "insensitive" } },
+        { slug: { contains: recherche, mode: "insensitive" } },
+      ];
+    }
+
+    const [boutiques, total] = await Promise.all([
+      db.store.findMany({
+        where,
+        take: limit,
+        skip: offset,
+        orderBy: { createdAt: "desc" },
+        include: {
+          org: { select: { id: true, name: true, status: true } },
+          _count: { select: { products: true, orders: true } },
+        },
+      }),
+      db.store.count({ where }),
+    ]);
+
+    res.json({
+      stores: boutiques.map((b) => ({
+        id: b.id,
+        name: b.name,
+        slug: b.slug,
+        city: b.city,
+        isOpen: b.isOpen,
+        rating: Number(b.rating),
+        createdAt: b.createdAt,
+        organization: b.org,
+        productCount: b._count.products,
+        orderCount: b._count.orders,
+      })),
+      pagination: { total, limit, offset },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/tickets", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const limit = getQueryNumber(req.query.limit, 20);
@@ -538,45 +589,67 @@ router.get("/commissions", authMiddleware, isSystemAdmin, async (req: Request, r
 // GET /admin/stats - Get system statistics
 router.get("/stats", authMiddleware, isSystemAdmin, async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    // Merchants stats
-    const totalMerchants = await db.organization.count();
-    const activeMerchants = await db.organization.count({
-      where: { status: "ACTIVE" },
-    });
-    const suspendedMerchants = await db.organization.count({
-      where: { status: "SUSPENDED" },
-    });
-
-    // Stores stats
-    const totalStores = await db.store.count();
-
-    // Orders stats
-    const totalOrders = await db.order.count();
-
-    // Revenue stats
-    const totalRevenue = await db.order.aggregate({
-      _sum: { totalAmount: true },
-    });
-
-    // Tickets
-    const openTickets = await db.merchantTicket.count({
-      where: { status: "OPEN" },
-    });
-
-    const config = await db.systemConfig.findFirst();
+    // La page consommatrice attend des blocs détaillés : renvoyer de simples
+    // nombres la faisait planter sur stats.revenue.total.
+    const [
+      totalMerchants,
+      activeMerchants,
+      suspendedMerchants,
+      totalStores,
+      activeStores,
+      totalOrders,
+      pendingOrders,
+      completedOrders,
+      revenueTotale,
+      revenueTerminee,
+      totalUsers,
+      totalCustomers,
+      paiementsEnAttente,
+      paiementsReussis,
+      totalProducts,
+      produitsBrouillon,
+      ticketsOuverts,
+      ticketsCritiques,
+      config,
+    ] = await Promise.all([
+      db.organization.count(),
+      db.organization.count({ where: { status: "ACTIVE" } }),
+      db.organization.count({ where: { status: "SUSPENDED" } }),
+      db.store.count({ where: { deletedAt: null } }),
+      db.store.count({ where: { deletedAt: null, isOpen: true } }),
+      db.order.count({ where: { deletedAt: null } }),
+      db.order.count({ where: { deletedAt: null, status: "PENDING" } }),
+      db.order.count({ where: { deletedAt: null, status: "COMPLETED" } }),
+      db.order.aggregate({ where: { deletedAt: null }, _sum: { totalAmount: true } }),
+      db.order.aggregate({
+        where: { deletedAt: null, status: "COMPLETED" },
+        _sum: { totalAmount: true },
+      }),
+      db.user.count(),
+      db.customer.count({ where: { deletedAt: null } }),
+      db.order.count({ where: { deletedAt: null, paymentStatus: "PENDING" } }),
+      db.order.count({ where: { deletedAt: null, paymentStatus: "SUCCEEDED" } }),
+      db.product.count({ where: { deletedAt: null } }),
+      db.product.count({ where: { deletedAt: null, status: "DRAFT" } }),
+      db.merchantTicket.count({ where: { status: "OPEN" } }),
+      db.merchantTicket.count({ where: { status: "OPEN", priority: "CRITICAL" } }),
+      db.systemConfig.findFirst(),
+    ]);
 
     res.json({
-      merchants: {
-        total: totalMerchants,
-        active: activeMerchants,
-        suspended: suspendedMerchants,
+      merchants: { total: totalMerchants, active: activeMerchants, suspended: suspendedMerchants },
+      stores: { total: totalStores, active: activeStores },
+      orders: { total: totalOrders, pending: pendingOrders, completed: completedOrders },
+      // Montants en euros : les colonnes sont des Decimal(10,2).
+      revenue: {
+        total: Number(revenueTotale._sum.totalAmount) || 0,
+        completed: Number(revenueTerminee._sum.totalAmount) || 0,
       },
-      stores: totalStores,
-      orders: totalOrders,
-      revenue: Number(totalRevenue._sum.totalAmount) || 0,
-      tickets: {
-        open: openTickets,
-      },
+      users: { total: totalUsers },
+      customers: { total: totalCustomers },
+      payments: { pending: paiementsEnAttente, successful: paiementsReussis },
+      products: { total: totalProducts, draft: produitsBrouillon },
+      tickets: { open: ticketsOuverts, critical: ticketsCritiques },
       config: {
         platformFeePercent: config?.platformFeePercent || 5,
         maintenanceMode: config?.maintenanceMode || false,

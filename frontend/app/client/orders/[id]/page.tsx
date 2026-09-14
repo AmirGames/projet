@@ -77,7 +77,7 @@ export default function OrderTrackingPage() {
         setError('Commande non trouvée');
       }
 
-      const deliveryResponse = await fetch(`${API_URL}/api/deliveries/${orderId}`, {
+      const deliveryResponse = await fetch(`${API_URL}/api/client/deliveries/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

@@ -44,13 +44,31 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
 
   const fetchRestaurant = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/public/restaurants/${params.id}`, {
+      const res = await fetch(`${API_URL}/api/client/stores/${params.id}`, {
         headers: { 'Content-Type': 'application/json' },
       });
 
       if (!res.ok) throw new Error('Erreur');
       const data = await res.json();
-      setRestaurant(data.restaurant);
+      const boutique = data.data || data.store || data;
+
+      setRestaurant({
+        id: boutique.id,
+        name: boutique.name,
+        description: boutique.description || '',
+        cuisine: boutique.city || '',
+        rating: Number(boutique.rating || 0),
+        deliveryTime: 30,
+        deliveryFee: Number(boutique.deliveryCost || 0),
+        address: [boutique.address, boutique.city].filter(Boolean).join(', '),
+        isOpen: boutique.isOpen,
+        products: (boutique.products || []).map((produit: any) => ({
+          id: produit.id,
+          name: produit.name,
+          description: produit.description || '',
+          price: Number(produit.price || 0),
+        })),
+      });
     } catch (err) {
       console.error('Erreur:', err);
     } finally {

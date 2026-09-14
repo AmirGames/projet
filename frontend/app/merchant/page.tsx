@@ -25,6 +25,7 @@ interface Order {
 export default function MerchantDashboard() {
   const router = useRouter();
   const [stores, setStores] = useState<Store[]>([]);
+  const [orgId, setOrgId] = useState('');
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -40,27 +41,29 @@ export default function MerchantDashboard() {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const orgId = localStorage.getItem('currentOrgId');
+      const org = localStorage.getItem('currentOrgId');
 
-      if (!token || !orgId) {
+      if (!token || !org) {
         router.push('/login');
         return;
       }
 
-      // Fetch stores
-      const storesRes = await fetch(`${API_URL}/api/stores?orgId=${orgId}`, {
+      setOrgId(org);
+
+      const storesRes = await fetch(`${API_URL}/api/stores/org/${org}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (storesRes.ok) {
         const storesData = await storesRes.json();
-        setStores(storesData.stores || []);
-        setStats((prev) => ({ ...prev, totalStores: storesData.total || 0 }));
+        const liste = Array.isArray(storesData) ? storesData : storesData.stores || [];
+        setStores(liste);
+        setStats((prev) => ({ ...prev, totalStores: liste.length }));
       }
 
       // Fetch recent orders
       const ordersRes = await fetch(
-        `${API_URL}/api/orders?orgId=${orgId}&limit=5`,
+        `${API_URL}/api/orders?orgId=${org}&limit=5`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -155,7 +158,7 @@ export default function MerchantDashboard() {
         ) : (
           <div className="space-y-3">
             {stores.map((store) => (
-              <Link key={store.id} href={`/merchant/${store.id}`}>
+              <Link key={store.id} href={`/merchant/${orgId}/dashboard`}>
                 <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-orange-600 transition cursor-pointer">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
