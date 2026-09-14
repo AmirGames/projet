@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building2, Users } from 'lucide-react';
+import { Building2, Users, Ban, CheckCircle, XCircle } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -31,7 +31,57 @@ export default function OrganizationsPage() {
   const [error, setError] = useState('');
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
+  const [action, setAction] = useState('');
   const limit = 20;
+
+  // Suspension et fermeture partagent le service de l'espace
+  // d'administration : le comportement est strictement le même.
+  const agirSurCommercant = async (
+    org: Organization,
+    operation: 'suspend' | 'unsuspend' | 'close'
+  ) => {
+    const libelles = {
+      suspend: 'suspendre',
+      unsuspend: 'réactiver',
+      close: 'fermer définitivement',
+    };
+
+    let reason = '';
+    if (operation !== 'unsuspend') {
+      reason = window.prompt(`Motif pour ${libelles[operation]} « ${org.name} » :`) || '';
+      if (!reason.trim()) return;
+    } else if (!window.confirm(`Réactiver « ${org.name} » ?`)) {
+      return;
+    }
+
+    setAction(org.id);
+    setError('');
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(
+        `${API_URL}/api/superowner/organizations/${org.id}/${operation}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(reason ? { reason } : {}),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || `Impossible de ${libelles[operation]} ce commerçant`);
+        return;
+      }
+
+      await fetchOrganizations();
+    } catch {
+      setError('Erreur de connexion au serveur');
+    } finally {
+      setAction('');
+    }
+  };
 
   useEffect(() => {
     fetchOrganizations();
@@ -118,6 +168,7 @@ export default function OrganizationsPage() {
                   <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">Utilisateurs</th>
                   <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Revenu</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Date</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
@@ -151,6 +202,43 @@ export default function OrganizationsPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {new Date(org.createdAt).toLocaleDateString('fr-FR')}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        {org.status === 'ACTIVE' && (
+                          <button
+                            onClick={() => agirSurCommercant(org, 'suspend')}
+                            disabled={action === org.id}
+                            title="Suspendre ce commerçant"
+                            className="p-2 bg-orange-600/80 hover:bg-orange-600 disabled:opacity-40 rounded-lg text-white transition"
+                          >
+                            <Ban size={16} />
+                          </button>
+                        )}
+                        {org.status === 'SUSPENDED' && (
+                          <button
+                            onClick={() => agirSurCommercant(org, 'unsuspend')}
+                            disabled={action === org.id}
+                            title="Réactiver ce commerçant"
+                            className="p-2 bg-green-600/80 hover:bg-green-600 disabled:opacity-40 rounded-lg text-white transition"
+                          >
+                            <CheckCircle size={16} />
+                          </button>
+                        )}
+                        {org.status !== 'CLOSED' && (
+                          <button
+                            onClick={() => agirSurCommercant(org, 'close')}
+                            disabled={action === org.id}
+                            title="Fermer définitivement ce commerçant"
+                            className="p-2 bg-red-600/80 hover:bg-red-600 disabled:opacity-40 rounded-lg text-white transition"
+                          >
+                            <XCircle size={16} />
+                          </button>
+                        )}
+                        {org.status === 'CLOSED' && (
+                          <span className="text-xs text-gray-500">Fermé</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

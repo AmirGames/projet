@@ -8,6 +8,9 @@ import { WebhookService, EVENEMENTS_DISPONIBLES } from "../services/webhook.serv
 import { BackupService } from "../services/backup.service";
 import { SecurityEventService } from "../services/security-event.service";
 import { invalidateMaintenanceCache } from "../middleware/maintenance";
+import { MerchantClosureService } from "../services/merchant-closure.service";
+import { TicketMessageService } from "../services/ticket-message.service";
+import { logger } from "../config/logger";
 
 const router = Router();
 
@@ -318,17 +321,35 @@ router.get("/financial-reports", authMiddleware, isSuperOwner, async (req: Reque
 // GET /superowner/system-config - System configuration
 router.get("/system-config", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
   try {
+    // Cette réponse était entièrement fabriquée (version de base en dur, cache
+    // Redis inexistant, clés API fictives). Elle reflète désormais l'état réel.
+    let config = await db.systemConfig.findFirst();
+    if (!config) config = await db.systemConfig.create({ data: {} });
+
+    const [versionBase, nbWebhooks, nbWebhooksActifs, cles] = await Promise.all([
+      db.$queryRaw<{ version: string }[]>`SELECT version() as version`.catch(() => []),
+      db.webhook.count(),
+      db.webhook.count({ where: { status: "ACTIVE" } }),
+      ApiKeyService.list(),
+    ]);
+
+    const version = versionBase[0]?.version?.match(/PostgreSQL ([\d.]+)/)?.[1] || "inconnue";
+
     res.json({
       config: {
-        apiVersion: "1.0.0",
+        apiVersion: process.env.npm_package_version || "1.0.0",
         environment: process.env.NODE_ENV || "development",
-        database: { status: "CONNECTED", version: "14.0" },
-        cache: { status: "ACTIVE", provider: "Redis" },
-        webhooks: { enabled: true, count: 12 },
-        apiKeys: [
-          { id: "api_key_001", name: "Mobile App", lastUsed: "2024-01-15", active: true },
-          { id: "api_key_002", name: "Integration", lastUsed: "2024-01-10", active: true },
-        ],
+        apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`,
+        webhookUrl: `${process.env.API_URL || ""}/api/webhooks`,
+        database: { status: versionBase.length ? "CONNECTED" : "UNREACHABLE", version },
+        webhooks: { enabled: nbWebhooksActifs > 0, count: nbWebhooks, active: nbWebhooksActifs },
+        apiKeys: cles,
+        // Réglages modifiables de la plateforme.
+        platformFeePercent: Number(config.platformFeePercent),
+        minOrderAmount: Number(config.minOrderAmount),
+        maxOrderAmount: Number(config.maxOrderAmount),
+        maintenanceMode: config.maintenanceMode,
+        maintenanceMessage: config.maintenanceMessage || "",
       },
     });
   } catch (err) {
@@ -486,6 +507,179 @@ router.get("/webhooks/:webhookId/deliveries", authMiddleware, isSuperOwner, asyn
 // ============================================================================
 // FINANCIAL REPORTS
 // ============================================================================
+
+
+// Journalise une action d'administration sur la plateforme.
+async function journaliser(req: Request, action: string, target: string, changes?: unknown) {
+  await db.systemAuditLog.create({
+    data: {
+      adminId: (req as any).userId,
+      action,
+      target,
+      changes: (changes ?? {}) as any,
+    },
+  });
+}
+
+// PATCH /superowner/support-tickets/:ticketId/priority - Changer la priorité
+router.patch("/support-tickets/:ticketId/priority", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ticketId = req.params.ticketId as string;
+    // La page affiche URGENT là où la base stocke CRITICAL.
+    const schema = z.object({ priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT", "CRITICAL"]) });
+    const body = schema.parse(req.body);
+    const priorite = body.priority === "URGENT" ? "CRITICAL" : body.priority;
+
+    const existant = await db.merchantTicket.findUnique({ where: { id: ticketId } });
+
+    if (!existant) {
+      throw new ApiError(404, "Ticket introuvable", "NOT_FOUND");
+    }
+
+    const ticket = await db.merchantTicket.update({
+      where: { id: ticketId },
+      data: { priority: priorite },
+    });
+
+    await journaliser(req, "TICKET_PRIORITY_CHANGED", ticketId, {
+      avant: existant.priority,
+      apres: priorite,
+    });
+
+    res.json({
+      message: "Priorité mise à jour",
+      ticket: { ...ticket, priority: ticket.priority === "CRITICAL" ? "URGENT" : ticket.priority },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/support-tickets/:ticketId/messages - Fil de discussion
+router.get("/support-tickets/:ticketId/messages", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const messages = await TicketMessageService.list(req.params.ticketId as string);
+    res.json({ data: messages });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/support-tickets/:ticketId/messages - Répondre au commerçant
+router.post("/support-tickets/:ticketId/messages", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const schema = z.object({ body: z.string().min(1, "Message requis") });
+    const body = schema.parse(req.body);
+
+    const message = await TicketMessageService.add({
+      ticketId: req.params.ticketId as string,
+      authorId: (req as any).userId,
+      authorRole: "ADMIN",
+      body: body.body,
+    });
+
+    res.status(201).json({ message: "Réponse envoyée", data: message });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---- Actions de gestion sur un commerçant ----
+// Elles s'appuient sur le même service que l'espace d'administration, pour que
+// suspension et fermeture se comportent exactement de la même façon.
+
+router.post("/organizations/:orgId/suspend", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+    const schema = z.object({ reason: z.string().min(1, "La raison est requise") });
+    const body = schema.parse(req.body);
+
+    const organisation = await MerchantClosureService.suspend(orgId, body.reason);
+    await journaliser(req, "SUSPEND_MERCHANT", orgId, { reason: body.reason });
+
+    logger.info("Merchant suspended by superowner", { orgId, reason: body.reason });
+    res.json(organisation);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/organizations/:orgId/unsuspend", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+
+    const organisation = await MerchantClosureService.unsuspend(orgId);
+    await journaliser(req, "UNSUSPEND_MERCHANT", orgId);
+
+    res.json(organisation);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/organizations/:orgId/close", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+    const schema = z.object({ reason: z.string().min(1, "La raison est requise") });
+    const body = schema.parse(req.body);
+
+    const organisation = await MerchantClosureService.close(orgId, body.reason);
+    await journaliser(req, "CLOSE_MERCHANT", orgId, { reason: body.reason });
+
+    logger.info("Merchant closed by superowner", { orgId, reason: body.reason });
+    res.json(organisation);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /superowner/system-config - Modifier la configuration de la plateforme
+router.put("/system-config", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const schema = z.object({
+      platformFeePercent: z.number().min(0).max(100).optional(),
+      minOrderAmount: z.number().min(0).optional(),
+      maxOrderAmount: z.number().min(0).optional(),
+      maintenanceMode: z.boolean().optional(),
+      maintenanceMessage: z.string().optional(),
+    });
+    const body = schema.parse(req.body);
+
+    if (
+      body.minOrderAmount !== undefined &&
+      body.maxOrderAmount !== undefined &&
+      body.minOrderAmount > body.maxOrderAmount
+    ) {
+      throw new ApiError(400, "Le montant minimum doit rester inférieur au maximum", "INVALID_RANGE");
+    }
+
+    let config = await db.systemConfig.findFirst();
+    if (!config) config = await db.systemConfig.create({ data: {} });
+
+    const misAJour = await db.systemConfig.update({
+      where: { id: config.id },
+      data: body,
+    });
+
+    // Le mode maintenance est mis en cache : sans cela le changement
+    // mettrait jusqu'à quinze secondes à s'appliquer.
+    invalidateMaintenanceCache();
+    await journaliser(req, "SYSTEM_CONFIG_UPDATED", config.id, body);
+
+    res.json({
+      message: "Configuration enregistrée",
+      config: {
+        platformFeePercent: Number(misAJour.platformFeePercent),
+        minOrderAmount: Number(misAJour.minOrderAmount),
+        maxOrderAmount: Number(misAJour.maxOrderAmount),
+        maintenanceMode: misAJour.maintenanceMode,
+        maintenanceMessage: misAJour.maintenanceMessage || "",
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // ============================================================================
 // DATA MANAGEMENT

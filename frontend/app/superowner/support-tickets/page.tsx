@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { HelpCircle, MessageSquare, Clock, AlertCircle } from 'lucide-react';
 
+import { TicketConversation } from '@/components/TicketConversation';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface SupportTicket {
@@ -31,6 +33,7 @@ export default function SupportTicketsPage() {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [ticketOuvert, setTicketOuvert] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
@@ -89,6 +92,29 @@ export default function SupportTicketsPage() {
       fetchTickets();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+    }
+  };
+
+  const handleUpdatePriority = async (ticketId: string, priorite: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${API_URL}/api/superowner/support-tickets/${ticketId}/priority`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ priority: priorite }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Changement de priorité impossible');
+        return;
+      }
+
+      setError('');
+      fetchTickets();
+    } catch {
+      setError('Erreur de connexion au serveur');
     }
   };
 
@@ -219,10 +245,38 @@ export default function SupportTicketsPage() {
                     </option>
                   ))}
                 </select>
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition">
-                  Ouvrir le ticket
-                </button>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={ticket.priority}
+                    onChange={(e) => handleUpdatePriority(ticket.id, e.target.value)}
+                    className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white"
+                    title="Priorité du ticket"
+                  >
+                    {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setTicketOuvert(ticketOuvert === ticket.id ? null : ticket.id)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition"
+                  >
+                    {ticketOuvert === ticket.id ? 'Fermer' : 'Ouvrir le ticket'}
+                  </button>
+                </div>
               </div>
+
+              {ticketOuvert === ticket.id && (
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <TicketConversation
+                    basePath="/api/superowner/support-tickets"
+                    ticketId={ticket.id}
+                    viewerRole="ADMIN"
+                    onSent={fetchTickets}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>
