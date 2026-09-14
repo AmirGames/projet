@@ -6,6 +6,7 @@ import { UserService } from "../services/user.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
+import { SecurityEventService } from "../services/security-event.service";
 import { generateSlug } from "../utils/validation";
 import { db } from "../services/db";
 
@@ -91,8 +92,25 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
     // Verify password
     const isPasswordValid = await AuthService.comparePassword(body.password, user.passwordHash);
     if (!isPasswordValid) {
+      SecurityEventService.record({
+        action: "LOGIN_FAILED",
+        actor: body.email,
+        severity: user.isSuperOwner || user.isSystemAdmin ? "HIGH" : "MEDIUM",
+        status: "FAILED",
+        details: "Mot de passe incorrect",
+        ipAddress: req.ip,
+      });
+
       throw new ApiError(401, "Email ou mot de passe incorrect", "INVALID_CREDENTIALS");
     }
+
+    SecurityEventService.record({
+      action: "LOGIN_SUCCESS",
+      actor: user.email,
+      severity: user.isSuperOwner || user.isSystemAdmin ? "MEDIUM" : "LOW",
+      details: user.isSuperOwner ? "Connexion superowner" : "Connexion réussie",
+      ipAddress: req.ip,
+    });
 
     // Get user's organizations
     const memberships = await UserService.getUserOrganizations(user.id);

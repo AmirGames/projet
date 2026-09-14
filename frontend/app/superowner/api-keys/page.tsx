@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Key, Plus, Copy, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Key, Plus, Copy, Trash2 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -31,7 +31,7 @@ export default function ApiKeysPage() {
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const [showForm, setShowForm] = useState(false);
-  const [showFullKey, setShowFullKey] = useState<string | null>(null);
+  const [nouvelleCle, setNouvelleCle] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '' });
   const limit = 20;
 
@@ -83,7 +83,14 @@ export default function ApiKeysPage() {
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error('Erreur lors de la création');
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Erreur lors de la création');
+      }
+
+      const data = await res.json();
+      // La clé n'est lisible qu'ici : elle n'est pas stockée en clair.
+      setNouvelleCle(data.key?.key || null);
       setFormData({ name: '' });
       setShowForm(false);
       fetchApiKeys();
@@ -102,7 +109,10 @@ export default function ApiKeysPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors de la révocation');
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Erreur lors de la révocation');
+      }
       fetchApiKeys();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
@@ -135,6 +145,30 @@ export default function ApiKeysPage() {
       {error && (
         <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
           {error}
+        </div>
+      )}
+
+      {nouvelleCle && (
+        <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg space-y-3">
+          <p className="text-green-400 font-semibold">
+            Clé créée — copiez-la maintenant, elle ne sera plus affichée
+          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <code className="bg-gray-900 px-3 py-2 rounded text-sm break-all">{nouvelleCle}</code>
+            <button
+              onClick={() => copyToClipboard(nouvelleCle)}
+              className="p-2 bg-gray-700 hover:bg-gray-600 rounded"
+              title="Copier"
+            >
+              <Copy size={16} />
+            </button>
+            <button
+              onClick={() => setNouvelleCle(null)}
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+            >
+              J'ai copié
+            </button>
+          </div>
         </div>
       )}
 
@@ -196,20 +230,8 @@ export default function ApiKeysPage() {
                   <td className="px-6 py-4 text-sm">{apiKey.name}</td>
                   <td className="px-6 py-4 text-sm flex items-center gap-2">
                     <code className="bg-gray-900 px-2 py-1 rounded text-xs">
-                      {showFullKey === apiKey.id ? apiKey.key : apiKey.prefix + '...'}
+                      {apiKey.key}
                     </code>
-                    <button
-                      onClick={() => setShowFullKey(showFullKey === apiKey.id ? null : apiKey.id)}
-                      className="p-1 hover:bg-gray-700 rounded"
-                    >
-                      {showFullKey === apiKey.id ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                    <button
-                      onClick={() => copyToClipboard(apiKey.key)}
-                      className="p-1 hover:bg-gray-700 rounded"
-                    >
-                      <Copy size={16} />
-                    </button>
                   </td>
                   <td className="px-6 py-4 text-sm">
                     <span className={`px-2 py-1 rounded text-xs font-semibold ${
@@ -221,7 +243,7 @@ export default function ApiKeysPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-400">
-                    {new Date(apiKey.lastUsed).toLocaleDateString('fr-FR')}
+                    {apiKey.lastUsed ? new Date(apiKey.lastUsed).toLocaleDateString('fr-FR') : 'Jamais'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button

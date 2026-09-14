@@ -3,6 +3,10 @@ import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
+import { ApiKeyService } from "../services/api-key.service";
+import { WebhookService, EVENEMENTS_DISPONIBLES } from "../services/webhook.service";
+import { BackupService } from "../services/backup.service";
+import { SecurityEventService } from "../services/security-event.service";
 
 const router = Router();
 
@@ -17,6 +21,9 @@ const isSuperOwner = async (req: Request, _res: Response, next: NextFunction) =>
     if (!user || !user.isSuperOwner) {
       throw new ApiError(403, "Accès refusé - Superowner requis", "FORBIDDEN");
     }
+
+    // Le jeton ne porte pas l'email : on l'expose pour les journaux.
+    (req as any).actorEmail = user.email;
 
     next();
   } catch (err) {
@@ -164,22 +171,148 @@ router.get("/system-config", authMiddleware, isSuperOwner, async (_req: Request,
   }
 });
 
-// POST /superowner/api-keys - Generate new API key
+// GET /superowner/api-keys - Clés existantes (valeur masquée)
+router.get("/api-keys", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    res.json(await ApiKeyService.list(limit, offset));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/api-keys - Générer une clé (visible une seule fois)
 router.post("/api-keys", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const schema = z.object({
-      name: z.string().min(1).max(100),
-    });
-
+    const schema = z.object({ name: z.string().min(1).max(100) });
     const body = schema.parse(req.body);
-    const newKey = `api_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    res.json({
-      success: true,
-      apiKey: newKey,
-      name: body.name,
-      createdAt: new Date(),
+    const cle = await ApiKeyService.create(body.name, req.userId);
+
+    SecurityEventService.record({
+      action: "API_KEY_CREATED",
+      actor: (req as any).actorEmail || "inconnu",
+      target: cle.id,
+      severity: "MEDIUM",
+      details: `Clé « ${body.name} » générée`,
+      ipAddress: req.ip,
     });
+
+    res.status(201).json({ success: true, key: cle });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/api-keys/:keyId/revoke - Révoquer une clé
+router.post("/api-keys/:keyId/revoke", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const keyId = req.params.keyId as string;
+    const cle = await ApiKeyService.revoke(keyId);
+
+    SecurityEventService.record({
+      action: "API_KEY_REVOKED",
+      actor: (req as any).actorEmail || "inconnu",
+      target: keyId,
+      severity: "HIGH",
+      details: `Clé « ${cle.name} » révoquée`,
+      ipAddress: req.ip,
+    });
+
+    res.json({ success: true, message: "Clé révoquée" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ============================================================================
+// WEBHOOKS
+// ============================================================================
+
+// GET /superowner/webhooks - Abonnements enregistrés
+router.get("/webhooks", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    res.json(await WebhookService.list(limit, offset));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/webhooks - Créer un abonnement
+router.post("/webhooks", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const schema = z.object({
+      url: z.string().url("URL invalide"),
+      events: z.array(z.string()).min(1, "Au moins un événement"),
+    });
+    const body = schema.parse(req.body);
+
+    const abonnement = await WebhookService.create({
+      url: body.url,
+      events: body.events,
+      createdById: req.userId,
+    });
+
+    SecurityEventService.record({
+      action: "WEBHOOK_CREATED",
+      actor: (req as any).actorEmail || "inconnu",
+      target: abonnement.id,
+      severity: "MEDIUM",
+      details: `Webhook vers ${body.url}`,
+      ipAddress: req.ip,
+    });
+
+    res.status(201).json({
+      success: true,
+      webhook: {
+        id: abonnement.id,
+        url: abonnement.url,
+        events: abonnement.events,
+        status: abonnement.status,
+        // Le secret sert à vérifier la signature : il n'est montré qu'ici.
+        secret: abonnement.secret,
+        lastTriggered: abonnement.lastTriggered,
+        retryCount: abonnement.retryCount,
+        createdAt: abonnement.createdAt,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /superowner/webhooks/:webhookId - Supprimer un abonnement
+router.delete("/webhooks/:webhookId", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const webhookId = req.params.webhookId as string;
+    await WebhookService.remove(webhookId);
+
+    SecurityEventService.record({
+      action: "WEBHOOK_DELETED",
+      actor: (req as any).actorEmail || "inconnu",
+      target: webhookId,
+      severity: "MEDIUM",
+      ipAddress: req.ip,
+    });
+
+    res.json({ success: true, message: "Webhook supprimé" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/webhooks/:webhookId/deliveries - Historique des envois
+router.get("/webhooks/:webhookId/deliveries", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const webhookId = req.params.webhookId as string;
+    const envois = await WebhookService.deliveries(webhookId);
+
+    res.json({ deliveries: envois, availableEvents: EVENEMENTS_DISPONIBLES });
   } catch (err) {
     next(err);
   }
@@ -233,49 +366,32 @@ router.get("/financial-reports", authMiddleware, isSuperOwner, async (_req: Requ
 // GET /superowner/data-management - Data management info
 router.get("/data-management", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const users = await db.user.count();
-    const organizations = await db.organization.count();
-
-    const data = {
-      stats: {
-        totalUsers: users,
-        totalOrganizations: organizations,
-        databaseSize: "2.5 GB",
-        lastBackup: new Date(Date.now() - 86400000).toISOString(),
-        nextBackup: new Date(Date.now() + 86400000).toISOString(),
-      },
-      backups: [
-        {
-          id: "backup_001",
-          date: new Date(Date.now() - 86400000).toISOString(),
-          size: "2.4 GB",
-          status: "SUCCESS",
-          type: "AUTOMATIC",
-        },
-        {
-          id: "backup_002",
-          date: new Date(Date.now() - 172800000).toISOString(),
-          size: "2.3 GB",
-          status: "SUCCESS",
-          type: "AUTOMATIC",
-        },
-      ],
-    };
-
-    res.json({ data });
+    // La page lit stats et backups à la racine de la réponse.
+    res.json(await BackupService.list());
   } catch (err) {
     next(err);
   }
 });
 
-// POST /superowner/backups - Create backup
-router.post("/backups", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+// POST /superowner/backups - Produire une sauvegarde
+router.post("/backups", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.json({
+    const sauvegarde = await BackupService.create(req.userId);
+
+    SecurityEventService.record({
+      action: "BACKUP_CREATED",
+      actor: (req as any).actorEmail || "inconnu",
+      target: sauvegarde.id,
+      severity: "MEDIUM",
+      details: sauvegarde.name,
+      ipAddress: req.ip,
+    });
+
+    res.status(201).json({
       success: true,
-      backupId: `backup_${Date.now()}`,
-      status: "STARTED",
-      message: "Backup créé et en cours...",
+      backupId: sauvegarde.id,
+      status: sauvegarde.status,
+      message: "Sauvegarde terminée",
     });
   } catch (err) {
     next(err);
@@ -286,41 +402,16 @@ router.post("/backups", authMiddleware, isSuperOwner, async (_req: Request, res:
 // SECURITY AUDIT
 // ============================================================================
 
-// GET /superowner/security-audit - Security audit logs
-router.get("/security-audit", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+// GET /superowner/security-audit - Journal des événements de sécurité
+router.get("/security-audit", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const summary = {
-      totalEvents: 234,
-      criticalAlerts: 2,
-      failedAttempts: 12,
-      suspiciousIps: 3,
-      systemHealth: 92,
-    };
+    const resultat = await SecurityEventService.list({
+      limit: parseInt(req.query.limit as string) || 20,
+      offset: parseInt(req.query.offset as string) || 0,
+      severity: (req.query.severity as string) || undefined,
+    });
 
-    const events = [
-      {
-        id: "event_001",
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        type: "FAILED_AUTH",
-        severity: "HIGH",
-        description: "Tentatives de connexion échouées depuis 192.168.1.100",
-        source: "LOGIN",
-        ipAddress: "192.168.1.100",
-        resolved: false,
-      },
-      {
-        id: "event_002",
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-        type: "API_ABUSE",
-        severity: "MEDIUM",
-        description: "Taux de requêtes anormalement élevé détecté",
-        source: "API",
-        ipAddress: "203.0.113.45",
-        resolved: true,
-      },
-    ];
-
-    res.json({ summary, events });
+    res.json(resultat);
   } catch (err) {
     next(err);
   }

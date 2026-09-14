@@ -43,7 +43,10 @@ export default function DataManagementPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors du chargement des données');
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Erreur lors du chargement des données');
+      }
       const response = await res.json();
       setData(response);
       setError('');
@@ -63,7 +66,10 @@ export default function DataManagementPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors de la création de la sauvegarde');
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Erreur lors de la création de la sauvegarde');
+      }
       await fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');

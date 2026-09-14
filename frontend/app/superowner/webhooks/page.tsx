@@ -65,7 +65,10 @@ export default function WebhooksPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors du chargement des webhooks');
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Erreur lors du chargement des webhooks');
+      }
       const data: WebhooksResponse = await res.json();
       setWebhooks(data.webhooks);
       setTotal(data.pagination.total);
@@ -101,7 +104,10 @@ export default function WebhooksPage() {
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error('Erreur lors de la création');
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Erreur lors de la création');
+      }
       setFormData({ url: '', events: [] });
       setShowForm(false);
       fetchWebhooks();
@@ -120,7 +126,10 @@ export default function WebhooksPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors de la suppression');
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Erreur lors de la suppression');
+      }
       fetchWebhooks();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');

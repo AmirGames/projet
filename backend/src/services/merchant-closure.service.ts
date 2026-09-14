@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
+import { emitWebhook } from "./webhook.service";
 
 const HARD_DELETE_DELAY_DAYS = 60;
 const RESTORATION_WINDOW_DAYS = 180;
@@ -50,6 +51,7 @@ export class MerchantClosureService {
     });
 
     logger.info("Merchant suspended", { orgId, reason });
+    emitWebhook("merchant.suspended", { orgId, name: org.name, reason });
     return updated;
   }
 
@@ -152,6 +154,7 @@ export class MerchantClosureService {
     await this.softDeleteMerchantData(orgId);
 
     logger.info("Merchant closed", { orgId, reason, archiveId: archive.id });
+    emitWebhook("merchant.closed", { orgId, name: org.name, reason, closedUntil });
     return { updated, archive };
   }
 

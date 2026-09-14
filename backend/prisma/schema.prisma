@@ -1141,3 +1141,94 @@ model ProductTag {
   @@unique([storeId, slug])
   @@index([storeId])
 }
+
+// ============================================================================
+// PLATEFORME : CLÉS API, WEBHOOKS, SAUVEGARDES, SÉCURITÉ
+// ============================================================================
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  // Début lisible de la clé (ex. sk_live_a1b2c3) : la clé complète n'est
+  // affichée qu'une fois, seul son hachage est conservé.
+  prefix      String
+  keyHash     String    @unique
+  status      String    @default("ACTIVE") // ACTIVE, REVOKED
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdById String?
+
+  createdAt   DateTime  @default(now())
+
+  @@index([status])
+  @@index([prefix])
+}
+
+model Webhook {
+  id            String    @id @default(cuid())
+  url           String
+  events        String[]  @default([])
+  // Sert à signer chaque envoi pour que le destinataire puisse le vérifier.
+  secret        String
+  status        String    @default("ACTIVE") // ACTIVE, INACTIVE, FAILED
+  lastTriggered DateTime?
+  retryCount    Int       @default(0)
+  createdById   String?
+
+  deliveries    WebhookDelivery[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status])
+}
+
+model WebhookDelivery {
+  id         String   @id @default(cuid())
+  webhookId  String
+  event      String
+  payload    Json
+  statusCode Int?
+  success    Boolean  @default(false)
+  error      String?
+
+  webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([createdAt])
+}
+
+model Backup {
+  id          String    @id @default(cuid())
+  name        String
+  sizeBytes   Int       @default(0)
+  status      String    @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, FAILED
+  filePath    String?
+  error       String?
+  createdById String?
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([createdAt])
+  @@index([status])
+}
+
+model SecurityEvent {
+  id        String   @id @default(cuid())
+  action    String   // LOGIN_FAILED, LOGIN_SUCCESS, ADMIN_GRANTED...
+  actor     String   // email concerné, ou "anonyme"
+  target    String   @default("")
+  severity  String   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  status    String   @default("SUCCESS") // SUCCESS, FAILED, WARNING
+  details   String   @default("")
+  ipAddress String?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([severity])
+  @@index([action])
+}

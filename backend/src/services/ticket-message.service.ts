@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
+import { emitWebhook } from "./webhook.service";
 
 export type TicketAuthorRole = "MERCHANT" | "ADMIN";
 
@@ -65,6 +66,13 @@ export class TicketMessageService {
     }
 
     await this.notifyCounterpart(ticket, params.authorRole, author.email);
+
+    emitWebhook("ticket.message", {
+      ticketId: ticket.id,
+      title: ticket.title,
+      orgId: ticket.orgId,
+      authorRole: params.authorRole,
+    });
 
     logger.info("Ticket message added", {
       ticketId: params.ticketId,
