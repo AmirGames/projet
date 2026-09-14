@@ -6,11 +6,19 @@ import { useAuth } from '@/lib/auth-context';
 import { LogOut, Menu } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
+import { espaceDAccueil } from '@/lib/espace-utilisateur';
 
 export default function Navbar() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Un seul lien « Dashboard », qui mène à l'espace correspondant au compte :
+  // /dashboard renvoyait vers l'ancienne interface commerçant.
+  const lienEspace = espaceDAccueil({
+    isSuperOwner: user?.isSuperOwner,
+    orgId: (user as any)?.organizationId || (typeof window !== 'undefined' ? localStorage.getItem('currentOrgId') : null),
+  });
 
   const handleLogout = () => {
     logout();
@@ -45,7 +53,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link href="/dashboard" className="text-gray-300 hover:text-white transition">
+                <Link href={lienEspace} className="text-gray-300 hover:text-white transition">
                   Dashboard
                 </Link>
                 {user.isSuperOwner && (
@@ -101,7 +109,7 @@ export default function Navbar() {
             ) : (
               <>
                 <Link
-                  href="/dashboard"
+                  href={lienEspace}
                   className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
                 >
                   Dashboard

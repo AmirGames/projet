@@ -18,7 +18,7 @@ export default function ClientLayout({
     { href: '/client', label: 'Accueil', icon: Home },
     { href: '/client/favorites', label: 'Favoris', icon: Heart },
     { href: '/client/orders', label: 'Commandes', icon: ShoppingCart },
-    { href: '/dashboard', label: 'Profil', icon: User },
+    { href: '/client/profile', label: 'Profil', icon: User },
   ];
 
   const isActive = (href: string) => pathname === href;

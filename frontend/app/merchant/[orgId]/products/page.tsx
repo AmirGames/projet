@@ -334,7 +334,7 @@ export default function ProductsPage() {
             description: formData.description,
             price: parseFloat(formData.price),
             stock: parseInt(formData.stock),
-            sku: formData.sku,
+            sku: formData.sku.trim() || undefined,
             status: formData.status,
             categoryId: formData.categoryId || undefined,
           }),
@@ -365,7 +365,7 @@ export default function ProductsPage() {
           description: formData.description || undefined,
           price: parseFloat(formData.price),
           stock: parseInt(formData.stock) || 0,
-          sku: formData.sku,
+          sku: formData.sku.trim() || undefined,
           status: formData.status,
         };
 

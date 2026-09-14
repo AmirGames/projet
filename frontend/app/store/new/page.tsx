@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -126,7 +127,7 @@ export default function CreateStorePage() {
         return;
       }
 
-      router.push('/dashboard');
+      router.push(espaceDAccueilLocal());
     } catch (err) {
       setError('Erreur de connexion');
       console.error(err);

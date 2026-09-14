@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
@@ -278,6 +279,77 @@ async function clientConnecte(req: Request) {
 
   return client;
 }
+
+const profilSchema = z.object({
+  name: z.string().min(2, "Nom minimum 2 caractères").optional(),
+  phone: z.string().min(9, "Téléphone invalide").optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  postalCode: z.string().optional(),
+});
+
+// GET /api/client/me - Profil du client connecté
+router.get("/me", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+
+    const [commandes, depenses] = await Promise.all([
+      db.order.count({ where: { customerId: client.id, deletedAt: null } }),
+      db.order.aggregate({
+        where: { customerId: client.id, deletedAt: null },
+        _sum: { totalAmount: true },
+      }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        id: client.id,
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        address: client.address,
+        city: client.city,
+        postalCode: client.postalCode,
+        status: client.status,
+        memberSince: client.createdAt,
+        totalOrders: commandes,
+        totalSpent: Number(depenses._sum.totalAmount) || 0,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/client/me - Mise à jour de ses propres coordonnées
+router.put("/me", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    const body = profilSchema.parse(req.body);
+
+    // L'adresse e-mail sert de clé de rapprochement avec le compte : elle
+    // n'est volontairement pas modifiable ici.
+    const misAJour = await db.customer.update({
+      where: { id: client.id },
+      data: body,
+    });
+
+    res.json({
+      message: "Profil mis à jour",
+      data: {
+        name: misAJour.name,
+        email: misAJour.email,
+        phone: misAJour.phone,
+        address: misAJour.address,
+        city: misAJour.city,
+        postalCode: misAJour.postalCode,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // GET /api/client/me/orders - Historique des commandes du client connecté
 router.get("/me/orders", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {

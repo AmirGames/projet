@@ -2,6 +2,7 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitWebhook } from "./webhook.service";
+import { emitNotification } from "../config/socket";
 
 export type TicketAuthorRole = "MERCHANT" | "ADMIN";
 
@@ -111,6 +112,8 @@ export class TicketMessageService {
 
     if (unique.length === 0) return;
 
+    // createMany ne renvoie pas les lignes créées : on les relit pour pouvoir
+    // les pousser telles quelles aux destinataires connectés.
     await db.notification.createMany({
       data: unique.map((email) => ({
         type: "TICKET_MESSAGE" as const,
@@ -120,6 +123,16 @@ export class TicketMessageService {
         link,
       })),
     });
+
+    const creees = await db.notification.findMany({
+      where: { recipientEmail: { in: unique }, type: "TICKET_MESSAGE", isRead: false },
+      orderBy: { createdAt: "desc" },
+      take: unique.length,
+    });
+
+    for (const notification of creees) {
+      emitNotification(notification.recipientEmail, notification);
+    }
   }
 
   static async archive(ticketId: string) {

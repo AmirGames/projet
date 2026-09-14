@@ -9,7 +9,7 @@ const router = Router();
 
 const createProductSchema = z.object({
   storeId: z.string().min(1, "storeId requis"),
-  sku: z.string().min(1, "SKU requis").optional(),
+  sku: z.string().trim().optional().transform((v) => v || undefined),
   name: z.string().min(2, "Nom minimum 2 caractères"),
   description: z.string().optional(),
   price: z.number().positive("Prix doit être positif"),
@@ -19,7 +19,7 @@ const createProductSchema = z.object({
 });
 
 const updateProductSchema = z.object({
-  sku: z.string().min(1).optional(),
+  sku: z.string().trim().optional().transform((v) => v || undefined),
   name: z.string().min(2).optional(),
   description: z.string().optional(),
   price: z.number().positive().optional(),

@@ -1,8 +1,9 @@
 import { db } from "./db";
+import { emitNotification } from "../config/socket";
 
 export const notificationService = {
   async create(storeId: string, recipientEmail: string, title: string, message: string, type: string, relatedOrderId?: string) {
-    return db.notification.create({
+    const notification = await db.notification.create({
       data: {
         storeId,
         recipientEmail,
@@ -13,6 +14,11 @@ export const notificationService = {
         isRead: false,
       },
     });
+
+    // Poussée immédiate : la cloche ne doit pas attendre un rechargement.
+    emitNotification(recipientEmail, notification);
+
+    return notification;
   },
 
   // Notifications d'une boutique. `getUserNotifications` filtre sur l'e-mail

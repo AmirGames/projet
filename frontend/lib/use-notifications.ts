@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -16,6 +17,7 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
@@ -77,8 +79,39 @@ export function useNotifications() {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
-    return () => clearInterval(interval);
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    // Le serveur pousse les nouvelles notifications : sans cela il fallait
+    // recharger la page pour les voir apparaître sur la cloche.
+    const socket = io(API_URL, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+    });
+    socketRef.current = socket;
+
+    socket.on('notification', (notification: Notification) => {
+      setNotifications((prev) =>
+        // Une même notification peut arriver deux fois (reconnexion) : on ne
+        // l'ajoute qu'une seule fois.
+        prev.some((n) => n.id === notification.id)
+          ? prev
+          : [notification, ...prev].slice(0, 20)
+      );
+      setUnreadCount((prev) => prev + 1);
+    });
+
+    // Filet de sécurité si la connexion temps réel est coupée (proxy, réseau
+    // d'entreprise) : on continue de rafraîchir, mais plus lentement.
+    const interval = setInterval(fetchNotifications, 60000);
+
+    return () => {
+      clearInterval(interval);
+      socket.off('notification');
+      socket.disconnect();
+      socketRef.current = null;
+    };
   }, [fetchNotifications]);
 
   return {
