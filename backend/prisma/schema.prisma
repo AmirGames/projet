@@ -1036,6 +1036,8 @@ enum NotificationType {
   PAYMENT_FAILED
   PAYMENT_SUCCEEDED
   TICKET_MESSAGE
+  // Annonce diffusée par l'administration de la plateforme
+  PLATFORM_ANNOUNCEMENT
 }
 
 model Notification {
@@ -1050,6 +1052,10 @@ model Notification {
 
   // Lien profond ouvert au clic sur la notification
   link            String?
+
+  // Diffusion par l'administration : niveau d'urgence et public visé
+  priority        String            @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  targetAudience  String            @default("ALL")    // ALL, MERCHANTS, CUSTOMERS, DRIVERS
 
   // Status
   isRead          Boolean           @default(false)

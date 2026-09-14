@@ -15,6 +15,16 @@ export const notificationService = {
     });
   },
 
+  // Notifications d'une boutique. `getUserNotifications` filtre sur l'e-mail
+  // du destinataire : lui passer un storeId ne renvoyait jamais rien.
+  async getStoreNotifications(storeId: string, limit = 50, unreadOnly = false) {
+    return db.notification.findMany({
+      where: { storeId, ...(unreadOnly ? { isRead: false } : {}) },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+  },
+
   async getUserNotifications(recipientEmail: string, limit = 20) {
     return db.notification.findMany({
       where: { recipientEmail },

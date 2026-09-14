@@ -583,6 +583,186 @@ router.get("/commissions", authMiddleware, isSystemAdmin, async (req: Request, r
 });
 
 // ============================================================================
+// JOURNAL D'ACCÈS & NOTIFICATIONS PLATEFORME
+// ============================================================================
+
+// GET /admin/access-logs - Journal des accès (connexions, actions sensibles)
+router.get("/access-logs", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const limit = Math.min(getQueryNumber(req.query.limit, 100), 500);
+    const offset = getQueryNumber(req.query.offset, 0);
+    const statut = req.query.status as string | undefined;
+
+    const where: any = {};
+    if (statut) where.status = statut;
+
+    const [evenements, total] = await Promise.all([
+      db.securityEvent.findMany({
+        where,
+        take: limit,
+        skip: offset,
+        orderBy: { createdAt: "desc" },
+      }),
+      db.securityEvent.count({ where }),
+    ]);
+
+    // La page attend un utilisateur, une ressource et un statut ; les
+    // événements de sécurité portent déjà ces informations.
+    const utilisateurs = await db.user.findMany({
+      where: { email: { in: [...new Set(evenements.map((e) => e.actor))] } },
+      select: { email: true, name: true },
+    });
+    const parEmail = new Map(utilisateurs.map((u) => [u.email, u]));
+
+    res.json({
+      logs: evenements.map((e) => ({
+        id: e.id,
+        user: { email: e.actor, name: parEmail.get(e.actor)?.name || "—" },
+        resource: e.target || "plateforme",
+        action: e.action,
+        ipAddress: e.ipAddress || "—",
+        userAgent: "—",
+        status: e.status === "SUCCESS" ? "SUCCESS" : e.status === "FAILED" ? "FAILED" : "DENIED",
+        severity: e.severity,
+        details: e.details,
+        timestamp: e.createdAt,
+        duration: 0,
+      })),
+      pagination: { total, limit, offset },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /admin/notifications - Annonces diffusées par la plateforme
+router.get("/notifications", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const limit = Math.min(getQueryNumber(req.query.limit, 50), 200);
+    const offset = getQueryNumber(req.query.offset, 0);
+
+    const where = { type: "PLATFORM_ANNOUNCEMENT" as const };
+
+    const [annonces, total] = await Promise.all([
+      db.notification.findMany({ where, take: limit, skip: offset, orderBy: { createdAt: "desc" } }),
+      db.notification.count({ where }),
+    ]);
+
+    res.json({
+      notifications: annonces.map((n) => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        type: n.priority === "CRITICAL" ? "ALERT" : n.priority === "HIGH" ? "WARNING" : "INFO",
+        priority: n.priority,
+        read: n.isRead,
+        createdAt: n.createdAt,
+        targetAudience: n.targetAudience,
+        actionUrl: n.link || undefined,
+      })),
+      pagination: { total, limit, offset },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const annonceSchema = z.object({
+  title: z.string().min(3, "Titre : 3 caractères minimum"),
+  message: z.string().min(3, "Message : 3 caractères minimum"),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
+  targetAudience: z.enum(["ALL", "MERCHANTS", "CUSTOMERS", "DRIVERS"]).optional(),
+  actionUrl: z.string().optional(),
+});
+
+// POST /admin/notifications - Diffuser une annonce
+router.post("/notifications", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = annonceSchema.parse(req.body);
+    const auteur = (req as any).actorEmail || "plateforme";
+
+    const annonce = await db.notification.create({
+      data: {
+        type: "PLATFORM_ANNOUNCEMENT",
+        title: body.title,
+        message: body.message,
+        priority: body.priority || "MEDIUM",
+        targetAudience: body.targetAudience || "ALL",
+        link: body.actionUrl,
+        recipientEmail: auteur,
+        sentAt: new Date(),
+      },
+    });
+
+    res.status(201).json({ message: "Annonce diffusée", notification: annonce });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /admin/notifications/:notificationId/read - Marquer comme lue
+router.patch("/notifications/:notificationId/read", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const notificationId = req.params.notificationId as string;
+
+    const existante = await db.notification.findUnique({ where: { id: notificationId } });
+    if (!existante) {
+      throw new ApiError(404, "Annonce introuvable", "NOT_FOUND");
+    }
+
+    const annonce = await db.notification.update({
+      where: { id: notificationId },
+      data: { isRead: true, readAt: new Date() },
+    });
+
+    res.json({ message: "Annonce marquée comme lue", notification: annonce });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /admin/notifications/:notificationId - Retirer une annonce
+router.delete("/notifications/:notificationId", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const notificationId = req.params.notificationId as string;
+
+    const existante = await db.notification.findUnique({ where: { id: notificationId } });
+    if (!existante) {
+      throw new ApiError(404, "Annonce introuvable", "NOT_FOUND");
+    }
+
+    await db.notification.delete({ where: { id: notificationId } });
+
+    res.json({ message: "Annonce supprimée" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /admin/tickets/:ticketId - Détail d'un ticket
+router.get("/tickets/:ticketId", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const ticketId = req.params.ticketId as string;
+
+    const ticket = await db.merchantTicket.findUnique({
+      where: { id: ticketId },
+      include: {
+        org: { select: { id: true, name: true, email: true, status: true } },
+        messages: { orderBy: { createdAt: "asc" } },
+      },
+    });
+
+    if (!ticket) {
+      throw new ApiError(404, "Ticket introuvable", "NOT_FOUND");
+    }
+
+    res.json({ ticket });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ============================================================================
 // SYSTEM STATISTICS
 // ============================================================================
 

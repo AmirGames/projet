@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Tag, Plus, Trash2, Edit2 } from "lucide-react";
 
+import { useCurrentStore } from "@/lib/current-store";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface ProductTag {
@@ -21,11 +23,7 @@ interface TagsResponse {
   take: number;
 }
 
-export default function ProductTagPage({
-  params,
-}: {
-  params: { orgId: string };
-}) {
+export default function ProductTagPage() {
   const [tags, setTags] = useState<ProductTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,12 +38,13 @@ export default function ProductTagPage({
     color: "#3B82F6",
   });
 
-  const storeId = params.orgId;
+  const { storeId } = useCurrentStore();
   const take = 20;
 
   useEffect(() => {
+    if (!storeId) return;
     fetchTags();
-  }, [skip]);
+  }, [skip, storeId]);
 
   const fetchTags = async () => {
     setLoading(true);

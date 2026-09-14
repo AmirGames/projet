@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Bell, Trash2, Check } from "lucide-react";
 
+import { useCurrentStore } from "@/lib/current-store";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Notification {
@@ -23,11 +25,7 @@ interface NotificationsResponse {
   take: number;
 }
 
-export default function NotificationsPage({
-  params,
-}: {
-  params: { orgId: string };
-}) {
+export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -36,13 +34,14 @@ export default function NotificationsPage({
   const [total, setTotal] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const storeId = params.orgId;
+  const { storeId } = useCurrentStore();
   const take = 20;
 
   useEffect(() => {
+    if (!storeId) return;
     fetchNotifications();
     fetchUnreadCount();
-  }, [filterRead, skip]);
+  }, [filterRead, skip, storeId]);
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -93,7 +92,7 @@ export default function NotificationsPage({
   const markAsRead = async (notificationId: string) => {
     try {
       const res = await fetch(
-        `/api/notifications/${storeId}/${notificationId}/read`,
+        `${API_URL}/api/notifications/${storeId}/${notificationId}/read`,
         {
           method: "PATCH",
           headers: {
@@ -130,7 +129,7 @@ export default function NotificationsPage({
   const deleteNotification = async (notificationId: string) => {
     try {
       const res = await fetch(
-        `/api/notifications/${storeId}/${notificationId}`,
+        `${API_URL}/api/notifications/${storeId}/${notificationId}`,
         {
           method: "DELETE",
           headers: {

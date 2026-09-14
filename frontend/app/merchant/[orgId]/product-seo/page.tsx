@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
+
+import { useCurrentStore } from "@/lib/current-store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -16,12 +18,10 @@ interface ProductSeo {
   ogDescription?: string;
 }
 
-export default function ProductSeoPage({
-  params,
-}: {
-  params: { orgId: string };
-}) {
+export default function ProductSeoPage() {
   const [productId, setProductId] = useState("");
+  const [produits, setProduits] = useState<{ id: string; name: string }[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -34,7 +34,29 @@ export default function ProductSeoPage({
     ogDescription: "",
   });
 
-  const storeId = params.orgId;
+  const { storeId } = useCurrentStore();
+
+  // Saisir un identifiant de produit à la main était impraticable : on propose
+  // la liste des produits de la boutique sélectionnée.
+  useEffect(() => {
+    if (!storeId) return;
+
+    const charger = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/products?storeId=${storeId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setProduits(data.products || []);
+      } catch {
+        // La page reste utilisable : l'identifiant peut être saisi autrement.
+      }
+    };
+
+    charger();
+    setProductId("");
+  }, [storeId]);
 
   const fetchSeo = async () => {
     if (!productId) {
@@ -127,13 +149,18 @@ export default function ProductSeoPage({
           Sélectionner un Produit
         </h2>
         <div className="flex gap-2">
-          <input
-            type="text"
+          <select
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
-            placeholder="Entrez l'ID du produit"
             className="flex-1 px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
+          >
+            <option value="">— Choisir un produit —</option>
+            {produits.map((produit) => (
+              <option key={produit.id} value={produit.id}>
+                {produit.name}
+              </option>
+            ))}
+          </select>
           <button
             onClick={fetchSeo}
             disabled={loading}

@@ -4,14 +4,16 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users, ShoppingCart, TrendingUp, AlertCircle } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Stats {
   merchants: { total: number; active: number; suspended: number };
-  stores: number;
-  orders: number;
-  revenue: number;
-  tickets: { open: number };
+  stores: { total: number; active: number };
+  orders: { total: number; pending: number; completed: number };
+  revenue: { total: number; completed: number };
+  tickets: { open: number; critical: number };
   config: { platformFeePercent: number; maintenanceMode: boolean };
 }
 
@@ -95,8 +97,8 @@ export default function SuperAdminDashboard() {
             <p className="text-gray-400 text-sm">Boutiques</p>
             <ShoppingCart size={20} className="text-green-500" />
           </div>
-          <p className="text-3xl font-bold">{stats.stores}</p>
-          <p className="text-sm text-gray-400 mt-2">points de vente</p>
+          <p className="text-3xl font-bold">{stats.stores.total}</p>
+          <p className="text-sm text-gray-400 mt-2">dont {stats.stores.active} ouvertes</p>
         </div>
 
         {/* Orders */}
@@ -105,7 +107,7 @@ export default function SuperAdminDashboard() {
             <p className="text-gray-400 text-sm">Commandes</p>
             <TrendingUp size={20} className="text-purple-500" />
           </div>
-          <p className="text-3xl font-bold">{stats.orders}</p>
+          <p className="text-3xl font-bold">{stats.orders.total}</p>
           <p className="text-sm text-gray-400 mt-2">total</p>
         </div>
 
@@ -115,7 +117,7 @@ export default function SuperAdminDashboard() {
             <p className="text-gray-400 text-sm">Revenu</p>
             <TrendingUp size={20} className="text-yellow-500" />
           </div>
-          <p className="text-3xl font-bold">{Number(stats.revenue).toFixed(2)} €</p>
+          <p className="text-3xl font-bold">{euro(stats.revenue.total)}</p>
           <p className="text-sm text-gray-400 mt-2">Commission: {stats.config.platformFeePercent}%</p>
         </div>
       </div>
