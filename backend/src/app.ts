@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { getEnv } from "./config/env";
 import { requestLogger } from "./config/logger";
 import { setupErrorHandling } from "./middleware/errorHandler";
+import { maintenanceMiddleware } from "./middleware/maintenance";
 import authRouter from "./routes/auth";
 import organizationRouter from "./routes/organization";
 import storeRouter from "./routes/store";
@@ -66,6 +67,11 @@ export function createApp(): Express {
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
+
+  // ===== Mode maintenance =====
+  // Placé avant les routes métier : seuls la connexion et l'administration
+  // restent joignables quand il est actif.
+  app.use(maintenanceMiddleware);
 
   // ===== API Routes =====
   app.use("/api/auth", authRouter);

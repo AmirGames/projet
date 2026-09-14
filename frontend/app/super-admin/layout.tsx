@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -21,11 +21,13 @@ import {
   Shield,
   Bell,
   Eye,
+  Lock,
 } from 'lucide-react';
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
   const { logout } = useAuth();
   const { isReady } = useProtectedRoute(true);
 
@@ -79,17 +81,38 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-          {navItems.map((item) => (
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto no-scrollbar">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={sidebarOpen ? undefined : item.label}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-red-600/20 text-red-400 font-medium'
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                }`}
+              >
+                <item.icon size={20} className="flex-shrink-0" />
+                {sidebarOpen && <span className="truncate">{item.label}</span>}
+              </Link>
+            );
+          })}
+
+          {/* Les deux espaces d'administration sont distincts : sans ce lien,
+              les pages SuperOwner restent inatteignables depuis ici. */}
+          <div className="pt-3 mt-3 border-t border-gray-700">
             <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+              href="/superowner"
+              title={sidebarOpen ? undefined : 'Espace SuperOwner'}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-red-400 hover:bg-red-900/20"
             >
-              <item.icon size={20} />
-              {sidebarOpen && <span>{item.label}</span>}
+              <Lock size={20} className="flex-shrink-0" />
+              {sidebarOpen && <span className="truncate">Espace SuperOwner</span>}
             </Link>
-          ))}
+          </div>
         </nav>
 
         {/* Logout */}

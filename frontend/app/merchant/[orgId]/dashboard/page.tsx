@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useCurrentStore } from '@/lib/current-store';
 import {
   ShoppingCart,
   Users,
@@ -46,16 +47,14 @@ export default function MerchantDashboard() {
   const router = useRouter();
   const orgId = params?.orgId as string;
 
+  const { storeId, currentStore, stores, loading: storesLoading } = useCurrentStore();
+
   const [org, setOrg] = useState<Organization | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (orgId) fetchDashboardData();
-  }, [orgId]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -64,11 +63,18 @@ export default function MerchantDashboard() {
 
     const auth = { Authorization: `Bearer ${token}` };
 
+    // Les chiffres suivent la boutique choisie dans le sélecteur ; sans
+    // boutique on retombe sur l'ensemble de l'organisation.
+    const portee = storeId ? `storeId=${storeId}` : `orgId=${orgId}`;
+
+    setLoading(true);
+    setError('');
+
     try {
       const [orgRes, ordersRes, productsRes] = await Promise.all([
         fetch(`${API_URL}/api/organizations/${orgId}`, { headers: auth }),
-        fetch(`${API_URL}/api/orders?orgId=${orgId}`, { headers: auth }),
-        fetch(`${API_URL}/api/products?orgId=${orgId}`, { headers: auth }),
+        fetch(`${API_URL}/api/orders?${portee}`, { headers: auth }),
+        fetch(`${API_URL}/api/products?${portee}`, { headers: auth }),
       ]);
 
       if (orgRes.ok) setOrg(await orgRes.json());
@@ -99,7 +105,13 @@ export default function MerchantDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orgId, storeId, router]);
+
+  useEffect(() => {
+    // On attend la liste des boutiques pour ne pas charger deux fois :
+    // une première fois sans portée, puis avec la boutique retenue.
+    if (orgId && !storesLoading) fetchDashboardData();
+  }, [orgId, storesLoading, fetchDashboardData]);
 
   if (loading) return <div className="text-center py-8">Chargement...</div>;
 
@@ -112,7 +124,17 @@ export default function MerchantDashboard() {
       <div>
         <h1 className="text-3xl font-bold">Tableau de bord</h1>
         <p className="text-gray-400 mt-1">
-          {org?.name ? `Vue d'ensemble de ${org.name}` : 'Vue d\'ensemble de votre commerce'}
+          {currentStore
+            ? `Vue d'ensemble de ${currentStore.name}`
+            : org?.name
+              ? `Vue d'ensemble de ${org.name}`
+              : "Vue d'ensemble de votre commerce"}
+          {stores.length > 1 && (
+            <span className="text-gray-500">
+              {' '}
+              — changez de boutique en haut à droite
+            </span>
+          )}
         </p>
       </div>
 
@@ -195,10 +217,21 @@ export default function MerchantDashboard() {
             {org.stores.map((store) => (
               <div
                 key={store.id}
-                className="p-3 bg-gray-700 rounded-lg flex items-center justify-between gap-4"
+                className={`p-3 rounded-lg flex items-center justify-between gap-4 ${
+                  store.id === storeId
+                    ? 'bg-gray-700 ring-1 ring-blue-500/60'
+                    : 'bg-gray-700'
+                }`}
               >
                 <div className="min-w-0">
-                  <p className="font-medium truncate">{store.name}</p>
+                  <p className="font-medium truncate">
+                    {store.name}
+                    {store.id === storeId && (
+                      <span className="ml-2 text-xs font-normal text-blue-400">
+                        boutique affichée
+                      </span>
+                    )}
+                  </p>
                   <p className="text-sm text-gray-400 truncate">
                     {store.city || 'Ville non renseignée'}
                   </p>

@@ -53,7 +53,7 @@ export default function OrganizationsPage() {
       if (!res.ok) throw new Error('Erreur lors du chargement des organisations');
       const data: OrganizationsResponse = await res.json();
       setOrganizations(data.organizations);
-      setTotal(data.pagination.total);
+      setTotal(data.pagination?.total ?? data.organizations?.length ?? 0);
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
@@ -147,7 +147,7 @@ export default function OrganizationsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <p className="font-bold text-green-400">${(org.revenue / 100).toFixed(2)}</p>
+                      <p className="font-bold text-green-400">{Number(org.revenue || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</p>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {new Date(org.createdAt).toLocaleDateString('fr-FR')}

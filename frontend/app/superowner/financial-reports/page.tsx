@@ -53,8 +53,8 @@ export default function FinancialReportsPage() {
 
       if (!res.ok) throw new Error('Erreur lors du chargement des rapports');
       const data: ReportsResponse = await res.json();
-      setReports(data.reports);
-      setTotal(data.pagination.total);
+      setReports(data.reports || []);
+      setTotal(data.pagination?.total ?? data.reports?.length ?? 0);
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
@@ -62,6 +62,13 @@ export default function FinancialReportsPage() {
       setLoading(false);
     }
   };
+
+  // Les montants arrivent en euros (Decimal Prisma), pas en centimes.
+  const euro = (valeur: number) =>
+    Number(valeur || 0).toLocaleString('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+    });
 
   const getPeriodLabel = (period: string) => {
     const [year, month] = period.split('-');
@@ -119,22 +126,22 @@ export default function FinancialReportsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <p className="font-bold text-green-400">${(report.totalRevenue / 100).toFixed(2)}</p>
+                      <p className="font-bold text-green-400">{euro(report.totalRevenue)}</p>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <p className="text-blue-400">${(report.platformFees / 100).toFixed(2)}</p>
+                      <p className="text-blue-400">{euro(report.platformFees)}</p>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <p className="text-red-400">-${(report.refunds / 100).toFixed(2)}</p>
+                      <p className="text-red-400">-{euro(report.refunds)}</p>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <p className="font-bold text-purple-400">${(report.netRevenue / 100).toFixed(2)}</p>
+                      <p className="font-bold text-purple-400">{euro(report.netRevenue)}</p>
                     </td>
                     <td className="px-6 py-4 text-center">
                       <p className="text-gray-400">{report.transactionCount}</p>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <p className="text-gray-400">${(report.averageOrderValue / 100).toFixed(2)}</p>
+                      <p className="text-gray-400">{euro(report.averageOrderValue)}</p>
                     </td>
                   </tr>
                 ))}

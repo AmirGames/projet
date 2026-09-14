@@ -121,4 +121,99 @@ export class BackupService {
       throw new ApiError(500, `Sauvegarde impossible : ${message}`, "BACKUP_FAILED");
     }
   }
+
+  static async get(id: string) {
+    const sauvegarde = await db.backup.findUnique({ where: { id } });
+
+    if (!sauvegarde) {
+      throw new ApiError(404, "Sauvegarde introuvable", "NOT_FOUND");
+    }
+
+    return sauvegarde;
+  }
+
+  // Renvoie le contenu du fichier pour téléchargement.
+  static async read(id: string) {
+    const sauvegarde = await this.get(id);
+
+    if (sauvegarde.status !== "COMPLETED" || !sauvegarde.filePath) {
+      throw new ApiError(400, "Cette sauvegarde n'a pas abouti", "BACKUP_INCOMPLETE");
+    }
+
+    try {
+      const contenu = await fs.readFile(sauvegarde.filePath, "utf-8");
+      return { nom: sauvegarde.name, contenu };
+    } catch {
+      throw new ApiError(410, "Le fichier de sauvegarde n'existe plus sur le disque", "FILE_MISSING");
+    }
+  }
+
+  static async remove(id: string) {
+    const sauvegarde = await this.get(id);
+
+    if (sauvegarde.filePath) {
+      // Le fichier peut avoir été supprimé à la main : ce n'est pas bloquant.
+      await fs.unlink(sauvegarde.filePath).catch(() => undefined);
+    }
+
+    await db.backup.delete({ where: { id } });
+    logger.info("Backup deleted", { id });
+  }
+
+  // Réinsère le contenu d'une sauvegarde sans toucher à ce qui existe déjà :
+  // les enregistrements encore présents sont ignorés, jamais écrasés.
+  static async restore(id: string) {
+    const { contenu } = await this.read(id);
+
+    let donnees: any;
+    try {
+      donnees = JSON.parse(contenu);
+    } catch {
+      throw new ApiError(422, "Fichier de sauvegarde illisible", "INVALID_BACKUP");
+    }
+
+    const sansHorodatage = (lignes: any[]) =>
+      (lignes || []).map(({ createdAt, updatedAt, deletedAt, ...reste }) => reste);
+
+    const resultats = {
+      organisations: 0,
+      boutiques: 0,
+      categories: 0,
+      produits: 0,
+      clients: 0,
+    };
+
+    const orgs = await db.organization.createMany({
+      data: sansHorodatage(donnees.organisations),
+      skipDuplicates: true,
+    });
+    resultats.organisations = orgs.count;
+
+    const boutiques = await db.store.createMany({
+      data: sansHorodatage(donnees.boutiques),
+      skipDuplicates: true,
+    });
+    resultats.boutiques = boutiques.count;
+
+    const categories = await db.category.createMany({
+      data: sansHorodatage(donnees.categories),
+      skipDuplicates: true,
+    });
+    resultats.categories = categories.count;
+
+    const produits = await db.product.createMany({
+      data: sansHorodatage(donnees.produits),
+      skipDuplicates: true,
+    });
+    resultats.produits = produits.count;
+
+    const clients = await db.customer.createMany({
+      data: sansHorodatage(donnees.clients),
+      skipDuplicates: true,
+    });
+    resultats.clients = clients.count;
+
+    logger.info("Backup restored", { id, ...resultats });
+    return resultats;
+  }
 }

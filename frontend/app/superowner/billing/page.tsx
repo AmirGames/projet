@@ -58,9 +58,11 @@ export default function BillingPage() {
 
       if (!res.ok) throw new Error('Erreur lors du chargement de la facturation');
       const data: BillingResponse = await res.json();
-      setBillings(data.billings);
-      setSummary(data.summary);
-      setTotal(data.pagination.total);
+      setBillings(data.billings || []);
+      setSummary(
+        data.summary ?? { totalRevenue: 0, pendingAmount: 0, activeSubscriptions: 0 }
+      );
+      setTotal(data.pagination?.total ?? data.billings?.length ?? 0);
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
@@ -68,6 +70,10 @@ export default function BillingPage() {
       setLoading(false);
     }
   };
+
+  // Les montants arrivent en euros (Decimal Prisma).
+  const euro = (valeur: number) =>
+    Number(valeur || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
@@ -97,13 +103,13 @@ export default function BillingPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-6">
           <p className="text-sm text-green-400 mb-2">Revenu Total</p>
-          <p className="text-3xl font-bold text-green-400">${(summary.totalRevenue / 100).toFixed(2)}</p>
+          <p className="text-3xl font-bold text-green-400">{euro(summary.totalRevenue)}</p>
           <p className="text-xs text-green-400/60 mt-2">Tous les abonnements</p>
         </div>
 
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-6">
           <p className="text-sm text-yellow-400 mb-2">Montant En Attente</p>
-          <p className="text-3xl font-bold text-yellow-400">${(summary.pendingAmount / 100).toFixed(2)}</p>
+          <p className="text-3xl font-bold text-yellow-400">{euro(summary.pendingAmount)}</p>
           <p className="text-xs text-yellow-400/60 mt-2">À collecter</p>
         </div>
 
@@ -144,7 +150,7 @@ export default function BillingPage() {
                     <td className="px-6 py-4 text-sm text-gray-400">{billing.tier}</td>
                     <td className="px-6 py-4 text-sm text-gray-400">{billing.period}</td>
                     <td className="px-6 py-4 text-right">
-                      <p className="font-bold text-green-400">${(billing.amount / 100).toFixed(2)}</p>
+                      <p className="font-bold text-green-400">{euro(billing.amount)}</p>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(billing.status)}`}>

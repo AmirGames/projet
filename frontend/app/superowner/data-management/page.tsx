@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Database, Clock } from 'lucide-react';
+import { Database, Clock, Download, RotateCcw, Trash2 } from 'lucide-react';
 
 interface DataStats {
   totalRecords: number;
@@ -75,6 +75,58 @@ export default function DataManagementPage() {
       setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const actionSauvegarde = async (id: string, action: 'restore' | 'delete') => {
+    const confirmation =
+      action === 'restore'
+        ? 'Réinjecter le contenu de cette sauvegarde ? Les enregistrements déjà présents seront conservés tels quels.'
+        : 'Supprimer définitivement cette sauvegarde et son fichier ?';
+
+    if (!confirm(confirmation)) return;
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${API_URL}/api/superowner/backups/${id}${action === 'restore' ? '/restore' : ''}`, {
+        method: action === 'restore' ? 'POST' : 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const corps = await res.json().catch(() => null);
+        throw new Error(corps?.error || "L'opération a échoué");
+      }
+
+      setError('');
+      fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "L'opération a échoué");
+    }
+  };
+
+  const telecharger = async (id: string, nom: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${API_URL}/api/superowner/backups/${id}/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const corps = await res.json().catch(() => null);
+        throw new Error(corps?.error || 'Téléchargement impossible');
+      }
+
+      // Le fichier arrive via une requête authentifiée : on le matérialise ici.
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const lien = document.createElement('a');
+      lien.href = url;
+      lien.download = nom;
+      lien.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Téléchargement impossible');
     }
   };
 
@@ -166,9 +218,36 @@ export default function DataManagementPage() {
                         <span>{backup.size}</span>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(backup.status)}`}>
-                      {backup.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(backup.status)}`}>
+                        {backup.status}
+                      </span>
+                      {backup.status === 'COMPLETED' && (
+                        <>
+                          <button
+                            onClick={() => telecharger(backup.id, backup.name)}
+                            title="Télécharger"
+                            className="p-2 bg-gray-700 hover:bg-gray-600 rounded"
+                          >
+                            <Download size={16} />
+                          </button>
+                          <button
+                            onClick={() => actionSauvegarde(backup.id, 'restore')}
+                            title="Restaurer"
+                            className="p-2 bg-blue-600 hover:bg-blue-700 rounded"
+                          >
+                            <RotateCcw size={16} />
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => actionSauvegarde(backup.id, 'delete')}
+                        title="Supprimer"
+                        className="p-2 bg-red-600 hover:bg-red-700 rounded"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

@@ -6,6 +6,7 @@ import { authMiddleware } from "../middleware/auth";
 import { MerchantClosureService } from "../services/merchant-closure.service";
 import { TicketMessageService } from "../services/ticket-message.service";
 import { logger } from "../config/logger";
+import { invalidateMaintenanceCache } from "../middleware/maintenance";
 
 const router = Router();
 
@@ -86,6 +87,9 @@ router.put("/config", authMiddleware, isSystemAdmin, async (req: Request, res: R
       where: { id: config.id },
       data: body,
     });
+
+    // Le middleware met le réglage en cache : forcer sa relecture.
+    invalidateMaintenanceCache();
 
     await db.systemAuditLog.create({
       data: {

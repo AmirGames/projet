@@ -7,6 +7,7 @@ import { ApiKeyService } from "../services/api-key.service";
 import { WebhookService, EVENEMENTS_DISPONIBLES } from "../services/webhook.service";
 import { BackupService } from "../services/backup.service";
 import { SecurityEventService } from "../services/security-event.service";
+import { invalidateMaintenanceCache } from "../middleware/maintenance";
 
 const router = Router();
 
@@ -77,29 +78,56 @@ router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res
 // ORGANIZATIONS
 // ============================================================================
 
-// GET /superowner/organizations - List all organizations
-router.get("/organizations", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+// GET /superowner/organizations - Commerçants avec leur activité réelle
+router.get("/organizations", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const organizations = await db.organization.findMany({
-      include: {
-        memberships: { select: { id: true } },
-        _count: { select: { memberships: true } },
-      },
-    });
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const offset = parseInt(req.query.offset as string) || 0;
+    const status = req.query.status as string;
 
-    const orgsWithStats = organizations.map((org: any) => ({
-      id: org.id,
-      name: org.name,
-      email: org.email,
-      status: org.status,
-      usersCount: org._count?.memberships || 0,
-      revenue: Math.floor(Math.random() * 50000),
-      commission: Math.floor(Math.random() * 5000),
-      createdAt: org.createdAt,
-      subscriptionPlan: org.plan,
-    }));
+    const where = status ? { status } : {};
 
-    res.json({ organizations: orgsWithStats });
+    const [organisations, total] = await Promise.all([
+      db.organization.findMany({
+        where,
+        skip: offset,
+        take: limit,
+        include: {
+          stores: { select: { id: true } },
+          _count: { select: { memberships: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.organization.count({ where }),
+    ]);
+
+    const lignes = await Promise.all(
+      organisations.map(async (org) => {
+        const storeIds = org.stores.map((s) => s.id);
+
+        const commandes = storeIds.length
+          ? await db.order.findMany({
+              where: { storeId: { in: storeIds } },
+              select: { totalAmount: true },
+            })
+          : [];
+
+        return {
+          id: org.id,
+          name: org.name,
+          email: org.email || "",
+          status: org.status,
+          tier: org.tier,
+          createdAt: org.createdAt,
+          activeUsers: org._count.memberships,
+          revenue: Number(
+            commandes.reduce((somme, c) => somme + Number(c.totalAmount), 0).toFixed(2)
+          ),
+        };
+      })
+    );
+
+    res.json({ organizations: lignes, pagination: { total, limit, offset } });
   } catch (err) {
     next(err);
   }
@@ -109,37 +137,151 @@ router.get("/organizations", authMiddleware, isSuperOwner, async (_req: Request,
 // BILLING
 // ============================================================================
 
-// GET /superowner/billing - Billing and subscription data
-router.get("/billing", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+// Facturation et rapports partagent le même découpage mensuel.
+function moisDe(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// GET /superowner/billing - Commissions dues par commerçant sur le mois courant
+router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const organizations = await db.organization.findMany();
-    const orders = await db.order.findMany();
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const offset = parseInt(req.query.offset as string) || 0;
 
-    const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
-    const pendingInvoices = Math.floor(Math.random() * 20);
-    const paidInvoices = Math.floor(Math.random() * 100);
+    const config = await db.systemConfig.findFirst();
+    const taux = Number(config?.platformFeePercent ?? 5) / 100;
 
-    const subscriptionPlans = [
-      { name: "Starter", count: 10, price: 2999 },
-      { name: "Professional", count: 25, price: 9999 },
-      { name: "Enterprise", count: 5, price: 49999 },
-    ];
+    const debutMois = new Date();
+    debutMois.setDate(1);
+    debutMois.setHours(0, 0, 0, 0);
+    const periode = moisDe(debutMois);
 
-    const topSubscribers = organizations.slice(0, 5).map((org: any) => ({
-      name: org.name,
-      plan: org.plan || "STARTER",
-      revenue: Math.floor(Math.random() * 10000),
-    }));
+    const prochaineEcheance = new Date(debutMois);
+    prochaineEcheance.setMonth(prochaineEcheance.getMonth() + 1);
+
+    const organisations = await db.organization.findMany({
+      include: {
+        stores: { select: { id: true } },
+        commissionHistory: { where: { period: periode }, take: 1 },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const lignes = await Promise.all(
+      organisations.map(async (org) => {
+        const storeIds = org.stores.map((s) => s.id);
+
+        const commandes = storeIds.length
+          ? await db.order.findMany({
+              where: { storeId: { in: storeIds }, createdAt: { gte: debutMois } },
+              select: { totalAmount: true },
+            })
+          : [];
+
+        const chiffreAffaires = commandes.reduce((somme, c) => somme + Number(c.totalAmount), 0);
+        const commission = chiffreAffaires * taux;
+        const dejaFacture = org.commissionHistory.length > 0;
+
+        return {
+          id: org.id,
+          organization: org.name,
+          tier: org.tier,
+          amount: Number(commission.toFixed(2)),
+          status: dejaFacture ? "PAID" : commission > 0 ? "PENDING" : "PAID",
+          period: periode,
+          nextBillingDate: prochaineEcheance,
+          createdAt: org.createdAt,
+          revenue: Number(chiffreAffaires.toFixed(2)),
+        };
+      })
+    );
+
+    const page = lignes.slice(offset, offset + limit);
 
     res.json({
-      data: {
-        totalRevenue,
-        monthlyRecurring: totalRevenue * 0.8,
-        pendingInvoices,
-        paidInvoices,
-        subscriptionPlans,
-        topSubscribers,
+      billings: page,
+      summary: {
+        totalRevenue: Number(lignes.reduce((s, l) => s + l.amount, 0).toFixed(2)),
+        pendingAmount: Number(
+          lignes.filter((l) => l.status === "PENDING").reduce((s, l) => s + l.amount, 0).toFixed(2)
+        ),
+        activeSubscriptions: organisations.filter((o) => o.status === "ACTIVE").length,
       },
+      pagination: { total: lignes.length, limit, offset },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/financial-reports - Synthèse mensuelle des douze derniers mois
+router.get("/financial-reports", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit as string) || 12, 36);
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const config = await db.systemConfig.findFirst();
+    const taux = Number(config?.platformFeePercent ?? 5) / 100;
+
+    const debut = new Date();
+    debut.setMonth(debut.getMonth() - 11);
+    debut.setDate(1);
+    debut.setHours(0, 0, 0, 0);
+
+    const commandes = await db.order.findMany({
+      where: { createdAt: { gte: debut } },
+      select: { totalAmount: true, createdAt: true, status: true },
+    });
+
+    const parMois = new Map<string, { revenus: number; remboursements: number; nombre: number }>();
+
+    for (let i = 0; i < 12; i += 1) {
+      const d = new Date(debut);
+      d.setMonth(d.getMonth() + i);
+      parMois.set(moisDe(d), { revenus: 0, remboursements: 0, nombre: 0 });
+    }
+
+    for (const commande of commandes) {
+      const cle = moisDe(commande.createdAt);
+      const ligne = parMois.get(cle);
+      if (!ligne) continue;
+
+      const montant = Number(commande.totalAmount);
+
+      // Faute de modèle de remboursement, les commandes rejetées en tiennent lieu.
+      if (commande.status === "REJECTED") {
+        ligne.remboursements += montant;
+      } else {
+        ligne.revenus += montant;
+        ligne.nombre += 1;
+      }
+    }
+
+    const rapports = [...parMois.entries()]
+      .reverse()
+      .map(([periode, valeurs]) => {
+        const fraisPlateforme = valeurs.revenus * taux;
+
+        return {
+          id: periode,
+          period: periode,
+          totalRevenue: Number(valeurs.revenus.toFixed(2)),
+          platformFees: Number(fraisPlateforme.toFixed(2)),
+          refunds: Number(valeurs.remboursements.toFixed(2)),
+          netRevenue: Number(
+            (valeurs.revenus - fraisPlateforme - valeurs.remboursements).toFixed(2)
+          ),
+          transactionCount: valeurs.nombre,
+          averageOrderValue: valeurs.nombre
+            ? Number((valeurs.revenus / valeurs.nombre).toFixed(2))
+            : 0,
+          createdAt: new Date(`${periode}-01T00:00:00.000Z`),
+        };
+      });
+
+    res.json({
+      reports: rapports.slice(offset, offset + limit),
+      pagination: { total: rapports.length, limit, offset },
     });
   } catch (err) {
     next(err);
@@ -398,6 +540,61 @@ router.post("/backups", authMiddleware, isSuperOwner, async (req: Request, res: 
   }
 });
 
+// GET /superowner/backups/:backupId/download - Télécharger le fichier
+router.get("/backups/:backupId/download", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const backupId = req.params.backupId as string;
+    const { nom, contenu } = await BackupService.read(backupId);
+
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Disposition", `attachment; filename="${nom}"`);
+    res.send(contenu);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/backups/:backupId/restore - Réinjecter le contenu
+router.post("/backups/:backupId/restore", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const backupId = req.params.backupId as string;
+    const resultats = await BackupService.restore(backupId);
+
+    SecurityEventService.record({
+      action: "BACKUP_RESTORED",
+      actor: (req as any).actorEmail || "inconnu",
+      target: backupId,
+      severity: "CRITICAL",
+      details: `Restaurés : ${Object.entries(resultats).map(([k, v]) => `${v} ${k}`).join(", ")}`,
+      ipAddress: req.ip,
+    });
+
+    res.json({ success: true, restored: resultats, message: "Sauvegarde restaurée" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /superowner/backups/:backupId - Supprimer la sauvegarde et son fichier
+router.delete("/backups/:backupId", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const backupId = req.params.backupId as string;
+    await BackupService.remove(backupId);
+
+    SecurityEventService.record({
+      action: "BACKUP_DELETED",
+      actor: (req as any).actorEmail || "inconnu",
+      target: backupId,
+      severity: "HIGH",
+      ipAddress: req.ip,
+    });
+
+    res.json({ success: true, message: "Sauvegarde supprimée" });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ============================================================================
 // SECURITY AUDIT
 // ============================================================================
@@ -511,6 +708,9 @@ router.put("/advanced-settings", authMiddleware, isSuperOwner, async (req: Reque
         ...(body.maintenanceMessage !== undefined && { maintenanceMessage: body.maintenanceMessage }),
       },
     });
+
+    // Sans cela, le mode maintenance ne prendrait effet qu'au bout du cache.
+    invalidateMaintenanceCache();
 
     await db.systemAuditLog.create({
       data: {

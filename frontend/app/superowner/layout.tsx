@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
 import {
@@ -18,11 +18,19 @@ import {
   Shield,
   Lock,
   Sliders,
+  TrendingUp,
+  Key,
+  FileText,
+  LifeBuoy,
+  Users,
+  Webhook,
+  ArrowLeftRight,
 } from 'lucide-react';
 
 export default function SuperOwnerLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
   const { logout } = useAuth();
   const { isReady } = useProtectedRoute(true);
 
@@ -42,15 +50,44 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
     );
   }
 
-  const navItems = [
-    { label: 'Dashboard', icon: Home, href: '/superowner' },
-    { label: 'Organisations', icon: Building2, href: '/superowner/organizations' },
-    { label: 'Facturation', icon: CreditCard, href: '/superowner/billing' },
-    { label: 'Configuration', icon: Settings, href: '/superowner/system-config' },
-    { label: 'Rapports', icon: BarChart3, href: '/superowner/financial-reports' },
-    { label: 'Données', icon: Database, href: '/superowner/data-management' },
-    { label: 'Sécurité', icon: Shield, href: '/superowner/security-audit' },
-    { label: 'Avancé', icon: Sliders, href: '/superowner/advanced-settings' },
+  const navSections = [
+    {
+      title: null,
+      items: [{ label: 'Dashboard', icon: Home, href: '/superowner' }],
+    },
+    {
+      title: 'Activité',
+      items: [
+        { label: 'Organisations', icon: Building2, href: '/superowner/organizations' },
+        { label: 'Analytics', icon: TrendingUp, href: '/superowner/analytics' },
+        { label: 'Facturation', icon: CreditCard, href: '/superowner/billing' },
+        { label: 'Rapports', icon: BarChart3, href: '/superowner/financial-reports' },
+      ],
+    },
+    {
+      title: 'Support',
+      items: [
+        { label: 'Tickets', icon: LifeBuoy, href: '/superowner/support-tickets' },
+        { label: 'Administrateurs', icon: Users, href: '/superowner/user-management' },
+      ],
+    },
+    {
+      title: 'Plateforme',
+      items: [
+        { label: 'Clés API', icon: Key, href: '/superowner/api-keys' },
+        { label: 'Webhooks', icon: Webhook, href: '/superowner/webhooks' },
+        { label: 'Configuration', icon: Settings, href: '/superowner/system-config' },
+        { label: 'Avancé', icon: Sliders, href: '/superowner/advanced-settings' },
+      ],
+    },
+    {
+      title: 'Supervision',
+      items: [
+        { label: 'Données', icon: Database, href: '/superowner/data-management' },
+        { label: 'Sécurité', icon: Shield, href: '/superowner/security-audit' },
+        { label: 'Journal', icon: FileText, href: '/superowner/audit-logs' },
+      ],
+    },
   ];
 
   return (
@@ -72,17 +109,47 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              <item.icon size={20} />
-              {sidebarOpen && <span>{item.label}</span>}
-            </Link>
+        <nav className="flex-1 p-4 space-y-4 overflow-y-auto no-scrollbar">
+          {navSections.map((section, index) => (
+            <div key={section.title ?? `section-${index}`} className="space-y-1">
+              {sidebarOpen && section.title && (
+                <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  {section.title}
+                </p>
+              )}
+              {section.items.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    title={sidebarOpen ? undefined : item.label}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-red-600/20 text-red-400 font-medium'
+                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    }`}
+                  >
+                    <item.icon size={20} className="flex-shrink-0" />
+                    {sidebarOpen && <span className="truncate">{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
           ))}
+
+          {/* Retour vers l'autre espace d'administration (commerçants,
+              commissions, exports), qui a sa propre navigation. */}
+          <div className="pt-3 mt-3 border-t border-gray-700">
+            <Link
+              href="/super-admin"
+              title={sidebarOpen ? undefined : 'Espace SuperAdmin'}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-700 hover:text-white"
+            >
+              <ArrowLeftRight size={20} className="flex-shrink-0" />
+              {sidebarOpen && <span className="truncate">Espace SuperAdmin</span>}
+            </Link>
+          </div>
         </nav>
 
         {/* Logout */}
