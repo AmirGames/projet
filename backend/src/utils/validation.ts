@@ -16,7 +16,9 @@ export const ValidationSchemas = {
   signupSchema: z.object({
     email: z.string().email("Email invalide"),
     password: z.string().min(6, "Minimum 6 caractères"),
-    name: z.string().min(2, "Nom requis"),
+    // « Nom requis » laissait croire à un champ vide, y compris pour une seule
+    // lettre. Le champ est nommé par le gestionnaire d'erreurs.
+    name: z.string().min(2, "Minimum 2 caractères"),
   }),
 
   loginSchema: z.object({

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 
 import { db } from "../services/db";
 import { logger } from "../config/logger";
-import { verifyToken } from "./auth";
+import { compteDuJeton, verifyToken } from "./auth";
 
 /**
  * Chacun chez soi.
@@ -235,13 +235,12 @@ export async function cloisonnement(req: Request, res: Response, next: NextFunct
   if (!charge?.userId) return next();
 
   try {
-    // La plateforme travaille sur les données des autres : c'est son rôle.
-    const utilisateur = await db.user.findUnique({
-      where: { id: charge.userId },
-      select: { isSuperOwner: true, isSystemAdmin: true },
-    });
+    // La plateforme travaille sur les données des autres : c'est son rôle. Le
+    // compte est lu par le même cache que le middleware d'authentification, qui
+    // passera juste après : la requête ne le lit donc qu'une fois.
+    const compte = await compteDuJeton(charge.userId);
 
-    if (utilisateur?.isSuperOwner || utilisateur?.isSystemAdmin) return next();
+    if (compte?.isSuperOwner || compte?.isSystemAdmin) return next();
 
     const corps = (req.body || {}) as Record<string, unknown>;
 

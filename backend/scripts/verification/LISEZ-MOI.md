@@ -93,6 +93,7 @@ continue.
 | `verif-pages-marchand.mjs` | Les routes appelées par les pages commerçant |
 | `verif-phase11.mjs` | Sauvegardes, mode maintenance, et les points signalés en revue |
 | `verif-restauration.mjs` | Qu'une sauvegarde restaure des données réellement perdues |
+| `verif-session-messages.mjs` | Session dont le compte a disparu, et refus de validation lisibles |
 | `verif-sante-systeme.mjs` | La santé système : ses cinq relevés, et ce qui la fait bouger |
 | `verif-salons-direct.mjs` | Qui peut suivre quoi en direct, et la disponibilité poussée |
 | `verif-zones-livraison.mjs` | Anneaux de livraison : frais, minimum, et leur application à la commande |

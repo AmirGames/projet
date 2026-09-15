@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware } from "../middleware/auth";
+import { authMiddleware, oublierCompte } from "../middleware/auth";
 import { ApiKeyService } from "../services/api-key.service";
 import { WebhookService, EVENEMENTS_DISPONIBLES } from "../services/webhook.service";
 import { BackupService } from "../services/backup.service";
@@ -1376,6 +1376,10 @@ router.post("/admins", authMiddleware, isSuperOwner, async (req: Request, res: R
       },
     });
 
+    // Le compte est gardé trente secondes : sans cet oubli, le nouvel
+    // administrateur attendrait avant d'entrer.
+    oublierCompte(compte.id);
+
     await db.systemAuditLog.create({
       data: {
         adminId: req.userId as string,
@@ -1438,6 +1442,8 @@ router.delete("/admins/:adminId", authMiddleware, isSuperOwner, async (req: Requ
       where: { id: adminId },
       data: { isSystemAdmin: false, isSuperOwner: false },
     });
+
+    oublierCompte(adminId);
 
     await db.systemAuditLog.create({
       data: {

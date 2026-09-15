@@ -39,21 +39,15 @@ const getQueryNumber = (value: any, defaultValue: number): number => {
 };
 
 // Middleware to check if user is system admin
-const isSystemAdmin = async (req: Request, _res: Response, next: NextFunction) => {
-  try {
-    const userId = (req as any).userId;
-    const user = await db.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user?.isSystemAdmin) {
-      throw new ApiError(403, "Accès refusé", "FORBIDDEN");
-    }
-
-    next();
-  } catch (err) {
-    next(err);
+// Le compte est déjà lu par `authMiddleware`, qui refuse en 401 celui qui
+// n'existe plus : ici, un refus veut bien dire « pas administrateur », et non
+// « compte introuvable » — c'est ce que les traces laissaient croire.
+const isSystemAdmin = (req: Request, _res: Response, next: NextFunction) => {
+  if (!req.compte?.isSystemAdmin) {
+    return next(new ApiError(403, "Accès refusé", "FORBIDDEN"));
   }
+
+  next();
 };
 
 // ============================================================================

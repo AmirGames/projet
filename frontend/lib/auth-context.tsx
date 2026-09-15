@@ -21,6 +21,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Efface la session d'un navigateur.
+ *
+ * Une base remise à zéro laisse le navigateur porteur d'un jeton signé pour un
+ * compte disparu. Le serveur répond alors 401 `SESSION_INVALIDE` : il n'y a
+ * rien à réessayer, il faut se reconnecter.
+ */
+function oublierLaSession() {
+  try {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('storeId');
+  } catch {
+    // Stockage refusé : il n'y avait rien à effacer.
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,10 +75,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (refreshData.refreshToken) {
               localStorage.setItem('refreshToken', refreshData.refreshToken);
             }
-            setUser(refreshData.user);
+
+            /**
+             * Le compte, ou celui qu'on avait déjà.
+             *
+             * La route ne rendait que le jeton : `refreshData.user` était donc
+             * vide, et un renouvellement réussi déconnectait l'écran. Elle le
+             * rend maintenant ; le repli garde l'ancien au cas où.
+             */
+            setUser((precedent) => refreshData.user || precedent);
           } else {
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
+            // La session est morte pour de bon : on efface, et on le dit à la
+            // page de connexion plutôt que de laisser l'écran réessayer.
+            oublierLaSession();
             setUser(null);
           }
         } else {
@@ -108,9 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('storeId');
+    oublierLaSession();
     setUser(null);
   };
 

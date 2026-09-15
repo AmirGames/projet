@@ -4,7 +4,7 @@ import { signupSchema, loginSchema, refreshTokenSchema } from "../utils/validati
 import { AuthService } from "../services/auth.service";
 import { UserService } from "../services/user.service";
 import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware } from "../middleware/auth";
+import { authMiddleware, compteDuJeton } from "../middleware/auth";
 import { limiterCadence, parDestinataire } from "../middleware/throttle";
 import { logger } from "../config/logger";
 import { SecurityEventService } from "../services/security-event.service";
@@ -216,6 +216,19 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
 
     const decoded = AuthService.verifyRefreshToken(body.refreshToken);
 
+    // Le compte a pu disparaître depuis la signature du jeton — base remise à
+    // zéro, utilisateur supprimé. Ce n'est pas une ressource introuvable mais
+    // une session à refaire : dit en 404, le navigateur réessayait sans fin.
+    const compte = await compteDuJeton(decoded.userId);
+
+    if (!compte) {
+      throw new ApiError(
+        401,
+        "Votre session n'est plus valable. Reconnectez-vous.",
+        "SESSION_INVALIDE"
+      );
+    }
+
     logger.info("Token refreshed", { userId: decoded.userId });
 
     // Get updated user info and orgs
@@ -242,7 +255,28 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
       role: (primaryMembership?.role || (livreur ? "DRIVER" : "ADMIN")) as any,
     });
 
-    res.json({ accessToken });
+    /**
+     * Le compte accompagne le jeton.
+     *
+     * La route ne rendait que `accessToken`. Le navigateur, lui, rangeait
+     * `data.user` — absent — et se retrouvait déconnecté juste après un
+     * renouvellement réussi : la session repartait toutes les cinq minutes.
+     */
+    res.json({
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isSuperOwner: user.isSuperOwner,
+        isSystemAdmin: user.isSystemAdmin,
+        emailVerified: user.emailVerified,
+      },
+      organization: primaryMembership
+        ? { id: primaryMembership.org.id, name: primaryMembership.org.name }
+        : null,
+      driver: livreur ? { id: livreur.id } : null,
+    });
   } catch (err) {
     next(err);
   }

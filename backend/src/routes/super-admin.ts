@@ -2,31 +2,22 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware } from "../middleware/auth";
+import { authMiddleware, oublierCompte } from "../middleware/auth";
 import { AuthService } from "../services/auth.service";
 import { MerchantClosureService } from "../services/merchant-closure.service";
 
 const router = Router();
 
 // Middleware to check if user is system admin
-const isSystemAdmin = async (req: Request, _res: Response, next: NextFunction) => {
-  try {
-    const userId = (req.user as any)?.userId;
-    if (!userId) throw new ApiError(401, "Authentification requise", "UNAUTHORIZED");
-
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      select: { isSystemAdmin: true },
-    });
-
-    if (!user?.isSystemAdmin) {
-      throw new ApiError(403, "Accès refusé - Administrateur système requis", "FORBIDDEN");
-    }
-
-    next();
-  } catch (err) {
-    next(err);
+// Idem : `authMiddleware` a déjà établi que le compte existe.
+const isSystemAdmin = (req: Request, _res: Response, next: NextFunction) => {
+  if (!req.compte?.isSystemAdmin) {
+    return next(
+      new ApiError(403, "Accès refusé - Administrateur système requis", "FORBIDDEN")
+    );
   }
+
+  next();
 };
 
 // ============================================================================
@@ -413,6 +404,9 @@ router.post("/users/:userId/ban", authMiddleware, isSystemAdmin, async (req: Req
       data: { status: "BANNED" },
     });
 
+    // Sans cela, le compte garderait ses accès le temps du cache.
+    oublierCompte(userId);
+
     res.json({
       success: true,
       message: "Utilisateur banni avec succès",
@@ -434,6 +428,8 @@ router.post("/users/:userId/unban", authMiddleware, isSystemAdmin, async (req: R
       where: { id: userId },
       data: { status: "ACTIVE" },
     });
+
+    oublierCompte(userId);
 
     res.json({
       success: true,
@@ -530,6 +526,8 @@ router.post("/admins/:adminId/remove", authMiddleware, isSystemAdmin, async (req
       where: { id: adminId },
       data: { isSystemAdmin: false },
     });
+
+    oublierCompte(adminId);
 
     res.json({
       success: true,
