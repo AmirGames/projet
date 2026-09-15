@@ -12,6 +12,8 @@ export class StoreService {
     phone?: string;
     email?: string;
     description?: string;
+    latitude?: number;
+    longitude?: number;
   }) {
     try {
       const store = await db.store.create({
@@ -25,6 +27,8 @@ export class StoreService {
           phone: data.phone,
           email: data.email,
           description: data.description,
+          latitude: data.latitude,
+          longitude: data.longitude,
         },
         include: {
           products: true,
@@ -111,6 +115,8 @@ export class StoreService {
           ...(data.phone && { phone: data.phone }),
           ...(data.email && { email: data.email }),
           ...(data.description && { description: data.description }),
+          ...(data.latitude !== undefined && { latitude: data.latitude }),
+          ...(data.longitude !== undefined && { longitude: data.longitude }),
           ...(Object.keys(settings).length > 0 && { settings }),
           ...(data.pickupSlots && { pickupSlots: data.pickupSlots }),
         },

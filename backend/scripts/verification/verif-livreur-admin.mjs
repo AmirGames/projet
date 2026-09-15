@@ -55,14 +55,24 @@ const mauvaisType = await patch('/api/drivers/availability', { isAvailable: 'oui
 check('valeur non booléenne refusée', mauvaisType.status === 400, `status=${mauvaisType.status}`);
 
 console.log('\n[Course : acceptation et cloisonnement]');
-// La course de livraison est créée par la plateforme pour la commande.
-const creationCourse = await fetch(API + '/api/orders/' + orderId, { headers: { Authorization: `Bearer ${m.accessToken}` } });
-// La course est créée en base : l'application ne permet pas de la provoquer.
-await sqlExec(`INSERT INTO "OrderDelivery" (id, "orderId", status, "createdAt", "updatedAt") VALUES ('course-${uniq}', '${orderId}', 'PENDING', NOW(), NOW())`);
-const courseId = `course-${uniq}`;
+// La boutique et le livreur doivent avoir une position : c'est elle qui décide
+// à qui la course est proposée.
+await sqlExec(`UPDATE "Store" SET latitude = 45.764, longitude = 4.8357 WHERE id = '${storeId}'`);
+await patch('/api/drivers/location', { latitude: 45.765, longitude: 4.836 }, dToken);
+
+// Le commerçant cherche un livreur ; la course part au plus proche.
+const rechercheLivreur = await j(await post(`/api/orders/${orderId}/dispatch`, {}, m.accessToken));
+const courseId = rechercheLivreur?.data?.deliveryId;
+check('une course est créée et proposée', rechercheLivreur?.data?.propose === true, JSON.stringify(rechercheLivreur?.data));
 
 const dispo = await j(await get('/api/drivers/deliveries?status=PENDING', dToken));
 check('course visible parmi les disponibles', (dispo?.data || []).some((c) => c.id === courseId), JSON.stringify(dispo?.data?.length));
+
+// La rémunération suit le barème (base + distance), plus les frais facturés au
+// client : une course longue doit être payée même si la livraison est offerte.
+const propositions = await j(await get('/api/drivers/offers', dToken));
+const remuneration = propositions?.data?.[0]?.payout;
+check('une rémunération est annoncée', remuneration > 0, `=${remuneration}`);
 
 const acceptation = await patch(`/api/drivers/deliveries/${courseId}/accept`, null, dToken);
 check('acceptation de la course', acceptation.status === 200, `status=${acceptation.status} ${JSON.stringify(await j(acceptation))}`);
@@ -86,15 +96,15 @@ check('course marquée livrée', livraison.status === 200, `status=${livraison.s
 console.log('\n[Revenus]');
 const revenus = await j(await get('/api/drivers/earnings', dToken));
 check('revenus accessibles', typeof revenus?.total === 'number', JSON.stringify(revenus)?.slice(0, 200));
-check('gain = frais de livraison (4,50 €)', revenus?.total === 4.5, `=${revenus?.total}`);
+check('gain conforme au barème plutôt qu aux frais client', revenus?.total === remuneration, `total=${revenus?.total} annoncé=${remuneration}`);
 check('une course comptabilisée', revenus?.deliveryCount === 1, `=${revenus?.deliveryCount}`);
-check('gain du jour renseigné', revenus?.today === 4.5, `=${revenus?.today}`);
+check('gain du jour renseigné', revenus?.today === remuneration, `=${revenus?.today}`);
 check('détail de la course présent', (revenus?.deliveries || []).length === 1, `n=${revenus?.deliveries?.length}`);
 check('montant de la commande rappelé', revenus?.deliveries?.[0]?.orderAmount === 30, `=${revenus?.deliveries?.[0]?.orderAmount}`);
 
 const compteurs = await j(await get('/api/drivers/me', dToken));
 check('compteur de courses incrémenté', compteurs?.data?.completedDeliveries === 1, `=${compteurs?.data?.completedDeliveries}`);
-check('total gagné cumulé', Number(compteurs?.data?.totalEarnings) === 4.5, `=${compteurs?.data?.totalEarnings}`);
+check('total gagné cumulé', Number(compteurs?.data?.totalEarnings) === remuneration, `=${compteurs?.data?.totalEarnings}`);
 
 const revenusAutre = await j(await get('/api/drivers/earnings', autre.accessToken));
 check('le second livreur a 0 €', revenusAutre?.total === 0, `=${revenusAutre?.total}`);

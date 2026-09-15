@@ -127,6 +127,14 @@ model SystemConfig {
   maintenanceMessage  String?
   selectedTheme       String    @default("dark")
 
+  // Rémunération des livreurs et attribution des courses
+  driverBaseFee       Decimal   @default(2.50) @db.Decimal(10, 2)
+  driverPerKmFee      Decimal   @default(0.80) @db.Decimal(10, 2)
+  // Délai laissé au livreur pour accepter avant de passer au suivant
+  driverOfferSeconds  Int       @default(30)
+  // Au-delà, on ne propose plus la course
+  driverMaxRadiusKm   Float     @default(8)
+
   // Settings JSON for additional configurations
   settings            Json      @default("{}")
 
@@ -627,6 +635,7 @@ model Driver {
   // Relations
   user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   deliveries      OrderDelivery[]
+  offers          DeliveryOffer[]
   documents       DriverDocument[]
 
   createdAt DateTime @default(now())
@@ -666,14 +675,29 @@ model OrderDelivery {
   estimatedTime   DateTime?
   actualTime      DateTime?
 
-  // Location tracking
+  // Adresses de la course : le retrait chez le commerçant, le dépôt chez le
+  // client. Elles ne bougent pas une fois la course créée.
   pickupLat       Float?
   pickupLng       Float?
   deliveryLat     Float?
   deliveryLng     Float?
 
+  // Position du livreur en chemin. Distincte des deux précédentes : elle était
+  // écrite dans deliveryLat/Lng, ce qui effaçait l'adresse du client à chaque
+  // envoi de position.
+  driverLat       Float?
+  driverLng       Float?
+  driverLocationAt DateTime?
+
   // Status
   status          String    @default("PENDING") // PENDING, ACCEPTED, PICKED_UP, DELIVERED, FAILED
+
+  // Rémunération, figée à l'attribution pour que le livreur sache ce qu'il
+  // accepte, et jamais recalculée ensuite.
+  distanceKm      Float?
+  driverPayout    Decimal?  @db.Decimal(10, 2)
+  platformFee     Decimal?  @db.Decimal(10, 2)
+  assignedAt      DateTime?
 
   // Proof
   proofPhoto      String?   // Photo de livraison
@@ -681,6 +705,7 @@ model OrderDelivery {
   // Relations
   order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   driver          Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  offers          DeliveryOffer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -688,6 +713,39 @@ model OrderDelivery {
   @@index([orderId])
   @@index([driverId])
   @@index([status])
+}
+
+// Proposition d'une course à un livreur.
+//
+// Une course est proposée à un livreur à la fois, au plus proche d'abord, avec
+// un délai pour répondre. Passé ce délai elle part au suivant. Garder la trace
+// de chaque proposition évite de re-solliciter quelqu'un qui a déjà refusé, et
+// permet de comprendre après coup pourquoi une course est restée sans preneur.
+model DeliveryOffer {
+  id          String    @id @default(cuid())
+  deliveryId  String
+  driverId    String
+
+  status      String    @default("PENDING") // PENDING, ACCEPTED, DECLINED, EXPIRED, CANCELLED
+
+  // Ce que le livreur voit avant d'accepter.
+  distanceKm  Float?
+  payout      Decimal?  @db.Decimal(10, 2)
+
+  offeredAt   DateTime  @default(now())
+  expiresAt   DateTime
+  respondedAt DateTime?
+
+  delivery    OrderDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  driver      Driver        @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Un livreur n'est sollicité qu'une fois par course.
+  @@unique([deliveryId, driverId])
+  @@index([driverId, status])
+  @@index([status, expiresAt])
 }
 
 // ============================================================================

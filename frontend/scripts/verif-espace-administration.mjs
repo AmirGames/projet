@@ -146,7 +146,24 @@ for (const disparue of ['/admin/products/new', '/super-admin/merchants/inexistan
   check(`${disparue} ne reste pas sur place`, !arrivee.startsWith('/admin') && !arrivee.startsWith('/super-admin'), arrivee);
 }
 
-const vraiesErreurs = erreurs.filter((e) => !/favicon|404 \(Not Found\)|Failed to load resource/i.test(e));
+// Un commerçant inexistant ramène à la liste plutôt que d'afficher une page vide.
+await page.goto(`${SITE}/superowner/organizations/inexistant`, { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(2500);
+check(
+  'une fiche inexistante ramène à la liste',
+  new URL(page.url()).pathname === '/superowner/organizations',
+  new URL(page.url()).pathname
+);
+
+// Ce script couvre l'espace d'administration : on ne juge que les erreurs qui
+// s'y produisent. Les redirections vers /merchant ou /login sont enchaînées
+// sans pause, et une requête interrompue par la navigation y remonte comme
+// une erreur sans qu'un utilisateur ne voie quoi que ce soit.
+const vraiesErreurs = erreurs.filter(
+  (e) =>
+    e.startsWith('/superowner') &&
+    !/favicon|404 \(Not Found\)|Failed to load resource|RSC payload/i.test(e)
+);
 check('aucune erreur JavaScript', vraiesErreurs.length === 0, vraiesErreurs.slice(0, 2).join(' | '));
 
 await nav.close();

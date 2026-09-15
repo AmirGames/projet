@@ -103,9 +103,25 @@ export function emitOrderUpdate(orderId: string, status: string, data?: any) {
 }
 
 export function emitDeliveryUpdate(orderId: string, data: any) {
+  if (!io) return;
+
   io.to(`order-${orderId}`).emit('delivery-update', {
     orderId,
     timestamp: new Date().toISOString(),
     ...data,
   });
+}
+
+/**
+ * Pousse un événement à un livreur précis.
+ *
+ * Une course proposée n'a de valeur que pendant quelques dizaines de
+ * secondes : l'attendre au prochain rafraîchissement de page la ferait
+ * expirer avant d'avoir été vue. Le salon est le même que celui des
+ * notifications, un compte n'ayant qu'une identité.
+ */
+export function emitDriverEvent(email: string, evenement: string, donnees: unknown) {
+  if (!io || !email) return;
+
+  io.to(salonUtilisateur(email)).emit(evenement, donnees);
 }

@@ -51,8 +51,15 @@ check('aucune course : réponse vide et non erreur', sansCourse?.data === null, 
 const livreur = await j(await post('/api/drivers/register', {
   name: 'Livreur', email: `d-${uniq}@t.fr`, password: 'Password123!', phone: '0611111111', vehicleType: 'bike',
 }));
-await sqlExec(`INSERT INTO "OrderDelivery" (id, "orderId", status, "createdAt", "updatedAt") VALUES ('c-${uniq}', '${orderId}', 'PENDING', NOW(), NOW())`);
-await patch(`/api/drivers/deliveries/c-${uniq}/accept`, null, livreur.accessToken);
+// La course passe par l'attribution : un livreur ne peut plus prendre une
+// course qui ne lui a pas été proposée.
+await sqlExec(`UPDATE "Store" SET latitude = 45.764, longitude = 4.8357 WHERE id = '${storeId}'`);
+await patch('/api/drivers/availability', { isOnline: true }, livreur.accessToken);
+await patch('/api/drivers/location', { latitude: 45.765, longitude: 4.836 }, livreur.accessToken);
+
+const courseProposee = await j(await post(`/api/orders/${orderId}/dispatch`, {}, m.accessToken));
+const propositionsClient = await j(await get('/api/drivers/offers', livreur.accessToken));
+await post(`/api/drivers/offers/${propositionsClient?.data?.[0]?.id}/accept`, null, livreur.accessToken);
 
 const suivi = await get(`/api/client/deliveries/${orderId}`, cToken);
 const suiviData = await j(suivi);

@@ -11,7 +11,8 @@
     "verif:domaines": "node scripts/verif-domaines.mjs",
     "verif:menu": "node scripts/verif-menu-merchant.mjs",
     "verif:admin": "node scripts/verif-espace-administration.mjs",
-    "verif:motdepasse": "node scripts/verif-mot-de-passe-oublie.mjs"
+    "verif:motdepasse": "node scripts/verif-mot-de-passe-oublie.mjs",
+    "verif:courses": "node scripts/verif-courses-livreur.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",

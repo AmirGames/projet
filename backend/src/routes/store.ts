@@ -18,6 +18,11 @@ const createStoreSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email().optional(),
   description: z.string().optional(),
+  // Coordonnées de la boutique. Sans elles, la boutique n'apparaît ni dans
+  // « les commerces près de chez moi » ni dans la recherche d'un livreur : le
+  // modèle portait ces colonnes, aucune route ne permettait de les remplir.
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
 });
 
 const updateStoreSchema = z.object({
@@ -34,6 +39,11 @@ const updateStoreSchema = z.object({
   secondaryColor: z.string().optional(),
   timezone: z.string().optional(),
   currency: z.string().optional(),
+  // Coordonnées de la boutique. Sans elles, la boutique n'apparaît ni dans
+  // « les commerces près de chez moi » ni dans la recherche d'un livreur : le
+  // modèle portait ces colonnes, aucune route ne permettait de les remplir.
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
 });
 
 const storeStatusSchema = z.object({

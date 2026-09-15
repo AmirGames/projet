@@ -3,6 +3,7 @@ import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { emitDeliveryUpdate } from "../config/socket";
+import { DispatchService } from "../services/dispatch.service";
 import { AuthService } from "../services/auth.service";
 import { z } from "zod";
 
@@ -117,8 +118,11 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
     debutSemaine.setDate(debutJour.getDate() - ((debutJour.getDay() + 6) % 7));
     const debutMois = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1);
 
-    // La rémunération du livreur correspond aux frais de livraison encaissés.
-    const gain = (c: (typeof courses)[number]) => Number(c.order?.feesAmount || 0);
+    // On paie ce qui a été annoncé à l'attribution : base + distance. Les
+    // frais facturés au client ne servent de repli que pour les courses
+    // antérieures au barème, qui n'ont pas de montant figé.
+    const gain = (c: (typeof courses)[number]) =>
+      Number(c.driverPayout ?? c.order?.feesAmount ?? 0);
     const depuis = (date: Date) =>
       courses
         .filter((c) => (c.deliveryTime || c.updatedAt) >= date)
@@ -148,15 +152,27 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
 router.patch("/availability", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const livreur = await livreurConnecte(req);
-    const { isAvailable } = req.body;
 
-    if (typeof isAvailable !== "boolean") {
-      throw new ApiError(400, "Le champ isAvailable doit être un booléen", "INVALID_INPUT");
+    // Deux états distincts, souvent confondus :
+    //   isOnline    — le livreur a décidé de prendre des courses ;
+    //   isAvailable — il n'en a pas déjà une sur les bras.
+    // Le premier lui appartient, le second est piloté par l'attribution. Le
+    // bouton de l'application agit donc sur isOnline.
+    const { isOnline, isAvailable } = req.body;
+    const voulu = typeof isOnline === "boolean" ? isOnline : isAvailable;
+
+    if (typeof voulu !== "boolean") {
+      throw new ApiError(400, "Le champ isOnline doit être un booléen", "INVALID_INPUT");
     }
 
     const misAJour = await db.driver.update({
       where: { id: livreur.id },
-      data: { isAvailable, isOnline: isAvailable },
+      data: {
+        isOnline: voulu,
+        // Se remettre en ligne ne rend pas disponible si une course est en
+        // cours : elle doit d'abord être terminée.
+        ...(voulu ? { isAvailable: livreur.currentOrderId === null } : { isAvailable: false }),
+      },
     });
 
     res.json({ isAvailable: misAJour.isAvailable, isOnline: misAJour.isOnline });
@@ -192,7 +208,13 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         rating: driver.rating,
         totalEarnings: driver.totalEarnings,
         completedDeliveries: driver.totalDeliveries,
+        // isOnline est ce que le livreur a choisi, isAvailable ce que
+        // l'attribution en a fait. L'application a besoin des deux.
+        isOnline: driver.isOnline,
         isAvailable: driver.isAvailable,
+        latitude: driver.latitude,
+        longitude: driver.longitude,
+        lastLocationUpdate: driver.lastLocationUpdate,
         vehicleType: driver.vehicleType,
         licensePlate: driver.licensePlate,
       }
@@ -205,13 +227,26 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
 // GET /drivers/deliveries - Get deliveries for driver (protected)
 router.get("/deliveries", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const driverId = req.query.driverId as string;
+    const livreur = await livreurConnecte(req);
     const status = (req.query.status as string) || "PENDING";
+
+    // Une course en attente ne regarde que le livreur à qui elle a été
+    // proposée. Renvoyer toutes les courses de la plateforme laissait
+    // n'importe qui prendre celle d'un autre, ce qui vide l'attribution de
+    // son sens.
+    const enAttente = status === "PENDING";
 
     const deliveries = await db.orderDelivery.findMany({
       where: {
-        ...(driverId ? { driverId } : {}),
-        status: status as any
+        status: status as any,
+        ...(enAttente
+          ? {
+              driverId: null,
+              offers: {
+                some: { driverId: livreur.id, status: "PENDING", expiresAt: { gt: new Date() } },
+              },
+            }
+          : { driverId: livreur.id }),
       },
       include: {
         order: {
@@ -303,23 +338,32 @@ router.patch(
         throw new ApiError(409, "Vous avez déjà accepté cette course", "ALREADY_ACCEPTED");
       }
 
-      const delivery = await db.orderDelivery.update({
-        where: { id: deliveryId },
-        data: {
+      // On accepte une proposition, pas une course au hasard. Cette route
+      // attribuait la course sans fixer la rémunération ni marquer le livreur
+      // occupé : il repartait avec une course non payée et pouvait en
+      // recevoir une deuxième.
+      const proposition = await db.deliveryOffer.findFirst({
+        where: {
+          deliveryId,
           driverId: livreur.id,
-          status: "ACCEPTED"
+          status: "PENDING",
+          expiresAt: { gt: new Date() },
         },
-        include: { order: true }
       });
 
-      emitDeliveryUpdate(delivery.orderId, {
-        driverId: livreur.id,
-        status: "ACCEPTED"
-      });
+      if (!proposition) {
+        throw new ApiError(
+          403,
+          "Cette course ne vous a pas été proposée",
+          "NOT_OFFERED"
+        );
+      }
+
+      const delivery = await DispatchService.accepter(proposition.id, livreur.id);
 
       res.json({
         success: true,
-        message: "Delivery accepted",
+        message: "Course acceptée",
         data: delivery
       });
     } catch (err) {
@@ -357,15 +401,31 @@ router.patch(
         include: { order: { select: { feesAmount: true } } }
       });
 
-      // Une course livrée alimente les compteurs du livreur.
+      // Une course livrée alimente les compteurs du livreur. On paie ce qui a
+      // été annoncé à l'attribution, pas les frais facturés au client : une
+      // course longue doit être payée comme telle même si le commerçant offre
+      // la livraison.
       if (status === "DELIVERED" && course.status !== "DELIVERED") {
+        const remuneration = Number(delivery.driverPayout ?? delivery.order?.feesAmount ?? 0);
+
         await db.driver.update({
           where: { id: livreur.id },
           data: {
             totalDeliveries: { increment: 1 },
-            totalEarnings: { increment: Number(delivery.order?.feesAmount || 0) },
+            totalEarnings: { increment: remuneration },
             currentOrderId: null,
+            // Le livreur redevient disponible pour la course suivante.
+            isAvailable: true,
           },
+        });
+      }
+
+      // Une course abandonnée doit libérer le livreur, sans quoi il ne reçoit
+      // plus rien.
+      if (status === "FAILED" && course.status !== "FAILED") {
+        await db.driver.update({
+          where: { id: livreur.id },
+          data: { currentOrderId: null, isAvailable: true },
         });
       }
 
@@ -400,23 +460,125 @@ router.patch(
 
       await courseDuLivreur(req, deliveryId);
 
-      const delivery = await db.orderDelivery.update({
-        where: { id: deliveryId },
-        data: {
-          deliveryLat: latitude,
-          deliveryLng: longitude
-        }
-      });
+      const { livreur } = await courseDuLivreur(req, deliveryId);
 
-      emitDeliveryUpdate(delivery.orderId, {
-        location: { latitude, longitude },
-        status: delivery.status
-      });
+      // Écrire ici dans deliveryLat/Lng effaçait l'adresse de livraison du
+      // client à chaque envoi de position. La position du livreur a désormais
+      // ses propres colonnes.
+      await DispatchService.enregistrerPosition(livreur.id, { latitude, longitude });
 
       res.json({
         success: true,
-        message: "Location updated",
+        message: "Position enregistrée",
         data: { latitude, longitude }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PATCH /drivers/location - Position du livreur, course ou non
+router.patch("/location", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = z
+      .object({
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180),
+      })
+      .parse(req.body);
+
+    const livreur = await livreurConnecte(req);
+
+    // La position compte même sans course en cours : c'est elle qui décide à
+    // qui la prochaine sera proposée.
+    const resultat = await DispatchService.enregistrerPosition(livreur.id, body);
+
+    res.json({ success: true, ...resultat });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /drivers/offers - Courses proposées, en attente de réponse
+router.get("/offers", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+
+    const propositions = await db.deliveryOffer.findMany({
+      where: {
+        driverId: livreur.id,
+        status: "PENDING",
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        delivery: {
+          include: {
+            order: {
+              select: {
+                id: true,
+                deliveryAddress: true,
+                deliveryCity: true,
+                deliveryPostal: true,
+                totalAmount: true,
+                store: { select: { name: true, address: true, city: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { offeredAt: "asc" },
+    });
+
+    res.json({
+      success: true,
+      data: propositions.map((proposition) => ({
+        id: proposition.id,
+        deliveryId: proposition.deliveryId,
+        distanceKm: proposition.distanceKm,
+        payout: Number(proposition.payout || 0),
+        expiresAt: proposition.expiresAt,
+        boutique: proposition.delivery.order?.store,
+        adresse: proposition.delivery.order?.deliveryAddress,
+        ville: proposition.delivery.order?.deliveryCity,
+        codePostal: proposition.delivery.order?.deliveryPostal,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /drivers/offers/:id/accept - Accepter une course proposée
+router.post(
+  "/offers/:id/accept",
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const livreur = await livreurConnecte(req);
+      const course = await DispatchService.accepter(req.params.id as string, livreur.id);
+
+      res.json({ success: true, message: "Course acceptée", data: course });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /drivers/offers/:id/decline - Refuser, la course part au suivant
+router.post(
+  "/offers/:id/decline",
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const livreur = await livreurConnecte(req);
+      const suivante = await DispatchService.refuser(req.params.id as string, livreur.id);
+
+      res.json({
+        success: true,
+        message: "Course refusée",
+        // Dit au commerçant si quelqu'un d'autre a été sollicité.
+        reproposee: Boolean(suivante),
       });
     } catch (err) {
       next(err);

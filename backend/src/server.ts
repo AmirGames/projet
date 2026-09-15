@@ -6,6 +6,7 @@ import { createApp } from "./app";
 import { initializeSocket } from "./config/socket";
 import { db } from "./services/db";
 import { ClosureJobs } from "./jobs/closure-jobs";
+import { DispatchJobs } from "./jobs/dispatch-jobs";
 
 // Load environment variables
 const env = loadEnv();
@@ -37,11 +38,13 @@ const start = async () => {
 
     // Start background jobs
     ClosureJobs.startJobs();
+    DispatchJobs.start();
 
     // Graceful shutdown
     const gracefulShutdown = async () => {
       logger.info("Shutting down gracefully...");
       ClosureJobs.stopJobs();
+      DispatchJobs.stop();
       httpServer.close(() => {
         logger.info("Server closed");
       });

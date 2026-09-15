@@ -76,6 +76,7 @@ continue.
 | `audit-superowner.mjs` | Chaque fonctionnalité de l'espace superowner, et ses effets réels |
 | `verif-admin-final.mjs` | Journal d'accès, annonces, tickets, notifications |
 | `verif-admin-motdepasse.mjs` | Création d'administrateur et réparation des mots de passe en clair |
+| `verif-attribution.mjs` | Attribution des courses : position, proposition, refus, rémunération |
 | `verif-client.mjs` | Historique, suivi de livraison, avis, favoris |
 | `verif-compte-email.mjs` | Mot de passe oublié et confirmation d'adresse, courriel compris |
 | `verif-disponibilite.mjs` | Bouton disponible / épuisé |

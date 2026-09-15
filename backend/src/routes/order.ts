@@ -6,6 +6,8 @@ import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { emitOrderUpdate } from "../config/socket";
 
+import { DispatchService } from "../services/dispatch.service";
+
 const router = Router();
 
 // GET /orders - Get orders by orgId or storeId (protected)
@@ -200,6 +202,49 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: 
 
     res.json({
       message: "Commande supprimée",
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /orders/:id/dispatch - Chercher un livreur pour cette commande
+ *
+ * Déclenché par le commerçant quand la commande est prête. Crée la course si
+ * elle n'existe pas encore, puis la propose au livreur disponible le plus
+ * proche.
+ *
+ * Relançable : si personne n'était en ligne au premier essai, le commerçant
+ * rappelle cette route plus tard sans rien dupliquer.
+ */
+router.post("/:id/dispatch", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orderId = req.params.id as string;
+
+    const course = await DispatchService.creerCourse(orderId);
+
+    if (course.driverId) {
+      res.json({
+        success: true,
+        message: "Cette course a déjà un livreur",
+        data: { deliveryId: course.id, driverId: course.driverId, propose: false },
+      });
+      return;
+    }
+
+    const proposition = await DispatchService.proposerAuSuivant(course.id);
+
+    res.json({
+      success: true,
+      message: proposition
+        ? "Course proposée à un livreur"
+        : "Aucun livreur disponible pour l'instant : relancez dans quelques minutes",
+      data: {
+        deliveryId: course.id,
+        propose: Boolean(proposition),
+        expiresAt: proposition?.expiresAt ?? null,
+      },
     });
   } catch (err) {
     next(err);

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { MapPin, Package, Clock, DollarSign, LogOut } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { PropositionsCourses } from '@/components/PropositionsCourses';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -64,9 +65,10 @@ export default function DriverDashboard() {
         const driverData = await driverResponse.json();
         setDriver(driverData.data);
         setEarnings(Number(driverData.data.totalEarnings || 0));
-        // Reprendre la disponibilité enregistrée plutôt que de supposer
-        // « disponible » à chaque rechargement.
-        setIsAvailable(driverData.data.isAvailable ?? true);
+        // L'état affiché est celui du serveur. Supposer « disponible » quand
+        // il ne répond rien faisait croire au livreur qu'il prenait des
+        // courses alors qu'il était hors ligne — et aucune ne lui arrivait.
+        setIsAvailable(driverData.data.isOnline === true);
       } else {
         throw new Error('Failed to load driver info');
       }
@@ -100,7 +102,7 @@ export default function DriverDashboard() {
       const reponse = await fetch(`${API_URL}/api/drivers/availability`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ isAvailable: nouvelEtat }),
+        body: JSON.stringify({ isOnline: nouvelEtat }),
       });
 
       if (!reponse.ok) {
@@ -225,12 +227,19 @@ export default function DriverDashboard() {
               <div>
                 <p className="text-gray-400 text-sm">Statut</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <div className={`w-3 h-3 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <p className="text-white font-semibold">{isAvailable ? 'Disponible' : 'Occupé'}</p>
+                  <div className={`w-3 h-3 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                  <p className="text-white font-semibold">{isAvailable ? 'En ligne' : 'Hors ligne'}</p>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Courses proposées : elles n'ont que quelques dizaines de secondes de
+            vie, elles passent donc avant tout le reste. */}
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-white mb-3">Courses proposées</h2>
+          <PropositionsCourses enLigne={isAvailable} surAcceptation={loadDriverData} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -364,7 +373,7 @@ export default function DriverDashboard() {
                       : 'bg-gray-700 hover:bg-gray-600 text-white'
                   }`}
                 >
-                  {isAvailable ? '✓ Disponible' : 'Indisponible'}
+                  {isAvailable ? '✓ En ligne' : 'Hors ligne'}
                 </button>
 
                 <Link href="/driver/earnings" className="block">

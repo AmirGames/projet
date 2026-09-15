@@ -66,13 +66,16 @@ export default function MerchantDetailPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) throw new Error('Failed to fetch');
+      // « Failed to fetch » était annoncé pour un simple 404 : le message
+      // faisait croire à une panne réseau. ensureOk remonte la vraie raison.
+      await ensureOk(response, 'Commerçant introuvable');
 
       const data = await response.json();
       setMerchant(data);
       setNewTier(data.tier);
     } catch (error) {
-      console.error('Erreur:', error);
+      // Un commerçant qui n'existe pas n'est pas un incident : on ramène à la
+      // liste sans encombrer la console.
       router.push('/superowner/organizations');
     } finally {
       setLoading(false);

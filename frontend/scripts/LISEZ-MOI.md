@@ -43,6 +43,7 @@ cd frontend
 VERIF_SITE_URL=http://localhost:3000 npm run verif:menu         # barre latérale du commerçant
 VERIF_SITE_URL=http://localhost:3000 npm run verif:admin        # espace d'administration
 VERIF_SITE_URL=http://localhost:3000 npm run verif:motdepasse   # mot de passe oublié
+VERIF_SITE_URL=http://localhost:3000 npm run verif:courses      # proposition de course au livreur
 ```
 
 | Variable | Rôle | Défaut |
@@ -80,6 +81,7 @@ pour le lancer.
 | `verif-menu-merchant.mjs` | Le choix du commerce et sa barre latérale |
 | `verif-espace-administration.mjs` | L'espace unique et les anciennes adresses |
 | `verif-mot-de-passe-oublie.mjs` | Le parcours complet, courriel compris |
+| `verif-courses-livreur.mjs` | Passage en ligne, proposition de course, acceptation |
 
 Le parcours mot de passe ouvre un serveur SMTP minimal sur le port 1025 pour
 lire le message envoyé : le jeton n'existe en clair que dans ce lien, la base
