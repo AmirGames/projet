@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { enregistrerPanier } from "@/lib/paniers";
 
 interface Product {
   id: string;
@@ -184,8 +185,19 @@ export default function StorefrontPage() {
 
                         <button 
               onClick={() => {
-                // Save cart to localStorage
-                localStorage.setItem("cart", JSON.stringify(cart));
+                // Rangé sous sa boutique : la clé commune était partagée avec
+                // deux autres formats qui s'écrasaient mutuellement.
+                enregistrerPanier(
+                  storeId,
+                  cart.map((produit) => ({
+                    productId: produit.id,
+                    name: produit.name,
+                    description: produit.description,
+                    price: Number(produit.price),
+                    quantity: 1,
+                    isAvailable: produit.isAvailable,
+                  }))
+                );
                 router.push("/checkout");
               }}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg"

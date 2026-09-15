@@ -19,7 +19,8 @@
     "verif:formules": "node scripts/verif-formules-pages.mjs",
     "verif:cloche": "node scripts/verif-cloche.mjs",
     "verif:restreint": "node scripts/verif-compte-restreint.mjs",
-    "verif:declinaisons": "node scripts/verif-declinaisons.mjs"
+    "verif:declinaisons": "node scripts/verif-declinaisons.mjs",
+    "verif:paniers": "node scripts/verif-paniers.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",

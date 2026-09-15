@@ -32,13 +32,22 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+/**
+ * Sa propre clé.
+ *
+ * Ce contexte range un tableau groupé par boutique, en centimes ; deux autres
+ * pages écrivaient sous « cart » une liste à plat en euros. Chacune écrasait
+ * les autres, et le panier revenait déformé ou vide.
+ */
+const CLE = 'zupone-panier-client';
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartStore[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
+    const savedCart = localStorage.getItem(CLE);
     if (savedCart) {
       try {
         setCart(JSON.parse(savedCart));
@@ -52,7 +61,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Save to localStorage when cart changes
   useEffect(() => {
     if (isHydrated) {
-      localStorage.setItem('cart', JSON.stringify(cart));
+      localStorage.setItem(CLE, JSON.stringify(cart));
     }
   }, [cart, isHydrated]);
 

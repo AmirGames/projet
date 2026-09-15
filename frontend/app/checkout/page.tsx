@@ -4,11 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { ArrowLeft } from "lucide-react";
+import { lirePanier, viderPanier, totalDuPanier } from "@/lib/paniers";
 
 interface CartItem {
   id: string;
   name: string;
   price: number;
+  quantity?: number;
 }
 
 export default function CheckoutPage() {
@@ -25,14 +27,26 @@ export default function CheckoutPage() {
   const storeId = "19c84158-7858-453f-9955-e95c01c4e895";
 
   useEffect(() => {
-    // Get cart from localStorage
-    const cart = localStorage.getItem("cart");
-    if (cart) {
-      setCartItems(JSON.parse(cart));
-    }
+    // Le panier de cette boutique, et non celui de la dernière visitée.
+    setCartItems(
+      lirePanier(storeId).map((ligne) => ({
+        id: ligne.productId,
+        name: ligne.name,
+        price: ligne.price,
+        quantity: ligne.quantity,
+      }))
+    );
   }, []);
 
-  const totalAmount = cartItems.reduce((sum, item) => sum + item.price, 0);
+  // Les quantités étaient ignorées : deux pizzas comptaient pour une.
+  const totalAmount = totalDuPanier(
+    cartItems.map((item) => ({
+      productId: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity ?? 1,
+    }))
+  );
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +104,7 @@ export default function CheckoutPage() {
       );
 
       // Clear cart
-      localStorage.removeItem("cart");
+      viderPanier(storeId);
 
       // Redirect to payment
       router.push("/payment");

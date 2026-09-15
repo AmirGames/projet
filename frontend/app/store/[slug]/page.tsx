@@ -7,6 +7,13 @@ import { ShoppingCart, MapPin, Phone, Clock, Star, AlertCircle, Check } from 'lu
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { useStoreLive } from '@/lib/use-store-live';
+import {
+  autresPaniers,
+  enregistrerPanier,
+  lirePanier,
+  viderPanier,
+  type PanierBoutique,
+} from '@/lib/paniers';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -67,6 +74,8 @@ export default function StorefrontPage() {
   >([]);
   // La déclinaison retenue pour chaque plat, avant l'ajout au panier.
   const [choix, setChoix] = useState<Record<string, string>>({});
+  // Les paniers laissés chez d'autres commerces : ils attendent leur tour.
+  const [ailleurs, setAilleurs] = useState<PanierBoutique[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   // Créneaux réellement proposables, déduits des horaires de la boutique.
@@ -146,6 +155,71 @@ export default function StorefrontPage() {
       panier.filter((ligne) => !(ligne.variante && indisponibles.has(ligne.variante.id)))
     );
   });
+
+  /**
+   * Le panier de cette boutique, relu à l'arrivée.
+   *
+   * Il n'était gardé qu'en mémoire : quitter la page le perdait. Et comme tout
+   * était rangé sous une clé unique, celui du commerce précédent s'affichait
+   * ici.
+   */
+  useEffect(() => {
+    if (!store?.id) return;
+
+    const lignes = lirePanier(store.id);
+    const catalogue = categories.flatMap((categorie) => categorie.products);
+
+    setCart(
+      lignes.map((ligne) => {
+        const produit = catalogue.find((candidat) => candidat.id === ligne.productId);
+
+        return {
+          // Le catalogue peut avoir changé depuis : à défaut, on reconstitue le
+          // strict nécessaire pour afficher et commander la ligne.
+          product:
+            produit || {
+              id: ligne.productId,
+              name: ligne.name,
+              description: ligne.description || '',
+              price: ligne.price,
+              isAvailable: ligne.isAvailable !== false,
+              images: [],
+            },
+          quantity: ligne.quantity,
+          variante: ligne.variantId
+            ? {
+                id: ligne.variantId,
+                label: ligne.variantNom || '',
+                prixEffectif: ligne.price,
+                isAvailable: true,
+              }
+            : undefined,
+        };
+      })
+    );
+
+    setAilleurs(autresPaniers(store.id));
+  }, [store?.id, categories]);
+
+  // Chaque modification est enregistrée sous la boutique courante, et nulle
+  // part ailleurs.
+  useEffect(() => {
+    if (!store?.id) return;
+
+    enregistrerPanier(
+      store.id,
+      cart.map((item) => ({
+        productId: item.product.id,
+        name: item.product.name,
+        description: item.product.description,
+        price: prixDeLaLigne(item),
+        quantity: item.quantity,
+        isAvailable: item.product.isAvailable,
+        ...(item.variante ? { variantId: item.variante.id, variantNom: item.variante.label } : {}),
+      })),
+      store.name
+    );
+  }, [cart, store?.id, store?.name]);
 
   // Un champ d'heure libre laissait choisir 9 h alors que la boutique ouvre à
   // 11 h : la commande partait et personne n'était là pour la remettre.
@@ -353,7 +427,10 @@ export default function StorefrontPage() {
         orderNumber: orderResponse.order.id.slice(-8).toUpperCase(),
       });
 
+      // La commande est passée : ce panier-là n'a plus lieu d'être.
       setCart([]);
+      viderPanier(store?.id);
+      setAilleurs(autresPaniers(store?.id));
       setShowCheckout(false);
       setShowCart(false);
     } catch (error) {
@@ -591,6 +668,30 @@ export default function StorefrontPage() {
         {showCart && (
           <aside className="w-96 bg-gray-800 border-l border-gray-700 p-6 overflow-y-auto max-h-screen">
             <h2 className="text-2xl font-bold mb-4">Votre Panier</h2>
+
+            {/* Un panier laissé chez un autre commerce n'est pas perdu : il
+                attend, et on le lui rappelle plutôt que de le lui resservir
+                ici par erreur. */}
+            {ailleurs.length > 0 && (
+              <div className="mb-4 rounded-lg border border-amber-700/40 bg-amber-900/15 px-3 py-2">
+                <p className="text-xs text-amber-200 font-semibold mb-1">
+                  {ailleurs.length === 1
+                    ? 'Un panier vous attend ailleurs'
+                    : `${ailleurs.length} paniers vous attendent ailleurs`}
+                </p>
+                <ul className="space-y-0.5">
+                  {ailleurs.map((autre) => (
+                    <li key={autre.storeId} className="text-xs text-amber-300">
+                      {autre.storeName || 'Une autre boutique'} —{' '}
+                      {autre.lignes.reduce((somme, ligne) => somme + ligne.quantity, 0)} article
+                      {autre.lignes.reduce((somme, ligne) => somme + ligne.quantity, 0) > 1
+                        ? 's'
+                        : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {cart.length === 0 ? (
               <p className="text-gray-400 text-center py-8">Votre panier est vide</p>

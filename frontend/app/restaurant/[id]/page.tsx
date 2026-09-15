@@ -7,6 +7,14 @@ import { MapPin, Clock, Star, ShoppingCart, Minus, Plus, ArrowLeft } from 'lucid
 
 import { euro } from '@/lib/format';
 import { useStoreLive } from '@/lib/use-store-live';
+import {
+  autresPaniers,
+  cleDeLigne,
+  enregistrerPanier,
+  lirePanier,
+  type LignePanier,
+  type PanierBoutique,
+} from '@/lib/paniers';
 
 /** Une déclinaison du plat : penne, spaghetti, tagliatelle. */
 interface Declinaison {
@@ -49,28 +57,15 @@ interface Restaurant {
   menu: Record<string, Product[]>;
 }
 
-interface CartItem extends Product {
-  quantity: number;
-  /** La déclinaison choisie, quand le plat se décline. */
-  variantId?: string;
-  variantNom?: string;
-}
-
-/**
- * La clé d'une ligne de panier.
- *
- * Le panier était indexé par produit : commander des penne puis des spaghetti
- * du même plat aurait incrémenté la même ligne.
- */
-const cleDeLigne = (productId: string, variantId?: string) =>
-  variantId ? `${productId}:${variantId}` : productId;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function RestaurantDetailPage({ params }: { params: { id: string } }) {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<LignePanier[]>([]);
+  // Les paniers laissés chez d'autres commerces : ils attendent leur tour.
+  const [ailleurs, setAilleurs] = useState<PanierBoutique[]>([]);
   // La déclinaison retenue pour chaque plat, avant l'ajout au panier.
   const [choix, setChoix] = useState<Record<string, string>>({});
 
@@ -105,14 +100,12 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
     // celui enregistré, sinon il revient au prochain chargement.
     if (!isAvailable) {
       setCart((panier) => {
-        const sansLeProduit = panier.filter((ligne) => ligne.id !== productId);
+        const sansLeProduit = panier.filter((ligne) => ligne.productId !== productId);
 
+        // Enregistré aussi, sinon le plat épuisé revient au prochain
+        // chargement.
         if (sansLeProduit.length !== panier.length) {
-          try {
-            localStorage.setItem('cart', JSON.stringify(sansLeProduit));
-          } catch {
-            // Stockage refusé : le panier en mémoire suffit pour cette visite.
-          }
+          enregistrerPanier(params.id, sansLeProduit);
         }
 
         return sansLeProduit;
@@ -164,11 +157,7 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
       );
 
       if (garde.length !== panier.length) {
-        try {
-          localStorage.setItem('cart', JSON.stringify(garde));
-        } catch {
-          // Stockage refusé : le panier en mémoire suffit pour cette visite.
-        }
+        enregistrerPanier(params.id, garde);
       }
 
       return garde;
@@ -240,19 +229,14 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
   };
 
   const loadCart = () => {
-    try {
-      const savedCart = localStorage.getItem('cart');
-      if (savedCart) {
-        setCart(JSON.parse(savedCart));
-      }
-    } catch (err) {
-      console.error('Erreur:', err);
-    }
+    // Le panier de cette boutique, et seulement celui-là.
+    setCart(lirePanier(params.id));
+    setAilleurs(autresPaniers(params.id));
   };
 
-  const saveCart = (newCart: CartItem[]) => {
-    setCart(newCart);
-    localStorage.setItem('cart', JSON.stringify(newCart));
+  const saveCart = (lignes: LignePanier[]) => {
+    setCart(lignes);
+    enregistrerPanier(params.id, lignes, restaurant?.name);
   };
 
   const addToCart = (product: Product) => {
@@ -268,12 +252,12 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
     if (declinaisons.length > 0 && (!choisie || !choisie.isAvailable)) return;
 
     const cle = cleDeLigne(product.id, choisie?.id);
-    const existant = cart.find((item) => cleDeLigne(item.id, item.variantId) === cle);
+    const existant = cart.find((item) => cleDeLigne(item.productId, item.variantId) === cle);
 
     if (existant) {
       saveCart(
         cart.map((item) =>
-          cleDeLigne(item.id, item.variantId) === cle
+          cleDeLigne(item.productId, item.variantId) === cle
             ? { ...item, quantity: item.quantity + 1 }
             : item
         )
@@ -284,7 +268,9 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
     saveCart([
       ...cart,
       {
-        ...product,
+        productId: product.id,
+        name: product.name,
+        description: product.description,
         // Le prix mémorisé est celui de la déclinaison choisie.
         price: choisie ? choisie.prixEffectif : product.price,
         quantity: 1,
@@ -296,13 +282,13 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
 
   const updateQuantity = (cle: string, quantity: number) => {
     if (quantity <= 0) {
-      saveCart(cart.filter((item) => cleDeLigne(item.id, item.variantId) !== cle));
+      saveCart(cart.filter((item) => cleDeLigne(item.productId, item.variantId) !== cle));
       return;
     }
 
     saveCart(
       cart.map((item) =>
-        cleDeLigne(item.id, item.variantId) === cle ? { ...item, quantity } : item
+        cleDeLigne(item.productId, item.variantId) === cle ? { ...item, quantity } : item
       )
     );
   };
@@ -541,13 +527,42 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
                 )}
               </div>
 
+              {/* Un panier laissé chez un autre commerce n'est pas perdu : il
+                  attend, et on le lui rappelle plutôt que de le lui resservir
+                  ici par erreur. */}
+              {ailleurs.length > 0 && (
+                <div className="mb-4 rounded-lg border border-amber-700/40 bg-amber-900/15 px-3 py-2">
+                  <p className="text-xs text-amber-200 font-semibold mb-1">
+                    {ailleurs.length === 1
+                      ? 'Un panier vous attend ailleurs'
+                      : `${ailleurs.length} paniers vous attendent ailleurs`}
+                  </p>
+                  <ul className="space-y-0.5">
+                    {ailleurs.map((autre) => (
+                      <li key={autre.storeId}>
+                        <Link
+                          href={`/restaurant/${autre.storeId}`}
+                          className="text-xs text-amber-300 hover:text-amber-200 underline"
+                        >
+                          {autre.storeName || 'Une autre boutique'} —{' '}
+                          {autre.lignes.reduce((somme, ligne) => somme + ligne.quantity, 0)} article
+                          {autre.lignes.reduce((somme, ligne) => somme + ligne.quantity, 0) > 1
+                            ? 's'
+                            : ''}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {cart.length === 0 ? (
                 <p className="text-gray-400 py-8 text-center">Votre panier est vide</p>
               ) : (
                 <>
                   <div className="space-y-3 mb-6 pb-6 border-b border-gray-700">
                     {cart.map((item) => {
-                      const cle = cleDeLigne(item.id, item.variantId);
+                      const cle = cleDeLigne(item.productId, item.variantId);
 
                       return (
                         <div key={cle} className="flex items-center justify-between">
