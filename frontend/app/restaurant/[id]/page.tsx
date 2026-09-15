@@ -5,12 +5,16 @@ import Link from 'next/link';
 
 import { MapPin, Clock, Star, ShoppingCart, Minus, Plus, ArrowLeft } from 'lucide-react';
 
+import { euro } from '@/lib/format';
+
 interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
   image?: string;
+  /** Basculé par le commerçant quand le plat n'est plus servi. */
+  isAvailable?: boolean;
 }
 
 interface Restaurant {
@@ -67,6 +71,10 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
           name: produit.name,
           description: produit.description || '',
           price: Number(produit.price || 0),
+          // Recopier les produits champ par champ laissait cette information
+          // au bord de la route : le client voyait les plats épuisés comme
+          // les autres et pouvait les commander.
+          isAvailable: produit.isAvailable !== false,
         })),
       });
     } catch (err) {
@@ -93,6 +101,10 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
   };
 
   const addToCart = (product: Product) => {
+    // Le bouton est désactivé, mais une page restée ouverte peut avoir une
+    // version périmée du menu : on refuse aussi ici.
+    if (product.isAvailable === false) return;
+
     const existingItem = cart.find((item) => item.id === product.id);
 
     if (existingItem) {
@@ -195,26 +207,48 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
 
             {restaurant.products && restaurant.products.length > 0 ? (
               <div className="space-y-4">
-                {restaurant.products.map((product) => (
-                  <div
-                    key={product.id}
-                    className="bg-gray-800 rounded-lg p-4 flex items-start justify-between hover:bg-gray-750 transition"
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg mb-1">{product.name}</h3>
-                      <p className="text-gray-400 text-sm mb-2">{product.description}</p>
-                      <p className="text-green-400 font-bold">€{product.price.toFixed(2)}</p>
-                    </div>
+                {restaurant.products.map((product) => {
+                  // Un plat épuisé reste affiché : le masquer laisserait le
+                  // client chercher en vain ce qu'il commande d'habitude.
+                  const epuise = product.isAvailable === false;
 
-                    <button
-                      onClick={() => addToCart(product)}
-                      className="ml-4 p-2 bg-green-600 hover:bg-green-700 rounded-lg transition"
-                      title="Ajouter au panier"
+                  return (
+                    <div
+                      key={product.id}
+                      className={`bg-gray-800 rounded-lg p-4 flex items-start justify-between transition ${
+                        epuise ? 'opacity-60' : 'hover:bg-gray-750'
+                      }`}
                     >
-                      <Plus size={20} />
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className="font-bold text-lg">{product.name}</h3>
+                          {epuise && (
+                            <span className="px-2 py-0.5 rounded border border-red-500/50 bg-red-500/15 text-red-300 text-xs font-semibold uppercase tracking-wide">
+                              Épuisé
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-gray-400 text-sm mb-2">{product.description}</p>
+                        <p className={`font-bold ${epuise ? 'text-gray-500' : 'text-green-400'}`}>
+                          {euro(product.price)}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => addToCart(product)}
+                        disabled={epuise}
+                        className={`ml-4 p-2 rounded-lg transition ${
+                          epuise
+                            ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                            : 'bg-green-600 hover:bg-green-700'
+                        }`}
+                        title={epuise ? 'Ce plat n\'est plus disponible' : 'Ajouter au panier'}
+                      >
+                        <Plus size={20} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-gray-400">Aucun produit disponible</p>

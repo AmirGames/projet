@@ -45,6 +45,7 @@ VERIF_SITE_URL=http://localhost:3000 npm run verif:admin        # espace d'admin
 VERIF_SITE_URL=http://localhost:3000 npm run verif:motdepasse   # mot de passe oublié
 VERIF_SITE_URL=http://localhost:3000 npm run verif:courses      # proposition de course au livreur
 VERIF_SITE_URL=http://localhost:3000 npm run verif:suivi        # suivi de livraison côté client
+VERIF_SITE_URL=http://localhost:3000 npm run verif:menu-client  # ordre des produits et plats épuisés
 ```
 
 | Variable | Rôle | Défaut |
@@ -84,6 +85,7 @@ pour le lancer.
 | `verif-mot-de-passe-oublie.mjs` | Le parcours complet, courriel compris |
 | `verif-courses-livreur.mjs` | Passage en ligne, proposition de course, acceptation |
 | `verif-suivi-client.mjs` | Distance restante, durée estimée et avancement, côté client |
+| `verif-menu-restaurant.mjs` | Ordre des produits et étiquette « Épuisé », côté client |
 
 Le parcours mot de passe ouvre un serveur SMTP minimal sur le port 1025 pour
 lire le message envoyé : le jeton n'existe en clair que dans ce lien, la base

@@ -18,6 +18,8 @@ interface Product {
   category?: { id: string; name: string };
   rating?: number;
   variants?: any[];
+  /** Basculé par le commerçant quand le plat n'est plus servi. */
+  isAvailable?: boolean;
 }
 
 interface Store {
@@ -126,6 +128,10 @@ export default function RestaurantDetail() {
   };
 
   const addToCart = (product: Product, quantity: number = 1) => {
+    // Les boutons sont désactivés, mais une page restée ouverte peut avoir
+    // une version périmée du menu : on refuse aussi ici.
+    if (product.isAvailable === false) return;
+
     const existingItem = cart.find(item => item.productId === product.id);
 
     if (existingItem) {
@@ -284,12 +290,27 @@ export default function RestaurantDetail() {
                       setSelectedProduct(product);
                       setShowProductModal(true);
                     }}
-                    className="bg-gray-800 rounded-lg p-4 hover:bg-gray-750 cursor-pointer transition flex justify-between items-start"
+                    className={`bg-gray-800 rounded-lg p-4 transition flex justify-between items-start ${
+                      product.isAvailable === false
+                        ? 'opacity-60'
+                        : 'hover:bg-gray-750 cursor-pointer'
+                    }`}
                   >
-                    <div className="flex-1">
-                      <h3 className="text-white font-semibold">{product.name}</h3>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-white font-semibold">{product.name}</h3>
+                        {product.isAvailable === false && (
+                          <span className="px-2 py-0.5 rounded border border-red-500/50 bg-red-500/15 text-red-300 text-xs font-semibold uppercase tracking-wide">
+                            Épuisé
+                          </span>
+                        )}
+                      </div>
                       <p className="text-gray-400 text-sm mt-1">{product.description}</p>
-                      <p className="text-orange-500 font-bold mt-2">
+                      <p
+                        className={`font-bold mt-2 ${
+                          product.isAvailable === false ? 'text-gray-500' : 'text-orange-500'
+                        }`}
+                      >
                         {euro(product.price)}
                       </p>
                     </div>
@@ -298,7 +319,17 @@ export default function RestaurantDetail() {
                         e.stopPropagation();
                         addToCart(product, 1);
                       }}
-                      className="ml-4 bg-orange-600 hover:bg-orange-700 text-white p-2 rounded-lg"
+                      disabled={product.isAvailable === false}
+                      title={
+                        product.isAvailable === false
+                          ? 'Ce plat n\'est plus disponible'
+                          : 'Ajouter au panier'
+                      }
+                      className={`ml-4 p-2 rounded-lg text-white ${
+                        product.isAvailable === false
+                          ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          : 'bg-orange-600 hover:bg-orange-700'
+                      }`}
                     >
                       <Plus size={20} />
                     </button>
@@ -415,9 +446,14 @@ export default function RestaurantDetail() {
               </button>
               <button
                 onClick={() => addToCart(selectedProduct, 1)}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg"
+                disabled={selectedProduct.isAvailable === false}
+                className={`flex-1 text-white font-bold py-3 rounded-lg ${
+                  selectedProduct.isAvailable === false
+                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                    : 'bg-orange-600 hover:bg-orange-700'
+                }`}
               >
-                Ajouter au panier
+                {selectedProduct.isAvailable === false ? 'Épuisé' : 'Ajouter au panier'}
               </button>
             </div>
           </div>

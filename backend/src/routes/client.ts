@@ -145,6 +145,42 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
   }
 });
 
+/**
+ * Regroupe les produits par catégorie, dans l'ordre choisi par le commerçant.
+ *
+ * Les catégories sortent dans leur propre ordre d'affichage, et les produits
+ * dans le leur : c'est tout l'intérêt du glisser-déposer côté commerçant, qui
+ * était enregistré mais jamais relu ici.
+ *
+ * Un produit épuisé n'est pas retiré. Le masquer laisse le client chercher en
+ * vain un plat qu'il commande d'habitude ; le montrer barré lui dit ce qui se
+ * passe, et qu'il peut revenir demain.
+ */
+function regrouperParCategorie(produits: any[]) {
+  const categories = new Map<string, { ordre: number; produits: any[] }>();
+
+  for (const produit of produits) {
+    const nom = produit.category?.name || "Autres";
+
+    if (!categories.has(nom)) {
+      categories.set(nom, {
+        // Sans catégorie, on passe en dernier plutôt qu'en premier.
+        ordre: produit.category ? produit.category.displayOrder ?? 0 : Number.MAX_SAFE_INTEGER,
+        produits: [],
+      });
+    }
+
+    categories.get(nom)!.produits.push(produit);
+  }
+
+  const ordonnees = [...categories.entries()].sort((a, b) => {
+    if (a[1].ordre !== b[1].ordre) return a[1].ordre - b[1].ordre;
+    return a[0].localeCompare(b[0], "fr");
+  });
+
+  return Object.fromEntries(ordonnees.map(([nom, groupe]) => [nom, groupe.produits]));
+}
+
 // GET /api/client/stores/:id - Get store details with menu (public)
 router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -163,7 +199,9 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
             media: true,
             variants: true
           },
-          orderBy: { name: "asc" }
+          // L'ordre voulu par le commerçant d'abord ; le nom ne sert qu'à
+          // départager deux produits laissés au même rang.
+          orderBy: [{ displayOrder: "asc" }, { name: "asc" }]
         },
         reviews: {
           take: 10,
@@ -185,15 +223,7 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
       throw new ApiError(423, "Boutique temporairement fermée", "STORE_TEMPORARILY_CLOSED");
     }
 
-    // Group products by category
-    const categorizedProducts = store.products.reduce((acc: any, product: any) => {
-      const categoryName = product.category?.name || "Autres";
-      if (!acc[categoryName]) {
-        acc[categoryName] = [];
-      }
-      acc[categoryName].push(product);
-      return acc;
-    }, {});
+    const categorizedProducts = regrouperParCategorie(store.products);
 
     res.json({
       success: true,
@@ -232,17 +262,10 @@ router.get("/stores/:id/menu", async (req: Request, res: Response, next: NextFun
         media: true,
         variants: true
       },
-      orderBy: [{ category: { name: "asc" } }, { name: "asc" }]
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }]
     });
 
-    const categorized = products.reduce((acc: any, product: any) => {
-      const categoryName = product.category?.name || "Autres";
-      if (!acc[categoryName]) {
-        acc[categoryName] = [];
-      }
-      acc[categoryName].push(product);
-      return acc;
-    }, {});
+    const categorized = regrouperParCategorie(products);
 
     res.json({
       success: true,

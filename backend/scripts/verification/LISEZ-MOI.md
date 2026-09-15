@@ -84,6 +84,7 @@ continue.
 | `verif-disponibilite.mjs` | Bouton disponible / épuisé |
 | `verif-formules.mjs` | Formules, quotas de boutiques, service d'adresses |
 | `verif-livreur-admin.mjs` | Espace livreur et liste des boutiques côté administration |
+| `verif-menu-client.mjs` | L'ordre du menu et les plats épuisés, tels que le client les reçoit |
 | `verif-pages-marchand.mjs` | Les routes appelées par les pages commerçant |
 | `verif-phase11.mjs` | Sauvegardes, mode maintenance, et les points signalés en revue |
 | `verif-restauration.mjs` | Qu'une sauvegarde restaure des données réellement perdues |
