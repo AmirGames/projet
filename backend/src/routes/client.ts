@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
+import { distanceKm, estUnPoint } from "../utils/geo";
 import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
@@ -410,6 +411,7 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
       where: { orderId },
       include: {
         driver: { select: { name: true, phone: true, vehicleType: true, rating: true } },
+        order: { select: { deliveryAddress: true, store: { select: { name: true } } } },
       },
     });
 
@@ -418,6 +420,21 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
       return;
     }
 
+    // Trois points distincts, longtemps confondus : d'où part la commande, où
+    // elle va, et où se trouve le livreur en ce moment. Renvoyer deliveryLat
+    // comme position du livreur ne montrait plus rien depuis que celle-ci a
+    // ses propres colonnes.
+    const retrait = { latitude: course.pickupLat, longitude: course.pickupLng };
+    const destination = { latitude: course.deliveryLat, longitude: course.deliveryLng };
+    const livreur = { latitude: course.driverLat, longitude: course.driverLng };
+
+    // La distance restante est ce qui intéresse le client ; la distance totale
+    // sert à situer l'avancement.
+    const restante =
+      estUnPoint(livreur) && estUnPoint(destination) ? distanceKm(livreur, destination) : null;
+    const totale =
+      estUnPoint(retrait) && estUnPoint(destination) ? distanceKm(retrait, destination) : null;
+
     res.json({
       success: true,
       data: {
@@ -425,8 +442,15 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         status: course.status,
         estimatedTime: course.estimatedTime,
         deliveryTime: course.deliveryTime,
-        latitude: course.deliveryLat,
-        longitude: course.deliveryLng,
+        boutique: course.order?.store?.name ?? null,
+        adresseLivraison: course.order?.deliveryAddress ?? null,
+        retrait: estUnPoint(retrait) ? retrait : null,
+        destination: estUnPoint(destination) ? destination : null,
+        position: estUnPoint(livreur)
+          ? { ...livreur, misAJourLe: course.driverLocationAt }
+          : null,
+        distanceRestanteKm: restante,
+        distanceTotaleKm: totale,
         driver: course.driver
           ? { ...course.driver, rating: Number(course.driver.rating) }
           : null,

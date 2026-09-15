@@ -13,6 +13,8 @@ export interface OrderData {
   deliveryAddress?: string;
   deliveryCity?: string;
   deliveryPostal?: string;
+  deliveryLat?: number;
+  deliveryLng?: number;
   totalAmount: number;
   taxAmount?: number;
   feesAmount?: number;
@@ -103,6 +105,8 @@ export class OrderService {
           deliveryAddress: data.deliveryAddress,
           deliveryCity: data.deliveryCity,
           deliveryPostal: data.deliveryPostal,
+          deliveryLat: data.deliveryLat,
+          deliveryLng: data.deliveryLng,
           totalAmount: data.totalAmount,
           taxAmount: data.taxAmount || 0,
           feesAmount: data.feesAmount || 0,

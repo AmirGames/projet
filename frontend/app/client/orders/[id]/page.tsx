@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Clock, Phone, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { SuiviLivraison, type Course } from '@/components/SuiviLivraison';
 import { useOrderTracking } from '@/lib/use-order-tracking';
 
 import { euro } from '@/lib/format';
@@ -19,21 +20,10 @@ interface Order {
   items?: any[];
 }
 
-interface OrderDelivery {
-  id: string;
-  status: string;
-  estimatedTime?: string;
-  actualTime?: string;
-  latitude?: number;
-  longitude?: number;
-  driver?: {
-    id: string;
-    name: string;
-    phone: string;
-    vehicleType: string;
-    rating: number;
-  };
-}
+// Le suivi distingue trois points : d'où part la commande, où elle va, et où
+// se trouve le livreur. Le champ « latitude » d'avant mélangeait les deux
+// derniers.
+type OrderDelivery = Course;
 
 export default function OrderTrackingPage() {
   const params = useParams();
@@ -71,8 +61,11 @@ export default function OrderTrackingPage() {
       });
 
       if (orderResponse.ok) {
+        // Cette route renvoie la commande directement, pas enveloppée dans
+        // « data » : la page lisait une propriété inexistante et n'affichait
+        // donc jamais la commande.
         const orderData = await orderResponse.json();
-        setOrder(orderData.data);
+        setOrder(orderData.data ?? orderData);
       } else if (orderResponse.status === 404) {
         setError('Commande non trouvée');
       }
@@ -238,51 +231,10 @@ export default function OrderTrackingPage() {
               </div>
             </div>
 
-            {/* Delivery Location */}
-            {deliveryLocation && (
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-bold text-white mb-4">Localisation du livreur</h2>
-                <div className="bg-gray-700 rounded-lg p-4 text-center">
-                  <p className="text-gray-400 mb-2">Coordonnées GPS</p>
-                  <p className="text-white font-monospace text-sm">
-                    {deliveryLocation.latitude.toFixed(4)}, {deliveryLocation.longitude.toFixed(4)}
-                  </p>
-                  {eta && (
-                    <div className="mt-4 p-3 bg-orange-900 rounded-lg">
-                      <p className="text-orange-200">
-                        ⏱️ Arrivée estimée: <span className="font-bold">{eta} minutes</span>
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Driver Info */}
-            {delivery?.driver && (
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-bold text-white mb-4">Information du livreur</h2>
-
-                <div className="bg-gray-700 rounded-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-semibold">{delivery.driver.name}</p>
-                      <p className="text-gray-400 text-sm">{delivery.driver.vehicleType}</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-orange-500">{delivery.driver.rating}</div>
-                      <p className="text-gray-400 text-xs">⭐ Note</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 pt-4 border-t border-gray-600">
-                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2">
-                      <Phone size={18} />
-                      Appeler le livreur
-                    </button>
-                  </div>
-                </div>
-              </div>
+            {/* Suivi : le bloc précédent affichait des coordonnées GPS brutes,
+                et un bouton « Appeler » qui n'appelait rien. */}
+            {delivery && (
+              <SuiviLivraison course={delivery} positionDirecte={deliveryLocation} />
             )}
 
             {/* Order Items */}

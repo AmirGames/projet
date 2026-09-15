@@ -490,6 +490,11 @@ model Order {
   deliveryAddress String?      // if DELIVERY
   deliveryCity    String?
   deliveryPostal  String?
+  // Coordonnées du point de livraison. L'autocomplétion les fournit au moment
+  // de la commande ; sans elles, aucune distance ni durée ne peut être
+  // calculée pour le suivi.
+  deliveryLat     Float?
+  deliveryLng     Float?
 
   // Status
   status          OrderStatus  @default(PENDING)

@@ -66,6 +66,24 @@ const suiviData = await j(suivi);
 check('suivi accessible', suivi.status === 200, `status=${suivi.status}`);
 check('statut de la course', suiviData?.data?.status === 'ACCEPTED', JSON.stringify(suiviData?.data?.status));
 check('livreur communiqué au client', suiviData?.data?.driver?.name === 'Livreur', JSON.stringify(suiviData?.data?.driver));
+check('la boutique de départ est nommée', !!suiviData?.data?.boutique, JSON.stringify(suiviData?.data?.boutique));
+check('le point de retrait est donné', suiviData?.data?.retrait?.latitude > 45, JSON.stringify(suiviData?.data?.retrait));
+check('aucune position tant que le livreur n a pas bougé', suiviData?.data?.position === null, JSON.stringify(suiviData?.data?.position));
+
+// Le livreur avance : le client doit voir la position et la distance restante.
+await patch('/api/drivers/location', { latitude: 45.77, longitude: 4.85 }, livreur.accessToken);
+const enRoute = await j(await get(`/api/client/deliveries/${orderId}`, cToken));
+
+check('la position du livreur remonte au client', enRoute?.data?.position?.latitude > 45.76, JSON.stringify(enRoute?.data?.position));
+check('elle est horodatée', !!enRoute?.data?.position?.misAJourLe, JSON.stringify(enRoute?.data?.position));
+check('une distance restante est calculée', enRoute?.data?.distanceRestanteKm >= 0, `=${enRoute?.data?.distanceRestanteKm}`);
+
+// Le défaut corrigé : la position du livreur ne doit pas devenir la destination.
+check(
+  'la destination reste distincte de la position',
+  JSON.stringify(enRoute?.data?.destination) !== JSON.stringify(enRoute?.data?.position),
+  `destination=${JSON.stringify(enRoute?.data?.destination)}`
+);
 const suiviIntrus = await get(`/api/client/deliveries/${orderId}`, autre.accessToken);
 check('un autre client ne peut pas suivre cette commande', suiviIntrus.status === 404, `status=${suiviIntrus.status}`);
 

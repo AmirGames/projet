@@ -63,6 +63,9 @@ export default function StorefrontPage() {
     deliveryType: 'DELIVERY' as 'PICKUP' | 'DELIVERY',
     deliveryAddress: '',
     deliveryCity: '',
+    // Renseignées quand le client retient une suggestion d'adresse.
+    deliveryLat: undefined as number | undefined,
+    deliveryLng: undefined as number | undefined,
     pickupTime: '',
     notes: '',
   });
@@ -185,6 +188,8 @@ export default function StorefrontPage() {
         deliveryType: checkoutForm.deliveryType,
         deliveryAddress: checkoutForm.deliveryAddress || undefined,
         deliveryCity: checkoutForm.deliveryCity || undefined,
+        deliveryLat: checkoutForm.deliveryLat,
+        deliveryLng: checkoutForm.deliveryLng,
         pickupTime: checkoutForm.pickupTime || undefined,
         notes: checkoutForm.notes || undefined,
         // L'API attend des euros (Decimal 10,2), pas des centimes.
@@ -483,6 +488,8 @@ export default function StorefrontPage() {
                     deliveryType: 'DELIVERY',
                     deliveryAddress: '',
                     deliveryCity: '',
+                    deliveryLat: undefined,
+                    deliveryLng: undefined,
                     pickupTime: '',
                     notes: '',
                   });
@@ -600,13 +607,25 @@ export default function StorefrontPage() {
                     <AddressAutocomplete
                       value={checkoutForm.deliveryAddress}
                       onChange={(valeur) =>
-                        setCheckoutForm({ ...checkoutForm, deliveryAddress: valeur })
+                        setCheckoutForm({
+                          ...checkoutForm,
+                          deliveryAddress: valeur,
+                          // Taper par-dessus une suggestion retenue rendrait
+                          // ses coordonnées fausses.
+                          deliveryLat: undefined,
+                          deliveryLng: undefined,
+                        })
                       }
                       onSelect={(adresse) =>
                         setCheckoutForm({
                           ...checkoutForm,
                           deliveryAddress: adresse.street,
                           deliveryCity: adresse.city || checkoutForm.deliveryCity,
+                          // Les coordonnées de l'adresse choisie étaient
+                          // jetées : sans elles, le suivi ne peut afficher ni
+                          // distance restante ni durée estimée.
+                          deliveryLat: adresse.latitude ?? undefined,
+                          deliveryLng: adresse.longitude ?? undefined,
                         })
                       }
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"

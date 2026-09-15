@@ -89,8 +89,12 @@ export class DispatchService {
       data: {
         orderId,
         status: "PENDING",
+        // Les deux bouts du trajet sont figés à la création de la course : la
+        // boutique d'où l'on retire, l'adresse où l'on dépose.
         pickupLat: commande.store?.latitude ?? null,
         pickupLng: commande.store?.longitude ?? null,
+        deliveryLat: commande.deliveryLat ?? null,
+        deliveryLng: commande.deliveryLng ?? null,
       },
     });
   }

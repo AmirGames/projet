@@ -57,6 +57,8 @@ const createOrderSchema = z.object({
   deliveryAddress: z.string().optional(),
   deliveryCity: z.string().optional(),
   deliveryPostal: z.string().optional(),
+  deliveryLat: z.number().min(-90).max(90).optional(),
+  deliveryLng: z.number().min(-180).max(180).optional(),
   totalAmount: z.number().positive("Total doit être positif"),
   taxAmount: z.number().optional(),
   feesAmount: z.number().optional(),
