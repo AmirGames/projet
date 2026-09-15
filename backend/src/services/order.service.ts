@@ -3,6 +3,7 @@ import { EmailService } from "./email.service";
 import { logger } from "../config/logger";
 import { ApiError } from "../middleware/errorHandler";
 import { VariantService } from "./variant.service";
+import { DeliveryZoneService } from "./delivery-zone.service";
 
 export interface OrderData {
   storeId: string;
@@ -119,14 +120,33 @@ export class OrderService {
         }
       }
 
-      // Le total suit les lignes, et non ce que le navigateur annonce. Les
-      // frais et taxes restent tels quels : ils se règlent côté boutique.
+      // Le total suit les lignes, et non ce que le navigateur annonce.
       const totalDesLignes = lignesTarifees.reduce(
         (somme, ligne) => somme + ligne.price * ligne.quantity,
         0
       );
+
+      /**
+       * Les frais de livraison viennent de la zone, pas du navigateur.
+       *
+       * Les zones existaient en base sans que rien ne les applique : la
+       * commande facturait le forfait de la boutique et acceptait n'importe
+       * quel montant, où que soit le client.
+       */
+      let fraisDeLivraison = Number(data.feesAmount || 0);
+
+      if (data.deliveryType === "DELIVERY" && lignesTarifees.length > 0) {
+        const verdict = await DeliveryZoneService.controlerLaLivraison(
+          data.storeId,
+          { latitude: data.deliveryLat, longitude: data.deliveryLng },
+          Number(totalDesLignes.toFixed(2))
+        );
+
+        fraisDeLivraison = verdict.frais;
+      }
+
       const totalCalcule = lignesTarifees.length > 0
-        ? Number((totalDesLignes + Number(data.taxAmount || 0) + Number(data.feesAmount || 0)).toFixed(2))
+        ? Number((totalDesLignes + Number(data.taxAmount || 0) + fraisDeLivraison).toFixed(2))
         : Number(data.totalAmount);
 
       const order = await db.order.create({
@@ -144,7 +164,7 @@ export class OrderService {
           deliveryLng: data.deliveryLng,
           totalAmount: totalCalcule,
           taxAmount: data.taxAmount || 0,
-          feesAmount: data.feesAmount || 0,
+          feesAmount: fraisDeLivraison,
           customerId,
           notes: data.notes,
           status: "PENDING" as any,

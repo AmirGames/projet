@@ -787,15 +787,32 @@ model DeliveryOffer {
 // DELIVERY ZONES
 // ============================================================================
 
+// Une zone de livraison : un anneau autour de la boutique, avec ses frais et
+// son montant minimum de commande.
+//
+// Le modèle existait avec un nom, des frais et un minimum, mais sans géométrie
+// utilisable — un point sans rayon — et rien ne l'appliquait : la commande
+// ignorait les zones, facturait les frais forfaitaires de la boutique et
+// acceptait n'importe quel montant, où que soit le client.
 model DeliveryZone {
   id        String  @id @default(cuid())
   storeId   String
   name      String
-  
-  // Polygon GeoJSON (simple for MVP: just center + radius or boundaries)
-  // Example: { type: "Point", coordinates: [lat, lon] }
+
+  // Rayon en kilomètres depuis la boutique. Les anneaux se recouvrent : c'est
+  // le plus petit qui contient l'adresse qui s'applique, comme chez Uber Eats.
+  radiusKm  Float   @default(3)
+
+  // Durée de livraison annoncée au client pour cette zone.
+  deliveryMinutes Int? 
+
+  // Une zone désactivée n'est plus livrée, sans perdre son réglage.
+  isActive  Boolean @default(true)
+
+  // Réservé à un vrai polygone, quand le besoin viendra. Le rayon suffit pour
+  // des anneaux concentriques.
   polygon   Json?
-  
+
   baseFee   Decimal @db.Decimal(10, 2)
   minOrder  Decimal @db.Decimal(10, 2)
 

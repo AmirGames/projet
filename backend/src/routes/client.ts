@@ -4,6 +4,7 @@ import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint } from "../utils/geo";
 import { StoreHoursService } from "../services/store-hours.service";
+import { DeliveryZoneService } from "../services/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
@@ -283,6 +284,40 @@ router.get("/stores/:id/pickup-slots", async (req: Request, res: Response, next:
     const creneaux = await StoreHoursService.creneauxDeRetrait(req.params.id as string, { jours });
 
     res.json({ success: true, data: creneaux });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/client/stores/:id/zone-livraison?lat=&lng=
+ *
+ * Dit au client, avant qu'il remplisse quoi que ce soit, s'il est livré, à
+ * quels frais et à partir de quel montant. Sans cela il découvrait le refus
+ * au dernier moment, après avoir saisi son adresse et son téléphone.
+ */
+router.get("/stores/:id/zone-livraison", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const latitude = req.query.lat === undefined ? null : Number(req.query.lat);
+    const longitude = req.query.lng === undefined ? null : Number(req.query.lng);
+
+    const verdict = await DeliveryZoneService.verdict(req.params.id as string, {
+      latitude: Number.isFinite(latitude) ? latitude : null,
+      longitude: Number.isFinite(longitude) ? longitude : null,
+    });
+
+    res.json({ success: true, data: verdict });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/client/stores/:id/zones - La grille des zones, pour information
+router.get("/stores/:id/zones", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const zones = await DeliveryZoneService.getByStoreId(req.params.id as string);
+
+    res.json({ success: true, data: zones.filter((zone) => zone.isActive) });
   } catch (err) {
     next(err);
   }

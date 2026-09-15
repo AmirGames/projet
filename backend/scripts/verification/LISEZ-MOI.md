@@ -94,6 +94,7 @@ continue.
 | `verif-restauration.mjs` | Qu'une sauvegarde restaure des données réellement perdues |
 | `verif-sante-systeme.mjs` | La santé système : ses cinq relevés, et ce qui la fait bouger |
 | `verif-salons-direct.mjs` | Qui peut suivre quoi en direct, et la disponibilité poussée |
+| `verif-zones-livraison.mjs` | Anneaux de livraison : frais, minimum, et leur application à la commande |
 | `verif-temps-reel.mjs` | Notifications poussées en direct |
 
 ## Ajouter une vérification

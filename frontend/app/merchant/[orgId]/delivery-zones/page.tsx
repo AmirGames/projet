@@ -11,13 +11,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface DeliveryZone {
   id: string;
   name: string;
+  /** Rayon en kilomètres depuis la boutique : c'est lui qui fait la zone. */
+  radiusKm: number;
   baseFee: number;
   minOrder: number;
-  polygon?: {
-    type: string;
-    coordinates: [number, number];
-  };
-  createdAt: string;
+  deliveryMinutes: number | null;
+  isActive: boolean;
 }
 
 export default function DeliveryZonesPage() {
@@ -31,8 +30,10 @@ export default function DeliveryZonesPage() {
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
   const [formData, setFormData] = useState({
     name: '',
+    radiusKm: '',
     baseFee: '',
     minOrder: '',
+    deliveryMinutes: '',
   });
   const [formError, setFormError] = useState('');
 
@@ -81,14 +82,24 @@ export default function DeliveryZonesPage() {
       return;
     }
 
+    // Sans rayon, aucune adresse ne peut être rattachée à la zone : elle ne
+    // s'appliquerait jamais.
+    const rayon = parseFloat(formData.radiusKm);
+    if (!(rayon > 0)) {
+      setFormError('Indiquez un rayon en kilomètres, supérieur à zéro');
+      return;
+    }
+
     setSaving(true);
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       const payload = {
         storeId,
         name: formData.name,
+        radiusKm: rayon,
         baseFee: parseFloat(formData.baseFee),
         minOrder: formData.minOrder ? parseFloat(formData.minOrder) : 0,
+        deliveryMinutes: formData.deliveryMinutes ? parseInt(formData.deliveryMinutes, 10) : null,
       };
 
       const url = editingZone
@@ -104,14 +115,20 @@ export default function DeliveryZonesPage() {
         body: JSON.stringify(payload),
       });
 
+      const donnees = await response.json().catch(() => null);
+
       if (response.ok) {
         await fetchZones();
         setShowForm(false);
         setEditingZone(null);
-        setFormData({ name: '', baseFee: '', minOrder: '' });
+        setFormData({ name: '', radiusKm: '', baseFee: '', minOrder: '', deliveryMinutes: '' });
+      } else {
+        // Un refus muet laissait croire que la zone était enregistrée.
+        setFormError(donnees?.error || 'Enregistrement refusé');
       }
     } catch (error) {
       console.error('Error saving delivery zone:', error);
+      setFormError('Le serveur ne répond pas');
     } finally {
       setSaving(false);
     }
@@ -142,8 +159,10 @@ export default function DeliveryZonesPage() {
     setEditingZone(zone);
     setFormData({
       name: zone.name,
+      radiusKm: zone.radiusKm?.toString() || '',
       baseFee: zone.baseFee.toString(),
       minOrder: zone.minOrder?.toString() || '',
+      deliveryMinutes: zone.deliveryMinutes?.toString() || '',
     });
     setFormError('');
     setShowForm(true);
@@ -151,7 +170,7 @@ export default function DeliveryZonesPage() {
 
   const handleAddZone = () => {
     setEditingZone(null);
-    setFormData({ name: '', baseFee: '', minOrder: '' });
+    setFormData({ name: '', radiusKm: '', baseFee: '', minOrder: '', deliveryMinutes: '' });
     setFormError('');
     setShowForm(true);
   };
@@ -202,10 +221,13 @@ export default function DeliveryZonesPage() {
                 {formError}
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div>
-                <label className="text-slate-300 text-sm block mb-2">Nom de la Zone</label>
+                <label htmlFor="zone-nom" className="text-slate-300 text-sm block mb-2">
+                  Nom de la zone
+                </label>
                 <input
+                  id="zone-nom"
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -214,8 +236,28 @@ export default function DeliveryZonesPage() {
                 />
               </div>
               <div>
-                <label className="text-slate-300 text-sm block mb-2">Frais de Base (€)</label>
+                {/* Le rayon fait la zone : sans lui, aucune adresse ne peut y
+                    être rattachée et la zone ne s'applique jamais. */}
+                <label htmlFor="zone-rayon" className="text-slate-300 text-sm block mb-2">
+                  Rayon (km)
+                </label>
                 <input
+                  id="zone-rayon"
+                  type="number"
+                  step="0.5"
+                  min="0.5"
+                  value={formData.radiusKm}
+                  onChange={(e) => setFormData({ ...formData, radiusKm: e.target.value })}
+                  placeholder="3"
+                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label htmlFor="zone-frais" className="text-slate-300 text-sm block mb-2">
+                  Frais de livraison (€)
+                </label>
+                <input
+                  id="zone-frais"
                   type="number"
                   step="0.01"
                   min="0"
@@ -226,8 +268,11 @@ export default function DeliveryZonesPage() {
                 />
               </div>
               <div>
-                <label className="text-slate-300 text-sm block mb-2">Commande Min. (€)</label>
+                <label htmlFor="zone-minimum" className="text-slate-300 text-sm block mb-2">
+                  Commande minimum (€)
+                </label>
                 <input
+                  id="zone-minimum"
                   type="number"
                   step="0.01"
                   min="0"
@@ -237,7 +282,29 @@ export default function DeliveryZonesPage() {
                   className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
                 />
               </div>
+              <div>
+                <label htmlFor="zone-duree" className="text-slate-300 text-sm block mb-2">
+                  Durée annoncée (min)
+                </label>
+                <input
+                  id="zone-duree"
+                  type="number"
+                  step="5"
+                  min="5"
+                  value={formData.deliveryMinutes}
+                  onChange={(e) => setFormData({ ...formData, deliveryMinutes: e.target.value })}
+                  placeholder="30"
+                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
+                />
+              </div>
             </div>
+
+            <p className="text-xs text-slate-400 mb-4">
+              Les zones sont des anneaux autour de votre boutique. C'est la plus petite qui
+              contient l'adresse du client qui s'applique : un voisin paie les frais de la zone
+              proche, un client éloigné ceux de la zone large. Au-delà de votre plus grand rayon,
+              la livraison est refusée.
+            </p>
             <div className="flex gap-2">
               <button
                 onClick={handleSaveZone}
@@ -250,7 +317,7 @@ export default function DeliveryZonesPage() {
                 onClick={() => {
                   setShowForm(false);
                   setEditingZone(null);
-                  setFormData({ name: '', baseFee: '', minOrder: '' });
+                  setFormData({ name: '', radiusKm: '', baseFee: '', minOrder: '', deliveryMinutes: '' });
                 }}
                 className="px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 transition"
               >
@@ -310,8 +377,22 @@ export default function DeliveryZonesPage() {
                     <span className="text-slate-400">Commande Minimale</span>
                     <span className="text-white font-semibold">{zone.minOrder.toFixed(2)} €</span>
                   </div>
-                  <div className="text-xs text-slate-500 pt-2 border-t border-slate-700">
-                    Créée le {new Date(zone.createdAt).toLocaleDateString('fr-FR')}
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Rayon</span>
+                    <span className="text-white font-semibold">{zone.radiusKm} km</span>
+                  </div>
+                  {zone.deliveryMinutes && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Durée annoncée</span>
+                      <span className="text-white font-semibold">{zone.deliveryMinutes} min</span>
+                    </div>
+                  )}
+                  <div className="text-xs pt-2 border-t border-slate-700">
+                    {zone.isActive ? (
+                      <span className="text-green-400">Zone livrée</span>
+                    ) : (
+                      <span className="text-orange-400">Zone désactivée</span>
+                    )}
                   </div>
                 </div>
               </div>

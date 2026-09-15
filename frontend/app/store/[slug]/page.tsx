@@ -76,6 +76,22 @@ export default function StorefrontPage() {
   const [choix, setChoix] = useState<Record<string, string>>({});
   // Les paniers laissés chez d'autres commerces : ils attendent leur tour.
   const [ailleurs, setAilleurs] = useState<PanierBoutique[]>([]);
+  /**
+   * Les conditions de livraison à l'adresse saisie.
+   *
+   * Les zones existaient sans que rien ne les montre : le client découvrait le
+   * refus — hors zone, ou sous le minimum — au dernier moment, après avoir
+   * saisi son adresse et son téléphone.
+   */
+  const [livraison, setLivraison] = useState<{
+    livrable: boolean;
+    zone: { name: string; minOrder: number; deliveryMinutes: number | null } | null;
+    distanceKm: number | null;
+    frais: number;
+    minimum: number;
+    raison: string;
+    forfaitBoutique: boolean;
+  } | null>(null);
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   // Créneaux réellement proposables, déduits des horaires de la boutique.
@@ -221,6 +237,33 @@ export default function StorefrontPage() {
     );
   }, [cart, store?.id, store?.name]);
 
+  // Les conditions de livraison se lisent dès que l'adresse est retenue.
+  useEffect(() => {
+    if (!store?.id || checkoutForm.deliveryType !== 'DELIVERY') {
+      setLivraison(null);
+      return;
+    }
+
+    const { deliveryLat, deliveryLng } = checkoutForm;
+    let annule = false;
+
+    const parametres =
+      deliveryLat !== undefined && deliveryLng !== undefined
+        ? `?lat=${deliveryLat}&lng=${deliveryLng}`
+        : '';
+
+    fetch(`${API_URL}/api/client/stores/${store.id}/zone-livraison${parametres}`)
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) => {
+        if (!annule && donnees) setLivraison(donnees.data || null);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      annule = true;
+    };
+  }, [store?.id, checkoutForm.deliveryType, checkoutForm.deliveryLat, checkoutForm.deliveryLng]);
+
   // Un champ d'heure libre laissait choisir 9 h alors que la boutique ouvre à
   // 11 h : la commande partait et personne n'était là pour la remettre.
   useEffect(() => {
@@ -348,8 +391,22 @@ export default function StorefrontPage() {
     Number(item.variante?.prixEffectif ?? item.product.price ?? 0);
 
   const cartTotal = cart.reduce((sum, item) => sum + prixDeLaLigne(item) * item.quantity, 0);
-  const cartServiceFee = cartTotal * 0.1;
-  const cartGrandTotal = cartTotal + cartServiceFee;
+  /**
+   * Les frais réellement facturés : ceux de la zone de livraison.
+   *
+   * La page ajoutait 10 % de « frais de service » qui n'existaient nulle part
+   * ailleurs — ni réglables, ni prélevés par le serveur. Le total affiché ne
+   * correspondait donc pas à celui de la commande.
+   */
+  const fraisDeLivraison =
+    checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable ? livraison.frais : 0;
+  const cartGrandTotal = cartTotal + fraisDeLivraison;
+
+  /** Le panier atteint-il le minimum de la zone. */
+  const sousLeMinimum =
+    checkoutForm.deliveryType === 'DELIVERY' &&
+    Boolean(livraison?.livrable) &&
+    cartTotal < (livraison?.minimum ?? 0);
 
   const handleCheckout = async () => {
     setCheckoutError('');
@@ -397,7 +454,9 @@ export default function StorefrontPage() {
         // L'API attend des euros (Decimal 10,2), pas des centimes.
         totalAmount: Number(cartGrandTotal.toFixed(2)),
         taxAmount: 0,
-        feesAmount: Number(cartServiceFee.toFixed(2)),
+        // Le serveur recalcule ces frais depuis la zone : on envoie ce qu'on a
+        // affiché, il tranche.
+        feesAmount: Number(fraisDeLivraison.toFixed(2)),
         // Le détail du panier : sans lui la commande n'enregistrait qu'un
         // montant, et la facture comme le détail de commande restaient vides.
         items: cart.map((item) => ({
@@ -749,8 +808,12 @@ export default function StorefrontPage() {
                     <span>{euro(cartTotal)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Frais de service</span>
-                    <span>{euro((cartTotal * 0.1))}</span>
+                    <span>Livraison</span>
+                    <span>
+                      {/* Les frais dépendent de l'adresse : ils se précisent au
+                          moment de la saisie. */}
+                      {fraisDeLivraison > 0 ? euro(fraisDeLivraison) : 'selon la zone'}
+                    </span>
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-3">
                     <span>Total</span>
@@ -962,6 +1025,45 @@ export default function StorefrontPage() {
                       placeholder="Paris"
                     />
                   </div>
+
+                  {/* Les conditions de la zone, dites avant de payer et non
+                      après. */}
+                  {livraison && !livraison.forfaitBoutique && (
+                    <div
+                      role="status"
+                      className={`rounded-lg px-3 py-2 text-sm border ${
+                        !livraison.livrable
+                          ? 'border-red-700/50 bg-red-900/20 text-red-200'
+                          : cartTotal < livraison.minimum
+                            ? 'border-amber-700/50 bg-amber-900/20 text-amber-200'
+                            : 'border-green-700/50 bg-green-900/20 text-green-200'
+                      }`}
+                    >
+                      {!livraison.livrable ? (
+                        <p>{livraison.raison}</p>
+                      ) : (
+                        <>
+                          <p className="font-semibold">
+                            Zone « {livraison.zone?.name} »
+                            {livraison.distanceKm !== null && ` — ${livraison.distanceKm} km`}
+                          </p>
+                          <p>
+                            Livraison {euro(livraison.frais)}
+                            {livraison.zone?.deliveryMinutes
+                              ? `, environ ${livraison.zone.deliveryMinutes} min`
+                              : ''}
+                            {livraison.minimum > 0 && ` — minimum ${euro(livraison.minimum)}`}
+                          </p>
+                          {cartTotal < livraison.minimum && (
+                            <p className="mt-1">
+                              Il vous manque {euro(livraison.minimum - cartTotal)} pour atteindre le
+                              minimum de cette zone.
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1023,8 +1125,15 @@ export default function StorefrontPage() {
                   <span>{euro(cartTotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Frais de service (10%)</span>
-                  <span>{euro(cartServiceFee)}</span>
+                  <span>
+                    Livraison
+                    {livraison?.zone ? ` — ${livraison.zone.name}` : ''}
+                  </span>
+                  <span>
+                    {checkoutForm.deliveryType === 'PICKUP'
+                      ? 'Retrait sur place'
+                      : euro(fraisDeLivraison)}
+                  </span>
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t border-gray-600 pt-2">
                   <span>Total</span>
@@ -1043,10 +1152,22 @@ export default function StorefrontPage() {
               </button>
               <button
                 onClick={handleCheckout}
-                disabled={submitting}
-                className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors disabled:opacity-50"
+                // Hors zone ou sous le minimum, le serveur refuserait : autant
+                // le dire avant que le client valide.
+                disabled={
+                  submitting ||
+                  sousLeMinimum ||
+                  (checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable === false)
+                }
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {submitting ? 'Traitement...' : 'Confirmer la Commande'}
+                {submitting
+                  ? 'Traitement...'
+                  : sousLeMinimum
+                    ? `Minimum ${euro(livraison?.minimum ?? 0)}`
+                    : checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable === false
+                      ? 'Adresse non livrée'
+                      : 'Confirmer la Commande'}
               </button>
             </div>
           </div>

@@ -20,7 +20,8 @@
     "verif:cloche": "node scripts/verif-cloche.mjs",
     "verif:restreint": "node scripts/verif-compte-restreint.mjs",
     "verif:declinaisons": "node scripts/verif-declinaisons.mjs",
-    "verif:paniers": "node scripts/verif-paniers.mjs"
+    "verif:paniers": "node scripts/verif-paniers.mjs",
+    "verif:zones": "node scripts/verif-zones-livraison.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",

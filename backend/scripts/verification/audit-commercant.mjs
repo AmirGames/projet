@@ -47,7 +47,11 @@ check('Horaires — ouverture/fermeture', (await patch(`/api/store-hours/${store
 const creneau = await post(`/api/store-hours/${storeId}/pickup-slots`, { start: '10:00', end: '10:30', maxOrders: 5 }, T);
 check('Créneaux de retrait — création', creneau.status < 300, `status=${creneau.status} ${JSON.stringify(await j(creneau))?.slice(0, 150)}`);
 
-const zone = await post('/api/delivery-zones', { storeId, name: 'Centre-ville', baseFee: 2.5, minOrderAmount: 10 }, T);
+const zone = await post(
+  '/api/delivery-zones',
+  { storeId, name: 'Centre-ville', radiusKm: 3, baseFee: 2.5, minOrder: 10 },
+  T
+);
 const zoneData = await j(zone);
 const zoneId = zoneData?.zone?.id || zoneData?.data?.id || zoneData?.id;
 check('Zone de livraison — création', zone.status < 300, `status=${zone.status} ${JSON.stringify(zoneData)?.slice(0, 150)}`);
