@@ -20,8 +20,12 @@ model User {
   name          String?
   passwordHash  String
   emailVerified Boolean   @default(false)
-  emailToken    String?   @unique
+  // Empreintes, jamais les jetons eux-mêmes : une lecture de la base ne doit
+  // pas suffire à confirmer une adresse ni à s'emparer d'un compte.
+  emailTokenHash String?  @unique
   emailTokenExpiresAt DateTime?
+  resetTokenHash String?  @unique
+  resetTokenExpiresAt DateTime?
   isSystemAdmin Boolean   @default(false)
   isSuperOwner  Boolean   @default(false)
   status        String    @default("ACTIVE") // ACTIVE, BANNED, SUSPENDED

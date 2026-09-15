@@ -19,11 +19,14 @@ export const api = {
       });
       const data = await response.json();
       if (!response.ok) {
-        return { error: true, message: data.message || "Erreur d'inscription" };
+        // L'API répond { error, code } : c'est « error » qui porte le texte.
+        // Renvoyer error: true affichait une case vide, un booléen ne se
+        // rendant pas.
+        return { error: data.error || "Erreur d'inscription", code: data.code };
       }
       return data;
     } catch (error) {
-      return { error: true, message: "Erreur de connexion au serveur" };
+      return { error: "Serveur injoignable. Vérifiez votre connexion." };
     }
   },
 
@@ -36,11 +39,11 @@ export const api = {
       });
       const data = await response.json();
       if (!response.ok) {
-        return { error: true, message: data.message || "Erreur de connexion" };
+        return { error: data.error || "Erreur de connexion", code: data.code };
       }
       return data;
     } catch (error) {
-      return { error: true, message: "Erreur de connexion au serveur" };
+      return { error: "Serveur injoignable. Vérifiez votre connexion." };
     }
   },
 

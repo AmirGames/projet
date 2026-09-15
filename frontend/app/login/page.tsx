@@ -6,6 +6,8 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
 export default function LoginPage() {
   const router = useRouter();
   const { refreshAuth } = useAuth();
@@ -13,17 +15,41 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [adresseNonConfirmee, setAdresseNonConfirmee] = useState(false);
+  const [lienRenvoye, setLienRenvoye] = useState("");
+
+  const renvoyerConfirmation = async () => {
+    setLienRenvoye("Envoi...");
+
+    try {
+      const reponse = await fetch(`${API_URL}/api/auth/resend-verification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const donnees = await reponse.json();
+      setLienRenvoye(donnees.message || donnees.error || "Demande envoyée.");
+    } catch {
+      setLienRenvoye("Serveur injoignable. Réessayez dans un instant.");
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setAdresseNonConfirmee(false);
+    setLienRenvoye("");
 
     try {
       const result = await api.login(email, password);
 
       if (result.error) {
-        setError(result.error || result.message || "Erreur de connexion");
+        setError(result.error);
+        // Un compte non confirmé n'a pas de session : sans ce bouton il n'a
+        // aucun moyen de redemander son lien.
+        setAdresseNonConfirmee(result.code === "EMAIL_NOT_VERIFIED");
         return;
       }
 
@@ -74,7 +100,23 @@ export default function LoginPage() {
 
         {error && (
           <div className="bg-red-600 text-white p-4 rounded-lg mb-4">
-            {error}
+            <p>{error}</p>
+
+            {adresseNonConfirmee && (
+              <div className="mt-3 pt-3 border-t border-red-400/50 text-sm">
+                {lienRenvoye ? (
+                  <p>{lienRenvoye}</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={renvoyerConfirmation}
+                    className="underline hover:no-underline font-medium"
+                  >
+                    Renvoyer le lien de confirmation
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -112,7 +154,15 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-2">
+          <p>
+            <Link
+              href="/mot-de-passe-oublie"
+              className="text-blue-400 hover:text-blue-300"
+            >
+              Mot de passe oublié ?
+            </Link>
+          </p>
           <p className="text-gray-400">
             Pas encore inscrit?{" "}
             <Link href="/signup" className="text-blue-400 hover:text-blue-300">

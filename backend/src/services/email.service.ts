@@ -176,4 +176,111 @@ export class EmailService {
       throw err;
     }
   }
+
+  /**
+   * Gabarit commun aux courriels de compte.
+   *
+   * Ces messages n'ont qu'un rôle : mener à un lien. Tout le reste — détails,
+   * offres, mises en page — dilue ce rôle et fait ressembler le message à du
+   * hameçonnage.
+   */
+  private static gabaritAction(options: {
+    titre: string;
+    corps: string;
+    libelleBouton: string;
+    lien: string;
+    apres: string;
+  }) {
+    return `
+      <!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #2d3748; color: white; padding: 20px; border-radius: 5px; }
+            .content { padding: 20px; background-color: #f7fafc; margin: 20px 0; border-radius: 5px; }
+            .button { display: inline-block; background-color: #dd6b20; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold; }
+            .lien-brut { word-break: break-all; color: #718096; font-size: 12px; }
+            .footer { text-align: center; color: #718096; font-size: 12px; margin-top: 30px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header"><h1>${options.titre}</h1></div>
+
+            <div class="content">
+              ${options.corps}
+
+              <div style="text-align: center;">
+                <a href="${options.lien}" class="button">${options.libelleBouton}</a>
+              </div>
+
+              <p class="lien-brut">
+                Si le bouton ne fonctionne pas, copiez cette adresse dans votre
+                navigateur :<br>${options.lien}
+              </p>
+
+              <p>${options.apres}</p>
+            </div>
+
+            <div class="footer"><p>${EMAIL_CONFIG.siteUrl}</p></div>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  /** Lien de réinitialisation de mot de passe. */
+  static async sendPasswordReset(email: string, nom: string | null, lien: string) {
+    return this.sendEmail({
+      to: email,
+      subject: "Réinitialiser votre mot de passe",
+      html: this.gabaritAction({
+        titre: "🔑 Nouveau mot de passe",
+        corps: `
+          <p>Bonjour${nom ? ` ${nom}` : ""},</p>
+          <p>Vous avez demandé à changer le mot de passe de votre compte.
+             Ce lien est valable une heure et ne fonctionne qu'une fois.</p>
+        `,
+        libelleBouton: "Choisir un nouveau mot de passe",
+        lien,
+        apres:
+          "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : " +
+          "votre mot de passe actuel reste valable et personne n'a été prévenu que " +
+          "vous possédez cette adresse.",
+      }),
+      text:
+        `Bonjour${nom ? ` ${nom}` : ""},\n\n` +
+        `Pour changer votre mot de passe, ouvrez ce lien dans l'heure : ${lien}\n\n` +
+        `Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.`,
+    });
+  }
+
+  /** Lien de confirmation d'adresse. */
+  static async sendEmailVerification(email: string, nom: string | null, lien: string) {
+    return this.sendEmail({
+      to: email,
+      subject: "Confirmez votre adresse e-mail",
+      html: this.gabaritAction({
+        titre: "✉️ Confirmez votre adresse",
+        corps: `
+          <p>Bonjour${nom ? ` ${nom}` : ""},</p>
+          <p>Confirmez cette adresse pour que nous puissions vous joindre :
+             commandes, réinitialisation de mot de passe, alertes importantes.
+             Ce lien est valable 24 heures.</p>
+        `,
+        libelleBouton: "Confirmer mon adresse",
+        lien,
+        apres:
+          "Si vous n'avez pas créé de compte chez nous, ignorez ce message : " +
+          "aucun compte ne sera activé avec cette adresse.",
+      }),
+      text:
+        `Bonjour${nom ? ` ${nom}` : ""},\n\n` +
+        `Confirmez votre adresse en ouvrant ce lien sous 24 heures : ${lien}\n\n` +
+        `Si vous n'avez pas créé de compte, ignorez ce message.`,
+    });
+  }
 }

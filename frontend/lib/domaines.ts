@@ -81,8 +81,12 @@ const CHEMINS: Partial<Record<EspaceHeberge, string[]>> = {
   pro: ['/store/new'],
 };
 
-/** Pages accessibles depuis tous les domaines. */
-const SEGMENTS_COMMUNS = ['login'];
+/**
+ * Pages accessibles depuis tous les domaines : celles du compte lui-même.
+ * Un lien de réinitialisation doit fonctionner quel que soit le domaine
+ * depuis lequel la demande a été faite.
+ */
+const SEGMENTS_COMMUNS = ['login', 'mot-de-passe-oublie', 'reinitialiser', 'verifier-email'];
 
 /** Accueil propre à chaque domaine. */
 export const ACCUEIL: Record<EspaceHeberge, string> = {

@@ -71,11 +71,13 @@ continue.
 | `outils.mjs` | Tuyauterie commune : contrôles, appels HTTP, accès base |
 | `reinitialiser.mjs` | Vidage de la base, avec son garde-fou |
 | `tout.mjs` | Enchaîne les suites et rend un bilan unique |
+| `boite-aux-lettres.mjs` | Serveur SMTP minimal, pour lire les courriels envoyés |
 | `audit-commercant.mjs` | Chaque fonctionnalité de l'espace commerçant |
 | `audit-superowner.mjs` | Chaque fonctionnalité de l'espace superowner, et ses effets réels |
 | `verif-admin-final.mjs` | Journal d'accès, annonces, tickets, notifications |
 | `verif-admin-motdepasse.mjs` | Création d'administrateur et réparation des mots de passe en clair |
 | `verif-client.mjs` | Historique, suivi de livraison, avis, favoris |
+| `verif-compte-email.mjs` | Mot de passe oublié et confirmation d'adresse, courriel compris |
 | `verif-disponibilite.mjs` | Bouton disponible / épuisé |
 | `verif-formules.mjs` | Formules, quotas de boutiques, service d'adresses |
 | `verif-livreur-admin.mjs` | Espace livreur et liste des boutiques côté administration |
