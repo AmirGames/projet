@@ -9,6 +9,55 @@ import { db } from '../services/db';
 // un salon nominatif, ce qui permet de la pousser au bon destinataire.
 const salonUtilisateur = (email: string) => `user-${email.toLowerCase()}`;
 
+/** Salon public d'une boutique : disponibilité des produits, horaires. */
+const salonBoutique = (storeId: string) => `store-${storeId}`;
+
+/**
+ * Qui a le droit de suivre une commande en direct.
+ *
+ * Le client qui l'a passée, l'équipe de la boutique, le livreur qui
+ * l'apporte, et la plateforme. Personne d'autre.
+ */
+async function peutSuivreLaCommande(socket: AuthenticatedSocket, orderId: string) {
+  if (!socket.userId) return false;
+
+  const commande = await db.order.findUnique({
+    where: { id: orderId },
+    select: {
+      customerEmail: true,
+      store: { select: { orgId: true } },
+      delivery: { select: { driver: { select: { userId: true } } } },
+    },
+  });
+
+  if (!commande) return false;
+
+  const utilisateur = await db.user.findUnique({
+    where: { id: socket.userId },
+    select: { email: true, isSuperOwner: true, isSystemAdmin: true },
+  });
+
+  if (!utilisateur) return false;
+  if (utilisateur.isSuperOwner || utilisateur.isSystemAdmin) return true;
+
+  if (
+    commande.customerEmail &&
+    utilisateur.email.toLowerCase() === commande.customerEmail.toLowerCase()
+  ) {
+    return true;
+  }
+
+  if (commande.delivery?.driver?.userId === socket.userId) return true;
+
+  // L'équipe de la boutique suit les commandes de son organisation.
+  const appartenance = await db.membership.findFirst({
+    where: { userId: socket.userId, orgId: commande.store.orgId },
+    select: { id: true },
+  });
+
+  return Boolean(appartenance);
+}
+
 export let io: SocketIOServer;
 
 export function initializeSocket(httpServer: HTTPServer) {
@@ -22,8 +71,13 @@ export function initializeSocket(httpServer: HTTPServer) {
 
   io.use((socket: AuthenticatedSocket, next) => {
     const token = socket.handshake.auth.token;
+
+    // Une connexion sans jeton est acceptée, mais reste anonyme : la vitrine
+    // est publique, et exiger un compte pour voir un plat passer en épuisé
+    // priverait de mise à jour la plupart des visiteurs. Ce qu'un anonyme
+    // peut suivre est décidé salon par salon, plus bas.
     if (!token) {
-      return next(new Error('Authentication token required'));
+      return next();
     }
 
     try {
@@ -33,6 +87,7 @@ export function initializeSocket(httpServer: HTTPServer) {
       socket.organizationId = decoded.orgId;
       next();
     } catch (err) {
+      // Un jeton présent mais invalide est une anomalie, pas un visiteur.
       next(new Error('Invalid token'));
     }
   });
@@ -40,33 +95,39 @@ export function initializeSocket(httpServer: HTTPServer) {
   io.on('connection', async (socket: AuthenticatedSocket) => {
     logger.info('User connected', { userId: socket.userId, socketId: socket.id });
 
-    // Le jeton ne porte que l'identifiant : on résout l'e-mail une fois, à la
-    // connexion, plutôt qu'à chaque notification envoyée.
-    try {
-      const utilisateur = await db.user.findUnique({
-        where: { id: socket.userId as string },
-        select: { email: true },
-      });
+    // Le menu d'une boutique est public : n'importe qui peut suivre ses
+    // changements de disponibilité.
+    socket.on('join-store', (storeId: string) => {
+      if (typeof storeId !== 'string' || !storeId) return;
+      socket.join(salonBoutique(storeId));
+    });
 
-      if (utilisateur) {
-        socket.data.email = utilisateur.email;
-        socket.join(salonUtilisateur(utilisateur.email));
+    socket.on('leave-store', (storeId: string) => {
+      if (typeof storeId !== 'string' || !storeId) return;
+      socket.leave(salonBoutique(storeId));
+    });
+
+    socket.on('join-order', async (orderId: string) => {
+      // Une commande porte un nom, un téléphone, une adresse et la position
+      // du livreur. N'importe quel connecté pouvait suivre celle d'un
+      // inconnu : il suffisait d'en deviner l'identifiant.
+      if (typeof orderId !== 'string' || !orderId) return;
+
+      if (!(await peutSuivreLaCommande(socket, orderId))) {
+        logger.warn('Suivi de commande refusé', { orderId, userId: socket.userId });
+        // « error » est un nom réservé côté client : un refus envoyé sous ce
+        // nom n'arrive pas de façon fiable.
+        socket.emit('acces-refuse', { salon: 'order', code: 'FORBIDDEN', orderId });
+        return;
       }
-    } catch (err) {
-      logger.error('Impossible de rattacher la connexion à un utilisateur', {
-        socketId: socket.id,
-        error: err instanceof Error ? err.message : err,
-      });
-    }
 
-    socket.on('join-order', (orderId: string) => {
       socket.join(`order-${orderId}`);
       logger.info('User joined order room', { orderId, socketId: socket.id });
     });
 
     socket.on('leave-order', (orderId: string) => {
+      if (typeof orderId !== 'string' || !orderId) return;
       socket.leave(`order-${orderId}`);
-      logger.info('User left order room', { orderId, socketId: socket.id });
     });
 
     socket.on('disconnect', () => {
@@ -76,6 +137,32 @@ export function initializeSocket(httpServer: HTTPServer) {
     socket.on('error', (error) => {
       logger.error('Socket error', { error, userId: socket.userId });
     });
+
+    // Le jeton ne porte que l'identifiant : on résout l'e-mail une fois, à la
+    // connexion, plutôt qu'à chaque notification envoyée.
+    //
+    // Après l'enregistrement des écouteurs, et non avant : attendre la base
+    // ici laissait passer les premiers messages du client — celui-ci émet
+    // dès « connect », et un événement sans écouteur est perdu, pas mis en
+    // attente. Le suivi de commande ratait ainsi son salon par intermittence.
+    if (socket.userId) {
+      try {
+        const utilisateur = await db.user.findUnique({
+          where: { id: socket.userId },
+          select: { email: true },
+        });
+
+        if (utilisateur) {
+          socket.data.email = utilisateur.email;
+          socket.join(salonUtilisateur(utilisateur.email));
+        }
+      } catch (err) {
+        logger.error('Impossible de rattacher la connexion à un utilisateur', {
+          socketId: socket.id,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
+    }
   });
 
   return io;
@@ -110,6 +197,18 @@ export function emitDeliveryUpdate(orderId: string, data: any) {
     timestamp: new Date().toISOString(),
     ...data,
   });
+}
+
+/**
+ * Pousse un événement aux visiteurs d'une boutique.
+ *
+ * Sert aux informations publiques du menu : un plat qui passe en épuisé doit
+ * disparaître du panier possible sans que le client ait à recharger.
+ */
+export function emitStoreEvent(storeId: string, evenement: string, donnees: unknown) {
+  if (!io || !storeId) return;
+
+  io.to(salonBoutique(storeId)).emit(evenement, donnees);
 }
 
 /**

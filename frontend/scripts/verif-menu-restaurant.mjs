@@ -140,6 +140,53 @@ check(
   JSON.stringify(pizzas)
 );
 
+titre('En direct, sans recharger');
+// On met d'abord la Margherita au panier, puis on la passe en épuisé sans
+// toucher au navigateur : le client doit le voir immédiatement.
+const boutonMargherita = page
+  .locator('div')
+  .filter({ hasText: /^Margherita/ })
+  .last()
+  .locator('button');
+
+await boutonMargherita.first().click().catch(() => undefined);
+await page.waitForTimeout(800);
+
+await appeler(`/api/products/${margherita}/availability`, {
+  method: 'PATCH',
+  jeton: T,
+  corps: { isAvailable: false },
+});
+
+// Aucun rechargement : seul le direct peut mettre la page à jour.
+await page.waitForTimeout(3000);
+
+const enDirect = await page.locator('body').innerText();
+check(
+  'l\u2019étiquette apparaît sans recharger',
+  /Épuisé/i.test(enDirect),
+  enDirect.slice(0, 400)
+);
+check(
+  'le bouton se désactive sans recharger',
+  (await page.locator('button:disabled').count()) >= 1,
+  `n=${await page.locator('button:disabled').count()}`
+);
+
+titre('Retour en disponible, en direct');
+await appeler(`/api/products/${margherita}/availability`, {
+  method: 'PATCH',
+  jeton: T,
+  corps: { isAvailable: true },
+});
+await page.waitForTimeout(3000);
+
+check(
+  'l\u2019étiquette disparaît sans recharger',
+  !/Épuisé/i.test(await page.locator('body').innerText()),
+  (await page.locator('body').innerText()).slice(0, 400)
+);
+
 titre('Un plat passé en épuisé');
 await appeler(`/api/products/${margherita}/availability`, {
   method: 'PATCH',

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Star, MapPin, Heart, Plus, Minus, ShoppingCart } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useStoreLive } from '@/lib/use-store-live';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -62,6 +63,30 @@ export default function RestaurantDetail() {
   useEffect(() => {
     loadRestaurantData();
   }, [storeId]);
+
+  // Le menu change pendant que le client le lit.
+  useStoreLive(storeId, ({ productId, isAvailable }) => {
+    setMenu((precedent) =>
+      Object.fromEntries(
+        Object.entries(precedent).map(([categorie, produits]) => [
+          categorie,
+          produits.map((produit) =>
+            produit.id === productId ? { ...produit, isAvailable } : produit
+          ),
+        ])
+      )
+    );
+
+    // La fiche ouverte doit refléter le changement, sinon son bouton
+    // « Ajouter » reste actif sur un plat épuisé.
+    setSelectedProduct((produit) =>
+      produit && produit.id === productId ? { ...produit, isAvailable } : produit
+    );
+
+    if (!isAvailable) {
+      setCart((panier) => panier.filter((ligne) => ligne.productId !== productId));
+    }
+  });
 
   const loadRestaurantData = async () => {
     try {

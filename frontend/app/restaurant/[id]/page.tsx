@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { MapPin, Clock, Star, ShoppingCart, Minus, Plus, ArrowLeft } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useStoreLive } from '@/lib/use-store-live';
 
 interface Product {
   id: string;
@@ -45,6 +46,39 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
     fetchRestaurant();
     loadCart();
   }, [params.id]);
+
+  // Le menu évolue pendant que le client le lit : un plat peut passer en
+  // épuisé à tout moment.
+  useStoreLive(params.id as string, ({ productId, isAvailable }) => {
+    setRestaurant((precedent) =>
+      precedent
+        ? {
+            ...precedent,
+            products: precedent.products.map((produit) =>
+              produit.id === productId ? { ...produit, isAvailable } : produit
+            ),
+          }
+        : precedent
+    );
+
+    // Un plat devenu indisponible ne doit pas rester dans le panier — ni dans
+    // celui enregistré, sinon il revient au prochain chargement.
+    if (!isAvailable) {
+      setCart((panier) => {
+        const sansLeProduit = panier.filter((ligne) => ligne.id !== productId);
+
+        if (sansLeProduit.length !== panier.length) {
+          try {
+            localStorage.setItem('cart', JSON.stringify(sansLeProduit));
+          } catch {
+            // Stockage refusé : le panier en mémoire suffit pour cette visite.
+          }
+        }
+
+        return sansLeProduit;
+      });
+    }
+  });
 
   const fetchRestaurant = async () => {
     try {

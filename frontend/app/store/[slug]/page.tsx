@@ -6,6 +6,7 @@ import { ShoppingCart, MapPin, Phone, Clock, Star, AlertCircle, Check } from 'lu
 
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { useStoreLive } from '@/lib/use-store-live';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -75,6 +76,24 @@ export default function StorefrontPage() {
       fetchStoreData();
     }
   }, [slug]);
+
+  // Le menu change pendant que le client compose son panier.
+  useStoreLive(store?.id, ({ productId, isAvailable }) => {
+    setCategories((precedentes) =>
+      precedentes.map((categorie) => ({
+        ...categorie,
+        products: categorie.products.map((produit) =>
+          produit.id === productId ? { ...produit, isAvailable } : produit
+        ),
+      }))
+    );
+
+    // Laisser un plat épuisé dans le panier ferait échouer la commande au
+    // dernier moment, après la saisie de l'adresse.
+    if (!isAvailable) {
+      setCart((panier) => panier.filter((ligne) => ligne.product.id !== productId));
+    }
+  });
 
   const fetchStoreData = async () => {
     try {

@@ -5,6 +5,8 @@ import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, checkOrgStatus } from "../middleware/auth";
 import { logger } from "../config/logger";
 
+import { emitStoreEvent } from "../config/socket";
+
 const router = Router();
 
 const createProductSchema = z.object({
@@ -209,6 +211,16 @@ router.patch("/:id/availability", authMiddleware, checkOrgStatus, async (req: Re
     const product = await ProductService.update(id, { isAvailable: body.isAvailable } as any);
 
     logger.info("Product availability changed", { id, isAvailable: body.isAvailable });
+
+    // Les clients en train de regarder ce menu voient le changement tout de
+    // suite : sans cela, quelqu'un pouvait mettre au panier un plat épuisé
+    // depuis dix minutes et ne l'apprendre qu'au moment de commander.
+    emitStoreEvent(existant.storeId, "produit-disponibilite", {
+      productId: id,
+      storeId: existant.storeId,
+      name: existant.name,
+      isAvailable: body.isAvailable,
+    });
 
     res.json({
       message: body.isAvailable ? "Produit de nouveau disponible" : "Produit marqué épuisé",
