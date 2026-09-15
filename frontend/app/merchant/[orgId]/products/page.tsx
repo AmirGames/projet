@@ -22,6 +22,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useCurrentStore } from '@/lib/current-store';
 
 import { euro } from '@/lib/format';
+import { DeclinaisonsProduit } from '@/components/DeclinaisonsProduit';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -142,6 +143,10 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability }: an
           </button>
         </div>
       </div>
+
+      {/* Les déclinaisons du plat : « Pâtes 4 fromages » en penne, spaghetti
+          ou tagliatelle. */}
+      <DeclinaisonsProduit productId={product.id} prixDuPlat={Number(product.price)} />
 
       {product.status === 'ACTIVE' && (
         <div className="mt-4 pt-4 border-t border-gray-700 flex items-center gap-3">

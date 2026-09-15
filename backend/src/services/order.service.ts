@@ -2,6 +2,7 @@ import { db } from "./db";
 import { EmailService } from "./email.service";
 import { logger } from "../config/logger";
 import { ApiError } from "../middleware/errorHandler";
+import { VariantService } from "./variant.service";
 
 export interface OrderData {
   storeId: string;
@@ -71,6 +72,21 @@ export class OrderService {
       // mieux vaut un message clair qu'une commande amputée en silence.
       const lignes = data.items || [];
 
+      /**
+       * Les lignes, avec leur prix recalculé.
+       *
+       * Le prix arrivait du navigateur et n'était jamais recoupé : une pizza à
+       * 14 € pouvait être commandée à un centime, et le total avec. Le serveur
+       * le relit du catalogue — ou de la déclinaison choisie.
+       */
+      const lignesTarifees: {
+        productId: string;
+        variantId?: string;
+        quantity: number;
+        price: number;
+        selectedOptions?: Record<string, string>;
+      }[] = [];
+
       if (lignes.length > 0) {
         const produits = await db.product.findMany({
           where: { id: { in: lignes.map((l) => l.productId) } },
@@ -91,8 +107,27 @@ export class OrderService {
               "PRODUCT_UNAVAILABLE"
             );
           }
+
+          if (!Number.isInteger(ligne.quantity) || ligne.quantity < 1) {
+            throw new ApiError(400, "Une quantité doit être un entier positif", "INVALID_QUANTITY");
+          }
+
+          lignesTarifees.push({
+            ...ligne,
+            price: await VariantService.prixDeLaLigne(ligne.productId, ligne.variantId),
+          });
         }
       }
+
+      // Le total suit les lignes, et non ce que le navigateur annonce. Les
+      // frais et taxes restent tels quels : ils se règlent côté boutique.
+      const totalDesLignes = lignesTarifees.reduce(
+        (somme, ligne) => somme + ligne.price * ligne.quantity,
+        0
+      );
+      const totalCalcule = lignesTarifees.length > 0
+        ? Number((totalDesLignes + Number(data.taxAmount || 0) + Number(data.feesAmount || 0)).toFixed(2))
+        : Number(data.totalAmount);
 
       const order = await db.order.create({
         data: {
@@ -107,7 +142,7 @@ export class OrderService {
           deliveryPostal: data.deliveryPostal,
           deliveryLat: data.deliveryLat,
           deliveryLng: data.deliveryLng,
-          totalAmount: data.totalAmount,
+          totalAmount: totalCalcule,
           taxAmount: data.taxAmount || 0,
           feesAmount: data.feesAmount || 0,
           customerId,
@@ -115,7 +150,7 @@ export class OrderService {
           status: "PENDING" as any,
           paymentStatus: "PENDING" as any,
           items: {
-            create: lignes.map((ligne) => ({
+            create: lignesTarifees.map((ligne) => ({
               productId: ligne.productId,
               variantId: ligne.variantId,
               quantity: ligne.quantity,
@@ -206,7 +241,9 @@ export class OrderService {
     orderId: string,
     productId: string,
     quantity: number,
-    price: number,
+    // Conservé pour ne pas casser les appelants, mais ignoré : le prix se lit
+    // dans le catalogue.
+    _prixAnnonce: number,
     variantId?: string,
     selectedOptions?: Record<string, string>
   ) {
@@ -220,20 +257,10 @@ export class OrderService {
       throw new ApiError(400, `« ${product.name} » n'est plus disponible`, "PRODUCT_UNAVAILABLE");
     }
 
-    if (variantId) {
-      const variant = await db.productVariant.findUnique({ where: { id: variantId } });
-
-      // Une variante n'a pas de libellé propre : on nomme le produit parent.
-      if (variant && !variant.isAvailable) {
-        throw new ApiError(
-          400,
-          `Cette déclinaison de « ${product.name} » n'est plus disponible`,
-          "VARIANT_UNAVAILABLE"
-        );
-      }
-    }
-
-    const total = price * quantity;
+    // Le prix vient du catalogue, pas de l'appelant : c'est le même contrôle
+    // que pour une commande entière, et il vaut aussi pour un ajout isolé.
+    const prixReel = await VariantService.prixDeLaLigne(productId, variantId);
+    const total = prixReel * quantity;
 
     const orderItem = await db.orderItem.create({
       data: {
@@ -241,7 +268,7 @@ export class OrderService {
         productId,
         variantId,
         quantity,
-        price,
+        price: prixReel,
         total,
         selectedOptions: selectedOptions || {},
       },

@@ -157,6 +157,31 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
  * vain un plat qu'il commande d'habitude ; le montrer barré lui dit ce qui se
  * passe, et qu'il peut revenir demain.
  */
+/**
+ * Les déclinaisons telles que le client doit les recevoir.
+ *
+ * Elles arrivaient brutes : sans ordre, et sans le prix réellement payé. La
+ * page n'a pas à savoir qu'un prix vide signifie « celui du plat ».
+ */
+function declinaisonsLisibles(produit: any) {
+  const variantes = Array.isArray(produit.variants) ? produit.variants : [];
+
+  return variantes
+    .slice()
+    .sort((a: any, b: any) =>
+      a.displayOrder !== b.displayOrder
+        ? a.displayOrder - b.displayOrder
+        : String(a.label).localeCompare(String(b.label), "fr")
+    )
+    .map((variante: any) => ({
+      id: variante.id,
+      label: variante.label,
+      price: variante.price === null ? null : Number(variante.price),
+      prixEffectif: Number(variante.price ?? produit.price),
+      isAvailable: variante.isAvailable,
+    }));
+}
+
 function regrouperParCategorie(produits: any[]) {
   const categories = new Map<string, { ordre: number; produits: any[] }>();
 
@@ -171,7 +196,12 @@ function regrouperParCategorie(produits: any[]) {
       });
     }
 
-    categories.get(nom)!.produits.push(produit);
+    categories.get(nom)!.produits.push({
+      ...produit,
+      variants: declinaisonsLisibles(produit),
+      // La question posée au client, quand le plat se décline.
+      variantLabel: produit.variantLabel || null,
+    });
   }
 
   const ordonnees = [...categories.entries()].sort((a, b) => {

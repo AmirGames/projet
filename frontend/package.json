@@ -18,7 +18,8 @@
     "verif:creneaux": "node scripts/verif-creneaux-retrait.mjs",
     "verif:formules": "node scripts/verif-formules-pages.mjs",
     "verif:cloche": "node scripts/verif-cloche.mjs",
-    "verif:restreint": "node scripts/verif-compte-restreint.mjs"
+    "verif:restreint": "node scripts/verif-compte-restreint.mjs",
+    "verif:declinaisons": "node scripts/verif-declinaisons.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",

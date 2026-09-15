@@ -373,6 +373,10 @@ model Product {
   displayOrder Int          @default(0)
   status      ProductStatus @default(DRAFT)
 
+  // La question posée au client quand le plat se décline : « Type de pâtes »,
+  // « Taille ». Vide, le plat n'a qu'une forme.
+  variantLabel String?
+
   // Soft delete
   deletedAt   DateTime?
 
@@ -450,8 +454,15 @@ model ProductVariant {
   id          String  @id @default(cuid())
   productId   String
   sku         String
+  // Ce que lit le client : « Penne », « Spaghetti », « Tagliatelle ». Sans
+  // libellé propre, une commande ne pouvait nommer que le plat parent.
+  label       String  @default("")
+  // L'ordre voulu par le commerçant, comme pour les produits.
+  displayOrder Int    @default(0)
   // combination is JSON: { optionId: choiceId }
-  combination Json
+  combination Json    @default("{}")
+  // Vide, la variante est au prix du plat : une déclinaison ne coûte pas
+  // toujours plus cher.
   price       Decimal? @db.Decimal(10, 2)
   stock       Int     @default(0)
   isAvailable Boolean @default(true)

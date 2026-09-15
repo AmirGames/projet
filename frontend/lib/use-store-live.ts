@@ -11,6 +11,21 @@ export interface ChangementDisponibilite {
   isAvailable: boolean;
 }
 
+/** Une déclinaison telle que le serveur la pousse. */
+export interface DeclinaisonEnDirect {
+  id: string;
+  label: string;
+  price: number | null;
+  prixEffectif: number;
+  isAvailable: boolean;
+  displayOrder: number;
+}
+
+export interface ChangementDeclinaisons {
+  productId: string;
+  variantes: DeclinaisonEnDirect[];
+}
+
 /**
  * Suit en direct les changements de menu d'une boutique.
  *
@@ -22,7 +37,8 @@ export interface ChangementDisponibilite {
  */
 export function useStoreLive(
   storeId: string | undefined,
-  surChangement: (changement: ChangementDisponibilite) => void
+  surChangement: (changement: ChangementDisponibilite) => void,
+  surDeclinaisons?: (changement: ChangementDeclinaisons) => void
 ) {
   const [connecte, setConnecte] = useState(false);
 
@@ -30,6 +46,9 @@ export function useStoreLive(
   // sinon il garde la version d'origine et travaille sur un menu périmé.
   const rappel = useRef(surChangement);
   rappel.current = surChangement;
+
+  const rappelDeclinaisons = useRef(surDeclinaisons);
+  rappelDeclinaisons.current = surDeclinaisons;
 
   useEffect(() => {
     if (!storeId) return;
@@ -55,6 +74,13 @@ export function useStoreLive(
 
     socket.on('produit-disponibilite', (donnees: ChangementDisponibilite) => {
       rappel.current(donnees);
+    });
+
+    // Une déclinaison épuisée doit disparaître des choix comme un plat
+    // disparaît du panier : sans cela, le client la retient et la commande
+    // échoue au dernier moment.
+    socket.on('produit-declinaisons', (donnees: ChangementDeclinaisons) => {
+      rappelDeclinaisons.current?.(donnees);
     });
 
     return () => {

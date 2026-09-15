@@ -40,6 +40,7 @@ import notificationsApiRouter from "./routes/notifications-api";
 import paymentMethodsApiRouter from "./routes/payment-methods-api";
 import supportRouter from "./routes/support";
 import plansRouter from "./routes/plans";
+import variantRouter from "./routes/variant";
 import addressRouter from "./routes/address";
 
 export function createApp(): Express {
@@ -102,6 +103,9 @@ export function createApp(): Express {
   app.use("/api/delivery-zones", deliveryZoneRouter);
   app.use("/api/staff", staffRouter);
   app.use("/api/reports", reportsRouter);
+  // Monté avant le routeur des produits : ses chemins sont plus précis et
+  // doivent être essayés en premier.
+  app.use("/api/products", variantRouter);
   app.use("/api/products", productRouter);
   app.use("/api/categories", categoryRouter);
   app.use("/api/orders", orderRouter);

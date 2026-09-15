@@ -23,6 +23,15 @@ interface Store {
   createdAt: string;
 }
 
+/** Une déclinaison du plat : penne, spaghetti, tagliatelle. */
+interface Declinaison {
+  id: string;
+  label: string;
+  /** Ce que le client paiera réellement, déclinaison ou plat. */
+  prixEffectif: number;
+  isAvailable: boolean;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -30,6 +39,9 @@ interface Product {
   price: number;
   isAvailable: boolean;
   images: Array<{ url: string }>;
+  /** La question posée : « Type de pâtes », « Taille ». */
+  variantLabel?: string | null;
+  variants?: Declinaison[];
 }
 
 interface Category {
@@ -50,7 +62,11 @@ export default function StorefrontPage() {
   const [store, setStore] = useState<Store | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
+  const [cart, setCart] = useState<
+    { product: Product; quantity: number; variante?: Declinaison }[]
+  >([]);
+  // La déclinaison retenue pour chaque plat, avant l'ajout au panier.
+  const [choix, setChoix] = useState<Record<string, string>>({});
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   // Créneaux réellement proposables, déduits des horaires de la boutique.
@@ -97,6 +113,38 @@ export default function StorefrontPage() {
     if (!isAvailable) {
       setCart((panier) => panier.filter((ligne) => ligne.product.id !== productId));
     }
+  },
+  // Une déclinaison épuisée doit sortir des choix et du panier.
+  ({ productId, variantes }) => {
+    const lues = variantes.map((variante) => ({
+      id: variante.id,
+      label: variante.label,
+      prixEffectif: variante.prixEffectif,
+      isAvailable: variante.isAvailable,
+    }));
+
+    setCategories((precedentes) =>
+      precedentes.map((categorie) => ({
+        ...categorie,
+        products: categorie.products.map((produit) =>
+          produit.id === productId ? { ...produit, variants: lues } : produit
+        ),
+      }))
+    );
+
+    const indisponibles = new Set(
+      lues.filter((variante) => !variante.isAvailable).map((variante) => variante.id)
+    );
+
+    setChoix((precedent) =>
+      indisponibles.has(precedent[productId] || '')
+        ? Object.fromEntries(Object.entries(precedent).filter(([cle]) => cle !== productId))
+        : precedent
+    );
+
+    setCart((panier) =>
+      panier.filter((ligne) => !(ligne.variante && indisponibles.has(ligne.variante.id)))
+    );
   });
 
   // Un champ d'heure libre laissait choisir 9 h alors que la boutique ouvre à
@@ -144,6 +192,13 @@ export default function StorefrontPage() {
                 description: produit.description || '',
                 price: Number(produit.price || 0),
                 isAvailable: produit.isAvailable !== false,
+                variantLabel: produit.variantLabel || null,
+                variants: (produit.variants || []).map((variante: any) => ({
+                  id: variante.id,
+                  label: variante.label,
+                  prixEffectif: Number(variante.prixEffectif ?? produit.price),
+                  isAvailable: variante.isAvailable !== false,
+                })),
                 images: (produit.media || produit.images || []).map((image: any) => ({
                   url: image.url,
                 })),
@@ -159,39 +214,66 @@ export default function StorefrontPage() {
     }
   };
 
+  /**
+   * La clé d'une ligne de panier.
+   *
+   * Indexer par produit ferait de « penne » et « spaghetti » du même plat une
+   * seule ligne : le client en commanderait deux sans savoir lesquelles.
+   */
+  const cleDeLigne = (productId: string, variantId?: string) =>
+    variantId ? `${productId}:${variantId}` : productId;
+
   const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id);
+    const declinaisons = product.variants || [];
+    const choisie = declinaisons.find((v) => v.id === choix[product.id]);
+
+    // Un plat qui se décline attend un choix : le serveur refuserait la
+    // commande, autant le dire avant.
+    if (declinaisons.length > 0 && (!choisie || !choisie.isAvailable)) return;
+
+    const cle = cleDeLigne(product.id, choisie?.id);
+
+    setCart((prev) => {
+      const existing = prev.find(
+        (item) => cleDeLigne(item.product.id, item.variante?.id) === cle
+      );
+
       if (existing) {
-        return prev.map(item =>
-          item.product.id === product.id
+        return prev.map((item) =>
+          cleDeLigne(item.product.id, item.variante?.id) === cle
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      return [...prev, { product, quantity: 1 }];
+
+      return [...prev, { product, quantity: 1, variante: choisie }];
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(item => item.product.id !== productId));
+  const removeFromCart = (cle: string) => {
+    setCart((prev) =>
+      prev.filter((item) => cleDeLigne(item.product.id, item.variante?.id) !== cle)
+    );
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (cle: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
-    } else {
-      setCart(prev =>
-        prev.map(item =>
-          item.product.id === productId
-            ? { ...item, quantity }
-            : item
-        )
-      );
+      removeFromCart(cle);
+      return;
     }
+
+    setCart((prev) =>
+      prev.map((item) =>
+        cleDeLigne(item.product.id, item.variante?.id) === cle ? { ...item, quantity } : item
+      )
+    );
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + Number(item.product.price || 0) * item.quantity, 0);
+  /** Le prix d'une ligne : celui de la déclinaison retenue, sinon du plat. */
+  const prixDeLaLigne = (item: { product: Product; variante?: Declinaison }) =>
+    Number(item.variante?.prixEffectif ?? item.product.price ?? 0);
+
+  const cartTotal = cart.reduce((sum, item) => sum + prixDeLaLigne(item) * item.quantity, 0);
   const cartServiceFee = cartTotal * 0.1;
   const cartGrandTotal = cartTotal + cartServiceFee;
 
@@ -247,7 +329,9 @@ export default function StorefrontPage() {
         items: cart.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
-          price: Number(item.product.price),
+          price: Number(item.variante?.prixEffectif ?? item.product.price),
+          // La cuisine a besoin de savoir laquelle préparer.
+          ...(item.variante ? { variantId: item.variante.id } : {}),
         })),
       };
 
@@ -398,26 +482,101 @@ export default function StorefrontPage() {
                           {/* Price & Stock */}
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-2xl font-bold text-red-400">{euro(product.price)}</p>
+                              <p className="text-2xl font-bold text-red-400">
+                                {euro(
+                                  (product.variants || []).find((v) => v.id === choix[product.id])
+                                    ?.prixEffectif ?? product.price
+                                )}
+                              </p>
                               <p className="text-xs text-gray-500">
                                 {product.isAvailable ? 'Disponible' : 'Épuisé'}
                               </p>
                             </div>
                           </div>
 
+                          {/* Les déclinaisons : « Type de pâtes », « Taille »… */}
+                          {(product.variants || []).length > 0 && (
+                            <div>
+                              {product.variantLabel && (
+                                <p className="text-xs text-gray-400 mb-1.5">{product.variantLabel}</p>
+                              )}
+
+                              <div
+                                role="radiogroup"
+                                aria-label={product.variantLabel || `Déclinaisons de ${product.name}`}
+                                className="flex flex-wrap gap-2"
+                              >
+                                {(product.variants || []).map((declinaison) => {
+                                  const retenue = choix[product.id] === declinaison.id;
+                                  const indisponible =
+                                    !declinaison.isAvailable || !product.isAvailable;
+
+                                  return (
+                                    <button
+                                      key={declinaison.id}
+                                      type="button"
+                                      role="radio"
+                                      aria-checked={retenue}
+                                      disabled={indisponible}
+                                      onClick={() =>
+                                        setChoix((precedent) => ({
+                                          ...precedent,
+                                          [product.id]: declinaison.id,
+                                        }))
+                                      }
+                                      title={
+                                        indisponible
+                                          ? `${declinaison.label} n'est plus disponible`
+                                          : undefined
+                                      }
+                                      className={`px-3 py-1 rounded-full border text-sm transition ${
+                                        indisponible
+                                          ? 'border-gray-700 text-gray-600 line-through cursor-not-allowed'
+                                          : retenue
+                                            ? 'border-red-500 bg-red-500/20 text-red-300'
+                                            : 'border-gray-600 text-gray-300 hover:border-gray-400'
+                                      }`}
+                                    >
+                                      {declinaison.label}
+                                      {declinaison.prixEffectif !== product.price && (
+                                        <span className="text-xs opacity-70">
+                                          {' '}
+                                          {euro(declinaison.prixEffectif)}
+                                        </span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
                           {/* Add to Cart Button */}
-                          <button
-                            onClick={() => addToCart(product)}
-                            disabled={!product.isAvailable}
-                            className={`w-full py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors ${
-                              !product.isAvailable
-                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                : 'bg-red-600 hover:bg-red-700 text-white'
-                            }`}
-                          >
-                            <ShoppingCart size={18} />
-                            Ajouter au panier
-                          </button>
+                          {(() => {
+                            const declinaisons = product.variants || [];
+                            const choisie = declinaisons.find((v) => v.id === choix[product.id]);
+                            const bloque =
+                              !product.isAvailable ||
+                              (declinaisons.length > 0 && (!choisie || !choisie.isAvailable));
+
+                            return (
+                              <button
+                                onClick={() => addToCart(product)}
+                                disabled={bloque}
+                                aria-label={`Ajouter ${product.name} au panier`}
+                                className={`w-full py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors ${
+                                  bloque
+                                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                    : 'bg-red-600 hover:bg-red-700 text-white'
+                                }`}
+                              >
+                                <ShoppingCart size={18} />
+                                {declinaisons.length > 0 && !choisie
+                                  ? `Choisissez : ${product.variantLabel || 'une option'}`
+                                  : 'Ajouter au panier'}
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))}
@@ -438,35 +597,48 @@ export default function StorefrontPage() {
             ) : (
               <>
                 <div className="space-y-4 mb-6">
-                  {cart.map(item => (
-                    <div key={item.product.id} className="bg-gray-700 rounded-lg p-4 space-y-2">
-                      <h3 className="font-semibold">{item.product.name}</h3>
-                      <div className="flex items-center justify-between">
-                        <p className="text-red-400">{euro(item.product.price)}</p>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                            className="w-6 h-6 bg-gray-600 hover:bg-gray-500 rounded text-sm"
-                          >
-                            −
-                          </button>
-                          <span className="w-8 text-center">{item.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                            className="w-6 h-6 bg-gray-600 hover:bg-gray-500 rounded text-sm"
-                          >
-                            +
-                          </button>
+                  {cart.map((item) => {
+                    const cle = cleDeLigne(item.product.id, item.variante?.id);
+
+                    return (
+                      <div key={cle} className="bg-gray-700 rounded-lg p-4 space-y-2">
+                        <h3 className="font-semibold">
+                          {item.product.name}
+                          {/* Sans le nom de la déclinaison, deux lignes du même
+                              plat seraient indistinguables. */}
+                          {item.variante && (
+                            <span className="text-gray-400"> — {item.variante.label}</span>
+                          )}
+                        </h3>
+                        <div className="flex items-center justify-between">
+                          <p className="text-red-400">{euro(prixDeLaLigne(item))}</p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => updateQuantity(cle, item.quantity - 1)}
+                              aria-label={`Retirer un ${item.product.name}`}
+                              className="w-6 h-6 bg-gray-600 hover:bg-gray-500 rounded text-sm"
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center">{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(cle, item.quantity + 1)}
+                              aria-label={`Ajouter un ${item.product.name}`}
+                              className="w-6 h-6 bg-gray-600 hover:bg-gray-500 rounded text-sm"
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
+                        <button
+                          onClick={() => removeFromCart(cle)}
+                          className="text-xs text-red-400 hover:text-red-300 w-full text-left"
+                        >
+                          Supprimer
+                        </button>
                       </div>
-                      <button
-                        onClick={() => removeFromCart(item.product.id)}
-                        className="text-xs text-red-400 hover:text-red-300 w-full text-left"
-                      >
-                        Supprimer
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Cart Summary */}
