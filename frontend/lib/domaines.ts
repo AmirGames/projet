@@ -1,72 +1,122 @@
 /**
- * Répartition des pages entre les deux domaines du site.
+ * Répartition des pages entre les domaines du site.
  *
- * Un même code sert deux publics qui n'ont rien à faire l'un chez l'autre :
+ * Un même code sert trois publics qui n'ont rien à faire les uns chez les
+ * autres :
  *   - le domaine professionnel (commercant.monsite.fr) : commerçants,
- *     livreurs, administration et superowner ;
+ *     administration et superowner ;
+ *   - le domaine livreur (livreur.monsite.fr) : les livreurs de la
+ *     plateforme, avec leur propre panneau ;
  *   - le domaine public (monsite.fr) : la vitrine, les boutiques et les
  *     commandes des clients.
  *
- * Séparer les deux donne des sessions cloisonnées (chaque domaine a son propre
- * stockage navigateur, un client et un commerçant ne se marchent plus dessus)
- * et laisse l'espace professionnel hors des moteurs de recherche.
+ * Séparer les domaines donne des sessions cloisonnées (chaque domaine a son
+ * propre stockage navigateur, un client et un commerçant ne se marchent plus
+ * dessus) et laisse les espaces professionnels hors des moteurs de recherche.
  *
- * Tant que les deux domaines ne sont pas renseignés, la répartition est
- * inactive et le site fonctionne comme avant sur un domaine unique.
+ * Chaque domaine est facultatif et se configure indépendamment : tant que le
+ * domaine public et au moins un espace professionnel ne sont pas renseignés,
+ * la répartition est inactive et le site fonctionne comme avant sur un
+ * domaine unique.
  */
 
-export type Espace = 'pro' | 'public' | 'commun';
+export type Espace = 'pro' | 'livreur' | 'public' | 'commun';
 
-export const DOMAINE_PRO = (process.env.NEXT_PUBLIC_DOMAINE_PRO || '').trim().toLowerCase();
-export const DOMAINE_PUBLIC = (process.env.NEXT_PUBLIC_DOMAINE_PUBLIC || '').trim().toLowerCase();
+/** Un espace qui possède son propre domaine. */
+export type EspaceHeberge = 'pro' | 'livreur' | 'public';
 
-/** La séparation ne s'applique que si les deux domaines sont connus. */
-export const CLOISONNEMENT_ACTIF = Boolean(DOMAINE_PRO && DOMAINE_PUBLIC);
+const lire = (valeur: string | undefined) => (valeur || '').trim().toLowerCase();
 
-/** Premier segment des pages réservées aux professionnels. */
-const SEGMENTS_PRO = new Set([
-  'merchant',
-  'superowner',
-  'super-admin',
-  'admin',
-  'dashboard',
-  'driver',
-  'signup', // inscription commerçant : elle crée une organisation
-]);
+export const DOMAINE_PRO = lire(process.env.NEXT_PUBLIC_DOMAINE_PRO);
+export const DOMAINE_PUBLIC = lire(process.env.NEXT_PUBLIC_DOMAINE_PUBLIC);
+export const DOMAINE_LIVREUR = lire(process.env.NEXT_PUBLIC_DOMAINE_LIVREUR);
 
-/** Premier segment des pages destinées aux clients. */
-const SEGMENTS_PUBLIC = new Set([
-  'client',
-  'store',
-  'restaurant',
-  'restaurants',
-  'checkout',
-  'payment',
-  'order-confirmation',
-  'track',
-]);
+export const DOMAINES: Record<EspaceHeberge, string> = {
+  pro: DOMAINE_PRO,
+  livreur: DOMAINE_LIVREUR,
+  public: DOMAINE_PUBLIC,
+};
+
+/**
+ * La séparation demande le domaine public et au moins un espace
+ * professionnel : sans point de comparaison, il n'y a rien à répartir.
+ */
+export const CLOISONNEMENT_ACTIF = Boolean(DOMAINE_PUBLIC && (DOMAINE_PRO || DOMAINE_LIVREUR));
+
+/**
+ * Premier segment des pages de chaque espace.
+ *
+ * Une page dont l'espace n'a pas de domaine configuré reste servie partout :
+ * activer le domaine livreur seul ne doit pas rendre l'administration
+ * injoignable.
+ */
+const SEGMENTS: Record<EspaceHeberge, string[]> = {
+  pro: [
+    'merchant',
+    'superowner',
+    'super-admin',
+    'admin',
+    'dashboard',
+    'signup', // inscription commerçant : elle crée une organisation
+  ],
+  livreur: ['driver'],
+  public: [
+    'client',
+    'store',
+    'restaurant',
+    'restaurants',
+    'checkout',
+    'payment',
+    'order-confirmation',
+    'track',
+  ],
+};
 
 /**
  * Exceptions : des pages professionnelles rangées sous un segment public.
  * La création de boutique vit sous /store alors qu'elle appartient au
  * commerçant.
  */
-const CHEMINS_PRO = ['/store/new'];
+const CHEMINS: Partial<Record<EspaceHeberge, string[]>> = {
+  pro: ['/store/new'],
+};
 
-/** Pages accessibles depuis les deux domaines. */
-const SEGMENTS_COMMUNS = new Set(['login']);
+/** Pages accessibles depuis tous les domaines. */
+const SEGMENTS_COMMUNS = ['login'];
+
+/** Accueil propre à chaque domaine. */
+export const ACCUEIL: Record<EspaceHeberge, string> = {
+  // La page d'accueil actuelle présente l'offre aux commerçants.
+  pro: '/',
+  // Le livreur arrive sur son tableau de bord, qui le renvoie à la connexion
+  // s'il n'est pas identifié.
+  livreur: '/driver',
+  // Côté public, la liste des commerces qui livrent chez le visiteur.
+  public: '/client',
+};
+
+/** Un espace n'est cloisonné que si son domaine est renseigné. */
+export function espaceHeberge(espace: EspaceHeberge): boolean {
+  return Boolean(DOMAINES[espace]);
+}
 
 /** À quel espace appartient une page. */
 export function espaceDuChemin(chemin: string): Espace {
-  if (CHEMINS_PRO.some((prefixe) => chemin === prefixe || chemin.startsWith(`${prefixe}/`))) {
-    return 'pro';
-  }
-
   const segment = chemin.split('/')[1] || '';
 
-  if (SEGMENTS_COMMUNS.has(segment)) return 'commun';
-  if (SEGMENTS_PRO.has(segment)) return 'pro';
-  if (SEGMENTS_PUBLIC.has(segment)) return 'public';
+  if (SEGMENTS_COMMUNS.includes(segment)) return 'commun';
+
+  for (const espace of ['pro', 'livreur', 'public'] as EspaceHeberge[]) {
+    const exceptions = CHEMINS[espace] || [];
+
+    if (exceptions.some((prefixe) => chemin === prefixe || chemin.startsWith(`${prefixe}/`))) {
+      return espace;
+    }
+  }
+
+  for (const espace of ['pro', 'livreur', 'public'] as EspaceHeberge[]) {
+    if (SEGMENTS[espace].includes(segment)) return espace;
+  }
 
   // Une page inconnue reste commune : mieux vaut l'afficher que renvoyer le
   // visiteur sur un autre domaine par excès de zèle.
@@ -74,14 +124,15 @@ export function espaceDuChemin(chemin: string): Espace {
 }
 
 /** L'espace desservi par un nom d'hôte, ou null s'il n'est pas reconnu. */
-export function espaceDuDomaine(hote: string): 'pro' | 'public' | null {
+export function espaceDuDomaine(hote: string): EspaceHeberge | null {
   if (!CLOISONNEMENT_ACTIF) return null;
 
   // Le port ne fait pas partie du domaine ; en développement il est toujours là.
   const domaine = hote.split(':')[0].toLowerCase();
 
-  if (domaine === DOMAINE_PRO) return 'pro';
-  if (domaine === DOMAINE_PUBLIC) return 'public';
+  for (const espace of ['pro', 'livreur', 'public'] as EspaceHeberge[]) {
+    if (DOMAINES[espace] && DOMAINES[espace] === domaine) return espace;
+  }
 
   // localhost et les adresses IP continuent de tout servir : le mode
   // « domaine unique » reste disponible pour le développement.
@@ -90,15 +141,14 @@ export function espaceDuDomaine(hote: string): 'pro' | 'public' | null {
 
 /**
  * Adresse absolue d'une page sur son domaine, pour les liens qui traversent
- * les deux espaces (« Voir la boutique », « Espace commerçant »).
+ * les espaces (« Voir la boutique », « Espace commerçant »).
  *
- * Sans cloisonnement, on renvoie le chemin tel quel : le lien reste relatif et
- * fonctionne sur le domaine unique.
+ * Si l'espace visé n'a pas de domaine propre, on renvoie le chemin tel quel :
+ * le lien reste relatif et fonctionne sur le domaine courant.
  */
-export function lienVersEspace(espace: 'pro' | 'public', chemin: string): string {
-  if (!CLOISONNEMENT_ACTIF) return chemin;
-
-  const domaine = espace === 'pro' ? DOMAINE_PRO : DOMAINE_PUBLIC;
+export function lienVersEspace(espace: EspaceHeberge, chemin: string): string {
+  const domaine = DOMAINES[espace];
+  if (!CLOISONNEMENT_ACTIF || !domaine) return chemin;
 
   // Le port et le protocole du site courant : en développement on reste en
   // http sur 3000, en production en https sans port.

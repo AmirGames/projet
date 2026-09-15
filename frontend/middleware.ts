@@ -1,27 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { espaceDuChemin, espaceDuDomaine, CLOISONNEMENT_ACTIF, DOMAINE_PRO, DOMAINE_PUBLIC } from '@/lib/domaines';
+import {
+  ACCUEIL,
+  CLOISONNEMENT_ACTIF,
+  DOMAINES,
+  EspaceHeberge,
+  espaceDuChemin,
+  espaceDuDomaine,
+  espaceHeberge,
+} from '@/lib/domaines';
 
 /**
  * Aiguille chaque requête vers le bon domaine.
  *
- * Deux domaines, un seul déploiement : le middleware lit l'hôte demandé et
- * décide si la page a le droit d'y être affichée. Une page professionnelle
- * appelée depuis le domaine public est renvoyée vers le domaine
- * professionnel, et inversement — l'adresse visible reste cohérente avec le
- * contenu, et une session client ne croise jamais une session commerçant.
+ * Trois domaines, un seul déploiement : le middleware lit l'hôte demandé et
+ * décide si la page a le droit d'y être affichée. Une page commerçant appelée
+ * depuis le domaine public est renvoyée vers le domaine professionnel, une
+ * page livreur vers le domaine livreur — l'adresse visible reste cohérente
+ * avec le contenu, et une session client ne croise jamais une session
+ * commerçant.
  *
- * Sans les deux domaines configurés, le middleware ne fait rien : le site
- * continue de fonctionner sur un domaine unique, notamment sur localhost.
+ * Sans domaines configurés, le middleware ne fait rien : le site continue de
+ * fonctionner sur un domaine unique, notamment sur localhost.
  */
-
-/** Accueil de chaque domaine. */
-const ACCUEIL: Record<'pro' | 'public', string> = {
-  // La page d'accueil actuelle présente l'offre aux commerçants.
-  pro: '/',
-  // Côté public, c'est la liste des commerces qui livrent chez le visiteur.
-  public: '/client',
-};
 
 export function middleware(requete: NextRequest) {
   if (!CLOISONNEMENT_ACTIF) return NextResponse.next();
@@ -51,10 +52,16 @@ export function middleware(requete: NextRequest) {
     return NextResponse.next();
   }
 
+  // Un espace sans domaine propre reste servi partout : activer le domaine
+  // livreur seul ne doit pas rendre l'administration injoignable.
+  if (!espaceHeberge(espacePage as EspaceHeberge)) {
+    return NextResponse.next();
+  }
+
   // Page demandée sur le mauvais domaine : on la sert depuis le bon, en
   // gardant le chemin et les paramètres.
   const url = requete.nextUrl.clone();
-  url.hostname = espacePage === 'pro' ? DOMAINE_PRO : DOMAINE_PUBLIC;
+  url.hostname = DOMAINES[espacePage as EspaceHeberge];
 
   return NextResponse.redirect(url);
 }
