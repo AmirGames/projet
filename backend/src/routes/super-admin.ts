@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
+import { AuthService } from "../services/auth.service";
 
 const router = Router();
 
@@ -489,11 +490,16 @@ router.post("/admins", authMiddleware, isSystemAdmin, async (req: Request, res: 
       throw new ApiError(400, "Cet email existe déjà", "EMAIL_EXISTS");
     }
 
+    // Le mot de passe était enregistré en clair : la connexion, qui compare
+    // une empreinte bcrypt, échouait systématiquement pour ces comptes — en
+    // plus d'exposer le mot de passe à quiconque lit la base.
+    const passwordHash = await AuthService.hashPassword(body.password);
+
     const newAdmin = await db.user.create({
       data: {
         email: body.email,
         name: body.name,
-        passwordHash: body.password, // In production, should be hashed
+        passwordHash,
         isSystemAdmin: true,
         status: "ACTIVE",
       },
