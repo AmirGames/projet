@@ -56,7 +56,15 @@ for (const href of liens) {
   const r = await page.request.get(SITE + href, { maxRedirects: 0 });
   check(`${href} répond (${r.status()})`, r.status() < 400, `statut ${r.status()}`);
 }
-check('aucun lien vers /merchant/<orgId> nu', !liens.some((h) => /^\/merchant\/[^/]+$/.test(h || '')), liens.join(','));
+// Un /merchant/<orgId> sans page derrière était un lien mort. Les segments
+// statiques de l'espace, eux, sont de vraies pages — et sont vérifiés
+// ci-dessus comme les autres.
+const PAGES_STATIQUES = ['formule', 'orders', 'register'];
+const nus = liens.filter(
+  (h) => /^\/merchant\/[^/]+$/.test(h || '') && !PAGES_STATIQUES.includes(h.split('/')[2])
+);
+check('aucun lien vers /merchant/<orgId> nu', nus.length === 0, liens.join(','));
+check('la formule est atteignable depuis le menu', liens.includes('/merchant/formule'), liens.join(','));
 
 console.log('\n[Choisir une boutique la sélectionne vraiment]');
 await page.locator('aside button', { hasText: 'Boulangerie Gare' }).click();

@@ -52,6 +52,25 @@ enum OrganizationTier {
   PRO
 }
 
+// Le contenu d'une formule — son nom, son prix, ce qu'elle autorise.
+//
+// Les trois codes restent fixes : ils servent de clé à Organization.tier. Ce
+// qui se vend derrière, en revanche, se règle depuis l'espace plateforme :
+// écrit en dur, il fallait modifier le code pour changer un tarif.
+model PlanTier {
+  code         OrganizationTier @id
+  label        String
+  maxStores    Int
+  monthlyPrice Decimal          @default(0) @db.Decimal(10, 2)
+  // Arguments de vente, une phrase par ligne.
+  features     Json             @default("[]")
+  // L'ordre de la grille, et donc la formule proposée à la suivante.
+  displayOrder Int              @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Organization {
   id       String            @id @default(cuid())
   name     String

@@ -15,7 +15,8 @@
     "verif:courses": "node scripts/verif-courses-livreur.mjs",
     "verif:suivi": "node scripts/verif-suivi-client.mjs",
     "verif:menu-client": "node scripts/verif-menu-restaurant.mjs",
-    "verif:creneaux": "node scripts/verif-creneaux-retrait.mjs"
+    "verif:creneaux": "node scripts/verif-creneaux-retrait.mjs",
+    "verif:formules": "node scripts/verif-formules-pages.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",

@@ -173,12 +173,20 @@ export default function MerchantDashboard() {
               <p className="text-sm text-orange-400">
                 Vous avez atteint la limite de votre formule.
               </p>
+              {/* La page des formules dit ce que chacune contient ; le support
+                  ne sert que lorsqu'il n'y a plus de palier au-dessus. */}
               <Link
-                href={orgId ? `/merchant/${orgId}/support` : '/merchant'}
+                href={
+                  quota.upgradeAvailable
+                    ? '/merchant/formule'
+                    : orgId
+                      ? `/merchant/${orgId}/support`
+                      : '/merchant'
+                }
                 className="text-sm text-orange-500 hover:text-orange-400 underline"
               >
                 {quota.upgradeAvailable
-                  ? 'Demander un changement de formule'
+                  ? 'Voir les formules'
                   : 'Demander une boutique supplémentaire'}
               </Link>
             </div>

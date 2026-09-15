@@ -84,6 +84,7 @@ continue.
 | `verif-compte-email.mjs` | Mot de passe oublié et confirmation d'adresse, courriel compris |
 | `verif-disponibilite.mjs` | Bouton disponible / épuisé |
 | `verif-formules.mjs` | Formules, quotas de boutiques, service d'adresses |
+| `verif-grille-formules.mjs` | Grille tarifaire réglable, quotas appliqués, demande de changement |
 | `verif-livreur-admin.mjs` | Espace livreur et liste des boutiques côté administration |
 | `verif-menu-client.mjs` | L'ordre du menu et les plats épuisés, tels que le client les reçoit |
 | `verif-pages-marchand.mjs` | Les routes appelées par les pages commerçant |

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutGrid, LogOut, Menu, MessageCircle, Plus, Store, X } from 'lucide-react';
+import { CreditCard, LayoutGrid, LogOut, Menu, MessageCircle, Plus, Store, X } from 'lucide-react';
 
 import { memoriserBoutique } from '@/lib/current-store';
 
@@ -19,10 +19,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * navigation est celle qui a du sens ici : la liste des boutiques.
  */
 
-const FORMULES: Record<string, { libelle: string; classe: string }> = {
-  FREE: { libelle: 'Gratuit', classe: 'bg-gray-600/40 text-gray-300 border-gray-500/40' },
-  PREMIUM: { libelle: 'Premium', classe: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
-  PRO: { libelle: 'Pro', classe: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+// Seule la couleur reste ici : le nom d'une formule se règle côté plateforme,
+// et une copie locale afficherait « Premium » après un renommage.
+const COULEURS: Record<string, string> = {
+  FREE: 'bg-gray-600/40 text-gray-300 border-gray-500/40',
+  PREMIUM: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+  PRO: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
 };
 
 interface Boutique {
@@ -34,15 +36,15 @@ interface Boutique {
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
   const [menuOuvert, setMenuOuvert] = useState(true);
   const [boutiques, setBoutiques] = useState<Boutique[]>([]);
-  const [formule, setFormule] = useState<string>('');
+  const [formule, setFormule] = useState<{ code: string; libelle: string } | null>(null);
   const [orgId, setOrgId] = useState('');
 
   const router = useRouter();
   const pathname = usePathname();
 
-  // Seul /merchant reçoit ce cadre : /merchant/:orgId/... a le sien, et
-  // empiler les deux afficherait deux barres latérales.
-  const auNiveauDuChoix = pathname === '/merchant';
+  // Seul le niveau du choix reçoit ce cadre : /merchant/:orgId/... a le sien,
+  // et empiler les deux afficherait deux barres latérales.
+  const auNiveauDuChoix = pathname === '/merchant' || pathname === '/merchant/formule';
 
   const charger = useCallback(async () => {
     try {
@@ -66,7 +68,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
 
       if (reponseQuota.ok) {
         const quota = await reponseQuota.json();
-        setFormule(quota.tier || '');
+        setFormule(quota.tier ? { code: quota.tier, libelle: quota.tierLabel || quota.tier } : null);
       }
     } catch (error) {
       console.error('Chargement des boutiques impossible', error);
@@ -113,12 +115,12 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
                   <span className="text-xs text-gray-400">Commerçant</span>
                   {formule && (
                     <span
-                      title={`Formule ${FORMULES[formule]?.libelle || formule}`}
+                      title={`Formule ${formule.libelle}`}
                       className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold uppercase tracking-wide ${
-                        FORMULES[formule]?.classe || FORMULES.FREE.classe
+                        COULEURS[formule.code] || COULEURS.FREE
                       }`}
                     >
-                      {FORMULES[formule]?.libelle || formule}
+                      {formule.libelle}
                     </span>
                   )}
                 </div>
@@ -164,6 +166,15 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
               {menuOuvert && <span className="truncate">Nouvelle boutique</span>}
             </Link>
 
+            <Link
+              href="/merchant/formule"
+              title={menuOuvert ? undefined : 'Ma formule'}
+              className={lienSecondaire}
+            >
+              <CreditCard size={20} className="flex-shrink-0" />
+              {menuOuvert && <span className="truncate">Ma formule</span>}
+            </Link>
+
             {orgId && (
               <Link
                 href={`/merchant/${orgId}/support`}
@@ -197,7 +208,11 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
           >
             {menuOuvert ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <div className="text-sm text-gray-400">Choisissez le commerce à gérer</div>
+          <div className="text-sm text-gray-400">
+            {pathname === '/merchant/formule'
+              ? 'Votre formule et la grille tarifaire'
+              : 'Choisissez le commerce à gérer'}
+          </div>
         </header>
 
         <main className="flex-1 p-6 overflow-auto">{children}</main>

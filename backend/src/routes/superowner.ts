@@ -9,7 +9,7 @@ import { BackupService } from "../services/backup.service";
 import { SecurityEventService } from "../services/security-event.service";
 import { invalidateMaintenanceCache } from "../middleware/maintenance";
 import { MerchantClosureService } from "../services/merchant-closure.service";
-import { FORMULES } from "../services/plan.service";
+import { PlanService } from "../services/plan.service";
 
 const LIBELLES_STATUT: Record<string, string> = {
   OPEN: "rouvert",
@@ -607,6 +607,71 @@ router.post("/support-tickets/:ticketId/messages", authMiddleware, isSuperOwner,
   }
 });
 
+// ---- La grille des formules ----
+// Tarifs, quotas et arguments de vente étaient écrits dans le code : changer
+// un prix demandait une mise en production.
+
+// GET /superowner/plans - La grille complète
+router.get("/plans", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const grille = await PlanService.grille();
+
+    // Combien de commerçants sur chaque formule : baisser un quota sans le
+    // savoir se paie en tickets de support.
+    const repartition = await db.organization.groupBy({
+      by: ["tier"],
+      _count: { _all: true },
+    });
+
+    res.json({
+      success: true,
+      data: grille.map((formule) => ({
+        ...formule,
+        abonnes: repartition.find((ligne) => ligne.tier === formule.code)?._count._all ?? 0,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /superowner/plans/:code - Régler une formule
+router.patch("/plans/:code", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const schemaCode = z.enum(["FREE", "PREMIUM", "PRO"]);
+    const code = schemaCode.parse((req.params.code as string)?.toUpperCase());
+
+    const schema = z.object({
+      libelle: z.string().min(2, "Nom minimum 2 caractères").optional(),
+      maxBoutiques: z.number().int().min(1, "Au moins une boutique").optional(),
+      prixMensuel: z.number().min(0, "Tarif négatif impossible").optional(),
+      avantages: z.array(z.string().min(1)).max(12, "Douze arguments suffisent").optional(),
+      ordre: z.number().int().min(0).optional(),
+    });
+
+    // Une erreur de validation ressort en « Validation error » : c'est ce que
+    // lirait le superowner à l'écran. On rend le premier motif, en français.
+    const analyse = schema.safeParse(req.body);
+
+    if (!analyse.success) {
+      throw new ApiError(
+        400,
+        analyse.error.issues[0]?.message || "Réglage invalide",
+        "INVALID_PLAN"
+      );
+    }
+
+    const body = analyse.data;
+    const formule = await PlanService.enregistrer(code, body);
+
+    await journaliser(req, "PLAN_TIER_UPDATED", code, body);
+
+    res.json({ message: `Formule ${formule.libelle} enregistrée`, data: formule });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ---- Actions de gestion sur un commerçant ----
 // Elles s'appuient sur le même service que l'espace d'administration, pour que
 // suspension et fermeture se comportent exactement de la même façon.
@@ -629,13 +694,14 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
 
     // Rétrograder en dessous du nombre de boutiques ouvertes créerait un
     // commerçant hors quota : on le signale au lieu de l'accepter en silence.
-    const quotaCible = FORMULES[body.tier].maxBoutiques;
+    const formuleCible = await PlanService.formule(body.tier);
+    const quotaCible = formuleCible.maxBoutiques;
     const boutiques = await db.store.count({ where: { orgId, deletedAt: null } });
 
     if (boutiques > quotaCible) {
       throw new ApiError(
         400,
-        `Ce commerçant exploite ${boutiques} boutiques ; la formule ${FORMULES[body.tier].libelle} en autorise ${quotaCible}. Fermez d'abord les boutiques en trop.`,
+        `Ce commerçant exploite ${boutiques} boutiques ; la formule ${formuleCible.libelle} en autorise ${quotaCible}. Fermez d'abord les boutiques en trop.`,
         "TIER_BELOW_USAGE"
       );
     }
@@ -651,7 +717,7 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
     });
 
     res.json({
-      message: `Formule passée en ${FORMULES[body.tier].libelle}`,
+      message: `Formule passée en ${formuleCible.libelle}`,
       organization: { id: organisation.id, tier: organisation.tier },
     });
   } catch (err) {
