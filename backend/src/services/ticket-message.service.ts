@@ -83,6 +83,56 @@ export class TicketMessageService {
     return message;
   }
 
+  /**
+   * Prévient le commerçant qu'un de ses tickets a changé d'état.
+   *
+   * Un changement de statut ou de priorité est une information qu'il attend :
+   * sans notification, il doit rouvrir la page pour s'en apercevoir.
+   */
+  static async notifierChangementEtat(
+    ticketId: string,
+    titreNotification: string,
+    corps: string
+  ) {
+    const ticket = await db.merchantTicket.findUnique({
+      where: { id: ticketId },
+      select: { id: true, title: true, orgId: true },
+    });
+
+    if (!ticket) return;
+
+    const memberships = await db.membership.findMany({
+      where: { orgId: ticket.orgId },
+      include: { user: { select: { email: true } } },
+    });
+
+    const destinataires = [...new Set(memberships.map((m) => m.user.email))];
+
+    if (destinataires.length === 0) return;
+
+    const lien = `/merchant/${ticket.orgId}/support`;
+
+    await db.notification.createMany({
+      data: destinataires.map((email) => ({
+        type: "TICKET_MESSAGE" as const,
+        title: titreNotification,
+        message: corps,
+        recipientEmail: email,
+        link: lien,
+      })),
+    });
+
+    const creees = await db.notification.findMany({
+      where: { recipientEmail: { in: destinataires }, type: "TICKET_MESSAGE", isRead: false },
+      orderBy: { createdAt: "desc" },
+      take: destinataires.length,
+    });
+
+    for (const notification of creees) {
+      emitNotification(notification.recipientEmail, notification);
+    }
+  }
+
   // Prévient l'autre partie : le marchand quand un admin répond, les admins sinon.
   private static async notifyCounterpart(
     ticket: { id: string; title: string; orgId: string },

@@ -36,6 +36,35 @@ export default function OrganizationsPage() {
 
   // Suspension et fermeture partagent le service de l'espace
   // d'administration : le comportement est strictement le même.
+  // Le changement de formule n'était possible que depuis la fiche détaillée
+  // d'un commerçant, dans l'autre espace d'administration.
+  const changerFormule = async (org: Organization, tier: string) => {
+    setAction(org.id);
+    setError('');
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${API_URL}/api/superowner/organizations/${org.id}/tier`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tier }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Changement de formule impossible');
+        return;
+      }
+
+      await fetchOrganizations();
+    } catch {
+      setError('Erreur de connexion au serveur');
+    } finally {
+      setAction('');
+    }
+  };
+
   const agirSurCommercant = async (
     org: Organization,
     operation: 'suspend' | 'unsuspend' | 'close'
@@ -182,9 +211,19 @@ export default function OrganizationsPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-400">{org.email}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded text-xs font-semibold ${getTierColor(org.tier)} text-white`}>
-                        {org.tier}
-                      </span>
+                      <select
+                        value={org.tier}
+                        onChange={(e) => changerFormule(org, e.target.value)}
+                        disabled={action === org.id}
+                        title="Formule d'abonnement"
+                        className={`px-3 py-1 rounded text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-40 ${getTierColor(
+                          org.tier
+                        )}`}
+                      >
+                        <option value="FREE">FREE</option>
+                        <option value="PREMIUM">PREMIUM</option>
+                        <option value="PRO">PRO</option>
+                      </select>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(org.status)}`}>

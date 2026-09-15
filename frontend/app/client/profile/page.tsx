@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Mail, ShoppingBag, Wallet, Save } from 'lucide-react';
 import { euro } from '@/lib/format';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -205,9 +206,17 @@ export default function ProfilClientPage() {
 
             <div>
               <label className="block text-sm text-gray-400 mb-1">Adresse de livraison</label>
-              <input
-                type="text"
-                {...champ('address')}
+              <AddressAutocomplete
+                value={formulaire.address}
+                onChange={(valeur) => setFormulaire({ ...formulaire, address: valeur })}
+                onSelect={(adresse) =>
+                  setFormulaire({
+                    ...formulaire,
+                    address: adresse.street,
+                    city: adresse.city || formulaire.city,
+                    postalCode: adresse.postalCode || formulaire.postalCode,
+                  })
+                }
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
               />
             </div>

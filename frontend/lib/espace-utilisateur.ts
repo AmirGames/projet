@@ -11,7 +11,9 @@ export function espaceDAccueil(options: {
   orgId?: string | null;
 }): string {
   if (options.isSuperOwner) return '/super-admin';
-  if (options.orgId) return `/merchant/${options.orgId}/dashboard`;
+  // On atterrit sur la liste des commerces plutôt que sur le tableau de bord
+  // d'une boutique : le commerçant choisit lui-même celle qu'il veut gérer.
+  if (options.orgId) return '/merchant';
   return '/login';
 }
 

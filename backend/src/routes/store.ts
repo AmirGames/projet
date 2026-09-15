@@ -4,6 +4,7 @@ import { StoreService } from "../services/store.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, checkOrgStatus } from "../middleware/auth";
 import { logger } from "../config/logger";
+import { PlanService } from "../services/plan.service";
 
 const router = Router();
 
@@ -45,6 +46,9 @@ router.post("/", authMiddleware, checkOrgStatus, async (req: Request, res: Respo
     const body = createStoreSchema.parse(req.body);
 
     logger.info("Creating store", { name: body.name, orgId: body.orgId });
+
+    // Le nombre de boutiques dépend de la formule souscrite.
+    await PlanService.verifierCreationBoutique(body.orgId);
 
     const store = await StoreService.create(body);
 
@@ -92,6 +96,16 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // GET /stores/org/:orgId - Get stores by organization
+// GET /stores/org/:orgId/quota - Boutiques autorisées par la formule
+router.get("/org/:orgId/quota", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const quota = await PlanService.quotaBoutiques(req.params.orgId as string);
+    res.json(quota);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/org/:orgId", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orgId = req.params.orgId as string;

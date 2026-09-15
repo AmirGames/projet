@@ -15,6 +15,7 @@ const createProductSchema = z.object({
   price: z.number().positive("Prix doit être positif"),
   categoryId: z.string().min(1, "categoryId invalide").optional().nullable(),
   stock: z.number().int().min(0, "Stock minimum 0").optional(),
+  isAvailable: z.boolean().optional(),
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).optional(),
 });
 
@@ -25,6 +26,7 @@ const updateProductSchema = z.object({
   price: z.number().positive().optional(),
   categoryId: z.string().min(1).optional().nullable(),
   stock: z.number().int().min(0).optional(),
+  isAvailable: z.boolean().optional(),
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).optional(),
 });
 
@@ -182,6 +184,34 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
 
     res.json({
       message: "Produit mis à jour",
+      product,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /products/:id/availability - Marquer disponible ou épuisé
+router.patch("/:id/availability", authMiddleware, checkOrgStatus, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const schema = z.object({ isAvailable: z.boolean() });
+    const body = schema.parse(req.body);
+
+    const existant = await ProductService.getById(id);
+
+    if (!existant) {
+      throw new ApiError(404, "Produit non trouvé", "NOT_FOUND");
+    }
+
+    // Un produit épuisé reste publié : il s'affiche en vitrine, barré, mais ne
+    // peut plus être commandé.
+    const product = await ProductService.update(id, { isAvailable: body.isAvailable } as any);
+
+    logger.info("Product availability changed", { id, isAvailable: body.isAvailable });
+
+    res.json({
+      message: body.isAvailable ? "Produit de nouveau disponible" : "Produit marqué épuisé",
       product,
     });
   } catch (err) {

@@ -58,6 +58,20 @@ const createOrderSchema = z.object({
   totalAmount: z.number().positive("Total doit être positif"),
   taxAmount: z.number().optional(),
   feesAmount: z.number().optional(),
+  notes: z.string().optional(),
+  // Le détail du panier : sans lui, la commande n'enregistrait qu'un montant,
+  // et la facture comme les statistiques de vente restaient vides.
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        variantId: z.string().optional(),
+        quantity: z.number().int().positive(),
+        price: z.number().nonnegative(),
+        selectedOptions: z.record(z.string(), z.string()).optional(),
+      })
+    )
+    .optional(),
 });
 
 const updateOrderStatusSchema = z.object({

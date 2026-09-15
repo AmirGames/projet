@@ -4,6 +4,7 @@ import { ApiError } from "../middleware/errorHandler";
 export interface ProductData {
   storeId: string;
   sku?: string;
+  isAvailable?: boolean;
   name: string;
   description?: string;
   price: number;
@@ -115,6 +116,10 @@ export class ProductService {
           ...(data.stock !== undefined && { stock: data.stock }),
           ...(data.status && { status: data.status }),
           ...(data.categoryId && { categoryId: data.categoryId }),
+          // Ces deux champs étaient ignorés : modifier la référence ou la
+          // disponibilité d'un produit restait sans effet.
+          ...(data.sku && { sku: data.sku }),
+          ...(data.isAvailable !== undefined && { isAvailable: data.isAvailable }),
         },
         include: {
           category: true,

@@ -10,6 +10,7 @@ import { PromoCode } from './promo-code';
 import { PaymentMethods } from './payment-methods';
 
 import { euro } from '@/lib/format';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -288,10 +289,10 @@ export default function CheckoutPage() {
                   <label className="block text-gray-300 text-sm font-semibold mb-2">
                     Adresse de livraison *
                   </label>
-                  <input
-                    type="text"
+                  <AddressAutocomplete
                     value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    onChange={setDeliveryAddress}
+                    onSelect={(adresse) => setDeliveryAddress(adresse.label)}
                     placeholder="Votre adresse complète"
                     className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />

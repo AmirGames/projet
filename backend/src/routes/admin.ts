@@ -5,6 +5,20 @@ import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { MerchantClosureService } from "../services/merchant-closure.service";
 import { TicketMessageService } from "../services/ticket-message.service";
+
+const LIBELLES_STATUT_TICKET: Record<string, string> = {
+  OPEN: "rouvert",
+  IN_PROGRESS: "pris en charge par le support",
+  RESOLVED: "résolu",
+  CLOSED: "clôturé",
+};
+
+const LIBELLES_PRIORITE_TICKET: Record<string, string> = {
+  LOW: "basse",
+  MEDIUM: "normale",
+  HIGH: "haute",
+  CRITICAL: "urgente",
+};
 import { logger } from "../config/logger";
 import { invalidateMaintenanceCache } from "../middleware/maintenance";
 
@@ -450,6 +464,15 @@ router.patch("/tickets/:ticketId", authMiddleware, isSystemAdmin, async (req: Re
     const body = schema.parse(req.body);
     const adminId = (req as any).userId;
 
+    const avant = await db.merchantTicket.findUnique({
+      where: { id: ticketId },
+      select: { status: true, priority: true },
+    });
+
+    if (!avant) {
+      throw new ApiError(404, "Ticket introuvable", "NOT_FOUND");
+    }
+
     const ticket = await db.merchantTicket.update({
       where: { id: ticketId },
       data: {
@@ -467,6 +490,23 @@ router.patch("/tickets/:ticketId", authMiddleware, isSystemAdmin, async (req: Re
         changes: body as any,
       },
     });
+
+    // Le commerçant est prévenu du changement, comme d'une réponse.
+    const changements: string[] = [];
+    if (body.status && body.status !== avant.status) {
+      changements.push(LIBELLES_STATUT_TICKET[body.status] || body.status);
+    }
+    if (body.priority && body.priority !== avant.priority) {
+      changements.push(`priorité ${LIBELLES_PRIORITE_TICKET[body.priority] || body.priority}`);
+    }
+
+    if (changements.length > 0) {
+      await TicketMessageService.notifierChangementEtat(
+        ticketId,
+        "Votre ticket a changé d'état",
+        `Ticket « ${ticket.title} » : ${changements.join(", ")}.`
+      );
+    }
 
     res.json(ticket);
   } catch (err) {

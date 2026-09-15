@@ -26,6 +26,13 @@ export default function MerchantDashboard() {
   const router = useRouter();
   const [stores, setStores] = useState<Store[]>([]);
   const [orgId, setOrgId] = useState('');
+  const [quota, setQuota] = useState<{
+    tierLabel: string;
+    used: number;
+    max: number;
+    canCreate: boolean;
+    upgradeAvailable: boolean;
+  } | null>(null);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -49,6 +56,15 @@ export default function MerchantDashboard() {
       }
 
       setOrgId(org);
+
+      // Le nombre de boutiques autorisées dépend de la formule souscrite.
+      const quotaRes = await fetch(`${API_URL}/api/stores/org/${org}/quota`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (quotaRes.ok) {
+        setQuota(await quotaRes.json());
+      }
 
       const storesRes = await fetch(`${API_URL}/api/stores/org/${org}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -134,14 +150,39 @@ export default function MerchantDashboard() {
 
       {/* Stores Section */}
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">Mes Boutiques</h2>
-          <Link
-            href="/merchant/register"
-            className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition"
-          >
-            + Créer une boutique
-          </Link>
+        <div className="flex justify-between items-center mb-4 gap-4 flex-wrap">
+          <div>
+            <h2 className="text-xl font-bold text-white">Mes Boutiques</h2>
+            {quota && (
+              <p className="text-sm text-gray-400 mt-1">
+                Formule {quota.tierLabel} — {quota.used} boutique
+                {quota.used > 1 ? 's' : ''} sur {quota.max}
+              </p>
+            )}
+          </div>
+
+          {quota && !quota.canCreate ? (
+            <div className="text-right">
+              <p className="text-sm text-orange-400">
+                Vous avez atteint la limite de votre formule.
+              </p>
+              <Link
+                href={orgId ? `/merchant/${orgId}/support` : '/merchant'}
+                className="text-sm text-orange-500 hover:text-orange-400 underline"
+              >
+                {quota.upgradeAvailable
+                  ? 'Demander un changement de formule'
+                  : 'Demander une boutique supplémentaire'}
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href="/store/new"
+              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition"
+            >
+              + Créer une boutique
+            </Link>
+          )}
         </div>
 
         {stores.length === 0 ? (
@@ -149,7 +190,7 @@ export default function MerchantDashboard() {
             <Store size={48} className="mx-auto text-gray-600 mb-4" />
             <p className="text-gray-400">Aucune boutique pour le moment</p>
             <Link
-              href="/merchant/register"
+              href="/store/new"
               className="inline-block mt-4 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition"
             >
               Créer votre première boutique

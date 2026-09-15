@@ -31,7 +31,7 @@ interface Product {
   description?: string;
   price: number;
   stock: number;
-  lowStockThreshold: number;
+  isAvailable: boolean;
   sku: string;
   displayOrder: number;
   status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
@@ -42,7 +42,7 @@ interface Product {
   createdAt: string;
 }
 
-function SortableProduct({ product, onEdit, onDelete, isLowStock, adjustStock }: any) {
+function SortableProduct({ product, onEdit, onDelete, onToggleAvailability }: any) {
   const {
     attributes,
     listeners,
@@ -63,8 +63,8 @@ function SortableProduct({ product, onEdit, onDelete, isLowStock, adjustStock }:
       ref={setNodeRef}
       style={style}
       className={`border rounded-lg p-4 transition-colors ${
-        isLowStock(product)
-          ? 'bg-yellow-600/10 border-yellow-600/50 hover:border-yellow-600'
+        !product.isAvailable
+          ? 'bg-orange-600/10 border-orange-600/50 hover:border-orange-600'
           : 'bg-gray-800 border-gray-700 hover:border-red-600'
       } ${isDragging ? 'shadow-lg shadow-red-600' : ''}`}
     >
@@ -81,8 +81,10 @@ function SortableProduct({ product, onEdit, onDelete, isLowStock, adjustStock }:
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-lg font-bold">{product.name}</h3>
-              {isLowStock(product) && (
-                <AlertCircle size={16} className="text-yellow-400" />
+              {!product.isAvailable && (
+                <span className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-orange-600/30 text-orange-400">
+                  <AlertCircle size={12} /> Épuisé
+                </span>
               )}
               <span className={`text-xs px-2 py-1 rounded ${
                 product.status === 'ACTIVE'
@@ -107,14 +109,10 @@ function SortableProduct({ product, onEdit, onDelete, isLowStock, adjustStock }:
                 <p className="font-mono text-sm">{product.sku}</p>
               </div>
               <div>
-                <p className="text-gray-500">Stock</p>
-                <p className={`font-semibold ${isLowStock(product) ? 'text-yellow-400' : 'text-green-400'}`}>
-                  {product.stock} unité{product.stock !== 1 ? 's' : ''}
+                <p className="text-gray-500">Disponibilité</p>
+                <p className={`font-semibold ${product.isAvailable ? 'text-green-400' : 'text-orange-400'}`}>
+                  {product.isAvailable ? 'Disponible' : 'Épuisé'}
                 </p>
-              </div>
-              <div>
-                <p className="text-gray-500">Seuil d'alerte</p>
-                <p className="font-semibold text-blue-400">{product.lowStockThreshold}</p>
               </div>
             </div>
             {product.category && (
@@ -146,32 +144,23 @@ function SortableProduct({ product, onEdit, onDelete, isLowStock, adjustStock }:
       </div>
 
       {product.status === 'ACTIVE' && (
-        <div className="mt-4 pt-4 border-t border-gray-700 flex items-center gap-2">
+        <div className="mt-4 pt-4 border-t border-gray-700 flex items-center gap-3">
           <Package size={16} className="text-gray-500" />
           <button
-            onClick={() => adjustStock(product.id, -5)}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
+            onClick={() => onToggleAvailability(product)}
+            className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+              product.isAvailable
+                ? 'bg-orange-600/20 text-orange-400 hover:bg-orange-600/30'
+                : 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+            }`}
           >
-            -5
+            {product.isAvailable ? 'Marquer épuisé' : 'Remettre en vente'}
           </button>
-          <button
-            onClick={() => adjustStock(product.id, -1)}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
-          >
-            -1
-          </button>
-          <button
-            onClick={() => adjustStock(product.id, 1)}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
-          >
-            +1
-          </button>
-          <button
-            onClick={() => adjustStock(product.id, 5)}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
-          >
-            +5
-          </button>
+          <span className="text-xs text-gray-500">
+            {product.isAvailable
+              ? 'Commandable par vos clients'
+              : 'Affiché mais non commandable'}
+          </span>
         </div>
       )}
     </div>
@@ -181,7 +170,7 @@ function SortableProduct({ product, onEdit, onDelete, isLowStock, adjustStock }:
 export default function ProductsPage() {
   const { storeId } = useCurrentStore();
   const [products, setProducts] = useState<Product[]>([]);
-  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
+
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -193,8 +182,7 @@ export default function ProductsPage() {
     name: '',
     description: '',
     price: '',
-    stock: '',
-    lowStockThreshold: '10',
+    isAvailable: true,
     sku: '',
     status: 'ACTIVE' as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
     categoryId: '',
@@ -210,7 +198,6 @@ export default function ProductsPage() {
   useEffect(() => {
     if (storeId) {
       fetchProducts();
-      fetchLowStockProducts();
       fetchCategories();
     }
   }, [storeId]);
@@ -247,22 +234,6 @@ export default function ProductsPage() {
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchLowStockProducts = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/products/low-stock/by-store/${storeId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setLowStockProducts(data.products || []);
-      }
-    } catch (error) {
-      console.error('Error fetching low stock products:', error);
     }
   };
 
@@ -333,7 +304,7 @@ export default function ProductsPage() {
             name: formData.name,
             description: formData.description,
             price: parseFloat(formData.price),
-            stock: parseInt(formData.stock),
+            isAvailable: formData.isAvailable,
             sku: formData.sku.trim() || undefined,
             status: formData.status,
             categoryId: formData.categoryId || undefined,
@@ -344,9 +315,6 @@ export default function ProductsPage() {
           setMessage('✅ Produit mis à jour');
           resetForm();
           await fetchProducts();
-          if (parseInt(formData.stock) <= parseInt(formData.lowStockThreshold)) {
-            await updateLowStockThreshold(editingProduct.id, parseInt(formData.lowStockThreshold));
-          }
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
@@ -364,7 +332,7 @@ export default function ProductsPage() {
           name: formData.name,
           description: formData.description || undefined,
           price: parseFloat(formData.price),
-          stock: parseInt(formData.stock) || 0,
+          isAvailable: formData.isAvailable,
           sku: formData.sku.trim() || undefined,
           status: formData.status,
         };
@@ -426,44 +394,6 @@ export default function ProductsPage() {
     }
   };
 
-  const updateLowStockThreshold = async (productId: string, threshold: number) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      await fetch(`${API_URL}/api/products/${productId}/low-stock-threshold`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ threshold }),
-      });
-      fetchLowStockProducts();
-    } catch (error) {
-      console.error('Error updating threshold:', error);
-    }
-  };
-
-  const adjustStock = async (productId: string, quantity: number) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/products/${productId}/stock`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ quantity }),
-      });
-
-      if (response.ok) {
-        const updated = await response.json();
-        setProducts(prev => prev.map(p => p.id === productId ? updated.product : p));
-        fetchLowStockProducts();
-      }
-    } catch (error) {
-      console.error('Error adjusting stock:', error);
-    }
-  };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
@@ -471,8 +401,7 @@ export default function ProductsPage() {
       name: product.name,
       description: product.description || '',
       price: product.price.toString(),
-      stock: product.stock.toString(),
-      lowStockThreshold: product.lowStockThreshold.toString(),
+      isAvailable: product.isAvailable ?? true,
       sku: product.sku,
       status: product.status,
       categoryId: product.category?.id || '',
@@ -487,9 +416,8 @@ export default function ProductsPage() {
       name: '',
       description: '',
       price: '',
-      stock: '',
-      lowStockThreshold: '10',
-      sku: '',
+      isAvailable: true,
+        sku: '',
       status: 'ACTIVE',
       categoryId: '',
     });
@@ -500,7 +428,31 @@ export default function ProductsPage() {
     p.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const isLowStock = (product: Product) => product.stock <= product.lowStockThreshold;
+  const produitsEpuises = products.filter((p) => !p.isAvailable);
+
+  // Une seule bascule remplace l'ajustement chiffré du stock.
+  const basculerDisponibilite = async (product: Product) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/products/${product.id}/availability`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ isAvailable: !product.isAvailable }),
+      });
+
+      const donnees = await response.json();
+
+      if (!response.ok) {
+        setMessage(`❌ ${donnees.error || 'Changement impossible'}`);
+        return;
+      }
+
+      setMessage(`✅ ${donnees.message}`);
+      fetchProducts();
+    } catch {
+      setMessage('❌ Erreur de connexion au serveur');
+    }
+  };
 
   const groupedProducts = filteredProducts.reduce((acc, product) => {
     const categoryId = product.category?.id || 'uncategorized';
@@ -533,7 +485,7 @@ export default function ProductsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">📦 Gestion des Produits</h1>
-            <p className="text-gray-400 mt-1">Gérez votre inventaire et les stocks (glissez pour réorganiser)</p>
+            <p className="text-gray-400 mt-1">Gérez votre catalogue (glissez pour réorganiser)</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
@@ -554,22 +506,31 @@ export default function ProductsPage() {
           </div>
         )}
 
-        {lowStockProducts.length > 0 && (
-          <div className="bg-yellow-600/20 border border-yellow-600/50 rounded-lg p-4">
+        {produitsEpuises.length > 0 && (
+          <div className="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4">
             <div className="flex gap-3">
-              <AlertCircle size={20} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+              <AlertCircle size={20} className="text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-yellow-400 mb-2">
-                  ⚠️ {lowStockProducts.length} produit{lowStockProducts.length > 1 ? 's' : ''} en rupture ou faible stock
+                <p className="font-semibold text-orange-400 mb-2">
+                  {produitsEpuises.length} produit{produitsEpuises.length > 1 ? 's' : ''} épuisé
+                  {produitsEpuises.length > 1 ? 's' : ''} — invisible
+                  {produitsEpuises.length > 1 ? 's' : ''} à la commande
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {lowStockProducts.slice(0, 5).map(p => (
-                    <span key={p.id} className="bg-yellow-700/30 px-2 py-1 rounded text-sm">
-                      {p.name}: {p.stock} unité{p.stock !== 1 ? 's' : ''}
-                    </span>
+                  {produitsEpuises.slice(0, 6).map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => basculerDisponibilite(p)}
+                      className="bg-orange-700/30 hover:bg-orange-700/50 px-2 py-1 rounded text-sm transition-colors"
+                      title="Remettre en vente"
+                    >
+                      {p.name} ↺
+                    </button>
                   ))}
-                  {lowStockProducts.length > 5 && (
-                    <span className="text-yellow-300 text-sm">+{lowStockProducts.length - 5} autres</span>
+                  {produitsEpuises.length > 6 && (
+                    <span className="text-orange-300 text-sm">
+                      +{produitsEpuises.length - 6} autres
+                    </span>
                   )}
                 </div>
               </div>
@@ -586,9 +547,11 @@ export default function ProductsPage() {
             <p className="text-gray-400 text-sm">Produits actifs</p>
             <p className="text-3xl font-bold">{products.filter(p => p.status === 'ACTIVE').length}</p>
           </div>
-          <div className="bg-yellow-600/20 border border-yellow-600/50 rounded-lg p-4">
-            <p className="text-yellow-400 text-sm">Stock bas</p>
-            <p className="text-3xl font-bold text-yellow-400">{lowStockProducts.length}</p>
+          <div className="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4">
+            <p className="text-orange-400 text-sm">Épuisés</p>
+            <p className="text-3xl font-bold text-orange-400">
+              {products.filter((p) => !p.isAvailable).length}
+            </p>
           </div>
         </div>
 
@@ -634,8 +597,7 @@ export default function ProductsPage() {
                           product={product}
                           onEdit={handleEdit}
                           onDelete={handleDelete}
-                          isLowStock={isLowStock}
-                          adjustStock={adjustStock}
+                          onToggleAvailability={basculerDisponibilite}
                         />
                       ))}
                     </div>
@@ -725,30 +687,19 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Stock *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                    placeholder="0"
-                    required
-                  />
+                  <label className="text-sm text-gray-400 block mb-2">Disponibilité</label>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, isAvailable: !formData.isAvailable })}
+                    className={`w-full px-3 py-2 rounded font-medium transition-colors ${
+                      formData.isAvailable
+                        ? 'bg-green-600/20 text-green-400 border border-green-600/50'
+                        : 'bg-orange-600/20 text-orange-400 border border-orange-600/50'
+                    }`}
+                  >
+                    {formData.isAvailable ? '✓ Disponible' : '✕ Épuisé'}
+                  </button>
                 </div>
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Seuil d'alerte stock</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.lowStockThreshold}
-                  onChange={(e) => setFormData({ ...formData, lowStockThreshold: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                  placeholder="10"
-                />
-                <p className="text-xs text-gray-500 mt-1">Vous serez alerté quand le stock passe sous ce seuil</p>
               </div>
 
               <div>

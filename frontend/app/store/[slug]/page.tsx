@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { ShoppingCart, MapPin, Phone, Clock, Star, AlertCircle, Check } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -26,7 +27,7 @@ interface Product {
   name: string;
   description: string;
   price: number;
-  stock: number;
+  isAvailable: boolean;
   images: Array<{ url: string }>;
 }
 
@@ -190,6 +191,13 @@ export default function StorefrontPage() {
         totalAmount: Number(cartGrandTotal.toFixed(2)),
         taxAmount: 0,
         feesAmount: Number(cartServiceFee.toFixed(2)),
+        // Le détail du panier : sans lui la commande n'enregistrait qu'un
+        // montant, et la facture comme le détail de commande restaient vides.
+        items: cart.map((item) => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          price: Number(item.product.price),
+        })),
       };
 
       const response = await fetch(`${API_URL}/api/orders`, {
@@ -341,7 +349,7 @@ export default function StorefrontPage() {
                             <div>
                               <p className="text-2xl font-bold text-red-400">{euro(product.price)}</p>
                               <p className="text-xs text-gray-500">
-                                {product.stock > 0 ? `${product.stock} en stock` : 'Rupture'}
+                                {product.isAvailable ? 'Disponible' : 'Épuisé'}
                               </p>
                             </div>
                           </div>
@@ -349,9 +357,9 @@ export default function StorefrontPage() {
                           {/* Add to Cart Button */}
                           <button
                             onClick={() => addToCart(product)}
-                            disabled={product.stock === 0}
+                            disabled={!product.isAvailable}
                             className={`w-full py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors ${
-                              product.stock === 0
+                              !product.isAvailable
                                 ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                                 : 'bg-red-600 hover:bg-red-700 text-white'
                             }`}
@@ -589,12 +597,20 @@ export default function StorefrontPage() {
                   <h3 className="font-bold text-lg">Adresse de Livraison</h3>
                   <div>
                     <label className="text-sm text-gray-400 block mb-2">Adresse *</label>
-                    <input
-                      type="text"
+                    <AddressAutocomplete
                       value={checkoutForm.deliveryAddress}
-                      onChange={(e) => setCheckoutForm({ ...checkoutForm, deliveryAddress: e.target.value })}
+                      onChange={(valeur) =>
+                        setCheckoutForm({ ...checkoutForm, deliveryAddress: valeur })
+                      }
+                      onSelect={(adresse) =>
+                        setCheckoutForm({
+                          ...checkoutForm,
+                          deliveryAddress: adresse.street,
+                          deliveryCity: adresse.city || checkoutForm.deliveryCity,
+                        })
+                      }
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                      placeholder="123 Rue de la Paix"
+                      placeholder="123 rue de la Paix"
                     />
                   </div>
 

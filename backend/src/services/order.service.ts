@@ -18,6 +18,13 @@ export interface OrderData {
   feesAmount?: number;
   customerId?: string;
   notes?: string;
+  items?: {
+    productId: string;
+    variantId?: string;
+    quantity: number;
+    price: number;
+    selectedOptions?: Record<string, string>;
+  }[];
 }
 
 export class OrderService {
@@ -58,6 +65,33 @@ export class OrderService {
     try {
       const customerId = await this.resoudreClient(data);
 
+      // On refuse la commande entière si un article n'est plus disponible :
+      // mieux vaut un message clair qu'une commande amputée en silence.
+      const lignes = data.items || [];
+
+      if (lignes.length > 0) {
+        const produits = await db.product.findMany({
+          where: { id: { in: lignes.map((l) => l.productId) } },
+          select: { id: true, name: true, storeId: true, isAvailable: true, deletedAt: true },
+        });
+
+        for (const ligne of lignes) {
+          const produit = produits.find((p) => p.id === ligne.productId);
+
+          if (!produit || produit.deletedAt || produit.storeId !== data.storeId) {
+            throw new ApiError(400, "Un article du panier n'existe plus", "PRODUCT_NOT_FOUND");
+          }
+
+          if (!produit.isAvailable) {
+            throw new ApiError(
+              400,
+              `« ${produit.name} » n'est plus disponible`,
+              "PRODUCT_UNAVAILABLE"
+            );
+          }
+        }
+      }
+
       const order = await db.order.create({
         data: {
           storeId: data.storeId,
@@ -76,6 +110,16 @@ export class OrderService {
           notes: data.notes,
           status: "PENDING" as any,
           paymentStatus: "PENDING" as any,
+          items: {
+            create: lignes.map((ligne) => ({
+              productId: ligne.productId,
+              variantId: ligne.variantId,
+              quantity: ligne.quantity,
+              price: ligne.price,
+              total: Number((ligne.price * ligne.quantity).toFixed(2)),
+              selectedOptions: ligne.selectedOptions || {},
+            })),
+          },
         },
         include: {
           items: {
@@ -165,18 +209,24 @@ export class OrderService {
     const product = await db.product.findUnique({ where: { id: productId } });
     if (!product) throw new ApiError(404, "Product not found", "PRODUCT_NOT_FOUND");
 
-    let availableStock = product.stock;
-    if (variantId) {
-      const variant = await db.productVariant.findUnique({ where: { id: variantId } });
-      if (variant) availableStock = variant.stock;
+    // Le suivi chiffré du stock est remplacé par une simple disponibilité que
+    // le commerçant bascule lui-même : un restaurant ne compte pas ses plats,
+    // il indique ce qui est épuisé.
+    if (!product.isAvailable) {
+      throw new ApiError(400, `« ${product.name} » n'est plus disponible`, "PRODUCT_UNAVAILABLE");
     }
 
-    if (availableStock < quantity) {
-      throw new ApiError(
-        400,
-        `Pas assez de stock. Disponible: ${availableStock}`,
-        "INSUFFICIENT_STOCK"
-      );
+    if (variantId) {
+      const variant = await db.productVariant.findUnique({ where: { id: variantId } });
+
+      // Une variante n'a pas de libellé propre : on nomme le produit parent.
+      if (variant && !variant.isAvailable) {
+        throw new ApiError(
+          400,
+          `Cette déclinaison de « ${product.name} » n'est plus disponible`,
+          "VARIANT_UNAVAILABLE"
+        );
+      }
     }
 
     const total = price * quantity;
@@ -193,18 +243,6 @@ export class OrderService {
       },
       include: { product: true },
     });
-
-    if (variantId) {
-      await db.productVariant.update({
-        where: { id: variantId },
-        data: { stock: { decrement: quantity } },
-      });
-    } else {
-      await db.product.update({
-        where: { id: productId },
-        data: { stock: { decrement: quantity } },
-      });
-    }
 
     return orderItem;
   }

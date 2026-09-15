@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -230,12 +231,18 @@ export default function CreateStorePage() {
                   <label className="block text-gray-300 mb-2 font-medium">
                     Adresse
                   </label>
-                  <input
-                    type="text"
-                    name="address"
+                  <AddressAutocomplete
                     value={formData.address}
-                    onChange={handleChange}
-                    placeholder="Rue de la Paix 123"
+                    onChange={(valeur) => setFormData({ ...formData, address: valeur })}
+                    onSelect={(adresse) =>
+                      setFormData({
+                        ...formData,
+                        address: adresse.street,
+                        city: adresse.city || formData.city,
+                        postalCode: adresse.postalCode || formData.postalCode,
+                      })
+                    }
+                    placeholder="123 rue de la Paix"
                     className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

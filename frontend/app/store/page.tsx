@@ -9,7 +9,7 @@ interface Product {
   name: string;
   sku: string;
   price: number;
-  stock: number;
+  isAvailable: boolean;
   description?: string;
 }
 
@@ -145,16 +145,16 @@ export default function StorefrontPage() {
                       €{product.price}
                     </span>
                     <span className="text-sm text-gray-400">
-                      Stock: {product.stock}
+                      {product.isAvailable ? 'Disponible' : 'Épuisé'}
                     </span>
                   </div>
 
                   <button
                     onClick={() => handleAddToCart(product)}
-                    disabled={product.stock === 0}
+                    disabled={!product.isAvailable}
                     className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-2 px-4 rounded-lg"
                   >
-                    {product.stock === 0 ? "Rupture de stock" : "Ajouter au panier"}
+                    {!product.isAvailable ? "Épuisé" : "Ajouter au panier"}
                   </button>
                 </div>
               ))}

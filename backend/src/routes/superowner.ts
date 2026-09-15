@@ -9,6 +9,21 @@ import { BackupService } from "../services/backup.service";
 import { SecurityEventService } from "../services/security-event.service";
 import { invalidateMaintenanceCache } from "../middleware/maintenance";
 import { MerchantClosureService } from "../services/merchant-closure.service";
+import { FORMULES } from "../services/plan.service";
+
+const LIBELLES_STATUT: Record<string, string> = {
+  OPEN: "rouvert",
+  IN_PROGRESS: "pris en charge par le support",
+  RESOLVED: "résolu",
+  CLOSED: "clôturé",
+};
+
+const LIBELLES_PRIORITE: Record<string, string> = {
+  LOW: "basse",
+  MEDIUM: "normale",
+  HIGH: "haute",
+  CRITICAL: "urgente",
+};
 import { TicketMessageService } from "../services/ticket-message.service";
 import { logger } from "../config/logger";
 
@@ -546,6 +561,14 @@ router.patch("/support-tickets/:ticketId/priority", authMiddleware, isSuperOwner
       apres: priorite,
     });
 
+    if (existant.priority !== priorite) {
+      await TicketMessageService.notifierChangementEtat(
+        ticketId,
+        "Priorité de votre ticket modifiée",
+        `Ticket « ${ticket.title} » : priorité ${LIBELLES_PRIORITE[priorite] || priorite}.`
+      );
+    }
+
     res.json({
       message: "Priorité mise à jour",
       ticket: { ...ticket, priority: ticket.priority === "CRITICAL" ? "URGENT" : ticket.priority },
@@ -587,6 +610,54 @@ router.post("/support-tickets/:ticketId/messages", authMiddleware, isSuperOwner,
 // ---- Actions de gestion sur un commerçant ----
 // Elles s'appuient sur le même service que l'espace d'administration, pour que
 // suspension et fermeture se comportent exactement de la même façon.
+
+// PATCH /superowner/organizations/:orgId/tier - Changer la formule
+router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+    const schema = z.object({ tier: z.enum(["FREE", "PREMIUM", "PRO"]) });
+    const body = schema.parse(req.body);
+
+    const existante = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { tier: true },
+    });
+
+    if (!existante) {
+      throw new ApiError(404, "Commerçant introuvable", "ORG_NOT_FOUND");
+    }
+
+    // Rétrograder en dessous du nombre de boutiques ouvertes créerait un
+    // commerçant hors quota : on le signale au lieu de l'accepter en silence.
+    const quotaCible = FORMULES[body.tier].maxBoutiques;
+    const boutiques = await db.store.count({ where: { orgId, deletedAt: null } });
+
+    if (boutiques > quotaCible) {
+      throw new ApiError(
+        400,
+        `Ce commerçant exploite ${boutiques} boutiques ; la formule ${FORMULES[body.tier].libelle} en autorise ${quotaCible}. Fermez d'abord les boutiques en trop.`,
+        "TIER_BELOW_USAGE"
+      );
+    }
+
+    const organisation = await db.organization.update({
+      where: { id: orgId },
+      data: { tier: body.tier },
+    });
+
+    await journaliser(req, "MERCHANT_TIER_CHANGED", orgId, {
+      avant: existante.tier,
+      apres: body.tier,
+    });
+
+    res.json({
+      message: `Formule passée en ${FORMULES[body.tier].libelle}`,
+      organization: { id: organisation.id, tier: organisation.tier },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.post("/organizations/:orgId/suspend", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -1137,6 +1208,14 @@ router.patch("/support-tickets/:ticketId/status", authMiddleware, isSuperOwner, 
         changes: { status: body.status } as any,
       },
     });
+
+    if (existant.status !== body.status) {
+      await TicketMessageService.notifierChangementEtat(
+        ticketId,
+        "Votre ticket a changé d'état",
+        `Ticket « ${ticket.title} » : ${LIBELLES_STATUT[body.status] || body.status}.`
+      );
+    }
 
     res.json({ success: true, ticket });
   } catch (err) {

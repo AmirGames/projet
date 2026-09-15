@@ -336,6 +336,9 @@ model Product {
   categoryId  String?
   stock       Int           @default(0)
   lowStockThreshold Int     @default(10)
+  // Disponibilité du jour, gérée à la main par le commerçant. Le suivi
+  // chiffré du stock viendra plus tard, par ingrédients et recettes.
+  isAvailable Boolean       @default(true)
   displayOrder Int          @default(0)
   status      ProductStatus @default(DRAFT)
 
@@ -420,6 +423,7 @@ model ProductVariant {
   combination Json
   price       Decimal? @db.Decimal(10, 2)
   stock       Int     @default(0)
+  isAvailable Boolean @default(true)
 
   // Relations
   product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)

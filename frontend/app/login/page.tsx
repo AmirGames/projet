@@ -44,11 +44,13 @@ export default function LoginPage() {
         localStorage.setItem("currentOrgId", orgId);
       }
 
+      // Le commerçant choisit son commerce depuis /merchant plutôt que
+      // d'être envoyé d'office sur une boutique.
       const redirectPath = result.user?.isSuperOwner
         ? "/super-admin"
         : orgId
-          ? `/merchant/${orgId}/dashboard`
-          : "/dashboard";
+          ? "/merchant"
+          : "/login";
 
       // Sans cela le contexte reste sur l'état déconnecté et les pages
       // protégées renvoient aussitôt vers /login.
