@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint } from "../utils/geo";
+import { StoreHoursService } from "../services/store-hours.service";
 import { authMiddleware } from "../middleware/auth";
 
 const router = Router();
@@ -240,6 +241,18 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
         reviewCount: store.reviews.length
       }
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/client/stores/:id/pickup-slots - Créneaux de retrait proposables
+router.get("/stores/:id/pickup-slots", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const jours = Math.min(parseInt((req.query.jours as string) || "7") || 7, 14);
+    const creneaux = await StoreHoursService.creneauxDeRetrait(req.params.id as string, { jours });
+
+    res.json({ success: true, data: creneaux });
   } catch (err) {
     next(err);
   }

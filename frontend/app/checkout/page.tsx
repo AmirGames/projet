@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { ArrowLeft } from "lucide-react";
 
 interface CartItem {
   id: string;
@@ -105,7 +106,18 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}
       <div className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto flex items-center gap-4">
+          {/* Sans retour, un client qui veut corriger son panier n'a que le
+              bouton du navigateur — et il ne le trouve pas sur téléphone. */}
+          <button
+            type="button"
+            onClick={() => router.back()}
+            title="Retour"
+            aria-label="Retour"
+            className="p-2 hover:bg-gray-700 rounded-lg transition"
+          >
+            <ArrowLeft size={20} />
+          </button>
           <h1 className="text-2xl font-bold">Passer la commande</h1>
         </div>
       </div>

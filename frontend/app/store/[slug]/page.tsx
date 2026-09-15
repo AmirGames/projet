@@ -53,6 +53,10 @@ export default function StorefrontPage() {
   const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  // Créneaux réellement proposables, déduits des horaires de la boutique.
+  const [creneaux, setCreneaux] = useState<
+    { date: string; libelle: string; creneaux: { valeur: string; libelle: string }[] }[]
+  >([]);
   const [orderConfirmation, setOrderConfirmation] = useState<OrderConfirmation | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
@@ -95,6 +99,25 @@ export default function StorefrontPage() {
     }
   });
 
+  // Un champ d'heure libre laissait choisir 9 h alors que la boutique ouvre à
+  // 11 h : la commande partait et personne n'était là pour la remettre.
+  useEffect(() => {
+    if (!store?.id || checkoutForm.deliveryType !== 'PICKUP') return;
+
+    let annule = false;
+
+    fetch(`${API_URL}/api/client/stores/${store.id}/pickup-slots`)
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) => {
+        if (!annule && donnees) setCreneaux(donnees.data || []);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      annule = true;
+    };
+  }, [store?.id, checkoutForm.deliveryType]);
+
   const fetchStoreData = async () => {
     try {
       const response = await fetch(`${API_URL}/api/stores/slug/${slug}`);
@@ -102,27 +125,31 @@ export default function StorefrontPage() {
         const data = await response.json();
         setStore(data.store);
 
-        // Fetch categories and products
-        const productsResponse = await fetch(`${API_URL}/api/products?storeId=${data.store.id}`);
-        if (productsResponse.ok) {
-          const productsData = await productsResponse.json();
-          // Group products by category
-          const grouped: { [key: string]: Category } = {};
-          productsData.products.forEach((product: Product & { categoryId: string; category: { id: string; name: string } }) => {
-            const categoryId = product.category?.id || 'uncategorized';
-            const categoryName = product.category?.name || 'Autres';
+        // Le menu vient de la route publique : /api/products exige un compte,
+        // si bien qu'un visiteur non connecté voyait la vitrine vide. Elle
+        // renvoie en prime le menu déjà groupé par catégorie, dans l'ordre
+        // voulu par le commerçant.
+        const menuResponse = await fetch(`${API_URL}/api/client/stores/${data.store.id}`);
+        if (menuResponse.ok) {
+          const menuData = await menuResponse.json();
+          const menu = (menuData.data?.menu || {}) as Record<string, any[]>;
 
-            if (!grouped[categoryId]) {
-              grouped[categoryId] = {
-                id: categoryId,
-                name: categoryName,
-                products: [],
-              };
-            }
-            grouped[categoryId].products.push(product);
-          });
-
-          setCategories(Object.values(grouped));
+          setCategories(
+            Object.entries(menu).map(([nom, produits]) => ({
+              id: nom,
+              name: nom,
+              products: produits.map((produit) => ({
+                id: produit.id,
+                name: produit.name,
+                description: produit.description || '',
+                price: Number(produit.price || 0),
+                isAvailable: produit.isAvailable !== false,
+                images: (produit.media || produit.images || []).map((image: any) => ({
+                  url: image.url,
+                })),
+              })),
+            }))
+          );
         }
       }
     } catch (error) {
@@ -670,13 +697,36 @@ export default function StorefrontPage() {
                 <div className="space-y-4">
                   <h3 className="font-bold text-lg">Heure de Retrait</h3>
                   <div>
-                    <label className="text-sm text-gray-400 block mb-2">Sélectionnez une heure *</label>
-                    <input
-                      type="datetime-local"
-                      value={checkoutForm.pickupTime}
-                      onChange={(e) => setCheckoutForm({ ...checkoutForm, pickupTime: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                    />
+                    <label htmlFor="creneau" className="text-sm text-gray-400 block mb-2">
+                      Sélectionnez une heure *
+                    </label>
+
+                    {creneaux.length === 0 ? (
+                      <p className="text-sm text-amber-300 bg-amber-900/20 border border-amber-700/40 rounded px-3 py-2">
+                        Aucun créneau de retrait disponible pour les prochains jours.
+                        Choisissez la livraison, ou revenez plus tard.
+                      </p>
+                    ) : (
+                      <select
+                        id="creneau"
+                        value={checkoutForm.pickupTime}
+                        onChange={(e) =>
+                          setCheckoutForm({ ...checkoutForm, pickupTime: e.target.value })
+                        }
+                        className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                      >
+                        <option value="">Choisir un créneau</option>
+                        {creneaux.map((jour) => (
+                          <optgroup key={jour.date} label={jour.libelle}>
+                            {jour.creneaux.map((creneau) => (
+                              <option key={creneau.valeur} value={creneau.valeur}>
+                                {creneau.libelle}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </div>
               )}

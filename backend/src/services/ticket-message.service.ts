@@ -133,6 +133,66 @@ export class TicketMessageService {
     }
   }
 
+
+  /**
+   * Prévient la plateforme qu'un commerçant vient d'ouvrir un ticket.
+   *
+   * Sans cela, un ticket créé n'apparaissait que pour qui pensait à ouvrir la
+   * page du support : un commerçant bloqué pouvait attendre des jours sans que
+   * personne ne le sache.
+   */
+  static async notifierOuvertureDeTicket(ticketId: string) {
+    const ticket = await db.merchantTicket.findUnique({
+      where: { id: ticketId },
+      select: {
+        id: true,
+        title: true,
+        priority: true,
+        orgId: true,
+        org: { select: { name: true } },
+      },
+    });
+
+    if (!ticket) return;
+
+    const plateforme = await db.user.findMany({
+      where: {
+        OR: [{ isSuperOwner: true }, { isSystemAdmin: true }],
+        status: "ACTIVE",
+      },
+      select: { email: true },
+    });
+
+    const destinataires = [...new Set(plateforme.map((u) => u.email))];
+    if (destinataires.length === 0) return;
+
+    const titre = `Nouveau ticket — ${ticket.org?.name || "un commerçant"}`;
+    const corps = `${ticket.title} (priorité ${ticket.priority})`;
+    const lien = `/superowner/support-tickets`;
+
+    await db.notification.createMany({
+      data: destinataires.map((email) => ({
+        type: "TICKET_MESSAGE" as const,
+        title: titre,
+        message: corps,
+        recipientEmail: email,
+        link: lien,
+        // Un ticket critique doit se distinguer dans la liste.
+        priority: ticket.priority === "HIGH" ? "HIGH" : "MEDIUM",
+      })),
+    });
+
+    const creees = await db.notification.findMany({
+      where: { recipientEmail: { in: destinataires }, title: titre, isRead: false },
+      orderBy: { createdAt: "desc" },
+      take: destinataires.length,
+    });
+
+    for (const notification of creees) {
+      emitNotification(notification.recipientEmail, notification);
+    }
+  }
+
   // Prévient l'autre partie : le marchand quand un admin répond, les admins sinon.
   private static async notifyCounterpart(
     ticket: { id: string; title: string; orgId: string },

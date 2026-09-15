@@ -56,6 +56,87 @@ export class StoreHoursService {
     };
   }
 
+
+  /**
+   * Créneaux de retrait réellement proposables.
+   *
+   * Un champ d'heure libre laissait le client choisir 9 h alors que la
+   * boutique ouvre à 11 h : la commande partait, et personne n'était là pour
+   * la lui donner. On ne propose donc que ce qui existe.
+   */
+  static async creneauxDeRetrait(
+    storeId: string,
+    options: { jours?: number; pasMinutes?: number; delaiPreparationMinutes?: number } = {}
+  ) {
+    const jours = options.jours ?? 7;
+    const pas = options.pasMinutes ?? 15;
+    const delai = options.delaiPreparationMinutes ?? 30;
+
+    const { operatingHours } = await this.getHours(storeId);
+
+    // Le plus tôt possible : maintenant, plus le temps de préparer.
+    const plancher = new Date(Date.now() + delai * 60 * 1000);
+    const resultat: {
+      date: string;
+      libelle: string;
+      creneaux: { valeur: string; libelle: string }[];
+    }[] = [];
+
+    for (let decalage = 0; decalage < jours; decalage++) {
+      const jour = new Date();
+      jour.setDate(jour.getDate() + decalage);
+      jour.setHours(0, 0, 0, 0);
+
+      // getDay() commence au dimanche ; notre table commence au lundi.
+      const code = DAYS[(jour.getDay() + 6) % 7];
+      const horaires = operatingHours[code as keyof OperatingHours];
+
+      if (!horaires || horaires.closed) continue;
+
+      const [heureOuverture, minuteOuverture] = horaires.open.split(":").map(Number);
+      const [heureFermeture, minuteFermeture] = horaires.close.split(":").map(Number);
+
+      const ouverture = new Date(jour);
+      ouverture.setHours(heureOuverture, minuteOuverture, 0, 0);
+
+      const fermeture = new Date(jour);
+      fermeture.setHours(heureFermeture, minuteFermeture, 0, 0);
+
+      // Une fermeture après minuit appartient au lendemain.
+      if (fermeture <= ouverture) fermeture.setDate(fermeture.getDate() + 1);
+
+      const creneaux: { valeur: string; libelle: string }[] = [];
+
+      for (
+        const instant = new Date(ouverture);
+        instant < fermeture;
+        instant.setMinutes(instant.getMinutes() + pas)
+      ) {
+        if (instant < plancher) continue;
+
+        creneaux.push({
+          valeur: instant.toISOString(),
+          libelle: instant.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+        });
+      }
+
+      if (creneaux.length === 0) continue;
+
+      resultat.push({
+        date: jour.toISOString().slice(0, 10),
+        libelle:
+          decalage === 0
+            ? "Aujourd'hui"
+            : decalage === 1
+              ? "Demain"
+              : jour.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }),
+        creneaux,
+      });
+    }
+
+    return resultat;
+  }
+
   static async updateHours(storeId: string, hours: Partial<OperatingHours>) {
     const current = await this.getHours(storeId);
     const updated = { ...current.operatingHours, ...hours };

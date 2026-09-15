@@ -29,6 +29,12 @@ interface Restaurant {
   address: string;
   isOpen: boolean;
   products: Product[];
+  /**
+   * Le menu groupé par catégorie, dans l'ordre voulu par le commerçant.
+   * La page n'affichait que la liste à plat : les catégories créées côté
+   * commerçant n'apparaissaient nulle part.
+   */
+  menu: Record<string, Product[]>;
 }
 
 interface CartItem extends Product {
@@ -56,6 +62,14 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
             ...precedent,
             products: precedent.products.map((produit) =>
               produit.id === productId ? { ...produit, isAvailable } : produit
+            ),
+            menu: Object.fromEntries(
+              Object.entries(precedent.menu).map(([categorie, produits]) => [
+                categorie,
+                produits.map((produit) =>
+                  produit.id === productId ? { ...produit, isAvailable } : produit
+                ),
+              ])
             ),
           }
         : precedent
@@ -100,6 +114,18 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
         deliveryFee: Number(boutique.deliveryCost || 0),
         address: [boutique.address, boutique.city].filter(Boolean).join(', '),
         isOpen: boutique.isOpen,
+        menu: Object.fromEntries(
+          Object.entries(boutique.menu || {}).map(([categorie, produits]) => [
+            categorie,
+            (produits as any[]).map((produit) => ({
+              id: produit.id,
+              name: produit.name,
+              description: produit.description || '',
+              price: Number(produit.price || 0),
+              isAvailable: produit.isAvailable !== false,
+            })),
+          ])
+        ),
         products: (boutique.products || []).map((produit: any) => ({
           id: produit.id,
           name: produit.name,
@@ -239,50 +265,67 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
           <div className="lg:col-span-2">
             <h2 className="text-2xl font-bold mb-6">Menu</h2>
 
-            {restaurant.products && restaurant.products.length > 0 ? (
-              <div className="space-y-4">
-                {restaurant.products.map((product) => {
-                  // Un plat épuisé reste affiché : le masquer laisserait le
-                  // client chercher en vain ce qu'il commande d'habitude.
-                  const epuise = product.isAvailable === false;
+            {Object.keys(restaurant.menu).length > 0 ? (
+              <div className="space-y-8">
+                {Object.entries(restaurant.menu).map(([categorie, produits]) => (
+                  <section key={categorie}>
+                    {/* Les catégories du commerçant structurent le menu ; sans
+                        elles, tout arrivait en une seule liste. */}
+                    <h3 className="text-xl font-bold mb-3 pb-2 border-b border-gray-700">
+                      {categorie}
+                    </h3>
 
-                  return (
-                    <div
-                      key={product.id}
-                      className={`bg-gray-800 rounded-lg p-4 flex items-start justify-between transition ${
-                        epuise ? 'opacity-60' : 'hover:bg-gray-750'
-                      }`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h3 className="font-bold text-lg">{product.name}</h3>
-                          {epuise && (
-                            <span className="px-2 py-0.5 rounded border border-red-500/50 bg-red-500/15 text-red-300 text-xs font-semibold uppercase tracking-wide">
-                              Épuisé
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-gray-400 text-sm mb-2">{product.description}</p>
-                        <p className={`font-bold ${epuise ? 'text-gray-500' : 'text-green-400'}`}>
-                          {euro(product.price)}
-                        </p>
-                      </div>
+                    <div className="space-y-4">
+                      {produits.map((product) => {
+                        // Un plat épuisé reste affiché : le masquer laisserait
+                        // le client chercher en vain ce qu'il commande
+                        // d'habitude.
+                        const epuise = product.isAvailable === false;
 
-                      <button
-                        onClick={() => addToCart(product)}
-                        disabled={epuise}
-                        className={`ml-4 p-2 rounded-lg transition ${
-                          epuise
-                            ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                            : 'bg-green-600 hover:bg-green-700'
-                        }`}
-                        title={epuise ? 'Ce plat n\'est plus disponible' : 'Ajouter au panier'}
-                      >
-                        <Plus size={20} />
-                      </button>
+                        return (
+                          <div
+                            key={product.id}
+                            className={`bg-gray-800 rounded-lg p-4 flex items-start justify-between transition ${
+                              epuise ? 'opacity-60' : 'hover:bg-gray-750'
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                {/* Un cran sous le titre de catégorie : le plan
+                                    du document reste lisible. */}
+                                <h4 className="font-bold text-lg">{product.name}</h4>
+                                {epuise && (
+                                  <span className="px-2 py-0.5 rounded border border-red-500/50 bg-red-500/15 text-red-300 text-xs font-semibold uppercase tracking-wide">
+                                    Épuisé
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-gray-400 text-sm mb-2">{product.description}</p>
+                              <p
+                                className={`font-bold ${epuise ? 'text-gray-500' : 'text-green-400'}`}
+                              >
+                                {euro(product.price)}
+                              </p>
+                            </div>
+
+                            <button
+                              onClick={() => addToCart(product)}
+                              disabled={epuise}
+                              className={`ml-4 p-2 rounded-lg transition ${
+                                epuise
+                                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                  : 'bg-green-600 hover:bg-green-700'
+                              }`}
+                              title={epuise ? 'Ce plat n\'est plus disponible' : 'Ajouter au panier'}
+                            >
+                              <Plus size={20} />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </section>
+                ))}
               </div>
             ) : (
               <p className="text-gray-400">Aucun produit disponible</p>

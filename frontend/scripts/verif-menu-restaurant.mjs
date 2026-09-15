@@ -1,9 +1,9 @@
 /**
  * Le menu vu par le client, dans un vrai navigateur.
  *
- * Deux choses que le commerçant décide et que le client doit voir : l'ordre
- * des produits dans une catégorie, et les plats épuisés — signalés, non
- * masqués, et impossibles à mettre au panier.
+ * Trois choses que le commerçant décide et que le client doit voir : ses
+ * catégories, l'ordre des produits à l'intérieur, et les plats épuisés —
+ * signalés, non masqués, et impossibles à mettre au panier.
  *
  *   npm i -D playwright && npx playwright install chromium
  *   VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3001 \
@@ -77,11 +77,26 @@ const boutique = await appeler('/api/stores', {
 
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
 
-const creer = async (name, price) => {
+const creerCategorie = async (name, displayOrder) => {
+  const reponse = await appeler('/api/categories', {
+    method: 'POST',
+    jeton: T,
+    corps: { storeId, name, displayOrder },
+  });
+
+  return reponse.donnees.category?.id || reponse.donnees.data?.id || reponse.donnees.id;
+};
+
+// « Pâtes » est créée en premier mais passe en second : c'est l'ordre du
+// commerçant qui compte, pas celui de la création ni l'alphabet.
+const catPates = await creerCategorie('Pâtes', 1);
+const catPizzas = await creerCategorie('Pizzas', 0);
+
+const creer = async (name, price, categoryId) => {
   const reponse = await appeler('/api/products', {
     method: 'POST',
     jeton: T,
-    corps: { storeId, name, price, status: 'ACTIVE' },
+    corps: { storeId, name, price, status: 'ACTIVE', ...(categoryId ? { categoryId } : {}) },
   });
 
   return reponse.donnees.product?.id || reponse.donnees.id;
@@ -89,9 +104,10 @@ const creer = async (name, price) => {
 
 // Noms choisis pour que l'alphabet donne Calzone, Margherita, Napolitaine :
 // l'ordre du commerçant sera l'inverse, la différence se verra.
-const margherita = await creer('Margherita', 12);
-const calzone = await creer('Calzone', 14);
-const napolitaine = await creer('Napolitaine', 13);
+const margherita = await creer('Margherita', 12, catPizzas);
+const calzone = await creer('Calzone', 14, catPizzas);
+const napolitaine = await creer('Napolitaine', 13, catPizzas);
+const carbonara = await creer('Carbonara', 15, catPates);
 
 await appeler('/api/products/reorder', {
   method: 'POST',
@@ -125,9 +141,51 @@ check('la pizzeria est listée', liste.includes(`Pizzeria ${uniq}`), liste.slice
 await page.goto(`${SITE}/restaurant/${storeId}`);
 await page.waitForTimeout(3000);
 
+titre('Les catégories du commerçant');
+// Le menu arrivait en une seule liste à plat : les catégories créées côté
+// commerçant n'apparaissaient nulle part.
+const categories = await page
+  .locator('h3')
+  .evaluateAll((titres) => titres.map((h) => h.textContent?.trim()));
+
+check('la catégorie Pizzas est un titre', categories.includes('Pizzas'), JSON.stringify(categories));
+check('la catégorie Pâtes est un titre', categories.includes('Pâtes'), JSON.stringify(categories));
+check(
+  'les catégories suivent l’ordre du commerçant',
+  categories.indexOf('Pizzas') < categories.indexOf('Pâtes'),
+  JSON.stringify(categories)
+);
+
+// Chaque plat doit être sous sa propre catégorie, pas seulement présent.
+const parSection = await page.locator('section').evaluateAll((sections) =>
+  sections.map((s) => ({
+    titre: s.querySelector('h3')?.textContent?.trim(),
+    plats: [...s.querySelectorAll('h4')].map((h) => h.textContent?.trim()),
+  }))
+);
+
+const sectionPizzas = parSection.find((s) => s.titre === 'Pizzas');
+const sectionPates = parSection.find((s) => s.titre === 'Pâtes');
+
+check(
+  'les trois pizzas sont sous « Pizzas »',
+  ['Margherita', 'Calzone', 'Napolitaine'].every((n) => sectionPizzas?.plats.includes(n)),
+  JSON.stringify(sectionPizzas)
+);
+check(
+  'la carbonara est sous « Pâtes »',
+  sectionPates?.plats.includes('Carbonara'),
+  JSON.stringify(sectionPates)
+);
+check(
+  'aucune pizza ne se glisse dans les pâtes',
+  !sectionPates?.plats.some((n) => ['Margherita', 'Calzone', 'Napolitaine'].includes(n || '')),
+  JSON.stringify(sectionPates)
+);
+
 titre('Ordre voulu par le commerçant');
 const nomsAffiches = await page
-  .locator('h3')
+  .locator('h4')
   .evaluateAll((titres) => titres.map((h) => h.textContent?.trim()));
 
 const pizzas = nomsAffiches.filter((n) =>
@@ -223,7 +281,7 @@ check(
 
 titre('Les autres restent commandables');
 const nomsRestants = await page
-  .locator('h3')
+  .locator('h4')
   .evaluateAll((titres) => titres.map((h) => h.textContent?.trim()));
 
 check('Calzone est toujours là', nomsRestants.includes('Calzone'), JSON.stringify(nomsRestants));

@@ -57,6 +57,9 @@ router.post("/tickets", authMiddleware, async (req: Request, res: Response, next
       },
     });
 
+    // La plateforme doit savoir qu'un commerçant attend une réponse.
+    await TicketMessageService.notifierOuvertureDeTicket(ticket.id);
+
     res.status(201).json({
       message: "Ticket de support créé",
       data: ticket,

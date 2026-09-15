@@ -14,7 +14,8 @@
     "verif:motdepasse": "node scripts/verif-mot-de-passe-oublie.mjs",
     "verif:courses": "node scripts/verif-courses-livreur.mjs",
     "verif:suivi": "node scripts/verif-suivi-client.mjs",
-    "verif:menu-client": "node scripts/verif-menu-restaurant.mjs"
+    "verif:menu-client": "node scripts/verif-menu-restaurant.mjs",
+    "verif:creneaux": "node scripts/verif-creneaux-retrait.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",
