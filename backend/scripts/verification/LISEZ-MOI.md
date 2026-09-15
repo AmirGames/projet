@@ -80,6 +80,7 @@ continue.
 | `verif-admin-motdepasse.mjs` | Création d'administrateur et réparation des mots de passe en clair |
 | `verif-attribution.mjs` | Attribution des courses : position, proposition, refus, rémunération |
 | `verif-client.mjs` | Historique, suivi de livraison, avis, favoris |
+| `verif-cloisonnement.mjs` | Chacun chez soi : aucune route n'accepte la boutique d'un autre |
 | `verif-creneaux-tickets.mjs` | Créneaux de retrait tenus aux horaires, alerte d'ouverture de ticket |
 | `verif-compte-restreint.mjs` | Suspension et fermeture : tout bloqué, sauf le support |
 | `verif-compte-email.mjs` | Mot de passe oublié et confirmation d'adresse, courriel compris |

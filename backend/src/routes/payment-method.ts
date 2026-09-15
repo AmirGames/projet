@@ -38,20 +38,9 @@ router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next
   }
 });
 
-router.get("/:storeId/:methodId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const storeId = req.params.storeId as string;
-    const methodId = req.params.methodId as string;
-
-    logger.info("Fetching payment method", { storeId, methodId });
-
-    const method = await PaymentMethodService.getPaymentMethod(storeId, methodId);
-    res.json(method);
-  } catch (err) {
-    next(err);
-  }
-});
-
+// « default » et « active » avant `/:storeId/:methodId` : déclarées après, elles
+// étaient lues comme des identifiants de moyen de paiement et ne répondaient
+// jamais.
 router.get("/:storeId/default", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
@@ -73,6 +62,20 @@ router.get("/:storeId/active", authMiddleware, async (req: Request, res: Respons
 
     const methods = await PaymentMethodService.getActivePaymentMethods(storeId);
     res.json({ data: methods });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/:storeId/:methodId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const storeId = req.params.storeId as string;
+    const methodId = req.params.methodId as string;
+
+    logger.info("Fetching payment method", { storeId, methodId });
+
+    const method = await PaymentMethodService.getPaymentMethod(storeId, methodId);
+    res.json(method);
   } catch (err) {
     next(err);
   }

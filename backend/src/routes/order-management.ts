@@ -32,6 +32,26 @@ router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next
   }
 });
 
+/**
+ * GET /orders/:storeId/today - Get today's orders
+ *
+ * Déclarée avant `/:storeId/:orderId`, sinon Express lit « today » comme un
+ * identifiant de commande et la route ne répond jamais.
+ */
+router.get("/:storeId/today", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const storeId = req.params.storeId as string;
+
+    logger.info("Fetching today's orders", { storeId });
+
+    const orders = await OrderManagementService.getTodayOrders(storeId);
+
+    res.json({ orders });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /orders/:storeId/:orderId - Get single order
 router.get("/:storeId/:orderId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -99,21 +119,6 @@ router.get("/:storeId/stats/overview", authMiddleware, async (req: Request, res:
     const stats = await OrderManagementService.getOrderStats(storeId, days);
 
     res.json(stats);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// GET /orders/:storeId/today - Get today's orders
-router.get("/:storeId/today", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const storeId = req.params.storeId as string;
-
-    logger.info("Fetching today's orders", { storeId });
-
-    const orders = await OrderManagementService.getTodayOrders(storeId);
-
-    res.json({ orders });
   } catch (err) {
     next(err);
   }

@@ -6,6 +6,7 @@ import { requestLogger } from "./config/logger";
 import { setupErrorHandling } from "./middleware/errorHandler";
 import { maintenanceMiddleware } from "./middleware/maintenance";
 import { compteRestreint } from "./middleware/compte-restreint";
+import { cloisonnement } from "./middleware/cloisonnement";
 import authRouter from "./routes/auth";
 import organizationRouter from "./routes/organization";
 import storeRouter from "./routes/store";
@@ -93,6 +94,12 @@ export function createApp(): Express {
   // posé ici, devant toutes les routes, et non route par route : il n'en
   // protégeait que trois.
   app.use(compteRestreint);
+
+  // Chacun chez soi : presque toutes les routes acceptaient un storeId sans
+  // vérifier qu'il appartenait à l'appelant. Le verrou est posé ici, devant
+  // toutes les routes, et non route par route : deux routeurs sur vingt-cinq
+  // faisaient le contrôle.
+  app.use(cloisonnement);
 
   // ===== API Routes =====
   app.use("/api/auth", authRouter);

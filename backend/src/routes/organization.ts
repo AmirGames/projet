@@ -41,8 +41,14 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
   }
 });
 
-// GET /organizations/:id - Get organization by ID
-router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * GET /organizations/:id - Get organization by ID
+ *
+ * Protégée : une organisation porte la formule et les coordonnées du
+ * commerçant. La route était ouverte, ce qui laissait le cloisonnement sans
+ * effet — il suffisait d'omettre son jeton pour lire le voisin.
+ */
+router.get("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
 
