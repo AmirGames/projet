@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
+import { intituleDeLaLigne } from '@/lib/ligne-commande';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -22,7 +23,14 @@ interface LigneCommande {
   quantity: number;
   price: number | string;
   total: number | string;
-  product?: { name: string; sku?: string | null } | null;
+  product?: {
+    name: string;
+    sku?: string | null;
+    variantLabel?: string | null;
+    category?: { name: string } | null;
+  } | null;
+  /** La déclinaison préparée : pennes, grande taille. */
+  variant?: { id: string; label: string; sku?: string | null } | null;
 }
 
 interface Commande {
@@ -242,7 +250,22 @@ export default function DetailCommandePage() {
                 <tbody className="divide-y divide-gray-700">
                   {lignes.map((ligne) => (
                     <tr key={ligne.id}>
-                      <td className="py-3">{ligne.product?.name || 'Produit supprimé'}</td>
+                      <td className="py-3">
+                        {/* La catégorie en surtitre : « 4 fromages » seul ne
+                            dit pas s'il s'agit des pâtes ou de la pizza. */}
+                        {intituleDeLaLigne(ligne).categorie && (
+                          <span className="block text-xs text-gray-500">
+                            {intituleDeLaLigne(ligne).categorie}
+                          </span>
+                        )}
+                        {intituleDeLaLigne(ligne).plat}
+                        {intituleDeLaLigne(ligne).declinaison && (
+                          <span className="text-orange-400">
+                            {' '}
+                            — {intituleDeLaLigne(ligne).declinaison}
+                          </span>
+                        )}
+                      </td>
                       <td className="py-3 text-center">{ligne.quantity}</td>
                       <td className="py-3 text-right">{euro(ligne.price)}</td>
                       <td className="py-3 text-right font-medium">{euro(ligne.total)}</td>

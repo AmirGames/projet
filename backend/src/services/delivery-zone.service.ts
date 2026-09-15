@@ -214,6 +214,9 @@ export class DeliveryZoneService {
       select: {
         latitude: true,
         longitude: true,
+        address: true,
+        city: true,
+        postalCode: true,
         acceptsDelivery: true,
         deliveryCost: true,
         minDeliveryAmount: true,
@@ -222,6 +225,34 @@ export class DeliveryZoneService {
 
     if (!boutique) {
       throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
+    }
+
+    /**
+     * La boutique se situe elle-même, une fois.
+     *
+     * Le formulaire de création jetait les coordonnées de l'adresse choisie :
+     * toutes les boutiques créées avant ce correctif sont sans position, et le
+     * client s'entendait répondre « cette boutique n'a pas encore situé son
+     * adresse » au moment de payer. On la retrouve ici, et on l'enregistre :
+     * le commerçant n'a rien à ressaisir.
+     */
+    if (!estUnPoint({ latitude: boutique.latitude, longitude: boutique.longitude })) {
+      const ecrite = [boutique.address, boutique.postalCode, boutique.city]
+        .filter(Boolean)
+        .join(" ");
+
+      if (ecrite.trim().length >= 3) {
+        const situee = await AddressService.situer(ecrite);
+
+        if (situee.point) {
+          boutique.latitude = situee.point.latitude;
+          boutique.longitude = situee.point.longitude;
+
+          await db.store
+            .update({ where: { id: storeId }, data: situee.point })
+            .catch(() => undefined);
+        }
+      }
     }
 
     const forfait = {

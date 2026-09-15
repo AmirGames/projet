@@ -79,6 +79,7 @@ continue.
 | `verif-adresses.mjs` | Les deux fournisseurs d'adresses, le filtre par pays et le repli |
 | `verif-admin-motdepasse.mjs` | Création d'administrateur et réparation des mots de passe en clair |
 | `verif-attribution.mjs` | Attribution des courses : position, proposition, refus, rémunération |
+| `verif-boutique-fermee.mjs` | Boutique fermée : visible, consultable, mais sans commande |
 | `verif-client.mjs` | Historique, suivi de livraison, avis, favoris |
 | `verif-cloisonnement.mjs` | Chacun chez soi : aucune route n'accepte la boutique d'un autre |
 | `verif-creneaux-tickets.mjs` | Créneaux de retrait tenus aux horaires, alerte d'ouverture de ticket |
@@ -97,6 +98,7 @@ continue.
 | `verif-sante-systeme.mjs` | La santé système : ses cinq relevés, et ce qui la fait bouger |
 | `verif-salons-direct.mjs` | Qui peut suivre quoi en direct, et la disponibilité poussée |
 | `verif-zones-livraison.mjs` | Anneaux de livraison : frais, minimum, et leur application à la commande |
+| `verif-ticket-paiement.mjs` | Catégorie et déclinaison sur le ticket, code promo, moyens de paiement |
 | `verif-temps-reel.mjs` | Notifications poussées en direct |
 
 ## Ajouter une vérification

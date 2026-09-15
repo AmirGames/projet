@@ -4,14 +4,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { intituleDeLaLigne } from '@/lib/ligne-commande';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface OrderItem {
   id: string;
-  name: string;
   quantity: number;
   price: number;
+  /** Le nom vit sur le plat, pas sur la ligne. */
+  product?: { name: string; category?: { name: string } | null } | null;
+  variant?: { label: string } | null;
 }
 
 interface Order {
@@ -315,10 +318,22 @@ export default function TrackOrderPage() {
                 {order.items && order.items.map(item => (
                   <div key={item.id} className="flex justify-between items-center bg-gray-700 p-3 rounded">
                     <div>
-                      <p className="font-semibold">{item.name}</p>
+                      {/* `item.name` n'existe pas sur une ligne de commande :
+                          l'article s'affichait sans nom. */}
+                      {intituleDeLaLigne(item).categorie && (
+                        <p className="text-xs text-gray-500">{intituleDeLaLigne(item).categorie}</p>
+                      )}
+                      <p className="font-semibold">
+                        {intituleDeLaLigne(item).plat}
+                        {intituleDeLaLigne(item).declinaison && (
+                          <span className="text-red-400"> — {intituleDeLaLigne(item).declinaison}</span>
+                        )}
+                      </p>
                       <p className="text-sm text-gray-400">Quantité: {item.quantity}</p>
                     </div>
-                    <p className="text-red-400 font-semibold">{euro(item.price)}</p>
+                    <p className="text-red-400 font-semibold">
+                      {euro(Number(item.price) * item.quantity)}
+                    </p>
                   </div>
                 ))}
               </div>

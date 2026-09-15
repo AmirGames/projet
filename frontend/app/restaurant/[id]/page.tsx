@@ -333,6 +333,19 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h1 className="text-4xl font-bold mb-2">{restaurant.name}</h1>
+
+              {/* Fermée, la boutique disparaissait de la liste : le client
+                  croyait le commerce parti. Elle reste consultable, et le dit. */}
+              {!restaurant.isOpen && (
+                <p
+                  role="status"
+                  className="mb-4 inline-block rounded-lg border border-amber-700/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-200"
+                >
+                  Momentanément indisponible — vous pouvez consulter le menu, mais pas commander
+                  pour le moment.
+                </p>
+              )}
+
               <p className="text-green-100 mb-4">{restaurant.description}</p>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -624,12 +637,18 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
                   {/* Sans la boutique, la page de commande visait un
                       identifiant écrit en dur : la commande partait chez un
                       autre commerce. */}
-                  <Link
-                    href={`/checkout?boutique=${params.id}`}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition block text-center"
-                  >
-                    Passer la commande
-                  </Link>
+                  {restaurant.isOpen ? (
+                    <Link
+                      href={`/checkout?boutique=${params.id}`}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition block text-center"
+                    >
+                      Passer la commande
+                    </Link>
+                  ) : (
+                    <p className="w-full rounded-lg bg-gray-700 py-3 px-4 text-center text-sm text-amber-300">
+                      Commerce momentanément indisponible
+                    </p>
+                  )}
                 </>
               )}
             </div>

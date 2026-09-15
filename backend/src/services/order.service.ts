@@ -4,6 +4,7 @@ import { logger } from "../config/logger";
 import { ApiError } from "../middleware/errorHandler";
 import { VariantService } from "./variant.service";
 import { DeliveryZoneService } from "./delivery-zone.service";
+import { PromotionService } from "./promotion.service";
 
 export interface OrderData {
   storeId: string;
@@ -21,6 +22,10 @@ export interface OrderData {
   taxAmount?: number;
   feesAmount?: number;
   customerId?: string;
+  /** Le code saisi par le client. La remise est calculée par le serveur. */
+  promoCode?: string;
+  /** Le moyen de paiement retenu, parmi ceux que le commerçant propose. */
+  paymentMethodId?: string;
   notes?: string;
   items?: {
     productId: string;
@@ -67,6 +72,30 @@ export class OrderService {
 
   static async create(data: OrderData) {
     try {
+      /**
+       * Une boutique fermée n'accepte pas de commande.
+       *
+       * Rien ne le vérifiait : le commerçant fermait sa boutique et les
+       * commandes continuaient d'arriver. Elle reste visible en vitrine — le
+       * client consulte le menu — mais la commande, elle, est refusée ici.
+       */
+      const boutique = await db.store.findUnique({
+        where: { id: data.storeId },
+        select: { isOpen: true, deletedAt: true, name: true },
+      });
+
+      if (!boutique || boutique.deletedAt) {
+        throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
+      }
+
+      if (!boutique.isOpen) {
+        throw new ApiError(
+          400,
+          `« ${boutique.name} » est momentanément indisponible et n'accepte pas de commande.`,
+          "STORE_CLOSED"
+        );
+      }
+
       const customerId = await this.resoudreClient(data);
 
       // On refuse la commande entière si un article n'est plus disponible :
@@ -154,8 +183,57 @@ export class OrderService {
         fraisDeLivraison = verdict.frais;
       }
 
+      /**
+       * La remise, calculée par le serveur.
+       *
+       * Le code promo n'était ni vérifié ni conservé : la commande ne gardait
+       * aucune trace de la remise, et le commerçant ne savait pas quel code
+       * avait servi. Un code refusé fait échouer la commande plutôt que de
+       * passer en silence au prix plein — le client a vu un prix remisé.
+       */
+      let remise = 0;
+      let codePromo: string | null = null;
+
+      if (data.promoCode && lignesTarifees.length > 0) {
+        const validation = await PromotionService.validateAndApply(
+          data.storeId,
+          data.promoCode,
+          Number(totalDesLignes.toFixed(2)),
+          lignesTarifees.map((ligne) => ligne.productId)
+        );
+
+        remise = Number(validation.discountAmount.toFixed(2));
+        codePromo = validation.promotion.code;
+
+        // Le compteur d'utilisations n'avançait jamais : une limite de dix
+        // usages n'en limitait aucun.
+        await PromotionService.applyPromotion(validation.promotion.id);
+      }
+
+      /** Le moyen de paiement doit être celui de cette boutique, et actif. */
+      let moyenDePaiement: { id: string; name: string } | null = null;
+
+      if (data.paymentMethodId) {
+        const propose = await db.paymentMethod.findFirst({
+          where: { id: data.paymentMethodId, storeId: data.storeId, isActive: true },
+          select: { id: true, name: true },
+        });
+
+        if (!propose) {
+          throw new ApiError(
+            400,
+            "Ce moyen de paiement n'est pas proposé par ce commerce",
+            "PAYMENT_METHOD_UNAVAILABLE"
+          );
+        }
+
+        moyenDePaiement = propose;
+      }
+
       const totalCalcule = lignesTarifees.length > 0
-        ? Number((totalDesLignes + Number(data.taxAmount || 0) + fraisDeLivraison).toFixed(2))
+        ? Number(
+            (totalDesLignes + Number(data.taxAmount || 0) + fraisDeLivraison - remise).toFixed(2)
+          )
         : Number(data.totalAmount);
 
       const order = await db.order.create({
@@ -174,6 +252,10 @@ export class OrderService {
           totalAmount: totalCalcule,
           taxAmount: data.taxAmount || 0,
           feesAmount: fraisDeLivraison,
+          promoCode: codePromo,
+          discountAmount: remise,
+          paymentMethodId: moyenDePaiement?.id,
+          paymentMethodName: moyenDePaiement?.name,
           customerId,
           notes: data.notes,
           status: "PENDING" as any,
@@ -191,7 +273,7 @@ export class OrderService {
         },
         include: {
           items: {
-            include: { product: true, variant: true },
+            include: { product: { include: { category: { select: { name: true } } } }, variant: true },
           },
         },
       });
@@ -213,7 +295,7 @@ export class OrderService {
       where: { id },
       include: {
         items: {
-          include: { product: true, variant: true },
+          include: { product: { include: { category: { select: { name: true } } } }, variant: true },
         },
         payments: true,
       },
@@ -327,7 +409,7 @@ export class OrderService {
       where: { id },
       include: {
         items: {
-          include: { product: true, variant: true },
+          include: { product: { include: { category: { select: { name: true } } } }, variant: true },
         },
         payments: true,
       },

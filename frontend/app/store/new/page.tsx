@@ -22,6 +22,16 @@ export default function CreateStorePage() {
     postalCode: '',
     phone: '',
     email: '',
+    /**
+     * Les coordonnées de l'adresse retenue.
+     *
+     * Elles étaient jetées : la boutique naissait sans position, et la livraison
+     * annonçait ensuite au client « cette boutique n'a pas encore situé son
+     * adresse ». Le serveur sait aussi les retrouver seul, mais autant les lui
+     * donner quand la suggestion les fournit.
+     */
+    latitude: undefined as number | undefined,
+    longitude: undefined as number | undefined,
   });
 
   useEffect(() => {
@@ -119,6 +129,8 @@ export default function CreateStorePage() {
           phone: formData.phone,
           email: formData.email,
           description: formData.description,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
         }),
       });
 
@@ -233,13 +245,24 @@ export default function CreateStorePage() {
                   </label>
                   <AddressAutocomplete
                     value={formData.address}
-                    onChange={(valeur) => setFormData({ ...formData, address: valeur })}
+                    onChange={(valeur) =>
+                      setFormData({
+                        ...formData,
+                        address: valeur,
+                        // Taper par-dessus une suggestion rendrait sa position
+                        // fausse.
+                        latitude: undefined,
+                        longitude: undefined,
+                      })
+                    }
                     onSelect={(adresse) =>
                       setFormData({
                         ...formData,
                         address: adresse.street,
                         city: adresse.city || formData.city,
                         postalCode: adresse.postalCode || formData.postalCode,
+                        latitude: adresse.latitude ?? undefined,
+                        longitude: adresse.longitude ?? undefined,
                       })
                     }
                     placeholder="123 rue de la Paix"

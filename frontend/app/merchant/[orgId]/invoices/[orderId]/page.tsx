@@ -11,6 +11,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface LigneFacture {
   description: string;
+  /** La catégorie du plat, en surtitre : « 4 fromages » ne dit pas lequel. */
+  category?: string | null;
+  /** La déclinaison facturée : pennes, grande taille. */
+  variant?: string | null;
   sku?: string | null;
   quantity: number;
   unitPrice: number;
@@ -178,7 +182,13 @@ export default function FacturePage() {
                 facture.items.map((ligne, index) => (
                   <tr key={`${ligne.description}-${index}`}>
                     <td className="py-3">
+                      {ligne.category && (
+                        <span className="text-gray-500 print:text-gray-600 text-xs block">
+                          {ligne.category}
+                        </span>
+                      )}
                       {ligne.description}
+                      {ligne.variant && <span className="text-gray-400"> — {ligne.variant}</span>}
                       {ligne.sku && (
                         <span className="text-gray-500 text-xs block">Réf. {ligne.sku}</span>
                       )}

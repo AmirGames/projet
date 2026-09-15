@@ -34,6 +34,13 @@ interface Livraison {
   forfaitBoutique: boolean;
 }
 
+interface MoyenDePaiement {
+  id: string;
+  type: string;
+  name: string;
+  isDefault: boolean;
+}
+
 export interface CommandePassee {
   id: string;
   numero: string;
@@ -64,6 +71,19 @@ export function TunnelCommande({
   >([]);
   const [submitting, setSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+  /**
+   * Les moyens de paiement du commerçant.
+   *
+   * Ils étaient réglables côté commerçant sans être montrés au client : au
+   * moment de payer, aucun choix n'apparaissait.
+   */
+  const [moyens, setMoyens] = useState<MoyenDePaiement[]>([]);
+  const [moyenChoisi, setMoyenChoisi] = useState('');
+  // Le code promo : saisi, puis vérifié par le serveur.
+  const [code, setCode] = useState('');
+  const [remise, setRemise] = useState<{ code: string; montant: number } | null>(null);
+  const [codeEnCours, setCodeEnCours] = useState(false);
+  const [codeRefuse, setCodeRefuse] = useState('');
 
   const [checkoutForm, setCheckoutForm] = useState({
     customerName: '',
@@ -148,6 +168,30 @@ export function TunnelCommande({
     };
   }, [boutique.id, checkoutForm.deliveryType]);
 
+  useEffect(() => {
+    if (!boutique.id) return;
+
+    let annule = false;
+
+    fetch(`${API_URL}/api/client/stores/${boutique.id}/payment-methods`)
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) => {
+        if (annule || !donnees) return;
+
+        const proposes: MoyenDePaiement[] = donnees.data || [];
+        setMoyens(proposes);
+
+        // Celui que le commerçant a mis par défaut, sinon le premier.
+        const parDefaut = proposes.find((moyen) => moyen.isDefault) || proposes[0];
+        if (parDefaut) setMoyenChoisi(parDefaut.id);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      annule = true;
+    };
+  }, [boutique.id]);
+
   const sousTotal = totalDuPanier(lignes);
 
   /**
@@ -158,13 +202,71 @@ export function TunnelCommande({
    */
   const fraisDeLivraison =
     checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable ? livraison.frais : 0;
-  const total = sousTotal + fraisDeLivraison;
+  const montantRemise = remise?.montant ?? 0;
+  const total = Math.max(0, sousTotal + fraisDeLivraison - montantRemise);
 
   /** Le panier atteint-il le minimum de la zone. */
   const sousLeMinimum =
     checkoutForm.deliveryType === 'DELIVERY' &&
     Boolean(livraison?.livrable) &&
     sousTotal < (livraison?.minimum ?? 0);
+
+  /**
+   * Vérifier le code promo auprès du serveur.
+   *
+   * Le composant existant appelait la route sans `storeId`, que celle-ci exige :
+   * tout code était donc refusé par un « Paramètre storeId requis ».
+   */
+  const appliquerLeCode = async () => {
+    const saisi = code.trim();
+    if (!saisi) return;
+
+    setCodeEnCours(true);
+    setCodeRefuse('');
+
+    try {
+      const reponse = await fetch(
+        `${API_URL}/api/promotions/validate?storeId=${boutique.id}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: saisi,
+            cartTotal: Number(sousTotal.toFixed(2)),
+            productIds: lignes.map((ligne) => ligne.productId),
+          }),
+        }
+      );
+
+      const lu = await reponse.json().catch(() => null);
+
+      if (!reponse.ok) {
+        setRemise(null);
+        setCodeRefuse(lu?.error || 'Ce code promo n’est pas valable');
+        return;
+      }
+
+      const montant = Number(lu?.discountAmount ?? lu?.data?.discountAmount ?? 0);
+
+      if (!(montant > 0)) {
+        setRemise(null);
+        setCodeRefuse('Ce code n’accorde aucune remise sur ce panier');
+        return;
+      }
+
+      setRemise({ code: saisi, montant });
+    } catch {
+      setCodeRefuse('Vérification impossible pour le moment');
+    } finally {
+      setCodeEnCours(false);
+    }
+  };
+
+  const retirerLeCode = () => {
+    setRemise(null);
+    setCode('');
+    setCodeRefuse('');
+  };
 
   const commander = async () => {
     setCheckoutError('');
@@ -208,6 +310,10 @@ export function TunnelCommande({
         deliveryLng: checkoutForm.deliveryLng,
         pickupTime: checkoutForm.pickupTime || undefined,
         notes: checkoutForm.notes || undefined,
+        // Le code part tel quel : le serveur recalcule la remise, comme il
+        // recalcule les prix et les frais de livraison.
+        promoCode: remise?.code || undefined,
+        paymentMethodId: moyenChoisi || undefined,
         // L'API attend des euros (Decimal 10,2), pas des centimes.
         totalAmount: Number(total.toFixed(2)),
         taxAmount: 0,
@@ -500,6 +606,77 @@ export function TunnelCommande({
           </div>
         )}
 
+        {/* Les moyens de paiement du commerçant. Ils existaient en base sans
+            qu'aucun écran ne les montre au client. */}
+        {moyens.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-lg">Moyen de Paiement</h3>
+            <div className="space-y-3" role="radiogroup" aria-label="Moyen de paiement">
+              {moyens.map((moyen) => (
+                <label
+                  key={moyen.id}
+                  className="flex items-center gap-3 p-3 bg-gray-700 rounded cursor-pointer hover:bg-gray-600 transition-colors"
+                >
+                  <input
+                    type="radio"
+                    name="moyenDePaiement"
+                    value={moyen.id}
+                    checked={moyenChoisi === moyen.id}
+                    onChange={() => setMoyenChoisi(moyen.id)}
+                    className="w-4 h-4"
+                  />
+                  <span className="flex-1 font-semibold">{moyen.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Le code promo : il n'y avait aucun champ pour le saisir. */}
+        <div className="space-y-4">
+          <h3 className="font-bold text-lg">Code Promo</h3>
+
+          {remise ? (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-green-700/50 bg-green-900/20 px-3 py-2 text-sm text-green-200">
+              <span>
+                Code « {remise.code} » appliqué — {euro(remise.montant)} de remise
+              </span>
+              <button
+                type="button"
+                onClick={retirerLeCode}
+                className="text-green-300 underline hover:text-green-100"
+              >
+                Retirer
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                id="code-promo"
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                className={champ}
+                placeholder="BIENVENUE10"
+              />
+              <button
+                type="button"
+                onClick={appliquerLeCode}
+                disabled={codeEnCours || code.trim().length === 0}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors disabled:opacity-50 whitespace-nowrap"
+              >
+                {codeEnCours ? 'Vérification…' : 'Appliquer'}
+              </button>
+            </div>
+          )}
+
+          {codeRefuse && (
+            <p role="status" className="text-sm text-amber-300">
+              {codeRefuse}
+            </p>
+          )}
+        </div>
+
         <div className="space-y-4">
           <h3 className="font-bold text-lg">Notes (Optionnel)</h3>
           <textarea
@@ -525,6 +702,12 @@ export function TunnelCommande({
               {checkoutForm.deliveryType === 'PICKUP' ? 'Retrait sur place' : euro(fraisDeLivraison)}
             </span>
           </div>
+          {remise && (
+            <div className="flex justify-between text-sm text-green-300">
+              <span>Remise — {remise.code}</span>
+              <span>− {euro(remise.montant)}</span>
+            </div>
+          )}
           <div className="flex justify-between font-bold text-lg border-t border-gray-600 pt-2">
             <span>Total</span>
             <span className="text-red-400">{euro(total)}</span>

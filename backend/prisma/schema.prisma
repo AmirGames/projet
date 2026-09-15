@@ -536,6 +536,18 @@ model Order {
   paymentStatus   PaymentStatus @default(PENDING)
   paymentId       String?      // Stripe payment intent ID
 
+  // Le code promo appliqué, et la remise qu'il a réellement accordée. Aucun des
+  // deux n'était conservé : la remise disparaissait de la commande, et le
+  // commerçant ne savait pas quel code avait été utilisé.
+  promoCode       String?
+  discountAmount  Decimal      @default(0) @db.Decimal(10, 2)
+
+  // Le moyen de paiement choisi par le client parmi ceux du commerçant. Gardé
+  // par identifiant et par nom : le nom reste lisible même si le commerçant
+  // retire le moyen de paiement plus tard.
+  paymentMethodId   String?
+  paymentMethodName String?
+
   notes           String?
 
   // Soft delete

@@ -28,6 +28,8 @@ interface Store {
   postalCode?: string | null;
   phone?: string | null;
   email?: string | null;
+  /** Fermée momentanément : la vitrine reste lisible, la commande non. */
+  isOpen?: boolean;
   createdAt: string;
 }
 
@@ -641,9 +643,21 @@ export default function StorefrontPage() {
                     <span>{euro(cartTotal)}</span>
                   </div>
 
+                  {/* Une boutique fermée reste consultable : elle disparaissait
+                      purement et simplement de la liste des commerces. */}
+                  {store?.isOpen === false && (
+                    <p
+                      role="status"
+                      className="rounded-lg border border-amber-700/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-200"
+                    >
+                      Momentanément indisponible — commande impossible pour le moment.
+                    </p>
+                  )}
+
                   <button
                     onClick={() => setShowCheckout(true)}
-                    className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors mt-4"
+                    disabled={store?.isOpen === false}
+                    className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Passer la Commande
                   </button>

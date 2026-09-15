@@ -51,9 +51,22 @@ export class OrderManagementService {
           include: {
             items: {
               include: {
+                /**
+                 * La catégorie et la déclinaison viennent avec le plat.
+                 *
+                 * Sans elles, le ticket n'affichait que « 4 fromages » : la
+                 * cuisine ne savait pas s'il s'agissait des pâtes ou de la
+                 * pizza, ni quelle déclinaison préparer.
+                 */
                 product: {
-                  select: { name: true, sku: true },
+                  select: {
+                    name: true,
+                    sku: true,
+                    variantLabel: true,
+                    category: { select: { name: true } },
+                  },
                 },
+                variant: { select: { id: true, label: true, sku: true } },
               },
             },
             customer: {
@@ -84,7 +97,9 @@ export class OrderManagementService {
         include: {
           items: {
             include: {
-              product: true,
+              // La catégorie distingue « 4 fromages » pâtes de « 4 fromages »
+              // pizza, sur le ticket comme sur le détail.
+              product: { include: { category: { select: { name: true } } } },
               variant: true,
             },
           },

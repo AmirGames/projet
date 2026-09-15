@@ -22,6 +22,8 @@ interface Store {
   distance?: number;
   estimatedDeliveryTime?: string;
   deliveryCost?: number;
+  /** Fermée momentanément : visible, mais on n'y commande pas. */
+  isOpen?: boolean;
   products?: any[];
 }
 
@@ -202,10 +204,18 @@ export default function ClientHomePage() {
                   <Link key={store.id} href={`/client/restaurant/${store.id}`}>
                     <div className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-xl transition transform hover:scale-105 cursor-pointer h-full">
                       {/* Restaurant Image Placeholder */}
-                      <div className="bg-gradient-to-r from-orange-500 to-red-500 h-40 flex items-center justify-center">
+                      <div className="relative bg-gradient-to-r from-orange-500 to-red-500 h-40 flex items-center justify-center">
                         <div className="text-center">
                           <div className="text-white text-4xl font-bold opacity-50">{store.name.charAt(0)}</div>
                         </div>
+
+                        {/* Une boutique fermée disparaissait de la liste : le
+                            client croyait le commerce parti. */}
+                        {store.isOpen === false && (
+                          <span className="absolute inset-x-0 bottom-0 bg-gray-900/80 py-1.5 text-center text-xs font-semibold text-amber-300">
+                            Momentanément indisponible
+                          </span>
+                        )}
                       </div>
 
                       <div className="p-4">

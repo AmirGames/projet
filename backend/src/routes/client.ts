@@ -13,7 +13,14 @@ const router = Router();
 router.get("/stores", async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const stores = await db.store.findMany({
-      where: { isOpen: true, deletedAt: null, org: { status: "ACTIVE" } },
+      /**
+       * Une boutique fermée reste dans la liste.
+       *
+       * Elle en disparaissait entièrement : le client croyait le commerce parti.
+       * Elle est maintenant listée avec son `isOpen`, que la vitrine affiche en
+       * « momentanément indisponible » — on peut voir le menu, pas commander.
+       */
+      where: { deletedAt: null, org: { status: "ACTIVE" } },
       include: {
         org: {
           select: { id: true, name: true, slug: true }
@@ -52,7 +59,7 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
     // Récupérer tous les stores avec localisation
     const stores = await db.store.findMany({
       where: {
-        isOpen: true,
+        // Fermée ou non : c'est la vitrine qui le dit, pas cette liste.
         deletedAt: null,
         org: { status: "ACTIVE" },
         latitude: { not: null },
@@ -116,7 +123,6 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
 
     const stores = await db.store.findMany({
       where: {
-        isOpen: true,
         deletedAt: null,
         org: { status: "ACTIVE" },
         OR: [
@@ -321,6 +327,30 @@ router.get("/stores/:id/zones", async (req: Request, res: Response, next: NextFu
     const zones = await DeliveryZoneService.getByStoreId(req.params.id as string);
 
     res.json({ success: true, data: zones.filter((zone) => zone.isActive) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/client/stores/:id/payment-methods
+ *
+ * Les moyens de paiement que le commerçant propose. La route de l'espace
+ * commerçant exige un compte : un client, lui, n'en a pas forcément — il ne
+ * voyait donc aucun moyen de paiement au moment de payer.
+ *
+ * On ne rend que l'identifiant, le type et le nom : la configuration d'un moyen
+ * de paiement contient les clés d'API du commerçant.
+ */
+router.get("/stores/:id/payment-methods", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const moyens = await db.paymentMethod.findMany({
+      where: { storeId: req.params.id as string, isActive: true },
+      select: { id: true, type: true, name: true, isDefault: true },
+      orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+    });
+
+    res.json({ success: true, data: moyens });
   } catch (err) {
     next(err);
   }

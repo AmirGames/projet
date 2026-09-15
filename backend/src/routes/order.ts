@@ -62,6 +62,9 @@ const createOrderSchema = z.object({
   totalAmount: z.number().positive("Total doit être positif"),
   taxAmount: z.number().optional(),
   feesAmount: z.number().optional(),
+  // Le code est repris tel quel ; c'est le serveur qui calcule la remise.
+  promoCode: z.string().optional(),
+  paymentMethodId: z.string().optional(),
   notes: z.string().optional(),
   // Le détail du panier : sans lui, la commande n'enregistrait qu'un montant,
   // et la facture comme les statistiques de vente restaient vides.

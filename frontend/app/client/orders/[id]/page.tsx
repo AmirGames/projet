@@ -8,6 +8,7 @@ import { SuiviLivraison, type Course } from '@/components/SuiviLivraison';
 import { useOrderTracking } from '@/lib/use-order-tracking';
 
 import { euro } from '@/lib/format';
+import { intituleDeLaLigne } from '@/lib/ligne-commande';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -246,7 +247,22 @@ export default function OrderTrackingPage() {
                   {order.items.map((item: any) => (
                     <div key={item.id} className="flex justify-between items-center p-3 bg-gray-700 rounded">
                       <div>
-                        <p className="text-white font-semibold">{item.name}</p>
+                        {/* `item.name` n'existe pas sur une ligne de commande :
+                            l'article s'affichait sans nom. */}
+                        {intituleDeLaLigne(item).categorie && (
+                          <p className="text-gray-500 text-xs">
+                            {intituleDeLaLigne(item).categorie}
+                          </p>
+                        )}
+                        <p className="text-white font-semibold">
+                          {intituleDeLaLigne(item).plat}
+                          {intituleDeLaLigne(item).declinaison && (
+                            <span className="text-orange-400">
+                              {' '}
+                              — {intituleDeLaLigne(item).declinaison}
+                            </span>
+                          )}
+                        </p>
                         <p className="text-gray-400 text-sm">x{item.quantity}</p>
                       </div>
                       <p className="text-orange-400 font-bold">

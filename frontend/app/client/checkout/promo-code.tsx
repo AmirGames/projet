@@ -8,11 +8,13 @@ import { euro } from '@/lib/format';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface PromoCodeProps {
+  /** La boutique qui accorde la remise : la route l'exige. */
+  storeId: string;
   orderAmount: number;
   onApply: (code: string, discount: number) => void;
 }
 
-export function PromoCode({ orderAmount, onApply }: PromoCodeProps) {
+export function PromoCode({ storeId, orderAmount, onApply }: PromoCodeProps) {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,17 +29,36 @@ export function PromoCode({ orderAmount, onApply }: PromoCodeProps) {
     setSuccess(false);
 
     try {
-      const response = await fetch(`${API_URL}/api/promotions/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, orderAmount }),
-      });
+      /**
+       * La boutique et le total du panier, aux noms attendus.
+       *
+       * L'appel omettait `storeId`, que la route exige, et nommait le total
+       * `orderAmount` là où elle lit `cartTotal` : tout code était refusé par un
+       * « Paramètre storeId requis » que l'écran affichait comme « Code
+       * invalide ».
+       */
+      const response = await fetch(
+        `${API_URL}/api/promotions/validate?storeId=${storeId}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, cartTotal: orderAmount }),
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
-        setDiscount(data.data.discount);
+        // La route rend la remise à la racine, et non sous « data ».
+        const remise = Number(data?.discountAmount ?? data?.data?.discount ?? 0);
+
+        if (!(remise > 0)) {
+          setError('Ce code n’accorde aucune remise sur ce panier');
+          return;
+        }
+
+        setDiscount(remise);
         setSuccess(true);
-        onApply(code, data.data.discount);
+        onApply(code, remise);
       } else {
         const data = await response.json();
         setError(data.error || data.message || 'Code invalide');

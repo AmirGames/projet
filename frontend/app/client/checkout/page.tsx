@@ -271,13 +271,24 @@ export default function CheckoutPage() {
             {/* Promo Code */}
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-bold text-white mb-4">Code Promo</h2>
-              <PromoCode
-                orderAmount={subtotal}
-                onApply={(promoCode, discountAmt) => {
-                  setDiscountAmount(discountAmt);
-                  setAppliedPromoCode(promoCode);
-                }}
-              />
+              {/* Un code promo appartient à une boutique : avec un panier
+                  réparti sur plusieurs commerces, on ne saurait pas laquelle
+                  accorde la remise. */}
+              {cart.length === 1 ? (
+                <PromoCode
+                  storeId={cart[0].storeId}
+                  orderAmount={subtotal}
+                  onApply={(promoCode, discountAmt) => {
+                    setDiscountAmount(discountAmt);
+                    setAppliedPromoCode(promoCode);
+                  }}
+                />
+              ) : (
+                <p className="text-sm text-gray-400">
+                  Un code promo s&apos;applique à un seul commerce. Commandez commerce par
+                  commerce pour en profiter.
+                </p>
+              )}
             </div>
 
             {/* Delivery Information */}

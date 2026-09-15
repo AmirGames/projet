@@ -9,7 +9,12 @@ export class InvoiceService {
         include: {
           items: {
             include: {
-              product: { select: { name: true, sku: true } },
+              // La catégorie et la déclinaison, sans quoi la facture d'une
+              // « 4 fromages » ne dit ni pâtes ni pizza, ni quelle taille.
+              product: {
+                select: { name: true, sku: true, category: { select: { name: true } } },
+              },
+              variant: { select: { label: true, sku: true } },
             },
           },
           customer: true,
@@ -47,7 +52,9 @@ export class InvoiceService {
         // Items
         items: order.items.map(item => ({
           description: item.product.name,
-          sku: item.product.sku,
+          category: item.product.category?.name || null,
+          variant: item.variant?.label || null,
+          sku: item.variant?.sku || item.product.sku,
           quantity: item.quantity,
           unitPrice: parseFloat(item.price.toString()),
           total: parseFloat(item.total.toString()),

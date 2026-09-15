@@ -55,7 +55,7 @@ async function installer(suffixe) {
     await post('/api/delivery-zones', { storeId, name: `Zone ${suffixe}`, radiusKm: 5, baseFee: 3, minOrder: 10 }, jeton)
   );
   const promo = await j(
-    await post('/api/promotions', { storeId, code: `PROMO${suffixe}${uniq}`, type: 'PERCENTAGE', value: 10 }, jeton)
+    await post('/api/promotions', { storeId, code: `PROMO${suffixe}${uniq}`, type: 'PERCENTAGE', discountValue: 10 }, jeton)
   );
 
   const commande = await j(
@@ -95,7 +95,7 @@ const TENTATIVES = [
   // Le corps de la requête
   ['créer un produit chez l’autre', () => post('/api/products', { storeId: alice.storeId, name: 'Intrusion', price: 1 }, bob.jeton)],
   ['créer une catégorie chez l’autre', () => post('/api/categories', { storeId: alice.storeId, name: 'Intrusion' }, bob.jeton)],
-  ['créer une promotion chez l’autre', () => post('/api/promotions', { storeId: alice.storeId, code: `VOL${uniq}`, type: 'PERCENTAGE', value: 50 }, bob.jeton)],
+  ['créer une promotion chez l’autre', () => post('/api/promotions', { storeId: alice.storeId, code: `VOL${uniq}`, type: 'PERCENTAGE', discountValue: 50 }, bob.jeton)],
   ['créer une zone chez l’autre', () => post('/api/delivery-zones', { storeId: alice.storeId, name: 'Intrusion', radiusKm: 9, baseFee: 0, minOrder: 0 }, bob.jeton)],
   ['créer une taxe chez l’autre', () => post(`/api/tax-settings/${alice.storeId}`, { name: 'Vol', rate: 99, applicableTo: 'all' }, bob.jeton)],
 
