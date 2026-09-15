@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
+import { NotificationBell } from '@/components/NotificationBell';
 import {
   Home,
   Building2,
@@ -171,9 +172,14 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <div className="text-sm text-gray-400 flex items-center gap-2">
-            <Lock size={16} className="text-red-600" />
-            SuperOwner - Gestion Complète
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-400 flex items-center gap-2">
+              <Lock size={16} className="text-red-600" />
+              SuperOwner - Gestion Complète
+            </div>
+            {/* La cloche suit la plateforme partout : un ticket ouvert pendant
+                qu'on consulte les journaux doit se voir sans changer de page. */}
+            <NotificationBell />
           </div>
         </header>
 

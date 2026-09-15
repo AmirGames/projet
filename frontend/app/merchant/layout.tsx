@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { CreditCard, LayoutGrid, LogOut, Menu, MessageCircle, Plus, Store, X } from 'lucide-react';
 
 import { memoriserBoutique } from '@/lib/current-store';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -208,10 +209,15 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
           >
             {menuOuvert ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <div className="text-sm text-gray-400">
-            {pathname === '/merchant/formule'
-              ? 'Votre formule et la grille tarifaire'
-              : 'Choisissez le commerce à gérer'}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-400">
+              {pathname === '/merchant/formule'
+                ? 'Votre formule et la grille tarifaire'
+                : 'Choisissez le commerce à gérer'}
+            </div>
+            {/* Une réponse du support arrive souvent pendant qu'on choisit sa
+                boutique : la cloche manquait à ce niveau-là. */}
+            <NotificationBell />
           </div>
         </header>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/lib/use-notifications';
@@ -9,6 +9,28 @@ export function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const conteneur = useRef<HTMLDivElement>(null);
+
+  // Le panneau restait ouvert par-dessus la page : désormais présent partout,
+  // il masquerait le contenu à chaque clic ailleurs.
+  useEffect(() => {
+    if (!open) return;
+
+    const auClic = (evenement: MouseEvent) => {
+      if (!conteneur.current?.contains(evenement.target as Node)) setOpen(false);
+    };
+    const auClavier = (evenement: KeyboardEvent) => {
+      if (evenement.key === 'Escape') setOpen(false);
+    };
+
+    document.addEventListener('mousedown', auClic);
+    document.addEventListener('keydown', auClavier);
+
+    return () => {
+      document.removeEventListener('mousedown', auClic);
+      document.removeEventListener('keydown', auClavier);
+    };
+  }, [open]);
 
   const handleClick = (notif: { id: string; isRead: boolean; link?: string | null }) => {
     if (!notif.isRead) markAsRead(notif.id);
@@ -19,10 +41,14 @@ export function NotificationBell() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={conteneur}>
       <button
         onClick={() => setOpen(!open)}
         className="relative p-2 text-gray-300 hover:text-white transition"
+        aria-label={
+          unreadCount > 0 ? `Notifications, ${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Notifications'
+        }
+        aria-expanded={open}
         title="Notifications"
       >
         <Bell size={20} />

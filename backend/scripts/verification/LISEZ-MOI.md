@@ -90,6 +90,7 @@ continue.
 | `verif-pages-marchand.mjs` | Les routes appelées par les pages commerçant |
 | `verif-phase11.mjs` | Sauvegardes, mode maintenance, et les points signalés en revue |
 | `verif-restauration.mjs` | Qu'une sauvegarde restaure des données réellement perdues |
+| `verif-sante-systeme.mjs` | La santé système : ses cinq relevés, et ce qui la fait bouger |
 | `verif-salons-direct.mjs` | Qui peut suivre quoi en direct, et la disponibilité poussée |
 | `verif-temps-reel.mjs` | Notifications poussées en direct |
 

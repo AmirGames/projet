@@ -10,6 +10,7 @@ import { SecurityEventService } from "../services/security-event.service";
 import { invalidateMaintenanceCache } from "../middleware/maintenance";
 import { MerchantClosureService } from "../services/merchant-closure.service";
 import { PlanService } from "../services/plan.service";
+import { SystemHealthService } from "../services/system-health.service";
 
 const LIBELLES_STATUT: Record<string, string> = {
   OPEN: "rouvert",
@@ -70,6 +71,7 @@ router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res
       alertesCritiques,
       systemConfig,
       auditLogs,
+      sante,
     ] = await Promise.all([
       db.organization.findMany({ select: { status: true } }),
       db.user.count(),
@@ -87,6 +89,9 @@ router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res
       db.merchantTicket.count({ where: { status: "OPEN", priority: "CRITICAL" } }),
       db.systemConfig.findFirst(),
       db.systemAuditLog.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
+      // La carte « Santé Système » lisait un champ que personne n'envoyait :
+      // elle affichait 0 % en rouge quoi qu'il arrive.
+      SystemHealthService.etat(),
     ]);
 
     const totalRevenue = Number(revenusTotaux._sum.totalAmount) || 0;
@@ -100,6 +105,7 @@ router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res
       activeOrganizations: organizations.filter((o) => o.status === "ACTIVE").length,
       totalUsers: users,
       criticalAlerts: alertesCritiques,
+      systemHealth: sante.score,
       // Revenu du mois en cours, et non une extrapolation du total sur 12 mois.
       monthlyRecurring: caMois,
       // Croissance réelle d'un mois sur l'autre.
@@ -109,7 +115,7 @@ router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res
           : 0,
     };
 
-    res.json({ stats, recentLogs: auditLogs });
+    res.json({ stats, recentLogs: auditLogs, systemHealth: sante });
   } catch (err) {
     next(err);
   }
