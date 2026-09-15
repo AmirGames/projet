@@ -48,9 +48,21 @@ export function createApp(): Express {
   app.use(helmet());
 
   // ===== CORS =====
+  // Le site est servi depuis deux domaines (public et professionnel) : l'API
+  // doit répondre aux deux. ALLOWED_ORIGINS les ajoute, séparés par des
+  // virgules, sans toucher au code.
+  const originesSupplementaires = (env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((origine) => origine.trim())
+    .filter(Boolean);
+
+  const originesAutorisees = Array.from(
+    new Set([env.FRONTEND_URL, "http://localhost:3000", ...originesSupplementaires])
+  );
+
   app.use(
     cors({
-      origin: [env.FRONTEND_URL, "http://localhost:3000"],
+      origin: originesAutorisees,
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],

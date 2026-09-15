@@ -10,6 +10,10 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
   API_URL: z.string().url(),
   FRONTEND_URL: z.string().url(),
+  // Domaines supplémentaires autorisés à appeler l'API, séparés par des
+  // virgules (le site est servi depuis un domaine public et un domaine
+  // professionnel).
+  ALLOWED_ORIGINS: z.string().optional(),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("debug"),
   SENDGRID_API_KEY: z.string().optional(),
   SENDGRID_FROM_EMAIL: z.string().email().optional(),

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
+import { lienVersEspace } from '@/lib/domaines';
 import {
   ShoppingCart,
   Users,
@@ -16,7 +17,6 @@ import {
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 interface Store {
   id: string;
@@ -247,7 +247,7 @@ export default function MerchantDashboard() {
                     {store.isOpen ? 'Ouverte' : 'Fermée'}
                   </span>
                   <a
-                    href={`${SITE_URL}/store/${store.slug}`}
+                    href={lienVersEspace('public', `/store/${store.slug}`)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-400 hover:text-blue-300 flex items-center gap-1 text-sm"

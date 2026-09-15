@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Store as StoreIcon, Search, Package, ShoppingCart, ExternalLink } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+import { lienVersEspace } from '@/lib/domaines';
+
+const API_URL =process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Boutique {
   id: string;
@@ -176,7 +177,7 @@ export default function BoutiquesAdminPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <a
-                        href={`${SITE_URL}/store/${boutique.slug}`}
+                        href={lienVersEspace('public', `/store/${boutique.slug}`)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
