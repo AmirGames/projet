@@ -24,7 +24,10 @@ import {
   LifeBuoy,
   Users,
   Webhook,
-  ArrowLeftRight,
+  Store,
+  Download,
+  Megaphone,
+  LogIn,
 } from 'lucide-react';
 
 export default function SuperOwnerLayout({ children }: { children: React.ReactNode }) {
@@ -59,15 +62,18 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       title: 'Activité',
       items: [
         { label: 'Organisations', icon: Building2, href: '/superowner/organizations' },
+        { label: 'Boutiques', icon: Store, href: '/superowner/stores' },
         { label: 'Analytics', icon: TrendingUp, href: '/superowner/analytics' },
         { label: 'Facturation', icon: CreditCard, href: '/superowner/billing' },
         { label: 'Rapports', icon: BarChart3, href: '/superowner/financial-reports' },
+        { label: 'Exports', icon: Download, href: '/superowner/exports' },
       ],
     },
     {
       title: 'Support',
       items: [
         { label: 'Tickets', icon: LifeBuoy, href: '/superowner/support-tickets' },
+        { label: 'Annonces', icon: Megaphone, href: '/superowner/notifications' },
         { label: 'Administrateurs', icon: Users, href: '/superowner/user-management' },
       ],
     },
@@ -86,6 +92,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
         { label: 'Données', icon: Database, href: '/superowner/data-management' },
         { label: 'Sécurité', icon: Shield, href: '/superowner/security-audit' },
         { label: 'Journal', icon: FileText, href: '/superowner/audit-logs' },
+        { label: 'Connexions', icon: LogIn, href: '/superowner/access-logs' },
       ],
     },
   ];
@@ -138,18 +145,6 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
             </div>
           ))}
 
-          {/* Retour vers l'autre espace d'administration (commerçants,
-              commissions, exports), qui a sa propre navigation. */}
-          <div className="pt-3 mt-3 border-t border-gray-700">
-            <Link
-              href="/super-admin"
-              title={sidebarOpen ? undefined : 'Espace SuperAdmin'}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-700 hover:text-white"
-            >
-              <ArrowLeftRight size={20} className="flex-shrink-0" />
-              {sidebarOpen && <span className="truncate">Espace SuperAdmin</span>}
-            </Link>
-          </div>
         </nav>
 
         {/* Logout */}

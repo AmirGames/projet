@@ -34,7 +34,10 @@ interface MerchantDetail {
 export default function MerchantDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const merchantId = params.id as string;
+  // Le segment s'appelle [orgId] depuis le regroupement des espaces
+  // d'administration ; lire params.id donnait « undefined » dans l'URL
+  // appelée.
+  const merchantId = params.orgId as string;
 
   const [merchant, setMerchant] = useState<MerchantDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,7 +73,7 @@ export default function MerchantDetailPage() {
       setNewTier(data.tier);
     } catch (error) {
       console.error('Erreur:', error);
-      router.push('/super-admin/merchants');
+      router.push('/superowner/organizations');
     } finally {
       setLoading(false);
     }
@@ -220,7 +223,7 @@ export default function MerchantDetailPage() {
     <div className="space-y-6 max-w-6xl">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/super-admin/merchants" className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+        <Link href="/superowner/organizations" className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
           <ArrowLeft size={20} />
         </Link>
         <div>

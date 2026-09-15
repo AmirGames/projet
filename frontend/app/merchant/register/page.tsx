@@ -188,7 +188,7 @@ export default function MerchantRegisterPage() {
       // Redirect after 2 seconds
       setTimeout(() => {
         if (data.user?.isSuperOwner) {
-          router.push('/super-admin');
+          router.push('/superowner');
         } else {
           router.push(`/merchant/${data.organizationId}/dashboard`);
         }

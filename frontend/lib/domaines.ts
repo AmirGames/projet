@@ -54,8 +54,6 @@ const SEGMENTS: Record<EspaceHeberge, string[]> = {
   pro: [
     'merchant',
     'superowner',
-    'super-admin',
-    'admin',
     'dashboard',
     'signup', // inscription commerçant : elle crée une organisation
   ],

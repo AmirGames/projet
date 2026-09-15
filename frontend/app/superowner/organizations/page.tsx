@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building2, Users, Ban, CheckCircle, XCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Building2, Users, Ban, CheckCircle, XCircle, Eye } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -244,6 +245,15 @@ export default function OrganizationsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
+                        {/* La fiche détaillée n'était reliée à rien : on y
+                            accédait uniquement en tapant l'adresse. */}
+                        <Link
+                          href={`/superowner/organizations/${org.id}`}
+                          title="Voir la fiche détaillée"
+                          className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
+                        >
+                          <Eye size={16} />
+                        </Link>
                         {org.status === 'ACTIVE' && (
                           <button
                             onClick={() => agirSurCommercant(org, 'suspend')}

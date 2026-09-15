@@ -14,6 +14,73 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
   },
+
+  /**
+   * Trois espaces d'administration coexistaient — /admin, /super-admin et
+   * /superowner — avec les mêmes écrans en trois exemplaires. Tout est
+   * désormais sous /superowner ; ces redirections gardent les anciennes
+   * adresses vivantes, signets et raccourcis compris.
+   *
+   * Les pages /admin du catalogue et des commandes ne relevaient pas de
+   * l'administration : elles pilotaient une boutique de démonstration codée
+   * en dur. Elles renvoient vers l'espace commerçant, où ces écrans existent
+   * pour de vrai, rattachés à la boutique choisie.
+   */
+  async redirects() {
+    const versSuperowner = {
+      "/admin": "/superowner",
+      "/admin/dashboard": "/superowner",
+      "/admin/super-owner": "/superowner",
+      "/admin/analytics": "/superowner/analytics",
+      "/admin/audit-logs": "/superowner/audit-logs",
+      "/admin/commissions": "/superowner/billing",
+      "/admin/merchants": "/superowner/organizations",
+      "/admin/stores": "/superowner/stores",
+      "/admin/tickets": "/superowner/support-tickets",
+      "/admin/settings": "/superowner/system-config",
+      "/admin/settings/admin-settings": "/superowner/system-config",
+      "/super-admin": "/superowner",
+      "/super-admin/access-logs": "/superowner/access-logs",
+      "/super-admin/admin-management": "/superowner/user-management",
+      "/super-admin/user-management": "/superowner/user-management",
+      "/super-admin/analytics": "/superowner/analytics",
+      "/super-admin/audit-logs": "/superowner/audit-logs",
+      "/super-admin/commissions": "/superowner/billing",
+      "/super-admin/exports": "/superowner/exports",
+      "/super-admin/merchants": "/superowner/organizations",
+      "/super-admin/notifications": "/superowner/notifications",
+      "/super-admin/settings": "/superowner/system-config",
+      "/super-admin/tickets": "/superowner/support-tickets",
+    };
+
+    const versCommercant = [
+      "/admin/categories",
+      "/admin/customers",
+      "/admin/orders",
+      "/admin/orders/:id",
+      "/admin/products",
+      "/admin/products/new",
+      "/admin/products/:id",
+    ];
+
+    return [
+      ...Object.entries(versSuperowner).map(([source, destination]) => ({
+        source,
+        destination,
+        permanent: true,
+      })),
+      {
+        source: "/super-admin/merchants/:id",
+        destination: "/superowner/organizations/:id",
+        permanent: true,
+      },
+      ...versCommercant.map((source) => ({
+        source,
+        destination: "/merchant",
+        permanent: true,
+      })),
+    ];
+  },
 };
 
 module.exports = nextConfig;

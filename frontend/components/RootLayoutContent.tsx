@@ -34,10 +34,9 @@ export default function RootLayoutContent({
     initializeTheme();
   }, [API_URL]);
 
-  // Don't show Navbar for admin/merchant/client/superowner/driver routes (they have their own layouts)
-  const hideNavbar = pathname?.startsWith('/admin') ||
-                     pathname?.startsWith('/superowner') ||
-                     pathname?.startsWith('/super-admin') ||
+  // Ces espaces ont leur propre barre latérale : la navigation publique y
+  // ferait double emploi.
+  const hideNavbar = pathname?.startsWith('/superowner') ||
                      pathname?.startsWith('/merchant') ||
                      pathname?.startsWith('/client') ||
                      pathname?.startsWith('/driver');

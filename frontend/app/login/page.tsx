@@ -73,7 +73,7 @@ export default function LoginPage() {
       // Le commerçant choisit son commerce depuis /merchant plutôt que
       // d'être envoyé d'office sur une boutique.
       const redirectPath = result.user?.isSuperOwner
-        ? "/super-admin"
+        ? "/superowner"
         : orgId
           ? "/merchant"
           : "/login";

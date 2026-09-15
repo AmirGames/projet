@@ -118,7 +118,7 @@ check(
 
 // ===== Pages professionnelles =====
 titre("Pages commerçant appelées d'ailleurs");
-for (const chemin of ["/merchant", "/superowner", "/super-admin", "/admin", "/dashboard", "/signup"]) {
+for (const chemin of ["/merchant", "/superowner", "/dashboard", "/signup"]) {
   await renvoyee(`${chemin} depuis le public`, PUBLIC, chemin, PRO);
 }
 await renvoyee("/store/new depuis le public", PUBLIC, "/store/new", PRO);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { Shield, AlertCircle } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -181,8 +181,11 @@ export default function AuditLogsPage() {
             </thead>
             <tbody className="divide-y divide-gray-700">
               {logs.map((log) => (
-                <>
-                  <tr key={log.id} className="hover:bg-gray-700/50 transition">
+                // La clé doit porter sur l'élément rendu par la boucle : posée
+                // sur le <tr> intérieur, React la perd et réutilise mal les
+                // lignes d'un rafraîchissement à l'autre.
+                <Fragment key={log.id}>
+                  <tr className="hover:bg-gray-700/50 transition">
                     <td className={`px-6 py-4 text-sm font-semibold ${getActionColor(log.action)}`}>
                       {log.action}
                     </td>
@@ -246,7 +249,7 @@ export default function AuditLogsPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

@@ -10,7 +10,7 @@ export function espaceDAccueil(options: {
   isSuperOwner?: boolean;
   orgId?: string | null;
 }): string {
-  if (options.isSuperOwner) return '/super-admin';
+  if (options.isSuperOwner) return '/superowner';
   // On atterrit sur la liste des commerces plutôt que sur le tableau de bord
   // d'une boutique : le commerçant choisit lui-même celle qu'il veut gérer.
   if (options.orgId) return '/merchant';

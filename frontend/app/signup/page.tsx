@@ -44,7 +44,7 @@ export default function SignupPage() {
 
       // Redirect based on role
       if (result.user?.isSuperOwner) {
-        router.push("/super-admin");
+        router.push("/superowner");
       } else {
         router.push(espaceDAccueilLocal());
       }

@@ -6,7 +6,7 @@ import { Wrench } from 'lucide-react';
 
 // Ces écrans restent joignables en maintenance, côté API comme côté interface :
 // sans eux, personne ne pourrait se connecter pour désactiver le mode.
-const CHEMINS_EXEMPTS = ['/login', '/superowner', '/super-admin'];
+const CHEMINS_EXEMPTS = ['/login', '/superowner'];
 
 /**
  * Affiche un écran de maintenance dès qu'une réponse de l'API revient en 503
