@@ -19,7 +19,13 @@ import { reinitialiser } from "./reinitialiser.mjs";
 
 const ICI = dirname(fileURLToPath(import.meta.url));
 
-const OUTILLAGE = ["outils.mjs", "tout.mjs", "reinitialiser.mjs", "boite-aux-lettres.mjs"];
+const OUTILLAGE = [
+  "outils.mjs",
+  "tout.mjs",
+  "reinitialiser.mjs",
+  "boite-aux-lettres.mjs",
+  "faux-service-adresses.mjs",
+];
 
 const scripts = readdirSync(ICI)
   .filter((nom) => nom.endsWith(".mjs") && !OUTILLAGE.includes(nom))

@@ -10,6 +10,8 @@ export interface AdresseChoisie {
   street: string;
   city: string;
   postalCode: string;
+  /** Vide avec la Base Adresse Nationale, qui ne couvre que la France. */
+  country: string;
   latitude: number | null;
   longitude: number | null;
 }
@@ -170,7 +172,14 @@ export function AddressAutocomplete({
                 <span className="min-w-0">
                   <span className="block text-sm text-white truncate">{adresse.street}</span>
                   <span className="block text-xs text-gray-400 truncate">
-                    {[adresse.postalCode, adresse.city].filter(Boolean).join(' ')}
+                    {[
+                      [adresse.postalCode, adresse.city].filter(Boolean).join(' '),
+                      // Sans le pays, deux villes homonymes sont
+                      // indiscernables dès qu'on sort de France.
+                      adresse.country,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </span>
                 </span>
               </button>

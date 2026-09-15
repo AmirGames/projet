@@ -72,9 +72,11 @@ continue.
 | `reinitialiser.mjs` | Vidage de la base, avec son garde-fou |
 | `tout.mjs` | Enchaîne les suites et rend un bilan unique |
 | `boite-aux-lettres.mjs` | Serveur SMTP minimal, pour lire les courriels envoyés |
+| `faux-service-adresses.mjs` | Faux fournisseur d'adresses, aux deux formats |
 | `audit-commercant.mjs` | Chaque fonctionnalité de l'espace commerçant |
 | `audit-superowner.mjs` | Chaque fonctionnalité de l'espace superowner, et ses effets réels |
 | `verif-admin-final.mjs` | Journal d'accès, annonces, tickets, notifications |
+| `verif-adresses.mjs` | Les deux fournisseurs d'adresses, le filtre par pays et le repli |
 | `verif-admin-motdepasse.mjs` | Création d'administrateur et réparation des mots de passe en clair |
 | `verif-attribution.mjs` | Attribution des courses : position, proposition, refus, rémunération |
 | `verif-client.mjs` | Historique, suivi de livraison, avis, favoris |
