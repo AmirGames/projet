@@ -4,6 +4,7 @@ import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { AuthService } from "../services/auth.service";
+import { MerchantClosureService } from "../services/merchant-closure.service";
 
 const router = Router();
 
@@ -127,11 +128,11 @@ router.post("/merchants/:merchantId/suspend", authMiddleware, isSystemAdmin, asy
 
     const body = schema.parse(req.body);
 
-    // Update organization status
-    await db.organization.update({
-      where: { id: merchantId },
-      data: { status: "SUSPENDED" },
-    });
+    // Écrire le statut à la main court-circuitait tout le reste : le motif
+    // n'était pas conservé, le webhook ne partait pas, et le commerçant
+    // gardait la main jusqu'à sa prochaine connexion. Même chemin que
+    // /admin/merchants/:orgId/suspend.
+    await MerchantClosureService.suspend(merchantId, body.reason);
 
     res.json({
       success: true,

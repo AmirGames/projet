@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { NotificationBell } from '@/components/NotificationBell';
 import { StoreSwitcher } from '@/components/StoreSwitcher';
 import { CurrentStoreProvider } from '@/lib/current-store';
+import { useStatutCompte } from '@/lib/use-statut-compte';
 import {
   Package,
   ShoppingCart,
@@ -36,21 +37,6 @@ import {
   Timer,
 } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-interface OrgStatus {
-  id: string;
-  name?: string;
-  status: string;
-  // Formule d'abonnement : FREE, PREMIUM ou PRO
-  tier?: 'FREE' | 'PREMIUM' | 'PRO';
-  suspensionReason?: string;
-  suspensionDate?: string;
-  closureReason?: string;
-  closureDate?: string;
-  closedUntil?: string;
-}
-
 // Chaque formule a sa couleur, pour être identifiable d'un coup d'œil.
 const FORMULES: Record<string, { libelle: string; classe: string }> = {
   FREE: { libelle: 'Gratuit', classe: 'bg-gray-600/40 text-gray-300 border-gray-500/40' },
@@ -60,33 +46,15 @@ const FORMULES: Record<string, { libelle: string; classe: string }> = {
 
 export default function MerchantStoreLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [orgStatus, setOrgStatus] = useState<OrgStatus | null>(null);
-  const [loadingStatus, setLoadingStatus] = useState(true);
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
   const orgId = params?.orgId as string;
 
-  useEffect(() => {
-    fetchOrgStatus();
-  }, [orgId]);
-
-  const fetchOrgStatus = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/organizations/${orgId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) return;
-      const data = await response.json();
-      setOrgStatus(data);
-    } catch (error) {
-      console.error('Error fetching org status:', error);
-    } finally {
-      setLoadingStatus(false);
-    }
-  };
+  // L'état du compte est tenu à jour en direct : une suspension prise en
+  // compte au prochain rechargement laissait le commerçant travailler dans une
+  // interface qui ne répond plus.
+  const { statut: orgStatus, chargement: loadingStatus, restreint } = useStatutCompte(orgId);
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
@@ -151,6 +119,22 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
     },
   ];
 
+  /**
+   * Ce que voit un compte suspendu ou fermé.
+   *
+   * Laisser la navigation entière afficherait une trentaine de liens dont
+   * chacun répondrait « accès refusé » : le commerçant croirait à une panne.
+   * Il ne reste que ce qui fonctionne.
+   */
+  const sectionsRestreintes = [
+    {
+      title: null,
+      items: [{ label: 'Support', icon: MessageCircle, href: `/merchant/${orgId}/support` }],
+    },
+  ];
+
+  const sections = restreint ? sectionsRestreintes : navSections;
+
   return (
     <CurrentStoreProvider orgId={orgId}>
     <div className="flex min-h-screen bg-gray-900 text-gray-100">
@@ -189,7 +173,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-4 overflow-y-auto no-scrollbar">
-          {navSections.map((section, index) => (
+          {sections.map((section, index) => (
             <div key={section.title ?? `section-${index}`} className="space-y-1">
               {sidebarOpen && section.title && (
                 <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -303,7 +287,37 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
 
         {/* Page Content */}
         <main className="flex-1 p-6 overflow-auto">
-          {children}
+          {/* Un compte restreint ne voit plus que le support. Afficher la page
+              demandée l'aurait laissé devant des tableaux vides et des
+              enregistrements qui échouent, sans lui dire pourquoi. */}
+          {restreint && !pathname?.endsWith('/support') ? (
+            <div className="max-w-xl mx-auto mt-10 text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center">
+                <MessageCircle size={26} className="text-gray-400" />
+              </div>
+
+              <h2 className="text-2xl font-bold">
+                {orgStatus?.status === 'CLOSED' ? 'Compte fermé' : 'Compte suspendu'}
+              </h2>
+
+              <p className="text-gray-400">
+                Votre espace est en accès restreint.{' '}
+                {orgStatus?.status === 'CLOSED'
+                  ? 'Seul le support reste joignable.'
+                  : 'Vous pouvez échanger avec le support, qui vous indiquera la marche à suivre.'}
+              </p>
+
+              <Link
+                href={`/merchant/${orgId}/support`}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 rounded-lg font-semibold transition"
+              >
+                <MessageCircle size={18} />
+                Écrire au support
+              </Link>
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </div>

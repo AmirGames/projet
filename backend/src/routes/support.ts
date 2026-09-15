@@ -8,6 +8,52 @@ import { TicketMessageService } from "../services/ticket-message.service";
 
 const router = Router();
 
+/**
+ * GET /support/compte/:orgId - L'état du compte, toujours joignable
+ *
+ * L'espace commerçant lisait cet état sur /api/organizations/:orgId. Or cette
+ * route est fermée à un compte suspendu : le bandeau qui explique la
+ * suspension disparaissait au moment précis où il devient utile. Il vit donc
+ * ici, sous le seul chemin qui reste ouvert.
+ */
+router.get("/compte/:orgId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+
+    const appartenance = await db.membership.findFirst({
+      where: { userId: req.userId, orgId },
+      select: { id: true },
+    });
+
+    if (!appartenance) {
+      throw new ApiError(403, "Accès refusé à ce commerçant", "FORBIDDEN");
+    }
+
+    const organisation = await db.organization.findUnique({
+      where: { id: orgId },
+      select: {
+        id: true,
+        name: true,
+        tier: true,
+        status: true,
+        suspensionReason: true,
+        suspensionDate: true,
+        closureReason: true,
+        closureDate: true,
+        closedUntil: true,
+      },
+    });
+
+    if (!organisation) {
+      throw new ApiError(404, "Commerçant introuvable", "NOT_FOUND");
+    }
+
+    res.json(organisation);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Un membre ne peut agir que sur les tickets de son organisation.
 async function assertTicketAccess(ticketId: string, req: Request) {
   const ticket = await db.merchantTicket.findUnique({ where: { id: ticketId } });

@@ -90,8 +90,9 @@ router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res
       db.systemConfig.findFirst(),
       db.systemAuditLog.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
       // La carte « Santé Système » lisait un champ que personne n'envoyait :
-      // elle affichait 0 % en rouge quoi qu'il arrive.
-      SystemHealthService.etat(),
+      // elle affichait 0 % en rouge quoi qu'il arrive. Seul le chiffre est
+      // rendu ici ; le détail a sa page, /superowner/health.
+      SystemHealthService.score(),
     ]);
 
     const totalRevenue = Number(revenusTotaux._sum.totalAmount) || 0;
@@ -105,7 +106,7 @@ router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res
       activeOrganizations: organizations.filter((o) => o.status === "ACTIVE").length,
       totalUsers: users,
       criticalAlerts: alertesCritiques,
-      systemHealth: sante.score,
+      systemHealth: sante,
       // Revenu du mois en cours, et non une extrapolation du total sur 12 mois.
       monthlyRecurring: caMois,
       // Croissance réelle d'un mois sur l'autre.
@@ -115,7 +116,19 @@ router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res
           : 0,
     };
 
-    res.json({ stats, recentLogs: auditLogs, systemHealth: sante });
+    res.json({ stats, recentLogs: auditLogs });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/system-health - Le détail de la santé, relevé par relevé
+//
+// Le tableau de bord n'affiche que le pourcentage ; ce qui le compose, et ce
+// qu'il faut faire pour le remonter, tient sur sa propre page.
+router.get("/system-health", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await SystemHealthService.etat() });
   } catch (err) {
     next(err);
   }

@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Key,
   Layers,
+  Activity,
   FileText,
   LifeBuoy,
   Users,
@@ -92,6 +93,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
     {
       title: 'Supervision',
       items: [
+        { label: 'Santé système', icon: Activity, href: '/superowner/health' },
         { label: 'Données', icon: Database, href: '/superowner/data-management' },
         { label: 'Sécurité', icon: Shield, href: '/superowner/security-audit' },
         { label: 'Journal', icon: FileText, href: '/superowner/audit-logs' },

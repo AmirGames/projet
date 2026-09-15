@@ -148,7 +148,7 @@ check(
   'resté ouvert'
 );
 
-titre('La santé système, sur le tableau de bord');
+titre('La santé, sur le tableau de bord');
 await page.goto(`${SITE}/superowner`);
 await page.waitForTimeout(3000);
 
@@ -157,27 +157,54 @@ const chiffre = tableau.match(/Santé Système\s+(\d+)%/);
 
 check('la carte affiche un pourcentage', Boolean(chiffre), tableau.slice(0, 500));
 check('il n’est plus figé à 0 %', Number(chiffre?.[1]) > 0, chiffre?.[1]);
+
+// Le tableau de bord ne porte que le chiffre : le détail a sa page.
 check(
-  'le détail explique sur quoi il repose',
-  /Sur quoi repose la santé système/.test(tableau),
-  tableau.slice(0, 700)
+  'le détail n’encombre plus le tableau de bord',
+  !/Base de données|Attribution des courses/.test(tableau),
+  tableau.slice(0, 900)
 );
+// La carte du tableau de bord, pas le lien du menu : c'est elle qui doit
+// mener au détail.
+const carteSante = page.locator('main a[href="/superowner/health"]');
+check('la carte mène à la page du détail', (await carteSante.count()) === 1, `n=${await carteSante.count()}`);
+
+titre('La page Santé système');
+await carteSante.first().click();
+await page.waitForTimeout(3000);
+
+check('le clic y mène', page.url().endsWith('/superowner/health'), page.url());
+
+const sante = await page.locator('body').innerText();
+check('le même pourcentage y figure', sante.includes(`${chiffre?.[1]}%`), sante.slice(0, 400));
 check(
   'les cinq relevés sont nommés',
   ['Base de données', 'Ouverture du service', 'Sauvegardes', 'Attribution des courses', 'Webhooks'].every(
-    (libelle) => tableau.includes(libelle)
+    (libelle) => sante.includes(libelle)
   ),
-  tableau.slice(0, 900)
+  sante.slice(0, 900)
 );
 check(
   'chaque relevé annonce ses points',
-  (tableau.match(/\d+ \/ \d+ points/g) || []).length === 5,
-  JSON.stringify(tableau.match(/\d+ \/ \d+ points/g))
+  (sante.match(/\d+ \/ \d+ points/g) || []).length === 5,
+  JSON.stringify(sante.match(/\d+ \/ \d+ points/g))
 );
 check(
   'un relevé en défaut dit quoi faire',
-  /Lancez une sauvegarde depuis Données/.test(tableau),
-  tableau.slice(0, 900)
+  /Lancez une sauvegarde depuis Données/.test(sante),
+  sante.slice(0, 900)
+);
+check('un relevé au vert est étiqueté', /rien à signaler/i.test(sante), sante.slice(0, 900));
+check('un bouton permet de relever à nouveau', (await page.locator('button', { hasText: 'Relever à nouveau' }).count()) === 1, 'bouton absent');
+check(
+  'un retour au tableau de bord existe',
+  (await page.locator('a[aria-label="Retour"]').count()) >= 1,
+  'retour absent'
+);
+check(
+  'un lien du menu y mène aussi',
+  (await page.locator('aside a[href="/superowner/health"]').count()) === 1,
+  'lien de menu absent'
 );
 
 titre('Un ticket allume la pastille');

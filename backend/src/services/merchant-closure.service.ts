@@ -2,6 +2,9 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitWebhook } from "./webhook.service";
+import { emitOrgStatus, emitNotification } from "../config/socket";
+import { oublierStatut } from "../middleware/compte-restreint";
+
 
 const HARD_DELETE_DELAY_DAYS = 60;
 const RESTORATION_WINDOW_DAYS = 180;
@@ -19,6 +22,53 @@ function addDays(days: number) {
   const date = new Date();
   date.setDate(date.getDate() + days);
   return date;
+}
+
+/**
+ * Rend un changement d'état immédiat, partout.
+ *
+ * Trois choses doivent suivre la bascule, sans quoi la suspension n'a lieu
+ * qu'en base : le garde-fou qui met les statuts en cache, l'écran du
+ * commerçant — qui continuerait de travailler dans une interface morte — et
+ * la notification qui lui dit ce qui se passe.
+ */
+async function appliquerEnDirect(
+  orgId: string,
+  statut: string,
+  raison: string | null,
+  annonce: { titre: string; message: string }
+) {
+  oublierStatut(orgId);
+  await emitOrgStatus(orgId, { status: statut, reason: raison });
+
+  try {
+    const membres = await db.membership.findMany({
+      where: { orgId },
+      select: { user: { select: { email: true } } },
+    });
+
+    for (const membre of membres) {
+      const notification = await db.notification.create({
+        data: {
+          type: "PLATFORM_ANNOUNCEMENT",
+          title: annonce.titre,
+          message: annonce.message,
+          recipientEmail: membre.user.email,
+          // Le support reste la seule porte : autant y mener directement.
+          link: `/merchant/${orgId}/support`,
+          priority: "HIGH",
+        },
+      });
+
+      emitNotification(membre.user.email, notification);
+    }
+  } catch (err) {
+    // L'annonce est un confort : son échec ne doit pas annuler la suspension.
+    logger.error("Annonce du changement d'état impossible", {
+      orgId,
+      error: err instanceof Error ? err.message : err,
+    });
+  }
 }
 
 export class MerchantClosureService {
@@ -52,6 +102,12 @@ export class MerchantClosureService {
 
     logger.info("Merchant suspended", { orgId, reason });
     emitWebhook("merchant.suspended", { orgId, name: org.name, reason });
+
+    await appliquerEnDirect(orgId, "SUSPENDED", reason, {
+      titre: "Votre compte est suspendu",
+      message: `Motif : ${reason}. Vous pouvez répondre au support depuis cette page.`,
+    });
+
     return updated;
   }
 
@@ -76,6 +132,12 @@ export class MerchantClosureService {
     });
 
     logger.info("Merchant unsuspended", { orgId });
+
+    await appliquerEnDirect(orgId, "ACTIVE", null, {
+      titre: "Votre compte est réactivé",
+      message: "Vous retrouvez l'accès complet à votre espace.",
+    });
+
     return updated;
   }
 
@@ -155,6 +217,12 @@ export class MerchantClosureService {
 
     logger.info("Merchant closed", { orgId, reason, archiveId: archive.id });
     emitWebhook("merchant.closed", { orgId, name: org.name, reason, closedUntil });
+
+    await appliquerEnDirect(orgId, "CLOSED", reason, {
+      titre: "Votre compte est fermé",
+      message: `Motif : ${reason}. Le support reste joignable depuis votre espace.`,
+    });
+
     return { updated, archive };
   }
 
@@ -278,6 +346,12 @@ export class MerchantClosureService {
     });
 
     logger.info("Merchant restored from backup", { orgId, adminId, recreated: org.isArchivedPermanently });
+
+    await appliquerEnDirect(orgId, "ACTIVE", null, {
+      titre: "Votre compte est rétabli",
+      message: "Vos boutiques et vos données sont de nouveau accessibles.",
+    });
+
     return updated;
   }
 

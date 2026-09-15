@@ -212,6 +212,39 @@ export function emitStoreEvent(storeId: string, evenement: string, donnees: unkn
 }
 
 /**
+ * Prévient toute l'équipe d'un commerçant que son compte a changé d'état.
+ *
+ * Une suspension prise en compte au prochain rechargement laisse le commerçant
+ * travailler dans une interface qui ne répond plus : chaque enregistrement
+ * échoue sans qu'il comprenne pourquoi. L'écran doit basculer tout de suite.
+ */
+export async function emitOrgStatus(
+  orgId: string,
+  donnees: { status: string; reason?: string | null }
+) {
+  if (!io || !orgId) return;
+
+  try {
+    const membres = await db.membership.findMany({
+      where: { orgId },
+      select: { user: { select: { email: true } } },
+    });
+
+    for (const membre of membres) {
+      io.to(salonUtilisateur(membre.user.email)).emit("compte-statut", {
+        orgId,
+        ...donnees,
+      });
+    }
+  } catch (err) {
+    logger.error("Impossible de diffuser le changement de statut", {
+      orgId,
+      error: err instanceof Error ? err.message : err,
+    });
+  }
+}
+
+/**
  * Pousse un événement à un livreur précis.
  *
  * Une course proposée n'a de valeur que pendant quelques dizaines de

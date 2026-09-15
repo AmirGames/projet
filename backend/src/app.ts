@@ -5,6 +5,7 @@ import { getEnv } from "./config/env";
 import { requestLogger } from "./config/logger";
 import { setupErrorHandling } from "./middleware/errorHandler";
 import { maintenanceMiddleware } from "./middleware/maintenance";
+import { compteRestreint } from "./middleware/compte-restreint";
 import authRouter from "./routes/auth";
 import organizationRouter from "./routes/organization";
 import storeRouter from "./routes/store";
@@ -86,6 +87,11 @@ export function createApp(): Express {
   // Placé avant les routes métier : seuls la connexion et l'administration
   // restent joignables quand il est actif.
   app.use(maintenanceMiddleware);
+
+  // Un compte suspendu ou fermé n'a plus accès qu'au support. Le verrou est
+  // posé ici, devant toutes les routes, et non route par route : il n'en
+  // protégeait que trois.
+  app.use(compteRestreint);
 
   // ===== API Routes =====
   app.use("/api/auth", authRouter);

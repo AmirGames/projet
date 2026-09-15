@@ -81,6 +81,7 @@ continue.
 | `verif-attribution.mjs` | Attribution des courses : position, proposition, refus, rémunération |
 | `verif-client.mjs` | Historique, suivi de livraison, avis, favoris |
 | `verif-creneaux-tickets.mjs` | Créneaux de retrait tenus aux horaires, alerte d'ouverture de ticket |
+| `verif-compte-restreint.mjs` | Suspension et fermeture : tout bloqué, sauf le support |
 | `verif-compte-email.mjs` | Mot de passe oublié et confirmation d'adresse, courriel compris |
 | `verif-disponibilite.mjs` | Bouton disponible / épuisé |
 | `verif-formules.mjs` | Formules, quotas de boutiques, service d'adresses |

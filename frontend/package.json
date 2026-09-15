@@ -17,7 +17,8 @@
     "verif:menu-client": "node scripts/verif-menu-restaurant.mjs",
     "verif:creneaux": "node scripts/verif-creneaux-retrait.mjs",
     "verif:formules": "node scripts/verif-formules-pages.mjs",
-    "verif:cloche": "node scripts/verif-cloche.mjs"
+    "verif:cloche": "node scripts/verif-cloche.mjs",
+    "verif:restreint": "node scripts/verif-compte-restreint.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",

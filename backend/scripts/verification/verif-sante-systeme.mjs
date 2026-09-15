@@ -13,8 +13,12 @@ const plateforme = await j(
 const TP = plateforme.accessToken;
 
 const lire = async () => {
-  const tableau = await j(await get('/api/superowner/dashboard', TP));
-  return { stats: tableau?.stats, sante: tableau?.systemHealth };
+  const [tableau, detail] = await Promise.all([
+    j(await get('/api/superowner/dashboard', TP)),
+    j(await get('/api/superowner/system-health', TP)),
+  ]);
+
+  return { stats: tableau?.stats, sante: detail?.data };
 };
 
 // ===== Le chiffre existe =====
@@ -24,7 +28,7 @@ const { stats, sante } = await lire();
 
 check('le champ lu par la page est envoyé', typeof stats?.systemHealth === 'number', `${stats?.systemHealth}`);
 check('il n’est plus figé à zéro', stats?.systemHealth > 0, `${stats?.systemHealth}`);
-check('le détail est joint', Array.isArray(sante?.controles), JSON.stringify(sante)?.slice(0, 200));
+check('le détail a sa propre route', Array.isArray(sante?.controles), JSON.stringify(sante)?.slice(0, 200));
 check('cinq relevés sont rendus', sante?.controles?.length === 5, `${sante?.controles?.length}`);
 check('les deux chiffres concordent', sante?.score === stats?.systemHealth, `${sante?.score} / ${stats?.systemHealth}`);
 
@@ -206,6 +210,11 @@ const intrus = await j(
 check(
   'un commerçant ne voit pas le tableau de bord',
   (await get('/api/superowner/dashboard', intrus.accessToken)).status === 403,
+  'accepté à tort'
+);
+check(
+  'ni le détail de la santé',
+  (await get('/api/superowner/system-health', intrus.accessToken)).status === 403,
   'accepté à tort'
 );
 
