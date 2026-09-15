@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Store, ShoppingCart, TrendingUp } from 'lucide-react';
 
+import { memoriserBoutique } from '@/lib/current-store';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Store {
@@ -94,6 +96,11 @@ export default function MerchantDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const ouvrirBoutique = (storeId: string) => {
+    memoriserBoutique(orgId, storeId);
+    router.push(`/merchant/${orgId}/dashboard`);
   };
 
   if (loading) {
@@ -199,7 +206,16 @@ export default function MerchantDashboard() {
         ) : (
           <div className="space-y-3">
             {stores.map((store) => (
-              <Link key={store.id} href={`/merchant/${orgId}/dashboard`}>
+              // Un bouton et non un lien : choisir une boutique, c'est la
+              // retenir avant d'ouvrir le tableau de bord. Sans cela, toutes
+              // les cartes menaient au même endroit et le choix n'avait aucun
+              // effet.
+              <button
+                key={store.id}
+                type="button"
+                onClick={() => ouvrirBoutique(store.id)}
+                className="block w-full text-left"
+              >
                 <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-orange-600 transition cursor-pointer">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -216,7 +232,7 @@ export default function MerchantDashboard() {
                     </div>
                   </div>
                 </div>
-              </Link>
+              </button>
             ))}
           </div>
         )}

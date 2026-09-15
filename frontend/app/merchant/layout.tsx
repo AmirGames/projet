@@ -1,132 +1,206 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import {
-  Package,
-  ShoppingCart,
-  Users,
-  MessageCircle,
-  Zap,
-  CreditCard,
-  Users2,
-  FileText,
-  MapPin,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  Home,
-  Star,
-} from 'lucide-react';
+import { LayoutGrid, LogOut, Menu, MessageCircle, Plus, Store, X } from 'lucide-react';
 
-// Pages directes de /merchant ; tout autre segment est un orgId.
-const STATIC_SEGMENTS = ['orders', 'register'];
+import { memoriserBoutique } from '@/lib/current-store';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+/**
+ * Cadre du choix du commerce.
+ *
+ * Les pages d'une boutique (/merchant/:orgId/...) ont leur propre barre
+ * latérale : ce cadre ne s'applique qu'au niveau au-dessus, là où aucune
+ * boutique n'est encore choisie. Il en reprend l'allure pour que le passage
+ * de l'un à l'autre ne donne pas l'impression de changer de site, mais sa
+ * navigation est celle qui a du sens ici : la liste des boutiques.
+ */
+
+const FORMULES: Record<string, { libelle: string; classe: string }> = {
+  FREE: { libelle: 'Gratuit', classe: 'bg-gray-600/40 text-gray-300 border-gray-500/40' },
+  PREMIUM: { libelle: 'Premium', classe: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+  PRO: { libelle: 'Pro', classe: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+};
+
+interface Boutique {
+  id: string;
+  name: string;
+  city?: string | null;
+}
 
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [menuOuvert, setMenuOuvert] = useState(true);
+  const [boutiques, setBoutiques] = useState<Boutique[]>([]);
+  const [formule, setFormule] = useState<string>('');
+  const [orgId, setOrgId] = useState('');
+
   const router = useRouter();
   const pathname = usePathname();
-  const [orgId, setOrgId] = useState<string>('');
 
-  useEffect(() => {
-    // Get orgId from URL or localStorage
-    const searchParams = new URLSearchParams(window.location.search);
-    const id = searchParams.get('orgId') || localStorage.getItem('currentOrgId') || '';
-    setOrgId(id);
+  // Seul /merchant reçoit ce cadre : /merchant/:orgId/... a le sien, et
+  // empiler les deux afficherait deux barres latérales.
+  const auNiveauDuChoix = pathname === '/merchant';
+
+  const charger = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const org = localStorage.getItem('currentOrgId');
+
+      if (!token || !org) return;
+      setOrgId(org);
+
+      const [reponseBoutiques, reponseQuota] = await Promise.all([
+        fetch(`${API_URL}/api/stores/org/${org}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/stores/org/${org}/quota`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (reponseBoutiques.ok) {
+        const donnees = await reponseBoutiques.json();
+        setBoutiques(Array.isArray(donnees) ? donnees : donnees.stores || []);
+      }
+
+      if (reponseQuota.ok) {
+        const quota = await reponseQuota.json();
+        setFormule(quota.tier || '');
+      }
+    } catch (error) {
+      console.error('Chargement des boutiques impossible', error);
+    }
   }, []);
 
-  const handleLogout = () => {
+  useEffect(() => {
+    if (auNiveauDuChoix) charger();
+  }, [auNiveauDuChoix, charger]);
+
+  const seDeconnecter = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('currentOrgId');
     router.push('/login');
   };
 
-  // Les routes /merchant/[orgId]/* ont déjà leur propre navigation : sans cela,
-  // les deux layouts s'empilent et affichent deux barres latérales.
-  const segments = pathname.split('/').filter(Boolean);
-  if (segments.length > 1 && !STATIC_SEGMENTS.includes(segments[1])) {
-    return <>{children}</>;
-  }
+  const ouvrirBoutique = (storeId: string) => {
+    memoriserBoutique(orgId, storeId);
+    router.push(`/merchant/${orgId}/dashboard`);
+  };
 
-  const navItems = [
-    { label: 'Dashboard', icon: Home, href: '/merchant' },
-    { label: 'Produits', icon: Package, href: `/merchant/${orgId}` },
-    { label: 'Catégories', icon: Zap, href: `/merchant/${orgId}/categories` },
-    { label: 'Commandes', icon: ShoppingCart, href: `/merchant/${orgId}/orders` },
-    { label: 'Clients', icon: Users, href: `/merchant/${orgId}/customers` },
-    { label: 'Avis', icon: Star, href: `/merchant/${orgId}/reviews` },
-    { label: 'Zones de livraison', icon: MapPin, href: `/merchant/${orgId}/delivery-zones` },
-    { label: 'Méthodes de paiement', icon: CreditCard, href: `/merchant/${orgId}/payment-methods` },
-    { label: 'Staff', icon: Users2, href: `/merchant/${orgId}/staff` },
-    { label: 'Factures', icon: FileText, href: `/merchant/${orgId}/invoices` },
-    { label: 'Support', icon: MessageCircle, href: `/merchant/${orgId}/support` },
-    { label: 'Paramètres', icon: Settings, href: `/merchant/${orgId}/settings` },
-  ];
+  if (!auNiveauDuChoix) return <>{children}</>;
+
+  const lienSecondaire =
+    'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-700 hover:text-white';
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-gray-100">
-      {/* Sidebar */}
       <aside
         className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
+          menuOuvert ? 'w-64' : 'w-20'
         } bg-gray-800 border-r border-gray-700 transition-all duration-300 flex flex-col`}
       >
-        {/* Logo */}
         <div className="p-6 border-b border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center font-bold">
-              M
+            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+              <LayoutGrid size={20} />
             </div>
-            {sidebarOpen && <span className="font-bold text-lg">Merchant</span>}
+            {menuOuvert && (
+              <div className="min-w-0">
+                <p className="font-bold text-sm truncate">Mes commerces</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs text-gray-400">Commerçant</span>
+                  {formule && (
+                    <span
+                      title={`Formule ${FORMULES[formule]?.libelle || formule}`}
+                      className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold uppercase tracking-wide ${
+                        FORMULES[formule]?.classe || FORMULES.FREE.classe
+                      }`}
+                    >
+                      {FORMULES[formule]?.libelle || formule}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {menuOuvert && (
+            <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Boutiques
+            </p>
+          )}
+
+          {boutiques.map((boutique) => (
+            <button
+              key={boutique.id}
+              type="button"
+              onClick={() => ouvrirBoutique(boutique.id)}
+              title={menuOuvert ? undefined : boutique.name}
+              className={`${lienSecondaire} w-full text-left`}
             >
-              <item.icon size={20} />
-              {sidebarOpen && <span>{item.label}</span>}
-            </Link>
+              <Store size={20} className="flex-shrink-0" />
+              {menuOuvert && (
+                <span className="min-w-0">
+                  <span className="block truncate">{boutique.name}</span>
+                  {boutique.city && (
+                    <span className="block text-xs text-gray-500 truncate">{boutique.city}</span>
+                  )}
+                </span>
+              )}
+            </button>
           ))}
+
+          {boutiques.length === 0 && menuOuvert && (
+            <p className="px-4 py-3 text-sm text-gray-500">Aucune boutique pour l&apos;instant.</p>
+          )}
+
+          <div className="pt-3 mt-3 border-t border-gray-700 space-y-1">
+            <Link href="/store/new" title={menuOuvert ? undefined : 'Nouvelle boutique'} className={lienSecondaire}>
+              <Plus size={20} className="flex-shrink-0" />
+              {menuOuvert && <span className="truncate">Nouvelle boutique</span>}
+            </Link>
+
+            {orgId && (
+              <Link
+                href={`/merchant/${orgId}/support`}
+                title={menuOuvert ? undefined : 'Support'}
+                className={lienSecondaire}
+              >
+                <MessageCircle size={20} className="flex-shrink-0" />
+                {menuOuvert && <span className="truncate">Support</span>}
+              </Link>
+            )}
+          </div>
         </nav>
 
-        {/* Logout */}
         <div className="p-4 border-t border-gray-700">
           <button
-            onClick={handleLogout}
+            onClick={seDeconnecter}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-900/20 transition-colors text-red-400"
           >
-            <LogOut size={20} />
-            {sidebarOpen && <span>Déconnexion</span>}
+            <LogOut size={20} className="flex-shrink-0" />
+            {menuOuvert && <span className="truncate">Déconnexion</span>}
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
         <header className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={() => setMenuOuvert(!menuOuvert)}
+            title={menuOuvert ? 'Replier le menu' : 'Déplier le menu'}
             className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
           >
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            {menuOuvert ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <div className="text-sm text-gray-400">Gestion du Commerce</div>
+          <div className="text-sm text-gray-400">Choisissez le commerce à gérer</div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 p-6 overflow-auto">
-          {children}
-        </main>
+        <main className="flex-1 p-6 overflow-auto">{children}</main>
       </div>
     </div>
   );

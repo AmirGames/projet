@@ -32,6 +32,22 @@ const CurrentStoreContext = createContext<CurrentStoreValue | undefined>(undefin
 
 const storageKey = (orgId: string) => `currentStoreId:${orgId}`;
 
+/**
+ * Mémorise la boutique à gérer depuis l'extérieur de l'espace commerçant.
+ *
+ * Le choix se fait sur /merchant, hors du fournisseur de contexte : sans
+ * cela, toutes les boutiques mènent au même tableau de bord et le choix ne
+ * sert à rien.
+ */
+export function memoriserBoutique(orgId: string, storeId: string) {
+  try {
+    localStorage.setItem(storageKey(orgId), storeId);
+  } catch {
+    // Navigation privée ou stockage refusé : la boutique par défaut prendra
+    // le relais, ce n'est pas bloquant.
+  }
+}
+
 export function CurrentStoreProvider({
   orgId,
   children,
