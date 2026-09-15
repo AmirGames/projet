@@ -86,7 +86,34 @@ pour le lancer.
 | `verif-courses-livreur.mjs` | Passage en ligne, proposition de course, acceptation |
 | `verif-suivi-client.mjs` | Distance restante, durée estimée et avancement, côté client |
 | `verif-menu-restaurant.mjs` | Ordre des produits et étiquette « Épuisé », côté client |
+| `verif-creneaux-retrait.mjs` | Créneaux de retrait tenus aux horaires d'ouverture |
+| `verif-declinaisons.mjs` | Déclinaisons d'un plat, des deux côtés |
+| `verif-paniers.mjs` | Un panier par commerce, et ceux laissés ailleurs |
+| `verif-zones-livraison.mjs` | Anneaux de livraison : réglage, frais, minimum |
+| `verif-commande-invite.mjs` | Commander sans compte : adresse, zone, commande enregistrée |
+| `verif-formules-pages.mjs` | Grille tarifaire et demande de changement de formule |
+| `verif-cloche.mjs` | La cloche de notifications, partout où elle doit être |
+| `verif-compte-restreint.mjs` | Compte suspendu ou fermé : tout bloqué sauf le support |
 
 Le parcours mot de passe ouvre un serveur SMTP minimal sur le port 1025 pour
 lire le message envoyé : le jeton n'existe en clair que dans ce lien, la base
 n'en garde qu'une empreinte. Laissez ce port libre pendant l'exécution.
+
+## La commande en invité
+
+`verif:invite` a besoin d'un service d'adresses joignable : le client y tape son
+adresse sans passer par une suggestion, et c'est le serveur qui la situe. Le faux
+service du dépôt suffit, et évite de dépendre d'Internet.
+
+```bash
+# 1. le faux service, sur le port 4599
+cd backend
+node scripts/verification/faux-service-adresses.mjs &
+
+# 2. l'API, tournée vers lui
+ADDRESS_API_URL=http://127.0.0.1:4599/ban/ PORT=3099 npm run dev
+
+# 3. la vérification
+cd frontend
+VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
+```

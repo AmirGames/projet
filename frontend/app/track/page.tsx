@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -52,15 +52,14 @@ export default function TrackOrderPage() {
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const rechercher = useCallback(async (valeur: string) => {
     setError('');
     setOrder(null);
     setHasSearched(true);
     setLoading(true);
 
     try {
-      const query = searchQuery.trim().toLowerCase();
+      const query = valeur.trim().toLowerCase();
       if (!query) {
         setError('Veuillez entrer un numéro de commande ou un email');
         setLoading(false);
@@ -87,7 +86,29 @@ export default function TrackOrderPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    rechercher(searchQuery);
   };
+
+  /**
+   * Le lien de suivi remis après une commande passée sans compte.
+   *
+   * Un invité n'a pas d'historique : ce lien est son seul moyen de revenir sur
+   * sa commande. La confirmation le lui donne, et la page le suit d'elle-même.
+   *
+   * La requête est lue ici plutôt qu'avec `useSearchParams`, qui obligerait à
+   * envelopper la page d'une frontière Suspense pour se construire.
+   */
+  useEffect(() => {
+    const demandee = new URLSearchParams(window.location.search).get('commande');
+    if (!demandee) return;
+
+    setSearchQuery(demandee);
+    rechercher(demandee);
+  }, [rechercher]);
 
   const getStatusIndex = (status: string) => {
     return statusSteps.findIndex(s => s.status === status);

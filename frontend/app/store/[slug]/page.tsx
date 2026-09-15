@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { ShoppingCart, MapPin, Phone, Clock, Star, AlertCircle, Check } from 'lucide-react';
+import { ShoppingCart, MapPin, Phone, Clock, Star, Check } from 'lucide-react';
 
 import { euro } from '@/lib/format';
-import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { TunnelCommande } from '@/components/TunnelCommande';
 import { useStoreLive } from '@/lib/use-store-live';
 import {
   autresPaniers,
   enregistrerPanier,
   lirePanier,
   viderPanier,
+  type LignePanier,
   type PanierBoutique,
 } from '@/lib/paniers';
 
@@ -76,45 +77,9 @@ export default function StorefrontPage() {
   const [choix, setChoix] = useState<Record<string, string>>({});
   // Les paniers laissés chez d'autres commerces : ils attendent leur tour.
   const [ailleurs, setAilleurs] = useState<PanierBoutique[]>([]);
-  /**
-   * Les conditions de livraison à l'adresse saisie.
-   *
-   * Les zones existaient sans que rien ne les montre : le client découvrait le
-   * refus — hors zone, ou sous le minimum — au dernier moment, après avoir
-   * saisi son adresse et son téléphone.
-   */
-  const [livraison, setLivraison] = useState<{
-    livrable: boolean;
-    zone: { name: string; minOrder: number; deliveryMinutes: number | null } | null;
-    distanceKm: number | null;
-    frais: number;
-    minimum: number;
-    raison: string;
-    forfaitBoutique: boolean;
-  } | null>(null);
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
-  // Créneaux réellement proposables, déduits des horaires de la boutique.
-  const [creneaux, setCreneaux] = useState<
-    { date: string; libelle: string; creneaux: { valeur: string; libelle: string }[] }[]
-  >([]);
   const [orderConfirmation, setOrderConfirmation] = useState<OrderConfirmation | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [checkoutError, setCheckoutError] = useState('');
-
-  const [checkoutForm, setCheckoutForm] = useState({
-    customerName: '',
-    customerEmail: '',
-    customerPhone: '',
-    deliveryType: 'DELIVERY' as 'PICKUP' | 'DELIVERY',
-    deliveryAddress: '',
-    deliveryCity: '',
-    // Renseignées quand le client retient une suggestion d'adresse.
-    deliveryLat: undefined as number | undefined,
-    deliveryLng: undefined as number | undefined,
-    pickupTime: '',
-    notes: '',
-  });
 
   useEffect(() => {
     if (slug) {
@@ -237,51 +202,6 @@ export default function StorefrontPage() {
     );
   }, [cart, store?.id, store?.name]);
 
-  // Les conditions de livraison se lisent dès que l'adresse est retenue.
-  useEffect(() => {
-    if (!store?.id || checkoutForm.deliveryType !== 'DELIVERY') {
-      setLivraison(null);
-      return;
-    }
-
-    const { deliveryLat, deliveryLng } = checkoutForm;
-    let annule = false;
-
-    const parametres =
-      deliveryLat !== undefined && deliveryLng !== undefined
-        ? `?lat=${deliveryLat}&lng=${deliveryLng}`
-        : '';
-
-    fetch(`${API_URL}/api/client/stores/${store.id}/zone-livraison${parametres}`)
-      .then((reponse) => (reponse.ok ? reponse.json() : null))
-      .then((donnees) => {
-        if (!annule && donnees) setLivraison(donnees.data || null);
-      })
-      .catch(() => undefined);
-
-    return () => {
-      annule = true;
-    };
-  }, [store?.id, checkoutForm.deliveryType, checkoutForm.deliveryLat, checkoutForm.deliveryLng]);
-
-  // Un champ d'heure libre laissait choisir 9 h alors que la boutique ouvre à
-  // 11 h : la commande partait et personne n'était là pour la remettre.
-  useEffect(() => {
-    if (!store?.id || checkoutForm.deliveryType !== 'PICKUP') return;
-
-    let annule = false;
-
-    fetch(`${API_URL}/api/client/stores/${store.id}/pickup-slots`)
-      .then((reponse) => (reponse.ok ? reponse.json() : null))
-      .then((donnees) => {
-        if (!annule && donnees) setCreneaux(donnees.data || []);
-      })
-      .catch(() => undefined);
-
-    return () => {
-      annule = true;
-    };
-  }, [store?.id, checkoutForm.deliveryType]);
 
   const fetchStoreData = async () => {
     try {
@@ -391,114 +311,17 @@ export default function StorefrontPage() {
     Number(item.variante?.prixEffectif ?? item.product.price ?? 0);
 
   const cartTotal = cart.reduce((sum, item) => sum + prixDeLaLigne(item) * item.quantity, 0);
-  /**
-   * Les frais réellement facturés : ceux de la zone de livraison.
-   *
-   * La page ajoutait 10 % de « frais de service » qui n'existaient nulle part
-   * ailleurs — ni réglables, ni prélevés par le serveur. Le total affiché ne
-   * correspondait donc pas à celui de la commande.
-   */
-  const fraisDeLivraison =
-    checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable ? livraison.frais : 0;
-  const cartGrandTotal = cartTotal + fraisDeLivraison;
 
-  /** Le panier atteint-il le minimum de la zone. */
-  const sousLeMinimum =
-    checkoutForm.deliveryType === 'DELIVERY' &&
-    Boolean(livraison?.livrable) &&
-    cartTotal < (livraison?.minimum ?? 0);
-
-  const handleCheckout = async () => {
-    setCheckoutError('');
-
-    if (!checkoutForm.customerName || !checkoutForm.customerEmail || !checkoutForm.customerPhone) {
-      setCheckoutError('Veuillez remplir tous les champs obligatoires');
-      return;
-    }
-
-    if (checkoutForm.deliveryType === 'DELIVERY' && (!checkoutForm.deliveryAddress || !checkoutForm.deliveryCity)) {
-      setCheckoutError('Veuillez remplir l\'adresse de livraison');
-      return;
-    }
-
-    if (checkoutForm.deliveryType === 'PICKUP' && !checkoutForm.pickupTime) {
-      setCheckoutError('Veuillez sélectionner une heure de retrait');
-      return;
-    }
-
-    if (cart.length === 0) {
-      setCheckoutError('Votre panier est vide');
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      if (!store) {
-        setCheckoutError('Erreur: boutique non trouvée');
-        return;
-      }
-
-      const orderData = {
-        storeId: store.id,
-        customerName: checkoutForm.customerName,
-        customerEmail: checkoutForm.customerEmail,
-        customerPhone: checkoutForm.customerPhone,
-        deliveryType: checkoutForm.deliveryType,
-        deliveryAddress: checkoutForm.deliveryAddress || undefined,
-        deliveryCity: checkoutForm.deliveryCity || undefined,
-        deliveryLat: checkoutForm.deliveryLat,
-        deliveryLng: checkoutForm.deliveryLng,
-        pickupTime: checkoutForm.pickupTime || undefined,
-        notes: checkoutForm.notes || undefined,
-        // L'API attend des euros (Decimal 10,2), pas des centimes.
-        totalAmount: Number(cartGrandTotal.toFixed(2)),
-        taxAmount: 0,
-        // Le serveur recalcule ces frais depuis la zone : on envoie ce qu'on a
-        // affiché, il tranche.
-        feesAmount: Number(fraisDeLivraison.toFixed(2)),
-        // Le détail du panier : sans lui la commande n'enregistrait qu'un
-        // montant, et la facture comme le détail de commande restaient vides.
-        items: cart.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-          price: Number(item.variante?.prixEffectif ?? item.product.price),
-          // La cuisine a besoin de savoir laquelle préparer.
-          ...(item.variante ? { variantId: item.variante.id } : {}),
-        })),
-      };
-
-      const response = await fetch(`${API_URL}/api/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        setCheckoutError(error.error || 'Erreur lors de la création de la commande');
-        return;
-      }
-
-      const orderResponse = await response.json();
-      setOrderConfirmation({
-        id: orderResponse.order.id,
-        orderNumber: orderResponse.order.id.slice(-8).toUpperCase(),
-      });
-
-      // La commande est passée : ce panier-là n'a plus lieu d'être.
-      setCart([]);
-      viderPanier(store?.id);
-      setAilleurs(autresPaniers(store?.id));
-      setShowCheckout(false);
-      setShowCart(false);
-    } catch (error) {
-      console.error('Checkout error:', error);
-      setCheckoutError('Erreur de connexion. Veuillez réessayer.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  /** Le panier tel que le tunnel de commande l'attend. */
+  const lignesDuPanier: LignePanier[] = cart.map((item) => ({
+    productId: item.product.id,
+    name: item.product.name,
+    description: item.product.description,
+    price: prixDeLaLigne(item),
+    quantity: item.quantity,
+    isAvailable: item.product.isAvailable,
+    ...(item.variante ? { variantId: item.variante.id, variantNom: item.variante.label } : {}),
+  }));
 
   if (loading) {
     return (
@@ -809,15 +632,13 @@ export default function StorefrontPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Livraison</span>
-                    <span>
-                      {/* Les frais dépendent de l'adresse : ils se précisent au
-                          moment de la saisie. */}
-                      {fraisDeLivraison > 0 ? euro(fraisDeLivraison) : 'selon la zone'}
-                    </span>
+                    {/* Les frais dépendent de l'adresse : ils s'affichent dans
+                        le tunnel, dès que le client l'a saisie. */}
+                    <span>selon la zone</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-3">
                     <span>Total</span>
-                    <span>{euro(cartGrandTotal)}</span>
+                    <span>{euro(cartTotal)}</span>
                   </div>
 
                   <button
@@ -861,21 +682,7 @@ export default function StorefrontPage() {
 
             <div className="space-y-2">
               <button
-                onClick={() => {
-                  setOrderConfirmation(null);
-                  setCheckoutForm({
-                    customerName: '',
-                    customerEmail: '',
-                    customerPhone: '',
-                    deliveryType: 'DELIVERY',
-                    deliveryAddress: '',
-                    deliveryCity: '',
-                    deliveryLat: undefined,
-                    deliveryLng: undefined,
-                    pickupTime: '',
-                    notes: '',
-                  });
-                }}
+                onClick={() => setOrderConfirmation(null)}
                 className="w-full py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors"
               >
                 Retour à la boutique
@@ -886,7 +693,7 @@ export default function StorefrontPage() {
       )}
 
       {/* Checkout Modal */}
-      {showCheckout && !orderConfirmation && (
+      {showCheckout && !orderConfirmation && store && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-2xl w-full my-8">
             <div className="border-b border-gray-700 p-6 flex items-center justify-between">
@@ -899,277 +706,24 @@ export default function StorefrontPage() {
               </button>
             </div>
 
-            <div className="p-6 space-y-6 max-h-96 overflow-y-auto">
-              {checkoutError && (
-                <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 flex gap-3">
-                  <AlertCircle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-red-400 text-sm">{checkoutError}</p>
-                </div>
-              )}
+            {/* Le même tunnel que la page /checkout : il n'existait qu'ici, si
+                bien que l'autre chemin de commande n'avait pas de champ
+                d'adresse. */}
+            <TunnelCommande
+              boutique={{ id: store.id, name: store.name }}
+              lignes={lignesDuPanier}
+              surAnnulation={() => setShowCheckout(false)}
+              surCommandePassee={(commande) => {
+                setOrderConfirmation({ id: commande.id, orderNumber: commande.numero });
 
-              {/* Customer Info */}
-              <div className="space-y-4">
-                <h3 className="font-bold text-lg">Vos Informations</h3>
-                <div>
-                  <label className="text-sm text-gray-400 block mb-2">Nom complet *</label>
-                  <input
-                    type="text"
-                    value={checkoutForm.customerName}
-                    onChange={(e) => setCheckoutForm({ ...checkoutForm, customerName: e.target.value })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                    placeholder="Jean Dupont"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm text-gray-400 block mb-2">Email *</label>
-                  <input
-                    type="email"
-                    value={checkoutForm.customerEmail}
-                    onChange={(e) => setCheckoutForm({ ...checkoutForm, customerEmail: e.target.value })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                    placeholder="jean@example.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm text-gray-400 block mb-2">Téléphone *</label>
-                  <input
-                    type="tel"
-                    value={checkoutForm.customerPhone}
-                    onChange={(e) => setCheckoutForm({ ...checkoutForm, customerPhone: e.target.value })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                    placeholder="+33 6 12 34 56 78"
-                  />
-                </div>
-              </div>
-
-              {/* Delivery Type */}
-              <div className="space-y-4">
-                <h3 className="font-bold text-lg">Mode de Livraison</h3>
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3 p-3 bg-gray-700 rounded cursor-pointer hover:bg-gray-600 transition-colors">
-                    <input
-                      type="radio"
-                      name="deliveryType"
-                      value="DELIVERY"
-                      checked={checkoutForm.deliveryType === 'DELIVERY'}
-                      onChange={(e) => setCheckoutForm({ ...checkoutForm, deliveryType: e.target.value as any })}
-                      className="w-4 h-4"
-                    />
-                    <div className="flex-1">
-                      <p className="font-semibold">Livraison à domicile</p>
-                      <p className="text-xs text-gray-400">Livraison à votre adresse</p>
-                    </div>
-                  </label>
-
-                  <label className="flex items-center gap-3 p-3 bg-gray-700 rounded cursor-pointer hover:bg-gray-600 transition-colors">
-                    <input
-                      type="radio"
-                      name="deliveryType"
-                      value="PICKUP"
-                      checked={checkoutForm.deliveryType === 'PICKUP'}
-                      onChange={(e) => setCheckoutForm({ ...checkoutForm, deliveryType: e.target.value as any })}
-                      className="w-4 h-4"
-                    />
-                    <div className="flex-1">
-                      <p className="font-semibold">Retrait sur place</p>
-                      <p className="text-xs text-gray-400">Récupérez votre commande à la boutique</p>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Delivery Address */}
-              {checkoutForm.deliveryType === 'DELIVERY' && (
-                <div className="space-y-4">
-                  <h3 className="font-bold text-lg">Adresse de Livraison</h3>
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-2">Adresse *</label>
-                    <AddressAutocomplete
-                      value={checkoutForm.deliveryAddress}
-                      onChange={(valeur) =>
-                        setCheckoutForm({
-                          ...checkoutForm,
-                          deliveryAddress: valeur,
-                          // Taper par-dessus une suggestion retenue rendrait
-                          // ses coordonnées fausses.
-                          deliveryLat: undefined,
-                          deliveryLng: undefined,
-                        })
-                      }
-                      onSelect={(adresse) =>
-                        setCheckoutForm({
-                          ...checkoutForm,
-                          deliveryAddress: adresse.street,
-                          deliveryCity: adresse.city || checkoutForm.deliveryCity,
-                          // Les coordonnées de l'adresse choisie étaient
-                          // jetées : sans elles, le suivi ne peut afficher ni
-                          // distance restante ni durée estimée.
-                          deliveryLat: adresse.latitude ?? undefined,
-                          deliveryLng: adresse.longitude ?? undefined,
-                        })
-                      }
-                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                      placeholder="123 rue de la Paix"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-400 block mb-2">Ville *</label>
-                    <input
-                      type="text"
-                      value={checkoutForm.deliveryCity}
-                      onChange={(e) => setCheckoutForm({ ...checkoutForm, deliveryCity: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                      placeholder="Paris"
-                    />
-                  </div>
-
-                  {/* Les conditions de la zone, dites avant de payer et non
-                      après. */}
-                  {livraison && !livraison.forfaitBoutique && (
-                    <div
-                      role="status"
-                      className={`rounded-lg px-3 py-2 text-sm border ${
-                        !livraison.livrable
-                          ? 'border-red-700/50 bg-red-900/20 text-red-200'
-                          : cartTotal < livraison.minimum
-                            ? 'border-amber-700/50 bg-amber-900/20 text-amber-200'
-                            : 'border-green-700/50 bg-green-900/20 text-green-200'
-                      }`}
-                    >
-                      {!livraison.livrable ? (
-                        <p>{livraison.raison}</p>
-                      ) : (
-                        <>
-                          <p className="font-semibold">
-                            Zone « {livraison.zone?.name} »
-                            {livraison.distanceKm !== null && ` — ${livraison.distanceKm} km`}
-                          </p>
-                          <p>
-                            Livraison {euro(livraison.frais)}
-                            {livraison.zone?.deliveryMinutes
-                              ? `, environ ${livraison.zone.deliveryMinutes} min`
-                              : ''}
-                            {livraison.minimum > 0 && ` — minimum ${euro(livraison.minimum)}`}
-                          </p>
-                          {cartTotal < livraison.minimum && (
-                            <p className="mt-1">
-                              Il vous manque {euro(livraison.minimum - cartTotal)} pour atteindre le
-                              minimum de cette zone.
-                            </p>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Pickup Time */}
-              {checkoutForm.deliveryType === 'PICKUP' && (
-                <div className="space-y-4">
-                  <h3 className="font-bold text-lg">Heure de Retrait</h3>
-                  <div>
-                    <label htmlFor="creneau" className="text-sm text-gray-400 block mb-2">
-                      Sélectionnez une heure *
-                    </label>
-
-                    {creneaux.length === 0 ? (
-                      <p className="text-sm text-amber-300 bg-amber-900/20 border border-amber-700/40 rounded px-3 py-2">
-                        Aucun créneau de retrait disponible pour les prochains jours.
-                        Choisissez la livraison, ou revenez plus tard.
-                      </p>
-                    ) : (
-                      <select
-                        id="creneau"
-                        value={checkoutForm.pickupTime}
-                        onChange={(e) =>
-                          setCheckoutForm({ ...checkoutForm, pickupTime: e.target.value })
-                        }
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                      >
-                        <option value="">Choisir un créneau</option>
-                        {creneaux.map((jour) => (
-                          <optgroup key={jour.date} label={jour.libelle}>
-                            {jour.creneaux.map((creneau) => (
-                              <option key={creneau.valeur} value={creneau.valeur}>
-                                {creneau.libelle}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Notes */}
-              <div className="space-y-4">
-                <h3 className="font-bold text-lg">Notes (Optionnel)</h3>
-                <textarea
-                  value={checkoutForm.notes}
-                  onChange={(e) => setCheckoutForm({ ...checkoutForm, notes: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500 h-20"
-                  placeholder="Instructions spéciales, allergies, etc..."
-                />
-              </div>
-
-              {/* Order Summary */}
-              <div className="bg-gray-700 rounded-lg p-4 space-y-2">
-                <h3 className="font-bold mb-3">Résumé de la Commande</h3>
-                <div className="flex justify-between text-sm">
-                  <span>Sous-total</span>
-                  <span>{euro(cartTotal)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>
-                    Livraison
-                    {livraison?.zone ? ` — ${livraison.zone.name}` : ''}
-                  </span>
-                  <span>
-                    {checkoutForm.deliveryType === 'PICKUP'
-                      ? 'Retrait sur place'
-                      : euro(fraisDeLivraison)}
-                  </span>
-                </div>
-                <div className="flex justify-between font-bold text-lg border-t border-gray-600 pt-2">
-                  <span>Total</span>
-                  <span className="text-red-400">{euro(cartGrandTotal)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="border-t border-gray-700 p-6 flex gap-3">
-              <button
-                onClick={() => setShowCheckout(false)}
-                className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleCheckout}
-                // Hors zone ou sous le minimum, le serveur refuserait : autant
-                // le dire avant que le client valide.
-                disabled={
-                  submitting ||
-                  sousLeMinimum ||
-                  (checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable === false)
-                }
-                className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting
-                  ? 'Traitement...'
-                  : sousLeMinimum
-                    ? `Minimum ${euro(livraison?.minimum ?? 0)}`
-                    : checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable === false
-                      ? 'Adresse non livrée'
-                      : 'Confirmer la Commande'}
-              </button>
-            </div>
+                // La commande est passée : ce panier-là n'a plus lieu d'être.
+                setCart([]);
+                viderPanier(store.id);
+                setAilleurs(autresPaniers(store.id));
+                setShowCheckout(false);
+                setShowCart(false);
+              }}
+            />
           </div>
         </div>
       )}

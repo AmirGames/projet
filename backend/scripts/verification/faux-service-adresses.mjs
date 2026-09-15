@@ -106,3 +106,15 @@ export async function ouvrirFauxServiceAdresses(port = 4599) {
     },
   };
 }
+
+/**
+ * Lancé directement, il reste en écoute : les vérifications navigateur ont
+ * besoin d'un vrai serveur, l'API tournant dans un autre processus.
+ *
+ *   node scripts/verification/faux-service-adresses.mjs &
+ *   ADDRESS_API_URL=http://127.0.0.1:4599/ban/ npm run dev
+ */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const service = await ouvrirFauxServiceAdresses(Number(process.env.PORT_ADRESSES) || 4599);
+  console.log(`Faux service d'adresses : ${service.urlBan}`);
+}

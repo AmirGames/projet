@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint } from "../utils/geo";
+import { AddressService } from "./address.service";
 
 /**
  * Les zones de livraison d'une boutique.
@@ -198,10 +199,15 @@ export class DeliveryZoneService {
    *
    * Sans zone définie, on retombe sur les frais et le minimum forfaitaires de
    * la boutique : une boutique qui n'a rien réglé doit continuer de livrer.
+   *
+   * `texte` est l'adresse telle que le client l'a écrite. Elle sert quand il n'a
+   * pas retenu de suggestion : sans coordonnées, aucun anneau ne pouvait être
+   * départagé et la commande était refusée — un client qui tape son adresse à la
+   * main ne pouvait pas commander.
    */
   static async verdict(
     storeId: string,
-    adresse: { latitude?: number | null; longitude?: number | null }
+    adresse: { latitude?: number | null; longitude?: number | null; texte?: string | null }
   ): Promise<Verdict> {
     const boutique = await db.store.findUnique({
       where: { id: storeId },
@@ -250,25 +256,68 @@ export class DeliveryZoneService {
 
     const depart = { latitude: boutique.latitude, longitude: boutique.longitude };
 
-    // Sans coordonnées, aucun anneau ne peut être départagé. On le dit plutôt
-    // que de facturer au hasard.
-    if (!estUnPoint(depart) || !estUnPoint(adresse)) {
+    if (!estUnPoint(depart)) {
       return {
         livrable: false,
         zone: null,
         distanceKm: null,
         frais: forfait.frais,
         minimum: forfait.minimum,
-        raison: !estUnPoint(depart)
-          ? "Cette boutique n'a pas encore situé son adresse : la livraison ne peut pas être calculée."
-          : "Choisissez une adresse dans les suggestions pour connaître les frais de livraison.",
+        raison:
+          "Cette boutique n'a pas encore situé son adresse : la livraison ne peut pas être calculée.",
+        forfaitBoutique: false,
+      };
+    }
+
+    // L'adresse écrite à la main n'a pas de coordonnées : on la situe.
+    let point = adresse;
+
+    if (!estUnPoint(point) && (adresse.texte || "").trim().length >= 3) {
+      const situee = await AddressService.situer(adresse.texte as string);
+
+      if (situee.point) {
+        point = situee.point;
+      } else if (!situee.disponible) {
+        // Notre service d'adresses est en panne. Ce n'est pas au client de le
+        // payer : la boutique livre au forfait, le temps que ça revienne.
+        return {
+          livrable: true,
+          zone: null,
+          distanceKm: null,
+          ...forfait,
+          raison: "",
+          forfaitBoutique: true,
+        };
+      } else {
+        return {
+          livrable: false,
+          zone: null,
+          distanceKm: null,
+          frais: forfait.frais,
+          minimum: forfait.minimum,
+          raison:
+            "Nous n'avons pas trouvé cette adresse. Vérifiez-la, ou choisissez-la dans les suggestions.",
+          forfaitBoutique: false,
+        };
+      }
+    }
+
+    // Ni coordonnées ni adresse : il n'y a rien à situer.
+    if (!estUnPoint(point)) {
+      return {
+        livrable: false,
+        zone: null,
+        distanceKm: null,
+        frais: forfait.frais,
+        minimum: forfait.minimum,
+        raison: "Saisissez votre adresse pour connaître les frais de livraison.",
         forfaitBoutique: false,
       };
     }
 
     const distance = distanceKm(
       { latitude: depart.latitude as number, longitude: depart.longitude as number },
-      { latitude: adresse.latitude as number, longitude: adresse.longitude as number }
+      { latitude: point.latitude as number, longitude: point.longitude as number }
     );
 
     // Les anneaux sont triés du plus petit au plus grand : le premier qui
@@ -310,7 +359,7 @@ export class DeliveryZoneService {
    */
   static async controlerLaLivraison(
     storeId: string,
-    adresse: { latitude?: number | null; longitude?: number | null },
+    adresse: { latitude?: number | null; longitude?: number | null; texte?: string | null },
     totalDesArticles: number
   ) {
     const verdict = await this.verdict(storeId, adresse);

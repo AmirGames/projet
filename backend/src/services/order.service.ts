@@ -138,7 +138,16 @@ export class OrderService {
       if (data.deliveryType === "DELIVERY" && lignesTarifees.length > 0) {
         const verdict = await DeliveryZoneService.controlerLaLivraison(
           data.storeId,
-          { latitude: data.deliveryLat, longitude: data.deliveryLng },
+          {
+            latitude: data.deliveryLat,
+            longitude: data.deliveryLng,
+            // L'adresse écrite à la main, pour la situer à défaut de
+            // coordonnées : sans elle, commander sans passer par une
+            // suggestion était impossible.
+            texte: [data.deliveryAddress, data.deliveryPostal, data.deliveryCity]
+              .filter(Boolean)
+              .join(" "),
+          },
           Number(totalDesLignes.toFixed(2))
         );
 

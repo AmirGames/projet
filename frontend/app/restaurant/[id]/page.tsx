@@ -621,8 +621,11 @@ export default function RestaurantDetailPage({ params }: { params: { id: string 
                     </div>
                   </div>
 
+                  {/* Sans la boutique, la page de commande visait un
+                      identifiant écrit en dur : la commande partait chez un
+                      autre commerce. */}
                   <Link
-                    href="/checkout"
+                    href={`/checkout?boutique=${params.id}`}
                     className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition block text-center"
                   >
                     Passer la commande

@@ -164,12 +164,12 @@ check(
   dehors?.data?.raison
 );
 
-titre('Sans coordonnées');
+titre('Sans coordonnées ni adresse');
 const sansPoint = await j(await get(`/api/client/stores/${storeId}/zone-livraison`));
 check('on ne devine pas la zone', sansPoint?.data?.livrable === false, JSON.stringify(sansPoint?.data));
 check(
-  'le message invite à choisir une suggestion',
-  /suggestions/.test(sansPoint?.data?.raison || ''),
+  'le message demande l’adresse',
+  /[Ss]aisissez votre adresse/.test(sansPoint?.data?.raison || ''),
   sansPoint?.data?.raison
 );
 

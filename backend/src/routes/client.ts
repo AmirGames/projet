@@ -304,6 +304,9 @@ router.get("/stores/:id/zone-livraison", async (req: Request, res: Response, nex
     const verdict = await DeliveryZoneService.verdict(req.params.id as string, {
       latitude: Number.isFinite(latitude) ? latitude : null,
       longitude: Number.isFinite(longitude) ? longitude : null,
+      // L'adresse telle que le client l'a écrite, quand il n'a retenu aucune
+      // suggestion : le serveur la situe pour trouver l'anneau.
+      texte: typeof req.query.adresse === "string" ? req.query.adresse : null,
     });
 
     res.json({ success: true, data: verdict });

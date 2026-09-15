@@ -1,124 +1,101 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
-import { ArrowLeft } from "lucide-react";
-import { lirePanier, viderPanier, totalDuPanier } from "@/lib/paniers";
+/**
+ * Commander depuis la fiche d'un commerce, sans compte.
+ *
+ * Cette page était une maquette : un identifiant de boutique écrit en dur, un
+ * menu déroulant « Livraison » **sans aucun champ d'adresse**, et une commande
+ * envoyée sans adresse, sans frais de zone et sans le détail du panier. Le
+ * client qui choisissait la livraison n'avait nulle part où dire où livrer.
+ *
+ * Elle affiche désormais le même tunnel que la vitrine, sur la boutique dont
+ * vient le panier.
+ */
 
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity?: number;
-}
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Check } from 'lucide-react';
+
+import { euro } from '@/lib/format';
+import { TunnelCommande } from '@/components/TunnelCommande';
+import {
+  autresPaniers,
+  cleDeLigne,
+  nombreDArticles,
+  totalDuPanier,
+  viderPanier,
+  type LignePanier,
+  type PanierBoutique,
+} from '@/lib/paniers';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [deliveryType, setDeliveryType] = useState("PICKUP");
-  const [pickupTime, setPickupTime] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const storeId = "19c84158-7858-453f-9955-e95c01c4e895";
+  const [boutique, setBoutique] = useState<{ id: string; name: string } | null>(null);
+  // Les autres paniers en attente : c'est au client de dire lequel il commande.
+  const [aChoisir, setAChoisir] = useState<PanierBoutique[]>([]);
+  const [lignes, setLignes] = useState<LignePanier[]>([]);
+  const [chargement, setChargement] = useState(true);
+  const [confirmation, setConfirmation] = useState<{ id: string; numero: string } | null>(null);
 
+  /**
+   * De quelle boutique s'agit-il.
+   *
+   * La fiche du commerce le dit (`?boutique=`). Sans ce paramètre — un lien
+   * gardé en favori, un retour en arrière — on se rabat sur le panier en cours
+   * s'il n'y en a qu'un, et on demande sinon.
+   *
+   * La requête est lue ici et non par `useSearchParams`, qui obligerait à
+   * envelopper la page d'une frontière Suspense pour se construire.
+   */
   useEffect(() => {
-    // Le panier de cette boutique, et non celui de la dernière visitée.
-    setCartItems(
-      lirePanier(storeId).map((ligne) => ({
-        id: ligne.productId,
-        name: ligne.name,
-        price: ligne.price,
-        quantity: ligne.quantity,
-      }))
-    );
+    const demandee = new URLSearchParams(window.location.search).get('boutique') || '';
+    const paniers = autresPaniers(undefined);
+
+    const retenu = demandee
+      ? paniers.find((panier) => panier.storeId === demandee)
+      : paniers.length === 1
+        ? paniers[0]
+        : undefined;
+
+    if (!retenu) {
+      // Un identifiant annoncé sans panier : la boutique existe peut-être, mais
+      // il n'y a rien à commander.
+      setAChoisir(paniers);
+      setChargement(false);
+      return;
+    }
+
+    setLignes(retenu.lignes);
+    setBoutique({ id: retenu.storeId, name: retenu.storeName });
+    setChargement(false);
+
+    // Le nom enregistré peut manquer (panier composé avant cette version) : la
+    // route publique le donne.
+    if (!retenu.storeName) {
+      fetch(`${API_URL}/api/client/stores/${retenu.storeId}`)
+        .then((reponse) => (reponse.ok ? reponse.json() : null))
+        .then((donnees) => {
+          const nom = donnees?.data?.store?.name || donnees?.data?.name;
+          if (nom) setBoutique({ id: retenu.storeId, name: nom });
+        })
+        .catch(() => undefined);
+    }
   }, []);
 
-  // Les quantités étaient ignorées : deux pizzas comptaient pour une.
-  const totalAmount = totalDuPanier(
-    cartItems.map((item) => ({
-      productId: item.id,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity ?? 1,
-    }))
-  );
-
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      // Create order
-      const orderResult = await api.createOrder(
-        storeId,
-        customerName,
-        customerEmail,
-        customerPhone,
-        deliveryType,
-        totalAmount
-      );
-
-      if (orderResult.error) {
-        setError(orderResult.error || orderResult.message || "Erreur lors de la création de la commande");
-        return;
-      }
-
-      const orderId = orderResult.order.id;
-
-      // Create payment intent
-      const paymentResult = await fetch(
-        "http://localhost:3001/api/payments/intent",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId,
-            storeId,
-            amount: totalAmount,
-            customerEmail,
-            customerName,
-            description: `Commande #${orderId.slice(0, 8)}`,
-          }),
-        }
-      ).then((res) => res.json());
-
-      if (paymentResult.error) {
-        setError("Erreur lors de la création du paiement");
-        return;
-      }
-
-      // Store order info and redirect to payment
-      localStorage.setItem(
-        "currentOrder",
-        JSON.stringify({
-          orderId,
-          clientSecret: paymentResult.clientSecret,
-          amount: totalAmount,
-        })
-      );
-
-      // Clear cart
-      viderPanier(storeId);
-
-      // Redirect to payment
-      router.push("/payment");
-    } catch (err) {
-      setError("Erreur lors du traitement");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (chargement) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-900 text-white">
+        <p className="text-gray-400">Chargement de votre panier…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* Header */}
       <div className="bg-gray-800 border-b border-gray-700 p-4">
         <div className="max-w-6xl mx-auto flex items-center gap-4">
           {/* Sans retour, un client qui veut corriger son panier n'a que le
@@ -132,118 +109,134 @@ export default function CheckoutPage() {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-2xl font-bold">Passer la commande</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Passer la commande</h1>
+            {boutique && <p className="text-sm text-gray-400">{boutique.name}</p>}
+          </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Order Summary */}
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-bold mb-4">Résumé de la commande</h2>
+        {confirmation ? (
+          <div className="max-w-md mx-auto bg-gray-800 border border-gray-700 rounded-lg text-center p-8 space-y-6">
+            <div className="flex justify-center">
+              <div className="w-16 h-16 bg-green-600/20 border border-green-600 rounded-full flex items-center justify-center">
+                <Check size={32} className="text-green-400" />
+              </div>
+            </div>
 
-            {cartItems.length === 0 ? (
-              <p className="text-gray-400">Panier vide</p>
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Commande confirmée</h2>
+              <p className="text-gray-400">Votre commande a bien été transmise au commerce.</p>
+            </div>
+
+            <div className="bg-gray-700 rounded-lg p-4">
+              <p className="text-gray-400 text-sm mb-1">Numéro de commande</p>
+              <p className="text-2xl font-bold text-red-400">#{confirmation.numero}</p>
+            </div>
+
+            <Link
+              href={`/track?commande=${confirmation.id}`}
+              className="block w-full py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors"
+            >
+              Suivre ma commande
+            </Link>
+          </div>
+        ) : !boutique ? (
+          <div className="max-w-md mx-auto bg-gray-800 border border-gray-700 rounded-lg p-8 space-y-4">
+            {aChoisir.length === 0 ? (
+              <>
+                <h2 className="text-xl font-bold">Votre panier est vide</h2>
+                <p className="text-gray-400 text-sm">
+                  Choisissez un commerce et composez votre commande.
+                </p>
+                <Link
+                  href="/client"
+                  className="inline-block py-2 px-4 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors"
+                >
+                  Voir les commerces
+                </Link>
+              </>
             ) : (
               <>
-                <div className="space-y-3 mb-6 pb-6 border-b border-gray-700">
-                  {cartItems.map((item, idx) => (
-                    <div key={idx} className="flex justify-between">
-                      <span>{item.name}</span>
-                      <span className="text-green-400">€{item.price}</span>
-                    </div>
+                <h2 className="text-xl font-bold">Quel panier voulez-vous commander&nbsp;?</h2>
+                {/* Une commande ne peut porter que sur un commerce : mélanger
+                    deux paniers n'aurait ni livreur ni cuisine communs. */}
+                <p className="text-gray-400 text-sm">
+                  Vous avez un panier chez plusieurs commerces. Une commande ne concerne qu&apos;un
+                  commerce à la fois.
+                </p>
+                <ul className="space-y-2">
+                  {aChoisir.map((panier) => (
+                    <li key={panier.storeId}>
+                      <Link
+                        href={`/checkout?boutique=${panier.storeId}`}
+                        className="flex items-center justify-between bg-gray-700 hover:bg-gray-600 rounded-lg px-4 py-3 transition-colors"
+                      >
+                        <span className="font-semibold">
+                          {panier.storeName || 'Commerce'}
+                          <span className="block text-xs text-gray-400">
+                            {nombreDArticles(panier.lignes)} article
+                            {nombreDArticles(panier.lignes) > 1 ? 's' : ''}
+                          </span>
+                        </span>
+                        <span className="text-red-400">{euro(totalDuPanier(panier.lignes))}</span>
+                      </Link>
+                    </li>
                   ))}
-                </div>
-
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total:</span>
-                  <span className="text-green-400">
-                    €{totalAmount.toFixed(2)}
-                  </span>
-                </div>
+                </ul>
               </>
             )}
           </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg">
+              <h2 className="text-xl font-bold mb-4">Résumé de la commande</h2>
 
-          {/* Checkout Form */}
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-bold mb-4">Vos informations</h2>
-
-            {error && (
-              <div className="bg-red-600 text-white p-4 rounded-lg mb-4">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleCheckout} className="space-y-4">
-              <div>
-                <label className="block text-gray-300 mb-2">Nom</label>
-                <input
-                  type="text"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-300 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg"
-                  required
-                />
+              <div className="space-y-3 mb-6 pb-6 border-b border-gray-700">
+                {lignes.map((ligne) => (
+                  <div
+                    key={cleDeLigne(ligne.productId, ligne.variantId)}
+                    className="flex justify-between gap-4"
+                  >
+                    <span className="min-w-0">
+                      {ligne.name}
+                      {/* Sans le nom de la déclinaison, deux lignes du même plat
+                          seraient indistinguables. */}
+                      {ligne.variantNom && (
+                        <span className="text-gray-400"> — {ligne.variantNom}</span>
+                      )}
+                      <span className="text-gray-400"> × {ligne.quantity}</span>
+                    </span>
+                    <span className="text-green-400 whitespace-nowrap">
+                      {euro(ligne.price * ligne.quantity)}
+                    </span>
+                  </div>
+                ))}
               </div>
 
-              <div>
-                <label className="block text-gray-300 mb-2">Téléphone</label>
-                <input
-                  type="tel"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg"
-                  required
-                />
+              <div className="flex justify-between text-lg font-bold">
+                <span>Sous-total</span>
+                <span className="text-green-400">{euro(totalDuPanier(lignes))}</span>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-gray-300 mb-2">Type de livraison</label>
-                <select
-                  value={deliveryType}
-                  onChange={(e) => setDeliveryType(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg"
-                >
-                  <option value="PICKUP">À emporter</option>
-                  <option value="DELIVERY">Livraison</option>
-                </select>
-              </div>
+            <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg">
+              <h2 className="text-xl font-bold mb-4">Vos informations</h2>
 
-              {deliveryType === "PICKUP" && (
-                <div>
-                  <label className="block text-gray-300 mb-2">Heure de retrait</label>
-                  <input
-                    type="datetime-local"
-                    value={pickupTime}
-                    onChange={(e) => setPickupTime(e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg"
-                    required
-                  />
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading || cartItems.length === 0}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-lg"
-              >
-                {loading ? "Traitement..." : "Procéder au paiement"}
-              </button>
-            </form>
+              <TunnelCommande
+                boutique={boutique}
+                lignes={lignes}
+                disposition="page"
+                surCommandePassee={(commande) => {
+                  setConfirmation({ id: commande.id, numero: commande.numero });
+                  viderPanier(boutique.id);
+                  setLignes([]);
+                }}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -170,6 +170,42 @@ export class AddressService {
     }
   }
 
+  /**
+   * Situer une adresse écrite à la main.
+   *
+   * Un client qui tape son adresse au lieu de retenir une suggestion n'a pas de
+   * coordonnées, et sans coordonnées aucune zone de livraison ne peut être
+   * départagée : sa commande était refusée. On la situe donc ici.
+   *
+   * `disponible` distingue les deux échecs, qui n'appellent pas la même
+   * conduite : une adresse introuvable est probablement mal écrite, un service
+   * injoignable est notre panne et ne doit pas fermer la boutique.
+   */
+  static async situer(texte: string): Promise<{
+    point: { latitude: number; longitude: number } | null;
+    disponible: boolean;
+    adresse: Suggestion | null;
+  }> {
+    const requete = (texte || "").trim();
+
+    if (requete.length < 3) {
+      return { point: null, disponible: true, adresse: null };
+    }
+
+    const { suggestions, available } = await this.rechercher(requete, 1);
+    const premiere = suggestions[0];
+
+    if (!premiere || premiere.latitude === null || premiere.longitude === null) {
+      return { point: null, disponible: available, adresse: premiere || null };
+    }
+
+    return {
+      point: { latitude: premiere.latitude, longitude: premiere.longitude },
+      disponible: true,
+      adresse: premiere,
+    };
+  }
+
   /** Vide le cache : utile après un changement de fournisseur. */
   static viderCache() {
     cache.clear();

@@ -198,7 +198,9 @@ export default function StorefrontPage() {
                     isAvailable: produit.isAvailable,
                   }))
                 );
-                router.push("/checkout");
+                // La boutique accompagne le panier : sans elle, la page de
+                // commande devine, et devinait mal.
+                router.push(`/checkout?boutique=${storeId}`);
               }}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg"
             >
