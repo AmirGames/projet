@@ -12,6 +12,7 @@ import {
   sqlScalaire,
   sqlExec,
   validerLivreur,
+  codeDeRemise,
 } from './outils.mjs';
 
 const MDP = 'Password123!';
@@ -93,7 +94,11 @@ async function courseLivree() {
 
   await patch(`/api/drivers/deliveries/${courseId}/accept`, null, D);
   await patch(`/api/drivers/deliveries/${courseId}`, { status: 'PICKED_UP' }, D);
-  await patch(`/api/drivers/deliveries/${courseId}`, { status: 'DELIVERED' }, D);
+  await patch(
+    `/api/drivers/deliveries/${courseId}`,
+    { status: 'DELIVERED', code: await codeDeRemise(courseId) },
+    D
+  );
 
   return courseId;
 }

@@ -3,7 +3,8 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : partie 2 de la livraison (versements aux livreurs).
+Dernière mise à jour : partie 3 de la livraison (preuve de remise). Le plan de
+livraison en trois temps est terminé.
 
 ---
 
@@ -65,7 +66,7 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Paiement** | Stripe — intention de paiement seulement |
 
 ```
-backend/    API REST — 37 routeurs, 41 services, 43 modèles Prisma
+backend/    API REST — 37 routeurs, 42 services, 43 modèles Prisma
 frontend/   Next.js — 82 pages
 ```
 
@@ -87,6 +88,7 @@ scripts de vérification (voir §6).
 - Frais de livraison et minimum de commande annoncés **avant** de valider
 - Code promo et choix du moyen de paiement au tunnel
 - Suivi de la commande : distance restante, durée estimée, position du livreur
+- **Code de remise** à quatre chiffres, donné au livreur à la porte
 - Retrouve une commande passée sans compte par son lien de suivi
 
 ### Le commerçant
@@ -110,6 +112,7 @@ scripts de vérification (voir §6).
 - Acceptation, refus, étapes de la course, rémunération calculée
 - **Sait s'il est payé** : ce qui reste dû, ce qui est arrêté et attend le
   virement, ce qui est arrivé, et le détail de chaque relevé
+- **Prouve la remise** : le code du client, ou la photo du dépôt en son absence
 
 ### La plateforme (superowner)
 - Commerçants : formule, suspension, fermeture, restauration depuis sauvegarde
@@ -179,9 +182,10 @@ appliquées, code promo et moyens de paiement au tunnel.
 **Livraison**
 Attribution automatique de la course au livreur disponible le plus proche,
 suivi côté client (distance, durée, position), domaine propre aux livreurs,
-puis **la validation des dossiers livreurs** et — dernier chantier en date —
-**les versements** : une course livrée est due tant qu'aucun relevé ne la
-porte, un arrêté la rattache, un versement solde le relevé.
+puis **la validation des dossiers livreurs**, **les versements** — une course
+livrée est due tant qu'aucun relevé ne la porte — et enfin **la preuve de la
+remise** : un code à quatre chiffres chez le client, une photo du dépôt en son
+absence.
 
 **Comptes et sécurité**
 Récupération de mot de passe, confirmation d'adresse e-mail, suspension et
@@ -215,8 +219,8 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 31 | **1030** |
-| **Navigateur** (`frontend/scripts/`) | 17 | **446** |
+| **API** (`backend/scripts/verification/`) | 32 | **1068** |
+| **Navigateur** (`frontend/scripts/`) | 18 | **470** |
 
 Tout est vert au dernier passage complet.
 
@@ -244,9 +248,9 @@ détaillent chaque suite et ses prérequis.
 
 ### Prérequis particuliers
 
-- **Base vierge** pour `verif:courses`, `verif:suivi`, `verif:livreurs` et
-  `verif:versements` : ces scripts créent leur propre compte plateforme, et seul
-  le premier compte inscrit est superowner. Lancer
+- **Base vierge** pour `verif:courses`, `verif:suivi`, `verif:livreurs`,
+  `verif:versements` et `verif:preuve` : ces scripts créent leur propre compte
+  plateforme, et seul le premier compte inscrit est superowner. Lancer
   `node scripts/verification/reinitialiser.mjs` avant.
 - **Jeu de démonstration** pour `verif:admin` et `verif:menu` :
   `node scripts/seed-demo.mjs`.
@@ -297,18 +301,24 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 
 ### Terminé et poussé
 
-Les parties **1 (validation des livreurs)** et **2 (versements)** du plan de
-livraison en trois temps sont finies, vertes et poussées.
+**Le plan de livraison en trois temps est terminé** : validation des livreurs,
+versements, preuve de la remise. Tout est vert et poussé.
 
-L'invariant de la partie 2, à ne jamais casser : **une course livrée est due
-tant qu'aucun relevé ne la porte**. Le champ `OrderDelivery.payoutId` est ce
-qui interdit qu'une course soit payée deux fois ; un arrêté ne prend que les
-courses qui n'en ont pas, et l'annulation d'un relevé non versé les relâche.
+Deux invariants à ne jamais casser :
+
+- **Une course livrée est due tant qu'aucun relevé ne la porte.** Le champ
+  `OrderDelivery.payoutId` interdit qu'une course soit payée deux fois : un
+  arrêté ne prend que les courses qui n'en ont pas, et l'annulation d'un relevé
+  non versé les relâche.
+- **Le code de remise appartient au client, jamais au livreur.** Aucune route
+  côté livreur ne le rend ; il sait seulement qu'un code est attendu et combien
+  d'essais lui restent. Cinq essais ratés le bloquent, et la photo du dépôt
+  devient la seule preuve possible.
 
 ### À faire ensuite
 
-**La preuve de livraison** (partie 3). Une course passe à « livrée » sur simple
-clic du livreur : ni code remis au client, ni photo, ni signature.
+Plus rien de la livraison. Le carnet qui reste est ci-dessous — le plus gros
+morceau étant le paiement en ligne, reporté volontairement.
 
 ### Le reste du carnet
 

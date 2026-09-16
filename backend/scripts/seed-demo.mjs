@@ -13,7 +13,7 @@
  * vierge. Remettre à zéro avec scripts/verification/reinitialiser.mjs.
  */
 
-import { j, post, patch, sqlExec, API, validerLivreur } from "./verification/outils.mjs";
+import { j, post, patch, sqlExec, API, validerLivreur, codeDeRemise } from "./verification/outils.mjs";
 
 const attendu = (reponse, quoi) => {
   if (!reponse) throw new Error(`${quoi} : aucune réponse de ${API}`);
@@ -154,7 +154,12 @@ await sqlExec(
 
 await patch("/api/drivers/deliveries/course-demo/accept", null, livreur.accessToken);
 await patch("/api/drivers/deliveries/course-demo", { status: "PICKED_UP" }, livreur.accessToken);
-await patch("/api/drivers/deliveries/course-demo", { status: "DELIVERED" }, livreur.accessToken);
+// La remise se prouve : le code de la course, comme le client le donnerait.
+await patch(
+  "/api/drivers/deliveries/course-demo",
+  { status: "DELIVERED", code: await codeDeRemise("course-demo") },
+  livreur.accessToken
+);
 
 console.log(`Jeu de démonstration en place sur ${API}
 

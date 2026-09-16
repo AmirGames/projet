@@ -777,8 +777,21 @@ model OrderDelivery {
   platformFee     Decimal?  @db.Decimal(10, 2)
   assignedAt      DateTime?
 
-  // Proof
-  proofPhoto      String?   // Photo de livraison
+  /// La preuve de la remise.
+  ///
+  /// Une course passait à DELIVERED sur simple clic du livreur : rien ne
+  /// distinguait un colis remis en main propre d'un colis jamais sorti du sac.
+  /// Le client reçoit un code à quatre chiffres qu'il donne à la porte ; à
+  /// défaut, le livreur photographie le dépôt.
+  deliveryCode    String?
+  /// Essais de code ratés. Quatre chiffres se forcent en dix mille tentatives :
+  /// passé cinq essais le code se bloque, et seule la photo reste.
+  codeAttempts    Int       @default(0)
+  /// CODE ou PHOTO : par quoi la remise a été prouvée.
+  proofType       String?
+  proofPhoto      String?   // Photo du dépôt, quand le client est absent
+  proofNote       String?
+  proofAt         DateTime?
 
   /// Le relevé de versement qui paie cette course.
   ///

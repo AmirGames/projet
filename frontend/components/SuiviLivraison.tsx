@@ -18,6 +18,10 @@ export interface Course {
   distanceRestanteKm?: number | null;
   distanceTotaleKm?: number | null;
   driver?: { name: string; phone?: string; vehicleType?: string; rating?: number } | null;
+  /** Le code à donner au livreur à la porte. Nul une fois la course remise. */
+  codeRemise?: string | null;
+  /** CODE ou PHOTO, une fois la remise prouvée. */
+  preuve?: string | null;
 }
 
 interface Props {
@@ -115,6 +119,26 @@ export function SuiviLivraison({ course, positionDirecte }: Props) {
           </div>
         )}
       </div>
+
+      {/* Le code de remise : c'est lui qui prouve que le repas a bien changé de
+          mains. Sans lui, une course se cloturait sur un simple clic. */}
+      {!livree && course.codeRemise && (
+        <div className="rounded-lg border border-orange-700/50 bg-orange-900/20 px-4 py-3">
+          <p className="text-sm text-orange-200">Votre code de remise</p>
+          <p className="text-3xl font-bold tracking-[0.3em] text-white">{course.codeRemise}</p>
+          <p className="text-xs text-orange-200/80 mt-1">
+            Donnez-le au livreur à la remise, et à personne d&apos;autre.
+          </p>
+        </div>
+      )}
+
+      {livree && course.preuve && (
+        <p className="text-sm text-green-300">
+          {course.preuve === 'CODE'
+            ? 'Remise confirmée par votre code.'
+            : 'Dépôt confirmé par photo, en votre absence.'}
+        </p>
+      )}
 
       {/* Plan du trajet : commerce, livreur, vous. */}
       <div>

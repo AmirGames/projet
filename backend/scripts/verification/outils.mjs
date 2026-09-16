@@ -138,6 +138,17 @@ export async function inscrirePlateforme() {
 }
 
 /**
+ * Le code de remise d'une course.
+ *
+ * Il appartient au client : le livreur ne le voit jamais, et aucune route ne le
+ * lui donne. Un script qui clôt une course joue le rôle du client, et le lit
+ * donc en base.
+ */
+export async function codeDeRemise(deliveryId) {
+  return sqlScalaire(`SELECT "deliveryCode" FROM "OrderDelivery" WHERE id = '${deliveryId}'`);
+}
+
+/**
  * Fait passer un livreur par la validation de la plateforme.
  *
  * Un livreur s'inscrit désormais en `PENDING` et ne reçoit aucune course tant

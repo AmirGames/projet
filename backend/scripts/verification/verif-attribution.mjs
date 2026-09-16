@@ -13,6 +13,7 @@ import {
   sqlExec,
   terminer,
   validerLivreur,
+  codeDeRemise,
 } from './outils.mjs';
 
 // Lyon : la boutique au centre, les livreurs à des distances croissantes.
@@ -234,7 +235,13 @@ check(
 
 titre('Livraison et rémunération');
 await patch(`/api/drivers/deliveries/${deliveryId}`, { status: 'PICKED_UP' }, loin.jeton);
-const livraison = await patch(`/api/drivers/deliveries/${deliveryId}`, { status: 'DELIVERED' }, loin.jeton);
+// La remise se prouve par le code du client, sans quoi la course ne se clôt
+// pas.
+const livraison = await patch(
+  `/api/drivers/deliveries/${deliveryId}`,
+  { status: 'DELIVERED', code: await codeDeRemise(deliveryId) },
+  loin.jeton
+);
 check('la course est livrée', livraison.status === 200, `statut=${livraison.status}`);
 
 const gains = await sqlScalaire(`SELECT "totalEarnings" FROM "Driver" WHERE email = 'loin-${uniq}@t.fr'`);

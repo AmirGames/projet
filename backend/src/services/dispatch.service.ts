@@ -3,6 +3,7 @@ import { logger } from "../config/logger";
 import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint, Point } from "../utils/geo";
 import { emitDeliveryUpdate, emitDriverEvent } from "../config/socket";
+import { genererCode } from "./delivery-proof.service";
 
 /**
  * Attribution des courses aux livreurs.
@@ -95,6 +96,9 @@ export class DispatchService {
         pickupLng: commande.store?.longitude ?? null,
         deliveryLat: commande.deliveryLat ?? null,
         deliveryLng: commande.deliveryLng ?? null,
+        // Le code de remise naît avec la course : le client le lit sur son
+        // suivi, et le donne au livreur à la porte.
+        deliveryCode: genererCode(),
       },
     });
   }

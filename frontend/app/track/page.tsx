@@ -31,6 +31,9 @@ interface Order {
   createdAt: string;
   items?: OrderItem[];
   notes?: string;
+  /** Le code à donner au livreur à la porte. Nul une fois la course remise. */
+  codeRemise?: string | null;
+  preuveDeLivraison?: string | null;
 }
 
 const statusSteps = [
@@ -290,6 +293,29 @@ export default function TrackOrderPage() {
                   </div>
                 )}
               </div>
+
+              {/* Le code de remise : c'est lui qui prouve que la commande a
+                  changé de mains. Une commande suivie sans compte n'a pas
+                  d'autre endroit pour le lire. */}
+              {order.codeRemise && (
+                <div className="mt-4 rounded-lg border border-orange-700/50 bg-orange-900/20 px-4 py-3">
+                  <p className="text-sm text-orange-200">Votre code de remise</p>
+                  <p className="text-3xl font-bold tracking-[0.3em] text-white">
+                    {order.codeRemise}
+                  </p>
+                  <p className="text-xs text-orange-200/80 mt-1">
+                    Donnez-le au livreur à la remise, et à personne d&apos;autre.
+                  </p>
+                </div>
+              )}
+
+              {order.preuveDeLivraison && (
+                <p className="mt-4 text-sm text-green-300">
+                  {order.preuveDeLivraison === 'CODE'
+                    ? 'Remise confirmée par votre code.'
+                    : 'Dépôt confirmé par photo, en votre absence.'}
+                </p>
+              )}
             </div>
 
             {/* Customer Information */}

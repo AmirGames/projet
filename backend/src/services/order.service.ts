@@ -436,15 +436,33 @@ export class OrderService {
   }
 
   static async getOrderWithItems(id: string) {
-    return await db.order.findUnique({
+    const commande = await db.order.findUnique({
       where: { id },
       include: {
         items: {
           include: { product: { include: { category: { select: { name: true } } } }, variant: true },
         },
         payments: true,
+        delivery: {
+          select: { status: true, deliveryCode: true, proofType: true, proofAt: true },
+        },
       },
     });
+
+    if (!commande) return null;
+
+    // Le code de remise se lit avec la commande : c'est ce que le client donne
+    // au livreur à la porte, et une commande suivie sans compte n'a pas
+    // d'autre endroit où le lire. Remise, il n'a plus d'objet.
+    const { delivery, ...reste } = commande;
+
+    return {
+      ...reste,
+      delivery,
+      codeRemise:
+        delivery && delivery.status !== "DELIVERED" ? delivery.deliveryCode : null,
+      preuveDeLivraison: delivery?.proofType ?? null,
+    };
   }
 
   static async delete(id: string) {

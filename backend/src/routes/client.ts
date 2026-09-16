@@ -588,6 +588,12 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         driver: course.driver
           ? { ...course.driver, rating: Number(course.driver.rating) }
           : null,
+        // Le code que le client donne au livreur à la porte. Il n'a de sens que
+        // tant que la course n'est pas remise, et c'est le seul endroit où il
+        // se lit : le livreur ne le voit jamais.
+        codeRemise: course.status === "DELIVERED" ? null : course.deliveryCode,
+        preuve: course.proofType,
+        prouveeLe: course.proofAt,
       },
     });
   } catch (err) {

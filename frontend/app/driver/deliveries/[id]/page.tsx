@@ -22,6 +22,10 @@ interface Delivery {
   latitude?: number;
   longitude?: number;
   items?: any[];
+  /** Un code est attendu à la remise. Sa valeur, elle, reste chez le client. */
+  codeAttendu?: boolean;
+  essaisRestants?: number;
+  preuve?: string | null;
 }
 
 export default function DeliveryTrackingPage() {
@@ -35,6 +39,14 @@ export default function DeliveryTrackingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [updating, setUpdating] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  // La preuve de la remise : le code du client, ou la photo du dépôt quand il
+  // est absent. Sans l'une des deux, la course ne se clôt pas.
+  const [code, setCode] = useState('');
+  const [modePhoto, setModePhoto] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [note, setNote] = useState('');
+  const [refus, setRefus] = useState('');
 
   const steps = ['Aller au restaurant', 'Récupérer la commande', 'Aller au client', 'Livrer & Confirmer'];
 
@@ -119,8 +131,23 @@ export default function DeliveryTrackingPage() {
     setUpdating(true);
 
     try {
-      const nextStatuses = ['ACCEPTED', 'PICKED_UP', 'DELIVERED'];
-      const nextStatus = nextStatuses[currentStep + 1];
+      /**
+       * L'état où mène l'étape courante.
+       *
+       * Un tableau indexé par `currentStep + 1` était décalé : depuis
+       * PICKED_UP, qui est l'étape 2, il cherchait un quatrième élément qui
+       * n'existait pas et envoyait `undefined`. Le bouton « Livrer &
+       * Confirmer » ne pouvait donc jamais clore une course.
+       */
+      const SUITE: Record<number, string> = { 0: 'PICKED_UP', 1: 'PICKED_UP', 2: 'DELIVERED' };
+      const nextStatus = SUITE[currentStep];
+
+      if (!nextStatus) {
+        setUpdating(false);
+        return;
+      }
+
+      setRefus('');
 
       const response = await fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}`, {
         method: 'PATCH',
@@ -128,13 +155,22 @@ export default function DeliveryTrackingPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: nextStatus }),
+        body: JSON.stringify({
+          status: nextStatus,
+          // La preuve n'accompagne que la remise : les étapes précédentes n'en
+          // demandent aucune.
+          ...(nextStatus === 'DELIVERED'
+            ? modePhoto
+              ? { photoUrl, note }
+              : { code }
+            : {}),
+        }),
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setDelivery(data.data);
-        setCurrentStep(currentStep + 1);
+        // Relire la course plutôt que de croire la réponse du PATCH : celle-ci
+        // rend l'enregistrement brut, sans le type de preuve mis en forme.
+        await loadDeliveryData();
 
         if (nextStatus === 'DELIVERED') {
           setTimeout(() => {
@@ -142,7 +178,18 @@ export default function DeliveryTrackingPage() {
           }, 2000);
         }
       } else {
-        setError('Erreur lors de la mise à jour');
+        // Un code refusé se disait « Erreur lors de la mise à jour » : le
+        // livreur ne savait pas s'il s'était trompé de chiffre.
+        const lu = await response.json().catch(() => null);
+
+        if (nextStatus === 'DELIVERED') {
+          setRefus(lu?.error || 'La remise n’a pas pu être confirmée');
+          // Code bloqué : la photo devient la seule issue, autant y basculer.
+          if (lu?.code === 'CODE_LOCKED') setModePhoto(true);
+          await loadDeliveryData();
+        } else {
+          setError(lu?.error || 'Erreur lors de la mise à jour');
+        }
       }
     } catch (err) {
       setError('Erreur lors de la mise à jour de la livraison');
@@ -286,13 +333,97 @@ export default function DeliveryTrackingPage() {
 
               {currentStep === 2 && (
                 <div className="space-y-4">
-                  <p className="text-gray-300 mb-4">Livrez la commande à l'adresse du client</p>
+                  <p className="text-gray-300 mb-4">Livrez la commande à l&apos;adresse du client</p>
                   <div className="bg-gray-700 rounded-lg p-4 flex gap-3">
                     <MapPin size={24} className="text-green-500 flex-shrink-0" />
                     <div>
                       <p className="text-white font-semibold">Client</p>
                       <p className="text-gray-400">{delivery.deliveryAddress}</p>
                     </div>
+                  </div>
+
+                  {/* La preuve de la remise. Une course se clôturait sur un
+                      simple clic : rien ne distinguait un repas remis en main
+                      propre d'un repas jamais sorti du sac. */}
+                  <div className="border-t border-gray-700 pt-4 space-y-3">
+                    <h3 className="text-white font-semibold">Preuve de la remise</h3>
+
+                    {refus && (
+                      <p role="status" className="text-sm text-red-400">
+                        {refus}
+                      </p>
+                    )}
+
+                    {!modePhoto ? (
+                      <>
+                        <label htmlFor="code-remise" className="block text-sm text-gray-400">
+                          Code à quatre chiffres, demandé au client
+                        </label>
+                        <input
+                          id="code-remise"
+                          value={code}
+                          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                          inputMode="numeric"
+                          placeholder="0000"
+                          className="w-32 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-2xl tracking-[0.3em] text-center"
+                        />
+                        {delivery.essaisRestants != null && delivery.essaisRestants < 5 && (
+                          <p className="text-xs text-amber-300">
+                            {delivery.essaisRestants} essai
+                            {delivery.essaisRestants > 1 ? 's' : ''} restant
+                            {delivery.essaisRestants > 1 ? 's' : ''}
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setModePhoto(true)}
+                          className="block text-sm text-orange-400 hover:underline"
+                        >
+                          Le client est absent : photographier le dépôt
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <label htmlFor="photo-depot" className="block text-sm text-gray-400">
+                          Lien vers la photo du dépôt
+                        </label>
+                        <input
+                          id="photo-depot"
+                          type="url"
+                          value={photoUrl}
+                          onChange={(e) => setPhotoUrl(e.target.value)}
+                          placeholder="https://…"
+                          className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                        />
+                        {/* L'hébergement de fichiers n'est pas branché : le dire
+                            plutôt que de laisser croire à un envoi. */}
+                        <p className="text-xs text-gray-500">
+                          L&apos;envoi de fichiers n&apos;est pas encore disponible : déposez un
+                          lien vers votre photo.
+                        </p>
+
+                        <label htmlFor="note-depot" className="block text-sm text-gray-400">
+                          Où avez-vous déposé ?
+                        </label>
+                        <input
+                          id="note-depot"
+                          value={note}
+                          onChange={(e) => setNote(e.target.value)}
+                          placeholder="Devant la porte, chez le gardien…"
+                          className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                        />
+
+                        {delivery.codeAttendu && (
+                          <button
+                            type="button"
+                            onClick={() => setModePhoto(false)}
+                            className="block text-sm text-orange-400 hover:underline"
+                          >
+                            Revenir au code du client
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -303,7 +434,11 @@ export default function DeliveryTrackingPage() {
                     <CheckCircle size={24} className="text-green-400 flex-shrink-0" />
                     <div>
                       <p className="text-green-200 font-semibold">Livraison complétée !</p>
-                      <p className="text-green-300 text-sm">Merci pour votre travail</p>
+                      <p className="text-green-300 text-sm">
+                        {delivery.preuve === 'PHOTO'
+                          ? 'Dépôt prouvé par photo.'
+                          : 'Remise confirmée par le code du client.'}
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -14,7 +14,7 @@
  */
 
 import { chromium } from 'playwright';
-import { validerLivreur } from './outils-livreur.mjs';
+import { validerLivreur, codeDeRemise } from './outils-livreur.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -147,7 +147,7 @@ async function courseLivree() {
   await appeler(`/api/drivers/deliveries/${courseId}`, {
     method: 'PATCH',
     jeton: D,
-    corps: { status: 'DELIVERED' },
+    corps: { status: 'DELIVERED', code: await codeDeRemise(API, orderId) },
   });
 }
 

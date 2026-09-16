@@ -2,7 +2,7 @@
 // et la nouvelle liste des boutiques côté administration.
 // --- Plateforme : superowner + commerçant + boutique + commande livrable ---
 
-import { check, j, uniq, post, get, patch, sqlExec, terminer, API, validerLivreur } from './outils.mjs';
+import { check, j, uniq, post, get, patch, sqlExec, terminer, API, validerLivreur, codeDeRemise } from './outils.mjs';
 
 const sup = await j(await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const superToken = sup.accessToken;
@@ -86,14 +86,16 @@ check('double acceptation refusée (409)', reAcceptation.status === 409, `status
 const autre = await j(await post('/api/drivers/register', {
   name: 'Autre', email: `d2-${uniq}@t.fr`, password: 'Password123!', phone: '0644444444', vehicleType: 'bike',
 }));
-const vol = await patch(`/api/drivers/deliveries/${courseId}`, { status: 'DELIVERED' }, autre.accessToken);
+// Clore une course demande la preuve de la remise : le code du client.
+const code = await codeDeRemise(courseId);
+const vol = await patch(`/api/drivers/deliveries/${courseId}`, { status: 'DELIVERED', code }, autre.accessToken);
 check('un autre livreur ne peut pas modifier la course (403)', vol.status === 403, `status=${vol.status} ${JSON.stringify(await j(vol))}`);
 
 const statutInvalide = await patch(`/api/drivers/deliveries/${courseId}`, { status: 'N_IMPORTE_QUOI' }, dToken);
 check('statut invalide refusé', statutInvalide.status === 400, `status=${statutInvalide.status}`);
 
 await patch(`/api/drivers/deliveries/${courseId}`, { status: 'PICKED_UP' }, dToken);
-const livraison = await patch(`/api/drivers/deliveries/${courseId}`, { status: 'DELIVERED' }, dToken);
+const livraison = await patch(`/api/drivers/deliveries/${courseId}`, { status: 'DELIVERED', code }, dToken);
 check('course marquée livrée', livraison.status === 200, `status=${livraison.status}`);
 
 console.log('\n[Revenus]');

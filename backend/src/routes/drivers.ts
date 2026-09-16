@@ -12,6 +12,7 @@ import {
   piecesAttendues,
 } from "../services/driver-approval.service";
 import { DriverPayoutService } from "../services/driver-payout.service";
+import { DeliveryProofService } from "../services/delivery-proof.service";
 import { z } from "zod";
 
 const router = Router();
@@ -455,7 +456,10 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
         estimatedTime: delivery.estimatedTime,
         latitude: delivery.deliveryLat,
         longitude: delivery.deliveryLng,
-        items: delivery.order?.items || []
+        items: delivery.order?.items || [],
+        // Le livreur doit savoir qu'un code lui sera demandé, sans jamais le
+        // lire : c'est le client qui le détient.
+        ...DeliveryProofService.etatDeLaPreuve(delivery),
       }
     });
   } catch (err) {
@@ -528,6 +532,21 @@ router.patch(
 
       if (course.driverId !== livreur.id) {
         throw new ApiError(403, "Acceptez d'abord cette course", "NOT_ASSIGNED");
+      }
+
+      /**
+       * Clore une course demande une preuve.
+       *
+       * Elle passait à DELIVERED sur simple clic : rien ne distinguait un repas
+       * remis en main propre d'un repas jamais sorti du sac. Le code du client
+       * le prouve ; à défaut, la photo du dépôt.
+       */
+      if (status === "DELIVERED" && course.status !== "DELIVERED") {
+        await DeliveryProofService.verifier(deliveryId, {
+          code: req.body?.code,
+          photoUrl: req.body?.photoUrl,
+          note: req.body?.note,
+        });
       }
 
       const delivery = await db.orderDelivery.update({

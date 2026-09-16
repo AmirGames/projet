@@ -59,3 +59,16 @@ export async function validerLivreur(API, jetonLivreur, jetonPlateforme) {
 
   return driverId;
 }
+
+/**
+ * Le code de remise d'une commande.
+ *
+ * Il appartient au client : le livreur ne le voit jamais. Un script qui clôt
+ * une course joue le rôle du client, et le lit donc là où celui-ci le lit —
+ * sur le suivi de sa commande.
+ */
+export async function codeDeRemise(API, orderId) {
+  const commande = await lire(await fetch(`${API}/api/orders/${orderId}`));
+
+  return commande?.codeRemise || null;
+}

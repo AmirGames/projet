@@ -10,7 +10,7 @@
  */
 
 import { chromium } from 'playwright';
-import { validerLivreur } from './outils-livreur.mjs';
+import { validerLivreur, codeDeRemise } from './outils-livreur.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -200,7 +200,12 @@ const course = await appeler('/api/drivers/deliveries?status=ACCEPTED', { jeton:
 const deliveryId = course.donnees.data[0].id;
 
 await appeler(`/api/drivers/deliveries/${deliveryId}`, { method: 'PATCH', jeton: D, corps: { status: 'PICKED_UP' } });
-await appeler(`/api/drivers/deliveries/${deliveryId}`, { method: 'PATCH', jeton: D, corps: { status: 'DELIVERED' } });
+// La remise se prouve par le code du client, sans quoi la course reste ouverte.
+await appeler(`/api/drivers/deliveries/${deliveryId}`, {
+  method: 'PATCH',
+  jeton: D,
+  corps: { status: 'DELIVERED', code: await codeDeRemise(API, orderId) },
+});
 
 await page.reload();
 await page.waitForTimeout(3500);
