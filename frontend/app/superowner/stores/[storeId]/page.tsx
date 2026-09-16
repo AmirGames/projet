@@ -14,11 +14,22 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AlertTriangle, ArrowLeft, ExternalLink, MapPin, Pencil, Store as StoreIcon } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+
+// Leaflet touche à `window` dès son chargement : pas de rendu côté serveur.
+const CarteZones = dynamic(() => import('@/components/CarteZones').then((m) => m.CarteZones), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[320px] w-full rounded-lg border border-gray-700 bg-gray-800 flex items-center justify-center text-gray-500">
+      Chargement de la carte…
+    </div>
+  ),
+});
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -310,6 +321,32 @@ export default function FicheBoutiquePage() {
                 />
               </div>
             ))}
+          </div>
+
+          {/* Une adresse que le service ne sait pas situer laissait le support
+              sans recours : il fallait trouver des coordonnées ailleurs et les
+              recopier. Ici, le point se pose à la main. */}
+          <div>
+            <p className="text-sm text-gray-400 mb-2">
+              Ou posez la boutique directement sur la carte.
+            </p>
+            <CarteZones
+              latitude={
+                formulaire.latitude ? Number(formulaire.latitude) : (fiche.latitude ?? null)
+              }
+              longitude={
+                formulaire.longitude ? Number(formulaire.longitude) : (fiche.longitude ?? null)
+              }
+              zones={[]}
+              hauteur={320}
+              onPosition={(latitude, longitude) =>
+                setFormulaire((actuel) => ({
+                  ...actuel,
+                  latitude: latitude.toFixed(6),
+                  longitude: longitude.toFixed(6),
+                }))
+              }
+            />
           </div>
 
           <p className="text-xs text-gray-500">

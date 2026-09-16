@@ -1,10 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Plus, Edit2, Trash2, Search, MapPin } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { Plus, Edit2, Trash2, Search, MapPin, Crosshair } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 
 import { euro } from '@/lib/format';
+
+// Leaflet touche à `window` dès son chargement : la carte ne peut pas être
+// rendue côté serveur.
+const CarteZones = dynamic(() => import('@/components/CarteZones').then((m) => m.CarteZones), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[420px] w-full rounded-lg border border-slate-700 bg-slate-800 flex items-center justify-center text-slate-500">
+      Chargement de la carte…
+    </div>
+  ),
+});
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -37,13 +49,124 @@ export default function DeliveryZonesPage() {
   });
   const [formError, setFormError] = useState('');
 
+  /**
+   * La boutique, pour la carte.
+   *
+   * Les zones sont des anneaux autour d'elle : sans son point, elles ne
+   * s'appliquent à rien, et le commerçant réglait des kilomètres à l'aveugle.
+   */
+  const [boutique, setBoutique] = useState<{
+    latitude: number | null;
+    longitude: number | null;
+    address: string | null;
+    city: string | null;
+    postalCode: string | null;
+  } | null>(null);
+  const [messageCarte, setMessageCarte] = useState('');
+  const [erreurCarte, setErreurCarte] = useState('');
+  const [situation, setSituation] = useState(false);
+
+  const chargerBoutique = useCallback(async () => {
+    if (!storeId) return;
+
+    try {
+      const reponse = await fetch(`${API_URL}/api/stores/${storeId}`);
+      if (!reponse.ok) return;
+
+      const lue = await reponse.json();
+      const magasin = lue.store || lue;
+
+      setBoutique({
+        latitude: magasin.latitude == null ? null : Number(magasin.latitude),
+        longitude: magasin.longitude == null ? null : Number(magasin.longitude),
+        address: magasin.address || null,
+        city: magasin.city || null,
+        postalCode: magasin.postalCode || null,
+      });
+    } catch {
+      // La carte est un confort : son absence ne doit pas emporter la page.
+    }
+  }, [storeId]);
 
   useEffect(() => {
     if (storeId) {
       fetchZones();
+      chargerBoutique();
     }
-  }, [storeId]);
+  }, [storeId, chargerBoutique]);
 
+  /** Enregistre la position de la boutique : c'est le centre de toutes les zones. */
+  const enregistrerPosition = async (latitude: number, longitude: number) => {
+    setErreurCarte('');
+    setMessageCarte('');
+
+    // L'affichage suit tout de suite : attendre le serveur ferait sauter le
+    // point sous la souris.
+    setBoutique((actuelle) => (actuelle ? { ...actuelle, latitude, longitude } : actuelle));
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const reponse = await fetch(`${API_URL}/api/stores/${storeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        // Six décimales : une dizaine de centimètres, largement au-delà de ce
+        // qu'un doigt sur une carte peut viser.
+        body: JSON.stringify({
+          latitude: Number(latitude.toFixed(6)),
+          longitude: Number(longitude.toFixed(6)),
+        }),
+      });
+
+      if (!reponse.ok) {
+        const lue = await reponse.json().catch(() => null);
+        setErreurCarte(lue?.error || 'Position non enregistrée');
+        await chargerBoutique();
+        return;
+      }
+
+      setMessageCarte('Position de la boutique enregistrée');
+    } catch {
+      setErreurCarte('Le serveur ne répond pas');
+      await chargerBoutique();
+    }
+  };
+
+  /** Retrouve la boutique depuis son adresse, plutôt que de la chercher à l'œil. */
+  const situerDepuisLAdresse = async () => {
+    const texte = [boutique?.address, boutique?.postalCode, boutique?.city]
+      .filter(Boolean)
+      .join(' ');
+
+    if (texte.trim().length < 3) {
+      setErreurCarte('Renseignez d’abord l’adresse de la boutique dans ses réglages');
+      return;
+    }
+
+    setSituation(true);
+    setErreurCarte('');
+    setMessageCarte('');
+
+    try {
+      const reponse = await fetch(
+        `${API_URL}/api/addresses/search?q=${encodeURIComponent(texte)}`
+      );
+      const lue = await reponse.json().catch(() => null);
+      const point = (lue?.suggestions || []).find(
+        (s: { latitude: number | null }) => s.latitude != null
+      );
+
+      if (!point) {
+        setErreurCarte('Adresse introuvable : posez la boutique sur la carte');
+        return;
+      }
+
+      await enregistrerPosition(point.latitude, point.longitude);
+    } catch {
+      setErreurCarte('Le service d’adresses ne répond pas');
+    } finally {
+      setSituation(false);
+    }
+  };
 
   const fetchZones = async () => {
     try {
@@ -208,6 +331,62 @@ export default function DeliveryZonesPage() {
             <Plus size={20} />
             Ajouter Zone
           </button>
+        </div>
+
+        {/* La carte : la boutique, ses anneaux, et la poignée du rayon réglé.
+            Le rayon se saisissait en kilomètres sans que rien ne dise ce qu'il
+            couvrait. */}
+        <div className="bg-slate-800 rounded-lg p-6 mb-8 border border-slate-700">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 className="text-xl font-bold text-white">Votre carte</h2>
+
+            {boutique && boutique.latitude == null && (
+              <button
+                type="button"
+                onClick={situerDepuisLAdresse}
+                disabled={situation}
+                className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white rounded-lg transition text-sm"
+              >
+                <Crosshair size={16} />
+                {situation ? 'Recherche…' : 'Situer depuis mon adresse'}
+              </button>
+            )}
+          </div>
+
+          {messageCarte && (
+            <p role="status" className="text-sm text-green-400 mb-3">
+              {messageCarte}
+            </p>
+          )}
+          {erreurCarte && (
+            <p role="status" className="text-sm text-red-400 mb-3">
+              {erreurCarte}
+            </p>
+          )}
+
+          {boutique?.latitude == null && (
+            <p className="text-sm text-amber-300 mb-3">
+              Votre boutique n’est pas située. Tant qu’elle ne l’est pas, aucune zone ne
+              s’applique et aucun livreur ne vous est proposé.
+            </p>
+          )}
+
+          <CarteZones
+            latitude={boutique?.latitude ?? null}
+            longitude={boutique?.longitude ?? null}
+            zones={zones}
+            zoneActive={
+              showForm
+                ? {
+                    id: editingZone?.id ?? null,
+                    name: formData.name || 'Nouvelle zone',
+                    radiusKm: parseFloat(formData.radiusKm) || 0,
+                  }
+                : null
+            }
+            onPosition={enregistrerPosition}
+            onRayon={(km) => setFormData((actuel) => ({ ...actuel, radiusKm: String(km) }))}
+          />
         </div>
 
         {/* Create/Edit Form */}

@@ -38,8 +38,9 @@ emporter ou à livrer.
   disponibilité basculable en direct (le client la voit changer sans recharger)
 - Commandes : liste, détail, changement d'état, facture imprimable
 - Horaires d'ouverture, créneaux de retrait, ouverture et fermeture immédiate
-- Zones de livraison en anneaux autour de la boutique : rayon, frais et montant
-  minimum par zone
+- Zones de livraison en anneaux autour de la boutique, **réglées sur une carte** :
+  il pose son commerce d'un clic, tire une poignée pour fixer le rayon et voit
+  ce qu'il couvre — rayon, frais et montant minimum par zone
 - Codes promo, moyens de paiement proposés, taxes, clientèle
 - Statistiques de vente, exports
 - **Son profil** : identité de facturation, propriétaire du commerce, numéro de
@@ -92,6 +93,7 @@ emporter ou à livrer.
 | **Authentification** | JWT (jeton d'accès + jeton de renouvellement) |
 | **Courriel** | SMTP par nodemailer (Mailpit en développement) |
 | **Adresses** | Base Adresse Nationale pour la France, Photon (OpenStreetMap) pour la Belgique et au-delà — les deux interrogés ensemble |
+| **Cartes** | Leaflet, fond de carte OpenStreetMap (sans clé ni compte) |
 | **Paiement** | Stripe (intention de paiement ; webhook et remboursement à faire) |
 
 Un seul dépôt, deux applications :
@@ -175,7 +177,7 @@ DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 538 contrôles, 21 suites
+# Navigateur : 564 contrôles, 22 suites
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
@@ -204,8 +206,9 @@ Par honnêteté, ce qui manque encore :
   une commande reste en paiement « en attente ».
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
-- **Le fond de carte** du suivi de livraison : le trajet est dessiné en repères,
-  sans tuiles cartographiques.
+- **Le fond de carte du suivi de livraison** : le trajet du livreur est encore
+  dessiné en repères, sans tuiles. Les zones de livraison, elles, ont désormais
+  leur vraie carte.
 - **Le stock par ingrédient** (une pizza consomme de la mozzarella). Aujourd'hui
   la disponibilité se bascule à la main, plat par plat.
 - **Prisma 5.22 → 7**, à faire une fois le reste stabilisé.

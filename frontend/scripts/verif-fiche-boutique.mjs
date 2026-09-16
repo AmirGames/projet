@@ -73,6 +73,9 @@ const T = commercant.donnees.accessToken;
 const nomBoutique = `Trattoria ${uniq}`;
 const slug = `trattoria-${uniq}`;
 
+// Sans adresse, la boutique n'est jamais située à la création : c'est le point
+// de départ voulu pour vérifier l'avertissement, et il ne dépend pas d'un
+// service d'adresses joignable. Une adresse aurait été géocodée d'office.
 const boutique = await appeler('/api/stores', {
   method: 'POST',
   jeton: T,
@@ -80,9 +83,6 @@ const boutique = await appeler('/api/stores', {
     orgId: commercant.donnees.organization.id,
     name: nomBoutique,
     slug,
-    address: '1 place Bellecour',
-    city: 'Lyon',
-    postalCode: '69002',
     phone: '0400000000',
   },
 });
@@ -103,8 +103,10 @@ const page = await contexte.newPage();
 const erreurs = [];
 page.on('console', (m) => {
   // Le script tente exprès une adresse publique déjà prise : le 400 qui en
-  // résulte est ce qu'on vérifie, pas un défaut de la page.
-  if (m.type() === 'error' && !/400/.test(m.text())) {
+  // résulte est ce qu'on vérifie, pas un défaut de la page. Les tuiles de la
+  // carte viennent d'OpenStreetMap : hors du projet, et refusées dans un bac à
+  // sable sans accès à Internet.
+  if (m.type() === 'error' && !/400|tile\.openstreetmap|net::ERR_/.test(m.text())) {
     erreurs.push(`${new URL(page.url()).pathname} : ${m.text()}`);
   }
 });
@@ -180,17 +182,43 @@ check('et affichée sur la fiche', apres.includes('0478123456'), apres.slice(0, 
 const vuServeur = await appeler(`/api/superowner/stores/${storeId}`, { jeton: TP });
 check('le serveur l’a bien enregistrée', vuServeur.donnees?.store?.phone === '0478123456', vuServeur.donnees?.store?.phone);
 
-titre('Corriger l’adresse situe la boutique');
+titre('Poser la boutique sur la carte la situe');
+/**
+ * Une adresse que le service ne sait pas situer laissait le support sans
+ * recours : il fallait trouver des coordonnées ailleurs et les recopier.
+ *
+ * Le géocodage automatique à la correction d'adresse est vérifié côté API
+ * (`verif-fiche-boutique.mjs`, sur le faux fournisseur) : ici, c'est le geste
+ * de secours qu'on contrôle, et il ne dépend d'aucun service extérieur.
+ */
 await page.click('button:has-text("Corriger")');
-await page.waitForTimeout(800);
+await page.waitForTimeout(1200);
 await page.fill('#champ-address', '20 Rue de la République');
-await page.fill('#champ-latitude', '');
-await page.fill('#champ-longitude', '');
+
+const carte = page.locator('.leaflet-container');
+check('une carte est proposée', (await carte.count()) === 1, `n=${await carte.count()}`);
+
+await carte.scrollIntoViewIfNeeded();
+await page.waitForTimeout(3000);
+
+const cadre = await carte.boundingBox();
+await page.mouse.click(cadre.x + cadre.width / 2, cadre.y + cadre.height / 2);
+await page.waitForTimeout(1000);
+
+const latitudeSaisie = await page.inputValue('#champ-latitude');
+check('le clic remplit la latitude', latitudeSaisie !== '', 'champ vide');
+check('et la longitude', (await page.inputValue('#champ-longitude')) !== '', 'champ vide');
+
 await page.click('button:has-text("Enregistrer la correction")');
 await page.waitForTimeout(3500);
 
 const situee = await appeler(`/api/superowner/stores/${storeId}`, { jeton: TP });
 check('elle a des coordonnées', situee.donnees?.store?.situee === true, `${situee.donnees?.store?.situee}`);
+check(
+  'celles posées sur la carte',
+  Math.abs(Number(situee.donnees?.store?.latitude) - Number(latitudeSaisie)) < 0.0001,
+  `${situee.donnees?.store?.latitude} ≠ ${latitudeSaisie}`
+);
 
 const sansAvertissement = await texte();
 check(

@@ -114,6 +114,7 @@ pour le lancer.
 | `verif-vitrine-unique.mjs` | Une seule vitrine, et les anciennes adresses qui y mènent |
 | `verif-fiche-boutique.mjs` | Fiche d'une boutique, et les seuls champs que la plateforme corrige |
 | `verif-profil-commercant.mjs` | Profil du commerçant : facturation, propriétaire, compte, justificatifs |
+| `verif-carte-zones.mjs` | La carte : poser la boutique, tirer le rayon, et ce qui est enregistré |
 
 Le parcours mot de passe ouvre un serveur SMTP minimal sur le port 1025 pour
 lire le message envoyé : le jeton n'existe en clair que dans ce lien, la base

@@ -96,7 +96,8 @@ scripts de vérification (voir §6).
   déclinaisons, disponibilité basculable en direct
 - Commandes : liste, détail, changement d'état, facture imprimable
 - Horaires, créneaux de retrait, ouverture et fermeture immédiate
-- Zones de livraison en anneaux : rayon, frais et minimum par zone
+- Zones de livraison en anneaux, **réglées sur une carte** : la boutique se pose
+  d'un clic, le rayon se tire à la poignée — rayon, frais et minimum par zone
 - Codes promo, moyens de paiement, taxes, clientèle
 - Statistiques de vente, exports
 - **Son profil** : identité de facturation, propriétaire du commerce, numéro de
@@ -243,7 +244,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 | | Suites | Contrôles |
 |---|---|---|
 | **API** (`backend/scripts/verification/`) | 35 | **1183** |
-| **Navigateur** (`frontend/scripts/`) | 21 | **538** |
+| **Navigateur** (`frontend/scripts/`) | 22 | **564** |
 
 Tout est vert au dernier passage complet.
 
@@ -374,16 +375,22 @@ Un invariant de plus :
   montrent que les quatre derniers caractères. Le champ de saisie part vide, et
   un enregistrement qui le laisse vide n'efface pas le compte enregistré.
 
+**La carte des zones est en place** : Leaflet et le fond OpenStreetMap, sans clé
+ni compte. Le commerçant pose sa boutique d'un clic, tire une poignée pour
+régler le rayon, et voit ses anneaux. La plateforme dispose de la même carte sur
+la fiche d'une boutique, pour poser à la main un commerce que le service
+d'adresses ne sait pas situer.
+
+À savoir pour les vérifications : **les tuiles sont bloquées dans le bac à
+sable**. Les suites navigateur ne les contrôlent donc pas — elles contrôlent ce
+que le navigateur dessine (anneaux, poignée, point) et ce que le serveur
+enregistre. Leurs filtres d'erreurs ignorent explicitement `tile.openstreetmap`
+et `net::ERR_`.
+
 ### À faire ensuite
 
-La **carte interactive** pour les zones de livraison, demandée : situer la
-boutique sur une carte et tracer un rayon en direct. À trancher avant de s'y
-mettre : une carte demande des tuiles d'un fournisseur extérieur, ce que le
-projet n'a jamais eu (le suivi de livraison dessine un plan schématique
-exprès).
-
-Le reste du carnet est ci-dessous — le plus gros morceau étant le paiement en
-ligne, reporté volontairement.
+Le carnet ci-dessous — le plus gros morceau étant le paiement en ligne, reporté
+volontairement.
 
 ### Le reste du carnet
 
@@ -393,8 +400,9 @@ ligne, reporté volontairement.
   volontairement.*
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
-- **Le fond de carte** du suivi de livraison : le trajet est dessiné en
-  repères, sans tuiles cartographiques.
+- **Le fond de carte du suivi de livraison** : le trajet du livreur est encore
+  dessiné en repères, sans tuiles. Les zones de livraison, elles, ont leur vraie
+  carte.
 - **Prisma 5.22 → 7.10**, une fois le reste stabilisé. *Reporté volontairement.*
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.
