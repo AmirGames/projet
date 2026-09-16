@@ -180,13 +180,8 @@ router.patch("/tickets/:id/status", authMiddleware, async (req: Request, res: Re
 
     logger.info("Updating ticket status", { id, status });
 
-    const ticket = await db.merchantTicket.update({
-      where: { id },
-      data: {
-        status,
-        resolvedAt: status === "RESOLVED" ? new Date() : null,
-      },
-    });
+    // Clore archive le ticket, ici comme côté plateforme.
+    const { ticket } = await TicketMessageService.changerEtat(id, status);
 
     res.json({
       message: "Statut du ticket mis à jour",

@@ -208,8 +208,17 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const offset = parseInt(req.query.offset as string) || 0;
 
+    /**
+     * Le taux de commission vient de la formule du commerçant.
+     *
+     * Il était unique et global : le même prélèvement pour tout le monde, quel
+     * que soit l'abonnement payé. Le réglage global sert désormais de repli pour
+     * une formule qui n'aurait pas de taux.
+     */
     const config = await db.systemConfig.findFirst();
-    const taux = Number(config?.platformFeePercent ?? 5) / 100;
+    const tauxParDefaut = Number(config?.platformFeePercent ?? 5);
+    const grille = await PlanService.grille();
+    const tauxParFormule = new Map(grille.map((formule) => [formule.code, formule.commission]));
 
     const debutMois = new Date();
     debutMois.setDate(1);
@@ -239,7 +248,8 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
           : [];
 
         const chiffreAffaires = commandes.reduce((somme, c) => somme + Number(c.totalAmount), 0);
-        const commission = chiffreAffaires * taux;
+        const taux = tauxParFormule.get(org.tier) ?? tauxParDefaut;
+        const commission = (chiffreAffaires * taux) / 100;
         const dejaFacture = org.commissionHistory.length > 0;
 
         return {
@@ -251,7 +261,11 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
           period: periode,
           nextBillingDate: prochaineEcheance,
           createdAt: org.createdAt,
+          // D'où vient le montant : l'écran n'affichait qu'un total, sans dire
+          // qu'il s'agissait d'un pourcentage des ventes du mois.
           revenue: Number(chiffreAffaires.toFixed(2)),
+          ordersCount: commandes.length,
+          commissionPercent: taux,
         };
       })
     );
@@ -664,12 +678,15 @@ router.patch("/plans/:code", authMiddleware, isSuperOwner, async (req: Request, 
       libelle: z.string().min(2, "Nom minimum 2 caractères").optional(),
       maxBoutiques: z.number().int().min(1, "Au moins une boutique").optional(),
       prixMensuel: z.number().min(0, "Tarif négatif impossible").optional(),
+      commission: z
+        .number()
+        .min(0, "Commission négative impossible")
+        .max(100, "Une commission ne dépasse pas 100 %")
+        .optional(),
       avantages: z.array(z.string().min(1)).max(12, "Douze arguments suffisent").optional(),
       ordre: z.number().int().min(0).optional(),
     });
 
-    // Une erreur de validation ressort en « Validation error » : c'est ce que
-    // lirait le superowner à l'écran. On rend le premier motif, en français.
     const analyse = schema.safeParse(req.body);
 
     if (!analyse.success) {
@@ -1143,8 +1160,18 @@ router.get("/analytics", authMiddleware, isSuperOwner, async (req: Request, res:
     const totalRevenue = data.reduce((s, d) => s + d.totalRevenue, 0);
     const totalTransactions = data.reduce((s, d) => s + d.transactions, 0);
 
+    /**
+     * Le jour en cours d'abord, puis on remonte dans le temps.
+     *
+     * La liste sortait du plus ancien au plus récent : il fallait la dérouler
+     * jusqu'en bas pour voir la journée qui intéresse. La croissance, elle, est
+     * calculée plus haut dans l'ordre chronologique, sans quoi elle se
+     * comparerait au lendemain.
+     */
+    const duPlusRecent = [...data].reverse();
+
     res.json({
-      data: data.map(({ periodeIndex, ...reste }) => reste),
+      data: duPlusRecent.map(({ periodeIndex, ...reste }) => reste),
       summary: {
         totalRevenue: Number(totalRevenue.toFixed(2)),
         totalTransactions,
@@ -1189,9 +1216,10 @@ router.get("/audit-logs", authMiddleware, isSuperOwner, async (req: Request, res
         resourceId: entree.target,
         changes: { before: {}, after: (entree.changes as Record<string, any>) || {} },
         status: "SUCCESS",
-        // Non tracées à ce jour : la table ne conserve ni IP ni user-agent.
-        ipAddress: "—",
-        userAgent: "—",
+        // Renseignées depuis que la table les garde : la section
+        // « Informations réseau » du journal était vide.
+        ipAddress: entree.ipAddress || "—",
+        userAgent: entree.userAgent || "—",
         timestamp: entree.createdAt,
       })),
       pagination: { total, limit, offset },
@@ -1272,18 +1300,9 @@ router.patch("/support-tickets/:ticketId/status", authMiddleware, isSuperOwner, 
     });
     const body = schema.parse(req.body);
 
-    const existant = await db.merchantTicket.findUnique({ where: { id: ticketId } });
-    if (!existant) {
-      throw new ApiError(404, "Ticket non trouvé", "NOT_FOUND");
-    }
-
-    const ticket = await db.merchantTicket.update({
-      where: { id: ticketId },
-      data: {
-        status: body.status,
-        resolvedAt: body.status === "RESOLVED" ? new Date() : null,
-      },
-    });
+    // Clore archive le ticket : sans cela, le commerçant le voyait encore actif
+    // et sa réponse le rouvrait aussitôt.
+    const { ticket, precedent } = await TicketMessageService.changerEtat(ticketId, body.status);
 
     await db.systemAuditLog.create({
       data: {
@@ -1294,7 +1313,7 @@ router.patch("/support-tickets/:ticketId/status", authMiddleware, isSuperOwner, 
       },
     });
 
-    if (existant.status !== body.status) {
+    if (precedent !== body.status) {
       await TicketMessageService.notifierChangementEtat(
         ticketId,
         "Votre ticket a changé d'état",

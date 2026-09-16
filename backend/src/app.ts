@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { getEnv } from "./config/env";
 import { requestLogger } from "./config/logger";
+import { middlewareOrigine } from "./config/origine";
 import { setupErrorHandling } from "./middleware/errorHandler";
 import { maintenanceMiddleware } from "./middleware/maintenance";
 import { compteRestreint } from "./middleware/compte-restreint";
@@ -79,6 +80,10 @@ export function createApp(): Express {
 
   // ===== Logging =====
   app.use(requestLogger);
+
+  // D'où vient la requête, retenu le temps du traitement : les journaux le
+  // lisent au moment d'écrire, sans que chaque appelant ait à le transmettre.
+  app.use(middlewareOrigine);
 
   // ===== Health check =====
   app.get("/health", (_req, res) => {

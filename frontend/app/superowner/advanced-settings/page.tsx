@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Sliders, Save } from 'lucide-react';
 
 interface AdvancedSettings {
@@ -69,7 +70,18 @@ export default function AdvancedSettingsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(settings),
+        /**
+         * Le mode maintenance n'est pas renvoyé.
+         *
+         * Il se règle dans Configuration : le réexpédier depuis cet écran
+         * écraserait un changement fait entre-temps par la valeur affichée ici,
+         * qui n'est qu'un état lu au chargement.
+         */
+        body: JSON.stringify({
+          ...settings,
+          maintenanceMode: undefined,
+          maintenanceMessage: undefined,
+        }),
       });
 
       if (!res.ok) {
@@ -136,39 +148,26 @@ export default function AdvancedSettingsPage() {
             <h2 className="text-lg font-bold text-white">Mode Système</h2>
 
             <div className="space-y-4">
-              <div>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.maintenanceMode}
-                    onChange={(e) =>
-                      setSettings((prev) => prev ? { ...prev, maintenanceMode: e.target.checked } : prev)
-                    }
-                    className="w-5 h-5 rounded border-gray-600"
-                  />
-                  <span className="text-white font-medium">Mode Maintenance</span>
-                </label>
-                <p className="text-sm text-gray-400 ml-8 mt-1">
-                  Désactive l'accès aux utilisateurs réguliers
-                </p>
-              </div>
-
-              {settings.maintenanceMode && (
-                <div className="ml-8 bg-gray-700/30 p-4 rounded-lg">
-                  <label className="block text-sm text-gray-400 mb-2">Message de Maintenance</label>
-                  <textarea
-                    value={settings.maintenanceMessage || ''}
-                    onChange={(e) =>
-                      setSettings((prev) =>
-                        prev ? { ...prev, maintenanceMessage: e.target.value } : prev
-                      )
-                    }
-                    rows={3}
-                    className="w-full px-4 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white text-sm"
-                    placeholder="Message affiché aux utilisateurs..."
-                  />
+              {/* Le mode maintenance se réglait ici et dans Configuration : deux
+                  interrupteurs pour le même réglage, dont l'un pouvait défaire
+                  l'autre sans le montrer. Il n'est réglable qu'à un endroit,
+                  avec son message ; ici on ne fait que son état. */}
+              <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-700/30 p-4">
+                <div>
+                  <p className="text-white font-medium">Mode maintenance</p>
+                  <p className="text-sm text-gray-400">
+                    {settings.maintenanceMode
+                      ? 'Activé : le site est fermé aux visiteurs.'
+                      : 'Désactivé : le site est ouvert.'}
+                  </p>
                 </div>
-              )}
+                <Link
+                  href="/superowner/system-config"
+                  className="whitespace-nowrap rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                >
+                  Régler dans Configuration
+                </Link>
+              </div>
 
               <div>
                 <label className="flex items-center gap-3 cursor-pointer">

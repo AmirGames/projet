@@ -62,6 +62,10 @@ model PlanTier {
   label        String
   maxStores    Int
   monthlyPrice Decimal          @default(0) @db.Decimal(10, 2)
+  /// La commission prélevée sur les ventes, en pourcentage. Elle n'existait
+  /// qu'en réglage global : toutes les formules payaient le même taux, et rien
+  /// ne permettait de faire payer moins cher un abonnement plus élevé.
+  commissionPercent Decimal      @default(5) @db.Decimal(5, 2)
   // Arguments de vente, une phrase par ligne.
   features     Json             @default("[]")
   // L'ordre de la grille, et donc la formule proposée à la suivante.
@@ -230,6 +234,12 @@ model SystemAuditLog {
   action          String
   target          String    // Which merchant or system component
   changes         Json?     // What changed
+
+  /// D'où l'action a été faite. La table ne gardait rien : le journal affichait
+  /// une section « Informations réseau » vide, ce qui la rendait inutile pour
+  /// distinguer deux administrateurs ou repérer un accès inhabituel.
+  ipAddress       String?
+  userAgent       String?
 
   // Relations
   admin           User      @relation(fields: [adminId], references: [id], onDelete: Cascade)
@@ -1361,6 +1371,9 @@ model SecurityEvent {
   status    String   @default("SUCCESS") // SUCCESS, FAILED, WARNING
   details   String   @default("")
   ipAddress String?
+  /// Le navigateur ou l'outil employé. La colonne manquait, et la page
+  /// affichait « — » pour tout le monde.
+  userAgent String?
 
   createdAt DateTime @default(now())
 

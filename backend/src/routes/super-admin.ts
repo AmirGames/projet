@@ -632,57 +632,45 @@ router.get("/audit-logs/export", authMiddleware, isSystemAdmin, async (req: Requ
 // ACCESS LOGS
 // ============================================================================
 
-// GET /super-admin/access-logs - View access logs
+/**
+ * GET /super-admin/access-logs - Journal des accès
+ *
+ * Rendait trois lignes écrites en dur — la même adresse IP inventée pour tout
+ * le monde. Un journal inventé est pire qu'un journal vide : on le croit.
+ */
 router.get("/access-logs", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 200);
 
-    const logs = [
-      {
-        id: "access_001",
-        user: "user@example.com",
-        ipAddress: "192.168.1.100",
-        userAgent: "Mozilla/5.0",
-        resource: "/super-admin/dashboard",
-        method: "GET",
-        status: 200,
-        timestamp: new Date(Date.now() - 1800000).toISOString(),
-        duration: 245,
-      },
-      {
-        id: "access_002",
-        user: "user@example.com",
-        ipAddress: "192.168.1.100",
-        userAgent: "Mozilla/5.0",
-        resource: "/api/super-admin/users",
-        method: "POST",
-        status: 201,
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        duration: 512,
-      },
-      {
-        id: "access_003",
-        user: "user@example.com",
-        ipAddress: "192.168.1.100",
-        userAgent: "Mozilla/5.0",
-        resource: "/super-admin/merchants",
-        method: "GET",
-        status: 200,
-        timestamp: new Date(Date.now() - 5400000).toISOString(),
-        duration: 189,
-      },
-    ];
+    const [evenements, total] = await Promise.all([
+      db.securityEvent.findMany({
+        take: limit,
+        skip: (page - 1) * limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      db.securityEvent.count(),
+    ]);
 
-    const paginated = logs.slice((page - 1) * limit, page * limit);
+    const logs = evenements.map((evenement) => ({
+      id: evenement.id,
+      user: evenement.actor,
+      ipAddress: evenement.ipAddress || "—",
+      userAgent: evenement.userAgent || "—",
+      resource: evenement.target || "plateforme",
+      method: evenement.action,
+      status: evenement.status === "SUCCESS" ? 200 : 403,
+      timestamp: evenement.createdAt,
+      duration: 0,
+    }));
 
     res.json({
-      logs: paginated,
+      logs,
       pagination: {
         page,
         limit,
-        total: logs.length,
-        pages: Math.ceil(logs.length / limit),
+        total,
+        pages: Math.ceil(total / limit) || 1,
       },
     });
   } catch (err) {

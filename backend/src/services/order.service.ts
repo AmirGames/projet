@@ -452,6 +452,28 @@ export class OrderService {
     });
   }
 
+  /**
+   * Le chiffre d'affaires d'une organisation, toutes boutiques confondues.
+   *
+   * La page d'accueil du commerçant affichait « 0,00 € » et « 0 commande » en
+   * dur : les deux compteurs n'étaient jamais renseignés.
+   */
+  static async chiffreAffairesOrg(orgId: string, status?: string) {
+    const where: any = { store: { orgId }, deletedAt: null };
+    if (status && status !== "ALL") where.status = status;
+
+    const somme = await db.order.aggregate({
+      where,
+      _sum: { totalAmount: true },
+      _count: true,
+    });
+
+    return {
+      commandes: somme._count,
+      chiffreAffaires: Number(somme._sum.totalAmount || 0),
+    };
+  }
+
   static async countByOrgId(orgId: string, status?: string) {
     const whereClause: any = {
       store: { orgId },

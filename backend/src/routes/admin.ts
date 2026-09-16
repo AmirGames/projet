@@ -655,7 +655,7 @@ router.get("/access-logs", authMiddleware, isSystemAdmin, async (req: Request, r
         resource: e.target || "plateforme",
         action: e.action,
         ipAddress: e.ipAddress || "—",
-        userAgent: "—",
+        userAgent: e.userAgent || "—",
         status: e.status === "SUCCESS" ? "SUCCESS" : e.status === "FAILED" ? "FAILED" : "DENIED",
         severity: e.severity,
         details: e.details,

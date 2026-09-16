@@ -17,6 +17,8 @@ interface Formule {
   libelle: string;
   maxBoutiques: number;
   prixMensuel: number;
+  /** Ce que la plateforme prélève sur les ventes, en pourcentage. */
+  commission: number;
   avantages: string[];
   ordre: number;
   abonnes: number;
@@ -89,6 +91,7 @@ export default function FormulesPage() {
           libelle: brouillon.libelle,
           maxBoutiques: Number(brouillon.maxBoutiques),
           prixMensuel: Number(brouillon.prixMensuel),
+          commission: Number(brouillon.commission),
           // Les lignes vides du formulaire ne sont pas des arguments de vente.
           avantages: brouillon.avantages.map((ligne) => ligne.trim()).filter(Boolean),
         }),
@@ -174,7 +177,7 @@ export default function FormulesPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label
                       className="block text-sm text-gray-400 mb-1"
@@ -209,6 +212,29 @@ export default function FormulesPage() {
                       value={brouillon.maxBoutiques}
                       onChange={(e) =>
                         modifier(formule.code, { maxBoutiques: Number(e.target.value) })
+                      }
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+
+                  {/* La commission n'était réglable qu'en global : le même taux
+                      pour tous, quel que soit l'abonnement payé. */}
+                  <div>
+                    <label
+                      className="block text-sm text-gray-400 mb-1"
+                      htmlFor={`commission-${formule.code}`}
+                    >
+                      Commission %
+                    </label>
+                    <input
+                      id={`commission-${formule.code}`}
+                      type="number"
+                      min={0}
+                      max={100}
+                      step="0.1"
+                      value={brouillon.commission}
+                      onChange={(e) =>
+                        modifier(formule.code, { commission: Number(e.target.value) })
                       }
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
                     />
@@ -274,7 +300,8 @@ export default function FormulesPage() {
 
               <p className="text-xs text-gray-500">
                 Vue commerçant : {brouillon.libelle} — {euro(brouillon.prixMensuel)} / mois,{' '}
-                {brouillon.maxBoutiques} boutique{brouillon.maxBoutiques > 1 ? 's' : ''}.
+                {brouillon.maxBoutiques} boutique{brouillon.maxBoutiques > 1 ? 's' : ''},{' '}
+                {brouillon.commission} % de commission sur les ventes.
               </p>
             </section>
           );

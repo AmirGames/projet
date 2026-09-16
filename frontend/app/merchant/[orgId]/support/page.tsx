@@ -7,6 +7,14 @@ import { TicketConversation } from '@/components/TicketConversation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+/** L'état du ticket, en français : la base le stocke en anglais. */
+const LIBELLES_STATUT: Record<string, string> = {
+  OPEN: 'Ouvert',
+  IN_PROGRESS: 'En cours',
+  RESOLVED: 'Résolu',
+  CLOSED: 'Clos',
+};
+
 interface Ticket {
   id: string;
   title: string;
@@ -254,7 +262,10 @@ export default function SupportPage() {
                       <span className={`px-2 py-1 rounded ${getPriorityColor(ticket.priority)}`}>
                         {ticket.priority}
                       </span>
-                      <span className="capitalize">{ticket.status}</span>
+                      <span>{LIBELLES_STATUT[ticket.status] || ticket.status}</span>
+                      {/* Clos, le ticket est archivé : il n'accepte plus de
+                          message, et le dire évite de chercher le champ. */}
+                      {ticket.archivedAt && <span className="text-gray-400">Archivé</span>}
                       {(ticket._count?.messages ?? 0) > 0 && (
                         <span className="flex items-center gap-1 text-blue-400">
                           <MessageCircle size={12} />

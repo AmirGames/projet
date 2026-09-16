@@ -25,17 +25,26 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
 
     let orders;
     let total;
+    // Les compteurs de la page d'accueil du commerçant : ils restaient à zéro
+    // faute d'être calculés quelque part.
+    let resume: { totalOrders: number; totalRevenue: number } | undefined;
 
     if (storeId) {
       orders = await OrderService.getByStoreId(storeId, limit, offset);
       total = await OrderService.countByStoreId(storeId);
     } else {
       orders = await OrderService.getByOrgId(orgId, status, limit, offset);
-      total = await OrderService.countByOrgId(orgId, status);
+      const bilan = await OrderService.chiffreAffairesOrg(orgId, status);
+      total = bilan.commandes;
+      resume = {
+        totalOrders: bilan.commandes,
+        totalRevenue: Number(bilan.chiffreAffaires.toFixed(2)),
+      };
     }
 
     res.json({
       orders,
+      ...(resume ? { summary: resume } : {}),
       pagination: {
         total,
         limit,

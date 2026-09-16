@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Store, ShoppingCart, TrendingUp } from 'lucide-react';
 
 import { memoriserBoutique } from '@/lib/current-store';
+import { euro } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -90,6 +91,15 @@ export default function MerchantDashboard() {
       if (ordersRes.ok) {
         const ordersData = await ordersRes.json();
         setRecentOrders(ordersData.orders || []);
+
+        // Les deux compteurs restaient à zéro : rien ne les renseignait. Ils
+        // viennent maintenant du serveur, qui compte toutes les commandes de
+        // l'organisation et non les cinq dernières affichées.
+        setStats((prev) => ({
+          ...prev,
+          totalOrders: Number(ordersData.summary?.totalOrders ?? prev.totalOrders),
+          totalRevenue: Number(ordersData.summary?.totalRevenue ?? prev.totalRevenue),
+        }));
       }
     } catch (error) {
       console.error('Erreur lors du chargement du dashboard:', error);
@@ -148,7 +158,7 @@ export default function MerchantDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Revenu Total</p>
-              <p className="text-3xl font-bold text-white mt-2">{Number(stats.totalRevenue).toFixed(2)} €</p>
+              <p className="text-3xl font-bold text-white mt-2">{euro(stats.totalRevenue)}</p>
             </div>
             <TrendingUp size={32} className="text-orange-600" />
           </div>

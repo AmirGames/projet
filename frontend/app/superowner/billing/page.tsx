@@ -12,6 +12,15 @@ interface BillingData {
   period: string;
   nextBillingDate: string;
   createdAt: string;
+  /**
+   * D'où vient le montant.
+   *
+   * L'écran n'affichait qu'un total : « 1,50 € » sans dire qu'il s'agissait
+   * d'un pourcentage des ventes du mois, ni lequel.
+   */
+  revenue?: number;
+  ordersCount?: number;
+  commissionPercent?: number;
 }
 
 interface BillingResponse {
@@ -138,7 +147,12 @@ export default function BillingPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Organisation</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Plan</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Période</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Montant</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
+                    Ventes du mois
+                  </th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
+                    Commission
+                  </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Status</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Prochain Paiement</th>
                 </tr>
@@ -149,8 +163,21 @@ export default function BillingPage() {
                     <td className="px-6 py-4 text-sm text-white font-medium">{billing.organization}</td>
                     <td className="px-6 py-4 text-sm text-gray-400">{billing.tier}</td>
                     <td className="px-6 py-4 text-sm text-gray-400">{billing.period}</td>
+                    <td className="px-6 py-4 text-right text-sm text-gray-300">
+                      {euro(billing.revenue ?? 0)}
+                      {billing.ordersCount !== undefined && (
+                        <span className="block text-xs text-gray-500">
+                          {billing.ordersCount} commande{billing.ordersCount > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <p className="font-bold text-green-400">{euro(billing.amount)}</p>
+                      {billing.commissionPercent !== undefined && (
+                        <span className="block text-xs text-gray-500">
+                          {billing.commissionPercent} % des ventes
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(billing.status)}`}>

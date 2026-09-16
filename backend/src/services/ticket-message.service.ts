@@ -35,8 +35,14 @@ export class TicketMessageService {
       throw new ApiError(404, "Ticket non trouvé", "NOT_FOUND");
     }
 
-    if (ticket.archivedAt) {
-      throw new ApiError(400, "Ce ticket est archivé", "TICKET_ARCHIVED");
+    // Un ticket clos est archivé : il n'accepte plus de message. Répondre le
+    // rouvrait, et il ne restait jamais clos.
+    if (ticket.status === "CLOSED" || ticket.archivedAt) {
+      throw new ApiError(
+        400,
+        "Ce ticket est clos. Ouvrez-en un nouveau pour poursuivre l'échange.",
+        "TICKET_ARCHIVED"
+      );
     }
 
     const author = await db.user.findUnique({
@@ -58,8 +64,9 @@ export class TicketMessageService {
       },
     });
 
-    // Une réponse rouvre un ticket résolu ou fermé : sinon l'échange reste sans suite.
-    if (ticket.status === "RESOLVED" || ticket.status === "CLOSED") {
+    // Une réponse rouvre un ticket résolu : « ça ne marche toujours pas » doit
+    // pouvoir relancer l'échange. Un ticket clos, lui, n'arrive jamais ici.
+    if (ticket.status === "RESOLVED") {
       await db.merchantTicket.update({
         where: { id: ticket.id },
         data: { status: "IN_PROGRESS", resolvedAt: null },
@@ -243,6 +250,42 @@ export class TicketMessageService {
     for (const notification of creees) {
       emitNotification(notification.recipientEmail, notification);
     }
+  }
+
+  /**
+   * Changer l'état d'un ticket.
+   *
+   * Clore un ticket l'archive. Sans cela, le commerçant continuait de le voir
+   * parmi ses tickets actifs et pouvait y écrire — sa réponse le rouvrait
+   * aussitôt, si bien qu'un ticket clos ne le restait jamais. Un échange fini
+   * est fini : pour reprendre, on ouvre un nouveau ticket.
+   *
+   * « Résolu » reste distinct : le commerçant peut répondre « ça ne marche
+   * toujours pas », et le ticket repart. C'est la clôture qui ferme la porte.
+   */
+  static async changerEtat(ticketId: string, statut: string) {
+    const ticket = await db.merchantTicket.findUnique({ where: { id: ticketId } });
+
+    if (!ticket) {
+      throw new ApiError(404, "Ticket non trouvé", "NOT_FOUND");
+    }
+
+    const clos = statut === "CLOSED";
+
+    const misAJour = await db.merchantTicket.update({
+      where: { id: ticketId },
+      data: {
+        status: statut,
+        resolvedAt: statut === "RESOLVED" ? new Date() : null,
+        // Rouvrir un ticket archivé le sort de l'archive : sinon il resterait
+        // muet, ouvert et sans réponse possible.
+        archivedAt: clos ? ticket.archivedAt ?? new Date() : null,
+      },
+    });
+
+    logger.info("Ticket status changed", { ticketId, statut, archive: clos });
+
+    return { ticket: misAJour, precedent: ticket.status };
   }
 
   static async archive(ticketId: string) {

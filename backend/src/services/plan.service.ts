@@ -16,6 +16,14 @@ export interface FormuleDetail {
   libelle: string;
   maxBoutiques: number;
   prixMensuel: number;
+  /**
+   * La commission prélevée sur les ventes, en pourcentage.
+   *
+   * Elle n'existait qu'en réglage global : toutes les formules payaient le même
+   * taux, et rien ne permettait de faire payer moins de commission à un
+   * abonnement plus cher — ce qui est pourtant l'argument de vente.
+   */
+  commission: number;
   avantages: string[];
   ordre: number;
 }
@@ -32,6 +40,7 @@ const GRILLE_INITIALE: FormuleDetail[] = [
     libelle: "Gratuit",
     maxBoutiques: 1,
     prixMensuel: 0,
+    commission: 8,
     avantages: ["1 boutique", "Commandes illimitées", "Support par ticket"],
     ordre: 0,
   },
@@ -40,6 +49,7 @@ const GRILLE_INITIALE: FormuleDetail[] = [
     libelle: "Premium",
     maxBoutiques: 3,
     prixMensuel: 29,
+    commission: 5,
     avantages: ["3 boutiques", "Statistiques détaillées", "Support prioritaire"],
     ordre: 1,
   },
@@ -48,6 +58,7 @@ const GRILLE_INITIALE: FormuleDetail[] = [
     libelle: "Pro",
     maxBoutiques: 10,
     prixMensuel: 79,
+    commission: 3,
     avantages: ["10 boutiques", "Accès API et webhooks", "Accompagnement dédié"],
     ordre: 2,
   },
@@ -82,6 +93,7 @@ export class PlanService {
           label: formule.libelle,
           maxStores: formule.maxBoutiques,
           monthlyPrice: formule.prixMensuel,
+          commissionPercent: formule.commission,
           features: formule.avantages,
           displayOrder: formule.ordre,
         })),
@@ -96,6 +108,7 @@ export class PlanService {
       libelle: ligne.label,
       maxBoutiques: ligne.maxStores,
       prixMensuel: Number(ligne.monthlyPrice),
+      commission: Number(ligne.commissionPercent),
       avantages: listeDeTextes(ligne.features),
       ordre: ligne.displayOrder,
     }));
@@ -124,6 +137,7 @@ export class PlanService {
       libelle?: string;
       maxBoutiques?: number;
       prixMensuel?: number;
+      commission?: number;
       avantages?: string[];
       ordre?: number;
     }
@@ -141,6 +155,14 @@ export class PlanService {
 
     if (valeurs.prixMensuel !== undefined && valeurs.prixMensuel < 0) {
       throw new ApiError(400, "Un tarif ne peut pas être négatif", "INVALID_PRICE");
+    }
+
+    if (valeurs.commission !== undefined && (valeurs.commission < 0 || valeurs.commission > 100)) {
+      throw new ApiError(
+        400,
+        "Une commission s'exprime en pourcentage, entre 0 et 100",
+        "INVALID_COMMISSION"
+      );
     }
 
     // Abaisser un quota sous ce que des commerçants exploitent déjà les
@@ -181,6 +203,7 @@ export class PlanService {
         ...(valeurs.libelle !== undefined ? { label: valeurs.libelle } : {}),
         ...(valeurs.maxBoutiques !== undefined ? { maxStores: valeurs.maxBoutiques } : {}),
         ...(valeurs.prixMensuel !== undefined ? { monthlyPrice: valeurs.prixMensuel } : {}),
+        ...(valeurs.commission !== undefined ? { commissionPercent: valeurs.commission } : {}),
         ...(valeurs.avantages !== undefined ? { features: valeurs.avantages } : {}),
         ...(valeurs.ordre !== undefined ? { displayOrder: valeurs.ordre } : {}),
       },
@@ -191,6 +214,7 @@ export class PlanService {
       libelle: ligne.label,
       maxBoutiques: ligne.maxStores,
       prixMensuel: Number(ligne.monthlyPrice),
+      commission: Number(ligne.commissionPercent),
       avantages: listeDeTextes(ligne.features),
       ordre: ligne.displayOrder,
     };
@@ -223,6 +247,8 @@ export class PlanService {
       tier: formule.code,
       tierLabel: formule.libelle,
       tierPrice: formule.prixMensuel,
+      // Le commerçant a le droit de savoir ce qu'on prélève sur ses ventes.
+      tierCommission: formule.commission,
       tierFeatures: formule.avantages,
       used: utilisees,
       max: maximum,
