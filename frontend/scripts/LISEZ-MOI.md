@@ -47,11 +47,13 @@ VERIF_SITE_URL=http://localhost:3000 npm run verif:courses      # proposition de
 VERIF_SITE_URL=http://localhost:3000 npm run verif:suivi        # suivi de livraison côté client
 VERIF_SITE_URL=http://localhost:3000 npm run verif:menu-client  # ordre des produits et plats épuisés
 VERIF_SITE_URL=http://localhost:3000 npm run verif:livreurs     # validation des dossiers livreurs
+VERIF_SITE_URL=http://localhost:3000 npm run verif:versements   # relevés et versements aux livreurs
 ```
 
-Trois scripts — `verif:courses`, `verif:suivi`, `verif:livreurs` — montent leur
-propre décor et font valider un livreur par la plateforme. Ils supposent donc
-une **base vierge** : le premier compte inscrit est le seul à être superowner.
+Quatre scripts — `verif:courses`, `verif:suivi`, `verif:livreurs`,
+`verif:versements` — montent leur propre décor et font valider un livreur par
+la plateforme. Ils supposent donc une **base vierge** : le premier compte
+inscrit est le seul à être superowner.
 
 ```bash
 cd backend && node scripts/verification/reinitialiser.mjs
@@ -103,6 +105,8 @@ pour le lancer.
 | `verif-formules-pages.mjs` | Grille tarifaire et demande de changement de formule |
 | `verif-cloche.mjs` | La cloche de notifications, partout où elle doit être |
 | `verif-compte-restreint.mjs` | Compte suspendu ou fermé : tout bloqué sauf le support |
+| `verif-validation-livreurs.mjs` | Dossier du livreur, examen des pièces, validation, suspension |
+| `verif-versements-livreurs.mjs` | Ce qui est dû, l'arrêté d'un relevé, le versement |
 
 Le parcours mot de passe ouvre un serveur SMTP minimal sur le port 1025 pour
 lire le message envoyé : le jeton n'existe en clair que dans ce lien, la base

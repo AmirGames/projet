@@ -49,6 +49,8 @@ emporter ou à livrer.
 - Passage en ligne, position transmise
 - Courses proposées automatiquement au livreur disponible le plus proche
 - Acceptation, refus, étapes de la course, rémunération calculée
+- **Sait s'il est payé** : ce qui lui reste dû, ce qui est arrêté et attend le
+  virement, ce qui est arrivé — et le détail de chaque relevé
 
 ### La plateforme (superowner)
 - Commerçants : formule, suspension, fermeture, restauration depuis sauvegarde
@@ -57,6 +59,8 @@ emporter ou à livrer.
 - Facturation : commission du mois par commerçant, avec son calcul détaillé
 - Livreurs : dossiers à traiter, examen des pièces une à une, validation,
   suspension et rétablissement — chaque geste motivé et journalisé
+- Versements : ce qu'elle doit et à qui, arrêté des relevés d'une période,
+  versement avec sa référence — une course payée ne l'est jamais deux fois
 - Santé du système : cinq relevés chiffrés, et ce qu'il faut faire pour chacun
 - Journal des actions administratives et journal des accès
 - Sauvegardes, mode maintenance, clés d'API, webhooks
@@ -78,8 +82,8 @@ emporter ou à livrer.
 Un seul dépôt, deux applications :
 
 ```
-backend/    API REST — 37 routeurs, 40 services, 42 modèles Prisma
-frontend/   Next.js — 81 pages
+backend/    API REST — 37 routeurs, 41 services, 43 modèles Prisma
+frontend/   Next.js — 82 pages
 ```
 
 ## Démarrer
@@ -149,14 +153,14 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 974 contrôles, 30 suites
+# API : 1030 contrôles, 31 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 408 contrôles, 16 suites
+# Navigateur : 446 contrôles, 17 suites
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
@@ -195,8 +199,6 @@ Par honnêteté, ce qui manque encore :
   sans tuiles cartographiques.
 - **Le stock par ingrédient** (une pizza consomme de la mozzarella). Aujourd'hui
   la disponibilité se bascule à la main, plat par plat.
-- **Les versements aux livreurs.** Leurs gains s'accumulent course après course,
-  mais rien ne les paie : ni période, ni relevé, ni trace de versement.
 - **La preuve de livraison.** Une course passe à « livrée » sur simple clic du
   livreur : ni code remis au client, ni photo, ni signature.
 - **Prisma 5.22 → 7**, à faire une fois le reste stabilisé.

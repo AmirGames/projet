@@ -23,7 +23,8 @@
     "verif:paniers": "node scripts/verif-paniers.mjs",
     "verif:zones": "node scripts/verif-zones-livraison.mjs",
     "verif:invite": "node scripts/verif-commande-invite.mjs",
-    "verif:livreurs": "node scripts/verif-validation-livreurs.mjs"
+    "verif:livreurs": "node scripts/verif-validation-livreurs.mjs",
+    "verif:versements": "node scripts/verif-versements-livreurs.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",

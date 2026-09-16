@@ -3,7 +3,7 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : commit `7d7f339`.
+Dernière mise à jour : partie 2 de la livraison (versements aux livreurs).
 
 ---
 
@@ -65,8 +65,8 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Paiement** | Stripe — intention de paiement seulement |
 
 ```
-backend/    API REST — 37 routeurs, 40 services, 42 modèles Prisma
-frontend/   Next.js — 81 pages
+backend/    API REST — 37 routeurs, 41 services, 43 modèles Prisma
+frontend/   Next.js — 82 pages
 ```
 
 **Le premier compte inscrit devient la plateforme** (superowner). Tous les
@@ -108,6 +108,8 @@ scripts de vérification (voir §6).
 - Passage en ligne, position transmise
 - Courses attribuées automatiquement au livreur disponible le plus proche
 - Acceptation, refus, étapes de la course, rémunération calculée
+- **Sait s'il est payé** : ce qui reste dû, ce qui est arrêté et attend le
+  virement, ce qui est arrivé, et le détail de chaque relevé
 
 ### La plateforme (superowner)
 - Commerçants : formule, suspension, fermeture, restauration depuis sauvegarde
@@ -116,6 +118,8 @@ scripts de vérification (voir §6).
 - Facturation : commission du mois par commerçant, avec le détail par commande
 - **Livreurs** : dossiers à traiter, examen des pièces, validation, suspension,
   rétablissement — chaque geste motivé et journalisé
+- **Versements** : ce qu'elle doit et à qui, arrêté des relevés d'une période,
+  versement avec sa référence, annulation d'un relevé non versé
 - Santé du système : cinq relevés chiffrés et la conduite à tenir
 - Journal des actions et journal des accès (avec IP et durée réelles)
 - Sauvegardes, mode maintenance, clés d'API, webhooks
@@ -175,7 +179,9 @@ appliquées, code promo et moyens de paiement au tunnel.
 **Livraison**
 Attribution automatique de la course au livreur disponible le plus proche,
 suivi côté client (distance, durée, position), domaine propre aux livreurs,
-puis — dernier chantier en date — **la validation des dossiers livreurs**.
+puis **la validation des dossiers livreurs** et — dernier chantier en date —
+**les versements** : une course livrée est due tant qu'aucun relevé ne la
+porte, un arrêté la rattache, un versement solde le relevé.
 
 **Comptes et sécurité**
 Récupération de mot de passe, confirmation d'adresse e-mail, suspension et
@@ -209,8 +215,8 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 30 | **974** |
-| **Navigateur** (`frontend/scripts/`) | 16 | **408** |
+| **API** (`backend/scripts/verification/`) | 31 | **1030** |
+| **Navigateur** (`frontend/scripts/`) | 17 | **446** |
 
 Tout est vert au dernier passage complet.
 
@@ -238,9 +244,10 @@ détaillent chaque suite et ses prérequis.
 
 ### Prérequis particuliers
 
-- **Base vierge** pour `verif:courses`, `verif:suivi` et `verif:livreurs` : ces
-  scripts créent leur propre compte plateforme, et seul le premier compte inscrit
-  est superowner. Lancer `node scripts/verification/reinitialiser.mjs` avant.
+- **Base vierge** pour `verif:courses`, `verif:suivi`, `verif:livreurs` et
+  `verif:versements` : ces scripts créent leur propre compte plateforme, et seul
+  le premier compte inscrit est superowner. Lancer
+  `node scripts/verification/reinitialiser.mjs` avant.
 - **Jeu de démonstration** pour `verif:admin` et `verif:menu` :
   `node scripts/seed-demo.mjs`.
 - **Faux service d'adresses** pour `verif:invite` et tout ce qui géocode :
@@ -277,6 +284,8 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 - `PaymentMethodType` : `CREDIT_CARD`, `DEBIT_CARD`, `PAYPAL`, `STRIPE`,
   `BANK_TRANSFER`, `CASH`, `APPLE_PAY`, `GOOGLE_PAY` — **pas de `CARD`**.
 - La création de ticket attend `subject`, pas `title`.
+- `Order` **n'a pas de `orderNumber`** : les commandes se désignent par leur
+  `id`, que l'interface raccourcit à ses huit derniers caractères.
 
 **Next.js**
 - `useSearchParams()` dans un composant client impose une frontière `Suspense`
@@ -288,17 +297,18 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 
 ### Terminé et poussé
 
-Le dernier chantier — **la validation des livreurs** (commit `8c808dd`) — est
-fini, vert, et poussé. C'était la partie 1 d'un plan de livraison en trois
-temps.
+Les parties **1 (validation des livreurs)** et **2 (versements)** du plan de
+livraison en trois temps sont finies, vertes et poussées.
 
-### À faire ensuite, dans cet ordre
+L'invariant de la partie 2, à ne jamais casser : **une course livrée est due
+tant qu'aucun relevé ne la porte**. Le champ `OrderDelivery.payoutId` est ce
+qui interdit qu'une course soit payée deux fois ; un arrêté ne prend que les
+courses qui n'en ont pas, et l'annulation d'un relevé non versé les relâche.
 
-1. **Les versements aux livreurs.** Leurs gains s'accumulent course après
-   course dans `totalEarnings`, mais rien ne les paie : ni période, ni relevé,
-   ni trace de versement.
-2. **La preuve de livraison.** Une course passe à « livrée » sur simple clic du
-   livreur : ni code remis au client, ni photo, ni signature.
+### À faire ensuite
+
+**La preuve de livraison** (partie 3). Une course passe à « livrée » sur simple
+clic du livreur : ni code remis au client, ni photo, ni signature.
 
 ### Le reste du carnet
 

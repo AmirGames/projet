@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Wallet, Package, Star, CalendarDays } from 'lucide-react';
 import { euro } from '@/lib/format';
+import { MesVersements } from '@/components/MesVersements';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -88,7 +89,7 @@ export default function RevenusLivreurPage() {
             Mes revenus
           </h1>
           <p className="text-gray-400 mt-1">
-            Calculés sur les frais de livraison de vos courses terminées
+            La rémunération annoncée à l&apos;attribution de chaque course terminée
           </p>
         </div>
 
@@ -97,6 +98,10 @@ export default function RevenusLivreurPage() {
             {erreur}
           </div>
         )}
+
+        {/* Ce qui est dû et ce qui est versé passe avant les totaux par
+            période : c'est la question qu'un livreur se pose d'abord. */}
+        <MesVersements />
 
         {revenus && (
           <>

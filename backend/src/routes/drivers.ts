@@ -11,6 +11,7 @@ import {
   libelleDuDocument,
   piecesAttendues,
 } from "../services/driver-approval.service";
+import { DriverPayoutService } from "../services/driver-payout.service";
 import { z } from "zod";
 
 const router = Router();
@@ -323,6 +324,43 @@ router.post("/documents", authMiddleware, async (req: Request, res: Response, ne
     next(err);
   }
 });
+
+/**
+ * GET /drivers/payouts - Ce qui est dû au livreur, et ce qui lui a été versé
+ *
+ * Ses gains s'accumulaient dans un seul total, sans qu'il puisse savoir si
+ * l'argent était arrivé.
+ */
+router.get("/payouts", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+
+    res.json({ success: true, data: await DriverPayoutService.situation(livreur.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** GET /drivers/payouts/:id - Le détail d'un relevé, course par course */
+router.get(
+  "/payouts/:id",
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const livreur = await livreurConnecte(req);
+      const releve = await DriverPayoutService.detail(req.params.id as string);
+
+      // Le relevé d'un autre livreur ne le regarde pas.
+      if (releve.driverId !== livreur.id) {
+        throw new ApiError(404, "Relevé introuvable", "PAYOUT_NOT_FOUND");
+      }
+
+      res.json({ success: true, data: releve });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 // GET /drivers/deliveries - Get deliveries for driver (protected)
 router.get("/deliveries", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {

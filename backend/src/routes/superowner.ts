@@ -15,6 +15,11 @@ import {
   libelleDuDocument,
   piecesAttendues,
 } from "../services/driver-approval.service";
+import {
+  DriverPayoutService,
+  MOYENS_VERSEMENT,
+  semainePrecedente,
+} from "../services/driver-payout.service";
 import { SystemHealthService } from "../services/system-health.service";
 
 const LIBELLES_STATUT: Record<string, string> = {
@@ -1665,6 +1670,145 @@ router.post("/drivers/:driverId/reactivate", authMiddleware, isSuperOwner, async
     });
 
     res.json({ success: true, driver: livreur });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ============================================================================
+// VERSEMENTS AUX LIVREURS
+// ============================================================================
+
+/**
+ * Les gains d'un livreur s'accumulaient sans que rien ne les paie. Arrêter un
+ * relevé prend les courses dues d'une période ; le payer marque le relevé
+ * versé. Une course déjà portée par un relevé n'est jamais reprise.
+ */
+
+// GET /superowner/payouts - Les relevés, filtrés par état
+router.get("/payouts", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const liste = await DriverPayoutService.lister({
+      status: req.query.status as string | undefined,
+      driverId: req.query.driverId as string | undefined,
+    });
+
+    res.json({
+      ...liste,
+      // Ce que la plateforme doit et qu'aucun relevé ne porte encore : le
+      // chiffre qui n'existait nulle part.
+      reste: await DriverPayoutService.resteADevoir(),
+      // La période que l'écran propose par défaut, pour ne pas la saisir
+      // chaque semaine à la main.
+      periodeProposee: semainePrecedente(),
+      moyens: MOYENS_VERSEMENT,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const arreteSchema = z.object({
+  periodStart: z.string().min(1, "Donnez le début de la période"),
+  periodEnd: z.string().min(1, "Donnez la fin de la période"),
+  driverId: z.string().optional(),
+});
+
+// POST /superowner/payouts/draw - Arrêter les relevés d'une période
+router.post("/payouts/draw", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const corps = arreteSchema.parse(req.body);
+    const debut = new Date(corps.periodStart);
+    const fin = new Date(corps.periodEnd);
+
+    if (Number.isNaN(debut.getTime()) || Number.isNaN(fin.getTime())) {
+      throw new ApiError(400, "Période illisible", "INVALID_PERIOD");
+    }
+
+    const releves = corps.driverId
+      ? [await DriverPayoutService.arreter(corps.driverId, debut, fin)]
+      : await DriverPayoutService.arreterTous(debut, fin);
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "DRAW_DRIVER_PAYOUTS",
+        target: corps.driverId || "all",
+        changes: { periodStart: debut, periodEnd: fin, releves: releves.length } as any,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message:
+        releves.length === 0
+          ? "Aucune course à payer sur cette période"
+          : `${releves.length} relevé${releves.length > 1 ? "s" : ""} arrêté${releves.length > 1 ? "s" : ""}`,
+      payouts: releves.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/payouts/:payoutId - Le détail d'un relevé
+router.get("/payouts/:payoutId", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, payout: await DriverPayoutService.detail(req.params.payoutId as string) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const versementSchema = z.object({
+  method: z.string().min(1, "Choisissez un moyen de versement"),
+  reference: z.string().optional(),
+  note: z.string().optional(),
+});
+
+// POST /superowner/payouts/:payoutId/pay - Marquer un relevé versé
+router.post("/payouts/:payoutId/pay", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const corps = versementSchema.parse(req.body);
+    const releve = await DriverPayoutService.payer(
+      req.params.payoutId as string,
+      corps,
+      req.userId as string
+    );
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "PAY_DRIVER_PAYOUT",
+        target: releve.id,
+        changes: { amount: Number(releve.amount), method: corps.method, reference: corps.reference } as any,
+      },
+    });
+
+    res.json({ success: true, payout: releve });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/payouts/:payoutId/cancel - Annuler un relevé non versé
+router.post("/payouts/:payoutId/cancel", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const releve = await DriverPayoutService.annuler(
+      req.params.payoutId as string,
+      (req.body?.raison as string) || ""
+    );
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "CANCEL_DRIVER_PAYOUT",
+        target: releve.id,
+        changes: { raison: releve.note } as any,
+      },
+    });
+
+    res.json({ success: true, payout: releve });
   } catch (err) {
     next(err);
   }

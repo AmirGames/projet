@@ -704,6 +704,7 @@ model Driver {
   deliveries      OrderDelivery[]
   offers          DeliveryOffer[]
   documents       DriverDocument[]
+  payouts         DriverPayout[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -779,10 +780,18 @@ model OrderDelivery {
   // Proof
   proofPhoto      String?   // Photo de livraison
 
+  /// Le relevé de versement qui paie cette course.
+  ///
+  /// Tant qu'il est vide, la course est due au livreur. C'est ce lien qui
+  /// garantit qu'une course n'est payée qu'une fois : un relevé ne prend que
+  /// les courses qui n'en ont pas.
+  payoutId        String?
+
   // Relations
   order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   driver          Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
   offers          DeliveryOffer[]
+  payout          DriverPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -790,6 +799,50 @@ model OrderDelivery {
   @@index([orderId])
   @@index([driverId])
   @@index([status])
+  @@index([payoutId])
+}
+
+/// Un relevé de versement : ce que la plateforme doit à un livreur, puis ce
+/// qu'elle lui a versé.
+///
+/// Les gains d'un livreur s'accumulaient course après course dans
+/// `Driver.totalEarnings`, sans que rien ne les paie : ni période, ni relevé,
+/// ni trace de versement. Un livreur ne pouvait pas savoir si les 340 € qu'on
+/// lui annonçait étaient déjà sur son compte ou toujours dus.
+model DriverPayout {
+  id              String    @id @default(cuid())
+  driverId        String
+
+  /// La période couverte, bornes incluses côté début, exclues côté fin.
+  periodStart     DateTime
+  periodEnd       DateTime
+
+  /// Figés à la création : un relevé dit ce qui a été arrêté ce jour-là, il ne
+  /// se recalcule pas si une course change plus tard.
+  deliveryCount   Int       @default(0)
+  amount          Decimal   @default(0) @db.Decimal(10, 2)
+
+  /// PENDING (arrêté, à verser), PAID (versé), CANCELLED (annulé).
+  status          String    @default("PENDING")
+
+  /// Comment le versement a été fait, pour que le livreur puisse le retrouver
+  /// sur son relevé bancaire.
+  method          String?
+  reference       String?
+  paidAt          DateTime?
+  paidBy          String?
+  note            String?
+
+  // Relations
+  driver          Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  deliveries      OrderDelivery[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([driverId])
+  @@index([status])
+  @@index([periodStart])
 }
 
 // Proposition d'une course à un livreur.
