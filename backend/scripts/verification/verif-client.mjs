@@ -1,9 +1,11 @@
 // Vérifie l'espace client : historique, suivi de livraison, avis, favoris.
 // Plateforme
 
-import { check, j, uniq, post, get, patch, del, sqlExec, terminer } from './outils.mjs';
+import { check, j, uniq, post, get, patch, del, sqlExec, terminer, validerLivreur } from './outils.mjs';
 
-await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` });
+const plateforme = await j(
+  await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` })
+);
 const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const b = await j(await post('/api/stores', {
   orgId: m.organization.id, name: `Bou ${uniq}`, slug: `bou-${uniq}`,
@@ -54,6 +56,8 @@ const livreur = await j(await post('/api/drivers/register', {
 // La course passe par l'attribution : un livreur ne peut plus prendre une
 // course qui ne lui a pas été proposée.
 await sqlExec(`UPDATE "Store" SET latitude = 45.764, longitude = 4.8357 WHERE id = '${storeId}'`);
+// Il ne roule qu'une fois son dossier validé par la plateforme.
+await validerLivreur(livreur.accessToken, plateforme.accessToken);
 await patch('/api/drivers/availability', { isOnline: true }, livreur.accessToken);
 await patch('/api/drivers/location', { latitude: 45.765, longitude: 4.836 }, livreur.accessToken);
 

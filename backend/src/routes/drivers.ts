@@ -5,6 +5,12 @@ import { authMiddleware } from "../middleware/auth";
 import { emitDeliveryUpdate } from "../config/socket";
 import { DispatchService } from "../services/dispatch.service";
 import { AuthService } from "../services/auth.service";
+import {
+  DriverApprovalService,
+  TYPES_DOCUMENT,
+  libelleDuDocument,
+  piecesAttendues,
+} from "../services/driver-approval.service";
 import { z } from "zod";
 
 const router = Router();
@@ -165,6 +171,30 @@ router.patch("/availability", authMiddleware, async (req: Request, res: Response
       throw new ApiError(400, "Le champ isOnline doit être un booléen", "INVALID_INPUT");
     }
 
+    /**
+     * Seul un livreur validé se met en ligne.
+     *
+     * L'attribution ne s'adresse déjà qu'aux ACTIVE, mais un dossier en attente
+     * qui se voit « en ligne » sans jamais rien recevoir ne comprend pas ce qui
+     * se passe : mieux vaut le lui dire ici.
+     */
+    if (voulu && livreur.status !== "ACTIVE") {
+      const explications: Record<string, string> = {
+        PENDING: "Votre dossier est en cours de validation : vous ne pouvez pas encore prendre de course.",
+        REJECTED: "Votre dossier a été refusé.",
+        SUSPENDED: "Votre compte est suspendu.",
+        INACTIVE: "Votre compte est désactivé.",
+      };
+
+      throw new ApiError(
+        403,
+        [explications[livreur.status] || "Votre compte n'est pas actif.", livreur.statusReason]
+          .filter(Boolean)
+          .join(" "),
+        "DRIVER_NOT_APPROVED"
+      );
+    }
+
     const misAJour = await db.driver.update({
       where: { id: livreur.id },
       data: {
@@ -217,7 +247,77 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         lastLocationUpdate: driver.lastLocationUpdate,
         vehicleType: driver.vehicleType,
         licensePlate: driver.licensePlate,
+        // L'état du dossier : sans lui, un livreur en attente de validation
+        // voyait un écran normal et ne comprenait pas pourquoi aucune course
+        // n'arrivait.
+        status: driver.status,
+        statusReason: driver.statusReason,
+        approvedAt: driver.approvedAt,
+        piecesAttendues: piecesAttendues(driver.vehicleType),
       }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /drivers/documents - Les pièces du dossier du livreur connecté
+ *
+ * Le modèle existait sans qu'aucune route ne l'écrive ni ne le lise : le
+ * livreur n'avait aucun moyen de déposer son permis, ni de savoir ce qu'on
+ * attendait de lui.
+ */
+router.get("/documents", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const dossier = await DriverApprovalService.dossier(livreur.id);
+
+    res.json({
+      success: true,
+      data: {
+        status: dossier.status,
+        statusReason: dossier.statusReason,
+        dossierComplet: dossier.dossierComplet,
+        piecesAttendues: dossier.piecesAttendues.map((type) => ({
+          type,
+          libelle: libelleDuDocument(type),
+        })),
+        piecesManquantes: dossier.piecesManquantes,
+        documents: dossier.documents.map((piece) => ({
+          id: piece.id,
+          type: piece.type,
+          libelle: libelleDuDocument(piece.type),
+          documentUrl: piece.documentUrl,
+          expiryDate: piece.expiryDate,
+          status: piece.status,
+          reviewNote: piece.reviewNote,
+          reviewedAt: piece.reviewedAt,
+        })),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const pieceSchema = z.object({
+  type: z.enum(TYPES_DOCUMENT),
+  documentUrl: z.string().url("Donnez un lien vers le document"),
+  expiryDate: z.string().optional().nullable(),
+});
+
+// POST /drivers/documents - Déposer une pièce du dossier
+router.post("/documents", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const body = pieceSchema.parse(req.body);
+
+    const piece = await DriverApprovalService.deposerPiece(livreur.id, body);
+
+    res.status(201).json({
+      message: `${libelleDuDocument(piece.type)} déposée, en attente de validation`,
+      data: piece,
     });
   } catch (err) {
     next(err);

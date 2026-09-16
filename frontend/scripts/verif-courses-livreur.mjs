@@ -11,6 +11,7 @@
  */
 
 import { chromium } from 'playwright';
+import { validerLivreur } from './outils-livreur.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -50,7 +51,7 @@ const uniq = Date.now().toString(36);
 
 // ===== Le décor, monté par l'API =====
 
-await appeler('/api/auth/signup', {
+const plateforme = await appeler('/api/auth/signup', {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` },
 });
@@ -91,7 +92,7 @@ const productId = produit.donnees.product?.id || produit.donnees.id;
 const motDePasse = 'Password123!';
 const emailLivreur = `livreur-${uniq}@t.fr`;
 
-await appeler('/api/drivers/register', {
+const livreur = await appeler('/api/drivers/register', {
   method: 'POST',
   corps: {
     name: `Livreur ${uniq}`,
@@ -102,6 +103,10 @@ await appeler('/api/drivers/register', {
     vehiclePlate: 'AB-123-CD',
   },
 });
+
+// Sans validation de la plateforme, l'écran des courses resterait sur le
+// dossier en attente : aucune course ne lui serait proposée.
+await validerLivreur(API, livreur.donnees.accessToken, plateforme.donnees.accessToken);
 
 // ===== Le navigateur =====
 

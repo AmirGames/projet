@@ -46,6 +46,15 @@ VERIF_SITE_URL=http://localhost:3000 npm run verif:motdepasse   # mot de passe o
 VERIF_SITE_URL=http://localhost:3000 npm run verif:courses      # proposition de course au livreur
 VERIF_SITE_URL=http://localhost:3000 npm run verif:suivi        # suivi de livraison côté client
 VERIF_SITE_URL=http://localhost:3000 npm run verif:menu-client  # ordre des produits et plats épuisés
+VERIF_SITE_URL=http://localhost:3000 npm run verif:livreurs     # validation des dossiers livreurs
+```
+
+Trois scripts — `verif:courses`, `verif:suivi`, `verif:livreurs` — montent leur
+propre décor et font valider un livreur par la plateforme. Ils supposent donc
+une **base vierge** : le premier compte inscrit est le seul à être superowner.
+
+```bash
+cd backend && node scripts/verification/reinitialiser.mjs
 ```
 
 | Variable | Rôle | Défaut |

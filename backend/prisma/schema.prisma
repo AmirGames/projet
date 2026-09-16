@@ -675,8 +675,18 @@ model Driver {
   longitude       Float?
   lastLocationUpdate DateTime?
 
-  // Status
-  status          String    @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, OFFLINE
+  /// PENDING, ACTIVE, REJECTED, SUSPENDED, INACTIVE.
+  ///
+  /// Un livreur naissait ACTIVE : il s'inscrivait et recevait une course dans
+  /// la minute, sans que personne n'ait vu son permis. Il attend maintenant la
+  /// validation de la plateforme — l'attribution n'ouvre les courses qu'aux
+  /// ACTIVE.
+  status          String    @default("PENDING")
+  /// Quand la plateforme a validé le dossier, et qui.
+  approvedAt      DateTime?
+  approvedBy      String?
+  /// Pourquoi le dossier a été refusé ou le compte suspendu, dit au livreur.
+  statusReason    String?
   isOnline        Boolean   @default(false)
   isAvailable     Boolean   @default(true)
   currentOrderId  String?   // Current delivery
@@ -703,13 +713,23 @@ model Driver {
   @@index([userId])
 }
 
+/// Une pièce du dossier d'un livreur : permis, assurance, carte grise.
+///
+/// Le modèle existait depuis le début sans qu'aucune route ne l'écrive ni ne le
+/// lise : le dossier d'un livreur était vide, et sa validation impossible.
 model DriverDocument {
   id              String    @id @default(cuid())
   driverId        String
-  type            String    // license, insurance, vehicle_registration
+  type            String    // license, insurance, vehicle_registration, identity
+  /// Le document lui-même. L'hébergement de fichiers n'étant pas branché, le
+  /// livreur fournit un lien ; le jour où un stockage existera, c'est ce champ
+  /// qui le recevra.
   documentUrl     String
   expiryDate      DateTime?
   status          String    @default("PENDING") // PENDING, APPROVED, REJECTED, EXPIRED
+  /// Le motif d'un refus, que le livreur doit pouvoir lire.
+  reviewNote      String?
+  reviewedAt      DateTime?
 
   // Relations
   driver          Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)

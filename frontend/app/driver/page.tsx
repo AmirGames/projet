@@ -7,6 +7,7 @@ import { MapPin, Package, Clock, DollarSign, LogOut } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { PropositionsCourses } from '@/components/PropositionsCourses';
+import { DossierLivreur } from '@/components/DossierLivreur';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -28,6 +29,8 @@ interface Driver {
   id: string;
   name: string;
   phone: string;
+  /** PENDING tant que la plateforme n'a pas validé le dossier. */
+  status?: string;
   rating: number;
   totalEarnings: number;
   completedDeliveries: number;
@@ -42,6 +45,7 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeDelivery, setActiveDelivery] = useState<Delivery | null>(null);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [refus, setRefus] = useState('');
   const [earnings, setEarnings] = useState(0);
 
   useEffect(() => {
@@ -107,9 +111,18 @@ export default function DriverDashboard() {
 
       if (!reponse.ok) {
         setIsAvailable(!nouvelEtat); // le serveur a refusé : on revient en arrière
+
+        // Le bouton revenait en arrière sans un mot : le livreur cliquait,
+        // rien ne bougeait, et il ne savait pas que son dossier était en cause.
+        const lu = await reponse.json().catch(() => null);
+        setRefus(lu?.error || 'Le passage en ligne a été refusé');
+        return;
       }
+
+      setRefus('');
     } catch {
       setIsAvailable(!nouvelEtat);
+      setRefus('Erreur de connexion');
     }
   };
 
@@ -190,6 +203,12 @@ export default function DriverDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Le dossier passe avant tout le reste : sans validation, aucune
+            course n'arrivera, et un écran normal ne le dirait pas. */}
+        <div className="mb-8">
+          <DossierLivreur surChangement={loadDriverData} />
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-gray-800 rounded-lg p-6">
@@ -375,6 +394,12 @@ export default function DriverDashboard() {
                 >
                   {isAvailable ? '✓ En ligne' : 'Hors ligne'}
                 </button>
+
+                {refus && (
+                  <p role="status" className="text-sm text-red-400">
+                    {refus}
+                  </p>
+                )}
 
                 <Link href="/driver/earnings" className="block">
                   <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">

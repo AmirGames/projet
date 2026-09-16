@@ -28,6 +28,7 @@ import {
   Users,
   Webhook,
   Store,
+  Truck,
   Download,
   Megaphone,
   LogIn,
@@ -66,6 +67,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       items: [
         { label: 'Organisations', icon: Building2, href: '/superowner/organizations' },
         { label: 'Boutiques', icon: Store, href: '/superowner/stores' },
+        { label: 'Livreurs', icon: Truck, href: '/superowner/drivers' },
         { label: 'Analytics', icon: TrendingUp, href: '/superowner/analytics' },
         { label: 'Facturation', icon: CreditCard, href: '/superowner/billing' },
         { label: 'Formules', icon: Layers, href: '/superowner/formules' },

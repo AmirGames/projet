@@ -10,6 +10,7 @@
  */
 
 import { chromium } from 'playwright';
+import { validerLivreur } from './outils-livreur.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -54,7 +55,7 @@ const emailClient = `client-${uniq}@t.fr`;
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', {
+const plateforme = await appeler('/api/auth/signup', {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: motDePasse, name: `P ${uniq}` },
 });
@@ -130,6 +131,9 @@ const livreur = await appeler('/api/drivers/register', {
 });
 
 const D = livreur.donnees.accessToken;
+
+// Il ne peut se mettre en ligne qu'une fois son dossier validé.
+await validerLivreur(API, D, plateforme.donnees.accessToken);
 
 await appeler('/api/drivers/availability', { method: 'PATCH', jeton: D, corps: { isOnline: true } });
 await appeler('/api/drivers/location', { method: 'PATCH', jeton: D, corps: BOUTIQUE });

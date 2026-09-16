@@ -1,7 +1,19 @@
 // Attribution automatique des courses : position du livreur, proposition au
 // plus proche, refus, expiration, rémunération.
 
-import { titre, check, j, uniq, post, get, patch, sqlScalaire, sqlExec, terminer } from './outils.mjs';
+import {
+  titre,
+  check,
+  j,
+  uniq,
+  post,
+  get,
+  patch,
+  sqlScalaire,
+  sqlExec,
+  terminer,
+  validerLivreur,
+} from './outils.mjs';
 
 // Lyon : la boutique au centre, les livreurs à des distances croissantes.
 const BOUTIQUE = { latitude: 45.764, longitude: 4.8357 };
@@ -64,6 +76,10 @@ async function creerLivreur(prefixe, position, enLigne = true) {
   );
 
   const jeton = compte.accessToken;
+
+  // Un livreur s'inscrit en attente de validation : tant qu'il n'est pas
+  // validé, il ne peut pas se mettre en ligne et l'attribution l'ignore.
+  await validerLivreur(jeton, S);
 
   if (enLigne) {
     await patch('/api/drivers/availability', { isAvailable: true, isOnline: true }, jeton);

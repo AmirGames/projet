@@ -2,7 +2,7 @@
 // et la nouvelle liste des boutiques côté administration.
 // --- Plateforme : superowner + commerçant + boutique + commande livrable ---
 
-import { check, j, uniq, post, get, patch, sqlExec, terminer, API } from './outils.mjs';
+import { check, j, uniq, post, get, patch, sqlExec, terminer, API, validerLivreur } from './outils.mjs';
 
 const sup = await j(await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const superToken = sup.accessToken;
@@ -45,6 +45,9 @@ const profil = await j(await get('/api/drivers/me', dToken));
 check('profil livreur accessible', profil?.data?.email === `d-${uniq}@t.fr`, JSON.stringify(profil)?.slice(0, 150));
 
 console.log('\n[Disponibilité]');
+// La disponibilité est réservée aux livreurs validés : le dossier passe
+// d'abord devant la plateforme.
+await validerLivreur(dToken, superToken);
 const indispo = await patch('/api/drivers/availability', { isAvailable: false }, dToken);
 const indispoData = await j(indispo);
 check('passage en indisponible', indispo.status === 200 && indispoData?.isAvailable === false, JSON.stringify(indispoData));

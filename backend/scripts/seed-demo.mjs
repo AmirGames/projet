@@ -13,7 +13,7 @@
  * vierge. Remettre à zéro avec scripts/verification/reinitialiser.mjs.
  */
 
-import { j, post, patch, sqlExec, API } from "./verification/outils.mjs";
+import { j, post, patch, sqlExec, API, validerLivreur } from "./verification/outils.mjs";
 
 const attendu = (reponse, quoi) => {
   if (!reponse) throw new Error(`${quoi} : aucune réponse de ${API}`);
@@ -128,6 +128,10 @@ const livreur = await j(
   })
 );
 
+// Un livreur s'inscrit en attente : la plateforme examine son dossier avant
+// qu'il puisse prendre la moindre course.
+await validerLivreur(livreur.accessToken, plateforme.accessToken);
+
 const aLivrer = await j(
   await post("/api/orders", {
     storeId: gare,
@@ -156,7 +160,7 @@ console.log(`Jeu de démonstration en place sur ${API}
 
   super@demo.fr      plateforme
   marchand@demo.fr   commerçant — Boulangerie Centre, Boulangerie Gare
-  livreur@demo.fr    livreur — une course livrée
+  livreur@demo.fr    livreur — dossier validé, une course livrée
 
   Mot de passe : Password123!`);
 

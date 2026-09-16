@@ -136,3 +136,39 @@ export async function inscrire(prefixe) {
 export async function inscrirePlateforme() {
   return inscrire("plateforme");
 }
+
+/**
+ * Fait passer un livreur par la validation de la plateforme.
+ *
+ * Un livreur s'inscrit désormais en `PENDING` et ne reçoit aucune course tant
+ * que son dossier n'est pas validé. Les scripts qui vérifient autre chose —
+ * l'attribution, le suivi client — ont besoin d'un livreur en état de rouler :
+ * ils passent par ici plutôt que de forcer l'état en base, pour que le chemin
+ * réel reste celui qu'on emprunte.
+ */
+export async function validerLivreur(jetonLivreur, jetonPlateforme) {
+  const moi = await j(await get("/api/drivers/me", jetonLivreur));
+  const driverId = moi?.data?.id;
+
+  for (const type of moi?.data?.piecesAttendues || []) {
+    await post(
+      "/api/drivers/documents",
+      { type, documentUrl: `https://exemple.fr/${type}.pdf` },
+      jetonLivreur
+    );
+  }
+
+  const dossier = await j(await get("/api/drivers/documents", jetonLivreur));
+
+  for (const piece of dossier?.data?.documents || []) {
+    await patch(
+      `/api/superowner/drivers/${driverId}/documents/${piece.id}`,
+      { approuve: true },
+      jetonPlateforme
+    );
+  }
+
+  await post(`/api/superowner/drivers/${driverId}/approve`, {}, jetonPlateforme);
+
+  return driverId;
+}
