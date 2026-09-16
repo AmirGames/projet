@@ -10,7 +10,8 @@ emporter ou à livrer.
 
 > **État du projet.** Fonctionnel de bout en bout en local : on crée un compte,
 > une boutique, un menu, on commande sans compte, le commerçant suit sa commande
-> et un livreur la prend en charge. Le paiement en ligne reste incomplet (voir
+> et un livreur — une fois son dossier validé par la plateforme — la prend en
+> charge. Le paiement en ligne reste incomplet (voir
 > [Ce qui n'est pas terminé](#ce-qui-nest-pas-terminé)). Rien n'est encore
 > déployé.
 
@@ -40,7 +41,11 @@ emporter ou à livrer.
 - Support par tickets, avec fil de discussion
 
 ### Le livreur
-- Inscription et espace à lui
+- Inscription, puis **dossier examiné par la plateforme** : il dépose ses pièces
+  (identité, permis, assurance, carte grise — seule l'identité à vélo), suit leur
+  examen pièce par pièce, et lit le motif quand l'une est refusée
+- Tant que son dossier n'est pas validé, il ne peut pas se mettre en ligne et
+  aucune course ne lui est proposée
 - Passage en ligne, position transmise
 - Courses proposées automatiquement au livreur disponible le plus proche
 - Acceptation, refus, étapes de la course, rémunération calculée
@@ -50,6 +55,8 @@ emporter ou à livrer.
 - Formules d'abonnement réglables : nom, prix, quota de boutiques, **commission
   sur les ventes**, arguments de vente
 - Facturation : commission du mois par commerçant, avec son calcul détaillé
+- Livreurs : dossiers à traiter, examen des pièces une à une, validation,
+  suspension et rétablissement — chaque geste motivé et journalisé
 - Santé du système : cinq relevés chiffrés, et ce qu'il faut faire pour chacun
 - Journal des actions administratives et journal des accès
 - Sauvegardes, mode maintenance, clés d'API, webhooks
@@ -71,8 +78,8 @@ emporter ou à livrer.
 Un seul dépôt, deux applications :
 
 ```
-backend/    API REST — 37 routeurs, 39 services, 42 modèles Prisma
-frontend/   Next.js — 80 pages
+backend/    API REST — 37 routeurs, 40 services, 42 modèles Prisma
+frontend/   Next.js — 81 pages
 ```
 
 ## Démarrer
@@ -142,14 +149,14 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 936 contrôles, 30 suites
+# API : 974 contrôles, 30 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 344 contrôles, 15 suites
+# Navigateur : 408 contrôles, 16 suites
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
@@ -188,6 +195,10 @@ Par honnêteté, ce qui manque encore :
   sans tuiles cartographiques.
 - **Le stock par ingrédient** (une pizza consomme de la mozzarella). Aujourd'hui
   la disponibilité se bascule à la main, plat par plat.
+- **Les versements aux livreurs.** Leurs gains s'accumulent course après course,
+  mais rien ne les paie : ni période, ni relevé, ni trace de versement.
+- **La preuve de livraison.** Une course passe à « livrée » sur simple clic du
+  livreur : ni code remis au client, ni photo, ni signature.
 - **Prisma 5.22 → 7**, à faire une fois le reste stabilisé.
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.
