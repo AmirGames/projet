@@ -38,3 +38,6 @@ docker-compose.override.yml
 
 # Claude markdown files
 md claude/
+
+# Sauvegardes produites par les vérifications
+backend/backups/

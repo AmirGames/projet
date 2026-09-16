@@ -21,6 +21,7 @@ import {
   semainePrecedente,
 } from "../services/driver-payout.service";
 import { StoreSupportService, libelleDuChamp } from "../services/store-support.service";
+import { MerchantProfileService } from "../services/merchant-profile.service";
 import { SystemHealthService } from "../services/system-health.service";
 
 const LIBELLES_STATUT: Record<string, string> = {
@@ -312,7 +313,21 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
 
     const organisation = await db.organization.findUnique({
       where: { id: orgId },
-      select: { id: true, name: true, tier: true, stores: { select: { id: true, name: true } } },
+      select: {
+        id: true,
+        name: true,
+        tier: true,
+        // L'identité de facturation : une facture sans raison sociale, adresse
+        // ni numéro de TVA n'en est pas une.
+        legalName: true,
+        vatNumber: true,
+        registrationNumber: true,
+        billingAddress: true,
+        billingPostalCode: true,
+        billingCity: true,
+        billingCountry: true,
+        stores: { select: { id: true, name: true } },
+      },
     });
 
     if (!organisation) {
@@ -381,7 +396,24 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
     const chiffreAffaires = lignes.reduce((somme, ligne) => somme + ligne.total, 0);
 
     res.json({
-      organization: { id: organisation.id, name: organisation.name, tier: organisation.tier },
+      organization: {
+        id: organisation.id,
+        name: organisation.name,
+        tier: organisation.tier,
+        legalName: organisation.legalName,
+        vatNumber: organisation.vatNumber,
+        registrationNumber: organisation.registrationNumber,
+        billingAddress: organisation.billingAddress,
+        billingPostalCode: organisation.billingPostalCode,
+        billingCity: organisation.billingCity,
+        billingCountry: organisation.billingCountry,
+        // Ce qui empêcherait d'émettre la facture, dit avant de l'éditer.
+        manquePourFacturer: [
+          !organisation.legalName && "la raison sociale",
+          !organisation.billingAddress && "l'adresse de facturation",
+          !organisation.vatNumber && "le numéro de TVA",
+        ].filter(Boolean),
+      },
       period: moisDe(debutMois),
       commissionPercent: taux,
       tierLabel: formule.libelle,
@@ -1894,6 +1926,69 @@ router.post("/payouts/:payoutId/cancel", authMiddleware, isSuperOwner, async (re
     next(err);
   }
 });
+
+// ============================================================================
+// DOSSIER DU COMMERÇANT
+// ============================================================================
+
+/**
+ * Le dossier d'un commerçant : son identité de facturation et ses pièces.
+ *
+ * La plateforme lui facture une commission sans jamais avoir vu un
+ * justificatif. Ces routes lui permettent de statuer sur ce qu'il a déposé.
+ */
+
+// GET /superowner/organizations/:orgId/profile - Le dossier d'un commerçant
+router.get(
+  "/organizations/:orgId/profile",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      res.json({
+        success: true,
+        data: await MerchantProfileService.dossier(req.params.orgId as string),
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PATCH /superowner/organizations/:orgId/documents/:documentId - Statuer sur une pièce
+router.patch(
+  "/organizations/:orgId/documents/:documentId",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const schema = z.object({
+        approuve: z.boolean(),
+        note: z.string().max(500).optional(),
+      });
+      const body = schema.parse(req.body);
+
+      const piece = await MerchantProfileService.examinerPiece(
+        req.params.orgId as string,
+        req.params.documentId as string,
+        body
+      );
+
+      await db.systemAuditLog.create({
+        data: {
+          adminId: req.userId as string,
+          action: body.approuve ? "APPROVE_MERCHANT_DOCUMENT" : "REJECT_MERCHANT_DOCUMENT",
+          target: req.params.orgId as string,
+          changes: { type: piece.type, note: body.note } as any,
+        },
+      });
+
+      res.json({ success: true, document: piece });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 // ============================================================================
 // ADMINISTRATEURS

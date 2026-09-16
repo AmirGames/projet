@@ -97,12 +97,43 @@ model Organization {
   archiveBackupId     String?     // ID du backup MerchantArchive
   isArchivedPermanently Boolean   @default(false)
 
+  /// L'identité de facturation du commerce.
+  ///
+  /// La plateforme lui facture une commission et lui doit des versements, sans
+  /// rien savoir de lui : ni raison sociale, ni adresse de facturation, ni
+  /// numéro de TVA, ni compte où virer. Une facture sans ces mentions n'en est
+  /// pas une.
+  legalName           String?
+  vatNumber           String?
+  registrationNumber  String?     // SIRET en France, BCE en Belgique
+  billingAddress      String?
+  billingPostalCode   String?
+  billingCity         String?
+  billingCountry      String?     @default("France")
+
+  /// Le propriétaire du commerce, la personne physique derrière la société.
+  ownerFirstName      String?
+  ownerLastName       String?
+  ownerEmail          String?
+  ownerPhone          String?
+  ownerBirthDate      DateTime?
+
+  /// Le compte à créditer.
+  ///
+  /// L'IBAN n'est jamais rendu en entier : les écrans n'en montrent que les
+  /// quatre derniers caractères, assez pour reconnaître son compte, pas assez
+  /// pour s'en servir ailleurs.
+  iban                String?
+  bic                 String?
+  accountHolder       String?
+
   // Relations
   stores              Store[]
   memberships         Membership[]
   tickets             MerchantTicket[]
   commissionHistory   CommissionHistory[]
   archive             MerchantArchive?
+  documents           OrganizationDocument[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -110,6 +141,34 @@ model Organization {
   @@index([slug])
   @@index([status])
   @@index([closedUntil])
+}
+
+/// Une pièce justificative du commerçant : Kbis, statuts, pièce d'identité.
+///
+/// La plateforme n'avait aucun moyen de lui demander un justificatif, ni lui de
+/// le fournir : tout se serait échangé par courriel, hors du service.
+model OrganizationDocument {
+  id          String    @id @default(cuid())
+  orgId       String
+  type        String    // registration, identity, vat, bank, other
+  /// Le document lui-même. L'hébergement de fichiers n'étant pas branché, le
+  /// commerçant fournit un lien ; le jour où un stockage existera, c'est ce
+  /// champ qui le recevra.
+  documentUrl String
+  fileName    String?
+  expiryDate  DateTime?
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  /// Le motif d'un refus, que le commerçant doit pouvoir lire.
+  reviewNote  String?
+  reviewedAt  DateTime?
+
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([status])
 }
 
 enum MembershipRole {

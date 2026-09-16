@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { CreditCard } from 'lucide-react';
 
 interface BillingData {
@@ -39,7 +40,19 @@ interface LigneDetail {
 }
 
 interface DetailFacturation {
-  organization: { id: string; name: string; tier: string };
+  organization: {
+    id: string;
+    name: string;
+    tier: string;
+    legalName: string | null;
+    vatNumber: string | null;
+    registrationNumber: string | null;
+    billingAddress: string | null;
+    billingPostalCode: string | null;
+    billingCity: string | null;
+    billingCountry: string | null;
+    manquePourFacturer: string[];
+  };
   period: string;
   commissionPercent: number;
   tierLabel: string;
@@ -277,11 +290,39 @@ export default function BillingPage() {
         <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg overflow-hidden">
           <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-gray-700/50 px-6 py-4">
             <div>
-              <h2 className="text-lg font-bold text-white">{detail.organization.name}</h2>
+              <h2 className="text-lg font-bold text-white">
+                {detail.organization.legalName || detail.organization.name}
+              </h2>
+              {/* Les mentions de la facture : sans elles, le document n'en est
+                  pas une, et personne ne le voyait avant de l'éditer. */}
+              <p className="text-sm text-gray-400">
+                {[
+                  detail.organization.billingAddress,
+                  [detail.organization.billingPostalCode, detail.organization.billingCity]
+                    .filter(Boolean)
+                    .join(' '),
+                  detail.organization.billingCountry,
+                  detail.organization.vatNumber && `TVA ${detail.organization.vatNumber}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || 'Identité de facturation non renseignée'}
+              </p>
               <p className="text-sm text-gray-400">
                 {detail.period} — formule {detail.tierLabel}, {detail.commissionPercent} % de
                 commission sur les ventes
               </p>
+              {detail.organization.manquePourFacturer.length > 0 && (
+                <p role="status" className="text-sm text-amber-300 mt-1">
+                  Facture incomplète : il manque{' '}
+                  {detail.organization.manquePourFacturer.join(', ')}.{' '}
+                  <Link
+                    href={`/superowner/organizations/${detail.organization.id}`}
+                    className="underline hover:text-amber-200"
+                  >
+                    Voir son dossier
+                  </Link>
+                </p>
+              )}
             </div>
             <div className="text-right text-sm">
               <p className="text-gray-300">

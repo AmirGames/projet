@@ -99,6 +99,9 @@ scripts de vérification (voir §6).
 - Zones de livraison en anneaux : rayon, frais et minimum par zone
 - Codes promo, moyens de paiement, taxes, clientèle
 - Statistiques de vente, exports
+- **Son profil** : identité de facturation, propriétaire du commerce, numéro de
+  TVA, compte bancaire, justificatifs — avec ce qui manque encore pour être
+  facturé et pour être payé
 - Support par tickets avec fil de discussion
 
 ### Le livreur
@@ -120,6 +123,9 @@ scripts de vérification (voir §6).
 - Facturation : commission du mois par commerçant, avec le détail par commande
 - **Boutiques** : une fiche par commerce, avec la correction des seuls champs
   dont la plateforme répond (voir la règle ci-dessous)
+- **Dossier d'un commerçant** : son identité de facturation, reportée sur sa
+  facture du mois, et l'examen de ses justificatifs — un refus se motive, et le
+  commerçant en est prévenu
 - **Livreurs** : dossiers à traiter, examen des pièces, validation, suspension,
   rétablissement — chaque geste motivé et journalisé
 - **Versements** : ce qu'elle doit et à qui, arrêté des relevés d'une période,
@@ -188,6 +194,14 @@ livrée est due tant qu'aucun relevé ne la porte — et enfin **la preuve de la
 remise** : un code à quatre chiffres chez le client, une photo du dépôt en son
 absence.
 
+**Identité du commerçant**
+La plateforme lui prélevait une commission et lui devait des versements sans
+rien savoir de lui : ni raison sociale, ni adresse de facturation, ni numéro de
+TVA, ni compte où virer — et aucun écran ne le lui demandait. `/merchant/profil`
+réunit les quatre, avec ses justificatifs et l'examen que la plateforme en fait.
+La facture du mois porte enfin ces mentions, et dit ce qui lui manque encore.
+L'autocomplétion d'adresse, elle, connaît désormais la Belgique.
+
 **Comptes et sécurité**
 Récupération de mot de passe, confirmation d'adresse e-mail, suspension et
 fermeture de compte en direct, **cloisonnement des commerçants** (une boutique
@@ -228,8 +242,8 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 34 | **1129** |
-| **Navigateur** (`frontend/scripts/`) | 20 | **505** |
+| **API** (`backend/scripts/verification/`) | 35 | **1183** |
+| **Navigateur** (`frontend/scripts/`) | 21 | **538** |
 
 Tout est vert au dernier passage complet.
 
@@ -263,11 +277,17 @@ détaillent chaque suite et ses prérequis.
   `node scripts/verification/reinitialiser.mjs` avant.
 - **Jeu de démonstration** pour `verif:admin` et `verif:menu` :
   `node scripts/seed-demo.mjs`.
-- **Faux service d'adresses** pour `verif:invite` et tout ce qui géocode :
+- **Faux service d'adresses** pour `verif:invite` côté navigateur :
   `node backend/scripts/verification/faux-service-adresses.mjs &` puis
   `ADDRESS_API_URL=http://127.0.0.1:4599/ban/` côté API. **À arrêter avant la
   suite d'API** : `verif-adresses` ouvre son propre service sur le même port
   4599 et s'interrompt si celui-ci est occupé.
+- Côté API, **aucune suite ne dépend d'Internet** : celles qui situent une
+  adresse (`verif-boutique-situee`, `verif-fiche-boutique`) démarrent leur
+  propre serveur branché sur le faux fournisseur, via
+  `scripts/verification/api-geocodante.mjs`. Une vérification qui appelait le
+  vrai service échouait dès que le réseau manquait, et passait pour une
+  régression.
 - **Trois domaines renseignés** pour `verif:domaines`
   (`NEXT_PUBLIC_DOMAINE_PUBLIC`, `_PRO`, `_LIVREUR`), les mêmes des deux côtés.
 
@@ -342,10 +362,28 @@ Deux invariants à ne jamais casser :
   d'essais lui restent. Cinq essais ratés le bloquent, et la photo du dépôt
   devient la seule preuve possible.
 
+**Le profil du commerçant est en place** : il renseigne son identité de
+facturation, son propriétaire, son compte et ses pièces depuis
+`/merchant/profil` ; la plateforme les retrouve sur la fiche du commerçant et
+sur sa facture du mois.
+
+Un invariant de plus :
+
+- **L'IBAN n'est jamais rendu en entier.** Ni dans une réponse d'API — côté
+  commerçant comme côté plateforme —, ni dans un journal : les écrans n'en
+  montrent que les quatre derniers caractères. Le champ de saisie part vide, et
+  un enregistrement qui le laisse vide n'efface pas le compte enregistré.
+
 ### À faire ensuite
 
-Plus rien de la livraison. Le carnet qui reste est ci-dessous — le plus gros
-morceau étant le paiement en ligne, reporté volontairement.
+La **carte interactive** pour les zones de livraison, demandée : situer la
+boutique sur une carte et tracer un rayon en direct. À trancher avant de s'y
+mettre : une carte demande des tuiles d'un fournisseur extérieur, ce que le
+projet n'a jamais eu (le suivi de livraison dessine un plan schématique
+exprès).
+
+Le reste du carnet est ci-dessous — le plus gros morceau étant le paiement en
+ligne, reporté volontairement.
 
 ### Le reste du carnet
 

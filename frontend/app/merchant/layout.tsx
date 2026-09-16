@@ -3,7 +3,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { CreditCard, LayoutGrid, LogOut, Menu, MessageCircle, Plus, Store, X } from 'lucide-react';
+import {
+  CreditCard,
+  LayoutGrid,
+  LogOut,
+  Menu,
+  MessageCircle,
+  Plus,
+  Store,
+  UserCog,
+  X,
+} from 'lucide-react';
 
 import { memoriserBoutique } from '@/lib/current-store';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -45,7 +55,8 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
 
   // Seul le niveau du choix reçoit ce cadre : /merchant/:orgId/... a le sien,
   // et empiler les deux afficherait deux barres latérales.
-  const auNiveauDuChoix = pathname === '/merchant' || pathname === '/merchant/formule';
+  const auNiveauDuChoix =
+    pathname === '/merchant' || pathname === '/merchant/formule' || pathname === '/merchant/profil';
 
   const charger = useCallback(async () => {
     try {
@@ -176,6 +187,15 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
               {menuOuvert && <span className="truncate">Ma formule</span>}
             </Link>
 
+            <Link
+              href="/merchant/profil"
+              title={menuOuvert ? undefined : 'Mon profil'}
+              className={lienSecondaire}
+            >
+              <UserCog size={20} className="flex-shrink-0" />
+              {menuOuvert && <span className="truncate">Mon profil</span>}
+            </Link>
+
             {orgId && (
               <Link
                 href={`/merchant/${orgId}/support`}
@@ -213,7 +233,9 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             <div className="text-sm text-gray-400">
               {pathname === '/merchant/formule'
                 ? 'Votre formule et la grille tarifaire'
-                : 'Choisissez le commerce à gérer'}
+                : pathname === '/merchant/profil'
+                  ? 'Vos informations de facturation et votre compte'
+                  : 'Choisissez le commerce à gérer'}
             </div>
             {/* Une réponse du support arrive souvent pendant qu'on choisit sa
                 boutique : la cloche manquait à ce niveau-là. */}

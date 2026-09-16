@@ -10,7 +10,9 @@ import {
   patch,
   terminer,
   sqlScalaire,
+  sqlExec,
 } from './outils.mjs';
+import { ouvrirApiGeocodante } from './api-geocodante.mjs';
 
 const MDP = 'Password123!';
 
@@ -177,7 +179,16 @@ check('réécrire la même valeur aussi', identique.status === 400, `statut ${id
 titre('Corriger l’adresse situe la boutique');
 // Corriger l'adresse en laissant les anciennes coordonnées serait le pire des
 // deux mondes : la bonne adresse à l'écran, les livreurs à l'ancienne.
-const adresse = await patch(
+//
+// Situer une adresse appelle un fournisseur qui est sur Internet : cette
+// correction-là passe donc par une API branchée sur le faux service, faute de
+// quoi la vérification dépendrait du réseau plutôt que de la plateforme.
+const geo = await ouvrirApiGeocodante();
+
+// Une position volontairement fausse, pour voir le géocodage la corriger.
+await sqlExec(`UPDATE "Store" SET latitude = 10, longitude = 10 WHERE id = '${storeId}'`);
+
+const adresse = await geo.patch(
   `/api/superowner/stores/${storeId}`,
   { address: '20 Rue de la République', city: 'Lyon', postalCode: '69002' },
   TP
@@ -189,6 +200,8 @@ check('la boutique est située d’office', lu?.situeeAutomatiquement === true, 
 
 const latitude = await sqlScalaire(`SELECT latitude FROM "Store" WHERE id = '${storeId}'`);
 check('les coordonnées ont suivi', latitude.startsWith('45.7'), latitude);
+
+await geo.fermer();
 
 titre('Des coordonnées données à la main sont respectées');
 const aLaMain = await patch(

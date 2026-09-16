@@ -1,8 +1,24 @@
 // Une boutique naît située : sans coordonnées, personne ne la livre.
+//
+// La suite lance sa propre API branchée sur le faux service d'adresses : le
+// fournisseur réel est sur Internet, et la vérification porte sur ce que fait
+// la plateforme d'une adresse, pas sur la disponibilité d'un tiers.
 
-import { titre, check, j, uniq, post, get, terminer, sqlScalaire } from './outils.mjs';
+import { titre, check, uniq, terminer, sqlScalaire } from './outils.mjs';
+import { ouvrirApiGeocodante } from './api-geocodante.mjs';
 
 const MDP = 'Password123!';
+
+const api = await ouvrirApiGeocodante();
+const { post, get } = api;
+
+const j = async (reponse) => {
+  try {
+    return await reponse.json();
+  } catch {
+    return null;
+  }
+};
 
 const plateforme = await j(
   await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
@@ -113,35 +129,39 @@ const precise = await j(
 const preciseId = precise.store?.id || precise.id;
 
 const latitudePrecise = await sqlScalaire(`SELECT latitude FROM "Store" WHERE id = '${preciseId}'`);
-check(
-  'le géocodage ne les écrase pas',
-  latitudePrecise.startsWith('48.85'),
-  latitudePrecise
-);
+check('le géocodage ne les écrase pas', latitudePrecise.startsWith('48.85'), latitudePrecise);
 
 // ===== Une adresse introuvable ne bloque pas =====
 
 titre('Une adresse qu’on ne sait pas situer n’empêche pas d’ouvrir');
 // Un service d'adresses en panne ne doit pas empêcher d'ouvrir un commerce :
 // la fiche de la plateforme le signalera.
+api.adresses.tomberEnPanne();
+
 const tiers = await j(
   await post('/api/auth/signup', { email: `t-${uniq}@t.fr`, password: MDP, name: `T ${uniq}` })
 );
 
-const sansAdresse = await post(
+const enPanne = await post(
   '/api/stores',
   {
     orgId: tiers.organization.id,
     name: `Sans adresse ${uniq}`,
     slug: `sans-adresse-${uniq}`,
+    address: '3 rue Inconnue',
+    city: 'Nulle Part',
+    postalCode: '00000',
     phone: '0400000002',
   },
   tiers.accessToken
 );
-check('la création passe quand même', sansAdresse.status === 201, `statut ${sansAdresse.status}`);
+check('la création passe quand même', enPanne.status === 201, `statut ${enPanne.status}`);
 
-const sansId = (await j(sansAdresse))?.store?.id;
+const sansId = (await j(enPanne))?.store?.id;
 const ficheSans = await j(await get(`/api/superowner/stores/${sansId}`, TP));
 check('et la plateforme la signale', ficheSans?.store?.situee === false, `${ficheSans?.store?.situee}`);
 
+api.adresses.tomberEnPanne(false);
+
+await api.fermer();
 await terminer();

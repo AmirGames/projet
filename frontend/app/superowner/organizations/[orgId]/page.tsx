@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
+import { DossierCommercant } from '@/components/DossierCommercant';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface MerchantDetail {
@@ -304,6 +306,10 @@ export default function MerchantDetailPage() {
           )}
         </div>
       )}
+
+      {/* Le dossier : ce que la plateforme sait du commerçant, et les pièces
+          qu'il a déposées — sans quoi elles resteraient en attente à jamais. */}
+      <DossierCommercant orgId={merchantId} />
 
       {/* Quick Actions */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">

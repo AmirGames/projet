@@ -42,6 +42,7 @@ import notificationsApiRouter from "./routes/notifications-api";
 import paymentMethodsApiRouter from "./routes/payment-methods-api";
 import supportRouter from "./routes/support";
 import plansRouter from "./routes/plans";
+import merchantProfileRouter from "./routes/merchant-profile";
 import variantRouter from "./routes/variant";
 import addressRouter from "./routes/address";
 
@@ -144,6 +145,7 @@ export function createApp(): Express {
   app.use("/api/payment-methods", paymentMethodsApiRouter);
   app.use("/api/support", supportRouter);
   app.use("/api/plans", plansRouter);
+  app.use("/api/merchant-profile", merchantProfileRouter);
   app.use("/api/addresses", addressRouter);
 
   // ===== Error handling (must be last) =====

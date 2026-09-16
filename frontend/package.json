@@ -27,7 +27,8 @@
     "verif:versements": "node scripts/verif-versements-livreurs.mjs",
     "verif:preuve": "node scripts/verif-preuve-livraison.mjs",
     "verif:vitrine": "node scripts/verif-vitrine-unique.mjs",
-    "verif:fiche": "node scripts/verif-fiche-boutique.mjs"
+    "verif:fiche": "node scripts/verif-fiche-boutique.mjs",
+    "verif:profil": "node scripts/verif-profil-commercant.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",

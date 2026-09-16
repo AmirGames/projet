@@ -25,6 +25,7 @@ const OUTILLAGE = [
   "reinitialiser.mjs",
   "boite-aux-lettres.mjs",
   "faux-service-adresses.mjs",
+  "api-geocodante.mjs",
 ];
 
 const scripts = readdirSync(ICI)

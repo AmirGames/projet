@@ -73,6 +73,7 @@ continue.
 | `tout.mjs` | Enchaîne les suites et rend un bilan unique |
 | `boite-aux-lettres.mjs` | Serveur SMTP minimal, pour lire les courriels envoyés |
 | `faux-service-adresses.mjs` | Faux fournisseur d'adresses, aux deux formats |
+| `api-geocodante.mjs` | Une API branchée sur ce faux fournisseur, pour les suites qui situent une adresse |
 | `audit-commercant.mjs` | Chaque fonctionnalité de l'espace commerçant |
 | `audit-superowner.mjs` | Chaque fonctionnalité de l'espace superowner, et ses effets réels |
 | `verif-admin-final.mjs` | Journal d'accès, annonces, tickets, notifications |
@@ -102,6 +103,9 @@ continue.
 | `verif-ticket-paiement.mjs` | Catégorie et déclinaison sur le ticket, code promo, moyens de paiement |
 | `verif-superowner-suite.mjs` | Tickets archivés, détail d'une facturation, bornes de commande, durée des accès |
 | `verif-temps-reel.mjs` | Notifications poussées en direct |
+| `verif-boutique-situee.mjs` | Une boutique naît située, et l'adresse introuvable ne bloque pas |
+| `verif-fiche-boutique.mjs` | Fiche d'une boutique, et les seuls champs que la plateforme corrige |
+| `verif-profil-commercant.mjs` | Profil du commerçant : facturation, propriétaire, IBAN masqué, pièces |
 
 ## Ajouter une vérification
 

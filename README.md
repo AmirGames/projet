@@ -42,6 +42,9 @@ emporter ou à livrer.
   minimum par zone
 - Codes promo, moyens de paiement proposés, taxes, clientèle
 - Statistiques de vente, exports
+- **Son profil** : identité de facturation, propriétaire du commerce, numéro de
+  TVA, compte bancaire et justificatifs — la page dit ce qui manque encore pour
+  être facturé et pour être payé. L'IBAN n'est jamais réaffiché en entier
 - Support par tickets, avec fil de discussion
 
 ### Le livreur
@@ -66,6 +69,9 @@ emporter ou à livrer.
 - Boutiques : une fiche par commerce, et la correction des seuls champs dont
   la plateforme répond — adresse et coordonnées, adresse publique, contact. Le
   catalogue, les prix et les horaires restent au commerçant
+- Commerçants, leur dossier : identité de facturation reportée sur la facture du
+  mois, et examen de leurs justificatifs — un refus se motive, et le commerçant
+  en est prévenu
 - Livreurs : dossiers à traiter, examen des pièces une à une, validation,
   suspension et rétablissement — chaque geste motivé et journalisé
 - Versements : ce qu'elle doit et à qui, arrêté des relevés d'une période,
@@ -91,8 +97,8 @@ emporter ou à livrer.
 Un seul dépôt, deux applications :
 
 ```
-backend/    API REST — 37 routeurs, 43 services, 43 modèles Prisma
-frontend/   Next.js — 82 pages
+backend/    API REST — 38 routeurs, 44 services, 44 modèles Prisma
+frontend/   Next.js — 83 pages
 ```
 
 ## Démarrer
@@ -162,14 +168,14 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1129 contrôles, 34 suites
+# API : 1183 contrôles, 35 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 505 contrôles, 20 suites
+# Navigateur : 538 contrôles, 21 suites
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
