@@ -133,14 +133,20 @@ export default function BoutiquesAdminPage() {
                 {boutiques.map((boutique) => (
                   <tr key={boutique.id} className="hover:bg-gray-700/30 transition-colors">
                     <td className="px-6 py-4">
-                      <p className="font-semibold">{boutique.name}</p>
+                      {/* La liste ne menait nulle part : ni fiche, ni détail. */}
+                      <Link
+                        href={`/superowner/stores/${boutique.id}`}
+                        className="font-semibold text-white hover:text-blue-300 hover:underline"
+                      >
+                        {boutique.name}
+                      </Link>
                       <p className="text-xs text-gray-500">
                         {boutique.city || 'Ville non renseignée'}
                       </p>
                     </td>
                     <td className="px-6 py-4">
                       <Link
-                        href={`/admin/merchants`}
+                        href="/superowner/organizations"
                         className="text-blue-400 hover:text-blue-300"
                       >
                         {boutique.organization?.name || '—'}

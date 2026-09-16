@@ -3,8 +3,7 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : nettoyage des vitrines en doublon. Le plan de livraison
-en trois temps est terminé.
+Dernière mise à jour : fiche boutique côté plateforme.
 
 ---
 
@@ -66,8 +65,8 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Paiement** | Stripe — intention de paiement seulement |
 
 ```
-backend/    API REST — 37 routeurs, 42 services, 43 modèles Prisma
-frontend/   Next.js — 81 pages
+backend/    API REST — 37 routeurs, 43 services, 43 modèles Prisma
+frontend/   Next.js — 82 pages
 ```
 
 **Le premier compte inscrit devient la plateforme** (superowner). Tous les
@@ -119,6 +118,8 @@ scripts de vérification (voir §6).
 - Formules réglables : nom, prix, quota de boutiques, **commission sur les
   ventes**, arguments de vente
 - Facturation : commission du mois par commerçant, avec le détail par commande
+- **Boutiques** : une fiche par commerce, avec la correction des seuls champs
+  dont la plateforme répond (voir la règle ci-dessous)
 - **Livreurs** : dossiers à traiter, examen des pièces, validation, suspension,
   rétablissement — chaque geste motivé et journalisé
 - **Versements** : ce qu'elle doit et à qui, arrêté des relevés d'une période,
@@ -227,8 +228,8 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 32 | **1069** |
-| **Navigateur** (`frontend/scripts/`) | 19 | **483** |
+| **API** (`backend/scripts/verification/`) | 33 | **1110** |
+| **Navigateur** (`frontend/scripts/`) | 20 | **505** |
 
 Tout est vert au dernier passage complet.
 
@@ -330,6 +331,12 @@ Deux invariants à ne jamais casser :
   `OrderDelivery.payoutId` interdit qu'une course soit payée deux fois : un
   arrêté ne prend que les courses qui n'en ont pas, et l'annulation d'un relevé
   non versé les relâche.
+- **La plateforme ne corrige d'une boutique que l'adresse et ses coordonnées,
+  l'adresse publique, le téléphone et l'e-mail.** Le nom, le catalogue, les
+  prix et les horaires appartiennent au commerçant : c'est lui qui répond de ce
+  que paie un client. Tout autre champ est refusé explicitement, chaque
+  correction part au journal avec son avant et son après, et le commerçant est
+  prévenu.
 - **Le code de remise appartient au client, jamais au livreur.** Aucune route
   côté livreur ne le rend ; il sait seulement qu'un code est attendu et combien
   d'essais lui restent. Cinq essais ratés le bloquent, et la photo du dépôt

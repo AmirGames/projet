@@ -50,6 +50,7 @@ VERIF_SITE_URL=http://localhost:3000 npm run verif:livreurs     # validation des
 VERIF_SITE_URL=http://localhost:3000 npm run verif:versements   # relevés et versements aux livreurs
 VERIF_SITE_URL=http://localhost:3000 npm run verif:preuve       # code de remise et photo du dépôt
 VERIF_SITE_URL=http://localhost:3000 npm run verif:vitrine      # une seule vitrine, anciennes adresses redirigées
+VERIF_SITE_URL=http://localhost:3000 npm run verif:fiche        # fiche boutique et corrections de la plateforme
 ```
 
 Cinq scripts — `verif:courses`, `verif:suivi`, `verif:livreurs`,
@@ -111,6 +112,7 @@ pour le lancer.
 | `verif-versements-livreurs.mjs` | Ce qui est dû, l'arrêté d'un relevé, le versement |
 | `verif-preuve-livraison.mjs` | Code de remise côté client, saisie et photo côté livreur |
 | `verif-vitrine-unique.mjs` | Une seule vitrine, et les anciennes adresses qui y mènent |
+| `verif-fiche-boutique.mjs` | Fiche d'une boutique, et les seuls champs que la plateforme corrige |
 
 Le parcours mot de passe ouvre un serveur SMTP minimal sur le port 1025 pour
 lire le message envoyé : le jeton n'existe en clair que dans ce lien, la base

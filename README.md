@@ -63,6 +63,9 @@ emporter ou à livrer.
 - Formules d'abonnement réglables : nom, prix, quota de boutiques, **commission
   sur les ventes**, arguments de vente
 - Facturation : commission du mois par commerçant, avec son calcul détaillé
+- Boutiques : une fiche par commerce, et la correction des seuls champs dont
+  la plateforme répond — adresse et coordonnées, adresse publique, contact. Le
+  catalogue, les prix et les horaires restent au commerçant
 - Livreurs : dossiers à traiter, examen des pièces une à une, validation,
   suspension et rétablissement — chaque geste motivé et journalisé
 - Versements : ce qu'elle doit et à qui, arrêté des relevés d'une période,
@@ -88,8 +91,8 @@ emporter ou à livrer.
 Un seul dépôt, deux applications :
 
 ```
-backend/    API REST — 37 routeurs, 42 services, 43 modèles Prisma
-frontend/   Next.js — 81 pages
+backend/    API REST — 37 routeurs, 43 services, 43 modèles Prisma
+frontend/   Next.js — 82 pages
 ```
 
 ## Démarrer
@@ -159,14 +162,14 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1069 contrôles, 32 suites
+# API : 1110 contrôles, 33 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 483 contrôles, 19 suites
+# Navigateur : 505 contrôles, 20 suites
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
