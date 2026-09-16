@@ -46,6 +46,8 @@ interface Piece {
 interface Profil {
   id: string;
   name: string;
+  status: string;
+  suspensionReason: string | null;
   legalName: string | null;
   vatNumber: string | null;
   registrationNumber: string | null;
@@ -292,6 +294,27 @@ export default function ProfilCommercantPage() {
           Ce qui figure sur vos factures, et le compte sur lequel vous êtes payé.
         </p>
       </div>
+
+      {/* Une suspension tient le plus souvent à ce qui manque ici. Le dire, et
+          laisser la page utilisable, est toute la différence entre une
+          consigne et une impasse. */}
+      {profil.status === 'SUSPENDED' && (
+        <div
+          role="status"
+          className="rounded-lg border border-red-700/50 bg-red-900/20 px-4 py-3 text-red-200 text-sm space-y-1"
+        >
+          <p className="font-semibold">Votre compte est suspendu</p>
+          {profil.suspensionReason && <p>Motif : {profil.suspensionReason}</p>}
+          <p>
+            Votre espace est fermé, mais ce dossier reste ouvert : complétez ce qui manque
+            ci-dessous, puis{' '}
+            <Link href={`/merchant/${orgId}/support`} className="underline hover:text-red-100">
+              prévenez le support
+            </Link>
+            . C&apos;est la plateforme qui lève la suspension.
+          </p>
+        </div>
+      )}
 
       {/* Ce qui manque se découvrait le jour où la facture était fausse, ou le
           virement impossible. */}

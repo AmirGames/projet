@@ -45,7 +45,8 @@ emporter ou à livrer.
 - Statistiques de vente, exports
 - **Son profil** : identité de facturation, propriétaire du commerce, numéro de
   TVA, compte bancaire et justificatifs — la page dit ce qui manque encore pour
-  être facturé et pour être payé. L'IBAN n'est jamais réaffiché en entier
+  être facturé et pour être payé. L'IBAN n'est jamais réaffiché en entier. Un
+  compte suspendu y garde accès : c'est là qu'il complète ce qu'on lui reproche
 - Support par tickets, avec fil de discussion
 
 ### Le livreur
@@ -170,14 +171,14 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1183 contrôles, 35 suites
+# API : 1190 contrôles, 35 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 564 contrôles, 22 suites
+# Navigateur : 570 contrôles, 22 suites
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite

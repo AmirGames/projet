@@ -204,6 +204,44 @@ check(
   'bloquée à tort'
 );
 
+// ===== Le dossier reste ouvert =====
+
+titre('Un suspendu garde la main sur son dossier');
+/**
+ * Une suspension tient le plus souvent à ce qui manque : un justificatif, un
+ * numéro de TVA, une coordonnée bancaire. Fermer au suspendu la page où il
+ * complète tout cela faisait de la suspension une impasse — le support lui
+ * disait quoi faire, et il n'avait nulle part où le faire.
+ */
+const dossier = await get(`/api/merchant-profile/${ORG}`, T);
+check('il lit son profil', dossier.status === 200, `statut ${dossier.status}`);
+
+const complete = await put(
+  `/api/merchant-profile/${ORG}`,
+  { legalName: `Regularise ${uniq}`, vatNumber: 'FR12345678901' },
+  T
+);
+check('il complète ce qui manque', complete.status === 200, `statut ${complete.status}`);
+
+const raisonSociale = await sqlScalaire(`SELECT "legalName" FROM "Organization" WHERE id = '${ORG}'`);
+check('et la correction est bien enregistrée', raisonSociale === `Regularise ${uniq}`, raisonSociale);
+
+const piece = await post(
+  `/api/merchant-profile/${ORG}/documents`,
+  { type: 'registration', documentUrl: 'https://exemple.fr/kbis.pdf' },
+  T
+);
+check('il dépose la pièce demandée', piece.status === 201, `statut ${piece.status}`);
+
+const deposees = await sqlScalaire(
+  `SELECT COUNT(*) FROM "OrganizationDocument" WHERE "orgId" = '${ORG}'`
+);
+check('elle arrive au dossier', deposees === '1', deposees);
+
+// La porte est étroite : elle ne rouvre pas le commerce.
+const catalogue = await put(`/api/products/${productId}`, { name: `Contournement ${uniq}` }, T);
+check('le catalogue reste fermé', catalogue.status === 403, `statut ${catalogue.status}`);
+
 // ===== Réactivation =====
 
 titre('Réactivation');
@@ -236,6 +274,10 @@ const apresFermeture = await jouerLeTravail();
 const echappees = apresFermeture.filter(([, , code]) => code !== 'ACCOUNT_CLOSED');
 
 check('tout est bloqué là aussi', echappees.length === 0, JSON.stringify(echappees));
+
+// Un compte fermé n'a plus de dossier à tenir : la porte se referme aussi.
+const dossierFerme = await get(`/api/merchant-profile/${ORG}`, T);
+check('le dossier se referme à la fermeture', dossierFerme.status === 403, `statut ${dossierFerme.status}`);
 
 const refusFerme = await j(await get(`/api/orders?storeId=${storeId}`, T));
 check('le refus parle de fermeture', /fermé/i.test(refusFerme?.error || ''), refusFerme?.error);

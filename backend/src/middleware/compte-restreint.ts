@@ -30,6 +30,21 @@ const CHEMINS_OUVERTS = [
 ];
 
 /**
+ * Ce qu'un compte **suspendu** garde en plus : son dossier.
+ *
+ * Une suspension tient le plus souvent à ce qui manque — un justificatif, un
+ * numéro de TVA, une coordonnée bancaire. Fermer au suspendu la page où il
+ * complète tout cela fait de la suspension une impasse : le support lui dit
+ * quoi faire, et il n'a nulle part où le faire. Il envoyait alors ses pièces
+ * par courriel, hors du service, et personne ne les retrouvait.
+ *
+ * Rien de commercial ne passe par là : ni catalogue, ni prix, ni commandes.
+ * Un compte **fermé**, lui, n'a plus de dossier à tenir : la porte reste
+ * close.
+ */
+const CHEMINS_OUVERTS_SI_SUSPENDU = ["/api/merchant-profile"];
+
+/**
  * Espaces qui ne dépendent pas d'un compte commerçant.
  *
  * La plateforme doit pouvoir lever une suspension qu'elle vient de poser, et
@@ -137,6 +152,13 @@ export async function compteRestreint(req: Request, res: Response, next: NextFun
   const refus = MESSAGES[statut];
 
   if (!refus) return next();
+
+  if (
+    statut === "SUSPENDED" &&
+    CHEMINS_OUVERTS_SI_SUSPENDU.some((chemin) => req.path.startsWith(chemin))
+  ) {
+    return next();
+  }
 
   return res.status(403).json({
     error: refus.message,

@@ -252,6 +252,47 @@ await page.waitForTimeout(2500);
 const motifLu = await texte();
 check('le motif lui est montré', /Document illisible/.test(motifLu), motifLu.slice(-1800));
 
+titre('Suspendu, il peut encore compléter son dossier');
+/**
+ * Une suspension tient le plus souvent à ce qui manque ici. Lui fermer cette
+ * page faisait de la suspension une impasse : le support lui disait quoi
+ * faire, et il n'avait nulle part où le faire.
+ */
+await appeler(`/api/superowner/organizations/${orgId}/suspend`, {
+  method: 'POST',
+  jeton: TP,
+  corps: { reason: `Dossier incomplet ${uniq}` },
+});
+
+await page.reload();
+await page.waitForTimeout(3000);
+
+const suspendu = await texte();
+check('la page reste ouverte', /Identité de facturation/.test(suspendu), suspendu.slice(0, 900));
+check('la suspension est annoncée', /compte est suspendu/i.test(suspendu), suspendu.slice(0, 900));
+check('avec son motif', suspendu.includes(`Dossier incomplet ${uniq}`), suspendu.slice(0, 1200));
+check('et le support est à portée de lien', /prévenez le support/i.test(suspendu), suspendu.slice(0, 1200));
+
+await page.selectOption('#piece-type', 'vat');
+await page.fill('#piece-lien', 'https://exemple.fr/tva.pdf');
+await page.click('button:has-text("Déposer la pièce")');
+await page.waitForTimeout(3000);
+
+const dossierSuspendu = await appeler(`/api/merchant-profile/${orgId}`, { jeton: T });
+check(
+  'la pièce déposée arrive bien au dossier',
+  (dossierSuspendu.donnees?.data?.documents || []).some((d) => d.type === 'vat'),
+  JSON.stringify(dossierSuspendu.donnees?.data?.documents?.map((d) => d.type))
+);
+
+// La porte est étroite : elle ne rouvre pas le commerce.
+const commerce = await appeler('/api/stores', {
+  method: 'POST',
+  jeton: T,
+  corps: { orgId, name: `Contournement ${uniq}`, slug: `contournement-${uniq}`, phone: '0400000000' },
+});
+check('le reste de l’espace reste fermé', commerce.statut === 403, `statut ${commerce.statut}`);
+
 titre('Rien n’a cassé en chemin');
 check('aucune erreur JavaScript', erreurs.length === 0, erreurs.join(' | '));
 

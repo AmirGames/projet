@@ -243,8 +243,8 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 35 | **1183** |
-| **Navigateur** (`frontend/scripts/`) | 22 | **564** |
+| **API** (`backend/scripts/verification/`) | 35 | **1190** |
+| **Navigateur** (`frontend/scripts/`) | 22 | **570** |
 
 Tout est vert au dernier passage complet.
 
@@ -370,6 +370,12 @@ sur sa facture du mois.
 
 Un invariant de plus :
 
+- **Un compte suspendu garde son dossier.** `/api/merchant-profile` est la
+  seule route commerçante ouverte à un compte suspendu, en plus du support et
+  des notifications : une suspension tient presque toujours à ce qui manque là
+  — un justificatif, un numéro de TVA, un IBAN —, et fermer cette page ferait de
+  la suspension une impasse. Un compte **fermé**, lui, n'a plus de dossier à
+  tenir : la porte se referme.
 - **L'IBAN n'est jamais rendu en entier.** Ni dans une réponse d'API — côté
   commerçant comme côté plateforme —, ni dans un journal : les écrans n'en
   montrent que les quatre derniers caractères. Le champ de saisie part vide, et
