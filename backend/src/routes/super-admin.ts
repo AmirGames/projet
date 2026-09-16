@@ -8,6 +8,22 @@ import { MerchantClosureService } from "../services/merchant-closure.service";
 
 const router = Router();
 
+/**
+ * Ce routeur ne sert plus à aucune page.
+ *
+ * Il date des trois espaces d'administration séparés, avant leur fusion sous
+ * `/superowner`. Le site n'appelle plus une seule de ses routes : ce qu'il
+ * faisait vit désormais dans `/api/superowner` et `/api/admin`.
+ *
+ * Treize routes qui rendaient des données inventées — journaux d'audit avec la
+ * même adresse IP pour tout le monde, tickets nommés « log_001 », réglages qui
+ * n'étaient jamais enregistrés — ont été retirées : un écran branché dessus
+ * aurait affiché une administration qui fonctionne sans rien administrer.
+ *
+ * Ce qui reste interroge réellement la base et sert encore aux vérifications.
+ * À retirer le jour où plus rien ne le cite.
+ */
+
 // Middleware to check if user is system admin
 // Idem : `authMiddleware` a déjà établi que le compte existe.
 const isSystemAdmin = (req: Request, _res: Response, next: NextFunction) => {
@@ -139,213 +155,23 @@ router.post("/merchants/:merchantId/suspend", authMiddleware, isSystemAdmin, asy
 // SUPPORT / TICKETS
 // ============================================================================
 
-// GET /super-admin/tickets - List support tickets
-router.get("/tickets", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const statusQuery = req.query.status;
-    const status = typeof statusQuery === "string" ? statusQuery : "OPEN";
-    const pageQuery = req.query.page;
-    const page = typeof pageQuery === "string" ? parseInt(pageQuery) : 1;
-    const limitQuery = req.query.limit;
-    const limit = typeof limitQuery === "string" ? parseInt(limitQuery) : 10;
 
-    const tickets = [
-      {
-        id: "ticket_001",
-        subject: "Problème avec intégration API",
-        priority: "HIGH",
-        status,
-        merchant: "ACME Corp",
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        description: "L'API retourne une erreur 500",
-      },
-      {
-        id: "ticket_002",
-        subject: "Question sur les frais de commission",
-        priority: "MEDIUM",
-        status: "PENDING",
-        merchant: "TechStore",
-        createdAt: new Date(Date.now() - 7200000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        description: "Clarification sur la structure des frais",
-      },
-      {
-        id: "ticket_003",
-        subject: "Demande d'accès administrateur",
-        priority: "LOW",
-        status: "RESOLVED",
-        merchant: "ShopMaster",
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        description: "Nouveau gestionnaire nécessite l'accès",
-      },
-    ];
 
-    const filteredTickets = tickets.filter(t => t.status === status || status === "ALL");
 
-    res.json({
-      tickets: filteredTickets.slice((page - 1) * limit, page * limit),
-      pagination: {
-        page,
-        limit,
-        total: filteredTickets.length,
-        pages: Math.ceil(filteredTickets.length / limit),
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// POST /super-admin/tickets/:ticketId/resolve - Resolve a ticket
-router.post("/tickets/:ticketId/resolve", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const schema = z.object({
-      resolution: z.string().min(1).max(1000),
-    });
-
-    const body = schema.parse(req.body);
-
-    res.json({
-      success: true,
-      message: "Ticket résolu avec succès",
-      resolution: body.resolution,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
 
 // ============================================================================
 // ANALYTICS
 // ============================================================================
 
-// GET /super-admin/analytics - Analytics and metrics
-router.get("/analytics", authMiddleware, isSystemAdmin, async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const analytics = {
-      revenue: {
-        total: 250000,
-        monthly: 42000,
-        growth: 15.5,
-      },
-      users: {
-        total: 1250,
-        active: 892,
-        new: 45,
-        churn: 3.2,
-      },
-      orders: {
-        total: 5432,
-        average: 46,
-        conversionRate: 8.5,
-      },
-      merchants: {
-        total: 89,
-        active: 78,
-        suspended: 2,
-        topMerchant: "ACME Corp",
-      },
-      timeSeriesData: [
-        { date: "2024-01-01", revenue: 8000, orders: 120 },
-        { date: "2024-01-02", revenue: 9200, orders: 145 },
-        { date: "2024-01-03", revenue: 8900, orders: 135 },
-        { date: "2024-01-04", revenue: 10500, orders: 165 },
-        { date: "2024-01-05", revenue: 12000, orders: 180 },
-      ],
-    };
 
-    res.json({ analytics });
-  } catch (err) {
-    next(err);
-  }
-});
 
 // ============================================================================
 // COMMISSIONS
 // ============================================================================
 
-// GET /super-admin/commissions - Commission tracking
-router.get("/commissions", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const status = (req.query.status as string) || "ALL";
 
-    const commissions = [
-      {
-        id: "comm_001",
-        period: "2024-01",
-        merchant: "ACME Corp",
-        merchantId: "org_1",
-        totalRevenue: 45000,
-        commissionRate: 5,
-        commissionAmount: 2250,
-        status: "PAID",
-        paidDate: "2024-02-05",
-      },
-      {
-        id: "comm_002",
-        period: "2024-01",
-        merchant: "TechStore",
-        merchantId: "org_2",
-        totalRevenue: 32000,
-        commissionRate: 5,
-        commissionAmount: 1600,
-        status: "PENDING",
-        dueDate: "2024-02-05",
-      },
-      {
-        id: "comm_003",
-        period: "2024-01",
-        merchant: "ShopMaster",
-        merchantId: "org_3",
-        totalRevenue: 28000,
-        commissionRate: 5,
-        commissionAmount: 1400,
-        status: "PROCESSING",
-        estimatedDate: "2024-02-03",
-      },
-    ];
 
-    const filtered = commissions.filter(c =>
-      (status === "ALL" || c.status === status)
-    );
 
-    res.json({
-      commissions: filtered,
-      summary: {
-        totalAmount: filtered.reduce((sum, c) => sum + c.commissionAmount, 0),
-        paid: filtered.filter(c => c.status === "PAID").length,
-        pending: filtered.filter(c => c.status === "PENDING").length,
-        processing: filtered.filter(c => c.status === "PROCESSING").length,
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// POST /super-admin/commissions/:commissionId/pay - Mark commission as paid
-router.post("/commissions/:commissionId/pay", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const schema = z.object({
-      paymentMethod: z.enum(["BANK_TRANSFER", "CHECK", "WIRE"]),
-      reference: z.string().min(1).max(100),
-    });
-
-    const body = schema.parse(req.body);
-
-    res.json({
-      success: true,
-      message: "Commission payée avec succès",
-      paymentMethod: body.paymentMethod,
-      reference: body.reference,
-      paidAt: new Date().toISOString(),
-    });
-  } catch (err) {
-    next(err);
-  }
-});
 
 // ============================================================================
 // USER MANAGEMENT
@@ -542,91 +368,9 @@ router.post("/admins/:adminId/remove", authMiddleware, isSystemAdmin, async (req
 // AUDIT LOGS
 // ============================================================================
 
-// GET /super-admin/audit-logs - View audit logs
-router.get("/audit-logs", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const action = (req.query.action as string) || "ALL";
 
-    const logs = [
-      {
-        id: "log_001",
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        admin: "admin@example.com",
-        action: "USER_BANNED",
-        target: "user_123",
-        changes: { status: "ACTIVE" },
-        details: "Utilisateur banni pour violation de politique",
-        ipAddress: "192.168.1.100",
-      },
-      {
-        id: "log_002",
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-        admin: "admin@example.com",
-        action: "MERCHANT_SUSPENDED",
-        target: "org_456",
-        changes: { status: "SUSPENDED" },
-        details: "Commerçant suspendu pour fraude suspecte",
-        ipAddress: "192.168.1.101",
-      },
-      {
-        id: "log_003",
-        timestamp: new Date(Date.now() - 86400000).toISOString(),
-        admin: "admin@example.com",
-        action: "ADMIN_CREATED",
-        target: "user_789",
-        changes: { isSystemAdmin: true },
-        details: "Nouveau administrateur système créé",
-        ipAddress: "192.168.1.102",
-      },
-    ];
 
-    const filtered = action === "ALL" ? logs : logs.filter(l => l.action === action);
-    const paginated = filtered.slice((page - 1) * limit, page * limit);
 
-    res.json({
-      logs: paginated,
-      pagination: {
-        page,
-        limit,
-        total: filtered.length,
-        pages: Math.ceil(filtered.length / limit),
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// GET /super-admin/audit-logs/export - Export audit logs
-router.get("/audit-logs/export", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const formatQuery = req.query.format;
-    const format = typeof formatQuery === "string" ? formatQuery : "CSV";
-
-    const csvData = `ID,Timestamp,Admin,Action,Target,Details,IP\nlog_001,2024-01-15T12:00:00Z,admin@example.com,USER_BANNED,user_123,Utilisateur banni pour violation de politique,192.168.1.100`;
-
-    if (format === "CSV") {
-      res.setHeader("Content-Type", "text/csv");
-      res.setHeader("Content-Disposition", "attachment; filename=audit-logs.csv");
-      res.send(csvData);
-    } else {
-      res.json({
-        logs: [
-          {
-            id: "log_001",
-            timestamp: "2024-01-15T12:00:00Z",
-            admin: "admin@example.com",
-            action: "USER_BANNED",
-          },
-        ],
-      });
-    }
-  } catch (err) {
-    next(err);
-  }
-});
 
 // ============================================================================
 // ACCESS LOGS
@@ -682,222 +426,24 @@ router.get("/access-logs", authMiddleware, isSystemAdmin, async (req: Request, r
 // EXPORTS
 // ============================================================================
 
-// GET /super-admin/exports - List available exports
-router.get("/exports", authMiddleware, isSystemAdmin, async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const exports = [
-      {
-        id: "export_001",
-        name: "Merchants Export",
-        type: "CSV",
-        status: "COMPLETED",
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        size: 2048,
-        url: "/api/super-admin/exports/export_001/download",
-      },
-      {
-        id: "export_002",
-        name: "Commissions Report",
-        type: "JSON",
-        status: "IN_PROGRESS",
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-        size: null,
-        progress: 45,
-      },
-      {
-        id: "export_003",
-        name: "Users List",
-        type: "CSV",
-        status: "COMPLETED",
-        createdAt: new Date(Date.now() - 172800000).toISOString(),
-        size: 4096,
-        url: "/api/super-admin/exports/export_003/download",
-      },
-    ];
 
-    res.json({ exports });
-  } catch (err) {
-    next(err);
-  }
-});
 
-// POST /super-admin/exports - Create new export
-router.post("/exports", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const schema = z.object({
-      dataType: z.enum(["MERCHANTS", "USERS", "COMMISSIONS", "ORDERS", "STATS"]),
-      format: z.enum(["CSV", "JSON"]),
-    });
 
-    const body = schema.parse(req.body);
-
-    res.json({
-      success: true,
-      export: {
-        id: `export_${Date.now()}`,
-        name: `${body.dataType} Export`,
-        type: body.format,
-        status: "QUEUED",
-        createdAt: new Date().toISOString(),
-      },
-      message: "Export créé et en attente de traitement",
-    });
-  } catch (err) {
-    next(err);
-  }
-});
 
 // ============================================================================
 // NOTIFICATIONS
 // ============================================================================
 
-// GET /super-admin/notifications - List notifications
-router.get("/notifications", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
 
-    const notifications = [
-      {
-        id: "notif_001",
-        type: "ALERT",
-        priority: "CRITICAL",
-        title: "Tentative de fraude détectée",
-        message: "Transaction suspecte depuis l'IP 203.0.113.45",
-        timestamp: new Date(Date.now() - 1800000).toISOString(),
-        read: false,
-      },
-      {
-        id: "notif_002",
-        type: "WARNING",
-        priority: "HIGH",
-        title: "Plusieurs échecs de connexion",
-        message: "12 tentatives échouées pour l'utilisateur user@example.com",
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        read: false,
-      },
-      {
-        id: "notif_003",
-        type: "INFO",
-        priority: "LOW",
-        title: "Backup complété",
-        message: "Sauvegarde de la base de données complétée avec succès",
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-        read: true,
-      },
-    ];
 
-    const paginated = notifications.slice((page - 1) * limit, page * limit);
 
-    res.json({
-      notifications: paginated,
-      unreadCount: notifications.filter(n => !n.read).length,
-      pagination: {
-        page,
-        limit,
-        total: notifications.length,
-        pages: Math.ceil(notifications.length / limit),
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// POST /super-admin/notifications/:notificationId/mark-read - Mark notification as read
-router.post("/notifications/:notificationId/mark-read", authMiddleware, isSystemAdmin, async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.json({
-      success: true,
-      message: "Notification marquée comme lue",
-    });
-  } catch (err) {
-    next(err);
-  }
-});
 
 // ============================================================================
 // SETTINGS
 // ============================================================================
 
-// GET /super-admin/settings - Get super admin settings
-router.get("/settings", authMiddleware, isSystemAdmin, async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const settings = {
-      platformFees: {
-        standardRate: 5,
-        enterpriseRate: 3,
-        premiumRate: 4,
-      },
-      payoutSettings: {
-        minimumAmount: 100,
-        frequency: "WEEKLY",
-        delay: 2,
-      },
-      verification: {
-        requirePhoneVerification: true,
-        requireIdVerification: true,
-        autoApproveThreshold: 1000,
-      },
-      security: {
-        twoFactorRequired: false,
-        maxLoginAttempts: 5,
-        sessionTimeout: 30,
-      },
-      notifications: {
-        emailAlerts: true,
-        criticalOnly: false,
-        weeklyReport: true,
-      },
-    };
 
-    res.json({ settings });
-  } catch (err) {
-    next(err);
-  }
-});
 
-// PUT /super-admin/settings - Update super admin settings
-router.put("/settings", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const schema = z.object({
-      platformFees: z.object({
-        standardRate: z.number().min(0).max(100).optional(),
-        enterpriseRate: z.number().min(0).max(100).optional(),
-        premiumRate: z.number().min(0).max(100).optional(),
-      }).optional(),
-      payoutSettings: z.object({
-        minimumAmount: z.number().min(0).optional(),
-        frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY"]).optional(),
-        delay: z.number().min(0).optional(),
-      }).optional(),
-      verification: z.object({
-        requirePhoneVerification: z.boolean().optional(),
-        requireIdVerification: z.boolean().optional(),
-        autoApproveThreshold: z.number().min(0).optional(),
-      }).optional(),
-      security: z.object({
-        twoFactorRequired: z.boolean().optional(),
-        maxLoginAttempts: z.number().min(1).optional(),
-        sessionTimeout: z.number().min(1).optional(),
-      }).optional(),
-      notifications: z.object({
-        emailAlerts: z.boolean().optional(),
-        criticalOnly: z.boolean().optional(),
-        weeklyReport: z.boolean().optional(),
-      }).optional(),
-    });
 
-    const body = schema.parse(req.body);
-
-    res.json({
-      success: true,
-      settings: body,
-      message: "Paramètres mis à jour avec succès",
-    });
-  } catch (err) {
-    next(err);
-  }
-});
 
 export default router;
