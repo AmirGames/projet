@@ -85,7 +85,7 @@ emporter ou à livrer.
 | **Temps réel** | Socket.IO (disponibilité des plats, notifications, suivi de livraison) |
 | **Authentification** | JWT (jeton d'accès + jeton de renouvellement) |
 | **Courriel** | SMTP par nodemailer (Mailpit en développement) |
-| **Adresses** | Base Adresse Nationale, ou Photon (OpenStreetMap) pour l'international |
+| **Adresses** | Base Adresse Nationale pour la France, Photon (OpenStreetMap) pour la Belgique et au-delà — les deux interrogés ensemble |
 | **Paiement** | Stripe (intention de paiement ; webhook et remboursement à faire) |
 
 Un seul dépôt, deux applications :
@@ -162,7 +162,7 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1110 contrôles, 33 suites
+# API : 1129 contrôles, 34 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma db push

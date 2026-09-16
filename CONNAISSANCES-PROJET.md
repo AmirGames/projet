@@ -3,7 +3,7 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : fiche boutique côté plateforme.
+Dernière mise à jour : boutique située à la création, et adresses belges.
 
 ---
 
@@ -61,7 +61,7 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Temps réel** | Socket.IO — disponibilité des plats, notifications, suivi de livraison |
 | **Authentification** | JWT (jeton d'accès + jeton de renouvellement) |
 | **Courriel** | SMTP via nodemailer, Mailpit en développement |
-| **Adresses** | Base Adresse Nationale, ou Photon (OpenStreetMap) hors de France |
+| **Adresses** | BAN pour la France + Photon pour la Belgique (`ADDRESS_PROVIDER=ban+photon`) |
 | **Paiement** | Stripe — intention de paiement seulement |
 
 ```
@@ -228,7 +228,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 33 | **1110** |
+| **API** (`backend/scripts/verification/`) | 34 | **1129** |
 | **Navigateur** (`frontend/scripts/`) | 20 | **505** |
 
 Tout est vert au dernier passage complet.

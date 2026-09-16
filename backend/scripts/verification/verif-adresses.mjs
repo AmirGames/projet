@@ -143,5 +143,56 @@ check('la Suisse est écartée', !pays.includes('Suisse'), JSON.stringify(pays))
 
 apiLimite.kill();
 
+// ===== La France et la Belgique ensemble =====
+
+titre('Mode mixte : la BAN pour la France, Photon pour le reste');
+/**
+ * La BAN s'arrête aux frontières : un commerce belge n'était pas trouvable.
+ * Basculer tout sur Photon aurait fait perdre la précision française — d'où
+ * l'interrogation des deux, la BAN d'abord.
+ */
+const apiMixte = await demarrerApi(4613, {
+  ADDRESS_PROVIDER: 'ban+photon',
+  ADDRESS_API_URL: faux.urlBan,
+  PHOTON_API_URL: faux.urlPhoton,
+  ADDRESS_COUNTRIES: 'fr,be',
+});
+
+const mixte = await chercher(4613, 'rue neuve');
+const villes = (mixte.suggestions || []).map((s) => s.city);
+
+check('le service répond', mixte.available === true, `${mixte.available}`);
+check('l’adresse française de la BAN est là', villes.includes('Lyon'), JSON.stringify(villes));
+check('l’adresse belge de Photon aussi', villes.includes('Bruxelles'), JSON.stringify(villes));
+check('la Suisse reste écartée', !villes.includes('Zurich'), JSON.stringify(villes));
+
+// La BAN est la plus fine sur la France : ses résultats passent devant.
+check('la BAN passe en premier', villes[0] === 'Lyon', JSON.stringify(villes));
+
+const belgeMixte = (mixte.suggestions || []).find((s) => s.city === 'Bruxelles');
+check('la belge porte son pays', belgeMixte?.country === 'Belgique', belgeMixte?.country);
+check('et ses coordonnées', belgeMixte?.latitude === 50.8503, `${belgeMixte?.latitude}`);
+
+titre('Un seul fournisseur en panne ne vide pas la recherche');
+// Sans cela, la panne de l'un ferait basculer toute la saisie en manuel alors
+// que l'autre a des résultats.
+const apiMoitie = await demarrerApi(4614, {
+  ADDRESS_PROVIDER: 'ban+photon',
+  ADDRESS_API_URL: 'http://127.0.0.1:4599/inexistant-ban',
+  PHOTON_API_URL: faux.urlPhoton,
+  ADDRESS_COUNTRIES: 'fr,be',
+});
+
+const moitie = await chercher(4614, 'rue neuve');
+check('le service reste annoncé disponible', moitie.available === true, `${moitie.available}`);
+check(
+  'les adresses de l’autre fournisseur reviennent',
+  (moitie.suggestions || []).some((s) => s.city === 'Bruxelles'),
+  JSON.stringify((moitie.suggestions || []).map((s) => s.city))
+);
+
+apiMixte.kill();
+apiMoitie.kill();
+
 await faux.fermer();
 await terminer();

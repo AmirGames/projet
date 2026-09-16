@@ -1,7 +1,7 @@
 // Une boutique fermée reste visible mais n'accepte plus de commande, et elle
 // situe son adresse toute seule.
 
-import { titre, check, j, uniq, post, get, patch, terminer, sqlScalaire } from './outils.mjs';
+import { titre, check, j, uniq, post, get, patch, terminer, sqlScalaire, sqlExec } from './outils.mjs';
 
 const MDP = 'Password123!';
 
@@ -121,8 +121,16 @@ const reprise = await post('/api/orders', {
 check('on commande de nouveau', reprise.status < 400, `statut ${reprise.status}`);
 
 titre('La boutique situe son adresse toute seule');
+/**
+ * Elle est désormais située dès sa création : le contrôle ne porte plus sur
+ * l'absence de position, mais sur le rattrapage — une boutique d'avant cette
+ * règle, ou dont le géocodage avait échoué, se situe au premier client qui
+ * demande les conditions de livraison.
+ */
+await sqlExec(`UPDATE "Store" SET latitude = NULL, longitude = NULL WHERE id = '${storeId}'`);
+
 const avant = await sqlScalaire(`SELECT latitude FROM "Store" WHERE id = '${storeId}'`);
-check('elle n’avait aucune position', avant === '', avant);
+check('elle n’a plus de position', avant === '', avant);
 
 // Le premier client qui demande les conditions de livraison déclenche la
 // recherche : le commerçant n'a rien à ressaisir.

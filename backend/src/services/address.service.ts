@@ -24,7 +24,7 @@ export interface Suggestion {
   longitude: number | null;
 }
 
-export type Fournisseur = "ban" | "photon";
+export type Fournisseur = "ban" | "photon" | "ban+photon";
 
 const DELAI_MS = 4000;
 
@@ -35,14 +35,30 @@ const DUREE_CACHE_MS = 5 * 60 * 1000;
 /** Sans purge, la table grandit indéfiniment au fil des recherches. */
 const TAILLE_MAX_CACHE = 500;
 
+/**
+ * Le fournisseur d'adresses.
+ *
+ * - `ban` : la Base Adresse Nationale, la plus précise — mais **elle ne connaît
+ *   que la France** ;
+ * - `photon` : OpenStreetMap, le monde entier, moins fin sur les adresses
+ *   françaises ;
+ * - `ban+photon` : la BAN pour la France, Photon pour les autres pays. C'est ce
+ *   qu'il faut dès qu'un pays voisin s'ajoute — la Belgique, par exemple —
+ *   sans rien perdre de la qualité française.
+ */
 export function fournisseurActif(): Fournisseur {
-  return process.env.ADDRESS_PROVIDER === "photon" ? "photon" : "ban";
+  const choisi = (process.env.ADDRESS_PROVIDER || "").trim().toLowerCase();
+
+  if (choisi === "photon") return "photon";
+  if (choisi === "ban+photon" || choisi === "mixte") return "ban+photon";
+
+  return "ban";
 }
 
 /**
  * Pays auxquels limiter la recherche, en codes ISO à deux lettres.
  * Vide signifie « partout ». N'a d'effet que sur Photon : la BAN ne connaît
- * que la France.
+ * que la France, qu'elle rend donc toujours.
  */
 function paysAutorises(): string[] {
   return (process.env.ADDRESS_COUNTRIES || "")
@@ -86,8 +102,8 @@ function normaliserPhoton(entite: any): Suggestion {
   };
 }
 
-function construireUrl(requete: string, limite: number): string {
-  if (fournisseurActif() === "photon") {
+function construireUrl(requete: string, limite: number, fournisseur = fournisseurActif()): string {
+  if (fournisseur === "photon") {
     // Photon n'a pas de filtre par pays : le tri se fait sur la réponse.
     const base = process.env.PHOTON_API_URL || "https://photon.komoot.io/api/";
     return `${base}?q=${encodeURIComponent(requete)}&limit=${limite}&lang=fr`;
@@ -114,29 +130,25 @@ export class AddressService {
    * dépendance. En cas de panne, `available: false` laisse la saisie
    * manuelle prendre le relais.
    */
-  static async rechercher(requete: string, limite: number) {
-    // En dessous de trois caractères, tous les fournisseurs renvoient du bruit.
-    if (requete.length < 3) {
-      return { suggestions: [] as Suggestion[], available: true };
-    }
-
-    const fournisseur = fournisseurActif();
-    const cle = `${fournisseur}|${requete.toLowerCase()}|${limite}`;
-    const enCache = cache.get(cle);
-
-    if (enCache && Date.now() < enCache.expireA) {
-      return { suggestions: enCache.resultats, available: true };
-    }
-
+  /**
+   * Interroge un fournisseur. Rend une liste vide plutôt que de lever : en mode
+   * mixte, la panne de l'un ne doit pas emporter les résultats de l'autre.
+   */
+  private static async interroger(
+    fournisseur: "ban" | "photon",
+    requete: string,
+    limite: number
+  ): Promise<{ suggestions: Suggestion[]; joignable: boolean }> {
     const controleur = new AbortController();
     const minuteur = setTimeout(() => controleur.abort(), DELAI_MS);
 
     try {
       // Photon ignore le périmètre demandé : on élargit la requête pour avoir
       // de quoi filtrer sans se retrouver les mains vides.
-      const demandees = fournisseur === "photon" && paysAutorises().length > 0 ? limite * 4 : limite;
+      const demandees =
+        fournisseur === "photon" && paysAutorises().length > 0 ? limite * 4 : limite;
 
-      const reponse = await fetch(construireUrl(requete, demandees), {
+      const reponse = await fetch(construireUrl(requete, demandees, fournisseur), {
         signal: controleur.signal,
         headers: { "User-Agent": "Zupone/1.0" },
       });
@@ -154,20 +166,77 @@ export class AddressService {
         .filter((s: Suggestion) => s.label)
         .slice(0, limite);
 
-      if (cache.size > TAILLE_MAX_CACHE) cache.clear();
-      cache.set(cle, { expireA: Date.now() + DUREE_CACHE_MS, resultats: suggestions });
-
-      return { suggestions, available: true };
+      return { suggestions, joignable: true };
     } catch (err) {
       logger.warn("Service d'adresses injoignable", {
         fournisseur,
         error: err instanceof Error ? err.message : err,
       });
 
-      return { suggestions: [] as Suggestion[], available: false };
+      return { suggestions: [], joignable: false };
     } finally {
       clearTimeout(minuteur);
     }
+  }
+
+  static async rechercher(requete: string, limite: number) {
+    // En dessous de trois caractères, tous les fournisseurs renvoient du bruit.
+    if (requete.length < 3) {
+      return { suggestions: [] as Suggestion[], available: true };
+    }
+
+    const fournisseur = fournisseurActif();
+    const cle = `${fournisseur}|${requete.toLowerCase()}|${limite}`;
+    const enCache = cache.get(cle);
+
+    if (enCache && Date.now() < enCache.expireA) {
+      return { suggestions: enCache.resultats, available: true };
+    }
+
+    /**
+     * En mode mixte, les deux fournisseurs sont interrogés de front.
+     *
+     * La BAN passe devant : sur une adresse française elle est plus fine que
+     * Photon, et c'est le gros des saisies. Photon apporte ce qu'elle ne
+     * connaît pas — la Belgique, notamment.
+     */
+    const aInterroger: ("ban" | "photon")[] =
+      fournisseur === "ban+photon" ? ["ban", "photon"] : [fournisseur];
+
+    const reponses = await Promise.all(
+      aInterroger.map((lequel) => this.interroger(lequel, requete, limite))
+    );
+
+    // Une même adresse peut revenir des deux côtés : on garde la première, donc
+    // celle de la BAN.
+    const vues = new Set<string>();
+    const suggestions: Suggestion[] = [];
+
+    for (const reponse of reponses) {
+      for (const suggestion of reponse.suggestions) {
+        const empreinte = `${suggestion.postalCode}|${suggestion.street}`.toLowerCase();
+
+        if (vues.has(empreinte)) continue;
+
+        vues.add(empreinte);
+        suggestions.push(suggestion);
+      }
+    }
+
+    // Injoignable ne se dit que si *aucun* fournisseur n'a répondu : sinon la
+    // saisie manuelle prendrait le relais alors qu'on a des résultats.
+    const joignable = reponses.some((reponse) => reponse.joignable);
+
+    if (!joignable) {
+      return { suggestions: [] as Suggestion[], available: false };
+    }
+
+    const retenues = suggestions.slice(0, limite);
+
+    if (cache.size > TAILLE_MAX_CACHE) cache.clear();
+    cache.set(cle, { expireA: Date.now() + DUREE_CACHE_MS, resultats: retenues });
+
+    return { suggestions: retenues, available: true };
   }
 
   /**

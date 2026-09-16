@@ -1,5 +1,7 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
+import { AddressService } from "./address.service";
+import { logger } from "../config/logger";
 
 export class StoreService {
   static async create(data: {
@@ -15,6 +17,35 @@ export class StoreService {
     latitude?: number;
     longitude?: number;
   }) {
+    /**
+     * Une boutique naît située.
+     *
+     * Elle naissait sans coordonnées dès que le formulaire n'en fournissait
+     * pas : invisible de l'attribution des courses et de ses propres zones de
+     * livraison, sans que rien ne le dise. Le commerçant créait sa boutique,
+     * réglait ses zones, et aucun livreur ne venait jamais.
+     *
+     * Le géocodage ne bloque pas la création : un service d'adresses en panne
+     * ne doit pas empêcher d'ouvrir un commerce. La fiche de la plateforme
+     * signale alors la boutique comme non située.
+     */
+    let { latitude, longitude } = data;
+
+    if (latitude == null || longitude == null) {
+      const texte = [data.address, data.postalCode, data.city].filter(Boolean).join(" ");
+
+      if (texte.trim().length >= 3) {
+        const situation = await AddressService.situer(texte);
+
+        if (situation.point) {
+          latitude = situation.point.latitude;
+          longitude = situation.point.longitude;
+        } else {
+          logger.warn("Store created without coordinates", { slug: data.slug, texte });
+        }
+      }
+    }
+
     try {
       const store = await db.store.create({
         data: {
@@ -27,8 +58,8 @@ export class StoreService {
           phone: data.phone,
           email: data.email,
           description: data.description,
-          latitude: data.latitude,
-          longitude: data.longitude,
+          latitude,
+          longitude,
         },
         include: {
           products: true,
