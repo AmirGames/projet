@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
-import { origineActuelle } from "../config/origine";
+import { dureeDeLaRequete, origineActuelle } from "../config/origine";
 
 /**
  * Journalisation des requêtes SQL.
@@ -46,10 +46,22 @@ function garderLOrigine(client: PrismaClientBrut) {
       const origine = origineActuelle();
       const lignes = params.args?.data;
 
+      const duree = dureeDeLaRequete();
+
       const completer = (ligne: any) => {
         if (!ligne || typeof ligne !== "object") return ligne;
         if (ligne.ipAddress === undefined && origine.ipAddress) ligne.ipAddress = origine.ipAddress;
         if (ligne.userAgent === undefined && origine.userAgent) ligne.userAgent = origine.userAgent;
+
+        // Seuls les événements de sécurité portent une durée.
+        if (
+          params.model === "SecurityEvent" &&
+          ligne.durationMs === undefined &&
+          duree !== undefined
+        ) {
+          ligne.durationMs = duree;
+        }
+
         return ligne;
       };
 

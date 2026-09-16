@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Settings, Key, Copy, Save, Database, Webhook, Wrench } from 'lucide-react';
 
 interface ApiKey {
@@ -96,7 +97,6 @@ export default function SystemConfigPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          platformFeePercent: Number(formulaire.platformFeePercent),
           minOrderAmount: Number(formulaire.minOrderAmount),
           maxOrderAmount: Number(formulaire.maxOrderAmount),
           maintenanceMode: formulaire.maintenanceMode,
@@ -193,23 +193,23 @@ export default function SystemConfigPage() {
             onSubmit={enregistrer}
             className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6 space-y-4"
           >
-            <h2 className="text-xl font-bold text-white">Paramètres de la plateforme</h2>
+            <h2 className="text-xl font-bold text-white">Bornes des commandes</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Commission (%)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="100"
-                  value={formulaire.platformFeePercent}
-                  onChange={(e) =>
-                    setFormulaire({ ...formulaire, platformFeePercent: e.target.value })
-                  }
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
+            {/* La commission se réglait ici, pour tout le monde à la fois. Elle
+                appartient maintenant à chaque formule : deux réglages du même
+                taux ne pouvaient que se contredire. */}
+            <p className="text-sm text-gray-400">
+              Ces deux montants encadrent <strong>toutes</strong> les commandes de la plateforme,
+              quel que soit le commerce. Laissez le minimum à 0 pour ne rien imposer — chaque
+              commerçant a déjà son propre minimum par zone de livraison. La commission, elle, se
+              règle par formule dans{' '}
+              <Link href="/superowner/formules" className="text-blue-400 hover:underline">
+                Formules
+              </Link>
+              .
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Commande minimum (€)</label>
                 <input

@@ -288,6 +288,106 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
   }
 });
 
+/**
+ * GET /superowner/billing/:orgId - Le détail de la commission d'un commerçant
+ *
+ * La page ne montrait qu'un montant par commerçant, sans le détail : impossible
+ * de savoir quelles commandes le composaient, ni ce qui avait été prélevé sur
+ * chacune. Ici, commande par commande, avec sa part.
+ */
+router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+
+    const organisation = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { id: true, name: true, tier: true, stores: { select: { id: true, name: true } } },
+    });
+
+    if (!organisation) {
+      throw new ApiError(404, "Commerçant introuvable", "ORG_NOT_FOUND");
+    }
+
+    // Le mois demandé, ou le mois courant.
+    const demande = (req.query.period as string) || "";
+    const debutMois = /^\d{4}-\d{2}$/.test(demande)
+      ? new Date(`${demande}-01T00:00:00`)
+      : new Date();
+    debutMois.setDate(1);
+    debutMois.setHours(0, 0, 0, 0);
+
+    const finMois = new Date(debutMois);
+    finMois.setMonth(finMois.getMonth() + 1);
+
+    const config = await db.systemConfig.findFirst();
+    const formule = await PlanService.formule(organisation.tier);
+    const taux = formule.commission ?? Number(config?.platformFeePercent ?? 5);
+
+    const storeIds = organisation.stores.map((boutique) => boutique.id);
+    const nomDeLaBoutique = new Map(organisation.stores.map((b) => [b.id, b.name]));
+
+    const commandes = storeIds.length
+      ? await db.order.findMany({
+          where: {
+            storeId: { in: storeIds },
+            createdAt: { gte: debutMois, lt: finMois },
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            storeId: true,
+            createdAt: true,
+            totalAmount: true,
+            discountAmount: true,
+            feesAmount: true,
+            status: true,
+            paymentStatus: true,
+            customerName: true,
+          },
+          orderBy: { createdAt: "desc" },
+        })
+      : [];
+
+    const lignes = commandes.map((commande) => {
+      const montant = Number(commande.totalAmount);
+
+      return {
+        id: commande.id,
+        numero: commande.id.slice(-8).toUpperCase(),
+        date: commande.createdAt,
+        boutique: nomDeLaBoutique.get(commande.storeId) || "—",
+        client: commande.customerName,
+        status: commande.status,
+        paymentStatus: commande.paymentStatus,
+        total: montant,
+        remise: Number(commande.discountAmount),
+        livraison: Number(commande.feesAmount),
+        // Ce que la plateforme prélève sur cette commande.
+        commission: Number(((montant * taux) / 100).toFixed(2)),
+      };
+    });
+
+    const chiffreAffaires = lignes.reduce((somme, ligne) => somme + ligne.total, 0);
+
+    res.json({
+      organization: { id: organisation.id, name: organisation.name, tier: organisation.tier },
+      period: moisDe(debutMois),
+      commissionPercent: taux,
+      tierLabel: formule.libelle,
+      orders: lignes,
+      summary: {
+        ordersCount: lignes.length,
+        revenue: Number(chiffreAffaires.toFixed(2)),
+        // Somme des parts, et non pourcentage du total : les arrondis par
+        // commande doivent correspondre à ce que la ligne affiche.
+        commission: Number(lignes.reduce((somme, ligne) => somme + ligne.commission, 0).toFixed(2)),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /superowner/financial-reports - Synthèse mensuelle des douze derniers mois
 router.get("/financial-reports", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -431,7 +531,6 @@ router.post("/api-keys", authMiddleware, isSuperOwner, async (req: Request, res:
       target: cle.id,
       severity: "MEDIUM",
       details: `Clé « ${body.name} » générée`,
-      ipAddress: req.ip,
     });
 
     res.status(201).json({ success: true, key: cle });
@@ -452,7 +551,6 @@ router.post("/api-keys/:keyId/revoke", authMiddleware, isSuperOwner, async (req:
       target: keyId,
       severity: "HIGH",
       details: `Clé « ${cle.name} » révoquée`,
-      ipAddress: req.ip,
     });
 
     res.json({ success: true, message: "Clé révoquée" });
@@ -498,7 +596,6 @@ router.post("/webhooks", authMiddleware, isSuperOwner, async (req: Request, res:
       target: abonnement.id,
       severity: "MEDIUM",
       details: `Webhook vers ${body.url}`,
-      ipAddress: req.ip,
     });
 
     res.status(201).json({
@@ -531,7 +628,6 @@ router.delete("/webhooks/:webhookId", authMiddleware, isSuperOwner, async (req: 
       actor: (req as any).actorEmail || "inconnu",
       target: webhookId,
       severity: "MEDIUM",
-      ipAddress: req.ip,
     });
 
     res.json({ success: true, message: "Webhook supprimé" });
@@ -879,7 +975,6 @@ router.post("/backups", authMiddleware, isSuperOwner, async (req: Request, res: 
       target: sauvegarde.id,
       severity: "MEDIUM",
       details: sauvegarde.name,
-      ipAddress: req.ip,
     });
 
     res.status(201).json({
@@ -919,7 +1014,6 @@ router.post("/backups/:backupId/restore", authMiddleware, isSuperOwner, async (r
       target: backupId,
       severity: "CRITICAL",
       details: `Restaurés : ${Object.entries(resultats).map(([k, v]) => `${v} ${k}`).join(", ")}`,
-      ipAddress: req.ip,
     });
 
     res.json({ success: true, restored: resultats, message: "Sauvegarde restaurée" });
@@ -939,7 +1033,6 @@ router.delete("/backups/:backupId", authMiddleware, isSuperOwner, async (req: Re
       actor: (req as any).actorEmail || "inconnu",
       target: backupId,
       severity: "HIGH",
-      ipAddress: req.ip,
     });
 
     res.json({ success: true, message: "Sauvegarde supprimée" });
@@ -1244,8 +1337,16 @@ router.get("/support-tickets", authMiddleware, isSuperOwner, async (req: Request
     const offset = parseInt(req.query.offset as string) || 0;
     const status = req.query.status as string;
     const priority = req.query.priority as string;
+    /**
+     * Les tickets archivés, sur demande.
+     *
+     * Clore un ticket l'archive : la liste, qui excluait les archivés sans
+     * alternative, le faisait donc disparaître pour de bon. La plateforme ne
+     * pouvait plus ni le relire ni le rouvrir.
+     */
+    const archives = req.query.archived === "true";
 
-    const where: any = { archivedAt: null };
+    const where: any = { archivedAt: archives ? { not: null } : null };
     if (status) where.status = status;
     if (priority) where.priority = versPrioriteStockee(priority);
 
@@ -1282,6 +1383,9 @@ router.get("/support-tickets", authMiddleware, isSuperOwner, async (req: Request
         userEmail: t.org.email || t.org.memberships[0]?.user.email || t.org.name,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
+        // Pour que l'écran sache lequel est archivé, et depuis quand.
+        archivedAt: t.archivedAt,
+        organization: t.org.name,
         messageCount: t._count.messages,
       })),
       pagination: { total, limit, offset },

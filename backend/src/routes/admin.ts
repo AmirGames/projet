@@ -660,7 +660,9 @@ router.get("/access-logs", authMiddleware, isSystemAdmin, async (req: Request, r
         severity: e.severity,
         details: e.details,
         timestamp: e.createdAt,
-        duration: 0,
+        // Mesurée depuis que la requête est chronométrée. `null` pour les
+        // entrées d'avant, plutôt qu'un zéro qui ressemble à une mesure.
+        duration: e.durationMs,
       })),
       pagination: { total, limit, offset },
     });

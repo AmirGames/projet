@@ -236,6 +236,37 @@ export class OrderService {
           )
         : Number(data.totalAmount);
 
+      /**
+       * Les bornes de la plateforme.
+       *
+       * `minOrderAmount` et `maxOrderAmount` étaient réglables dans
+       * Configuration, affichés, enregistrés — et appliqués nulle part. Un
+       * garde-fou qui ne garde rien vaut moins que pas de garde-fou : on croit
+       * être protégé.
+       */
+      const bornes = await db.systemConfig.findFirst({
+        select: { minOrderAmount: true, maxOrderAmount: true },
+      });
+
+      const minimum = Number(bornes?.minOrderAmount ?? 0);
+      const maximum = Number(bornes?.maxOrderAmount ?? 0);
+
+      if (minimum > 0 && totalCalcule < minimum) {
+        throw new ApiError(
+          400,
+          `Le montant minimum d'une commande est de ${minimum.toFixed(2)} €.`,
+          "BELOW_PLATFORM_MINIMUM"
+        );
+      }
+
+      if (maximum > 0 && totalCalcule > maximum) {
+        throw new ApiError(
+          400,
+          `Le montant maximum d'une commande est de ${maximum.toFixed(2)} €. Passez plusieurs commandes.`,
+          "ABOVE_PLATFORM_MAXIMUM"
+        );
+      }
+
       const order = await db.order.create({
         data: {
           storeId: data.storeId,

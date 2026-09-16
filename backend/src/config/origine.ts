@@ -19,6 +19,8 @@ import { Request, Response, NextFunction } from "express";
 export interface Origine {
   ipAddress?: string;
   userAgent?: string;
+  /** L'instant où la requête est arrivée, pour mesurer sa durée. */
+  debutA?: number;
 }
 
 const contexte = new AsyncLocalStorage<Origine>();
@@ -26,6 +28,18 @@ const contexte = new AsyncLocalStorage<Origine>();
 /** L'origine de la requête en cours, vide hors requête (tâche de fond, script). */
 export function origineActuelle(): Origine {
   return contexte.getStore() || {};
+}
+
+/**
+ * Le temps écoulé depuis l'arrivée de la requête, en millisecondes.
+ *
+ * Le journal des accès affichait une colonne « durée » toujours à zéro : elle
+ * n'était mesurée nulle part. Rend `undefined` hors requête, pour ne pas
+ * inventer un zéro qui ressemble à une mesure.
+ */
+export function dureeDeLaRequete(): number | undefined {
+  const debut = contexte.getStore()?.debutA;
+  return debut === undefined ? undefined : Date.now() - debut;
 }
 
 /**
@@ -47,6 +61,7 @@ function adresseLisible(brute: string | undefined): string | undefined {
 
 export function middlewareOrigine(req: Request, _res: Response, next: NextFunction) {
   const origine: Origine = {
+    debutA: Date.now(),
     ipAddress: adresseLisible(req.ip),
     // Tronqué : certains agents dépassent les deux cents caractères, sans rien
     // apprendre de plus à qui relit.

@@ -1374,6 +1374,9 @@ model SecurityEvent {
   /// Le navigateur ou l'outil employé. La colonne manquait, et la page
   /// affichait « — » pour tout le monde.
   userAgent String?
+  /// Temps de traitement de la requête, en millisecondes. La page affichait une
+  /// colonne « durée » toujours à zéro : rien ne la mesurait.
+  durationMs Int?
 
   createdAt DateTime @default(now())
 

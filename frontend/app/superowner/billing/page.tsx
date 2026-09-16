@@ -23,6 +23,30 @@ interface BillingData {
   commissionPercent?: number;
 }
 
+/** Le détail d'un commerçant : ses commandes du mois, et la part prélevée. */
+interface LigneDetail {
+  id: string;
+  numero: string;
+  date: string;
+  boutique: string;
+  client: string;
+  status: string;
+  paymentStatus: string;
+  total: number;
+  remise: number;
+  livraison: number;
+  commission: number;
+}
+
+interface DetailFacturation {
+  organization: { id: string; name: string; tier: string };
+  period: string;
+  commissionPercent: number;
+  tierLabel: string;
+  orders: LigneDetail[];
+  summary: { ordersCount: number; revenue: number; commission: number };
+}
+
 interface BillingResponse {
   billings: BillingData[];
   summary: {
@@ -46,6 +70,14 @@ export default function BillingPage() {
   const [error, setError] = useState('');
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
+  /**
+   * Le commerçant dont on regarde le détail.
+   *
+   * La page n'affichait qu'un montant par ligne, sans dire de quelles commandes
+   * il venait ni ce qui avait été prélevé sur chacune.
+   */
+  const [detail, setDetail] = useState<DetailFacturation | null>(null);
+  const [detailEnCours, setDetailEnCours] = useState<string | null>(null);
   const limit = 20;
 
   useEffect(() => {
@@ -91,6 +123,33 @@ export default function BillingPage() {
       OVERDUE: 'bg-red-500/10 text-red-400 border-red-500/20',
     };
     return colors[status] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+  };
+
+  const ouvrirLeDetail = async (billing: BillingData) => {
+    // Un deuxième clic replie.
+    if (detail?.organization.id === billing.id) {
+      setDetail(null);
+      return;
+    }
+
+    setDetailEnCours(billing.id);
+    setError('');
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(
+        `${API_URL}/api/superowner/billing/${billing.id}?period=${billing.period}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!res.ok) throw new Error('Erreur lors du chargement du détail');
+
+      setDetail(await res.json());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+    } finally {
+      setDetailEnCours(null);
+    }
   };
 
   return (
@@ -159,8 +218,25 @@ export default function BillingPage() {
               </thead>
               <tbody className="divide-y divide-gray-700/50">
                 {billings.map((billing) => (
-                  <tr key={billing.id} className="hover:bg-gray-700/20 transition">
-                    <td className="px-6 py-4 text-sm text-white font-medium">{billing.organization}</td>
+                  <tr
+                    key={billing.id}
+                    onClick={() => ouvrirLeDetail(billing)}
+                    className={`cursor-pointer transition ${
+                      detail?.organization.id === billing.id
+                        ? 'bg-blue-900/20'
+                        : 'hover:bg-gray-700/20'
+                    }`}
+                  >
+                    <td className="px-6 py-4 text-sm text-white font-medium">
+                      {billing.organization}
+                      <span className="block text-xs text-gray-500">
+                        {detailEnCours === billing.id
+                          ? 'Chargement…'
+                          : detail?.organization.id === billing.id
+                            ? 'Replier le détail'
+                            : 'Voir les commandes'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-400">{billing.tier}</td>
                     <td className="px-6 py-4 text-sm text-gray-400">{billing.period}</td>
                     <td className="px-6 py-4 text-right text-sm text-gray-300">
@@ -192,6 +268,92 @@ export default function BillingPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Le détail d'un commerçant : ses commandes du mois, et la part prélevée
+          sur chacune. La page n'affichait qu'un total sans son origine. */}
+      {detail && (
+        <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg overflow-hidden">
+          <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-gray-700/50 px-6 py-4">
+            <div>
+              <h2 className="text-lg font-bold text-white">{detail.organization.name}</h2>
+              <p className="text-sm text-gray-400">
+                {detail.period} — formule {detail.tierLabel}, {detail.commissionPercent} % de
+                commission sur les ventes
+              </p>
+            </div>
+            <div className="text-right text-sm">
+              <p className="text-gray-300">
+                {detail.summary.ordersCount} commande{detail.summary.ordersCount > 1 ? 's' : ''} —{' '}
+                {euro(detail.summary.revenue)}
+              </p>
+              <p className="font-bold text-green-400">
+                Commission : {euro(detail.summary.commission)}
+              </p>
+            </div>
+          </div>
+
+          {detail.orders.length === 0 ? (
+            <p className="px-6 py-8 text-center text-gray-400">
+              Aucune commande sur cette période.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-900/50 border-b border-gray-700/50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                      Commande
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Date</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                      Boutique
+                    </th>
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
+                      Total
+                    </th>
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
+                      Commission
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700/50">
+                  {detail.orders.map((ligne) => (
+                    <tr key={ligne.id} className="hover:bg-gray-700/20 transition">
+                      <td className="px-6 py-4 text-sm text-white">
+                        #{ligne.numero}
+                        <span className="block text-xs text-gray-500">{ligne.client}</span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-400">
+                        {new Date(ligne.date).toLocaleString('fr-FR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-400">{ligne.boutique}</td>
+                      <td className="px-6 py-4 text-right text-sm text-gray-300">
+                        {euro(ligne.total)}
+                        {ligne.remise > 0 && (
+                          <span className="block text-xs text-green-400">
+                            − {euro(ligne.remise)} de remise
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right text-sm font-medium text-green-400">
+                        {euro(ligne.commission)}
+                        <span className="block text-xs text-gray-500">
+                          {detail.commissionPercent} %
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

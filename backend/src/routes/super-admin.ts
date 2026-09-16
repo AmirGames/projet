@@ -405,7 +405,7 @@ router.get("/access-logs", authMiddleware, isSystemAdmin, async (req: Request, r
       method: evenement.action,
       status: evenement.status === "SUCCESS" ? 200 : 403,
       timestamp: evenement.createdAt,
-      duration: 0,
+      duration: evenement.durationMs,
     }));
 
     res.json({

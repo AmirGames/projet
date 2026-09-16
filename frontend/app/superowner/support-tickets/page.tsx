@@ -7,6 +7,14 @@ import { TicketConversation } from '@/components/TicketConversation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+/** L'état du ticket, en français : la base le stocke en anglais. */
+const LIBELLES_STATUT: Record<string, string> = {
+  OPEN: 'Ouvert',
+  IN_PROGRESS: 'En cours',
+  RESOLVED: 'Résolu',
+  CLOSED: 'Clos',
+};
+
 interface SupportTicket {
   id: string;
   title: string;
@@ -18,6 +26,9 @@ interface SupportTicket {
   updatedAt: string;
   messageCount: number;
   assignedTo?: string;
+  /** Renseigné dès que le ticket est clos : il passe alors dans les archives. */
+  archivedAt?: string | null;
+  organization?: string;
 }
 
 interface TicketsResponse {
@@ -38,11 +49,18 @@ export default function SupportTicketsPage() {
   const [total, setTotal] = useState(0);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterPriority, setFilterPriority] = useState<string>('ALL');
+  /**
+   * Les tickets archivés.
+   *
+   * Clore un ticket l'archive : la liste ne montrait que les actifs, sans moyen
+   * de voir ni de rouvrir ce qui avait été clos.
+   */
+  const [voirArchives, setVoirArchives] = useState(false);
   const limit = 20;
 
   useEffect(() => {
     fetchTickets();
-  }, [offset, filterStatus, filterPriority]);
+  }, [offset, filterStatus, filterPriority, voirArchives]);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -58,6 +76,9 @@ export default function SupportTicketsPage() {
       }
       if (filterPriority !== 'ALL') {
         query.append('priority', filterPriority);
+      }
+      if (voirArchives) {
+        query.append('archived', 'true');
       }
 
       const res = await fetch(`${API_URL}/api/superowner/support-tickets?${query}`, {
@@ -135,6 +156,9 @@ export default function SupportTicketsPage() {
 
   const statusOptions = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
+  /** Rouvrir un ticket clos : il sort de l'archive et redevient répondable. */
+  const rouvrir = (ticketId: string) => handleUpdateStatus(ticketId, 'IN_PROGRESS');
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -153,6 +177,33 @@ export default function SupportTicketsPage() {
           {error}
         </div>
       )}
+
+      {/* Un ticket clos est archivé : sans cette bascule, la plateforme ne
+          pouvait plus le relire ni le rouvrir. */}
+      <div className="flex gap-2" role="group" aria-label="Tickets à afficher">
+        <button
+          onClick={() => {
+            setVoirArchives(false);
+            setOffset(0);
+          }}
+          className={`px-4 py-2 rounded text-sm font-medium transition ${
+            voirArchives ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-blue-600 text-white'
+          }`}
+        >
+          En cours
+        </button>
+        <button
+          onClick={() => {
+            setVoirArchives(true);
+            setOffset(0);
+          }}
+          className={`px-4 py-2 rounded text-sm font-medium transition ${
+            voirArchives ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+          }`}
+        >
+          Archivés
+        </button>
+      </div>
 
       <div className="flex gap-4">
         <div className="flex-1">
@@ -198,7 +249,9 @@ export default function SupportTicketsPage() {
       ) : tickets.length === 0 ? (
         <div className="text-center py-12 bg-gray-800/50 rounded-lg">
           <HelpCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Aucun ticket de support</p>
+          <p className="text-gray-400">
+            {voirArchives ? 'Aucun ticket archivé' : 'Aucun ticket de support en cours'}
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -215,12 +268,18 @@ export default function SupportTicketsPage() {
                       {ticket.priority}
                     </span>
                     <span className={`px-2 py-1 rounded text-xs font-semibold text-white bg-gray-700`}>
-                      {ticket.status}
+                      {LIBELLES_STATUT[ticket.status] || ticket.status}
                     </span>
+                    {ticket.archivedAt && (
+                      <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-900 text-gray-400">
+                        Archivé
+                      </span>
+                    )}
                   </div>
                   <p className="text-gray-400 text-sm mb-2">{ticket.description}</p>
                   <div className="flex items-center gap-4 text-xs text-gray-500">
-                    <span>Email: {ticket.userEmail}</span>
+                    {ticket.organization && <span>{ticket.organization}</span>}
+                    <span>{ticket.userEmail}</span>
                     <span className="flex items-center gap-1">
                       <Clock size={14} />
                       {new Date(ticket.createdAt).toLocaleDateString('fr-FR')}
@@ -241,7 +300,7 @@ export default function SupportTicketsPage() {
                 >
                   {statusOptions.map((status) => (
                     <option key={status} value={status}>
-                      {status}
+                      {LIBELLES_STATUT[status] || status}
                     </option>
                   ))}
                 </select>
@@ -258,11 +317,19 @@ export default function SupportTicketsPage() {
                       </option>
                     ))}
                   </select>
+                  {ticket.archivedAt && (
+                    <button
+                      onClick={() => rouvrir(ticket.id)}
+                      className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded text-sm transition"
+                    >
+                      Rouvrir
+                    </button>
+                  )}
                   <button
                     onClick={() => setTicketOuvert(ticketOuvert === ticket.id ? null : ticket.id)}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition"
                   >
-                    {ticketOuvert === ticket.id ? 'Fermer' : 'Ouvrir le ticket'}
+                    {ticketOuvert === ticket.id ? 'Replier' : 'Voir la discussion'}
                   </button>
                 </div>
               </div>

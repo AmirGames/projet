@@ -125,8 +125,7 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
         actor: user.email,
         severity: "HIGH",
         details: "Mot de passe stocké en clair, converti à la connexion",
-        ipAddress: req.ip,
-      });
+        });
     }
 
     if (!isPasswordValid) {
@@ -136,8 +135,7 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
         severity: user.isSuperOwner || user.isSystemAdmin ? "HIGH" : "MEDIUM",
         status: "FAILED",
         details: "Mot de passe incorrect",
-        ipAddress: req.ip,
-      });
+        });
 
       throw new ApiError(401, "Email ou mot de passe incorrect", "INVALID_CREDENTIALS");
     }
@@ -158,7 +156,6 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
       actor: user.email,
       severity: user.isSuperOwner || user.isSystemAdmin ? "MEDIUM" : "LOW",
       details: user.isSuperOwner ? "Connexion superowner" : "Connexion réussie",
-      ipAddress: req.ip,
     });
 
     // Get user's organizations

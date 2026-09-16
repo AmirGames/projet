@@ -14,7 +14,8 @@ interface AccessLog {
   userAgent: string;
   status: 'SUCCESS' | 'FAILED' | 'DENIED';
   timestamp: string;
-  duration: number;
+  /** Durée du traitement, en millisecondes. Absente pour les entrées d'avant. */
+  duration: number | null;
 }
 
 export default function AccessLogsPage() {
@@ -49,7 +50,7 @@ export default function AccessLogsPage() {
     const matchesSearch =
       log.user.email.toLowerCase().includes(search.toLowerCase()) ||
       log.resource.toLowerCase().includes(search.toLowerCase()) ||
-      log.ipAddress.includes(search);
+      (log.ipAddress || '').includes(search);
     const matchesStatus = statusFilter === 'ALL' || log.status === statusFilter;
     const matchesAction = !actionFilter || log.action === actionFilter;
     return matchesSearch && matchesStatus && matchesAction;
@@ -188,7 +189,7 @@ export default function AccessLogsPage() {
                 <th className="px-6 py-4 text-left">Action</th>
                 <th className="px-6 py-4 text-center">Statut</th>
                 <th className="px-6 py-4 text-left">IP</th>
-                <th className="px-6 py-4 text-right">Durée (ms)</th>
+                <th className="px-6 py-4 text-right">Durée</th>
               </tr>
             </thead>
             <tbody>
@@ -231,7 +232,13 @@ export default function AccessLogsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 font-mono text-xs text-gray-400">{log.ipAddress}</td>
-                  <td className="px-6 py-4 text-right text-gray-400">{log.duration}</td>
+                  <td className="px-6 py-4 text-right text-gray-400">
+                    {/* Une entrée d'avant la mesure n'a pas de durée : un tiret
+                        vaut mieux qu'un zéro, qui se lirait comme instantané. */}
+                    {log.duration === null || log.duration === undefined
+                      ? '—'
+                      : `${log.duration} ms`}
+                  </td>
                 </tr>
               ))}
             </tbody>
