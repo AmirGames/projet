@@ -200,8 +200,9 @@ export default function ClientHomePage() {
 
               {/* Restaurants Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Une seule vitrine désormais, à l'adresse lisible. */}
                 {filteredStores.map((store) => (
-                  <Link key={store.id} href={`/client/restaurant/${store.id}`}>
+                  <Link key={store.id} href={`/store/${store.slug}`}>
                     <div className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-xl transition transform hover:scale-105 cursor-pointer h-full">
                       {/* Restaurant Image Placeholder */}
                       <div className="relative bg-gradient-to-r from-orange-500 to-red-500 h-40 flex items-center justify-center">

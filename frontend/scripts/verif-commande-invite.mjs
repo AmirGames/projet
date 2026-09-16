@@ -53,6 +53,8 @@ const appeler = async (chemin, options = {}) => {
 };
 
 const uniq = Date.now().toString(36);
+// La vitrine se visite par son adresse lisible : c'est la seule qui reste.
+const slug = `trattoria-${uniq}`;
 const MDP = 'Password123!';
 
 // Le faux service d'adresses situe tout à ce point : la boutique est posée
@@ -78,7 +80,7 @@ const boutique = await appeler('/api/stores', {
   corps: {
     orgId: commercant.donnees.organization.id,
     name: `Trattoria ${uniq}`,
-    slug: `trattoria-${uniq}`,
+    slug,
     address: '1 place Bellecour',
     city: 'Lyon',
     postalCode: '69002',
@@ -113,7 +115,7 @@ page.on('console', (m) => {
 const texte = () => page.locator('body').innerText();
 
 titre('Un invité compose son panier');
-await page.goto(`${SITE}/restaurant/${storeId}`);
+await page.goto(`${SITE}/store/${slug}`);
 await page.waitForTimeout(3500);
 
 const fiche = await texte();
@@ -121,10 +123,19 @@ check('la fiche du commerce s’ouvre', fiche.includes(plat), fiche.slice(0, 300
 
 await page.locator(`button[aria-label="Ajouter ${plat} au panier"]`).first().click();
 await page.waitForTimeout(600);
+
+// Le panier de la vitrine est un panneau replié : la deuxième unité s'ajoute
+// depuis ses lignes, encore faut-il les avoir sous les yeux.
+await page.locator('button', { hasText: 'Panier' }).first().click();
+await page.waitForTimeout(1000);
+
 await page.locator(`button[aria-label="Ajouter un ${plat}"]`).first().click();
 await page.waitForTimeout(600);
 
-await page.locator('a', { hasText: 'Passer la commande' }).first().click();
+// La vitrine commande son propre panier sur place ; la page /checkout, elle,
+// reprend un panier par son adresse — c'est ce qu'on vérifie ici, et c'est le
+// chemin qu'emprunte le rappel « un panier vous attend ailleurs ».
+await page.goto(`${SITE}/checkout?boutique=${storeId}`);
 await page.waitForTimeout(3000);
 
 titre('La page de commande sait de quel commerce il s’agit');

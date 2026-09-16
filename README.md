@@ -19,6 +19,8 @@ emporter ou à livrer.
 
 ### Le client
 - Parcourt les commerces, par recherche ou par proximité
+- **Une seule vitrine**, à l'adresse lisible du commerce (`/store/<slug>`) : les
+  anciens liens par identifiant y mènent encore
 - Consulte un menu rangé par catégories, avec les plats épuisés signalés
 - Choisit une déclinaison quand un plat en a (taille, type de pâtes…)
 - Garde **un panier par commerce** : passer d'un commerce à l'autre ne mélange rien
@@ -87,7 +89,7 @@ Un seul dépôt, deux applications :
 
 ```
 backend/    API REST — 37 routeurs, 42 services, 43 modèles Prisma
-frontend/   Next.js — 82 pages
+frontend/   Next.js — 81 pages
 ```
 
 ## Démarrer
@@ -157,14 +159,14 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1068 contrôles, 32 suites
+# API : 1069 contrôles, 32 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 470 contrôles, 18 suites
+# Navigateur : 483 contrôles, 19 suites
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
@@ -193,12 +195,6 @@ Par honnêteté, ce qui manque encore :
   une commande reste en paiement « en attente ».
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
-- **`/client/checkout`**, une troisième page de commande héritée, qui envoie un
-  panier réparti sur plusieurs commerces dans un format que l'API n'accepte pas.
-  Le tunnel de commande à jour est celui de la vitrine.
-- **Deux vitrines pour la même chose** : `/restaurant/<id>` et `/store/<slug>`.
-  Elles partagent le tunnel de commande mais pas leur habillage ; il faudrait
-  n'en garder qu'une.
 - **Le fond de carte** du suivi de livraison : le trajet est dessiné en repères,
   sans tuiles cartographiques.
 - **Le stock par ingrédient** (une pizza consomme de la mozzarella). Aujourd'hui

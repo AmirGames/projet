@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, ShoppingCart, Heart, User, Menu, X } from 'lucide-react';
 import { useState } from 'react';
-import { CartProvider } from '@/lib/cart-context';
 
 export default function ClientLayout({
   children,
@@ -23,8 +22,15 @@ export default function ClientLayout({
 
   const isActive = (href: string) => pathname === href;
 
+  /**
+   * Le panier global a disparu avec l'ancien tunnel.
+   *
+   * Le site tient un panier **par commerce** (`lib/paniers.ts`) : un
+   * fournisseur de panier unique enveloppait ces pages sans que personne ne le
+   * lise, et laissait croire à deux systèmes de panier concurrents.
+   */
   return (
-    <CartProvider>
+    <>
       <div className="min-h-screen bg-gray-900">
         {/* Mobile Navigation */}
         <nav className="md:hidden bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
@@ -155,6 +161,6 @@ export default function ClientLayout({
           </div>
         </footer>
       </div>
-    </CartProvider>
+    </>
   );
 }

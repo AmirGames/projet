@@ -3,8 +3,8 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : partie 3 de la livraison (preuve de remise). Le plan de
-livraison en trois temps est terminé.
+Dernière mise à jour : nettoyage des vitrines en doublon. Le plan de livraison
+en trois temps est terminé.
 
 ---
 
@@ -67,7 +67,7 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 
 ```
 backend/    API REST — 37 routeurs, 42 services, 43 modèles Prisma
-frontend/   Next.js — 82 pages
+frontend/   Next.js — 81 pages
 ```
 
 **Le premier compte inscrit devient la plateforme** (superowner). Tous les
@@ -199,6 +199,14 @@ Fil de discussion sur les tickets, cloche de notifications branchée partout,
 archivage à la clôture, priorités, alerte de la plateforme à l'ouverture,
 tickets archivés consultables et ré-ouvrables.
 
+**Nettoyage des vitrines**
+Le site portait **trois vitrines** pour la même chose — `/restaurant/<id>`,
+`/client/restaurant/<id>`, `/store/<slug>` — plus une maquette `/store` à
+l'identifiant écrit en dur, vers laquelle la page d'accueil pointait. Il n'en
+reste qu'une, `/store/<slug>` ; les anciennes adresses redirigent. Le panier
+global (`cart-context`) a disparu avec l'ancien tunnel `/client/checkout` :
+seul `lib/paniers.ts`, un panier par commerce, subsiste.
+
 **Infrastructure de vérification**
 Les scripts de vérification versés dans le dépôt, un `README.md`, et le présent
 document.
@@ -219,8 +227,8 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 32 | **1068** |
-| **Navigateur** (`frontend/scripts/`) | 18 | **470** |
+| **API** (`backend/scripts/verification/`) | 32 | **1069** |
+| **Navigateur** (`frontend/scripts/`) | 19 | **483** |
 
 Tout est vert au dernier passage complet.
 
@@ -249,14 +257,16 @@ détaillent chaque suite et ses prérequis.
 ### Prérequis particuliers
 
 - **Base vierge** pour `verif:courses`, `verif:suivi`, `verif:livreurs`,
-  `verif:versements` et `verif:preuve` : ces scripts créent leur propre compte
+  `verif:versements`, `verif:preuve` et `verif:vitrine` : ces scripts créent leur propre compte
   plateforme, et seul le premier compte inscrit est superowner. Lancer
   `node scripts/verification/reinitialiser.mjs` avant.
 - **Jeu de démonstration** pour `verif:admin` et `verif:menu` :
   `node scripts/seed-demo.mjs`.
 - **Faux service d'adresses** pour `verif:invite` et tout ce qui géocode :
   `node backend/scripts/verification/faux-service-adresses.mjs &` puis
-  `ADDRESS_API_URL=http://127.0.0.1:4599/ban/` côté API.
+  `ADDRESS_API_URL=http://127.0.0.1:4599/ban/` côté API. **À arrêter avant la
+  suite d'API** : `verif-adresses` ouvre son propre service sur le même port
+  4599 et s'interrompt si celui-ci est occupé.
 - **Trois domaines renseignés** pour `verif:domaines`
   (`NEXT_PUBLIC_DOMAINE_PUBLIC`, `_PRO`, `_LIVREUR`), les mêmes des deux côtés.
 
@@ -294,6 +304,16 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 **Next.js**
 - `useSearchParams()` dans un composant client impose une frontière `Suspense`
   au build. Lire `window.location.search` dans un `useEffect` à la place.
+- Un commentaire JSX `{/* … */}` ne peut pas être **frère** de l'élément que
+  rend une flèche : il casse la compilation. Le placer avant le `.map(…)`.
+- **Ne jamais enregistrer un état avant de l'avoir lu.** Sur la vitrine, l'effet
+  qui persiste le panier partait avant celui qui le relit, et écrasait le panier
+  gardé du dernier passage. Un garde (`panierLu`) ordonne les deux.
+
+**La vitrine (`/store/<slug>`)**
+- Son panier est un **panneau replié** : un script qui veut lire ses lignes doit
+  d'abord cliquer sur « Panier ».
+- Elle titre ses catégories en `h2` et ses plats en `h3`, dans des `<section>`.
 
 ---
 
@@ -328,12 +348,6 @@ morceau étant le paiement en ligne, reporté volontairement.
   volontairement.*
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
-- **`/client/checkout`**, troisième page de commande héritée, qui envoie un
-  panier réparti sur plusieurs commerces dans un format que l'API refuse.
-- **Deux vitrines pour la même chose** : `/restaurant/<id>` et `/store/<slug>`.
-  Elles partagent le tunnel mais pas l'habillage ; il faudrait n'en garder
-  qu'une.
-- **La page de démonstration `/store`** avec un identifiant écrit en dur.
 - **Le fond de carte** du suivi de livraison : le trajet est dessiné en
   repères, sans tuiles cartographiques.
 - **Prisma 5.22 → 7.10**, une fois le reste stabilisé. *Reporté volontairement.*

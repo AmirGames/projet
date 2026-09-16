@@ -50,7 +50,7 @@ export default function OrderConfirmationContent() {
 
           <div className="flex gap-4 justify-center">
             <Link
-              href="/store"
+              href="/restaurants"
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg"
             >
               Continuer les achats

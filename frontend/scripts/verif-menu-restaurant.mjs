@@ -44,6 +44,8 @@ const appeler = async (chemin, options = {}) => {
 };
 
 const uniq = Date.now().toString(36);
+// La vitrine se visite par son adresse lisible : c'est la seule qui reste.
+const slug = `pizzeria-${uniq}`;
 
 // ===== Le décor =====
 
@@ -65,7 +67,7 @@ const boutique = await appeler('/api/stores', {
   corps: {
     orgId: commercant.donnees.organization.id,
     name: `Pizzeria ${uniq}`,
-    slug: `pizzeria-${uniq}`,
+    slug,
     address: '1 place Bellecour',
     city: 'Lyon',
     postalCode: '69002',
@@ -138,14 +140,17 @@ await page.waitForTimeout(3000);
 const liste = await page.locator('body').innerText();
 check('la pizzeria est listée', liste.includes(`Pizzeria ${uniq}`), liste.slice(0, 300));
 
-await page.goto(`${SITE}/restaurant/${storeId}`);
+await page.goto(`${SITE}/store/${slug}`);
 await page.waitForTimeout(3000);
 
 titre('Les catégories du commerçant');
 // Le menu arrivait en une seule liste à plat : les catégories créées côté
 // commerçant n'apparaissaient nulle part.
+// La vitrine qui reste titre ses catégories en h2 et ses plats en h3 : c'est
+// l'enchaînement correct sous le nom du commerce. Seuls les niveaux changent,
+// le comportement vérifié est le même.
 const categories = await page
-  .locator('h3')
+  .locator('h2')
   .evaluateAll((titres) => titres.map((h) => h.textContent?.trim()));
 
 check('la catégorie Pizzas est un titre', categories.includes('Pizzas'), JSON.stringify(categories));
@@ -159,8 +164,8 @@ check(
 // Chaque plat doit être sous sa propre catégorie, pas seulement présent.
 const parSection = await page.locator('section').evaluateAll((sections) =>
   sections.map((s) => ({
-    titre: s.querySelector('h3')?.textContent?.trim(),
-    plats: [...s.querySelectorAll('h4')].map((h) => h.textContent?.trim()),
+    titre: s.querySelector('h2')?.textContent?.trim(),
+    plats: [...s.querySelectorAll('h3')].map((h) => h.textContent?.trim()),
   }))
 );
 
@@ -185,7 +190,7 @@ check(
 
 titre('Ordre voulu par le commerçant');
 const nomsAffiches = await page
-  .locator('h4')
+  .locator('h3')
   .evaluateAll((titres) => titres.map((h) => h.textContent?.trim()));
 
 const pizzas = nomsAffiches.filter((n) =>
@@ -281,7 +286,7 @@ check(
 
 titre('Les autres restent commandables');
 const nomsRestants = await page
-  .locator('h4')
+  .locator('h3')
   .evaluateAll((titres) => titres.map((h) => h.textContent?.trim()));
 
 check('Calzone est toujours là', nomsRestants.includes('Calzone'), JSON.stringify(nomsRestants));

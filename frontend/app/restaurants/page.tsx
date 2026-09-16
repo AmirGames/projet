@@ -7,6 +7,8 @@ import { Search, MapPin, Star, Clock } from 'lucide-react';
 interface Restaurant {
   id: string;
   name: string;
+  /** L'adresse lisible de la vitrine, seule porte d'entrée désormais. */
+  slug: string;
   description: string;
   cuisine: string;
   rating: number;
@@ -48,6 +50,9 @@ export default function RestaurantsPage() {
         (data.data || []).map((boutique: any) => ({
           id: boutique.id,
           name: boutique.name,
+          // Le lien de la vitrine passe par le slug : sans lui, la carte
+          // menait vers /store/undefined.
+          slug: boutique.slug,
           description: boutique.description || '',
           cuisine: boutique.city || '',
           rating: Number(boutique.rating || 0),
@@ -156,7 +161,7 @@ export default function RestaurantsPage() {
             {filteredRestaurants.map((restaurant) => (
               <Link
                 key={restaurant.id}
-                href={`/restaurant/${restaurant.id}`}
+                href={`/store/${restaurant.slug}`}
                 className="group bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition transform hover:scale-105"
               >
                 {/* Image */}

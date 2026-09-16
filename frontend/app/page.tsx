@@ -49,10 +49,10 @@ export default function Home() {
             Commencer gratuitement
           </Link>
           <Link
-            href="/store"
+            href="/restaurants"
             className="px-8 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg text-lg"
           >
-            Voir un exemple
+            Voir les commerces
           </Link>
         </div>
       </div>
@@ -64,12 +64,15 @@ export default function Home() {
             Découvrez notre plateforme
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* L'accueil menait vers une maquette à l'identifiant écrit en
+                dur : un visiteur tombait sur une boutique qui n'existe que sur
+                la machine du développeur. */}
             <Link
-              href="/store"
+              href="/restaurants"
               className="bg-gray-700 hover:bg-gray-600 p-6 rounded-lg transition"
             >
               <h4 className="text-xl font-bold mb-2">👥 Vue Client</h4>
-              <p className="text-gray-400">Voir la boutique en ligne</p>
+              <p className="text-gray-400">Parcourir les commerces en ligne</p>
             </Link>
             <Link
               href="/dashboard"

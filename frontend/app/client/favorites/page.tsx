@@ -15,6 +15,8 @@ interface FavoriteStore {
   store: {
     id: string;
     name: string;
+    /** L'adresse lisible de la vitrine, seule porte d'entrée désormais. */
+    slug: string;
     description?: string;
     address?: string;
     city?: string;
@@ -166,7 +168,7 @@ export default function FavoritesPage() {
                     </div>
 
                     {/* CTA Button */}
-                    <Link href={`/client/restaurant/${store.id}`} className="w-full block">
+                    <Link href={`/store/${store.slug}`} className="w-full block">
                       <button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition">
                         Voir le menu →
                       </button>

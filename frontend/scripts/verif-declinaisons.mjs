@@ -170,7 +170,7 @@ const nomEpuisee = epuisees[0]?.label;
 // ===== Côté client =====
 
 titre('Le client choisit');
-await page.goto(`${SITE}/restaurant/${storeId}`);
+await page.goto(`${SITE}/store/${slug}`);
 await page.waitForTimeout(3500);
 
 const menu = await page.locator('body').innerText();
@@ -187,8 +187,10 @@ titre('Sans choix, pas de commande');
 const bouton = page.locator('button[aria-label="Ajouter Pâtes 4 fromages au panier"]');
 check('le bouton est bloqué', await bouton.first().isDisabled(), 'actif à tort');
 check(
+  // La vitrine qui reste nomme la question du commerçant plutôt que de parler
+  // d'« une option » : « Choisissez : Type de pâtes ».
   'la page invite à choisir',
-  /Choisissez une option pour commander/.test(menu),
+  /Choisissez\s*:/.test(menu),
   menu.slice(0, 700)
 );
 
@@ -202,6 +204,12 @@ check('le bouton se débloque', !(await bouton.first().isDisabled()), 'resté bl
 
 titre('Au panier, la déclinaison est nommée');
 await bouton.first().click();
+await page.waitForTimeout(800);
+
+// Le panier de cette vitrine est un panneau replié : sans l'ouvrir, ses lignes
+// ne sont pas dans la page.
+const ouvrirPanier = page.locator('button:has-text("Panier")').first();
+await ouvrirPanier.click();
 await page.waitForTimeout(800);
 
 const panier = await page.locator('body').innerText();

@@ -106,8 +106,13 @@ const ajouterAuPanier = (plat) =>
 // ===== La page du restaurant =====
 
 titre('Un panier chez le commerce 1');
-await page.goto(`${SITE}/restaurant/${un.storeId}`);
+await page.goto(`${SITE}/store/${un.slug}`);
 await page.waitForTimeout(3500);
+
+// Le panier de la vitrine est un panneau replié : sans l'ouvrir, ses lignes ne
+// sont pas dans la page.
+await page.locator('button', { hasText: 'Panier' }).first().click();
+await page.waitForTimeout(1000);
 
 check('le menu du commerce 1 est là', (await texte()).includes(un.plat), (await texte()).slice(0, 300));
 
@@ -121,8 +126,13 @@ check('son plat est au panier', chezUn.includes(un.plat), chezUn.slice(0, 600));
 check('la quantité est de deux', /\b2\b/.test(chezUn), chezUn.slice(0, 600));
 
 titre('En passant chez le commerce 2');
-await page.goto(`${SITE}/restaurant/${deux.storeId}`);
+await page.goto(`${SITE}/store/${deux.slug}`);
 await page.waitForTimeout(3500);
+
+// Le panier de la vitrine est un panneau replié : sans l'ouvrir, ses lignes ne
+// sont pas dans la page.
+await page.locator('button', { hasText: 'Panier' }).first().click();
+await page.waitForTimeout(1000);
 
 const chezDeux = await texte();
 check('le menu du commerce 2 est là', chezDeux.includes(deux.plat), chezDeux.slice(0, 300));
@@ -147,8 +157,13 @@ check('son plat s’y ajoute', deuxRempli.includes(deux.plat), deuxRempli.slice(
 check('sans ramener celui du commerce 1', !new RegExp(`${un.plat}\\s*\\n`).test(deuxRempli), deuxRempli.slice(0, 700));
 
 titre('Retour chez le commerce 1');
-await page.goto(`${SITE}/restaurant/${un.storeId}`);
+await page.goto(`${SITE}/store/${un.slug}`);
 await page.waitForTimeout(3500);
+
+// Le panier de la vitrine est un panneau replié : sans l'ouvrir, ses lignes ne
+// sont pas dans la page.
+await page.locator('button', { hasText: 'Panier' }).first().click();
+await page.waitForTimeout(1000);
 
 const retour = await texte();
 check('son panier est retrouvé intact', retour.includes(un.plat), retour.slice(0, 700));

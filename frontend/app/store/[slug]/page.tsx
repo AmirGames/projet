@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ShoppingCart, MapPin, Phone, Clock, Star, Check } from 'lucide-react';
 
@@ -81,6 +81,15 @@ export default function StorefrontPage() {
   const [ailleurs, setAilleurs] = useState<PanierBoutique[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  /**
+   * La boutique dont le panier a déjà été lu.
+   *
+   * Le panier était relu à chaque changement du menu. Comme la disponibilité
+   * arrive en direct et modifie le menu, une déclinaison épuisée sortait du
+   * panier puis y revenait aussitôt, ressuscitée depuis le stockage : le client
+   * pouvait commander un plat qui venait d'être retiré.
+   */
+  const panierLu = useRef<string | null>(null);
   const [orderConfirmation, setOrderConfirmation] = useState<OrderConfirmation | null>(null);
 
   useEffect(() => {
@@ -147,7 +156,11 @@ export default function StorefrontPage() {
    * ici.
    */
   useEffect(() => {
-    if (!store?.id) return;
+    // Une fois par boutique, et seulement quand le menu est arrivé : les lignes
+    // s'enrichissent du catalogue vivant.
+    if (!store?.id || loading || panierLu.current === store.id) return;
+
+    panierLu.current = store.id;
 
     const lignes = lirePanier(store.id);
     const catalogue = categories.flatMap((categorie) => categorie.products);
@@ -182,12 +195,19 @@ export default function StorefrontPage() {
     );
 
     setAilleurs(autresPaniers(store.id));
-  }, [store?.id, categories]);
+  }, [store?.id, loading, categories]);
 
   // Chaque modification est enregistrée sous la boutique courante, et nulle
   // part ailleurs.
   useEffect(() => {
-    if (!store?.id) return;
+    /**
+     * Jamais avant d'avoir lu.
+     *
+     * Le panier commence vide en mémoire : enregistrer cet état initial
+     * écrasait le panier gardé du dernier passage, et le client retrouvait son
+     * commerce les mains vides.
+     */
+    if (!store?.id || panierLu.current !== store.id) return;
 
     enregistrerPanier(
       store.id,
@@ -565,12 +585,20 @@ export default function StorefrontPage() {
                 </p>
                 <ul className="space-y-0.5">
                   {ailleurs.map((autre) => (
-                    <li key={autre.storeId} className="text-xs text-amber-300">
-                      {autre.storeName || 'Une autre boutique'} —{' '}
-                      {autre.lignes.reduce((somme, ligne) => somme + ligne.quantity, 0)} article
-                      {autre.lignes.reduce((somme, ligne) => somme + ligne.quantity, 0) > 1
-                        ? 's'
-                        : ''}
+                    <li key={autre.storeId} className="text-xs">
+                      {/* Le rappel n'était qu'un constat : on pouvait voir
+                          qu'un panier attendait ailleurs, sans aucun moyen de
+                          le reprendre. */}
+                      <a
+                        href={`/checkout?boutique=${autre.storeId}`}
+                        className="text-amber-300 hover:text-amber-200 hover:underline"
+                      >
+                        {autre.storeName || 'Une autre boutique'} —{' '}
+                        {autre.lignes.reduce((somme, ligne) => somme + ligne.quantity, 0)} article
+                        {autre.lignes.reduce((somme, ligne) => somme + ligne.quantity, 0) > 1
+                          ? 's'
+                          : ''}
+                      </a>
                     </li>
                   ))}
                 </ul>
