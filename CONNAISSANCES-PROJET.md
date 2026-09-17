@@ -415,6 +415,30 @@ Un invariant de plus :
   commandes d'une boutique. Le bouton est sur sa fiche, la fermeture exige un
   motif que le commerçant reçoit, la réouverture n'en demande pas, et les deux
   gestes sont journalisés (`CLOSE_STORE`, `OPEN_STORE`).
+- **Ce qui touche à l'argent est figé sur la commande.** La commission se
+  recalculait à l'affichage de la facturation, au taux de la formule *actuelle* :
+  changer la formule d'un commerçant refacturait tout son historique au nouveau
+  taux — la plateforme perdait de l'argent dans un sens, en réclamait indûment
+  dans l'autre. `commissionPercent`, `commissionAmount` et `tierAtOrder` sont
+  désormais inscrits sur chaque commande, et la facturation les additionne. Un
+  mois peut donc porter deux taux, et l'écran le dit.
+- **La TVA est calculée au serveur, et comprise dans le prix.** `taxAmount`
+  arrivait du navigateur ; aucun écran ne l'envoyant, toute commande naissait
+  avec zéro de taxe, et le taux réglé ne servait à rien. Le calcul retient
+  **une seule taxe par ligne**, la plus précise (produit, puis catégorie, puis
+  « sur tout ») — les cumuler aurait taxé deux fois la même limonade. Et le prix
+  affiché étant TTC, la taxe s'en **extrait** (`TaxSetting.included`, vrai par
+  défaut) : ajouter 12 % au passage en caisse ferait payer au client autre chose
+  que ce qu'il a vu sur la carte.
+- **Une facture porte les mentions de son émetteur.** Numéro de TVA et
+  immatriculation, pris sur la boutique quand elle a sa propre identité de
+  facturation, sinon sur la société. Sans numéro de TVA, une facture ne permet
+  ni de récupérer la taxe ni de justifier la dépense : l'écran le signale au
+  commerçant plutôt que d'imprimer un document inutilisable.
+- **`zone-impression` n'imprime que le document.** « Imprimer » sortait presque
+  tout le site : seule la barre d'action portait un `print:hidden`, le châssis
+  restait sur le papier. La règle est dans `globals.css`, et se pose sur le
+  document à imprimer, quelle que soit sa profondeur dans la page.
 - **Les webhooks sont branchés pour de bon.** L'écran proposait dix événements
   dont neuf n'existaient pas côté serveur, et l'abonnement était accepté sans un
   mot ; sur les six réels, trois n'étaient émis nulle part. La liste est

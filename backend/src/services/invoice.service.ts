@@ -19,7 +19,32 @@ export class InvoiceService {
           },
           customer: true,
           store: {
-            select: { name: true, email: true, phone: true, address: true, city: true },
+            select: {
+              name: true,
+              email: true,
+              phone: true,
+              address: true,
+              city: true,
+              postalCode: true,
+              // L'identité de facturation de la boutique quand elle en a une —
+              // trois commerces d'un même compte peuvent avoir trois numéros de
+              // TVA —, sinon celle de la société.
+              legalName: true,
+              vatNumber: true,
+              registrationNumber: true,
+              org: {
+                select: {
+                  name: true,
+                  legalName: true,
+                  vatNumber: true,
+                  registrationNumber: true,
+                  billingAddress: true,
+                  billingPostalCode: true,
+                  billingCity: true,
+                  billingCountry: true,
+                },
+              },
+            },
           },
         },
       });
@@ -27,6 +52,25 @@ export class InvoiceService {
       if (!order || order.storeId !== storeId) {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
+
+      /**
+       * Les mentions légales de l'émetteur.
+       *
+       * Une facture sans numéro de TVA n'en est pas une : elle ne permet ni de
+       * récupérer la taxe, ni de justifier la dépense. Rien n'en sortait, alors
+       * que le commerçant les renseigne dans son profil.
+       */
+      const org = order.store.org;
+
+      const emetteur = {
+        legalName: order.store.legalName || org?.legalName || null,
+        vatNumber: order.store.vatNumber || org?.vatNumber || null,
+        registrationNumber: order.store.registrationNumber || org?.registrationNumber || null,
+        billingAddress: org?.billingAddress || null,
+        billingPostalCode: org?.billingPostalCode || null,
+        billingCity: org?.billingCity || null,
+        billingCountry: org?.billingCountry || null,
+      };
 
       const invoice = {
         invoiceNumber: `INV-${order.id.slice(0, 8).toUpperCase()}`,
@@ -39,9 +83,11 @@ export class InvoiceService {
           email: order.store.email,
           phone: order.store.phone,
           address: order.store.address,
+          postalCode: order.store.postalCode,
           city: order.store.city,
+          ...emetteur,
         },
-        
+
         // Customer Info
         customerInfo: {
           name: order.customerName,
@@ -63,6 +109,12 @@ export class InvoiceService {
         // Amounts
         subtotal: order.items.reduce((sum, item) => sum + parseFloat(item.total.toString()), 0),
         tax: parseFloat(order.taxAmount.toString()),
+        // Le taux tel qu'il valait à la commande : un commerçant qui passe de 10
+        // à 20 % ne doit pas réécrire la TVA d'un ticket déjà remis.
+        taxRate: parseFloat(order.taxRate.toString()),
+        // Les prix affichés étant TTC, la taxe est comprise dans le total : la
+        // facture doit le dire, sinon on croit qu'elle s'ajoute.
+        taxIncluded: true,
         fees: parseFloat(order.feesAmount.toString()),
         total: parseFloat(order.totalAmount.toString()),
         

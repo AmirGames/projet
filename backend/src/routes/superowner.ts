@@ -255,13 +255,49 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
         const commandes = storeIds.length
           ? await db.order.findMany({
               where: { storeId: { in: storeIds }, createdAt: { gte: debutMois } },
-              select: { totalAmount: true },
+              select: {
+                totalAmount: true,
+                commissionPercent: true,
+                commissionAmount: true,
+                tierAtOrder: true,
+              },
             })
           : [];
 
         const chiffreAffaires = commandes.reduce((somme, c) => somme + Number(c.totalAmount), 0);
-        const taux = tauxParFormule.get(org.tier) ?? tauxParDefaut;
-        const commission = (chiffreAffaires * taux) / 100;
+
+        /**
+         * La commission se lit sur chaque commande, où elle a été figée.
+         *
+         * Elle se recalculait ici au taux de la formule *actuelle* : changer la
+         * formule d'un commerçant refacturait tout son mois — et tout mois
+         * rouvert plus tard — au nouveau taux. La plateforme perdait de l'argent
+         * dans un sens, en réclamait indûment dans l'autre.
+         *
+         * Les commandes antérieures à ce changement n'ont pas de taux figé : on
+         * retombe alors sur la formule du jour, faute de mieux.
+         */
+        const tauxDuJour = tauxParFormule.get(org.tier) ?? tauxParDefaut;
+
+        const commission = commandes.reduce((somme, c) => {
+          const figee = Number(c.commissionAmount);
+
+          if (figee > 0) return somme + figee;
+
+          return somme + (Number(c.totalAmount) * tauxDuJour) / 100;
+        }, 0);
+
+        // Les taux réellement appliqués sur la période : plusieurs en cas de
+        // changement de formule en cours de mois, et c'est exactement ce que
+        // l'écran doit pouvoir montrer.
+        const tauxAppliques = [
+          ...new Set(
+            commandes
+              .map((c) => Number(c.commissionPercent))
+              .filter((t) => t > 0)
+          ),
+        ].sort((a, b) => a - b);
+
         const dejaFacture = org.commissionHistory.length > 0;
 
         return {
@@ -277,7 +313,11 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
           // qu'il s'agissait d'un pourcentage des ventes du mois.
           revenue: Number(chiffreAffaires.toFixed(2)),
           ordersCount: commandes.length,
-          commissionPercent: taux,
+          // Le taux effectivement appliqué. Plusieurs valeurs quand la formule a
+          // changé en cours de mois : les anciennes commandes gardent l'ancien.
+          commissionPercent: tauxAppliques.length === 1 ? tauxAppliques[0] : tauxDuJour,
+          commissionRates: tauxAppliques,
+          tierChangedDuringPeriod: tauxAppliques.length > 1,
         };
       })
     );

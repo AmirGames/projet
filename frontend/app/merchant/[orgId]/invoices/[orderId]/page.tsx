@@ -30,12 +30,23 @@ interface Facture {
     email?: string | null;
     phone?: string | null;
     address?: string | null;
+    postalCode?: string | null;
     city?: string | null;
+    /** Les mentions légales de l'émetteur : sans TVA, ce n'est pas une facture. */
+    legalName?: string | null;
+    vatNumber?: string | null;
+    registrationNumber?: string | null;
+    billingAddress?: string | null;
+    billingPostalCode?: string | null;
+    billingCity?: string | null;
+    billingCountry?: string | null;
   };
   customerInfo: { name: string; email: string; phone: string };
   items: LigneFacture[];
   subtotal: number;
   tax: number;
+  taxRate: number;
+  taxIncluded: boolean;
   fees: number;
   total: number;
   paymentStatus: string;
@@ -122,7 +133,8 @@ export default function FacturePage() {
         </button>
       </div>
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 space-y-8 print:bg-white print:text-black">
+      {/* `zone-impression` : à l'impression, tout le reste du site disparaît. */}
+      <div className="zone-impression bg-gray-800 border border-gray-700 rounded-lg p-8 space-y-8 print:bg-white print:text-black">
         <div className="flex justify-between items-start gap-6 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold">Facture {facture.invoiceNumber}</h1>
@@ -147,11 +159,41 @@ export default function FacturePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
           <div>
             <p className="text-gray-400 print:text-gray-700 uppercase text-xs mb-2">Émetteur</p>
-            <p className="font-bold">{facture.storeInfo.name}</p>
+            <p className="font-bold">{facture.storeInfo.legalName || facture.storeInfo.name}</p>
+            {facture.storeInfo.legalName && facture.storeInfo.legalName !== facture.storeInfo.name && (
+              <p className="text-gray-400 print:text-gray-700">
+                Enseigne : {facture.storeInfo.name}
+              </p>
+            )}
             {facture.storeInfo.address && <p>{facture.storeInfo.address}</p>}
-            {facture.storeInfo.city && <p>{facture.storeInfo.city}</p>}
+            {(facture.storeInfo.postalCode || facture.storeInfo.city) && (
+              <p>{[facture.storeInfo.postalCode, facture.storeInfo.city].filter(Boolean).join(' ')}</p>
+            )}
             {facture.storeInfo.phone && <p>{facture.storeInfo.phone}</p>}
             {facture.storeInfo.email && <p className="break-all">{facture.storeInfo.email}</p>}
+
+            {/* Une facture sans numéro de TVA n'en est pas une : elle ne permet
+                ni de récupérer la taxe, ni de justifier la dépense. */}
+            {facture.storeInfo.vatNumber ? (
+              <p className="mt-2">
+                <span className="text-gray-400 print:text-gray-700">N° TVA : </span>
+                {facture.storeInfo.vatNumber}
+              </p>
+            ) : (
+              <p className="mt-2 text-amber-400 print:hidden text-xs">
+                Aucun numéro de TVA : renseignez-le dans{' '}
+                <Link href="/merchant/profil" className="underline">
+                  votre profil
+                </Link>{' '}
+                — une facture sans ce numéro n&apos;est pas valable.
+              </p>
+            )}
+            {facture.storeInfo.registrationNumber && (
+              <p>
+                <span className="text-gray-400 print:text-gray-700">SIRET / BCE : </span>
+                {facture.storeInfo.registrationNumber}
+              </p>
+            )}
           </div>
           <div>
             <p className="text-gray-400 print:text-gray-700 uppercase text-xs mb-2">Client</p>
@@ -209,18 +251,39 @@ export default function FacturePage() {
               <span>Sous-total</span>
               <span>{euro(facture.subtotal)}</span>
             </div>
-            <div className="flex justify-between text-gray-400 print:text-gray-700">
-              <span>TVA</span>
-              <span>{euro(facture.tax)}</span>
-            </div>
-            <div className="flex justify-between text-gray-400 print:text-gray-700">
-              <span>Frais</span>
-              <span>{euro(facture.fees)}</span>
-            </div>
+            {facture.fees > 0 && (
+              <div className="flex justify-between text-gray-400 print:text-gray-700">
+                <span>Frais de livraison</span>
+                <span>{euro(facture.fees)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-700 print:border-gray-300">
-              <span>Total</span>
+              <span>Total{facture.taxIncluded ? ' TTC' : ''}</span>
               <span className="text-green-400 print:text-black">{euro(facture.total)}</span>
             </div>
+
+            {/* Le détail de la TVA : le prix est TTC, la taxe s'en extrait. Le
+                ticket n'en montrait rien, et la taxe valait zéro faute d'être
+                calculée au serveur. */}
+            {facture.tax > 0 ? (
+              <div className="pt-2 border-t border-gray-700 print:border-gray-300 space-y-1 text-gray-400 print:text-gray-700">
+                <div className="flex justify-between">
+                  <span>Total HT</span>
+                  <span>{euro(facture.total - facture.tax)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>
+                    dont TVA{facture.taxRate > 0 ? ` ${facture.taxRate} %` : ''}
+                  </span>
+                  <span>{euro(facture.tax)}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="pt-2 text-xs text-gray-500 print:hidden">
+                Aucune TVA sur cette commande. Réglez votre taux dans les taxes de la boutique : il
+                s&apos;appliquera aux commandes suivantes.
+              </p>
+            )}
           </div>
         </div>
 

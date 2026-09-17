@@ -47,6 +47,8 @@ interface Commande {
   paymentStatus: string;
   totalAmount: number | string;
   taxAmount: number | string;
+  /** Le taux tel qu'il valait à la commande, et non celui réglé aujourd'hui. */
+  taxRate?: number | string;
   feesAmount: number | string;
   notes?: string | null;
   createdAt: string;
@@ -281,18 +283,39 @@ export default function DetailCommandePage() {
               <span>Sous-total</span>
               <span>{euro(sousTotal)}</span>
             </div>
-            <div className="flex justify-between text-gray-400">
-              <span>TVA</span>
-              <span>{euro(commande.taxAmount)}</span>
-            </div>
-            <div className="flex justify-between text-gray-400">
-              <span>Frais</span>
-              <span>{euro(commande.feesAmount)}</span>
-            </div>
+            {Number(commande.feesAmount) > 0 && (
+              <div className="flex justify-between text-gray-400">
+                <span>Frais de livraison</span>
+                <span>{euro(commande.feesAmount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-700">
-              <span>Total</span>
+              <span>Total TTC</span>
               <span className="text-green-400">{euro(commande.totalAmount)}</span>
             </div>
+
+            {/* La TVA est comprise dans le prix : elle s'extrait du total, elle
+                ne s'y ajoute pas. Elle valait zéro sur toute commande, faute
+                d'être calculée au serveur — le taux réglé ne servait à rien. */}
+            {Number(commande.taxAmount) > 0 ? (
+              <div className="pt-2 border-t border-gray-700 space-y-1 text-gray-400">
+                <div className="flex justify-between">
+                  <span>Total HT</span>
+                  <span>{euro(Number(commande.totalAmount) - Number(commande.taxAmount))}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>
+                    dont TVA
+                    {Number(commande.taxRate) > 0 ? ` ${Number(commande.taxRate)} %` : ''}
+                  </span>
+                  <span>{euro(commande.taxAmount)}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="pt-2 text-xs text-gray-500">
+                Aucune TVA sur cette commande.
+              </p>
+            )}
           </div>
         </div>
 

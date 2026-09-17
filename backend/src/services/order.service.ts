@@ -6,6 +6,7 @@ import { VariantService } from "./variant.service";
 import { DeliveryZoneService } from "./delivery-zone.service";
 import { PromotionService } from "./promotion.service";
 import { emitWebhook } from "./webhook.service";
+import { TaxService } from "./tax.service";
 
 export interface OrderData {
   storeId: string;
@@ -45,6 +46,40 @@ export class OrderService {
    * passée sans compte doit tout de même alimenter la clientèle du commerçant,
    * sans quoi son carnet d'adresses reste vide.
    */
+  /**
+   * Le taux de commission qui s'applique à cette commande, maintenant.
+   *
+   * La facturation le recalculait à l'affichage, au taux de la formule *du
+   * jour* : un commerçant passé de Free à Pro voyait toutes ses commandes du
+   * mois — et de tout mois rouvert plus tard — refacturées au taux Pro. Dans
+   * l'autre sens, la plateforme perdait la différence sur tout l'historique.
+   *
+   * Le taux est donc lu ici, une fois, et gardé sur la commande.
+   */
+  private static async commissionDeLaBoutique(storeId: string, montant: number) {
+    const boutique = await db.store.findUnique({
+      where: { id: storeId },
+      select: { org: { select: { tier: true } } },
+    });
+
+    const tier = boutique?.org?.tier ?? null;
+
+    const formule = tier
+      ? await db.planTier.findUnique({ where: { code: tier }, select: { commissionPercent: true } })
+      : null;
+
+    // Le réglage global ne sert que de repli, pour une formule sans taux propre.
+    const config = await db.systemConfig.findFirst({ select: { platformFeePercent: true } });
+
+    const taux = Number(formule?.commissionPercent ?? config?.platformFeePercent ?? 5);
+
+    return {
+      tier,
+      taux,
+      montant: Number(((montant * taux) / 100).toFixed(2)),
+    };
+  }
+
   private static async resoudreClient(data: OrderData) {
     if (data.customerId) return data.customerId;
     if (!data.customerEmail) return undefined;
@@ -231,11 +266,36 @@ export class OrderService {
         moyenDePaiement = propose;
       }
 
+      /**
+       * La taxe, calculée ici et non annoncée par le navigateur.
+       *
+       * `data.taxAmount` était pris tel quel ; aucun écran ne l'envoyant, toute
+       * commande naissait avec zéro de taxe. Le taux réglé par le commerçant ne
+       * servait à rien, et son ticket n'avait pas de TVA à montrer.
+       */
+      const taxe = await TaxService.taxeDesLignes(
+        data.storeId,
+        lignesTarifees.map((ligne) => ({
+          productId: ligne.productId,
+          montant: ligne.price * ligne.quantity,
+        }))
+      );
+
       const totalCalcule = lignesTarifees.length > 0
         ? Number(
-            (totalDesLignes + Number(data.taxAmount || 0) + fraisDeLivraison - remise).toFixed(2)
+            (totalDesLignes + taxe.aAjouter + fraisDeLivraison - remise).toFixed(2)
           )
         : Number(data.totalAmount);
+
+      /**
+       * La commission de la plateforme, figée sur la commande.
+       *
+       * Elle se recalculait à chaque affichage de la facturation, au taux de la
+       * formule *actuelle* du commerçant : changer sa formule refacturait tout
+       * son historique au nouveau taux. Une commande passée sous une formule
+       * doit rester facturée au taux de cette formule.
+       */
+      const commission = await this.commissionDeLaBoutique(data.storeId, totalCalcule);
 
       /**
        * Les bornes de la plateforme.
@@ -282,7 +342,6 @@ export class OrderService {
           deliveryLat: data.deliveryLat,
           deliveryLng: data.deliveryLng,
           totalAmount: totalCalcule,
-          taxAmount: data.taxAmount || 0,
           feesAmount: fraisDeLivraison,
           promoCode: codePromo,
           discountAmount: remise,
@@ -290,6 +349,11 @@ export class OrderService {
           paymentMethodName: moyenDePaiement?.name,
           customerId,
           notes: data.notes,
+          taxAmount: taxe.total,
+          taxRate: taxe.taux,
+          commissionPercent: commission.taux,
+          commissionAmount: commission.montant,
+          tierAtOrder: commission.tier,
           status: "PENDING" as any,
           paymentStatus: "PENDING" as any,
           items: {

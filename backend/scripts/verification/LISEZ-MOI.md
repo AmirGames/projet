@@ -101,6 +101,7 @@ continue.
 | `verif-salons-direct.mjs` | Qui peut suivre quoi en direct, et la disponibilité poussée |
 | `verif-zones-livraison.mjs` | Anneaux de livraison : frais, minimum, et leur application à la commande |
 | `verif-webhooks.mjs` | Webhooks : signature, événements réels, relances, pause et reprise |
+| `verif-argent.mjs` | Commission figée à la commande, TVA calculée au serveur, mentions de la facture |
 | `verif-ticket-paiement.mjs` | Catégorie et déclinaison sur le ticket, code promo, moyens de paiement |
 | `verif-superowner-suite.mjs` | Tickets archivés, détail d'une facturation, bornes de commande, durée des accès |
 | `verif-temps-reel.mjs` | Notifications poussées en direct |

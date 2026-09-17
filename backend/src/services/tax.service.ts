@@ -134,6 +134,117 @@ export class TaxService {
     }
   }
 
+  /**
+   * La taxe d'une commande, calculée au serveur.
+   *
+   * Le commerçant réglait sa TVA, l'écran l'enregistrait — et la commande
+   * additionnait `taxAmount` tel que le *navigateur* l'annonçait. Comme aucun
+   * écran ne l'envoyait, toute commande naissait avec zéro de taxe : le taux
+   * réglé ne servait à rien, et le ticket n'avait rien à montrer.
+   *
+   * Deux choix de calcul importaient :
+   *
+   * - **Une seule taxe par ligne, la plus précise.** `calculateTax()` cumulait
+   *   toutes les taxes applicables : une TVA « sur tout » et une TVA « sur les
+   *   boissons » se seraient ajoutées sur une limonade. Ici, un réglage visant
+   *   le produit l'emporte sur un réglage visant sa catégorie, qui l'emporte sur
+   *   celui qui vise tout.
+   * - **La taxe est comprise dans le prix** (`included`, vrai par défaut). Un
+   *   prix montré à un particulier est TTC : la TVA s'en extrait, elle ne
+   *   s'ajoute pas au moment de payer. Ajouter 12 % au passage en caisse ferait
+   *   payer au client autre chose que ce qu'il a vu sur la carte.
+   */
+  static async taxeDesLignes(
+    storeId: string,
+    lignes: { productId: string; montant: number }[]
+  ): Promise<{
+    total: number;
+    /** Ce qui s'ajoute au total : zéro quand la taxe est déjà comprise. */
+    aAjouter: number;
+    /** Le taux à retenir sur la commande — celui du plus gros montant taxé. */
+    taux: number;
+    detail: { nom: string; taux: number; base: number; taxe: number; comprise: boolean }[];
+  }> {
+    if (lignes.length === 0) {
+      return { total: 0, aAjouter: 0, taux: 0, detail: [] };
+    }
+
+    const reglages = await db.taxSetting.findMany({ where: { storeId, status: "ACTIVE" } });
+
+    if (reglages.length === 0) {
+      return { total: 0, aAjouter: 0, taux: 0, detail: [] };
+    }
+
+    const produits = await db.product.findMany({
+      where: { id: { in: lignes.map((l) => l.productId) } },
+      select: { id: true, categoryId: true },
+    });
+
+    const categorieDuProduit = new Map(produits.map((p) => [p.id, p.categoryId]));
+
+    // Du plus précis au plus général : le premier qui correspond gagne.
+    const parProduit = reglages.filter((r) => r.applicableTo === "products");
+    const parCategorie = reglages.filter((r) => r.applicableTo === "categories");
+    const surTout = reglages.filter((r) => r.applicableTo === "all");
+
+    const cumul = new Map<
+      string,
+      { nom: string; taux: number; base: number; taxe: number; comprise: boolean }
+    >();
+
+    for (const ligne of lignes) {
+      const categorieId = categorieDuProduit.get(ligne.productId);
+
+      const reglage =
+        parProduit.find((r) => r.productIds.includes(ligne.productId)) ||
+        (categorieId ? parCategorie.find((r) => r.categoryIds.includes(categorieId)) : undefined) ||
+        surTout[0];
+
+      if (!reglage) continue;
+
+      const taux = Number(reglage.rate);
+
+      // Comprise : on l'extrait du prix (12 % dans 112 € en font 12).
+      // Ajoutée : elle se calcule sur le prix et grossit le total.
+      const taxe = reglage.included
+        ? (ligne.montant * taux) / (100 + taux)
+        : (ligne.montant * taux) / 100;
+
+      const vu = cumul.get(reglage.id);
+
+      if (vu) {
+        vu.base += ligne.montant;
+        vu.taxe += taxe;
+      } else {
+        cumul.set(reglage.id, {
+          nom: reglage.name,
+          taux,
+          base: ligne.montant,
+          taxe,
+          comprise: reglage.included,
+        });
+      }
+    }
+
+    const detail = [...cumul.values()].map((l) => ({
+      ...l,
+      base: Number(l.base.toFixed(2)),
+      taxe: Number(l.taxe.toFixed(2)),
+    }));
+
+    const total = Number(detail.reduce((somme, l) => somme + l.taxe, 0).toFixed(2));
+    const aAjouter = Number(
+      detail.filter((l) => !l.comprise).reduce((somme, l) => somme + l.taxe, 0).toFixed(2)
+    );
+
+    // Le taux retenu sur la commande est celui qui porte le plus gros montant :
+    // une commande à deux taux n'en garde qu'un, et autant que ce soit le
+    // principal. Le détail complet reste dans `detail`.
+    const principal = [...detail].sort((a, b) => b.base - a.base)[0];
+
+    return { total, aAjouter, taux: principal?.taux ?? 0, detail };
+  }
+
   static async calculateTax(storeId: string, amount: number, categoryIds?: string[], productIds?: string[]) {
     try {
       const whereClause: any = {

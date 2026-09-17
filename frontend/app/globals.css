@@ -95,3 +95,57 @@ a {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/**
+ * N'imprimer que le document, pas l'application autour.
+ *
+ * « Imprimer » sortait presque tout le site : la barre latérale, l'en-tête, le
+ * menu, le pied de page. Seule la barre d'action de la facture portait un
+ * `print:hidden` — tout le châssis, lui, restait sur le papier, et le ticket se
+ * retrouvait noyé au milieu, souvent sur une deuxième page.
+ *
+ * Le document à imprimer se marque d'un `zone-impression`. Tout le reste est
+ * rendu invisible — `visibility` plutôt que `display`, pour ne pas casser la
+ * mise en page pendant que le navigateur compose les pages —, et le document
+ * remonte en haut de la feuille.
+ */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+    box-shadow: none !important;
+  }
+
+  .zone-impression,
+  .zone-impression * {
+    visibility: visible !important;
+  }
+
+  .zone-impression {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    border: 0 !important;
+  }
+
+  /* Ce qui n'a rien à faire sur un ticket, même dans la zone imprimée. */
+  .zone-impression .print\:hidden,
+  .sans-impression {
+    display: none !important;
+  }
+}

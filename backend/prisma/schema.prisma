@@ -626,6 +626,25 @@ model Order {
   paymentStatus   PaymentStatus @default(PENDING)
   paymentId       String?      // Stripe payment intent ID
 
+  /// Le taux de TVA appliqué, tel qu'il valait au moment de la commande.
+  ///
+  /// `taxAmount` arrivait du navigateur et valait donc zéro : la taxe réglée par
+  /// le commerçant n'était lue nulle part. Elle est maintenant calculée au
+  /// serveur, et son taux conservé — un commerçant qui passe de 10 à 20 % ne
+  /// doit pas réécrire la TVA de ses tickets déjà remis.
+  taxRate         Decimal      @default(0) @db.Decimal(5, 2)
+
+  /// La commission de la plateforme, figée à la commande.
+  ///
+  /// Elle se recalculait à chaque affichage de la facturation, au taux de la
+  /// formule *actuelle* du commerçant : changer sa formule refacturait tout son
+  /// historique au nouveau taux. Dans un sens la plateforme perdait de l'argent,
+  /// dans l'autre elle en réclamait indûment.
+  commissionPercent Decimal    @default(0) @db.Decimal(5, 2)
+  commissionAmount  Decimal    @default(0) @db.Decimal(10, 2)
+  /// La formule du commerçant à cet instant, pour expliquer le taux retenu.
+  tierAtOrder       String?
+
   // Le code promo appliqué, et la remise qu'il a réellement accordée. Aucun des
   // deux n'était conservé : la remise disparaissait de la commande, et le
   // commerçant ne savait pas quel code avait été utilisé.
@@ -1294,6 +1313,14 @@ model TaxSetting {
 
   name            String  // "VAT 20%", "TVA"
   rate            Decimal @db.Decimal(5, 2) // 20.00 for 20%
+
+  /// La taxe est-elle déjà comprise dans le prix affiché ?
+  ///
+  /// En France comme en Belgique, un prix montré à un particulier est TTC : la
+  /// TVA s'extrait du prix, elle ne s'ajoute pas par-dessus au moment de payer.
+  /// C'est donc la valeur par défaut. `false` pour une facturation hors taxes,
+  /// où le taux s'ajoute au total.
+  included        Boolean @default(true)
 
   // Scope
   applicableTo    String  @default("all") // all, categories, products
