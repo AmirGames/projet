@@ -64,19 +64,81 @@ const REPONSE_PHOTON = {
   ],
 };
 
+/**
+ * Réponse au format Google Places (New) : adresse découpée en composants
+ * typés, coordonnées à part, et un masque de champs qu'on ignore ici.
+ */
+const REPONSE_GOOGLE = {
+  places: [
+    {
+      formattedAddress: "20 Rue de la République, 69002 Lyon, France",
+      displayName: { text: "20 Rue de la République" },
+      location: { latitude: 45.764, longitude: 4.8357 },
+      addressComponents: [
+        { longText: "20", types: ["street_number"] },
+        { longText: "Rue de la République", types: ["route"] },
+        { longText: "Lyon", types: ["locality"] },
+        { longText: "69002", types: ["postal_code"] },
+        { longText: "France", types: ["country"] },
+      ],
+    },
+    {
+      formattedAddress: "12 Rue Neuve, 1000 Bruxelles, Belgique",
+      displayName: { text: "12 Rue Neuve" },
+      location: { latitude: 50.8503, longitude: 4.3517 },
+      addressComponents: [
+        { longText: "12", types: ["street_number"] },
+        { longText: "Rue Neuve", types: ["route"] },
+        { longText: "Bruxelles", types: ["locality"] },
+        { longText: "1000", types: ["postal_code"] },
+        { longText: "Belgique", types: ["country"] },
+      ],
+    },
+    {
+      formattedAddress: "5 Bahnhofstrasse, 8001 Zurich, Suisse",
+      displayName: { text: "5 Bahnhofstrasse" },
+      location: { latitude: 47.3769, longitude: 8.5417 },
+      addressComponents: [
+        { longText: "5", types: ["street_number"] },
+        { longText: "Bahnhofstrasse", types: ["route"] },
+        { longText: "Zurich", types: ["locality"] },
+        { longText: "8001", types: ["postal_code"] },
+        { longText: "Suisse", types: ["country"] },
+      ],
+    },
+  ],
+};
+
 export async function ouvrirFauxServiceAdresses(port = 4599) {
   const appels = [];
+  const clesRecues = [];
   let enPanne = false;
 
   const serveur = createServer((requete, reponse) => {
-    appels.push(requete.url || "");
+    const chemin = requete.url || "";
+    appels.push(chemin);
 
     if (enPanne) {
       reponse.writeHead(503).end("Service indisponible");
       return;
     }
 
-    const format = (requete.url || "").includes("/photon") ? REPONSE_PHOTON : REPONSE_BAN;
+    // Google refuse une requête sans clé : le faux service le fait aussi, sans
+    // quoi on ne saurait pas si la clé est bien transmise.
+    if (chemin.includes("/google")) {
+      if (!requete.headers["x-goog-api-key"]) {
+        reponse.writeHead(403).end(JSON.stringify({ error: { message: "API key manquante" } }));
+        return;
+      }
+
+      clesRecues.push(String(requete.headers["x-goog-api-key"]));
+
+      reponse.writeHead(200, { "Content-Type": "application/json" });
+      reponse.end(JSON.stringify(REPONSE_GOOGLE));
+      return;
+    }
+
+    const format = chemin.includes("/photon") ? REPONSE_PHOTON : REPONSE_BAN;
 
     reponse.writeHead(200, { "Content-Type": "application/json" });
     reponse.end(JSON.stringify(format));
@@ -90,7 +152,10 @@ export async function ouvrirFauxServiceAdresses(port = 4599) {
   return {
     urlBan: `http://127.0.0.1:${port}/ban/`,
     urlPhoton: `http://127.0.0.1:${port}/photon/`,
+    urlGoogle: `http://127.0.0.1:${port}/google`,
     appels,
+    /** Les clés reçues : de quoi vérifier qu'elle part bien, et laquelle. */
+    clesRecues,
 
     /** Simule une panne du fournisseur, pour vérifier le repli. */
     tomberEnPanne(valeur = true) {
@@ -99,6 +164,7 @@ export async function ouvrirFauxServiceAdresses(port = 4599) {
 
     vider() {
       appels.length = 0;
+      clesRecues.length = 0;
     },
 
     async fermer() {

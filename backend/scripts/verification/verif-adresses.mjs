@@ -191,6 +191,77 @@ check(
   JSON.stringify((moitie.suggestions || []).map((s) => s.city))
 );
 
+// ===== Google Places (New) =====
+
+titre('Google Places rend des adresses complètes');
+/**
+ * La clé ne quitte jamais le serveur : la requête part de l'API, pas du
+ * navigateur. Le faux service refuse d'ailleurs une requête sans clé, faute de
+ * quoi on ne saurait pas si elle est bien transmise.
+ */
+const apiGoogle = await demarrerApi(4615, {
+  ADDRESS_PROVIDER: 'google',
+  GOOGLE_PLACES_API_URL: faux.urlGoogle,
+  GOOGLE_MAPS_API_KEY: 'cle-de-test',
+  ADDRESS_COUNTRIES: '',
+});
+
+faux.vider();
+const google = await chercher(4615, '20 rue de la republique');
+
+check('le fournisseur est annoncé', google.provider === 'google', google.provider);
+check('des suggestions reviennent', (google.suggestions || []).length >= 1, `n=${google.suggestions?.length}`);
+
+const lyon = (google.suggestions || []).find((s) => s.city === 'Lyon');
+check('la voie est reconstituée', lyon?.street === '20 Rue de la République', lyon?.street);
+check('le code postal est extrait', lyon?.postalCode === '69002', lyon?.postalCode);
+check('le pays aussi', lyon?.country === 'France', lyon?.country);
+// C'est ce qui évite un second appel « Place Details » par adresse retenue.
+check('les coordonnées sont là', lyon?.latitude === 45.764, `${lyon?.latitude}`);
+
+titre('La clé part bien, et seulement au serveur');
+check('le faux service l’a reçue', faux.clesRecues.includes('cle-de-test'), JSON.stringify(faux.clesRecues));
+
+titre('Le filtre par pays s’applique aussi');
+const apiGoogleFr = await demarrerApi(4616, {
+  ADDRESS_PROVIDER: 'google',
+  GOOGLE_PLACES_API_URL: faux.urlGoogle,
+  GOOGLE_MAPS_API_KEY: 'cle-de-test',
+  ADDRESS_COUNTRIES: 'fr,be',
+});
+
+const filtrees = await chercher(4616, 'rue');
+const paysRendus = (filtrees.suggestions || []).map((s) => s.country);
+check('la Suisse est écartée', !paysRendus.includes('Suisse'), JSON.stringify(paysRendus));
+check('la France reste', paysRendus.includes('France'), JSON.stringify(paysRendus));
+check('la Belgique aussi', paysRendus.includes('Belgique'), JSON.stringify(paysRendus));
+
+titre('Sans clé, le fournisseur le dit');
+// Une liste vide se lirait « aucune adresse ne correspond » : c'est faux, et
+// le commerçant chercherait l'erreur dans sa saisie.
+const apiSansCle = await demarrerApi(4617, {
+  ADDRESS_PROVIDER: 'google',
+  GOOGLE_PLACES_API_URL: faux.urlGoogle,
+  GOOGLE_MAPS_API_KEY: '',
+});
+
+const sansCle = await chercher(4617, 'rue de la republique');
+check('le service se déclare indisponible', sansCle.available === false, `${sansCle.available}`);
+check('et ne rend rien', (sansCle.suggestions || []).length === 0, `n=${sansCle.suggestions?.length}`);
+
+titre('Une clé refusée ne ferme pas la saisie');
+// Clé révoquée, quota dépassé, API non activée : la saisie manuelle prend le
+// relais plutôt que de bloquer une commande.
+faux.tomberEnPanne();
+const enPanne = await chercher(4615, 'rue de la republique');
+check('la recherche ne lève pas', !!enPanne, 'aucune réponse');
+check('le repli manuel est annoncé', enPanne.available === false, `${enPanne.available}`);
+faux.tomberEnPanne(false);
+
+apiGoogle.kill();
+apiGoogleFr.kill();
+apiSansCle.kill();
+
 apiMixte.kill();
 apiMoitie.kill();
 

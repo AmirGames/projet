@@ -1,17 +1,26 @@
 import { logger } from "../config/logger";
 
 /**
- * Recherche d'adresses, avec deux fournisseurs interchangeables.
+ * Recherche d'adresses, avec des fournisseurs interchangeables.
  *
  *   ban    — Base Adresse Nationale, la base officielle française. La plus
  *            précise et la plus complète sur la France, mais elle s'arrête
  *            aux frontières : une adresse belge ne renvoie rien.
  *   photon — OpenStreetMap, couverture mondiale, sans clé d'API. Moins fin
  *            que la BAN sur la France, mais il répond partout.
+ *   google — Places API (New). La meilleure pertinence sur une saisie
+ *            approximative, et la couverture la plus large. **Payant**, et
+ *            exige une clé : sans `GOOGLE_MAPS_API_KEY`, le fournisseur se
+ *            déclare injoignable plutôt que d'échouer silencieusement.
  *
- * Le choix se fait par ADDRESS_PROVIDER. Tant que vous ne servez que la
- * France, « ban » donne de meilleures adresses ; dès que vous ouvrez un autre
- * pays, « photon » devient nécessaire.
+ * Le choix se fait par ADDRESS_PROVIDER. Les deux premiers sont gratuits et
+ * suffisent à la France et à la Belgique ; Google se justifie quand la
+ * pertinence de la saisie prime sur le coût.
+ *
+ * **La clé ne quitte jamais le serveur.** Google documente un usage depuis le
+ * navigateur, avec une clé restreinte par référent ; ici la requête part de
+ * l'API, si bien que la clé n'apparaît dans aucune page et se restreint par
+ * adresse IP — bien plus étanche.
  */
 
 export interface Suggestion {
@@ -24,7 +33,7 @@ export interface Suggestion {
   longitude: number | null;
 }
 
-export type Fournisseur = "ban" | "photon" | "ban+photon";
+export type Fournisseur = "ban" | "photon" | "ban+photon" | "google";
 
 const DELAI_MS = 4000;
 
@@ -51,6 +60,7 @@ export function fournisseurActif(): Fournisseur {
 
   if (choisi === "photon") return "photon";
   if (choisi === "ban+photon" || choisi === "mixte") return "ban+photon";
+  if (choisi === "google") return "google";
 
   return "ban";
 }
@@ -102,6 +112,33 @@ function normaliserPhoton(entite: any): Suggestion {
   };
 }
 
+/**
+ * Une adresse Google, ramenée à la forme commune.
+ *
+ * Places (New) rend l'adresse découpée en « composants » typés plutôt qu'en
+ * champs nommés : le numéro et la voie arrivent séparés, comme chez Photon.
+ */
+function normaliserGoogle(lieu: any): Suggestion {
+  const composants: any[] = lieu?.addressComponents || [];
+
+  const composant = (type: string) =>
+    composants.find((c) => (c?.types || []).includes(type))?.longText || "";
+
+  const numero = composant("street_number");
+  const voie = composant("route");
+  const ville = composant("locality") || composant("postal_town") || composant("administrative_area_level_2");
+
+  return {
+    label: lieu?.formattedAddress || "",
+    street: [numero, voie].filter(Boolean).join(" ") || lieu?.displayName?.text || "",
+    city: ville,
+    postalCode: composant("postal_code"),
+    country: composant("country"),
+    latitude: typeof lieu?.location?.latitude === "number" ? lieu.location.latitude : null,
+    longitude: typeof lieu?.location?.longitude === "number" ? lieu.location.longitude : null,
+  };
+}
+
 function construireUrl(requete: string, limite: number, fournisseur = fournisseurActif()): string {
   if (fournisseur === "photon") {
     // Photon n'a pas de filtre par pays : le tri se fait sur la réponse.
@@ -134,6 +171,101 @@ export class AddressService {
    * Interroge un fournisseur. Rend une liste vide plutôt que de lever : en mode
    * mixte, la panne de l'un ne doit pas emporter les résultats de l'autre.
    */
+  /**
+   * Google Places (New) : une requête POST, une clé en en-tête, un masque de
+   * champs obligatoire.
+   *
+   * On appelle `places:searchText` et non `places:autocomplete`, bien que ce
+   * dernier porte le nom d'« autocomplétion » : la complétion ne rend que des
+   * libellés et des identifiants, sans coordonnées. Il faudrait un second
+   * appel « Place Details » à chaque adresse retenue — deux fois plus d'appels
+   * facturés, et un aller-retour de plus pour l'écran — là où `searchText`
+   * rend en une fois ce que les deux autres fournisseurs rendent déjà :
+   * libellé, voie, ville, code postal, pays et coordonnées.
+   *
+   * Le masque de champs n'est pas un détail : sans lui l'API refuse la
+   * requête, et demander plus de champs que nécessaire se facture plus cher.
+   */
+  private static async interrogerGoogle(
+    requete: string,
+    limite: number
+  ): Promise<{ suggestions: Suggestion[]; joignable: boolean }> {
+    const cle = (process.env.GOOGLE_MAPS_API_KEY || "").trim();
+
+    if (!cle) {
+      // Sans clé, mieux vaut le dire que rendre une liste vide qu'on prendrait
+      // pour « aucune adresse ne correspond ».
+      logger.warn("GOOGLE_MAPS_API_KEY absente : fournisseur Google inutilisable");
+      return { suggestions: [], joignable: false };
+    }
+
+    const controleur = new AbortController();
+    const minuteur = setTimeout(() => controleur.abort(), DELAI_MS);
+
+    try {
+      const base = process.env.GOOGLE_PLACES_API_URL || "https://places.googleapis.com/v1";
+      const pays = paysAutorises();
+
+      const reponse = await fetch(`${base}/places:searchText`, {
+        method: "POST",
+        signal: controleur.signal,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": cle,
+          "X-Goog-FieldMask":
+            "places.formattedAddress,places.location,places.addressComponents,places.displayName",
+        },
+        body: JSON.stringify({
+          textQuery: requete,
+          languageCode: "fr",
+          // Un seul pays peut être transmis : au-delà, le tri se fait sur la
+          // réponse, comme pour Photon.
+          ...(pays.length === 1 ? { regionCode: pays[0].toUpperCase() } : {}),
+          maxResultCount: Math.min(limite, 20),
+        }),
+      });
+
+      if (!reponse.ok) {
+        // Le corps porte la raison — clé refusée, quota dépassé, API non
+        // activée : la taire condamnerait à deviner.
+        const raison = await reponse.text().catch(() => "");
+        throw new Error(`Réponse ${reponse.status} ${raison.slice(0, 200)}`);
+      }
+
+      const donnees: any = await reponse.json();
+
+      const suggestions = (donnees.places || [])
+        .map(normaliserGoogle)
+        .filter((s: Suggestion) => s.label)
+        .filter((s: Suggestion) => {
+          if (pays.length === 0) return true;
+
+          // Google rend le pays en toutes lettres : on compare sur ce qu'on
+          // sait, faute de code ISO dans la réponse.
+          const NOMS: Record<string, string[]> = {
+            fr: ["france"],
+            be: ["belgique", "belgium"],
+          };
+
+          return pays.some((code) =>
+            (NOMS[code] || [code]).some((nom) => s.country.toLowerCase().includes(nom))
+          );
+        })
+        .slice(0, limite);
+
+      return { suggestions, joignable: true };
+    } catch (err) {
+      logger.warn("Service d'adresses injoignable", {
+        fournisseur: "google",
+        error: err instanceof Error ? err.message : err,
+      });
+
+      return { suggestions: [], joignable: false };
+    } finally {
+      clearTimeout(minuteur);
+    }
+  }
+
   private static async interroger(
     fournisseur: "ban" | "photon",
     requete: string,
@@ -200,12 +332,15 @@ export class AddressService {
      * Photon, et c'est le gros des saisies. Photon apporte ce qu'elle ne
      * connaît pas — la Belgique, notamment.
      */
-    const aInterroger: ("ban" | "photon")[] =
-      fournisseur === "ban+photon" ? ["ban", "photon"] : [fournisseur];
-
-    const reponses = await Promise.all(
-      aInterroger.map((lequel) => this.interroger(lequel, requete, limite))
-    );
+    const reponses =
+      fournisseur === "google"
+        ? [await this.interrogerGoogle(requete, limite)]
+        : await Promise.all(
+            (fournisseur === "ban+photon"
+              ? (["ban", "photon"] as const)
+              : ([fournisseur] as const)
+            ).map((lequel) => this.interroger(lequel, requete, limite))
+          );
 
     // Une même adresse peut revenir des deux côtés : on garde la première, donc
     // celle de la BAN.

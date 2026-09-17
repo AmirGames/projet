@@ -246,7 +246,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 39 | **1267** |
+| **API** (`backend/scripts/verification/`) | 39 | **1281** |
 | **Navigateur** (`frontend/scripts/`) | 24 | **607** |
 
 Tout est vert au dernier passage complet.
@@ -393,6 +393,12 @@ Un invariant de plus :
   servies par `GET /api/stores/types`. Recopiées dans un `<select>`, elles
   auraient dérivé dès la première addition — c'est exactement ce qui était
   arrivé aux publics d'annonce.
+- **Une clé de service ne quitte jamais le serveur.** Google Places est
+  interrogé depuis l'API, pas depuis le navigateur : la clé se restreint alors
+  par adresse IP plutôt que par référent HTTP, et n'apparaît dans aucune page.
+  `ADDRESS_PROVIDER=google` suffit à basculer ; sans `GOOGLE_MAPS_API_KEY` le
+  fournisseur se déclare injoignable au lieu de rendre une liste vide qu'on
+  lirait « aucune adresse ne correspond ».
 - **Un refus attendu n'est pas une panne.** Le gestionnaire d'erreurs trie sur
   le code : un 4xx part en `WARN` sans pile, un 5xx garde `ERROR` et sa pile.
   Tout partait en `ERROR` : une session à refaire, une TVA mal saisie et une
