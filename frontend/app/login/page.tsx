@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
+import { RAISON_DECONNEXION, useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -17,6 +17,27 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [adresseNonConfirmee, setAdresseNonConfirmee] = useState(false);
   const [lienRenvoye, setLienRenvoye] = useState("");
+  const [raison, setRaison] = useState("");
+
+  /**
+   * Dire pourquoi on a été déconnecté.
+   *
+   * Sans cela, une session périmée ramenait à un formulaire vide, sans un mot :
+   * l'utilisateur croyait à une panne. Le message est lu une fois puis retiré,
+   * sinon il réapparaîtrait à chaque visite de la page.
+   */
+  useEffect(() => {
+    try {
+      const lue = sessionStorage.getItem(RAISON_DECONNEXION);
+
+      if (lue) {
+        setRaison(lue);
+        sessionStorage.removeItem(RAISON_DECONNEXION);
+      }
+    } catch {
+      // Stockage refusé : on se passe du message.
+    }
+  }, []);
 
   const renvoyerConfirmation = async () => {
     setLienRenvoye("Envoi...");
@@ -97,6 +118,15 @@ export default function LoginPage() {
         <h1 className="text-3xl font-bold text-white mb-6 text-center">
           Connexion
         </h1>
+
+        {raison && !error && (
+          <div
+            role="status"
+            className="bg-amber-600/20 border border-amber-600/50 text-amber-200 p-4 rounded-lg mb-4"
+          >
+            {raison}
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-600 text-white p-4 rounded-lg mb-4">

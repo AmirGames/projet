@@ -109,6 +109,7 @@ continue.
 | `verif-annonces.mjs` | Une annonce de la plateforme atteint le public visé, et lui seul |
 | `verif-horaires-plages.mjs` | Plusieurs services par jour, et la nuit qui déborde |
 | `verif-identite-boutique.mjs` | Genre du commerce, et l'identité sous laquelle la boutique facture |
+| `verif-journal.mjs` | Ce que le journal crie, et ce qu'il murmure (démarre sa propre API) |
 
 ## Ajouter une vérification
 

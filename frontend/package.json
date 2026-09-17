@@ -30,7 +30,8 @@
     "verif:fiche": "node scripts/verif-fiche-boutique.mjs",
     "verif:profil": "node scripts/verif-profil-commercant.mjs",
     "verif:carte": "node scripts/verif-carte-zones.mjs",
-    "verif:horaires": "node scripts/verif-horaires-genre.mjs"
+    "verif:horaires": "node scripts/verif-horaires-genre.mjs",
+    "verif:session": "node scripts/verif-session-perimee.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",

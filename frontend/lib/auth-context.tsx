@@ -28,11 +28,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * compte disparu. Le serveur répond alors 401 `SESSION_INVALIDE` : il n'y a
  * rien à réessayer, il faut se reconnecter.
  */
+export const RAISON_DECONNEXION = 'raisonDeconnexion';
+
 function oublierLaSession() {
   try {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('storeId');
+
+    /**
+     * Pourquoi la session s'est arrêtée.
+     *
+     * L'écran renvoyait vers la page de connexion sans un mot : l'utilisateur
+     * se retrouvait devant un formulaire vide, persuadé d'avoir été déconnecté
+     * par erreur, et réessayait. Le drapeau ne survit pas à l'onglet — c'est
+     * un message, pas un état.
+     */
+    sessionStorage.setItem(
+      RAISON_DECONNEXION,
+      'Votre session n’est plus valable. Reconnectez-vous.'
+    );
   } catch {
     // Stockage refusé : il n'y avait rien à effacer.
   }

@@ -246,8 +246,8 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 38 | **1253** |
-| **Navigateur** (`frontend/scripts/`) | 23 | **599** |
+| **API** (`backend/scripts/verification/`) | 39 | **1267** |
+| **Navigateur** (`frontend/scripts/`) | 24 | **607** |
 
 Tout est vert au dernier passage complet.
 
@@ -393,6 +393,11 @@ Un invariant de plus :
   servies par `GET /api/stores/types`. Recopiées dans un `<select>`, elles
   auraient dérivé dès la première addition — c'est exactement ce qui était
   arrivé aux publics d'annonce.
+- **Un refus attendu n'est pas une panne.** Le gestionnaire d'erreurs trie sur
+  le code : un 4xx part en `WARN` sans pile, un 5xx garde `ERROR` et sa pile.
+  Tout partait en `ERROR` : une session à refaire, une TVA mal saisie et une
+  page inexistante faisaient le même bruit qu'une vraie panne, au point qu'on ne
+  distinguait plus ce qui appelle une intervention.
 - **L'IBAN n'est jamais rendu en entier.** Ni dans une réponse d'API — côté
   commerçant comme côté plateforme —, ni dans un journal : les écrans n'en
   montrent que les quatre derniers caractères. Le champ de saisie part vide, et

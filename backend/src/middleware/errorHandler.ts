@@ -84,13 +84,34 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ) => {
-  logger.error("Error caught", {
+  /**
+   * Un refus attendu n'est pas une panne.
+   *
+   * Tout partait en `ERROR` avec sa pile d'appels : une session à refaire, une
+   * TVA mal saisie, une page demandée qui n'existe pas remplissaient le journal
+   * du même bruit que les vraies pannes — au point qu'on ne distingue plus ce
+   * qui appelle une intervention de ce qui est le fonctionnement normal.
+   *
+   * Un 4xx est donc un avertissement, sans pile. Une pile ne dit rien d'utile
+   * sur une saisie refusée : elle pointe la ligne qui a refusé, qu'on connaît
+   * déjà par le message.
+   */
+  const statut = err instanceof ApiError ? err.statusCode : err instanceof ZodError ? 400 : 500;
+  const attendu = statut < 500;
+
+  const contexte = {
     name: err.name,
     message: err.message,
-    stack: err.stack,
     path: req.path,
     method: req.method,
-  });
+    ...(attendu ? {} : { stack: err.stack }),
+  };
+
+  if (attendu) {
+    logger.warn("Requête refusée", contexte);
+  } else {
+    logger.error("Error caught", contexte);
+  }
 
   if (err instanceof ZodError) {
     return res.status(400).json({
