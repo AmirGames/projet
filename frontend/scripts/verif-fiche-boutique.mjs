@@ -258,6 +258,62 @@ check('le refus est affiché', /déjà utilisée/i.test(refus), refus.slice(0, 7
 const intact = await appeler(`/api/superowner/stores/${storeId}`, { jeton: TP });
 check('l’adresse publique n’a pas bougé', intact.donnees?.store?.slug === slug, intact.donnees?.store?.slug);
 
+// ===== Ouvrir et fermer =====
+
+titre('La plateforme ferme la boutique depuis sa fiche');
+/**
+ * Le commerçant a ce bouton dans son espace ; la plateforme n'avait que le tout
+ * ou rien de la suspension de compte — qui ferme aussi l'espace du commerçant,
+ * et donc sa remédiation. Fermer une boutique pour l'après-midi est un autre
+ * geste, et il manquait ici.
+ */
+await page.reload();
+await page.waitForTimeout(2500);
+
+const entete = await texte();
+check('la fiche dit qu’elle est ouverte', /· ouverte/.test(entete), entete.slice(0, 400));
+check(
+  'le bouton de fermeture est là',
+  (await page.locator('button:has-text("Fermer la boutique")').count()) === 1,
+  'absent'
+);
+
+await page.click('button:has-text("Fermer la boutique")');
+await page.waitForTimeout(600);
+
+const confirmer = page.locator('button:has-text("Confirmer la fermeture")');
+// Une boutique fermée sans explication se traduit par un appel au support.
+check('sans motif, on ne peut pas confirmer', await confirmer.isDisabled(), 'active à tort');
+
+await page.fill('#motif-fermeture', `Travaux ${uniq}`);
+await page.waitForTimeout(300);
+check('avec un motif, le bouton s’active', await confirmer.isEnabled(), 'inactive à tort');
+
+await confirmer.click();
+await page.waitForTimeout(3000);
+
+const fermee = await texte();
+check('la fiche la dit fermée', /· fermée/.test(fermee), fermee.slice(0, 400));
+
+const vueFermee = await appeler(`/api/superowner/stores/${storeId}`, { jeton: TP });
+check('le serveur l’a bien fermée', vueFermee.donnees?.store?.isOpen === false, `${vueFermee.donnees?.store?.isOpen}`);
+
+titre('Et elle la rouvre');
+check(
+  'le bouton a changé de sens',
+  (await page.locator('button:has-text("Rouvrir la boutique")').count()) === 1,
+  'absent'
+);
+
+await page.click('button:has-text("Rouvrir la boutique")');
+await page.waitForTimeout(3000);
+
+const rouverte = await texte();
+check('la fiche la dit rouverte', /· ouverte/.test(rouverte), rouverte.slice(0, 400));
+
+const vueRouverte = await appeler(`/api/superowner/stores/${storeId}`, { jeton: TP });
+check('le serveur l’a bien rouverte', vueRouverte.donnees?.store?.isOpen === true, `${vueRouverte.donnees?.store?.isOpen}`);
+
 // ===== Le commerçant est prévenu =====
 
 titre('Le commerçant reçoit un avis');
@@ -267,6 +323,11 @@ const liste2 = avis.donnees?.data || avis.donnees?.notifications || [];
 check(
   'un avis de correction lui est adressé',
   liste2.some((n) => /a corrigé/i.test(n.title || '')),
+  JSON.stringify(liste2.map((n) => n.title)).slice(0, 400)
+);
+check(
+  'la fermeture lui est dite, avec son motif',
+  liste2.some((n) => /a été fermée/i.test(n.title || '') && (n.message || '').includes(`Travaux ${uniq}`)),
   JSON.stringify(liste2.map((n) => n.title)).slice(0, 400)
 );
 

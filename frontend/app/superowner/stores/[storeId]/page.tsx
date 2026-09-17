@@ -17,12 +17,20 @@ import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { AlertTriangle, ArrowLeft, ExternalLink, MapPin, Pencil, Store as StoreIcon } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ExternalLink,
+  MapPin,
+  Pencil,
+  Power,
+  Store as StoreIcon,
+} from 'lucide-react';
 
 import { euro } from '@/lib/format';
 
 // Leaflet touche à `window` dès son chargement : pas de rendu côté serveur.
-const CarteZones = dynamic(() => import('@/components/CarteZones').then((m) => m.CarteZones), {
+const CarteZones = dynamic(() => import('@/components/CarteZones'), {
   ssr: false,
   loading: () => (
     <div className="h-[320px] w-full rounded-lg border border-gray-700 bg-gray-800 flex items-center justify-center text-gray-500">
@@ -97,6 +105,18 @@ export default function FicheBoutiquePage() {
   const [message, setMessage] = useState('');
   const [enEdition, setEnEdition] = useState(false);
   const [formulaire, setFormulaire] = useState<Record<string, string>>({});
+
+  /**
+   * Fermer un commerce depuis la plateforme.
+   *
+   * Le commerçant a ce bouton dans son espace ; la plateforme n'avait que le
+   * tout ou rien de la suspension du compte, qui est autre chose : une boutique
+   * fermée pour l'après-midi rouvre le lendemain, et ses commandes en cours
+   * restent dues.
+   */
+  const [fermetureEnCours, setFermetureEnCours] = useState(false);
+  const [motifFermeture, setMotifFermeture] = useState('');
+  const [bascule, setBascule] = useState(false);
 
   const jeton = () => localStorage.getItem('accessToken');
 
@@ -198,6 +218,36 @@ export default function FicheBoutiquePage() {
     }
   };
 
+  const basculerLOuverture = async (ouvert: boolean) => {
+    setErreur('');
+    setMessage('');
+    setBascule(true);
+
+    try {
+      const reponse = await fetch(`${API_URL}/api/superowner/stores/${storeId}/ouverture`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton()}` },
+        body: JSON.stringify({ ouvert, motif: ouvert ? undefined : motifFermeture }),
+      });
+
+      const lu = await reponse.json().catch(() => null);
+
+      if (!reponse.ok) {
+        setErreur(lu?.error || 'Changement refusé');
+        return;
+      }
+
+      setMessage(lu?.message || 'Ouverture modifiée');
+      setFermetureEnCours(false);
+      setMotifFermeture('');
+      await charger();
+    } catch {
+      setErreur('Erreur de connexion');
+    } finally {
+      setBascule(false);
+    }
+  };
+
   if (chargement) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -253,6 +303,28 @@ export default function FicheBoutiquePage() {
               <ExternalLink size={14} />
               Voir la vitrine
             </a>
+            {/* Fermer demande un motif : une boutique fermée sans explication
+                se traduit par un appel au support. Rouvrir n'en demande pas. */}
+            {fiche.isOpen ? (
+              <button
+                onClick={() => setFermetureEnCours(true)}
+                disabled={bascule}
+                className="inline-flex items-center gap-1 px-4 py-2 bg-red-600/80 hover:bg-red-600 disabled:opacity-50 text-white rounded text-sm font-medium transition"
+              >
+                <Power size={14} />
+                Fermer la boutique
+              </button>
+            ) : (
+              <button
+                onClick={() => basculerLOuverture(true)}
+                disabled={bascule}
+                className="inline-flex items-center gap-1 px-4 py-2 bg-green-600/80 hover:bg-green-600 disabled:opacity-50 text-white rounded text-sm font-medium transition"
+              >
+                <Power size={14} />
+                Rouvrir la boutique
+              </button>
+            )}
+
             {!enEdition && (
               <button
                 onClick={ouvrirEdition}
@@ -265,6 +337,47 @@ export default function FicheBoutiquePage() {
           </div>
         </div>
       </div>
+
+      {fermetureEnCours && (
+        <div className="p-4 bg-gray-800 border border-red-600/40 rounded-lg space-y-3">
+          <div>
+            <p className="font-semibold text-white">Fermer {fiche.name}</p>
+            <p className="text-sm text-gray-400 mt-1">
+              Elle cesse de recevoir des commandes, et le commerçant en est prévenu. Ses
+              commandes en cours ne sont pas touchées. C&apos;est différent d&apos;une
+              suspension de compte, qui ferme tout son espace.
+            </p>
+          </div>
+
+          <input
+            id="motif-fermeture"
+            value={motifFermeture}
+            onChange={(e) => setMotifFermeture(e.target.value)}
+            placeholder="Motif — il sera lu par le commerçant"
+            aria-label="Motif de fermeture"
+            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+          />
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => basculerLOuverture(false)}
+              disabled={bascule || !motifFermeture.trim()}
+              className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white rounded text-sm font-medium transition"
+            >
+              Confirmer la fermeture
+            </button>
+            <button
+              onClick={() => {
+                setFermetureEnCours(false);
+                setMotifFermeture('');
+              }}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
 
       {erreur && (
         <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">

@@ -260,4 +260,70 @@ const etranger = await j(
 const intrusion = await patch(`/api/superowner/stores/${autreId}`, { phone: '0600000000' }, etranger.accessToken);
 check('la correction lui est refusée', intrusion.status === 403, `statut ${intrusion.status}`);
 
+// ===== Ouvrir et fermer =====
+
+titre('La plateforme ferme un commerce');
+/**
+ * Le commerçant a ce bouton dans son espace ; la plateforme n'avait que le tout
+ * ou rien de la suspension du compte. Fermer une boutique pour l'après-midi
+ * n'est pas suspendre un compte : elle rouvre le lendemain.
+ */
+const sansMotif = await post(`/api/superowner/stores/${storeId}/ouverture`, { ouvert: false }, TP);
+// Une boutique fermée sans explication se traduit par un appel au support.
+check('fermer exige un motif', sansMotif.status === 400, `statut ${sansMotif.status}`);
+
+const fermeture = await post(
+  `/api/superowner/stores/${storeId}/ouverture`,
+  { ouvert: false, motif: `Incident ${uniq}` },
+  TP
+);
+check('la fermeture passe', fermeture.status === 200, `statut ${fermeture.status}`);
+
+const etat = await sqlScalaire(`SELECT "isOpen"::text FROM "Store" WHERE id = '${storeId}'`);
+check('la boutique est bien fermée', etat === 'false', etat);
+
+const dejaFermee = await post(
+  `/api/superowner/stores/${storeId}/ouverture`,
+  { ouvert: false, motif: 'encore' },
+  TP
+);
+check('la refermer ne fait rien', dejaFermee.status === 400, `statut ${dejaFermee.status}`);
+
+titre('Le commerçant l’apprend');
+const avis = await sqlScalaire(
+  `SELECT COUNT(*) FROM "Notification" WHERE "recipientEmail" = 'm-${uniq}@t.fr' AND title LIKE '%a été fermée%'`
+);
+check('un avis lui est adressé', avis === '1', avis);
+
+const motifLu = await sqlScalaire(
+  `SELECT message FROM "Notification" WHERE "recipientEmail" = 'm-${uniq}@t.fr' AND title LIKE '%a été fermée%' LIMIT 1`
+);
+check('avec le motif', motifLu.includes(`Incident ${uniq}`), motifLu);
+
+titre('Et elle la rouvre');
+const reouverture = await post(`/api/superowner/stores/${storeId}/ouverture`, { ouvert: true }, TP);
+// Rouvrir n'a pas à se justifier.
+check('rouvrir ne demande pas de motif', reouverture.status === 200, `statut ${reouverture.status}`);
+
+const etatApres = await sqlScalaire(`SELECT "isOpen"::text FROM "Store" WHERE id = '${storeId}'`);
+check('la boutique est rouverte', etatApres === 'true', etatApres);
+
+titre('Le geste laisse une trace');
+const traceOuverture = await sqlScalaire(
+  `SELECT COUNT(*) FROM "SystemAuditLog" WHERE target = '${storeId}' AND action IN ('CLOSE_STORE', 'OPEN_STORE')`
+);
+check(
+  'la fermeture et la réouverture sont journalisées',
+  traceOuverture === '2',
+  traceOuverture
+);
+
+titre('Un commerçant ne ferme pas la boutique d’un autre');
+const intrusionOuverture = await post(
+  `/api/superowner/stores/${storeId}/ouverture`,
+  { ouvert: false, motif: 'sabotage' },
+  T
+);
+check('le refus est net', intrusionOuverture.status === 403, `statut ${intrusionOuverture.status}`);
+
 await terminer();

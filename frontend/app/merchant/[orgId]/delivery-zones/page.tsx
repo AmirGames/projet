@@ -9,7 +9,7 @@ import { euro } from '@/lib/format';
 
 // Leaflet touche à `window` dès son chargement : la carte ne peut pas être
 // rendue côté serveur.
-const CarteZones = dynamic(() => import('@/components/CarteZones').then((m) => m.CarteZones), {
+const CarteZones = dynamic(() => import('@/components/CarteZones'), {
   ssr: false,
   loading: () => (
     <div className="h-[420px] w-full rounded-lg border border-slate-700 bg-slate-800 flex items-center justify-center text-slate-500">

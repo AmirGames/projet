@@ -270,3 +270,13 @@ export function CarteZones({
     </div>
   );
 }
+
+/**
+ * Export par défaut, pour `next/dynamic`.
+ *
+ * Chargé par `import(...).then((m) => m.CarteZones)`, le module se retrouvait
+ * dans un chunk que le manifeste ne retrouvait plus après un changement de
+ * dépendances : « Loading chunk … failed (http://…/_next/undefined) ». La forme
+ * par défaut est celle que `dynamic()` résout sans détour.
+ */
+export default CarteZones;

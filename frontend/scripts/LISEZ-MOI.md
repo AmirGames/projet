@@ -112,7 +112,7 @@ pour le lancer.
 | `verif-versements-livreurs.mjs` | Ce qui est dû, l'arrêté d'un relevé, le versement |
 | `verif-preuve-livraison.mjs` | Code de remise côté client, saisie et photo côté livreur |
 | `verif-vitrine-unique.mjs` | Une seule vitrine, et les anciennes adresses qui y mènent |
-| `verif-fiche-boutique.mjs` | Fiche d'une boutique, et les seuls champs que la plateforme corrige |
+| `verif-fiche-boutique.mjs` | Fiche d'une boutique, les seuls champs que la plateforme corrige, et sa fermeture |
 | `verif-profil-commercant.mjs` | Profil du commerçant : facturation, propriétaire, compte, justificatifs |
 | `verif-carte-zones.mjs` | La carte : poser la boutique, tirer le rayon, et ce qui est enregistré |
 | `verif-horaires-genre.mjs` | Services multiples, fermeture après minuit, genre du commerce, TVA par boutique |

@@ -1950,6 +1950,47 @@ router.post("/payouts/:payoutId/cancel", authMiddleware, isSuperOwner, async (re
   }
 });
 
+/**
+ * POST /superowner/stores/:storeId/ouverture - Ouvrir ou fermer un commerce
+ *
+ * Le commerçant a ce bouton dans son espace ; la plateforme n'avait que le tout
+ * ou rien de la suspension du compte, qui est autre chose.
+ */
+router.post(
+  "/stores/:storeId/ouverture",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const schema = z.object({ ouvert: z.boolean(), motif: z.string().max(300).optional() });
+      const body = schema.parse(req.body);
+
+      const { boutique, ouvert, motif } = await StoreSupportService.basculerLOuverture(
+        req.params.storeId as string,
+        body.ouvert,
+        body.motif
+      );
+
+      await db.systemAuditLog.create({
+        data: {
+          adminId: req.userId as string,
+          action: ouvert ? "OPEN_STORE" : "CLOSE_STORE",
+          target: boutique.id,
+          changes: { isOpen: ouvert, motif } as any,
+        },
+      });
+
+      res.json({
+        success: true,
+        message: ouvert ? "Boutique rouverte" : "Boutique fermée",
+        store: boutique,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // ============================================================================
 // DOSSIER DU COMMERÇANT
 // ============================================================================

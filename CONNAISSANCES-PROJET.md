@@ -408,6 +408,17 @@ Un invariant de plus :
   commerçant comme côté plateforme —, ni dans un journal : les écrans n'en
   montrent que les quatre derniers caractères. Le champ de saisie part vide, et
   un enregistrement qui le laisse vide n'efface pas le compte enregistré.
+- **Fermer une boutique n'est pas suspendre un compte.** La plateforme n'avait
+  que la suspension — qui ferme aussi l'espace du commerçant, donc sa
+  remédiation — là où l'incident du jour ne demandait que de couper les
+  commandes d'une boutique. Le bouton est sur sa fiche, la fermeture exige un
+  motif que le commerçant reçoit, la réouverture n'en demande pas, et les deux
+  gestes sont journalisés (`CLOSE_STORE`, `OPEN_STORE`).
+- **Un composant chargé par `next/dynamic` s'exporte par défaut.** Repris par
+  `import(...).then((m) => m.CarteZones)`, il atterrissait dans un morceau que
+  le manifeste ne retrouvait plus après un changement de dépendances :
+  « Loading chunk … failed (`/_next/undefined`) ». `export default` règle le
+  chargement, et `ssr: false` reste indispensable — Leaflet touche `window`.
 
 **La carte des zones est en place** : Leaflet et le fond OpenStreetMap, sans clé
 ni compte. Le commerçant pose sa boutique d'un clic, tire une poignée pour

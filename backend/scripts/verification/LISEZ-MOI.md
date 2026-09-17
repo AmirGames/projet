@@ -104,7 +104,7 @@ continue.
 | `verif-superowner-suite.mjs` | Tickets archivés, détail d'une facturation, bornes de commande, durée des accès |
 | `verif-temps-reel.mjs` | Notifications poussées en direct |
 | `verif-boutique-situee.mjs` | Une boutique naît située, et l'adresse introuvable ne bloque pas |
-| `verif-fiche-boutique.mjs` | Fiche d'une boutique, et les seuls champs que la plateforme corrige |
+| `verif-fiche-boutique.mjs` | Fiche d'une boutique, les seuls champs que la plateforme corrige, et sa fermeture |
 | `verif-profil-commercant.mjs` | Profil du commerçant : facturation, propriétaire, IBAN masqué, pièces |
 | `verif-annonces.mjs` | Une annonce de la plateforme atteint le public visé, et lui seul |
 | `verif-horaires-plages.mjs` | Plusieurs services par jour, et la nuit qui déborde |

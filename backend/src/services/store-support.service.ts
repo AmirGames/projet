@@ -277,6 +277,90 @@ export class StoreSupportService {
   }
 
   /**
+   * Ouvre ou ferme un commerce, depuis la plateforme.
+   *
+   * Le commerçant a ce bouton dans son espace ; la plateforme, elle, n'avait
+   * que le tout ou rien de la suspension du compte. Or fermer une boutique pour
+   * l'après-midi — un incident, une demande par téléphone, un commerçant qui a
+   * oublié — n'est pas suspendre un compte : ses commandes en cours restent
+   * dues, et il rouvre le lendemain.
+   *
+   * Le geste part au journal avec son motif : une boutique fermée sans
+   * explication se traduit par un appel au support.
+   */
+  static async basculerLOuverture(
+    storeId: string,
+    ouvert: boolean,
+    motif?: string
+  ) {
+    const boutique = await db.store.findUnique({
+      where: { id: storeId },
+      select: { id: true, name: true, isOpen: true, orgId: true, deletedAt: true },
+    });
+
+    if (!boutique || boutique.deletedAt) {
+      throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
+    }
+
+    if (boutique.isOpen === ouvert) {
+      throw new ApiError(
+        400,
+        ouvert ? "Cette boutique est déjà ouverte" : "Cette boutique est déjà fermée",
+        "NOTHING_TO_CHANGE"
+      );
+    }
+
+    // Fermer sans dire pourquoi laisse le commerçant sans recours : il voit sa
+    // boutique fermée et ne peut que téléphoner.
+    if (!ouvert && !motif?.trim()) {
+      throw new ApiError(400, "Dites pourquoi vous fermez cette boutique", "REASON_REQUIRED");
+    }
+
+    const misAJour = await db.store.update({
+      where: { id: storeId },
+      data: { isOpen: ouvert },
+    });
+
+    await this.prevenirDeLOuverture(boutique.orgId, boutique.name, ouvert, motif);
+
+    return { boutique: misAJour, ouvert, motif: motif?.trim() || null };
+  }
+
+  /** Le commerçant doit l'apprendre autrement qu'en voyant ses commandes s'arrêter. */
+  private static async prevenirDeLOuverture(
+    orgId: string,
+    nomDeLaBoutique: string,
+    ouvert: boolean,
+    motif?: string
+  ) {
+    const adhesions = await db.membership.findMany({
+      where: { orgId },
+      select: { user: { select: { email: true } } },
+    });
+
+    for (const adhesion of adhesions) {
+      const email = adhesion.user?.email;
+      if (!email) continue;
+
+      const notification = await db.notification.create({
+        data: {
+          type: "PLATFORM_ANNOUNCEMENT",
+          title: ouvert
+            ? `${nomDeLaBoutique} a été rouverte`
+            : `${nomDeLaBoutique} a été fermée`,
+          message: ouvert
+            ? "La plateforme a rouvert votre boutique : vous recevez de nouveau des commandes."
+            : `La plateforme a fermé votre boutique. Motif : ${motif?.trim()}`,
+          recipientEmail: email,
+          link: "/merchant",
+        },
+      });
+
+      emitNotification(email, notification);
+    }
+  }
+
+  /**
    * Prévient le commerçant de ce que la plateforme a corrigé.
    *
    * Une modification muette se découvre par hasard, des semaines plus tard.
