@@ -96,7 +96,23 @@ export const errorHandler = (
    * sur une saisie refusée : elle pointe la ligne qui a refusé, qu'on connaît
    * déjà par le message.
    */
-  const statut = err instanceof ApiError ? err.statusCode : err instanceof ZodError ? 400 : 500;
+  /**
+   * Un corps JSON mal formé est du même ordre : c'est l'appelant qui a mal
+   * écrit sa requête, pas le serveur qui a cassé. `body-parser` le signale avec
+   * un `status` de 400 ; sans le lire, on répondait 500 et on journalisait une
+   * pile d'appels pour une virgule en trop.
+   */
+  const statutPorte = (err as { status?: number; statusCode?: number }).status;
+
+  const statut =
+    err instanceof ApiError
+      ? err.statusCode
+      : err instanceof ZodError
+        ? 400
+        : err instanceof SyntaxError && typeof statutPorte === "number"
+          ? statutPorte
+          : 500;
+
   const attendu = statut < 500;
 
   const contexte = {
@@ -124,6 +140,13 @@ export const errorHandler = (
     return res.status(err.statusCode).json({
       error: err.message,
       code: err.code,
+    });
+  }
+
+  if (err instanceof SyntaxError && attendu) {
+    return res.status(statut).json({
+      error: "Corps de requête illisible : ce n'est pas du JSON valide.",
+      code: "INVALID_JSON",
     });
   }
 

@@ -7,6 +7,7 @@ import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { PlanService } from "../services/plan.service";
 import { TicketMessageService } from "../services/ticket-message.service";
+import { emitWebhook } from "../services/webhook.service";
 
 const router = Router();
 
@@ -135,6 +136,16 @@ router.post("/:orgId/demande", authMiddleware, async (req: Request, res: Respons
     });
 
     await TicketMessageService.notifierOuvertureDeTicket(ticket.id);
+
+    // Une demande de formule est un ticket comme un autre : l'événement ne doit
+    // pas dépendre de la porte par laquelle le ticket est entré.
+    emitWebhook("ticket.created", {
+      ticketId: ticket.id,
+      orgId,
+      title: ticket.title,
+      priority: "MEDIUM",
+      category: "BILLING",
+    });
 
     logger.info("Demande de changement de formule", { orgId, de: quota.tier, vers: body.tier });
 

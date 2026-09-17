@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
+import { emitWebhook } from "./webhook.service";
 
 export interface OrderFilterOptions {
   skip?: number;
@@ -145,6 +146,16 @@ export class OrderManagementService {
           },
           customer: { select: { name: true, email: true } },
         },
+      });
+
+      // Le commerçant a son propre chemin pour changer l'état d'une commande :
+      // l'événement doit partir des deux, sinon il dépendrait de l'écran utilisé.
+      emitWebhook("order.status_changed", {
+        orderId: updated.id,
+        storeId: updated.storeId,
+        previousStatus: order.status,
+        status: updated.status,
+        totalAmount: Number(updated.totalAmount),
       });
 
       return updated;

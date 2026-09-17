@@ -4,7 +4,7 @@ import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, oublierCompte } from "../middleware/auth";
 import { ApiKeyService } from "../services/api-key.service";
-import { WebhookService, EVENEMENTS_DISPONIBLES } from "../services/webhook.service";
+import { WebhookService, EVENEMENTS_WEBHOOK } from "../services/webhook.service";
 import { BackupService } from "../services/backup.service";
 import { SecurityEventService } from "../services/security-event.service";
 import { invalidateMaintenanceCache } from "../middleware/maintenance";
@@ -641,6 +641,13 @@ router.get("/webhooks", authMiddleware, isSuperOwner, async (req: Request, res: 
   }
 });
 
+// GET /superowner/webhooks/evenements - La liste des événements qui existent
+// vraiment. L'écran proposait sa propre liste, qui avait divergé de celle du
+// serveur : neuf des dix événements offerts n'étaient émis par personne.
+router.get("/webhooks/evenements", authMiddleware, isSuperOwner, async (_req: Request, res: Response) => {
+  res.json({ availableEvents: EVENEMENTS_WEBHOOK });
+});
+
 // POST /superowner/webhooks - Créer un abonnement
 router.post("/webhooks", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -702,13 +709,54 @@ router.delete("/webhooks/:webhookId", authMiddleware, isSuperOwner, async (req: 
   }
 });
 
+// PATCH /superowner/webhooks/:webhookId - Mettre en pause, ou remettre en marche
+// un abonnement coupé après cinq abandons. Sans cette route, il fallait le
+// supprimer et le recréer — donc changer le secret chez le destinataire.
+router.patch("/webhooks/:webhookId", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const schema = z.object({ status: z.enum(["ACTIVE", "INACTIVE"]) });
+    const body = schema.parse(req.body);
+    const webhookId = req.params.webhookId as string;
+
+    const abonnement = await WebhookService.setStatus(webhookId, body.status);
+
+    res.json({
+      success: true,
+      message: body.status === "ACTIVE" ? "Webhook réactivé" : "Webhook mis en pause",
+      webhook: { id: abonnement.id, status: abonnement.status, retryCount: abonnement.retryCount },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/webhooks/:webhookId/essai - Envoi d'essai
+// La seule façon de savoir si son destinataire répondait correctement était
+// d'attendre un vrai événement — et de le manquer s'il ne répondait pas.
+router.post("/webhooks/:webhookId/essai", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const webhookId = req.params.webhookId as string;
+    const envoi = await WebhookService.essayer(webhookId);
+
+    res.json({
+      success: true,
+      envoi,
+      message: envoi.success
+        ? `Votre serveur a répondu ${envoi.statusCode}.`
+        : `Échec : ${envoi.error}. Une relance est programmée.`,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /superowner/webhooks/:webhookId/deliveries - Historique des envois
 router.get("/webhooks/:webhookId/deliveries", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const webhookId = req.params.webhookId as string;
     const envois = await WebhookService.deliveries(webhookId);
 
-    res.json({ deliveries: envois, availableEvents: EVENEMENTS_DISPONIBLES });
+    res.json({ deliveries: envois, availableEvents: EVENEMENTS_WEBHOOK });
   } catch (err) {
     next(err);
   }

@@ -5,6 +5,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { VariantService } from "./variant.service";
 import { DeliveryZoneService } from "./delivery-zone.service";
 import { PromotionService } from "./promotion.service";
+import { emitWebhook } from "./webhook.service";
 
 export interface OrderData {
   storeId: string;
@@ -315,6 +316,18 @@ export class OrderService {
         logger.warn("Email notification failed, but order was created", { error: emailErr });
       }
 
+      // L'événement était proposé à l'abonnement et n'était émis nulle part :
+      // une caisse branchée dessus n'a jamais vu passer une seule commande.
+      emitWebhook("order.created", {
+        orderId: order.id,
+        storeId: order.storeId,
+        status: order.status,
+        deliveryType: order.deliveryType,
+        totalAmount: Number(order.totalAmount),
+        customerName: order.customerName,
+        createdAt: order.createdAt,
+      });
+
       return order;
     } catch (error: any) {
       throw error;
@@ -364,13 +377,28 @@ export class OrderService {
 
   static async updateStatus(id: string, status: string) {
     try {
-      return await db.order.update({
+      // L'ancien état est lu avant la mise à jour : un abonné qui reçoit « la
+      // commande est prête » sans savoir d'où elle vient ne peut pas distinguer
+      // une préparation qui avance d'un renvoi du même état.
+      const avant = await db.order.findUnique({ where: { id }, select: { status: true } });
+
+      const commande = await db.order.update({
         where: { id },
         data: { status: status as any },
         include: {
           items: true,
         },
       });
+
+      emitWebhook("order.status_changed", {
+        orderId: commande.id,
+        storeId: commande.storeId,
+        previousStatus: avant?.status ?? null,
+        status: commande.status,
+        totalAmount: Number(commande.totalAmount),
+      });
+
+      return commande;
     } catch (error: any) {
       if (error.code === "P2025") {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");

@@ -124,28 +124,69 @@ const lu = await refus.json().catch(() => null);
 check('le message est là', !!lu?.error, JSON.stringify(lu));
 check('et son code aussi', !!lu?.code, JSON.stringify(lu));
 
-titre('Une vraie panne garde sa pile');
+titre('Un corps JSON illisible est un refus, pas une panne');
 /**
- * Le tri se fait sur le code : une exception non typée reste `ERROR` avec sa
- * pile. Sans cela, on aurait échangé un journal bruyant contre un journal
- * aveugle.
- *
- * Un corps JSON tronqué fait échouer l'analyse avant toute route : c'est la
- * façon la plus sûre de provoquer une exception qui n'est ni une validation,
- * ni un refus.
+ * C'est l'appelant qui a mal écrit sa requête, pas le serveur qui a cassé.
+ * `body-parser` le dit — son erreur porte un `status` de 400 — mais personne ne
+ * le lisait : on répondait 500 et on journalisait une pile d'appels pour une
+ * accolade manquante.
  */
-const panne = await fetch(`${BASE}/api/auth/login`, {
+const tronque = await fetch(`${BASE}/api/auth/login`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: '{"email": "tronque",',
 });
 
 await new Promise((r) => setTimeout(r, 400));
-const lignePanne = depuis();
+const ligneTronquee = depuis();
 
-check('le journal crie', /ERROR/.test(lignePanne), lignePanne.slice(0, 300));
-check('et garde la pile', /"stack"|\bat /.test(lignePanne), lignePanne.slice(0, 400));
-check('la requête est refusée', panne.status >= 400, `statut ${panne.status}`);
+check('la requête est refusée en 400', tronque.status === 400, `statut ${tronque.status}`);
+check('le journal avertit sans crier', !/ERROR/.test(ligneTronquee), ligneTronquee.slice(0, 300));
+
+const luTronque = await tronque.json().catch(() => null);
+// Un « Internal server error » aurait envoyé chercher la panne du mauvais côté.
+check('le message dit ce qui ne va pas', /JSON/.test(luTronque?.error || ''), JSON.stringify(luTronque));
+
+titre('Une vraie panne garde sa pile');
+/**
+ * Le tri se fait sur le code : une exception qui n'est ni un `ApiError`, ni une
+ * validation, ni un corps illisible reste `ERROR` avec sa pile. Sans cela, on
+ * aurait échangé un journal bruyant contre un journal aveugle.
+ *
+ * Aucune route ne plante sur commande — c'est heureux —, alors le contrôle
+ * appelle le gestionnaire lui-même, dans un processus à part : le vrai
+ * gestionnaire et le vrai journal, sans mise en scène dans le code de
+ * production.
+ */
+const pannier = spawn(
+  process.execPath,
+  [
+    join(RACINE, 'node_modules', '.bin', 'tsx'),
+    '-e',
+    `
+    import { errorHandler } from "./src/middleware/errorHandler";
+
+    const reponse = { status: () => reponse, json: () => reponse };
+
+    errorHandler(
+      new Error("La base a disparu au milieu d'une écriture"),
+      { path: "/api/commandes", method: "POST" } as any,
+      reponse as any,
+      (() => {}) as any
+    );
+    `,
+  ],
+  { cwd: RACINE, stdio: ['ignore', 'pipe', 'pipe'] }
+);
+
+let sortiePanne = '';
+pannier.stdout.on('data', (bloc) => (sortiePanne += bloc));
+pannier.stderr.on('data', (bloc) => (sortiePanne += bloc));
+
+await new Promise((resoudre) => pannier.on('close', resoudre));
+
+check('le journal crie', /ERROR/.test(sortiePanne), sortiePanne.slice(0, 400));
+check('et garde la pile', /"stack"|\bat /.test(sortiePanne), sortiePanne.slice(0, 500));
 
 api.kill();
 await terminer();

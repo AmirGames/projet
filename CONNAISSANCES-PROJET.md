@@ -414,6 +414,24 @@ Un invariant de plus :
   commandes d'une boutique. Le bouton est sur sa fiche, la fermeture exige un
   motif que le commerçant reçoit, la réouverture n'en demande pas, et les deux
   gestes sont journalisés (`CLOSE_STORE`, `OPEN_STORE`).
+- **Les webhooks sont branchés pour de bon.** L'écran proposait dix événements
+  dont neuf n'existaient pas côté serveur, et l'abonnement était accepté sans un
+  mot ; sur les six réels, trois n'étaient émis nulle part. La liste est
+  maintenant celle du serveur (`EVENEMENTS_WEBHOOK`), un événement inconnu est
+  refusé en nommant ce qui ne va pas, et les six partent réellement. Le secret
+  n'est rendu qu'à la création — l'écran le montre une fois, comme l'IBAN il ne
+  reparaît jamais. Un envoi raté est relancé trois fois (une minute, cinq,
+  trente) : la file est en base, pas dans un `setTimeout`, pour survivre au
+  redémarrage. Les délais se raccourcissent par `WEBHOOK_RELANCES_MS` — c'est
+  ainsi que la vérification les observe. Tout est écrit dans
+  `DOCUMENTATION-WEBHOOKS.md`.
+- **Un corps JSON illisible est un refus, pas une panne.** `body-parser` marque
+  son erreur d'un `status` 400 ; personne ne le lisait, et une accolade
+  manquante sortait en 500 avec sa pile d'appels. Le gestionnaire d'erreurs le
+  lit maintenant. Corollaire pour les vérifications : un corps tronqué n'est
+  plus un moyen de provoquer une vraie panne — `verif-journal.mjs` appelle
+  désormais le gestionnaire dans un processus à part pour contrôler qu'un 5xx
+  garde bien son `ERROR` et sa pile.
 - **Un composant chargé par `next/dynamic` s'exporte par défaut.** Repris par
   `import(...).then((m) => m.CarteZones)`, il atterrissait dans un morceau que
   le manifeste ne retrouvait plus après un changement de dépendances :

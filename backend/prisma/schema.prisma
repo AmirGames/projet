@@ -1504,12 +1504,23 @@ model WebhookDelivery {
   success    Boolean  @default(false)
   error      String?
 
+  // Une ligne par événement, pas par tentative : elle porte le compte des
+  // essais et la date du prochain. Un envoi raté se retentait nulle part —
+  // un destinataire redémarré perdait la commande pour de bon.
+  attempt       Int       @default(1)
+  // Rempli tant qu'une relance est due ; vidé dès que l'envoi aboutit ou que
+  // les relances sont épuisées. C'est la file d'attente, et elle est en base :
+  // un `setTimeout` n'aurait pas survécu au redémarrage du serveur.
+  nextAttemptAt DateTime?
+  abandonedAt   DateTime?
+
   webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
 
   createdAt  DateTime @default(now())
 
   @@index([webhookId])
   @@index([createdAt])
+  @@index([nextAttemptAt])
 }
 
 model Backup {

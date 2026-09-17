@@ -5,6 +5,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { TicketMessageService } from "../services/ticket-message.service";
+import { emitWebhook } from "../services/webhook.service";
 
 const router = Router();
 
@@ -105,6 +106,16 @@ router.post("/tickets", authMiddleware, async (req: Request, res: Response, next
 
     // La plateforme doit savoir qu'un commerçant attend une réponse.
     await TicketMessageService.notifierOuvertureDeTicket(ticket.id);
+
+    // Les réponses à un ticket étaient diffusées, son ouverture non : un outil
+    // de support extérieur voyait la conversation commencer sans son début.
+    emitWebhook("ticket.created", {
+      ticketId: ticket.id,
+      orgId: ticket.orgId,
+      title: ticket.title,
+      priority: ticket.priority,
+      category: ticket.category,
+    });
 
     res.status(201).json({
       message: "Ticket de support créé",

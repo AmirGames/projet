@@ -180,14 +180,14 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1291 contrôles, 39 suites
+# API : 1338 contrôles, 40 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 617 contrôles, 24 suites
+# Navigateur : 644 contrôles, 25 suites
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
@@ -198,6 +198,17 @@ détaillent chaque suite et ses prérequis.
 
 > La base visée est **vidée** à chaque script. Un garde-fou refuse de s'exécuter
 > si son nom ne contient pas `test`.
+
+## Webhooks
+
+La plateforme prévient un système extérieur de ce qui s'y passe : commandes,
+tickets, suspensions. Six événements, un envoi `POST` signé en HMAC-SHA256, et
+trois relances si le destinataire ne répond pas. Les abonnements se gèrent dans
+**Administration → Webhooks**.
+
+Le format exact, la vérification de la signature en Node, PHP et Python, et la
+charge utile de chaque événement sont dans
+[`DOCUMENTATION-WEBHOOKS.md`](DOCUMENTATION-WEBHOOKS.md).
 
 ## Plusieurs domaines
 

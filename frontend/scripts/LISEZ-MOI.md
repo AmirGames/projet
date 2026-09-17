@@ -117,6 +117,7 @@ pour le lancer.
 | `verif-carte-zones.mjs` | La carte : poser la boutique, tirer le rayon, et ce qui est enregistré |
 | `verif-horaires-genre.mjs` | Services multiples, fermeture après minuit, genre du commerce, TVA par boutique |
 | `verif-session-perimee.mjs` | Session qui n'est plus valable : retour à la connexion, et pourquoi |
+| `verif-webhooks.mjs` | Webhooks : événements servis par le serveur, secret montré une fois, envoi d'essai |
 
 Le parcours mot de passe ouvre un serveur SMTP minimal sur le port 1025 pour
 lire le message envoyé : le jeton n'existe en clair que dans ce lien, la base
