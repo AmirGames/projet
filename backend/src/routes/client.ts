@@ -6,6 +6,12 @@ import { distanceKm, estUnPoint } from "../utils/geo";
 import { StoreHoursService } from "../services/store-hours.service";
 import { DeliveryZoneService } from "../services/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";
+import {
+  COMMENTAIRE_MAX,
+  NOTE_MAX,
+  NOTE_MIN,
+  noterLivreur,
+} from "../services/driver-rating.service";
 
 const router = Router();
 
@@ -544,8 +550,13 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
     const course = await db.orderDelivery.findUnique({
       where: { orderId },
       include: {
-        driver: { select: { name: true, phone: true, vehicleType: true, rating: true } },
+        driver: {
+          select: { name: true, phone: true, vehicleType: true, rating: true, totalRatings: true },
+        },
         order: { select: { deliveryAddress: true, store: { select: { name: true } } } },
+        // La note déjà donnée : sans elle l'écran reproposerait les étoiles à
+        // chaque visite, pour un enregistrement que le serveur refuse.
+        rating: { select: { note: true, commentaire: true, createdAt: true } },
       },
     });
 
@@ -586,7 +597,20 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         distanceRestanteKm: restante,
         distanceTotaleKm: totale,
         driver: course.driver
-          ? { ...course.driver, rating: Number(course.driver.rating) }
+          ? {
+              ...course.driver,
+              // Un livreur jamais noté n'a pas de note : la colonne vaut 5 par
+              // défaut, ce qui lui prêterait un sans-faute qu'il n'a pas gagné.
+              rating: course.driver.totalRatings > 0 ? Number(course.driver.rating) : null,
+              avis: course.driver.totalRatings,
+            }
+          : null,
+        maNote: course.rating
+          ? {
+              note: course.rating.note,
+              commentaire: course.rating.commentaire,
+              donneeLe: course.rating.createdAt,
+            }
           : null,
         // Le code que le client donne au livreur à la porte. Il n'a de sens que
         // tant que la course n'est pas remise, et c'est le seul endroit où il
@@ -600,6 +624,47 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
     next(err);
   }
 });
+
+const noteSchema = z.object({
+  note: z
+    .number({ error: "La note est un nombre" })
+    .int("La note est un entier")
+    .min(NOTE_MIN, `La note va de ${NOTE_MIN} à ${NOTE_MAX}`)
+    .max(NOTE_MAX, `La note va de ${NOTE_MIN} à ${NOTE_MAX}`),
+  commentaire: z.string().max(COMMENTAIRE_MAX).optional(),
+});
+
+// POST /api/client/deliveries/:orderId/rating - Noter le livreur d'une course
+router.post(
+  "/deliveries/:orderId/rating",
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const client = await clientConnecte(req);
+      const corps = noteSchema.parse(req.body);
+
+      const resultat = await noterLivreur({
+        orderId: req.params.orderId as string,
+        customerId: client.id,
+        note: corps.note,
+        commentaire: corps.commentaire,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: "Merci, votre note est enregistrée",
+        data: {
+          note: resultat.note.note,
+          commentaire: resultat.note.commentaire,
+          donneeLe: resultat.note.createdAt,
+          livreur: { moyenne: resultat.moyenne, avis: resultat.avis },
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 router.get("/me/favorites", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {

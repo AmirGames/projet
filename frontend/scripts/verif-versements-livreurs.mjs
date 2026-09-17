@@ -173,6 +173,10 @@ await page.fill('input[type="email"]', emailLivreur);
 await page.fill('input[type="password"]', MDP);
 await page.click('button[type="submit"]');
 await page.waitForURL('**/driver', { timeout: 15000 });
+// Laisser le tableau de bord finir ses appels avant de le quitter : une
+// navigation qui part trop tôt annule les requêtes en vol, et le
+// « Failed to fetch » qui en résulte ressemble à une panne de la page.
+await page.waitForTimeout(2500);
 
 await page.goto(`${SITE}/driver/earnings`);
 await page.waitForTimeout(2500);
@@ -194,7 +198,11 @@ check('avec un montant', duInitial > 0, `${duInitial}`);
 // ===== Côté plateforme : l'arrêté =====
 
 titre('La plateforme ouvre les versements');
-const pagePlateforme = await contexte.newPage();
+// Son propre contexte : deux pages du même contexte partagent le
+// `localStorage`, donc le jeton. La connexion de la plateforme écrasait celui
+// du livreur, et l'espace livreur repartait ensuite avec le mauvais compte.
+const contextePlateforme = await nav.newContext();
+const pagePlateforme = await contextePlateforme.newPage();
 const erreursPlateforme = [];
 pagePlateforme.on('console', (m) => {
   if (m.type() === 'error') erreursPlateforme.push(m.text());

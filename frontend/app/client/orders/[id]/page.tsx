@@ -235,7 +235,11 @@ export default function OrderTrackingPage() {
             {/* Suivi : le bloc précédent affichait des coordonnées GPS brutes,
                 et un bouton « Appeler » qui n'appelait rien. */}
             {delivery && (
-              <SuiviLivraison course={delivery} positionDirecte={deliveryLocation} />
+              <SuiviLivraison
+                course={delivery}
+                orderId={orderId}
+                positionDirecte={deliveryLocation}
+              />
             )}
 
             {/* Order Items */}

@@ -26,7 +26,9 @@ interface Livreur {
   statusReason: string | null;
   approvedAt: string | null;
   isOnline: boolean;
-  rating: number;
+  /** Nulle tant que personne ne l'a noté. */
+  rating: number | null;
+  avis: number;
   totalDeliveries: number;
   totalEarnings: number;
   courses: number;
@@ -268,6 +270,14 @@ export default function LivreursPage() {
                         </span>
                         <span>{livreur.totalDeliveries} course{livreur.totalDeliveries > 1 ? 's' : ''}</span>
                         <span>{euro(livreur.totalEarnings)} gagnés</span>
+                        {/* La note manquait entièrement : la plateforme
+                            classait ses livreurs sans jamais voir ce que les
+                            clients en disaient. */}
+                        <span className={livreur.rating != null && livreur.rating < 3 ? 'text-red-300' : ''}>
+                          {livreur.rating == null
+                            ? 'jamais noté'
+                            : `${livreur.rating.toFixed(1).replace('.', ',')} ★ (${livreur.avis} avis)`}
+                        </span>
                       </div>
 
                       {livreur.statusReason && (

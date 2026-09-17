@@ -13,6 +13,7 @@ import {
 } from "../services/driver-approval.service";
 import { DriverPayoutService } from "../services/driver-payout.service";
 import { DeliveryProofService } from "../services/delivery-proof.service";
+import { notesDuLivreur } from "../services/driver-rating.service";
 import { z } from "zod";
 
 const router = Router();
@@ -142,7 +143,10 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
       week: depuis(debutSemaine),
       month: depuis(debutMois),
       deliveryCount: courses.length,
-      rating: Number(livreur.rating),
+      // Nulle tant que personne ne l'a noté : « 5,00 / 5 » s'affichait sur un
+      // écran de revenus dès la première course.
+      rating: livreur.totalRatings > 0 ? Number(livreur.rating) : null,
+      avis: livreur.totalRatings,
       deliveries: courses.slice(0, 30).map((c) => ({
         id: c.id,
         orderId: c.orderId,
@@ -237,7 +241,11 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         id: driver.id,
         name: driver.user?.name,
         email: driver.user?.email,
-        rating: driver.rating,
+        // Un livreur jamais noté n'a pas de note : la colonne vaut 5 par
+        // défaut, et son tableau de bord lui annonçait un sans-faute dès
+        // l'inscription. `avis` est ce qui distingue les deux.
+        rating: driver.totalRatings > 0 ? Number(driver.rating) : null,
+        avis: driver.totalRatings,
         totalEarnings: driver.totalEarnings,
         completedDeliveries: driver.totalDeliveries,
         // isOnline est ce que le livreur a choisi, isAvailable ce que
@@ -601,6 +609,17 @@ router.patch(
     }
   }
 );
+
+// GET /drivers/ratings - Ce que les clients ont dit de ses courses
+router.get("/ratings", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+
+    res.json({ success: true, data: await notesDuLivreur(livreur.id) });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // PATCH /drivers/deliveries/:id/location - Update driver location (protected)
 router.patch(

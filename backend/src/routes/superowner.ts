@@ -1600,7 +1600,10 @@ router.get("/drivers", authMiddleware, isSuperOwner, async (req: Request, res: R
           statusReason: livreur.statusReason,
           approvedAt: livreur.approvedAt,
           isOnline: livreur.isOnline,
-          rating: Number(livreur.rating),
+          // Nul tant que personne ne l'a noté : classer les livreurs sur un 5
+          // par défaut revenait à ne pas les classer du tout.
+          rating: livreur.totalRatings > 0 ? Number(livreur.rating) : null,
+          avis: livreur.totalRatings,
           totalDeliveries: livreur.totalDeliveries,
           totalEarnings: Number(livreur.totalEarnings),
           courses: livreur._count.deliveries,
@@ -1637,7 +1640,8 @@ router.get("/drivers/:driverId", authMiddleware, isSuperOwner, async (req: Reque
         statusReason: dossier.statusReason,
         approvedAt: dossier.approvedAt,
         isOnline: dossier.isOnline,
-        rating: Number(dossier.rating),
+        rating: dossier.totalRatings > 0 ? Number(dossier.rating) : null,
+        avis: dossier.totalRatings,
         totalDeliveries: dossier.totalDeliveries,
         totalEarnings: Number(dossier.totalEarnings),
         createdAt: dossier.createdAt,

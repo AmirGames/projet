@@ -3,7 +3,7 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : le suivi de livraison sur un vrai fond de carte.
+Dernière mise à jour : la note du livreur, donnée par le client.
 
 ---
 
@@ -119,6 +119,7 @@ scripts de vérification (voir §6).
 - **Sait s'il est payé** : ce qui reste dû, ce qui est arrêté et attend le
   virement, ce qui est arrivé, et le détail de chaque relevé
 - **Prouve la remise** : le code du client, ou la photo du dépôt en son absence
+- **Est noté par ses clients**, et lit leurs remarques sur son tableau de bord
 
 ### La plateforme (superowner)
 - Commerçants : formule, suspension, fermeture, restauration depuis sauvegarde
@@ -457,6 +458,32 @@ régler le rayon, et voit ses anneaux. La plateforme dispose de la même carte s
 la fiche d'une boutique, pour poser à la main un commerce que le service
 d'adresses ne sait pas situer.
 
+**Le livreur est noté par ses clients.** `Driver.rating` valait 5,00 pour tout
+le monde : c'était la valeur par défaut de la colonne, et aucune route ne
+l'écrivait jamais. Le livreur lisait « 5 » sur son tableau de bord le jour de
+son inscription, la plateforme classait ses livreurs sur un chiffre identique
+pour tous, et le client qui avait attendu une heure n'avait nulle part où le
+dire. Une note va de 1 à 5 et se donne **une fois par course remise**, par le
+client de cette course : c'est `deliveryId` qui est unique dans `DriverRating`,
+pas le couple client/livreur. Trois choses à retenir :
+
+- **La moyenne est recalculée depuis les notes, jamais ajustée au fil de
+  l'eau.** Une moyenne entretenue par additions successives dérive au premier
+  incident, et plus rien ne permet de la remettre d'aplomb. `Driver.rating`
+  n'est que le reflet de `DriverRating`.
+- **Un livreur jamais noté n'a pas de note.** Les routes renvoient `rating: null`
+  et `avis: 0` tant que `totalRatings` vaut zéro, et les écrans affichent « Pas
+  encore noté » — plutôt qu'un sans-faute qu'il n'a pas gagné.
+- **Le livreur lit ce qu'on lui reproche, jamais qui le lui reproche.**
+  `/api/drivers/ratings` ne renvoie pas le client : une note nominative se
+  réglerait à la course suivante.
+
+À savoir pour les vérifications : **deux pages du même contexte Playwright
+partagent le `localStorage`, donc le jeton**. Une suite qui connecte la
+plateforme dans un `contexte.newPage()` écrase le jeton du livreur, et l'espace
+livreur repart ensuite avec le mauvais compte — un 404 « aucun profil livreur »
+que rien dans le scénario n'explique. Chaque rôle prend son `nav.newContext()`.
+
 À savoir pour les vérifications : **les tuiles sont bloquées dans le bac à
 sable**. Les suites navigateur ne les contrôlent donc pas — elles contrôlent ce
 que le navigateur dessine (anneaux, poignée, point) et ce que le serveur
@@ -476,6 +503,8 @@ volontairement.
   volontairement.*
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
+- **Se servir de la note à l'attribution** : elle est écrite et lue, mais le
+  dispatch départage toujours à la distance seule.
 - **Prisma 5.22 → 7.10**, une fois le reste stabilisé. *Reporté volontairement.*
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.

@@ -161,7 +161,13 @@ for (const type of ['identity', 'insurance', 'vehicle_registration']) {
 // ===== Côté plateforme : l'examen =====
 
 titre('La plateforme ouvre la page des livreurs');
-const pagePlateforme = await contexte.newPage();
+// Son propre contexte, et non un onglet de plus : deux pages du même contexte
+// partagent le `localStorage`, donc le jeton. La connexion de la plateforme
+// écrasait celui du livreur, et les appels de l'espace livreur repartaient
+// ensuite avec le mauvais compte — un 404 « aucun profil livreur » que rien
+// dans le scénario n'expliquait.
+const contextePlateforme = await nav.newContext();
+const pagePlateforme = await contextePlateforme.newPage();
 const erreursPlateforme = [];
 pagePlateforme.on('console', (m) => {
   if (m.type() === 'error') erreursPlateforme.push(m.text());

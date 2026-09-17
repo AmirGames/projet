@@ -23,7 +23,9 @@ interface Revenus {
   week: number;
   month: number;
   deliveryCount: number;
-  rating: number;
+  /** Nulle tant que personne ne l'a noté. */
+  rating: number | null;
+  avis?: number;
   deliveries: CourseRemuneree[];
 }
 
@@ -137,7 +139,14 @@ export default function RevenusLivreurPage() {
                   <p className="text-gray-400 text-sm">Note moyenne</p>
                   <Star size={20} className="text-yellow-500" />
                 </div>
-                <p className="text-3xl font-bold">{revenus.rating.toFixed(2)} / 5</p>
+                {revenus.rating == null ? (
+                  <p className="text-gray-500 text-lg font-semibold mt-2">Pas encore noté</p>
+                ) : (
+                  <p className="text-3xl font-bold">
+                    {revenus.rating.toFixed(2).replace('.', ',')} / 5
+                    <span className="text-gray-500 text-sm font-normal"> · {revenus.avis} avis</span>
+                  </p>
+                )}
               </div>
             </div>
 

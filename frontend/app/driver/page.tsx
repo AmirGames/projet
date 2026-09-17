@@ -8,6 +8,7 @@ import { MapPin, Package, Clock, DollarSign, LogOut } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { PropositionsCourses } from '@/components/PropositionsCourses';
 import { DossierLivreur } from '@/components/DossierLivreur';
+import { NotesRecues } from '@/components/NotesRecues';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -31,7 +32,9 @@ interface Driver {
   phone: string;
   /** PENDING tant que la plateforme n'a pas validé le dossier. */
   status?: string;
-  rating: number;
+  /** Nulle tant que personne ne l'a noté. */
+  rating: number | null;
+  avis?: number;
   totalEarnings: number;
   completedDeliveries: number;
   isAvailable: boolean;
@@ -215,7 +218,20 @@ export default function DriverDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400 text-sm">Note</p>
-                <p className="text-white text-3xl font-bold">{driver.rating}</p>
+                {/* « 5 » s'affichait dès l'inscription : c'était la valeur par
+                    défaut de la colonne, pas une note gagnée. */}
+                {driver.rating == null ? (
+                  <p className="text-gray-500 text-lg font-semibold mt-1">Pas encore noté</p>
+                ) : (
+                  <>
+                    <p className="text-white text-3xl font-bold">
+                      {driver.rating.toFixed(1).replace('.', ',')}
+                    </p>
+                    <p className="text-gray-500 text-xs">
+                      {driver.avis} avis
+                    </p>
+                  </>
+                )}
               </div>
               <div className="text-4xl">⭐</div>
             </div>
@@ -372,8 +388,8 @@ export default function DriverDashboard() {
           )}
 
           {/* Driver Info Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-gray-800 rounded-lg p-6 sticky top-8 space-y-6">
+          <div className="lg:col-span-1 space-y-8">
+            <div className="bg-gray-800 rounded-lg p-6 space-y-6">
               <div>
                 <p className="text-gray-400 text-sm mb-2">Profil</p>
                 <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
@@ -408,6 +424,9 @@ export default function DriverDashboard() {
                 </Link>
               </div>
             </div>
+
+            {/* La moyenne seule ne dit pas quoi corriger : les remarques, si. */}
+            <NotesRecues />
           </div>
         </div>
       </div>

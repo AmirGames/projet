@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Bike, Clock, MapPin, Navigation, Store } from 'lucide-react';
+import { Etoiles, NoterLivreur, type MaNote } from '@/components/NoterLivreur';
 
 // Leaflet touche `window` dès son chargement : il ne peut pas être rendu côté
 // serveur.
@@ -29,15 +30,26 @@ export interface Course {
   position?: (Point & { misAJourLe?: string | null }) | null;
   distanceRestanteKm?: number | null;
   distanceTotaleKm?: number | null;
-  driver?: { name: string; phone?: string; vehicleType?: string; rating?: number } | null;
+  /** `rating` est nul tant que personne ne l'a noté : `avis` compte les notes. */
+  driver?: {
+    name: string;
+    phone?: string;
+    vehicleType?: string;
+    rating?: number | null;
+    avis?: number;
+  } | null;
   /** Le code à donner au livreur à la porte. Nul une fois la course remise. */
   codeRemise?: string | null;
   /** CODE ou PHOTO, une fois la remise prouvée. */
   preuve?: string | null;
+  /** La note que ce client a déjà donnée à cette course, s'il l'a donnée. */
+  maNote?: MaNote | null;
 }
 
 interface Props {
   course: Course;
+  /** L'identifiant de la commande : c'est par lui que la note s'enregistre. */
+  orderId?: string;
   /** Position poussée en direct, qui prend le pas sur celle de la course. */
   positionDirecte?: Point | null;
 }
@@ -78,7 +90,10 @@ function ilYA(horodatage?: string | null) {
   return `il y a ${Math.floor(secondes / 3600)} h`;
 }
 
-export function SuiviLivraison({ course, positionDirecte }: Props) {
+export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
+  // La note donnée reste à l'écran sans recharger la page : sans cela le client
+  // ne saurait pas si son geste a été pris.
+  const [maNote, setMaNote] = useState<MaNote | null>(course.maNote ?? null);
   // Le battement sert à rafraîchir « il y a N secondes » sans nouvel appel.
   const [, setBattement] = useState(0);
 
@@ -237,9 +252,20 @@ export function SuiviLivraison({ course, positionDirecte }: Props) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-white font-semibold truncate">{course.driver.name}</p>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-400 flex items-center gap-1">
               {course.driver.vehicleType}
-              {course.driver.rating ? ` · ${course.driver.rating} ★` : ''}
+              {/* « 5 ★ » s'affichait pour tout le monde, y compris pour un
+                  livreur qui n'avait jamais été noté. */}
+              {course.driver.rating != null && (
+                <>
+                  <span>·</span>
+                  <Etoiles valeur={course.driver.rating} taille={12} />
+                  <span>
+                    {course.driver.rating.toFixed(1).replace('.', ',')}
+                    {course.driver.avis ? ` (${course.driver.avis})` : ''}
+                  </span>
+                </>
+              )}
             </p>
           </div>
           {course.driver.phone && !livree && (
@@ -251,6 +277,17 @@ export function SuiviLivraison({ course, positionDirecte }: Props) {
             </a>
           )}
         </div>
+      )}
+
+      {/* La note se demande une fois la commande reçue, là où le client
+          regarde déjà — et non sur une page qu'il faudrait penser à ouvrir. */}
+      {livree && course.driver && orderId && (
+        <NoterLivreur
+          orderId={orderId}
+          prenomLivreur={course.driver.name?.split(' ')[0]}
+          maNote={maNote}
+          onNote={setMaNote}
+        />
       )}
 
       {!position && !livree && (

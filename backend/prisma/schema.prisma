@@ -785,6 +785,7 @@ model Driver {
   offers          DeliveryOffer[]
   documents       DriverDocument[]
   payouts         DriverPayout[]
+  ratings         DriverRating[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -885,6 +886,7 @@ model OrderDelivery {
   driver          Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
   offers          DeliveryOffer[]
   payout          DriverPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  rating          DriverRating?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1153,6 +1155,7 @@ model Customer {
   // Relations
   orders          Order[]
   reviews         Review[] @relation("ReviewToCustomer")
+  driverRatings   DriverRating[]
   favorites       FavoriteStore[] @relation("CustomerFavorites")
 
   createdAt DateTime @default(now())
@@ -1166,6 +1169,39 @@ model Customer {
 // ============================================================================
 // REVIEWS & RATINGS
 // ============================================================================
+
+/// La note qu'un client donne à son livreur, une fois la course remise.
+///
+/// `Driver.rating` valait 5,00 pour tout le monde depuis le premier jour :
+/// c'était la valeur par défaut de la colonne, et rien ne l'écrivait jamais.
+/// Le livreur voyait « 5 » sur son tableau de bord sans avoir jamais été noté,
+/// l'attribution ne pouvait pas s'en servir pour départager, et la plateforme
+/// n'avait aucune prise sur un livreur qui se conduit mal.
+///
+/// Une note par course, et par la course : c'est `deliveryId` qui est unique,
+/// pas le couple client/livreur. Un client qui commande dix fois note dix fois,
+/// et ne peut pas noter deux fois la même course.
+model DriverRating {
+  id          String   @id @default(cuid())
+  deliveryId  String   @unique
+  driverId    String
+  /// Le client qui a noté. Nul si sa fiche disparaît : la note reste, sinon la
+  /// moyenne du livreur bougerait à la suppression d'un compte.
+  customerId  String?
+
+  /// De 1 à 5. Entier : une demi-étoile ne se donne pas.
+  note        Int
+  commentaire String?
+
+  delivery    OrderDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  driver      Driver        @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  customer    Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+
+  @@index([driverId])
+  @@index([customerId])
+}
 
 model Review {
   id          String  @id @default(cuid())
