@@ -3,7 +3,7 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : boutique située à la création, et adresses belges.
+Dernière mise à jour : le suivi de livraison sur un vrai fond de carte.
 
 ---
 
@@ -438,6 +438,19 @@ Un invariant de plus :
   « Loading chunk … failed (`/_next/undefined`) ». `export default` règle le
   chargement, et `ssr: false` reste indispensable — Leaflet touche `window`.
 
+**Le suivi de livraison est sur la carte.** Le trajet se lisait sur un plan
+dessiné à la main — un trait, trois repères, une pastille qui glissait de l'un à
+l'autre. Un livreur « aux deux tiers » pouvait aussi bien être dans la rue d'à
+côté qu'à l'autre bout de la ville : le trait était le même. Le client voit
+maintenant les trois points là où ils sont, le parcouru plein et le restant
+pointillé, et la pastille du livreur qui bouge sans recharger — la position
+arrive par la socket. Deux garde-fous s'y lisent : **le cadrage ne se refait
+qu'à l'ouverture**, sinon la carte sauterait sous les doigts de qui vient de la
+déplacer ; et **la pastille du livreur disparaît une fois la course remise**,
+plutôt que de rester figée comme s'il roulait encore. Une commande dont
+l'adresse n'a pas pu être située garde son plan dessiné : une carte sans points
+ne montrerait qu'un fond vide.
+
 **La carte des zones est en place** : Leaflet et le fond OpenStreetMap, sans clé
 ni compte. Le commerçant pose sa boutique d'un clic, tire une poignée pour
 régler le rayon, et voit ses anneaux. La plateforme dispose de la même carte sur
@@ -463,9 +476,6 @@ volontairement.
   volontairement.*
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
-- **Le fond de carte du suivi de livraison** : le trajet du livreur est encore
-  dessiné en repères, sans tuiles. Les zones de livraison, elles, ont leur vraie
-  carte.
 - **Prisma 5.22 → 7.10**, une fois le reste stabilisé. *Reporté volontairement.*
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.

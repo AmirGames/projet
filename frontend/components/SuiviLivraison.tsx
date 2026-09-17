@@ -1,7 +1,19 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Bike, Clock, MapPin, Navigation, Store } from 'lucide-react';
+
+// Leaflet touche `window` dès son chargement : il ne peut pas être rendu côté
+// serveur.
+const CarteTrajet = dynamic(() => import('@/components/CarteTrajet'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[260px] w-full rounded-lg border border-gray-700 bg-gray-900 flex items-center justify-center text-sm text-gray-500">
+      Chargement de la carte…
+    </div>
+  ),
+});
 
 export interface Point {
   latitude: number;
@@ -33,10 +45,11 @@ interface Props {
 /**
  * Suivi d'une livraison : où en est le livreur, et dans combien de temps.
  *
- * Le plan est dessiné à la main plutôt que posé sur un fond cartographique :
- * il n'a aucune dépendance, fonctionne hors ligne, et répond à la seule
- * question que se pose le client — « c'est encore loin ? ». Un vrai fond de
- * carte viendra se substituer à ce plan sans rien changer au reste.
+ * Le trajet se pose désormais sur un vrai fond de carte, dès que le commerce
+ * et l'adresse de livraison sont situés. Le plan dessiné à la main reste, mais
+ * en repli : une commande dont les points manquent — une adresse que le service
+ * n'a pas su situer — garde un trait d'avancement plutôt qu'un trou dans la
+ * page.
  */
 
 const LIBELLES: Record<string, string> = {
@@ -104,6 +117,10 @@ export function SuiviLivraison({ course, positionDirecte }: Props) {
 
   const livree = course.status === 'DELIVERED';
 
+  // Sans le commerce et l'adresse, une carte ne montrerait qu'un fond vide :
+  // le plan dessiné en dit alors davantage.
+  const surLaCarte = !!course.retrait && !!course.destination;
+
   return (
     <div className="bg-gray-800 rounded-lg p-6 space-y-5">
       <div className="flex items-start justify-between gap-3">
@@ -140,36 +157,46 @@ export function SuiviLivraison({ course, positionDirecte }: Props) {
         </p>
       )}
 
-      {/* Plan du trajet : commerce, livreur, vous. */}
+      {/* Le trajet : commerce, livreur, vous. Sur la carte quand les points
+          sont connus, en plan dessiné sinon. */}
       <div>
-        <svg viewBox="0 0 100 24" className="w-full h-16" role="img" aria-label="Avancement du livreur">
-          <line x1="8" y1="16" x2="92" y2="16" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" />
+        {surLaCarte ? (
+          <CarteTrajet
+            retrait={course.retrait}
+            destination={course.destination}
+            livreur={position}
+            livree={livree}
+          />
+        ) : (
+          <svg viewBox="0 0 100 24" className="w-full h-16" role="img" aria-label="Avancement du livreur">
+            <line x1="8" y1="16" x2="92" y2="16" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" />
 
-          {avancement != null && (
-            <line
-              x1="8"
-              y1="16"
-              x2={8 + 84 * avancement}
-              y2="16"
-              stroke="#ea580c"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          )}
+            {avancement != null && (
+              <line
+                x1="8"
+                y1="16"
+                x2={8 + 84 * avancement}
+                y2="16"
+                stroke="#ea580c"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            )}
 
-          <circle cx="8" cy="16" r="3" fill="#4b5563" />
-          <circle cx="92" cy="16" r="3" fill={livree ? '#16a34a' : '#4b5563'} />
+            <circle cx="8" cy="16" r="3" fill="#4b5563" />
+            <circle cx="92" cy="16" r="3" fill={livree ? '#16a34a' : '#4b5563'} />
 
-          {avancement != null && (
-            <circle cx={8 + 84 * avancement} cy="16" r="4" fill="#ea580c">
-              {!livree && (
-                <animate attributeName="r" values="4;5;4" dur="2s" repeatCount="indefinite" />
-              )}
-            </circle>
-          )}
-        </svg>
+            {avancement != null && (
+              <circle cx={8 + 84 * avancement} cy="16" r="4" fill="#ea580c">
+                {!livree && (
+                  <animate attributeName="r" values="4;5;4" dur="2s" repeatCount="indefinite" />
+                )}
+              </circle>
+            )}
+          </svg>
+        )}
 
-        <div className="flex items-start justify-between text-xs -mt-2">
+        <div className={`flex items-start justify-between text-xs ${surLaCarte ? 'mt-2' : '-mt-2'}`}>
           <span className="flex items-center gap-1 text-gray-400 max-w-[45%]">
             <Store size={12} className="flex-shrink-0" />
             <span className="truncate">{course.boutique || 'Le commerce'}</span>

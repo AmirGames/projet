@@ -153,6 +153,10 @@ const nav = await chromium.launch();
 const page = await nav.newPage();
 const erreurs = [];
 page.on('console', (m) => {
+  // Les tuiles d'OpenStreetMap sont hors du projet : un bac à sable sans accès
+  // à Internet les refuse, et ce n'est pas un défaut de la page.
+  if (/tile\.openstreetmap|net::ERR_|ERR_NAME_NOT_RESOLVED|ERR_TUNNEL/.test(m.text())) return;
+
   if (m.type() === 'error') erreurs.push(`${new URL(page.url()).pathname} : ${m.text()}`);
 });
 
@@ -191,9 +195,12 @@ check('une distance restante est affichée', /\d+([,.]\d+)?\s*(km|m)\b/.test(enR
 check('une durée estimée est affichée', /\d+\s*min/.test(enRoute), enRoute.slice(0, 400));
 check('la fraîcheur de la position est indiquée', /à l.instant|il y a/i.test(enRoute), enRoute.slice(0, 400));
 
-// Le plan du trajet : trois repères, pas un fond de carte.
-const plan = page.locator('svg[aria-label="Avancement du livreur"]');
-check('le plan du trajet est dessiné', (await plan.count()) === 1, `n=${await plan.count()}`);
+// Le trajet, désormais sur un vrai fond de carte. Ce que cette carte montre
+// est vérifié en détail par `verif-carte-suivi.mjs` ; ici on contrôle
+// seulement qu'elle est là — et le plan dessiné reste le repli des commandes
+// dont l'adresse n'a pas pu être située.
+const plan = page.locator('[data-carte-trajet].leaflet-container');
+check('le trajet est posé sur une carte', (await plan.count()) === 1, `n=${await plan.count()}`);
 
 titre('Livraison terminée');
 const course = await appeler('/api/drivers/deliveries?status=ACCEPTED', { jeton: D });
