@@ -29,8 +29,10 @@ export default function NotificationsPage() {
     message: '',
     type: 'INFO' as const,
     priority: 'MEDIUM' as const,
-    targetAudience: 'ADMIN',
+    targetAudience: 'ALL',
   });
+  const [erreur, setErreur] = useState('');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     fetchNotifications();
@@ -55,19 +57,32 @@ export default function NotificationsPage() {
 
   const handleSendNotification = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErreur('');
+    setMessage('');
+
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`${API_URL}/api/admin/notifications`, {
+      const reponse = await fetch(`${API_URL}/api/admin/notifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(formData),
       });
 
-      setFormData({ title: '', message: '', type: 'INFO', priority: 'MEDIUM', targetAudience: 'ADMIN' });
+      const lue = await reponse.json().catch(() => null);
+
+      // Le refus était avalé : le formulaire se fermait, et la plateforme
+      // croyait avoir diffusé une annonce que le serveur venait de rejeter.
+      if (!reponse.ok) {
+        setErreur(lue?.error || 'Annonce refusée');
+        return;
+      }
+
+      setMessage(lue?.message || 'Annonce diffusée');
+      setFormData({ title: '', message: '', type: 'INFO', priority: 'MEDIUM', targetAudience: 'ALL' });
       setShowForm(false);
       fetchNotifications();
     } catch (error) {
-      console.error('Erreur:', error);
+      setErreur('Le serveur ne répond pas');
     }
   };
 
@@ -153,6 +168,12 @@ export default function NotificationsPage() {
         </div>
       </div>
 
+      {message && (
+        <p role="status" className="text-sm text-green-400">
+          {message}
+        </p>
+      )}
+
       {/* Create Notification Button */}
       <button
         onClick={() => setShowForm(!showForm)}
@@ -166,6 +187,11 @@ export default function NotificationsPage() {
       {showForm && (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <h2 className="text-lg font-bold mb-4">Nouvelle notification</h2>
+          {erreur && (
+            <p role="status" className="mb-4 text-sm text-red-400">
+              {erreur}
+            </p>
+          )}
           <form onSubmit={handleSendNotification} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Titre</label>
@@ -222,10 +248,10 @@ export default function NotificationsPage() {
                 onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
               >
-                <option value="ADMIN">Administrateurs</option>
-                <option value="MERCHANT">Commerçants</option>
-                <option value="USER">Utilisateurs</option>
-                <option value="ALL">Tous</option>
+                <option value="ALL">Tout le monde</option>
+                <option value="MERCHANTS">Les commerçants</option>
+                <option value="CUSTOMERS">Les clients</option>
+                <option value="DRIVERS">Les livreurs</option>
               </select>
             </div>
             <div className="flex gap-2 justify-end">

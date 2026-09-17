@@ -16,6 +16,8 @@ export class StoreService {
     description?: string;
     latitude?: number;
     longitude?: number;
+    businessType?: string;
+    cuisineType?: string;
   }) {
     /**
      * Une boutique naît située.
@@ -60,6 +62,10 @@ export class StoreService {
           description: data.description,
           latitude,
           longitude,
+          businessType: data.businessType,
+          // Une cuisine n'a de sens qu'en restauration : la retenir pour une
+          // épicerie brouillerait la recherche du client.
+          cuisineType: data.businessType === "restaurant" ? data.cuisineType : null,
         },
         include: {
           products: true,
@@ -148,6 +154,8 @@ export class StoreService {
           ...(data.description && { description: data.description }),
           ...(data.latitude !== undefined && { latitude: data.latitude }),
           ...(data.longitude !== undefined && { longitude: data.longitude }),
+          ...(data.businessType !== undefined && { businessType: data.businessType }),
+          ...(data.cuisineType !== undefined && { cuisineType: data.cuisineType }),
           ...(Object.keys(settings).length > 0 && { settings }),
           ...(data.pickupSlots && { pickupSlots: data.pickupSlots }),
         },

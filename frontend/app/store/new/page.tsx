@@ -32,7 +32,31 @@ export default function CreateStorePage() {
      */
     latitude: undefined as number | undefined,
     longitude: undefined as number | undefined,
+    /**
+     * Ce que vend ce commerce, et ce qu'on y mange.
+     *
+     * Le formulaire ne le demandait pas : toute boutique naissait « restaurant »
+     * sans genre, et le client ne pouvait ni distinguer une épicerie d'un
+     * fleuriste, ni chercher une pizzeria.
+     */
+    businessType: 'restaurant',
+    cuisineType: '',
   });
+
+  // Les listes viennent du serveur : recopiées ici, elles auraient dérivé dès
+  // la première addition.
+  const [etablissements, setEtablissements] = useState<{ code: string; libelle: string }[]>([]);
+  const [cuisines, setCuisines] = useState<{ code: string; libelle: string }[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/stores/types`)
+      .then((r) => r.json())
+      .then((lu) => {
+        setEtablissements(lu?.data?.etablissements || []);
+        setCuisines(lu?.data?.cuisines || []);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const checkOrgStatus = async () => {
@@ -61,7 +85,9 @@ export default function CreateStorePage() {
     checkOrgStatus();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -127,10 +153,16 @@ export default function CreateStorePage() {
           city: formData.city,
           postalCode: formData.postalCode,
           phone: formData.phone,
-          email: formData.email,
+          email: formData.email || undefined,
           description: formData.description,
           latitude: formData.latitude,
           longitude: formData.longitude,
+          businessType: formData.businessType || undefined,
+          // Une cuisine n'a de sens qu'en restauration.
+          cuisineType:
+            formData.businessType === 'restaurant' && formData.cuisineType
+              ? formData.cuisineType
+              : undefined,
         }),
       });
 
@@ -218,6 +250,52 @@ export default function CreateStorePage() {
                     className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="businessType" className="block text-gray-300 mb-2 font-medium">
+                      Type d&apos;entreprise *
+                    </label>
+                    <select
+                      id="businessType"
+                      name="businessType"
+                      value={formData.businessType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      {etablissements.map((genre) => (
+                        <option key={genre.code} value={genre.code}>
+                          {genre.libelle}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Une épicerie n'a pas de cuisine : le champ n'apparaît que
+                      là où il a un sens. */}
+                  {formData.businessType === 'restaurant' && (
+                    <div>
+                      <label htmlFor="cuisineType" className="block text-gray-300 mb-2 font-medium">
+                        Type de cuisine
+                      </label>
+                      <select
+                        id="cuisineType"
+                        name="cuisineType"
+                        value={formData.cuisineType}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Sélectionnez…</option>
+                        {cuisines.map((genre) => (
+                          <option key={genre.code} value={genre.code}>
+                            {genre.libelle}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 <div>

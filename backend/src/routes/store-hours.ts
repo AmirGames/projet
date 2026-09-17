@@ -6,11 +6,27 @@ import { logger } from "../config/logger";
 
 const router = Router();
 
-const dayHoursSchema = z.object({
-  open: z.string().regex(/^([0-1][0-9]|2[0-3]):([0-5][0-9])$/, "Invalid time format (HH:mm)"),
-  close: z.string().regex(/^([0-1][0-9]|2[0-3]):([0-5][0-9])$/, "Invalid time format (HH:mm)"),
-  closed: z.boolean(),
-});
+const heure = z
+  .string()
+  .regex(/^([0-1][0-9]|2[0-3]):([0-5][0-9])$/, "Heure invalide : utilisez le format HH:mm");
+
+/**
+ * Un jour porte plusieurs plages — le service du midi, celui du soir.
+ *
+ * L'ancienne forme `{ open, close, closed }` reste acceptée : un client déjà
+ * déployé continue de fonctionner, et le service la convertit en une plage
+ * unique.
+ */
+const dayHoursSchema = z
+  .object({
+    closed: z.boolean(),
+    plages: z.array(z.object({ open: heure, close: heure })).optional(),
+    open: heure.optional(),
+    close: heure.optional(),
+  })
+  .refine((corps) => corps.closed || corps.plages?.length || (corps.open && corps.close), {
+    message: "Donnez au moins une plage horaire, ou fermez la journée",
+  });
 
 const pickupSlotSchema = z.object({
   start: z.string().regex(/^([0-1][0-9]|2[0-3]):([0-5][0-9])$/, "Invalid time format (HH:mm)"),

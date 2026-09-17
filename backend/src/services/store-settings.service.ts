@@ -1,5 +1,12 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
+import { verifierLaTva } from "./merchant-profile.service";
+import {
+  libelleDeLEtablissement,
+  libelleDeLaCuisine,
+  CODES_ETABLISSEMENT,
+  CODES_CUISINE,
+} from "./store-type.service";
 
 export interface StoreSettingsData {
   name?: string;
@@ -21,10 +28,18 @@ export interface StoreSettingsData {
     reviewNotifications?: boolean;
     emailNotifications?: boolean;
   };
-  businessHours?: {
-    defaultOpen?: string;
-    defaultClose?: string;
-  };
+  businessType?: string;
+  cuisineType?: string | null;
+  /**
+   * L'identité de facturation propre à cette boutique.
+   *
+   * Vide, c'est celle de la société qui s'applique. Renseignée, elle prime :
+   * trois commerces peuvent relever de trois sociétés, donc de trois numéros
+   * de TVA.
+   */
+  legalName?: string | null;
+  vatNumber?: string | null;
+  registrationNumber?: string | null;
 }
 
 export class StoreSettingsService {
@@ -38,6 +53,17 @@ export class StoreSettingsService {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
       }
 
+      const org = await db.organization.findUnique({
+        where: { id: store.orgId },
+        select: {
+          legalName: true,
+          vatNumber: true,
+          registrationNumber: true,
+          billingCountry: true,
+          name: true,
+        },
+      });
+
       return {
         id: store.id,
         name: store.name,
@@ -48,6 +74,33 @@ export class StoreSettingsService {
         postalCode: store.postalCode,
         phone: store.phone,
         email: store.email,
+        businessType: store.businessType,
+        businessTypeLibelle: libelleDeLEtablissement(store.businessType),
+        cuisineType: store.cuisineType,
+        cuisineTypeLibelle: libelleDeLaCuisine(store.cuisineType),
+        legalName: store.legalName,
+        vatNumber: store.vatNumber,
+        registrationNumber: store.registrationNumber,
+        /**
+         * Ce que la société fournit par défaut, et ce qui s'appliquera.
+         *
+         * L'écran doit pouvoir dire « hérité de votre société » plutôt que de
+         * laisser trois champs vides que le commerçant croirait manquants.
+         */
+        facturation: {
+          societe: {
+            legalName: org?.legalName || null,
+            vatNumber: org?.vatNumber || null,
+            registrationNumber: org?.registrationNumber || null,
+            pays: org?.billingCountry || "France",
+          },
+          effective: {
+            legalName: store.legalName || org?.legalName || null,
+            vatNumber: store.vatNumber || org?.vatNumber || null,
+            registrationNumber: store.registrationNumber || org?.registrationNumber || null,
+          },
+          propre: !!(store.legalName || store.vatNumber || store.registrationNumber),
+        },
         settings: store.settings || {},
       };
     } catch (error) {
@@ -75,8 +128,42 @@ export class StoreSettingsService {
         ...(data.logo && { logo: data.logo }),
         ...(data.banner && { banner: data.banner }),
         ...(data.notifications && { notifications: data.notifications }),
-        ...(data.businessHours && { businessHours: data.businessHours }),
       };
+
+    const texte = (valeur: unknown) => {
+      const propre = String(valeur ?? "").trim();
+      return propre || null;
+    };
+
+    const facturation: Record<string, string | null> = {};
+
+    for (const champ of ["legalName", "registrationNumber"] as const) {
+      if (data[champ] !== undefined) facturation[champ] = texte(data[champ]);
+    }
+
+    if (data.vatNumber !== undefined) {
+      const tva = texte(data.vatNumber)?.replace(/\s+/g, "").toUpperCase() || null;
+
+      if (tva) {
+        // Le pays est celui de la société : la boutique ne déclare pas le sien.
+        const org = await db.organization.findUnique({
+          where: { id: store.orgId },
+          select: { billingCountry: true },
+        });
+
+        verifierLaTva(tva, org?.billingCountry || "France");
+      }
+
+      facturation.vatNumber = tva;
+    }
+
+    if (data.businessType !== undefined && !CODES_ETABLISSEMENT.includes(data.businessType as never)) {
+      throw new ApiError(400, "Type d'établissement inconnu", "UNKNOWN_BUSINESS_TYPE");
+    }
+
+    if (data.cuisineType !== undefined && data.cuisineType && !CODES_CUISINE.includes(data.cuisineType as never)) {
+      throw new ApiError(400, "Type de cuisine inconnu", "UNKNOWN_CUISINE_TYPE");
+    }
 
       const updateData: any = {
         ...(data.name && { name: data.name }),
@@ -86,26 +173,21 @@ export class StoreSettingsService {
         ...(data.postalCode && { postalCode: data.postalCode }),
         ...(data.phone && { phone: data.phone }),
         ...(data.email && { email: data.email }),
+        ...(data.businessType !== undefined && { businessType: data.businessType }),
+        // Une cuisine n'a de sens qu'en restauration.
+        ...(data.cuisineType !== undefined && {
+          cuisineType:
+            (data.businessType ?? store.businessType) === "restaurant" ? data.cuisineType : null,
+        }),
+        ...facturation,
         settings: updatedSettings,
       };
 
-      const updated = await db.store.update({
-        where: { id: storeId },
-        data: updateData,
-      });
+      await db.store.update({ where: { id: storeId }, data: updateData });
 
-      return {
-        id: updated.id,
-        name: updated.name,
-        slug: updated.slug,
-        description: updated.description,
-        address: updated.address,
-        city: updated.city,
-        postalCode: updated.postalCode,
-        phone: updated.phone,
-        email: updated.email,
-        settings: updated.settings || {},
-      };
+      // Relu par le même chemin que la lecture : l'écran reçoit l'héritage
+      // depuis la société, et non un objet à moitié rempli.
+      return this.getSettings(storeId);
     } catch (error: any) {
       if (error.code === "P2025") {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");

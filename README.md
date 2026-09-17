@@ -37,16 +37,23 @@ emporter ou à livrer.
 - Catalogue : catégories et plats réordonnables au glisser-déposer, déclinaisons,
   disponibilité basculable en direct (le client la voit changer sans recharger)
 - Commandes : liste, détail, changement d'état, facture imprimable
-- Horaires d'ouverture, créneaux de retrait, ouverture et fermeture immédiate
+- Horaires d'ouverture **service par service** : le midi et le soir dans la
+  même journée, et les fermetures après minuit (17h30 – 01h00)
+- Créneaux de retrait, ouverture et fermeture immédiate
 - Zones de livraison en anneaux autour de la boutique, **réglées sur une carte** :
   il pose son commerce d'un clic, tire une poignée pour fixer le rayon et voit
   ce qu'il couvre — rayon, frais et montant minimum par zone
+- Genre du commerce (restaurant, épicerie, fleuriste…) et type de cuisine,
+  demandés dès la création
 - Codes promo, moyens de paiement proposés, taxes, clientèle
 - Statistiques de vente, exports
 - **Son profil** : identité de facturation, propriétaire du commerce, numéro de
   TVA, compte bancaire et justificatifs — la page dit ce qui manque encore pour
   être facturé et pour être payé. L'IBAN n'est jamais réaffiché en entier. Un
   compte suspendu y garde accès : c'est là qu'il complète ce qu'on lui reproche
+- **Une boutique peut porter sa propre identité de facturation** (raison
+  sociale, TVA, immatriculation) quand elle relève d'une autre société ; sinon
+  elle hérite de celle du compte
 - Support par tickets, avec fil de discussion
 
 ### Le livreur
@@ -79,6 +86,8 @@ emporter ou à livrer.
 - Versements : ce qu'elle doit et à qui, arrêté des relevés d'une période,
   versement avec sa référence — une course payée ne l'est jamais deux fois
 - Santé du système : cinq relevés chiffrés, et ce qu'il faut faire pour chacun
+- Annonces diffusées au public visé — commerçants, clients, livreurs — et
+  reçues par chacun d'eux
 - Journal des actions administratives et journal des accès
 - Sauvegardes, mode maintenance, clés d'API, webhooks
 - Support : tous les tickets, réponses, priorités
@@ -171,14 +180,14 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1190 contrôles, 35 suites
+# API : 1253 contrôles, 38 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 570 contrôles, 22 suites
+# Navigateur : 599 contrôles, 23 suites
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite

@@ -5,6 +5,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { MerchantClosureService } from "../services/merchant-closure.service";
 import { TicketMessageService } from "../services/ticket-message.service";
+import { AnnouncementService, PUBLICS_CONNUS } from "../services/announcement.service";
 
 const LIBELLES_STATUT_TICKET: Record<string, string> = {
   OPEN: "rouvert",
@@ -707,7 +708,9 @@ const annonceSchema = z.object({
   title: z.string().min(3, "Titre : 3 caractères minimum"),
   message: z.string().min(3, "Message : 3 caractères minimum"),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
-  targetAudience: z.enum(["ALL", "MERCHANTS", "CUSTOMERS", "DRIVERS"]).optional(),
+  // La liste vient du service : l'écran et le serveur ne proposaient pas les
+  // mêmes valeurs, et trois choix sur quatre étaient refusés en 400.
+  targetAudience: z.enum(PUBLICS_CONNUS as [string, ...string[]]).optional(),
   actionUrl: z.string().optional(),
 });
 
@@ -717,20 +720,25 @@ router.post("/notifications", authMiddleware, isSystemAdmin, async (req: Request
     const body = annonceSchema.parse(req.body);
     const auteur = (req as any).actorEmail || "plateforme";
 
-    const annonce = await db.notification.create({
-      data: {
-        type: "PLATFORM_ANNOUNCEMENT",
-        title: body.title,
-        message: body.message,
-        priority: body.priority || "MEDIUM",
-        targetAudience: body.targetAudience || "ALL",
-        link: body.actionUrl,
-        recipientEmail: auteur,
-        sentAt: new Date(),
-      },
+    // Une seule ligne était créée, adressée à son auteur : l'annonce
+    // n'atteignait personne. Elle est maintenant recopiée dans la boîte de
+    // chaque destinataire du public visé.
+    const { annonce, destinataires } = await AnnouncementService.diffuser({
+      title: body.title,
+      message: body.message,
+      priority: body.priority,
+      targetAudience: body.targetAudience,
+      link: body.actionUrl,
+      auteur,
     });
 
-    res.status(201).json({ message: "Annonce diffusée", notification: annonce });
+    res.status(201).json({
+      message: destinataires
+        ? `Annonce diffusée à ${destinataires} destinataire${destinataires > 1 ? "s" : ""}`
+        : "Annonce enregistrée, mais personne ne correspond à ce public",
+      notification: annonce,
+      destinataires,
+    });
   } catch (err) {
     next(err);
   }

@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { emailFacultatif } from "../utils/validation";
 import { StoreSettingsService } from "../services/store-settings.service";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
@@ -13,7 +14,7 @@ const updateSettingsSchema = z.object({
   city: z.string().max(100).optional(),
   postalCode: z.string().max(20).optional(),
   phone: z.string().max(20).optional(),
-  email: z.string().email().optional(),
+  email: emailFacultatif,
   website: z.string().url().optional().or(z.literal("")),
   timezone: z.string().optional(),
   currency: z.string().max(3).optional(),
@@ -26,10 +27,18 @@ const updateSettingsSchema = z.object({
     reviewNotifications: z.boolean().optional(),
     emailNotifications: z.boolean().optional(),
   }).optional(),
-  businessHours: z.object({
-    defaultOpen: z.string().optional(),
-    defaultClose: z.string().optional(),
-  }).optional(),
+  // Ce que vend ce commerce, et ce qu'on y mange.
+  businessType: z.string().max(40).optional(),
+  cuisineType: z.string().max(40).nullable().optional(),
+  /**
+   * L'identité de facturation propre à cette boutique.
+   *
+   * Vide, celle de la société s'applique : trois commerces sous une seule
+   * société n'ont qu'un numéro de TVA. Renseignée, elle prime.
+   */
+  legalName: z.string().max(200).nullable().optional(),
+  vatNumber: z.string().max(30).nullable().optional(),
+  registrationNumber: z.string().max(30).nullable().optional(),
 });
 
 // GET /store-settings/:storeId - Get store settings (protected)
@@ -58,7 +67,7 @@ router.put("/:storeId", authMiddleware, async (req: Request, res: Response, next
     const settings = await StoreSettingsService.updateSettings(storeId, body);
 
     res.json({
-      message: "Store settings updated",
+      message: "Réglages enregistrés",
       settings,
     });
   } catch (err) {

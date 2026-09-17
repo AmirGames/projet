@@ -31,14 +31,31 @@ interface StoreSettings {
       reviewNotifications?: boolean;
       emailNotifications?: boolean;
     };
-    businessHours?: {
-      defaultOpen?: string;
-      defaultClose?: string;
+  };
+  businessType?: string | null;
+  cuisineType?: string | null;
+  facturation?: {
+    societe: {
+      legalName: string | null;
+      vatNumber: string | null;
+      registrationNumber: string | null;
+      pays: string;
     };
+    effective: {
+      legalName: string | null;
+      vatNumber: string | null;
+      registrationNumber: string | null;
+    };
+    propre: boolean;
   };
 }
 
-type TabType = 'general' | 'contact' | 'notifications' | 'business';
+interface Genre {
+  code: string;
+  libelle: string;
+}
+
+type TabType = 'general' | 'contact' | 'notifications' | 'facturation';
 
 export default function StoreSettings() {
   const params = useParams();
@@ -69,11 +86,28 @@ export default function StoreSettings() {
       reviewNotifications: false,
       emailNotifications: false,
     },
-    businessHours: {
-      defaultOpen: '',
-      defaultClose: '',
-    },
+    businessType: '',
+    cuisineType: '',
+    legalName: '',
+    vatNumber: '',
+    registrationNumber: '',
   });
+
+  // Les genres viennent du serveur : recopiés ici, ils auraient dérivé dès la
+  // première addition.
+  const [etablissements, setEtablissements] = useState<Genre[]>([]);
+  const [cuisines, setCuisines] = useState<Genre[]>([]);
+  const [facturation, setFacturation] = useState<StoreSettings['facturation'] | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/stores/types`)
+      .then((r) => r.json())
+      .then((lu) => {
+        setEtablissements(lu?.data?.etablissements || []);
+        setCuisines(lu?.data?.cuisines || []);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (storeId) {
@@ -117,11 +151,13 @@ export default function StoreSettings() {
           reviewNotifications: false,
           emailNotifications: false,
         },
-        businessHours: settings_obj.businessHours || {
-          defaultOpen: '',
-          defaultClose: '',
-        },
+        businessType: data.businessType || '',
+        cuisineType: data.cuisineType || '',
+        legalName: data.legalName || '',
+        vatNumber: data.vatNumber || '',
+        registrationNumber: data.registrationNumber || '',
       });
+      setFacturation(data.facturation || null);
     } catch (error) {
       console.error('Error fetching settings:', error);
       setMessage({ type: 'error', text: 'Erreur lors du chargement des paramètres' });
@@ -165,11 +201,16 @@ export default function StoreSettings() {
         body: JSON.stringify(formData),
       });
 
+      const lu = await response.json().catch(() => null);
+
+      // Un refus muet — une TVA au mauvais format, par exemple — laissait
+      // croire que tout était enregistré.
       if (!response.ok) {
-        throw new Error('Failed to save settings');
+        setMessage({ type: 'error', text: lu?.error || 'Réglages refusés' });
+        return;
       }
 
-      setMessage({ type: 'success', text: 'Paramètres sauvegardés avec succès!' });
+      setMessage({ type: 'success', text: 'Réglages enregistrés' });
       setTimeout(() => setMessage(null), 3000);
       fetchSettings();
     } catch (error) {
@@ -216,7 +257,7 @@ export default function StoreSettings() {
         {/* Tabs */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg mb-6">
           <div className="flex border-b border-gray-700">
-            {(['general', 'contact', 'notifications', 'business'] as TabType[]).map(tab => (
+            {(['general', 'contact', 'notifications', 'facturation'] as TabType[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -229,7 +270,7 @@ export default function StoreSettings() {
                 {tab === 'general' && '🏪 Général'}
                 {tab === 'contact' && '📍 Contact'}
                 {tab === 'notifications' && '🔔 Notifications'}
-                {tab === 'business' && '⏰ Entreprise'}
+                {tab === 'facturation' && '🧾 Facturation'}
               </button>
             ))}
           </div>
@@ -442,40 +483,166 @@ export default function StoreSettings() {
               </div>
             )}
 
-            {/* Business Tab */}
-            {activeTab === 'business' && (
-              <div className="space-y-6">
-                <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
-                  <p className="text-blue-400 text-sm">ℹ️ Configurez les heures d'ouverture par défaut pour votre boutique</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Le genre du commerce, et sous quelle identité il facture. Les
+                horaires par défaut qui occupaient cet onglet faisaient doublon
+                avec l'onglet Horaires, et personne ne les lisait. */}
+            {activeTab === 'facturation' && (
+              <div className="space-y-8">
+                <section className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Heure d'ouverture</label>
-                    <input
-                      type="time"
-                      value={formData.businessHours.defaultOpen}
-                      onChange={(e) => handleNestedChange('businessHours', 'defaultOpen', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
-                    />
+                    <h3 className="font-semibold text-gray-100">Genre du commerce</h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Ce que vend ce commerce, et ce qu&apos;on y mange. Le client s&apos;en
+                      sert pour vous trouver.
+                    </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Heure de fermeture</label>
-                    <input
-                      type="time"
-                      value={formData.businessHours.defaultClose}
-                      onChange={(e) => handleNestedChange('businessHours', 'defaultClose', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
-                    />
-                  </div>
-                </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="businessType" className="block text-sm font-medium text-gray-300 mb-2">
+                        Type d&apos;établissement
+                      </label>
+                      <select
+                        id="businessType"
+                        value={formData.businessType}
+                        onChange={(e) =>
+                          handleInputChange(
+                            'businessType',
+                            e.target.value,
+                          )
+                        }
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                      >
+                        <option value="">Choisir…</option>
+                        {etablissements.map((genre) => (
+                          <option key={genre.code} value={genre.code}>
+                            {genre.libelle}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-4">
-                  <p className="text-gray-400 text-sm">
-                    💡 Les paramètres supplémentaires comme les méthodes de paiement, les configurations fiscales et les paramètres de livraison seront ajoutés bientôt.
+                    {/* Une épicerie n'a pas de cuisine : le champ n'apparaît
+                        que là où il a un sens. */}
+                    {formData.businessType === 'restaurant' && (
+                      <div>
+                        <label htmlFor="cuisineType" className="block text-sm font-medium text-gray-300 mb-2">
+                          Type de cuisine
+                        </label>
+                        <select
+                          id="cuisineType"
+                          value={formData.cuisineType}
+                          onChange={(e) => handleInputChange('cuisineType', e.target.value)}
+                          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                        >
+                          <option value="">Choisir…</option>
+                          {cuisines.map((genre) => (
+                            <option key={genre.code} value={genre.code}>
+                              {genre.libelle}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="space-y-4 border-t border-gray-700 pt-6">
+                  <div>
+                    <h3 className="font-semibold text-gray-100">Identité de facturation</h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Ce qui figure sur les factures de <em>cette boutique</em>. Laissez vide si
+                      elle relève de votre société : c&apos;est le cas le plus courant.
+                    </p>
+                  </div>
+
+                  {facturation && (
+                    <div
+                      className={`rounded-lg border p-4 text-sm ${
+                        facturation.propre
+                          ? 'border-amber-600/40 bg-amber-900/20 text-amber-200'
+                          : 'border-gray-600 bg-gray-700/50 text-gray-300'
+                      }`}
+                    >
+                      {facturation.propre ? (
+                        <p>
+                          Cette boutique facture sous sa propre identité :{' '}
+                          <strong>{facturation.effective.legalName || '—'}</strong>
+                          {facturation.effective.vatNumber && ` · TVA ${facturation.effective.vatNumber}`}
+                        </p>
+                      ) : (
+                        <p>
+                          Héritée de votre société :{' '}
+                          <strong>{facturation.societe.legalName || 'non renseignée'}</strong>
+                          {facturation.societe.vatNumber && ` · TVA ${facturation.societe.vatNumber}`}
+                          {!facturation.societe.legalName && (
+                            <>
+                              {' — '}
+                              <Link href="/merchant/profil" className="underline hover:text-white">
+                                complétez votre profil
+                              </Link>
+                            </>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="legalName" className="block text-sm font-medium text-gray-300 mb-2">
+                        Raison sociale de la boutique
+                      </label>
+                      <input
+                        id="legalName"
+                        value={formData.legalName}
+                        onChange={(e) => handleInputChange('legalName', e.target.value)}
+                        placeholder={facturation?.societe.legalName || 'Celle de votre société'}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="vatNumber" className="block text-sm font-medium text-gray-300 mb-2">
+                        Numéro de TVA
+                      </label>
+                      <input
+                        id="vatNumber"
+                        value={formData.vatNumber}
+                        onChange={(e) => handleInputChange('vatNumber', e.target.value)}
+                        placeholder={facturation?.societe.vatNumber || 'Celui de votre société'}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="registrationNumber" className="block text-sm font-medium text-gray-300 mb-2">
+                        Numéro d&apos;immatriculation
+                      </label>
+                      <input
+                        id="registrationNumber"
+                        value={formData.registrationNumber}
+                        onChange={(e) => handleInputChange('registrationNumber', e.target.value)}
+                        placeholder={facturation?.societe.registrationNumber || 'Celui de votre société'}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-gray-500">
+                    Le compte bancaire et les justificatifs restent au niveau de votre société,
+                    dans{' '}
+                    <Link href="/merchant/profil" className="underline hover:text-gray-300">
+                      votre profil
+                    </Link>
+                    .
                   </p>
-                </div>
+                </section>
+
+                <p className="text-sm text-gray-400 border-t border-gray-700 pt-6">
+                  Les horaires d&apos;ouverture se règlent dans l&apos;onglet{' '}
+                  <strong>Horaires</strong> de la barre latérale, service par service.
+                </p>
               </div>
             )}
           </div>

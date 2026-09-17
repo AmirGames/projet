@@ -360,6 +360,24 @@ model Store {
   email         String?
   description   String?
 
+  /// Ce que vend ce commerce, et ce qu'on y mange.
+  ///
+  /// L'inscription ne le demandait pas : toute boutique était un « restaurant »
+  /// sans genre, et le client ne pouvait ni filtrer par type de commerce ni
+  /// chercher une pizzeria.
+  businessType  String?   // restaurant, grocery, supermarket, deli, liquor, florist, pharmacy, shop
+  cuisineType   String?   // pizza, japanese-sushi, burgers… sans objet hors restauration
+
+  /// L'identité de facturation propre à cette boutique.
+  ///
+  /// Vide, c'est celle de l'organisation qui s'applique — le cas courant :
+  /// plusieurs points de vente sous une même société. Renseignée, elle prime :
+  /// trois commerces peuvent relever de trois sociétés, donc de trois numéros
+  /// de TVA.
+  legalName          String?
+  vatNumber          String?
+  registrationNumber String?
+
   // GÉOLOCALISATION - Pour Uber Eats like
   latitude      Float?    // Pour trouver restaurants proches
   longitude     Float?
@@ -367,8 +385,11 @@ model Store {
   // Store settings (JSON)
   settings      Json      @default("{}")
 
-  // Operating hours (JSON object by day of week)
-  // Example: { "MON": { "open": "09:00", "close": "22:00", "closed": false }, ... }
+  /// Horaires par jour, en plusieurs plages : un service le midi, un autre le
+  /// soir. Une fermeture antérieure à l'ouverture se termine le lendemain.
+  /// { "MON": { "closed": false, "plages": [{ "open": "11:30", "close": "14:00" },
+  ///                                        { "open": "17:30", "close": "01:00" }] } }
+  /// L'ancienne forme { open, close, closed } reste lue.
   operatingHours Json     @default("{}")
 
   // Pickup slots (JSON array)

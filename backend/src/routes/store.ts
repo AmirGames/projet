@@ -1,10 +1,17 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { emailFacultatif } from "../utils/validation";
 import { StoreService } from "../services/store.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, checkOrgStatus } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { PlanService } from "../services/plan.service";
+import {
+  TYPES_ETABLISSEMENT,
+  TYPES_CUISINE,
+  CODES_ETABLISSEMENT,
+  CODES_CUISINE,
+} from "../services/store-type.service";
 
 const router = Router();
 
@@ -16,13 +23,17 @@ const createStoreSchema = z.object({
   city: z.string().optional(),
   postalCode: z.string().optional(),
   phone: z.string().optional(),
-  email: z.string().email().optional(),
+  email: emailFacultatif,
   description: z.string().optional(),
   // Coordonnées de la boutique. Sans elles, la boutique n'apparaît ni dans
   // « les commerces près de chez moi » ni dans la recherche d'un livreur : le
   // modèle portait ces colonnes, aucune route ne permettait de les remplir.
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+  // Ce que vend ce commerce, et ce qu'on y mange : l'inscription ne le
+  // demandait pas, et toute boutique était un « restaurant » sans genre.
+  businessType: z.enum(CODES_ETABLISSEMENT as [string, ...string[]]).optional(),
+  cuisineType: z.enum(CODES_CUISINE as [string, ...string[]]).optional(),
 });
 
 const updateStoreSchema = z.object({
@@ -32,7 +43,7 @@ const updateStoreSchema = z.object({
   city: z.string().optional(),
   postalCode: z.string().optional(),
   phone: z.string().optional(),
-  email: z.string().email().optional(),
+  email: emailFacultatif,
   description: z.string().optional(),
   logo: z.string().optional(),
   primaryColor: z.string().optional(),
@@ -44,6 +55,10 @@ const updateStoreSchema = z.object({
   // modèle portait ces colonnes, aucune route ne permettait de les remplir.
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+  // Ce que vend ce commerce, et ce qu'on y mange : l'inscription ne le
+  // demandait pas, et toute boutique était un « restaurant » sans genre.
+  businessType: z.enum(CODES_ETABLISSEMENT as [string, ...string[]]).optional(),
+  cuisineType: z.enum(CODES_CUISINE as [string, ...string[]]).optional(),
 });
 
 const storeStatusSchema = z.object({
@@ -69,6 +84,23 @@ router.post("/", authMiddleware, checkOrgStatus, async (req: Request, res: Respo
   } catch (err) {
     next(err);
   }
+});
+
+/**
+ * GET /stores/types - Les genres de commerce et de cuisine.
+ *
+ * Publique : le formulaire d'inscription en a besoin avant qu'un compte
+ * n'existe. La liste vit côté serveur pour que l'écran, l'API et la recherche
+ * parlent des mêmes valeurs — recopiée dans un `<select>`, elle aurait dérivé
+ * dès la première addition.
+ *
+ * Déclarée avant `/:id`, qui capterait sinon « types » pour un identifiant.
+ */
+router.get("/types", (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: { etablissements: TYPES_ETABLISSEMENT, cuisines: TYPES_CUISINE },
+  });
 });
 
 // GET /stores/slug/:slug - Get store by slug (public)

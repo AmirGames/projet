@@ -106,6 +106,9 @@ continue.
 | `verif-boutique-situee.mjs` | Une boutique naît située, et l'adresse introuvable ne bloque pas |
 | `verif-fiche-boutique.mjs` | Fiche d'une boutique, et les seuls champs que la plateforme corrige |
 | `verif-profil-commercant.mjs` | Profil du commerçant : facturation, propriétaire, IBAN masqué, pièces |
+| `verif-annonces.mjs` | Une annonce de la plateforme atteint le public visé, et lui seul |
+| `verif-horaires-plages.mjs` | Plusieurs services par jour, et la nuit qui déborde |
+| `verif-identite-boutique.mjs` | Genre du commerce, et l'identité sous laquelle la boutique facture |
 
 ## Ajouter une vérification
 

@@ -95,7 +95,10 @@ scripts de vérification (voir §6).
 - Catalogue : catégories et plats réordonnables au glisser-déposer,
   déclinaisons, disponibilité basculable en direct
 - Commandes : liste, détail, changement d'état, facture imprimable
-- Horaires, créneaux de retrait, ouverture et fermeture immédiate
+- Horaires **service par service** (midi et soir dans la même journée,
+  fermetures après minuit), créneaux de retrait, ouverture et fermeture
+  immédiate
+- Genre du commerce et type de cuisine, demandés dès la création
 - Zones de livraison en anneaux, **réglées sur une carte** : la boutique se pose
   d'un clic, le rayon se tire à la poignée — rayon, frais et minimum par zone
 - Codes promo, moyens de paiement, taxes, clientèle
@@ -243,8 +246,8 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 35 | **1190** |
-| **Navigateur** (`frontend/scripts/`) | 22 | **570** |
+| **API** (`backend/scripts/verification/`) | 38 | **1253** |
+| **Navigateur** (`frontend/scripts/`) | 23 | **599** |
 
 Tout est vert au dernier passage complet.
 
@@ -376,6 +379,20 @@ Un invariant de plus :
   — un justificatif, un numéro de TVA, un IBAN —, et fermer cette page ferait de
   la suspension une impasse. Un compte **fermé**, lui, n'a plus de dossier à
   tenir : la porte se referme.
+- **Une journée d'ouverture porte une liste de plages, pas un couple
+  d'heures.** `{ closed, plages: [{ open, close }] }`, et une plage dont la
+  fermeture précède l'ouverture se termine le lendemain. L'ancienne forme
+  `{ open, close, closed }` reste lue (`lireLeJour`) : pas de migration, pas de
+  temps d'arrêt, et le nouveau format s'écrit dès la première modification.
+- **Un champ e-mail facultatif accepte la chaîne vide** (`emailFacultatif`,
+  `utils/validation.ts`). `z.string().email().optional()` la refuse : une
+  boutique sans adresse de contact ne pouvait ni être créée, ni voir le moindre
+  de ses réglages enregistré, sur un « Invalid email address » qui ne nommait
+  même pas le champ.
+- **Les nomenclatures vivent côté serveur** (`store-type.service.ts`) et sont
+  servies par `GET /api/stores/types`. Recopiées dans un `<select>`, elles
+  auraient dérivé dès la première addition — c'est exactement ce qui était
+  arrivé aux publics d'annonce.
 - **L'IBAN n'est jamais rendu en entier.** Ni dans une réponse d'API — côté
   commerçant comme côté plateforme —, ni dans un journal : les écrans n'en
   montrent que les quatre derniers caractères. Le champ de saisie part vide, et

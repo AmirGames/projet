@@ -1,5 +1,20 @@
 import { z } from "zod";
 
+/**
+ * Un e-mail facultatif, tel qu'un formulaire l'envoie quand il est vide.
+ *
+ * `z.string().email().optional()` refuse la chaîne vide : un champ facultatif
+ * laissé vide arrive comme `""`, et le formulaire était refusé avec « Invalid
+ * email address » sans même nommer le champ. Une boutique sans adresse de
+ * contact ne pouvait donc ni être créée, ni voir le moindre de ses réglages
+ * enregistré.
+ */
+export const emailFacultatif = z
+  .string()
+  .email("Adresse e-mail invalide")
+  .optional()
+  .or(z.literal(""));
+
 export const ValidationSchemas = {
   pagination: z.object({
     page: z.coerce.number().int().positive().default(1),

@@ -326,7 +326,15 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
         billingPostalCode: true,
         billingCity: true,
         billingCountry: true,
-        stores: { select: { id: true, name: true } },
+        stores: {
+          select: {
+            id: true,
+            name: true,
+            legalName: true,
+            vatNumber: true,
+            registrationNumber: true,
+          },
+        },
       },
     });
 
@@ -407,6 +415,21 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
         billingPostalCode: organisation.billingPostalCode,
         billingCity: organisation.billingCity,
         billingCountry: organisation.billingCountry,
+        /**
+         * Les boutiques qui facturent sous leur propre identité.
+         *
+         * Trois commerces peuvent relever de trois sociétés : présenter une
+         * seule raison sociale pour le mois entier serait faux.
+         */
+        identitesParBoutique: organisation.stores
+          .filter((boutique) => boutique.legalName || boutique.vatNumber)
+          .map((boutique) => ({
+            id: boutique.id,
+            name: boutique.name,
+            legalName: boutique.legalName || organisation.legalName,
+            vatNumber: boutique.vatNumber || organisation.vatNumber,
+            registrationNumber: boutique.registrationNumber || organisation.registrationNumber,
+          })),
         // Ce qui empêcherait d'émettre la facture, dit avant de l'éditer.
         manquePourFacturer: [
           !organisation.legalName && "la raison sociale",

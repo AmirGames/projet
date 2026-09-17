@@ -62,6 +62,25 @@ export function ibanMasque(iban: string | null): string | null {
   return propre.length <= 4 ? "••••" : `•••• ${propre.slice(-4)}`;
 }
 
+/**
+ * Le numéro de TVA correspond-il au pays.
+ *
+ * Extrait du profil parce que la boutique en a besoin elle aussi : une
+ * organisation peut couvrir trois commerces relevant de trois sociétés, donc de
+ * trois numéros. Deux contrôles séparés auraient divergé.
+ */
+export function verifierLaTva(tva: string, pays: string) {
+  const regle = PAYS[pays as keyof typeof PAYS];
+
+  if (regle && !regle.tva.test(tva)) {
+    throw new ApiError(
+      400,
+      `Numéro de TVA ${pays.toLowerCase()} invalide (exemple : ${regle.exemple})`,
+      "INVALID_VAT"
+    );
+  }
+}
+
 /** Longueur et alphabet d'un IBAN, sans prétendre valider la clé de contrôle. */
 const IBAN_VALIDE = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{10,30}$/;
 
@@ -205,16 +224,7 @@ export class MerchantProfileService {
       const tva = texte(voulu.vatNumber)?.replace(/\s+/g, "").toUpperCase() || null;
 
       if (tva) {
-        const pays = (donnees.billingCountry as string) || org.billingCountry || "France";
-        const regle = PAYS[pays as keyof typeof PAYS];
-
-        if (regle && !regle.tva.test(tva)) {
-          throw new ApiError(
-            400,
-            `Numéro de TVA ${pays.toLowerCase()} invalide (exemple : ${regle.exemple})`,
-            "INVALID_VAT"
-          );
-        }
+        verifierLaTva(tva, (donnees.billingCountry as string) || org.billingCountry || "France");
       }
 
       donnees.vatNumber = tva;

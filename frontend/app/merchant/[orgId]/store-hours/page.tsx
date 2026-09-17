@@ -1,197 +1,227 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+/**
+ * Les horaires d'ouverture de la boutique.
+ *
+ * Un jour n'avait qu'une plage : un restaurant qui sert à midi puis le soir
+ * devait déclarer 11 h 30 – 22 h 00 et se dire ouvert tout l'après-midi. Et une
+ * fermeture à 1 h du matin était refusée — alors que c'est l'horaire normal
+ * d'un vendredi soir.
+ *
+ * La page était par ailleurs restée en anglais, seule de tout l'espace
+ * commerçant.
+ */
+
+import { useCallback, useEffect, useState } from 'react';
 import { Plus, Trash2, Clock, Power } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface DayHours {
+interface Plage {
   open: string;
   close: string;
-  closed: boolean;
 }
 
-interface PickupSlot {
+interface DayHours {
+  closed: boolean;
+  plages: Plage[];
+  open: string;
+  close: string;
+}
+
+interface CreneauRetrait {
   id?: string;
   start: string;
   end: string;
   maxOrders: number;
 }
 
-interface StoreHoursData {
-  operatingHours: {
-    MON: DayHours;
-    TUE: DayHours;
-    WED: DayHours;
-    THU: DayHours;
-    FRI: DayHours;
-    SAT: DayHours;
-    SUN: DayHours;
-  };
+interface Horaires {
+  operatingHours: Record<string, DayHours>;
   isOpen: boolean;
-  pickupSlots: PickupSlot[];
+  pickupSlots: CreneauRetrait[];
+  ouvertMaintenant?: boolean;
 }
 
-const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-const DAY_NAMES: { [key: string]: string } = {
-  MON: 'Monday',
-  TUE: 'Tuesday',
-  WED: 'Wednesday',
-  THU: 'Thursday',
-  FRI: 'Friday',
-  SAT: 'Saturday',
-  SUN: 'Sunday',
+const JOURS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+const NOM_DU_JOUR: Record<string, string> = {
+  MON: 'Lundi',
+  TUE: 'Mardi',
+  WED: 'Mercredi',
+  THU: 'Jeudi',
+  FRI: 'Vendredi',
+  SAT: 'Samedi',
+  SUN: 'Dimanche',
 };
 
-export default function StoreHoursPage() {
+/** Une fermeture avant l'ouverture se lit « le lendemain ». */
+const franchitMinuit = (plage: Plage) => plage.close <= plage.open;
 
+export default function HorairesPage() {
   const { storeId } = useCurrentStore();
-  const [data, setData] = useState<StoreHoursData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [editingDay, setEditingDay] = useState<string | null>(null);
-  const [newSlot, setNewSlot] = useState<PickupSlot>({ start: '11:00', end: '13:00', maxOrders: 10 });
-  const [showNewSlotForm, setShowNewSlotForm] = useState(false);
 
-  useEffect(() => {
-    if (storeId) {
-      fetchHours();
-    }
-  }, [storeId]);
+  const [data, setData] = useState<Horaires | null>(null);
+  const [chargement, setChargement] = useState(true);
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState('');
+  const [message, setMessage] = useState('');
 
-  const fetchHours = async () => {
+  const [jourEdite, setJourEdite] = useState<string | null>(null);
+  const [brouillon, setBrouillon] = useState<DayHours | null>(null);
+
+  const [nouveauCreneau, setNouveauCreneau] = useState<CreneauRetrait>({
+    start: '11:00',
+    end: '13:00',
+    maxOrders: 10,
+  });
+  const [formulaireCreneau, setFormulaireCreneau] = useState(false);
+
+  const charger = useCallback(async () => {
+    if (!storeId) return;
+
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/store-hours/${storeId}`, {
+      const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          setData({
-            operatingHours: {
-              MON: { open: '09:00', close: '22:00', closed: false },
-              TUE: { open: '09:00', close: '22:00', closed: false },
-              WED: { open: '09:00', close: '22:00', closed: false },
-              THU: { open: '09:00', close: '22:00', closed: false },
-              FRI: { open: '09:00', close: '23:00', closed: false },
-              SAT: { open: '10:00', close: '23:00', closed: false },
-              SUN: { open: '10:00', close: '22:00', closed: false },
-            },
-            isOpen: true,
-            pickupSlots: [],
-          });
-        }
+      if (!reponse.ok) {
+        setErreur('Horaires indisponibles');
         return;
       }
 
-      const result = await response.json();
-      setData(result);
-    } catch (error) {
-      console.error('Error fetching store hours:', error);
+      setData(await reponse.json());
+      setErreur('');
+    } catch {
+      setErreur('Le serveur ne répond pas');
     } finally {
-      setLoading(false);
+      setChargement(false);
     }
+  }, [storeId]);
+
+  useEffect(() => {
+    charger();
+  }, [charger]);
+
+  const ouvrirLEdition = (jour: string) => {
+    const actuel = data?.operatingHours[jour];
+
+    setJourEdite(jour);
+    setErreur('');
+    setBrouillon({
+      closed: !!actuel?.closed,
+      plages: actuel?.plages?.length ? [...actuel.plages] : [{ open: '09:00', close: '22:00' }],
+      open: actuel?.open || '09:00',
+      close: actuel?.close || '22:00',
+    });
   };
 
-  const handleUpdateDay = async (day: string, hours: DayHours) => {
-    setSaving(true);
+  const enregistrerLeJour = async (jour: string, horaires: DayHours) => {
+    setEnvoi(true);
+    setErreur('');
+    setMessage('');
+
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/store-hours/${storeId}/day/${day}`, {
+      const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}/day/${jour}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(hours),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ closed: horaires.closed, plages: horaires.plages }),
       });
 
-      if (response.ok) {
-        await fetchHours();
-        setEditingDay(null);
+      const lu = await reponse.json().catch(() => null);
+
+      // Un refus muet laissait croire que l'horaire était enregistré.
+      if (!reponse.ok) {
+        setErreur(lu?.error || 'Horaires refusés');
+        return;
       }
-    } catch (error) {
-      console.error('Error updating day:', error);
+
+      await charger();
+      setJourEdite(null);
+      setBrouillon(null);
+      setMessage(`${NOM_DU_JOUR[jour]} enregistré`);
+    } catch {
+      setErreur('Le serveur ne répond pas');
     } finally {
-      setSaving(false);
+      setEnvoi(false);
     }
   };
 
-  const handleToggleStoreStatus = async () => {
+  const basculerLaBoutique = async () => {
     if (!data) return;
-    setSaving(true);
+    setEnvoi(true);
+
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/store-hours/${storeId}/status`, {
+      await fetch(`${API_URL}/api/store-hours/${storeId}/status`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ isOpen: !data.isOpen }),
       });
 
-      if (response.ok) {
-        await fetchHours();
-      }
-    } catch (error) {
-      console.error('Error toggling store status:', error);
+      await charger();
+    } catch {
+      setErreur('Le serveur ne répond pas');
     } finally {
-      setSaving(false);
+      setEnvoi(false);
     }
   };
 
-  const handleAddPickupSlot = async () => {
-    setSaving(true);
+  const ajouterUnCreneau = async () => {
+    setEnvoi(true);
+    setErreur('');
+
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/store-hours/${storeId}/pickup-slots`, {
+      const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}/pickup-slots`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newSlot),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(nouveauCreneau),
       });
 
-      if (response.ok) {
-        await fetchHours();
-        setNewSlot({ start: '11:00', end: '13:00', maxOrders: 10 });
-        setShowNewSlotForm(false);
+      const lu = await reponse.json().catch(() => null);
+
+      if (!reponse.ok) {
+        setErreur(lu?.error || 'Créneau refusé');
+        return;
       }
-    } catch (error) {
-      console.error('Error adding pickup slot:', error);
+
+      await charger();
+      setNouveauCreneau({ start: '11:00', end: '13:00', maxOrders: 10 });
+      setFormulaireCreneau(false);
+    } catch {
+      setErreur('Le serveur ne répond pas');
     } finally {
-      setSaving(false);
+      setEnvoi(false);
     }
   };
 
-  const handleDeletePickupSlot = async (slotId: string | undefined) => {
-    if (!slotId) return;
-    setSaving(true);
+  const retirerUnCreneau = async (creneauId: string | undefined) => {
+    if (!creneauId) return;
+    setEnvoi(true);
+
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/store-hours/${storeId}/pickup-slots/${slotId}`, {
+      await fetch(`${API_URL}/api/store-hours/${storeId}/pickup-slots/${creneauId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (response.ok) {
-        await fetchHours();
-      }
-    } catch (error) {
-      console.error('Error deleting pickup slot:', error);
+      await charger();
+    } catch {
+      setErreur('Le serveur ne répond pas');
     } finally {
-      setSaving(false);
+      setEnvoi(false);
     }
   };
 
-  if (loading) {
+  if (chargement) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500" />
       </div>
     );
   }
@@ -199,9 +229,9 @@ export default function StoreHoursPage() {
   if (!data) {
     return (
       <div className="min-h-screen bg-slate-900 p-8">
-        <div className="max-w-2xl mx-auto text-center text-slate-400">
-          <p>Store hours data not available</p>
-        </div>
+        <p role="status" className="text-slate-400">
+          {erreur || 'Horaires indisponibles'}
+        </p>
       </div>
     );
   }
@@ -209,17 +239,25 @@ export default function StoreHoursPage() {
   return (
     <div className="min-h-screen bg-slate-900 p-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header with Store Status */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
               <Clock className="text-amber-500" />
-              Store Hours & Availability
+              Horaires et disponibilité
             </h1>
+            <p className="text-slate-400 mt-2">
+              Vos horaires d&apos;ouverture, et les créneaux de retrait proposés au client.
+            </p>
           </div>
+
           <button
-            onClick={handleToggleStoreStatus}
-            disabled={saving}
+            onClick={basculerLaBoutique}
+            disabled={envoi}
+            title={
+              data.isOpen
+                ? 'Fermer la boutique immédiatement'
+                : 'Rouvrir la boutique immédiatement'
+            }
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
               data.isOpen
                 ? 'bg-green-600 text-white hover:bg-green-700'
@@ -227,192 +265,312 @@ export default function StoreHoursPage() {
             } disabled:opacity-50`}
           >
             <Power size={20} />
-            {data.isOpen ? 'Open' : 'Closed'}
+            {data.isOpen ? 'Ouverte' : 'Fermée'}
           </button>
         </div>
 
-        {/* Operating Hours Section */}
+        {message && (
+          <p role="status" className="mb-4 text-sm text-green-400">
+            {message}
+          </p>
+        )}
+        {erreur && (
+          <p role="status" className="mb-4 text-sm text-red-400">
+            {erreur}
+          </p>
+        )}
+
+        {/* Les horaires de la semaine */}
         <div className="bg-slate-800 rounded-lg p-6 mb-8 border border-slate-700">
-          <h2 className="text-xl font-bold text-white mb-6">Operating Hours</h2>
+          <h2 className="text-xl font-bold text-white mb-2">Horaires d&apos;ouverture</h2>
+          {/* Le service du midi et celui du soir tiennent dans la même journée. */}
+          <p className="text-sm text-slate-400 mb-6">
+            Une journée peut compter plusieurs services — midi et soir, par exemple. Une
+            fermeture après minuit se saisit telle quelle : 17h30 – 01h00.
+          </p>
+
           <div className="space-y-3">
-            {DAYS.map((day) => {
-              const hours = data.operatingHours[day as keyof typeof data.operatingHours];
-              const isEditing = editingDay === day;
+            {JOURS.map((jour) => {
+              const horaires = data.operatingHours[jour];
+              const enEdition = jourEdite === jour;
+
+              if (!enEdition) {
+                return (
+                  <div
+                    key={jour}
+                    className="flex items-center justify-between bg-slate-700 p-4 rounded-lg border border-slate-600"
+                  >
+                    <p className="text-white font-medium flex-1">{NOM_DU_JOUR[jour]}</p>
+
+                    <div className="flex items-center gap-4">
+                      {horaires?.closed ? (
+                        <span className="text-sm text-red-400">Fermé</span>
+                      ) : (
+                        <span className="text-sm text-green-400">
+                          {(horaires?.plages || []).map((plage, index) => (
+                            <span key={index} className="ml-3 first:ml-0">
+                              {plage.open} – {plage.close}
+                              {franchitMinuit(plage) && (
+                                <span className="text-slate-400 text-xs"> (le lendemain)</span>
+                              )}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+
+                      {/* Sept boutons « Modifier » identiques ne se
+                          distinguent ni à la lecture d'écran, ni autrement. */}
+                      <button
+                        onClick={() => ouvrirLEdition(jour)}
+                        aria-label={`Modifier ${NOM_DU_JOUR[jour]}`}
+                        className="px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition text-sm"
+                      >
+                        Modifier
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
 
               return (
                 <div
-                  key={day}
-                  className="flex items-center justify-between bg-slate-700 p-4 rounded-lg border border-slate-600"
+                  key={jour}
+                  className="bg-slate-700 p-4 rounded-lg border border-amber-600/60 space-y-3"
                 >
-                  <div className="flex-1">
-                    <p className="text-white font-medium">{DAY_NAMES[day]}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-white font-medium">{NOM_DU_JOUR[jour]}</p>
+
+                    <label className="flex items-center gap-2 text-slate-300 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={brouillon?.closed || false}
+                        onChange={(e) =>
+                          setBrouillon((actuel) =>
+                            actuel ? { ...actuel, closed: e.target.checked } : actuel
+                          )
+                        }
+                        className="w-4 h-4"
+                      />
+                      Fermé ce jour-là
+                    </label>
                   </div>
 
-                  {!isEditing ? (
-                    <div className="flex items-center gap-4">
-                      <div className={`text-sm ${hours.closed ? 'text-red-400' : 'text-green-400'}`}>
-                        {hours.closed ? 'CLOSED' : `${hours.open} - ${hours.close}`}
-                      </div>
-                      <button
-                        onClick={() => setEditingDay(day)}
-                        className="px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 transition text-sm"
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <label className="flex items-center gap-2 text-slate-300">
-                        <input
-                          type="checkbox"
-                          checked={hours.closed}
-                          onChange={(e) => {
-                            const updated = { ...hours, closed: e.target.checked };
-                            handleUpdateDay(day, updated);
-                          }}
-                          className="w-4 h-4"
-                        />
-                        Closed
-                      </label>
-                      {!hours.closed && (
-                        <>
+                  {!brouillon?.closed && (
+                    <div className="space-y-2">
+                      {(brouillon?.plages || []).map((plage, index) => (
+                        <div key={index} className="flex items-center gap-2 flex-wrap">
                           <input
                             type="time"
-                            value={hours.open}
-                            onChange={(e) => {
-                              const updated = { ...hours, open: e.target.value };
-                              setData({
-                                ...data,
-                                operatingHours: {
-                                  ...data.operatingHours,
-                                  [day]: updated,
-                                },
-                              });
-                            }}
+                            aria-label={`Ouverture ${index + 1} — ${NOM_DU_JOUR[jour]}`}
+                            value={plage.open}
+                            onChange={(e) =>
+                              setBrouillon((actuel) =>
+                                actuel
+                                  ? {
+                                      ...actuel,
+                                      plages: actuel.plages.map((p, i) =>
+                                        i === index ? { ...p, open: e.target.value } : p
+                                      ),
+                                    }
+                                  : actuel
+                              )
+                            }
                             className="px-2 py-1 bg-slate-600 text-white rounded text-sm"
                           />
-                          <span className="text-slate-400">to</span>
+                          <span className="text-slate-400">à</span>
                           <input
                             type="time"
-                            value={hours.close}
-                            onChange={(e) => {
-                              const updated = { ...hours, close: e.target.value };
-                              setData({
-                                ...data,
-                                operatingHours: {
-                                  ...data.operatingHours,
-                                  [day]: updated,
-                                },
-                              });
-                            }}
+                            aria-label={`Fermeture ${index + 1} — ${NOM_DU_JOUR[jour]}`}
+                            value={plage.close}
+                            onChange={(e) =>
+                              setBrouillon((actuel) =>
+                                actuel
+                                  ? {
+                                      ...actuel,
+                                      plages: actuel.plages.map((p, i) =>
+                                        i === index ? { ...p, close: e.target.value } : p
+                                      ),
+                                    }
+                                  : actuel
+                              )
+                            }
                             className="px-2 py-1 bg-slate-600 text-white rounded text-sm"
                           />
-                        </>
+
+                          {franchitMinuit(plage) && (
+                            <span className="text-xs text-slate-400">jusqu&apos;au lendemain</span>
+                          )}
+
+                          {(brouillon?.plages.length || 0) > 1 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setBrouillon((actuel) =>
+                                  actuel
+                                    ? {
+                                        ...actuel,
+                                        plages: actuel.plages.filter((_, i) => i !== index),
+                                      }
+                                    : actuel
+                                )
+                              }
+                              title="Retirer ce service"
+                              className="p-1 text-red-400 hover:text-red-300 transition"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+
+                      {(brouillon?.plages.length || 0) < 4 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setBrouillon((actuel) =>
+                              actuel
+                                ? {
+                                    ...actuel,
+                                    plages: [...actuel.plages, { open: '17:30', close: '22:00' }],
+                                  }
+                                : actuel
+                            )
+                          }
+                          className="flex items-center gap-1 text-sm text-amber-400 hover:text-amber-300 transition"
+                        >
+                          <Plus size={16} />
+                          Ajouter un service
+                        </button>
                       )}
-                      <button
-                        onClick={() => handleUpdateDay(day, hours)}
-                        disabled={saving}
-                        className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm disabled:opacity-50"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingDay(null)}
-                        className="px-2 py-1 bg-slate-600 text-white rounded hover:bg-slate-500 transition text-sm"
-                      >
-                        Cancel
-                      </button>
                     </div>
                   )}
+
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => brouillon && enregistrerLeJour(jour, brouillon)}
+                      disabled={envoi}
+                      aria-label={`Enregistrer ${NOM_DU_JOUR[jour]}`}
+                      className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm disabled:opacity-50"
+                    >
+                      Enregistrer
+                    </button>
+                    <button
+                      onClick={() => {
+                        setJourEdite(null);
+                        setBrouillon(null);
+                      }}
+                      className="px-3 py-1 bg-slate-600 text-white rounded hover:bg-slate-500 transition text-sm"
+                    >
+                      Annuler
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* Pickup Time Slots Section */}
+        {/* Les créneaux de retrait */}
         <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white">Pickup Time Slots</h2>
-            {!showNewSlotForm && (
+            <h2 className="text-xl font-bold text-white">Créneaux de retrait</h2>
+
+            {!formulaireCreneau && (
               <button
-                onClick={() => setShowNewSlotForm(true)}
+                onClick={() => setFormulaireCreneau(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition"
               >
                 <Plus size={20} />
-                Add Slot
+                Ajouter un créneau
               </button>
             )}
           </div>
 
-          {/* Add Slot Form */}
-          {showNewSlotForm && (
+          {formulaireCreneau && (
             <div className="bg-slate-700 p-4 rounded-lg mb-4 border border-slate-600">
-              <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label className="text-slate-300 text-sm">Start Time</label>
+                  <label htmlFor="creneau-debut" className="text-slate-300 text-sm">
+                    Début
+                  </label>
                   <input
+                    id="creneau-debut"
                     type="time"
-                    value={newSlot.start}
-                    onChange={(e) => setNewSlot({ ...newSlot, start: e.target.value })}
+                    value={nouveauCreneau.start}
+                    onChange={(e) => setNouveauCreneau({ ...nouveauCreneau, start: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-600 text-white rounded text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-300 text-sm">End Time</label>
+                  <label htmlFor="creneau-fin" className="text-slate-300 text-sm">
+                    Fin
+                  </label>
                   <input
+                    id="creneau-fin"
                     type="time"
-                    value={newSlot.end}
-                    onChange={(e) => setNewSlot({ ...newSlot, end: e.target.value })}
+                    value={nouveauCreneau.end}
+                    onChange={(e) => setNouveauCreneau({ ...nouveauCreneau, end: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-600 text-white rounded text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-300 text-sm">Max Orders</label>
+                  <label htmlFor="creneau-max" className="text-slate-300 text-sm">
+                    Commandes maximum
+                  </label>
                   <input
+                    id="creneau-max"
                     type="number"
                     min="1"
-                    value={newSlot.maxOrders}
-                    onChange={(e) => setNewSlot({ ...newSlot, maxOrders: parseInt(e.target.value) })}
+                    value={nouveauCreneau.maxOrders}
+                    onChange={(e) =>
+                      setNouveauCreneau({
+                        ...nouveauCreneau,
+                        maxOrders: parseInt(e.target.value, 10) || 1,
+                      })
+                    }
                     className="w-full px-3 py-2 bg-slate-600 text-white rounded text-sm"
                   />
                 </div>
               </div>
+
               <div className="flex gap-2">
                 <button
-                  onClick={handleAddPickupSlot}
-                  disabled={saving}
+                  onClick={ajouterUnCreneau}
+                  disabled={envoi}
                   className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
                 >
-                  Add
+                  Ajouter
                 </button>
                 <button
-                  onClick={() => setShowNewSlotForm(false)}
+                  onClick={() => setFormulaireCreneau(false)}
                   className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-500 transition"
                 >
-                  Cancel
+                  Annuler
                 </button>
               </div>
             </div>
           )}
 
-          {/* Slots List */}
           {data.pickupSlots.length > 0 ? (
             <div className="space-y-3">
-              {data.pickupSlots.map((slot) => (
+              {data.pickupSlots.map((creneau) => (
                 <div
-                  key={slot.id}
+                  key={creneau.id}
                   className="flex items-center justify-between bg-slate-700 p-4 rounded-lg border border-slate-600"
                 >
                   <div className="flex-1">
                     <p className="text-white font-medium">
-                      {slot.start} - {slot.end}
+                      {creneau.start} – {creneau.end}
                     </p>
-                    <p className="text-slate-400 text-sm">Max {slot.maxOrders} orders</p>
+                    <p className="text-slate-400 text-sm">
+                      {creneau.maxOrders} commande{creneau.maxOrders > 1 ? 's' : ''} au maximum
+                    </p>
                   </div>
+
                   <button
-                    onClick={() => handleDeletePickupSlot(slot.id)}
-                    disabled={saving}
+                    onClick={() => retirerUnCreneau(creneau.id)}
+                    disabled={envoi}
+                    title="Retirer ce créneau"
                     className="p-2 bg-red-600 text-white rounded hover:bg-red-700 transition disabled:opacity-50"
                   >
                     <Trash2 size={20} />
@@ -421,7 +579,10 @@ export default function StoreHoursPage() {
               ))}
             </div>
           ) : (
-            <p className="text-slate-400 text-center py-8">No pickup slots configured</p>
+            <p className="text-slate-400 text-center py-8">
+              Aucun créneau de retrait. Le client se voit alors proposer les heures
+              d&apos;ouverture ci-dessus.
+            </p>
           )}
         </div>
       </div>
