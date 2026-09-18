@@ -22,8 +22,10 @@ interface Store {
   distance?: number;
   estimatedDeliveryTime?: string;
   deliveryCost?: number;
-  /** Fermée momentanément : visible, mais on n'y commande pas. */
+  /** Fermée momentanément (bouton rapide du commerçant) : visible, mais on n'y commande pas. */
   isOpen?: boolean;
+  /** Ce que disent à la fois le planning hebdomadaire et le bouton rapide, croisés. */
+  isOpenNow?: boolean;
   products?: any[];
 }
 
@@ -212,9 +214,9 @@ export default function ClientHomePage() {
 
                         {/* Une boutique fermée disparaissait de la liste : le
                             client croyait le commerce parti. */}
-                        {store.isOpen === false && (
+                        {store.isOpenNow === false && (
                           <span className="absolute inset-x-0 bottom-0 bg-gray-900/80 py-1.5 text-center text-xs font-semibold text-amber-300">
-                            Momentanément indisponible
+                            {store.isOpen === false ? 'Momentanément indisponible' : 'Fermé pour le moment'}
                           </span>
                         )}
                       </div>
