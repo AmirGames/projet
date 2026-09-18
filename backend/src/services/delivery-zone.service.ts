@@ -1,15 +1,18 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
-import { distanceKm, estUnPoint } from "../utils/geo";
+import { distanceKm, estUnPoint, pointDansPolygone, airePolygone, Point } from "../utils/geo";
 import { AddressService } from "./address.service";
 
 /**
  * Les zones de livraison d'une boutique.
  *
- * Des anneaux concentriques autour du commerce, chacun avec ses frais et son
- * montant minimum de commande — comme chez Uber Eats. L'anneau le plus petit
- * qui contient l'adresse s'applique : le client proche paie moins et commande
- * à partir de moins cher que le client éloigné.
+ * Deux formes possibles : des anneaux concentriques autour du commerce
+ * (type RADIUS, chacun avec ses frais et son montant minimum, comme chez Uber
+ * Eats), ou des polygones dessinés à la main (type POLYGON) pour coller à une
+ * vraie limite — une rivière, une voie ferrée, un quartier — qu'un cercle ne
+ * peut pas suivre. La zone la plus « spécifique » qui contient l'adresse
+ * s'applique : le rayon le plus petit, ou à défaut le polygone de plus petite
+ * aire, parmi celles qui la couvrent.
  *
  * Le modèle existait depuis le début avec un nom, des frais et un minimum,
  * mais sans géométrie utilisable — un point sans rayon — et surtout : rien ne
@@ -17,10 +20,16 @@ import { AddressService } from "./address.service";
  * acceptait n'importe quel montant, de n'importe où.
  */
 
+export type ZoneType = "RADIUS" | "POLYGON";
+
 export interface DeliveryZoneData {
   storeId: string;
   name: string;
-  radiusKm: number;
+  type?: ZoneType;
+  radiusKm?: number | null;
+  polygon?: Point[] | null;
+  color?: string;
+  opacity?: number;
   baseFee: number;
   minOrder: number;
   deliveryMinutes?: number | null;
@@ -30,7 +39,11 @@ export interface DeliveryZoneData {
 export interface ZoneLisible {
   id: string;
   name: string;
-  radiusKm: number;
+  type: ZoneType;
+  radiusKm: number | null;
+  polygon: Point[] | null;
+  color: string;
+  opacity: number;
   baseFee: number;
   minOrder: number;
   deliveryMinutes: number | null;
@@ -42,7 +55,7 @@ export interface Verdict {
   livrable: boolean;
   /** La zone qui s'applique, si l'adresse est desservie. */
   zone: ZoneLisible | null;
-  /** Distance entre la boutique et l'adresse, en kilomètres. */
+  /** Distance entre la boutique et l'adresse, en kilomètres. Sans objet pour une zone polygone. */
   distanceKm: number | null;
   /** Les frais à facturer. */
   frais: number;
@@ -54,51 +67,92 @@ export interface Verdict {
   forfaitBoutique: boolean;
 }
 
+/** Une couleur par défaut différente pour chaque nouvelle zone, sans que le
+ * commerçant ait à y penser — il peut toujours la changer ensuite. */
+const PALETTE = ["#f59e0b", "#3b82f6", "#22c55e", "#ec4899", "#a855f7", "#06b6d4", "#ef4444", "#84cc16"];
+
+const HEX_VALIDE = /^#[0-9a-fA-F]{6}$/;
+
 const lisible = (zone: any): ZoneLisible => ({
   id: zone.id,
   name: zone.name,
-  radiusKm: Number(zone.radiusKm),
+  type: zone.type,
+  radiusKm: zone.radiusKm == null ? null : Number(zone.radiusKm),
+  polygon: (zone.polygon as Point[] | null) ?? null,
+  color: zone.color,
+  opacity: Number(zone.opacity),
   baseFee: Number(zone.baseFee),
   minOrder: Number(zone.minOrder),
   deliveryMinutes: zone.deliveryMinutes ?? null,
   isActive: zone.isActive,
 });
 
+/** La « spécificité » d'une zone : la plus petite gagne quand plusieurs zones
+ * contiennent la même adresse. Un rayon se compare à un rayon ; un polygone,
+ * à son aire — les deux échelles ne se valent pas exactement, mais départager
+ * les cas de recouvrement importe plus que leur exactitude. */
+function specificite(zone: ZoneLisible): number {
+  if (zone.type === "RADIUS") return zone.radiusKm ?? Infinity;
+  if (zone.polygon && zone.polygon.length >= 3) return airePolygone(zone.polygon);
+  return Infinity;
+}
+
 export class DeliveryZoneService {
   static async create(data: DeliveryZoneData) {
     const nom = (data.name || "").trim();
+    const type: ZoneType = data.type === "POLYGON" ? "POLYGON" : "RADIUS";
 
     if (!nom) {
       throw new ApiError(400, "Une zone a besoin d'un nom", "MISSING_NAME");
-    }
-
-    if (!(data.radiusKm > 0)) {
-      throw new ApiError(400, "Le rayon doit être supérieur à zéro", "INVALID_RADIUS");
     }
 
     if (data.baseFee < 0 || data.minOrder < 0) {
       throw new ApiError(400, "Ni les frais ni le minimum ne peuvent être négatifs", "INVALID_AMOUNT");
     }
 
-    // Deux anneaux de même rayon se disputeraient la même adresse.
-    const memeRayon = await db.deliveryZone.findFirst({
-      where: { storeId: data.storeId, radiusKm: data.radiusKm },
-      select: { name: true },
-    });
+    if (type === "RADIUS") {
+      if (!(data.radiusKm && data.radiusKm > 0)) {
+        throw new ApiError(400, "Le rayon doit être supérieur à zéro", "INVALID_RADIUS");
+      }
 
-    if (memeRayon) {
-      throw new ApiError(
-        409,
-        `« ${memeRayon.name} » couvre déjà ${data.radiusKm} km. Choisissez un autre rayon.`,
-        "DUPLICATE_RADIUS"
-      );
+      // Deux anneaux de même rayon se disputeraient la même adresse.
+      const memeRayon = await db.deliveryZone.findFirst({
+        where: { storeId: data.storeId, type: "RADIUS", radiusKm: data.radiusKm },
+        select: { name: true },
+      });
+
+      if (memeRayon) {
+        throw new ApiError(
+          409,
+          `« ${memeRayon.name} » couvre déjà ${data.radiusKm} km. Choisissez un autre rayon.`,
+          "DUPLICATE_RADIUS"
+        );
+      }
+    } else {
+      if (!data.polygon || data.polygon.length < 3) {
+        throw new ApiError(400, "Un polygone a besoin d'au moins 3 sommets", "INVALID_POLYGON");
+      }
     }
+
+    if (data.color && !HEX_VALIDE.test(data.color)) {
+      throw new ApiError(400, "La couleur doit être un code hexadécimal (#rrggbb)", "INVALID_COLOR");
+    }
+
+    if (data.opacity !== undefined && (data.opacity < 0.1 || data.opacity > 0.9)) {
+      throw new ApiError(400, "L'opacité doit être comprise entre 0.1 et 0.9", "INVALID_OPACITY");
+    }
+
+    const compte = await db.deliveryZone.count({ where: { storeId: data.storeId } });
 
     return db.deliveryZone.create({
       data: {
         storeId: data.storeId,
         name: nom,
-        radiusKm: data.radiusKm,
+        type,
+        radiusKm: type === "RADIUS" ? data.radiusKm : null,
+        polygon: type === "POLYGON" ? (data.polygon as any) : undefined,
+        color: data.color || PALETTE[compte % PALETTE.length],
+        opacity: data.opacity ?? 0.35,
         baseFee: data.baseFee,
         minOrder: data.minOrder || 0,
         deliveryMinutes: data.deliveryMinutes ?? null,
@@ -117,11 +171,11 @@ export class DeliveryZoneService {
     return zone;
   }
 
-  /** Les zones d'une boutique, du plus petit anneau au plus grand. */
+  /** Les zones d'une boutique, du plus petit anneau au plus grand, puis les polygones. */
   static async getByStoreId(storeId: string) {
     const zones = await db.deliveryZone.findMany({
       where: { storeId },
-      orderBy: { radiusKm: "asc" },
+      orderBy: [{ type: "asc" }, { radiusKm: "asc" }, { createdAt: "asc" }],
     });
 
     return zones.map(lisible);
@@ -130,27 +184,49 @@ export class DeliveryZoneService {
   static async update(id: string, data: Partial<DeliveryZoneData>) {
     const existante = await this.getById(id);
 
-    if (data.radiusKm !== undefined && !(data.radiusKm > 0)) {
-      throw new ApiError(400, "Le rayon doit être supérieur à zéro", "INVALID_RADIUS");
+    if (data.type && data.type !== existante.type) {
+      throw new ApiError(
+        400,
+        "Impossible de changer la forme d'une zone existante (rayon ↔ polygone) : supprimez-la et recréez-la.",
+        "TYPE_IMMUTABLE"
+      );
     }
 
     if ((data.baseFee !== undefined && data.baseFee < 0) || (data.minOrder !== undefined && data.minOrder < 0)) {
       throw new ApiError(400, "Ni les frais ni le minimum ne peuvent être négatifs", "INVALID_AMOUNT");
     }
 
-    if (data.radiusKm !== undefined && data.radiusKm !== Number(existante.radiusKm)) {
-      const memeRayon = await db.deliveryZone.findFirst({
-        where: { storeId: existante.storeId, radiusKm: data.radiusKm, id: { not: id } },
-        select: { name: true },
-      });
+    if (data.color && !HEX_VALIDE.test(data.color)) {
+      throw new ApiError(400, "La couleur doit être un code hexadécimal (#rrggbb)", "INVALID_COLOR");
+    }
 
-      if (memeRayon) {
-        throw new ApiError(
-          409,
-          `« ${memeRayon.name} » couvre déjà ${data.radiusKm} km. Choisissez un autre rayon.`,
-          "DUPLICATE_RADIUS"
-        );
+    if (data.opacity !== undefined && (data.opacity < 0.1 || data.opacity > 0.9)) {
+      throw new ApiError(400, "L'opacité doit être comprise entre 0.1 et 0.9", "INVALID_OPACITY");
+    }
+
+    if (existante.type === "RADIUS" && data.radiusKm !== undefined) {
+      if (!(data.radiusKm > 0)) {
+        throw new ApiError(400, "Le rayon doit être supérieur à zéro", "INVALID_RADIUS");
       }
+
+      if (data.radiusKm !== existante.radiusKm) {
+        const memeRayon = await db.deliveryZone.findFirst({
+          where: { storeId: existante.storeId, type: "RADIUS", radiusKm: data.radiusKm, id: { not: id } },
+          select: { name: true },
+        });
+
+        if (memeRayon) {
+          throw new ApiError(
+            409,
+            `« ${memeRayon.name} » couvre déjà ${data.radiusKm} km. Choisissez un autre rayon.`,
+            "DUPLICATE_RADIUS"
+          );
+        }
+      }
+    }
+
+    if (existante.type === "POLYGON" && data.polygon !== undefined && data.polygon.length < 3) {
+      throw new ApiError(400, "Un polygone a besoin d'au moins 3 sommets", "INVALID_POLYGON");
     }
 
     try {
@@ -158,7 +234,10 @@ export class DeliveryZoneService {
         where: { id },
         data: {
           ...(data.name !== undefined ? { name: data.name.trim() } : {}),
-          ...(data.radiusKm !== undefined ? { radiusKm: data.radiusKm } : {}),
+          ...(existante.type === "RADIUS" && data.radiusKm !== undefined ? { radiusKm: data.radiusKm } : {}),
+          ...(existante.type === "POLYGON" && data.polygon !== undefined ? { polygon: data.polygon as any } : {}),
+          ...(data.color !== undefined ? { color: data.color } : {}),
+          ...(data.opacity !== undefined ? { opacity: data.opacity } : {}),
           ...(data.baseFee !== undefined ? { baseFee: data.baseFee } : {}),
           ...(data.minOrder !== undefined ? { minOrder: data.minOrder } : {}),
           ...(data.deliveryMinutes !== undefined ? { deliveryMinutes: data.deliveryMinutes } : {}),
@@ -188,7 +267,7 @@ export class DeliveryZoneService {
     const zones = await db.deliveryZone.findMany({
       where: { store: { orgId } },
       include: { store: { select: { id: true, name: true } } },
-      orderBy: [{ storeId: "asc" }, { radiusKm: "asc" }],
+      orderBy: [{ storeId: "asc" }, { type: "asc" }, { radiusKm: "asc" }],
     });
 
     return zones.map((zone) => ({ ...lisible(zone), store: zone.store }));
@@ -351,12 +430,30 @@ export class DeliveryZoneService {
       { latitude: point.latitude as number, longitude: point.longitude as number }
     );
 
-    // Les anneaux sont triés du plus petit au plus grand : le premier qui
-    // contient l'adresse est le bon.
-    const zone = zones.find((candidate) => distance <= candidate.radiusKm);
+    // Parmi toutes les zones qui contiennent l'adresse — anneaux et polygones
+    // mélangés — la plus spécifique gagne : le plus petit rayon, ou à défaut
+    // le polygone de plus petite aire.
+    const candidates = zones.filter((candidate) =>
+      candidate.type === "RADIUS"
+        ? candidate.radiusKm != null && distance <= candidate.radiusKm
+        : pointDansPolygone(
+            { latitude: point.latitude as number, longitude: point.longitude as number },
+            candidate.polygon || []
+          )
+    );
+
+    const zone = candidates.sort((a, b) => specificite(a) - specificite(b))[0] ?? null;
 
     if (!zone) {
-      const portee = Math.max(...zones.map((candidate) => candidate.radiusKm));
+      const rayons = zones.filter((z) => z.type === "RADIUS" && z.radiusKm != null);
+      const aUnPolygone = zones.some((z) => z.type === "POLYGON");
+
+      const raisonPortee =
+        rayons.length > 0
+          ? `au-delà de la zone livrée (${Math.max(...rayons.map((z) => z.radiusKm as number))} km)${
+              aUnPolygone ? " et hors des zones dessinées" : ""
+            }`
+          : "hors des zones dessinées";
 
       return {
         livrable: false,
@@ -364,9 +461,7 @@ export class DeliveryZoneService {
         distanceKm: Number(distance.toFixed(2)),
         frais: 0,
         minimum: 0,
-        raison: `Cette adresse est à ${distance.toFixed(
-          1
-        )} km, au-delà de la zone livrée (${portee} km).`,
+        raison: `Cette adresse est à ${distance.toFixed(1)} km, ${raisonPortee}.`,
         forfaitBoutique: false,
       };
     }
@@ -374,7 +469,9 @@ export class DeliveryZoneService {
     return {
       livrable: true,
       zone,
-      distanceKm: Number(distance.toFixed(2)),
+      // Sans objet pour une zone polygone : la distance ne dit rien de la
+      // couverture, seul le tracé compte.
+      distanceKm: zone.type === "RADIUS" ? Number(distance.toFixed(2)) : null,
       frais: zone.baseFee,
       minimum: zone.minOrder,
       raison: "",

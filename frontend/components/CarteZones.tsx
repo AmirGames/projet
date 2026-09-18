@@ -19,14 +19,25 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import type { Circle, Map as CarteLeaflet, Marker } from 'leaflet';
+import type { Circle, Polygon, Polyline, CircleMarker, Map as CarteLeaflet, Marker } from 'leaflet';
 
 import 'leaflet/dist/leaflet.css';
+
+export interface Sommet {
+  latitude: number;
+  longitude: number;
+}
 
 export interface ZoneCarte {
   id: string;
   name: string;
-  radiusKm: number;
+  type: 'RADIUS' | 'POLYGON';
+  /** En kilomètres, uniquement pour le type RADIUS. */
+  radiusKm: number | null;
+  /** Uniquement pour le type POLYGON. */
+  polygon: Sommet[] | null;
+  color: string;
+  opacity: number;
   isActive: boolean;
 }
 
@@ -34,12 +45,22 @@ interface Props {
   latitude: number | null;
   longitude: number | null;
   zones: ZoneCarte[];
-  /** La zone en cours de réglage : la seule dont le rayon se tire. */
+  /** La zone-anneau en cours de réglage : la seule dont le rayon se tire. */
   zoneActive?: { id: string | null; name: string; radiusKm: number } | null;
   /** La boutique a été déplacée sur la carte. */
   onPosition?: (latitude: number, longitude: number) => void;
   /** Le rayon de la zone active a changé, en kilomètres. */
   onRayon?: (km: number) => void;
+  /**
+   * Les sommets déjà posés d'un polygone en cours de dessin — `null` ou
+   * `undefined` quand on n'est pas en train de dessiner. C'est le parent qui
+   * porte la liste ; la carte ne fait qu'y ajouter un point à chaque clic.
+   */
+  dessin?: Sommet[] | null;
+  /** Un clic sur la carte a posé un sommet (uniquement pendant le dessin). */
+  onSommet?: (latitude: number, longitude: number) => void;
+  /** Couleur d'aperçu du polygone en cours de dessin. */
+  couleurDessin?: string;
   hauteur?: number;
 }
 
@@ -68,22 +89,28 @@ export function CarteZones({
   zoneActive,
   onPosition,
   onRayon,
+  dessin,
+  onSommet,
+  couleurDessin = '#f59e0b',
   hauteur = 560,
 }: Props) {
   const conteneur = useRef<HTMLDivElement>(null);
   const carte = useRef<CarteLeaflet | null>(null);
   const boutique = useRef<Marker | null>(null);
   const anneaux = useRef<Circle[]>([]);
+  const polygones = useRef<Polygon[]>([]);
   const anneauActif = useRef<Circle | null>(null);
   const poignee = useRef<Marker | null>(null);
+  const traceDessin = useRef<Polyline | null>(null);
+  const sommetsDessin = useRef<CircleMarker[]>([]);
   const leaflet = useRef<typeof import('leaflet') | null>(null);
 
   const [prete, setPrete] = useState(false);
 
   // Les rappels changent à chaque rendu : les garder dans une référence évite
   // de redéclarer les écouteurs de la carte à chaque frappe au clavier.
-  const rappels = useRef({ onPosition, onRayon });
-  rappels.current = { onPosition, onRayon };
+  const rappels = useRef({ onPosition, onRayon, onSommet, dessin });
+  rappels.current = { onPosition, onRayon, onSommet, dessin };
 
   // ===== La carte, une seule fois =====
   useEffect(() => {
@@ -109,11 +136,15 @@ export function CarteZones({
         attribution: '© OpenStreetMap',
       }).addTo(instance);
 
-      // Une boutique sans coordonnées n'a pas de point à déplacer : le clic est
-      // alors le seul geste qui la pose. Une fois posée, seul le point se
-      // déplace — sinon un clic sur la carte déplacerait le commerce par
-      // mégarde.
+      // Trois usages du clic, dans l'ordre : poser un sommet si l'on dessine
+      // un polygone ; sinon poser la boutique si elle n'a pas encore de point
+      // (ensuite, seul le point lui-même se déplace, pour qu'un clic sur la
+      // carte ne déplace jamais le commerce par mégarde).
       instance.on('click', (evenement) => {
+        if (rappels.current.dessin != null) {
+          rappels.current.onSommet?.(evenement.latlng.lat, evenement.latlng.lng);
+          return;
+        }
         if (boutique.current) return;
         rappels.current.onPosition?.(evenement.latlng.lat, evenement.latlng.lng);
       });
@@ -162,7 +193,7 @@ export function CarteZones({
     carte.current.setView([latitude, longitude], Math.max(carte.current.getZoom(), 12));
   }, [prete, latitude, longitude]);
 
-  // ===== Les anneaux =====
+  // ===== Les anneaux (type RADIUS) =====
   useEffect(() => {
     const L = leaflet.current;
     if (!prete || !L || !carte.current) return;
@@ -172,9 +203,11 @@ export function CarteZones({
 
     if (latitude == null || longitude == null) return;
 
+    const rayons = zones.filter((zone): zone is ZoneCarte & { radiusKm: number } => zone.type === 'RADIUS' && zone.radiusKm != null);
+
     // Du plus large au plus étroit : sinon le grand anneau recouvre les petits
     // et on ne voit plus qu'un disque.
-    const triees = [...zones].sort((a, b) => b.radiusKm - a.radiusKm);
+    const triees = [...rayons].sort((a, b) => b.radiusKm - a.radiusKm);
 
     for (const zone of triees) {
       if (zone.id === zoneActive?.id) continue;
@@ -182,15 +215,70 @@ export function CarteZones({
       anneaux.current.push(
         L.circle([latitude, longitude], {
           radius: zone.radiusKm * 1000,
-          color: zone.isActive ? '#38bdf8' : '#64748b',
+          color: zone.isActive ? zone.color : '#64748b',
           weight: 2,
-          fillOpacity: 0.06,
+          fillColor: zone.isActive ? zone.color : '#64748b',
+          fillOpacity: zone.isActive ? zone.opacity : 0.06,
         })
           .bindTooltip(`${zone.name} — ${zone.radiusKm} km`)
           .addTo(carte.current)
       );
     }
   }, [prete, latitude, longitude, zones, zoneActive?.id]);
+
+  // ===== Les polygones (type POLYGON) =====
+  useEffect(() => {
+    const L = leaflet.current;
+    if (!prete || !L || !carte.current) return;
+
+    for (const forme of polygones.current) forme.remove();
+    polygones.current = [];
+
+    const formes = zones.filter((zone) => zone.type === 'POLYGON' && zone.polygon && zone.polygon.length >= 3);
+
+    for (const zone of formes) {
+      const sommets = (zone.polygon as Sommet[]).map((s) => [s.latitude, s.longitude] as [number, number]);
+
+      polygones.current.push(
+        L.polygon(sommets, {
+          color: zone.isActive ? zone.color : '#64748b',
+          weight: 2,
+          fillColor: zone.isActive ? zone.color : '#64748b',
+          fillOpacity: zone.isActive ? zone.opacity : 0.06,
+        })
+          .bindTooltip(zone.name)
+          .addTo(carte.current)
+      );
+    }
+  }, [prete, zones]);
+
+  // ===== Le polygone en cours de dessin =====
+  useEffect(() => {
+    const L = leaflet.current;
+    if (!prete || !L || !carte.current) return;
+
+    traceDessin.current?.remove();
+    traceDessin.current = null;
+    for (const point of sommetsDessin.current) point.remove();
+    sommetsDessin.current = [];
+
+    if (!dessin || dessin.length === 0) return;
+
+    const points = dessin.map((s) => [s.latitude, s.longitude] as [number, number]);
+
+    // Une ligne, pas encore un polygone fermé : on ne sait pas si le dernier
+    // sommet est vraiment le dernier tant que le commerçant n'a pas cliqué
+    // sur « Terminer la zone ».
+    traceDessin.current = (points.length >= 2 ? L.polygon(points, { color: couleurDessin, weight: 2, fillColor: couleurDessin, fillOpacity: 0.15, dashArray: '6 4' }) : L.polyline(points, { color: couleurDessin, weight: 2, dashArray: '6 4' })).addTo(carte.current);
+
+    for (const [lat, lng] of points) {
+      sommetsDessin.current.push(
+        L.circleMarker([lat, lng], { radius: 5, color: couleurDessin, fillColor: '#fff', fillOpacity: 1, weight: 2 }).addTo(
+          carte.current
+        )
+      );
+    }
+  }, [prete, dessin, couleurDessin]);
 
   // ===== L'anneau en cours de réglage, et sa poignée =====
   useEffect(() => {
@@ -263,9 +351,13 @@ export function CarteZones({
       <p className="text-xs text-slate-400 mt-2">
         {latitude == null
           ? 'Votre boutique n’est pas encore située : renseignez son adresse ou posez-la sur la carte.'
-          : zoneActive
-            ? 'Tirez la poignée orange pour régler le rayon, et le point de la boutique pour la déplacer.'
-            : ' Position fixée d’après l’adresse de la boutique. Pour la corriger, contactez le support depuis vos réglages.'}
+          : dessin != null
+            ? 'Cliquez sur la carte pour poser les sommets de la zone, dans l’ordre.'
+            : zoneActive
+              ? 'Tirez la poignée orange pour régler le rayon.'
+              : onPosition
+                ? 'Déplacez le point de la boutique pour corriger sa position.'
+                : ''}
       </p>
     </div>
   );

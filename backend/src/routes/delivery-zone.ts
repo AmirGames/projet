@@ -44,16 +44,42 @@ async function exigerLaZone(id: string, req: Request) {
   return zone;
 }
 
-const schemaZone = z.object({
+const sommetSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+});
+
+const baseZoneSchema = z.object({
   storeId: z.string().min(1),
   name: z.string().min(2, "Nom de zone : deux caractères minimum").max(50),
-  // Le rayon fait la zone : sans lui, aucune adresse ne peut être rattachée.
-  radiusKm: z.number().positive("Le rayon doit être supérieur à zéro").max(200),
+  type: z.enum(["RADIUS", "POLYGON"]).optional().default("RADIUS"),
+  // Le rayon fait la zone RADIUS : sans lui, aucune adresse ne peut être rattachée.
+  radiusKm: z.number().positive("Le rayon doit être supérieur à zéro").max(200).optional(),
+  // Les sommets font la zone POLYGON, dans l'ordre où ils ont été posés.
+  polygon: z.array(sommetSchema).min(3, "Un polygone a besoin d'au moins 3 sommets").optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, "La couleur doit être un code hexadécimal (#rrggbb)")
+    .optional(),
+  opacity: z.number().min(0.1).max(0.9).optional(),
   baseFee: z.number().nonnegative("Les frais ne peuvent pas être négatifs"),
   minOrder: z.number().nonnegative("Le minimum ne peut pas être négatif").optional(),
   deliveryMinutes: z.number().int().positive().max(600).nullable().optional(),
   isActive: z.boolean().optional(),
 });
+
+// À la création, la forme choisie doit avoir sa géométrie : un rayon pour
+// RADIUS, au moins 3 sommets pour POLYGON. Le service revalide de toute façon
+// — cette version-ci ne sert qu'à renvoyer une erreur claire, tout de suite.
+const schemaZone = baseZoneSchema
+  .refine((zone) => zone.type !== "RADIUS" || zone.radiusKm != null, {
+    message: "Le rayon doit être supérieur à zéro",
+    path: ["radiusKm"],
+  })
+  .refine((zone) => zone.type !== "POLYGON" || (zone.polygon && zone.polygon.length >= 3), {
+    message: "Un polygone a besoin d'au moins 3 sommets",
+    path: ["polygon"],
+  });
 
 // POST /delivery-zones - Créer une zone
 router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
@@ -120,7 +146,7 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
     const id = req.params.id as string;
     await exigerLaZone(id, req);
 
-    const body = schemaZone.omit({ storeId: true }).partial().parse(req.body);
+    const body = baseZoneSchema.omit({ storeId: true }).partial().parse(req.body);
     const zone = await DeliveryZoneService.update(id, body);
 
     logger.info("Zone de livraison modifiée", { id });

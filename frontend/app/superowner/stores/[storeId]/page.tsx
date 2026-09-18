@@ -44,7 +44,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Zone {
   id: string;
   name: string;
-  radiusKm: number;
+  type: 'RADIUS' | 'POLYGON';
+  radiusKm: number | null;
+  polygon: { latitude: number; longitude: number }[] | null;
   baseFee: number;
   minOrder: number;
   isActive: boolean;
@@ -550,7 +552,8 @@ export default function FicheBoutiquePage() {
                 {fiche.deliveryZones.map((zone) => (
                   <li key={zone.id} className="flex justify-between gap-4">
                     <span className="text-gray-400">
-                      {zone.name} · {zone.radiusKm} km{!zone.isActive && ' (inactive)'}
+                      {zone.name} · {zone.type === 'RADIUS' ? `${zone.radiusKm} km` : `polygone (${zone.polygon?.length ?? 0} pts)`}
+                      {!zone.isActive && ' (inactive)'}
                     </span>
                     <span className="text-white">
                       {euro(zone.baseFee)} · min. {euro(zone.minOrder)}

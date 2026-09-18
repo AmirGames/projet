@@ -68,8 +68,8 @@ export class StoreSupportService {
         },
         _count: { select: { products: true, orders: true, categories: true } },
         deliveryZones: {
-          orderBy: { radiusKm: "asc" },
-          select: { id: true, name: true, radiusKm: true, baseFee: true, minOrder: true, isActive: true },
+          orderBy: [{ type: "asc" }, { radiusKm: "asc" }],
+          select: { id: true, name: true, type: true, radiusKm: true, baseFee: true, minOrder: true, isActive: true },
         },
       },
     });

@@ -20,11 +20,21 @@ const CarteZones = dynamic(() => import('@/components/CarteZones'), {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+interface Sommet {
+  latitude: number;
+  longitude: number;
+}
+
 interface DeliveryZone {
   id: string;
   name: string;
-  /** Rayon en kilomètres depuis la boutique : c'est lui qui fait la zone. */
-  radiusKm: number;
+  type: 'RADIUS' | 'POLYGON';
+  /** Rayon en kilomètres depuis la boutique : uniquement pour le type RADIUS. */
+  radiusKm: number | null;
+  /** Les sommets du polygone : uniquement pour le type POLYGON. */
+  polygon: Sommet[] | null;
+  color: string;
+  opacity: number;
   baseFee: number;
   minOrder: number;
   deliveryMinutes: number | null;
@@ -42,12 +52,17 @@ export default function DeliveryZonesPage() {
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
   const [formData, setFormData] = useState({
     name: '',
+    type: 'RADIUS' as 'RADIUS' | 'POLYGON',
     radiusKm: '',
+    color: '#f59e0b',
+    opacity: '0.35',
     baseFee: '',
     minOrder: '',
     deliveryMinutes: '',
   });
   const [formError, setFormError] = useState('');
+  /** Les sommets déjà posés du polygone en cours de dessin ; `null` hors dessin. */
+  const [dessin, setDessin] = useState<Sommet[] | null>(null);
 
   /**
    * La boutique, pour la carte.
@@ -205,25 +220,48 @@ export default function DeliveryZonesPage() {
       return;
     }
 
-    // Sans rayon, aucune adresse ne peut être rattachée à la zone : elle ne
-    // s'appliquerait jamais.
-    const rayon = parseFloat(formData.radiusKm);
-    if (!(rayon > 0)) {
-      setFormError('Indiquez un rayon en kilomètres, supérieur à zéro');
-      return;
+    let rayon = 0;
+
+    if (formData.type === 'RADIUS') {
+      // Sans rayon, aucune adresse ne peut être rattachée à la zone : elle ne
+      // s'appliquerait jamais.
+      rayon = parseFloat(formData.radiusKm);
+      if (!(rayon > 0)) {
+        setFormError('Indiquez un rayon en kilomètres, supérieur à zéro');
+        return;
+      }
+    } else {
+      // À la création, ou après avoir cliqué « Redessiner » : les nouveaux
+      // sommets font foi. Sinon, une zone existante garde son tracé.
+      if (dessin && dessin.length > 0 && dessin.length < 3) {
+        setFormError('Un polygone a besoin d’au moins 3 sommets — continuez à cliquer sur la carte');
+        return;
+      }
+      if (!editingZone && (!dessin || dessin.length < 3)) {
+        setFormError('Dessinez la zone sur la carte : au moins 3 sommets');
+        return;
+      }
     }
 
     setSaving(true);
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-      const payload = {
+      const payload: Record<string, unknown> = {
         storeId,
         name: formData.name,
-        radiusKm: rayon,
+        type: formData.type,
+        color: formData.color,
+        opacity: parseFloat(formData.opacity),
         baseFee: parseFloat(formData.baseFee),
         minOrder: formData.minOrder ? parseFloat(formData.minOrder) : 0,
         deliveryMinutes: formData.deliveryMinutes ? parseInt(formData.deliveryMinutes, 10) : null,
       };
+
+      if (formData.type === 'RADIUS') {
+        payload.radiusKm = rayon;
+      } else if (dessin && dessin.length >= 3) {
+        payload.polygon = dessin;
+      }
 
       const url = editingZone
         ? `${API_URL}/api/delivery-zones/${editingZone.id}`
@@ -244,7 +282,7 @@ export default function DeliveryZonesPage() {
         await fetchZones();
         setShowForm(false);
         setEditingZone(null);
-        setFormData({ name: '', radiusKm: '', baseFee: '', minOrder: '', deliveryMinutes: '' });
+        setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', deliveryMinutes: '' }); setDessin(null);
       } else {
         // Un refus muet laissait croire que la zone était enregistrée.
         setFormError(donnees?.error || 'Enregistrement refusé');
@@ -282,18 +320,27 @@ export default function DeliveryZonesPage() {
     setEditingZone(zone);
     setFormData({
       name: zone.name,
+      type: zone.type,
       radiusKm: zone.radiusKm?.toString() || '',
+      color: zone.color || '#f59e0b',
+      opacity: (zone.opacity ?? 0.35).toString(),
       baseFee: zone.baseFee.toString(),
       minOrder: zone.minOrder?.toString() || '',
       deliveryMinutes: zone.deliveryMinutes?.toString() || '',
     });
+    // On ne repart pas en dessin : le tracé existant reste tel quel, sauf si
+    // le commerçant clique explicitement sur « Redessiner cette zone ».
+    setDessin(null);
     setFormError('');
     setShowForm(true);
   };
 
+  /** Efface le tracé existant pour en reposer un nouveau, sommet par sommet. */
+  const redessinerZone = () => setDessin([]);
+
   const handleAddZone = () => {
     setEditingZone(null);
-    setFormData({ name: '', radiusKm: '', baseFee: '', minOrder: '', deliveryMinutes: '' });
+    setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', deliveryMinutes: '' }); setDessin(null);
     setFormError('');
     setShowForm(true);
   };
@@ -373,6 +420,8 @@ export default function DeliveryZonesPage() {
 
           {boutique?.latitude != null && (
             <p className="text-sm text-slate-400 mb-3">
+              Position fixée d’après l’adresse de la boutique. Pour la corriger, contactez le
+              support depuis vos réglages.
             </p>
           )}
 
@@ -381,7 +430,7 @@ export default function DeliveryZonesPage() {
             longitude={boutique?.longitude ?? null}
             zones={zones}
             zoneActive={
-              showForm
+              showForm && formData.type === 'RADIUS'
                 ? {
                     id: editingZone?.id ?? null,
                     name: formData.name || 'Nouvelle zone',
@@ -396,6 +445,11 @@ export default function DeliveryZonesPage() {
             // réglages de la boutique (et par le support, une fois validée).
             onPosition={boutique?.latitude == null ? enregistrerPosition : undefined}
             onRayon={(km) => setFormData((actuel) => ({ ...actuel, radiusKm: String(km) }))}
+            dessin={showForm && formData.type === 'POLYGON' ? dessin : null}
+            onSommet={(latitude, longitude) =>
+              setDessin((actuel) => [...(actuel || []), { latitude, longitude }])
+            }
+            couleurDessin={formData.color}
           />
         </div>
 
@@ -425,22 +479,78 @@ export default function DeliveryZonesPage() {
                 />
               </div>
               <div>
-                {/* Le rayon fait la zone : sans lui, aucune adresse ne peut y
-                    être rattachée et la zone ne s'applique jamais. */}
-                <label htmlFor="zone-rayon" className="text-slate-300 text-sm block mb-2">
-                  Rayon (km)
+                <label htmlFor="zone-forme" className="text-slate-300 text-sm block mb-2">
+                  Forme
                 </label>
-                <input
-                  id="zone-rayon"
-                  type="number"
-                  step="0.5"
-                  min="0.5"
-                  value={formData.radiusKm}
-                  onChange={(e) => setFormData({ ...formData, radiusKm: e.target.value })}
-                  placeholder="3"
-                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
-                />
+                {editingZone ? (
+                  // La forme d'une zone ne se change pas après coup : ça
+                  // reviendrait à en recréer une autre sous le même nom.
+                  <p className="px-3 py-2 bg-slate-900 text-slate-300 rounded border border-slate-700 text-sm">
+                    {formData.type === 'RADIUS' ? 'Rayon (anneau)' : 'Polygone dessiné'}
+                  </p>
+                ) : (
+                  <select
+                    id="zone-forme"
+                    value={formData.type}
+                    onChange={(e) => {
+                      const type = e.target.value as 'RADIUS' | 'POLYGON';
+                      setFormData({ ...formData, type });
+                      setDessin(type === 'POLYGON' ? [] : null);
+                    }}
+                    className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="RADIUS">Rayon (anneau, en km)</option>
+                    <option value="POLYGON">Polygone (dessiné à la main)</option>
+                  </select>
+                )}
               </div>
+              {formData.type === 'RADIUS' ? (
+                <div>
+                  {/* Le rayon fait la zone : sans lui, aucune adresse ne peut y
+                      être rattachée et la zone ne s'applique jamais. */}
+                  <label htmlFor="zone-rayon" className="text-slate-300 text-sm block mb-2">
+                    Rayon (km)
+                  </label>
+                  <input
+                    id="zone-rayon"
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    value={formData.radiusKm}
+                    onChange={(e) => setFormData({ ...formData, radiusKm: e.target.value })}
+                    placeholder="3"
+                    className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <span className="text-slate-300 text-sm block mb-2">Tracé sur la carte</span>
+                  {dessin != null ? (
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-2 bg-slate-900 text-slate-300 rounded border border-slate-700 text-sm flex-1">
+                        {dessin.length} sommet{dessin.length !== 1 ? 's' : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDessin((actuel) => (actuel && actuel.length > 0 ? actuel.slice(0, -1) : actuel))}
+                        disabled={dessin.length === 0}
+                        title="Retirer le dernier sommet"
+                        className="px-2 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white rounded text-sm"
+                      >
+                        ↩︎
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={redessinerZone}
+                      className="w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded border border-slate-600 text-sm"
+                    >
+                      Redessiner cette zone
+                    </button>
+                  )}
+                </div>
+              )}
               <div>
                 <label htmlFor="zone-frais" className="text-slate-300 text-sm block mb-2">
                   Frais de livraison (€)
@@ -486,13 +596,39 @@ export default function DeliveryZonesPage() {
                   className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
                 />
               </div>
+              <div>
+                <label htmlFor="zone-couleur" className="text-slate-300 text-sm block mb-2">
+                  Couleur
+                </label>
+                <input
+                  id="zone-couleur"
+                  type="color"
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  className="w-full h-10 px-1 py-1 bg-slate-700 rounded border border-slate-600 cursor-pointer"
+                />
+              </div>
+              <div>
+                <label htmlFor="zone-opacite" className="text-slate-300 text-sm block mb-2">
+                  Opacité ({Math.round(parseFloat(formData.opacity) * 100)} %)
+                </label>
+                <input
+                  id="zone-opacite"
+                  type="range"
+                  min="0.1"
+                  max="0.9"
+                  step="0.05"
+                  value={formData.opacity}
+                  onChange={(e) => setFormData({ ...formData, opacity: e.target.value })}
+                  className="w-full mt-3"
+                />
+              </div>
             </div>
 
             <p className="text-xs text-slate-400 mb-4">
-              Les zones sont des anneaux autour de votre boutique. C'est la plus petite qui
-              contient l'adresse du client qui s'applique : un voisin paie les frais de la zone
-              proche, un client éloigné ceux de la zone large. Au-delà de votre plus grand rayon,
-              la livraison est refusée.
+              La zone la plus « spécifique » qui contient l'adresse du client s'applique : le plus
+              petit rayon, ou à défaut le plus petit polygone, parmi ceux qui la couvrent. Un
+              client hors de toute zone ne peut pas commander en livraison.
             </p>
             <div className="flex gap-2">
               <button
@@ -506,7 +642,7 @@ export default function DeliveryZonesPage() {
                 onClick={() => {
                   setShowForm(false);
                   setEditingZone(null);
-                  setFormData({ name: '', radiusKm: '', baseFee: '', minOrder: '', deliveryMinutes: '' });
+                  setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', deliveryMinutes: '' }); setDessin(null);
                 }}
                 className="px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 transition"
               >
@@ -537,8 +673,17 @@ export default function DeliveryZonesPage() {
               <div key={zone.id} className="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-amber-500 transition">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-white">{zone.name}</h3>
-                    <p className="text-slate-400 text-sm">Zone de livraison</p>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-3 h-3 rounded-full shrink-0 border border-white/30"
+                        style={{ backgroundColor: zone.color }}
+                        title={`Couleur sur la carte : ${zone.color}`}
+                      />
+                      <h3 className="text-lg font-bold text-white">{zone.name}</h3>
+                    </div>
+                    <p className="text-slate-400 text-sm">
+                      {zone.type === 'RADIUS' ? 'Zone de livraison — rayon' : 'Zone de livraison — polygone'}
+                    </p>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -567,8 +712,10 @@ export default function DeliveryZonesPage() {
                     <span className="text-white font-semibold">{zone.minOrder.toFixed(2)} €</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-400">Rayon</span>
-                    <span className="text-white font-semibold">{zone.radiusKm} km</span>
+                    <span className="text-slate-400">{zone.type === 'RADIUS' ? 'Rayon' : 'Sommets'}</span>
+                    <span className="text-white font-semibold">
+                      {zone.type === 'RADIUS' ? `${zone.radiusKm} km` : `${zone.polygon?.length ?? 0} points`}
+                    </span>
                   </div>
                   {zone.deliveryMinutes && (
                     <div className="flex justify-between items-center">

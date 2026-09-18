@@ -1019,14 +1019,25 @@ model DeliveryOffer {
 // utilisable — un point sans rayon — et rien ne l'appliquait : la commande
 // ignorait les zones, facturait les frais forfaitaires de la boutique et
 // acceptait n'importe quel montant, où que soit le client.
+enum DeliveryZoneType {
+  RADIUS
+  POLYGON
+}
+
 model DeliveryZone {
   id        String  @id @default(cuid())
   storeId   String
   name      String
 
-  // Rayon en kilomètres depuis la boutique. Les anneaux se recouvrent : c'est
-  // le plus petit qui contient l'adresse qui s'applique, comme chez Uber Eats.
-  radiusKm  Float   @default(3)
+  /// RADIUS : un anneau simple, réglé au kilomètre. POLYGON : une forme
+  /// dessinée à la main sur la carte, pour coller à une rue, un pont, une
+  /// limite de quartier qu'un cercle ne peut pas suivre.
+  type      DeliveryZoneType @default(RADIUS)
+
+  // Rayon en kilomètres depuis la boutique. Uniquement pour le type RADIUS ;
+  // les anneaux se recouvrent, c'est le plus petit qui contient l'adresse qui
+  // s'applique, comme chez Uber Eats.
+  radiusKm  Float?
 
   // Durée de livraison annoncée au client pour cette zone.
   deliveryMinutes Int? 
@@ -1034,9 +1045,17 @@ model DeliveryZone {
   // Une zone désactivée n'est plus livrée, sans perdre son réglage.
   isActive  Boolean @default(true)
 
-  // Réservé à un vrai polygone, quand le besoin viendra. Le rayon suffit pour
-  // des anneaux concentriques.
+  /// Uniquement pour le type POLYGON : la liste des sommets, dans l'ordre où
+  /// ils ont été posés — [{ lat, lng }, { lat, lng }, ...], au moins 3.
   polygon   Json?
+
+  /// Couleur de la zone sur la carte (hex, ex. "#f59e0b"). Chaque zone la
+  /// sienne, pour distinguer les recouvrements d'un coup d'œil.
+  color     String  @default("#f59e0b")
+
+  /// Opacité du remplissage (0.1 à 0.9) : assez transparent pour voir les
+  /// zones se superposer, assez opaque pour rester lisible.
+  opacity   Float   @default(0.35)
 
   baseFee   Decimal @db.Decimal(10, 2)
   minOrder  Decimal @db.Decimal(10, 2)
