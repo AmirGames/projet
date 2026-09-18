@@ -28,8 +28,10 @@ interface Store {
   postalCode?: string | null;
   phone?: string | null;
   email?: string | null;
-  /** Fermée momentanément : la vitrine reste lisible, la commande non. */
+  /** Fermée momentanément (bouton rapide du commerçant) : la vitrine reste lisible, la commande non. */
   isOpen?: boolean;
+  /** Ce que disent à la fois le planning hebdomadaire et le bouton rapide, croisés. */
+  isOpenNow?: boolean;
   createdAt: string;
 }
 
@@ -406,7 +408,9 @@ export default function StorefrontPage() {
             )}
             <div className="flex items-center gap-2">
               <Clock size={18} />
-              <span>Ouvert</span>
+              <span className={store.isOpenNow === false ? 'text-red-600 font-medium' : ''}>
+                {store.isOpenNow === false ? 'Fermé' : 'Ouvert'}
+              </span>
             </div>
           </div>
         </div>
@@ -672,19 +676,22 @@ export default function StorefrontPage() {
                   </div>
 
                   {/* Une boutique fermée reste consultable : elle disparaissait
-                      purement et simplement de la liste des commerces. */}
-                  {store?.isOpen === false && (
+                      purement et simplement de la liste des commerces. Fermée par
+                      le bouton rapide ou par le planning du jour : même message. */}
+                  {store?.isOpenNow === false && (
                     <p
                       role="status"
                       className="rounded-lg border border-amber-700/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-200"
                     >
-                      Momentanément indisponible — commande impossible pour le moment.
+                      {store?.isOpen === false
+                        ? 'Momentanément indisponible — commande impossible pour le moment.'
+                        : 'Fermé pour le moment — hors des horaires d\u2019ouverture.'}
                     </p>
                   )}
 
                   <button
                     onClick={() => setShowCheckout(true)}
-                    disabled={store?.isOpen === false}
+                    disabled={store?.isOpenNow === false}
                     className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Passer la Commande
