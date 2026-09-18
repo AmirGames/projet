@@ -59,7 +59,7 @@ export default function RestaurantsPage() {
           deliveryTime: 30,
           deliveryFee: Number(boutique.deliveryCost || 0),
           address: [boutique.address, boutique.city].filter(Boolean).join(', '),
-          isOpen: boutique.isOpen,
+          isOpen: boutique.isOpenNow,
         }))
       );
     } catch (err) {
