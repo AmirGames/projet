@@ -68,7 +68,7 @@ export function CarteZones({
   zoneActive,
   onPosition,
   onRayon,
-  hauteur = 420,
+  hauteur = 560,
 }: Props) {
   const conteneur = useRef<HTMLDivElement>(null);
   const carte = useRef<CarteLeaflet | null>(null);
@@ -266,8 +266,6 @@ export function CarteZones({
           : zoneActive
             ? 'Tirez la poignée orange pour régler le rayon, et le point de la boutique pour la déplacer.'
             : ' Position fixée d’après l’adresse de la boutique. Pour la corriger, contactez le support depuis vos réglages.'}
-
-            
       </p>
     </div>
   );

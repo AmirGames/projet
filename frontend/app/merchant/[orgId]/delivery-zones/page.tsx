@@ -12,7 +12,7 @@ import { euro } from '@/lib/format';
 const CarteZones = dynamic(() => import('@/components/CarteZones'), {
   ssr: false,
   loading: () => (
-    <div className="h-[420px] w-full rounded-lg border border-slate-700 bg-slate-800 flex items-center justify-center text-slate-500">
+    <div className="h-[560px] w-full rounded-lg border border-slate-700 bg-slate-800 flex items-center justify-center text-slate-500">
       Chargement de la carte…
     </div>
   ),
@@ -373,7 +373,6 @@ export default function DeliveryZonesPage() {
 
           {boutique?.latitude != null && (
             <p className="text-sm text-slate-400 mb-3">
-              
             </p>
           )}
 
