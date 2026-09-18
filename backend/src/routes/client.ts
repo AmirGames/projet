@@ -42,7 +42,13 @@ router.get("/stores", async (_req: Request, res: Response, next: NextFunction) =
     res.json({
       success: true,
       count: stores.length,
-      data: stores
+      data: stores.map((store) => ({
+        ...store,
+        // Ce que disent à la fois le planning hebdomadaire et le bouton
+        // rapide, croisés — pas juste le bouton, sinon un jour fermé dans les
+        // horaires n'a jamais d'effet ici.
+        isOpenNow: StoreHoursService.isOpenNow(store),
+      })),
     });
   } catch (err) {
     next(err);
@@ -100,7 +106,8 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
         return {
           ...store,
           distance: parseFloat(distance.toFixed(2)),
-          estimatedDeliveryTime: Math.ceil(distance * 5) + " min"
+          estimatedDeliveryTime: Math.ceil(distance * 5) + " min",
+          isOpenNow: StoreHoursService.isOpenNow(store),
         };
       })
       .filter(store => store.distance <= maxDist)
@@ -152,7 +159,10 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
     res.json({
       success: true,
       count: stores.length,
-      data: stores
+      data: stores.map((store) => ({
+        ...store,
+        isOpenNow: StoreHoursService.isOpenNow(store),
+      })),
     });
   } catch (err) {
     next(err);
@@ -274,6 +284,7 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
       data: {
         ...store,
         menu: categorizedProducts,
+        isOpenNow: StoreHoursService.isOpenNow(store),
         averageRating:
           store.reviews.length > 0
             ? (
