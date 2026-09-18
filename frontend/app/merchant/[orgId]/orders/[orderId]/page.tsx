@@ -11,6 +11,7 @@ import {
   Clock,
   FileText,
   StickyNote,
+  Printer,
 } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
@@ -216,13 +217,29 @@ export default function DetailCommandePage() {
             {new Date(commande.createdAt).toLocaleString('fr-FR')}
           </p>
         </div>
-        <span
-          className={`px-4 py-2 rounded-full text-sm font-medium ${
-            COULEURS[commande.status] || 'bg-gray-500/20 text-gray-400'
-          }`}
-        >
-          {STATUTS.find((s) => s.valeur === commande.status)?.libelle || commande.status}
-        </span>
+        <div className="flex items-center gap-3">
+          {/* Le ticket s'imprime depuis une page à part : imprimer d'ici
+              sortirait la barre latérale et le menu avec lui. */}
+          <button
+            onClick={() =>
+              window.open(
+                `/impression/commande/${orderId}?storeId=${storeId}&format=ticket`,
+                '_blank',
+                'width=460,height=820'
+              )
+            }
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Printer size={16} /> Imprimer le ticket
+          </button>
+          <span
+            className={`px-4 py-2 rounded-full text-sm font-medium ${
+              COULEURS[commande.status] || 'bg-gray-500/20 text-gray-400'
+            }`}
+          >
+            {STATUTS.find((s) => s.valeur === commande.status)?.libelle || commande.status}
+          </span>
+        </div>
       </div>
 
       {message && (

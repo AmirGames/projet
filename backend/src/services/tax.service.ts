@@ -161,18 +161,23 @@ export class TaxService {
     total: number;
     /** Ce qui s'ajoute au total : zéro quand la taxe est déjà comprise. */
     aAjouter: number;
-    /** Le taux à retenir sur la commande — celui du plus gros montant taxé. */
+    /** Le taux principal (celui qui porte le plus gros montant), pour le champ Order.taxRate. */
     taux: number;
     detail: { nom: string; taux: number; base: number; taxe: number; comprise: boolean }[];
+    /**
+     * Taux et montant de taxe par ligne, dans le même ordre que `lignes`.
+     * Stockés sur OrderItem pour permettre le récapitulatif multi-taux sur le ticket.
+     */
+    parLigne: { taxRate: number; taxAmount: number }[];
   }> {
     if (lignes.length === 0) {
-      return { total: 0, aAjouter: 0, taux: 0, detail: [] };
+      return { total: 0, aAjouter: 0, taux: 0, detail: [], parLigne: [] };
     }
 
     const reglages = await db.taxSetting.findMany({ where: { storeId, status: "ACTIVE" } });
 
     if (reglages.length === 0) {
-      return { total: 0, aAjouter: 0, taux: 0, detail: [] };
+      return { total: 0, aAjouter: 0, taux: 0, detail: [], parLigne: lignes.map(() => ({ taxRate: 0, taxAmount: 0 })) };
     }
 
     const produits = await db.product.findMany({
@@ -192,6 +197,9 @@ export class TaxService {
       { nom: string; taux: number; base: number; taxe: number; comprise: boolean }
     >();
 
+    // Résultat par ligne (même ordre que `lignes`), pour stocker sur OrderItem.
+    const parLigne: { taxRate: number; taxAmount: number }[] = [];
+
     for (const ligne of lignes) {
       const categorieId = categorieDuProduit.get(ligne.productId);
 
@@ -200,7 +208,11 @@ export class TaxService {
         (categorieId ? parCategorie.find((r) => r.categoryIds.includes(categorieId)) : undefined) ||
         surTout[0];
 
-      if (!reglage) continue;
+      if (!reglage) {
+        // Aucune taxe ne s'applique à ce produit.
+        parLigne.push({ taxRate: 0, taxAmount: 0 });
+        continue;
+      }
 
       const taux = Number(reglage.rate);
 
@@ -209,6 +221,12 @@ export class TaxService {
       const taxe = reglage.included
         ? (ligne.montant * taux) / (100 + taux)
         : (ligne.montant * taux) / 100;
+
+      // Résultat arrondi pour cette ligne.
+      parLigne.push({
+        taxRate: taux,
+        taxAmount: Number(taxe.toFixed(2)),
+      });
 
       const vu = cumul.get(reglage.id);
 
@@ -237,12 +255,11 @@ export class TaxService {
       detail.filter((l) => !l.comprise).reduce((somme, l) => somme + l.taxe, 0).toFixed(2)
     );
 
-    // Le taux retenu sur la commande est celui qui porte le plus gros montant :
-    // une commande à deux taux n'en garde qu'un, et autant que ce soit le
-    // principal. Le détail complet reste dans `detail`.
+    // Le taux retenu sur la commande est celui qui porte le plus gros montant.
+    // Le détail complet (multi-taux) reste dans `detail` et sur chaque OrderItem.
     const principal = [...detail].sort((a, b) => b.base - a.base)[0];
 
-    return { total, aAjouter, taux: principal?.taux ?? 0, detail };
+    return { total, aAjouter, taux: principal?.taux ?? 0, detail, parLigne };
   }
 
   static async calculateTax(storeId: string, amount: number, categoryIds?: string[], productIds?: string[]) {

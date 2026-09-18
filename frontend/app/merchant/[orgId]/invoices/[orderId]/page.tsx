@@ -45,7 +45,8 @@ interface Facture {
   items: LigneFacture[];
   subtotal: number;
   tax: number;
-  taxRate: number;
+  taxRate: number | null;
+  taxDetail?: { taux: number; base: number; taxe: number }[];
   taxIncluded: boolean;
   fees: number;
   total: number;
@@ -125,12 +126,35 @@ export default function FacturePage() {
         >
           <ArrowLeft size={16} /> Retour aux factures
         </Link>
-        <button
-          onClick={() => window.print()}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-lg font-medium transition-colors"
-        >
-          <Printer size={18} /> Imprimer / PDF
-        </button>
+        <div className="flex items-center gap-2">
+          {/* L'impression passe par une page dédiée, hors de l'espace
+              commerçant : imprimer d'ici emportait la barre latérale, le menu
+              et quelques pages blanches. */}
+          <button
+            onClick={() =>
+              window.open(
+                `/impression/commande/${orderId}?storeId=${storeId}&format=a4`,
+                '_blank',
+                'width=900,height=1000'
+              )
+            }
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-lg font-medium transition-colors"
+          >
+            <Printer size={18} /> Imprimer la facture (A4)
+          </button>
+          <button
+            onClick={() =>
+              window.open(
+                `/impression/commande/${orderId}?storeId=${storeId}&format=ticket`,
+                '_blank',
+                'width=460,height=820'
+              )
+            }
+            className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+          >
+            <Printer size={18} /> Ticket 80 mm
+          </button>
+        </div>
       </div>
 
       {/* `zone-impression` : à l'impression, tout le reste du site disparaît. */}
@@ -262,23 +286,28 @@ export default function FacturePage() {
               <span className="text-green-400 print:text-black">{euro(facture.total)}</span>
             </div>
 
-            {/* Le détail de la TVA : le prix est TTC, la taxe s'en extrait. Le
-                ticket n'en montrait rien, et la taxe valait zéro faute d'être
-                calculée au serveur. */}
-            {facture.tax > 0 ? (
-              <div className="pt-2 border-t border-gray-700 print:border-gray-300 space-y-1 text-gray-400 print:text-gray-700">
-                <div className="flex justify-between">
-                  <span>Total HT</span>
-                  <span>{euro(facture.total - facture.tax)}</span>
+            {/* Récapitulatif TVA — multi-taux si la commande en a plusieurs. */}
+            {facture.tax > 0 ? (() => {
+              const lignes = facture.taxDetail && facture.taxDetail.length > 0
+                ? facture.taxDetail
+                : [{ taux: facture.taxRate ?? 0, base: facture.total - facture.tax, taxe: facture.tax }];
+              return (
+                <div className="pt-2 border-t border-gray-700 print:border-gray-300 space-y-1 text-sm text-gray-400 print:text-gray-700">
+                  {lignes.map((l) => (
+                    <div key={l.taux} className="space-y-0.5">
+                      <div className="flex justify-between">
+                        <span>Base HT {l.taux} %</span>
+                        <span>{euro(l.base - l.taxe)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>TVA {l.taux} %</span>
+                        <span>{euro(l.taxe)}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex justify-between">
-                  <span>
-                    dont TVA{facture.taxRate > 0 ? ` ${facture.taxRate} %` : ''}
-                  </span>
-                  <span>{euro(facture.tax)}</span>
-                </div>
-              </div>
-            ) : (
+              );
+            })() : (
               <p className="pt-2 text-xs text-gray-500 print:hidden">
                 Aucune TVA sur cette commande. Réglez votre taux dans les taxes de la boutique : il
                 s&apos;appliquera aux commandes suivantes.

@@ -424,6 +424,8 @@ model Store {
   reviews       Review[] @relation("ReviewToStore")
   campaigns     MarketingCampaign[] @relation("CampaignToStore")
   taxSettings   TaxSetting[] @relation("TaxSettingToStore")
+  invoiceSeqs   InvoiceSeq[] @relation("InvoiceSeqToStore")
+  invoices      Invoice[]    @relation("InvoiceToStore")
   paymentMethods PaymentMethod[] @relation("PaymentMethodToStore")
   notifications Notification[] @relation("NotificationToStore")
   tags          ProductTag[] @relation("TagToStore")
@@ -683,6 +685,7 @@ model Order {
   customer        Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   payments        Payment[]
   delivery        OrderDelivery?
+  invoice         Invoice?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -704,6 +707,12 @@ model OrderItem {
   selectedOptions Json    @default("{}")
   price           Decimal @db.Decimal(10, 2)
   total           Decimal @db.Decimal(10, 2)
+
+  /// Le taux de TVA appliqué à cette ligne, tel qu'il valait à la commande.
+  /// Permet d'afficher un récapitulatif multi-taux correct sur le ticket.
+  taxRate         Decimal @default(0) @db.Decimal(5, 2)
+  /// La taxe correspondante, en euros, extraite du prix TTC de la ligne.
+  taxAmount       Decimal @default(0) @db.Decimal(10, 2)
 
   // Relations
   order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -1635,6 +1644,53 @@ model Backup {
 
   @@index([createdAt])
   @@index([status])
+}
+
+
+// ============================================================================
+// FACTURATION
+// ============================================================================
+
+/// Compteur de numéros de facture par boutique, par an et par série.
+model InvoiceSeq {
+  id      String @id @default(cuid())
+  storeId String
+  year    Int
+  serie   String @default("FAC")
+  last    Int    @default(0)
+
+  store   Store  @relation("InvoiceSeqToStore", fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, year, serie])
+  @@index([storeId])
+}
+
+/// Une facture émise, figée au moment de l'émission.
+model Invoice {
+  id        String   @id @default(cuid())
+  number    String
+  storeId   String
+  orderId   String   @unique
+  issuedAt  DateTime @default(now())
+
+  emetteurJson     Json @default("{}")
+  destinataireJson Json @default("{}")
+  lignesJson       Json @default("[]")
+
+  subtotal  Decimal  @default(0) @db.Decimal(10, 2)
+  /// Détail de la TVA par taux : [{ taux, base, taxe, nom }]
+  taxJson   Json     @default("[]")
+  taxTotal  Decimal  @default(0) @db.Decimal(10, 2)
+  fees      Decimal  @default(0) @db.Decimal(10, 2)
+  discount  Decimal  @default(0) @db.Decimal(10, 2)
+  total     Decimal  @default(0) @db.Decimal(10, 2)
+
+  store     Store    @relation("InvoiceToStore",  fields: [storeId], references: [id], onDelete: Restrict)
+  order     Order    @relation(fields: [orderId], references: [id],  onDelete: Restrict)
+
+  @@unique([number, storeId])
+  @@index([storeId])
+  @@index([issuedAt])
 }
 
 model SecurityEvent {

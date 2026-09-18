@@ -16,6 +16,9 @@ interface Order {
   id: string;
   status: string;
   totalAmount: number;
+  /** La taxe figée à la commande, et le taux qui valait ce jour-là. */
+  taxAmount?: number | string;
+  taxRate?: number | string;
   deliveryAddress: string;
   createdAt: string;
   items?: any[];
@@ -302,12 +305,28 @@ export default function OrderTrackingPage() {
                 </div>
               )}
 
-              {/* Order Total */}
+              {/* Le total, et la TVA qu'il contient : les prix sont TTC, la
+                  taxe s'en extrait. Le client n'en voyait rien. */}
               <div className="pt-4 border-t border-gray-700">
-                <p className="text-gray-400 text-sm mb-2">Total</p>
+                <p className="text-gray-400 text-sm mb-2">Total TTC</p>
                 <p className="text-white text-2xl font-bold">
                   {euro(order.totalAmount)}
                 </p>
+                {Number(order.taxAmount) > 0 && (
+                  <div className="mt-2 space-y-1 text-sm text-gray-400">
+                    <div className="flex justify-between">
+                      <span>Total HT</span>
+                      <span>{euro(Number(order.totalAmount) - Number(order.taxAmount))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>
+                        dont TVA
+                        {Number(order.taxRate) > 0 ? ` ${Number(order.taxRate)} %` : ''}
+                      </span>
+                      <span>{euro(order.taxAmount)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Help */}

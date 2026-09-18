@@ -357,13 +357,18 @@ export class OrderService {
           status: "PENDING" as any,
           paymentStatus: "PENDING" as any,
           items: {
-            create: lignesTarifees.map((ligne) => ({
+            create: lignesTarifees.map((ligne, index) => ({
               productId: ligne.productId,
               variantId: ligne.variantId,
               quantity: ligne.quantity,
               price: ligne.price,
               total: Number((ligne.price * ligne.quantity).toFixed(2)),
               selectedOptions: ligne.selectedOptions || {},
+              // La taxe de cette ligne, figée au moment de la commande.
+              // Permet le récapitulatif multi-taux (6 % nourriture + 21 % boissons)
+              // sur le ticket, sans avoir à recalculer après coup.
+              taxRate:   taxe.parLigne[index]?.taxRate   ?? 0,
+              taxAmount: taxe.parLigne[index]?.taxAmount ?? 0,
             })),
           },
         },

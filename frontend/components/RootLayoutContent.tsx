@@ -35,11 +35,13 @@ export default function RootLayoutContent({
   }, [API_URL]);
 
   // Ces espaces ont leur propre barre latérale : la navigation publique y
-  // ferait double emploi.
+  // ferait double emploi. `/impression` est une feuille à imprimer : elle ne
+  // porte aucun élément du site, c'est tout l'intérêt.
   const hideNavbar = pathname?.startsWith('/superowner') ||
                      pathname?.startsWith('/merchant') ||
                      pathname?.startsWith('/client') ||
-                     pathname?.startsWith('/driver');
+                     pathname?.startsWith('/driver') ||
+                     pathname?.startsWith('/impression');
 
   return (
     <>

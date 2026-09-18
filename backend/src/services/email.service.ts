@@ -82,9 +82,26 @@ export class EmailService {
                       : ''
                   }
                   <div class="detail-row">
-                    <strong>Montant total:</strong>
-                    <span style="font-size: 18px; color: #48bb78;">€${order.totalAmount.toFixed(2)}</span>
+                    <strong>Montant total TTC:</strong>
+                    <span style="font-size: 18px; color: #48bb78;">€${Number(order.totalAmount).toFixed(2)}</span>
                   </div>
+                  ${
+                    /* La TVA que contient le prix. Le client recevait un montant
+                       TTC sans jamais savoir quelle taxe il y avait dedans :
+                       l'email ne valait pas justificatif. */
+                    Number(order.taxAmount) > 0
+                      ? `<div class="detail-row">
+                          <strong>Total HT:</strong>
+                          <span>€${(Number(order.totalAmount) - Number(order.taxAmount)).toFixed(2)}</span>
+                        </div>
+                        <div class="detail-row">
+                          <strong>dont TVA${
+                            Number(order.taxRate) > 0 ? ` ${Number(order.taxRate)} %` : ''
+                          }:</strong>
+                          <span>€${Number(order.taxAmount).toFixed(2)}</span>
+                        </div>`
+                      : ''
+                  }
                 </div>
 
                 <p>Statut: <strong>${order.status}</strong></p>
