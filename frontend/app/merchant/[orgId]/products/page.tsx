@@ -43,7 +43,27 @@ interface Product {
   createdAt: string;
 }
 
-function SortableProduct({ product, onEdit, onDelete, onToggleAvailability }: any) {
+type CategorySortMode = 'MANUAL' | 'ALPHA_ASC' | 'ALPHA_DESC' | 'PRICE_ASC' | 'PRICE_DESC';
+
+/** Même logique que côté serveur (voir category.service.ts) : le tri appliqué
+ * ici sert juste à afficher tout de suite le bon ordre, avant que la vitrine
+ * ne le recalcule elle-même côté API. */
+function trierProduits(produits: Product[], sortMode: CategorySortMode | undefined): Product[] {
+  switch (sortMode) {
+    case 'ALPHA_ASC':
+      return [...produits].sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+    case 'ALPHA_DESC':
+      return [...produits].sort((a, b) => b.name.localeCompare(a.name, 'fr', { sensitivity: 'base' }));
+    case 'PRICE_ASC':
+      return [...produits].sort((a, b) => a.price - b.price);
+    case 'PRICE_DESC':
+      return [...produits].sort((a, b) => b.price - a.price);
+    default:
+      return produits;
+  }
+}
+
+function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triManuel = true }: any) {
   const {
     attributes,
     listeners,
@@ -51,7 +71,7 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability }: an
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: product.id });
+  } = useSortable({ id: product.id, disabled: !triManuel });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -72,10 +92,15 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability }: an
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 flex-1">
           <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing text-gray-600 hover:text-gray-400 mt-1"
-            title="Glissez pour réorganiser"
+            {...(triManuel ? attributes : {})}
+            {...(triManuel ? listeners : {})}
+            disabled={!triManuel}
+            className={`mt-1 ${
+              triManuel
+                ? 'cursor-grab active:cursor-grabbing text-gray-600 hover:text-gray-400'
+                : 'cursor-not-allowed text-gray-800'
+            }`}
+            title={triManuel ? 'Glissez pour réorganiser' : 'Tri automatique actif — passez en "Ordre manuel" pour réorganiser à la main'}
           >
             <GripVertical size={18} />
           </button>
@@ -176,7 +201,7 @@ export default function ProductsPage() {
   const { storeId } = useCurrentStore();
   const [products, setProducts] = useState<Product[]>([]);
 
-  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; sortMode?: CategorySortMode }>>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -279,6 +304,39 @@ export default function ProductsPage() {
       } finally {
         setIsReordering(false);
       }
+    }
+  };
+
+  /**
+   * Le tri d'une catégorie se règle une fois, pour tous ses produits.
+   *
+   * En mode automatique (alphabétique ou par prix), le glisser-déposer n'a
+   * plus de sens : l'ordre se recalcule tout seul, à chaque changement de
+   * prix compris.
+   */
+  const changerTriCategorie = async (categoryId: string, sortMode: CategorySortMode) => {
+    const precedent = categories;
+    setCategories(prev => prev.map(c => (c.id === categoryId ? { ...c, sortMode } : c)));
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/categories/${categoryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sortMode }),
+      });
+
+      if (!response.ok) {
+        setCategories(precedent);
+        setMessage('❌ Le tri de la catégorie n\'a pas pu être changé');
+        return;
+      }
+
+      setMessage('✅ Tri de la catégorie mis à jour');
+      setTimeout(() => setMessage(''), 3000);
+    } catch {
+      setCategories(precedent);
+      setMessage('❌ Erreur de connexion au serveur');
     }
   };
 
@@ -462,14 +520,16 @@ export default function ProductsPage() {
   const groupedProducts = filteredProducts.reduce((acc, product) => {
     const categoryId = product.category?.id || 'uncategorized';
     if (!acc[categoryId]) {
+      const categorie = categories.find(c => c.id === categoryId);
       acc[categoryId] = {
         category: product.category || { id: 'uncategorized', name: 'Sans catégorie' },
+        sortMode: categorie?.sortMode || 'MANUAL',
         products: [],
       };
     }
     acc[categoryId].products.push(product);
     return acc;
-  }, {} as Record<string, { category: { id: string; name: string }; products: Product[] }>);
+  }, {} as Record<string, { category: { id: string; name: string }; sortMode: CategorySortMode; products: Product[] }>);
 
   if (loading) {
     return (
@@ -589,25 +649,45 @@ export default function ProductsPage() {
                 strategy={verticalListSortingStrategy}
                 disabled={isReordering}
               >
-                {Object.values(groupedProducts).map(group => (
-                  <div key={group.category.id} className="space-y-3">
-                    <div className="flex items-center gap-3 pt-2">
-                      <h2 className="text-xl font-bold">{group.category.name}</h2>
-                      <span className="text-sm text-gray-400">({group.products.length} produit{group.products.length !== 1 ? 's' : ''})</span>
+                {Object.values(groupedProducts).map(group => {
+                  const produitsAffiches = trierProduits(group.products, group.sortMode);
+                  const triManuel = group.sortMode === 'MANUAL' || group.sortMode === undefined;
+
+                  return (
+                    <div key={group.category.id} className="space-y-3">
+                      <div className="flex items-center gap-3 pt-2">
+                        <h2 className="text-xl font-bold">{group.category.name}</h2>
+                        <span className="text-sm text-gray-400">({group.products.length} produit{group.products.length !== 1 ? 's' : ''})</span>
+                        {group.category.id !== 'uncategorized' && (
+                          <select
+                            value={group.sortMode}
+                            onChange={(e) => changerTriCategorie(group.category.id, e.target.value as CategorySortMode)}
+                            className="ml-auto bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-red-500"
+                            title="Ordre d'affichage des produits, au tableau de bord et sur la vitrine"
+                          >
+                            <option value="MANUAL">Ordre manuel</option>
+                            <option value="ALPHA_ASC">Alphabétique (A→Z)</option>
+                            <option value="ALPHA_DESC">Alphabétique (Z→A)</option>
+                            <option value="PRICE_ASC">Prix croissant</option>
+                            <option value="PRICE_DESC">Prix décroissant</option>
+                          </select>
+                        )}
+                      </div>
+                      <div className="space-y-3 pl-4 border-l-2 border-red-600">
+                        {produitsAffiches.map(product => (
+                          <SortableProduct
+                            key={product.id}
+                            product={product}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                            onToggleAvailability={basculerDisponibilite}
+                            triManuel={triManuel}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div className="space-y-3 pl-4 border-l-2 border-red-600">
-                      {group.products.map(product => (
-                        <SortableProduct
-                          key={product.id}
-                          product={product}
-                          onEdit={handleEdit}
-                          onDelete={handleDelete}
-                          onToggleAvailability={basculerDisponibilite}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </SortableContext>
             </DndContext>
           )}

@@ -506,11 +506,27 @@ model ProductImage {
   @@index([order])
 }
 
+enum CategorySortMode {
+  MANUAL
+  ALPHA_ASC
+  ALPHA_DESC
+  PRICE_ASC
+  PRICE_DESC
+}
+
 model Category {
   id          String  @id @default(cuid())
   storeId     String
   name        String
   displayOrder Int    @default(0)
+
+  /// Comment les produits de cette catégorie s'affichent : dans l'ordre que
+  /// le commerçant a fixé au glisser-déposer (MANUAL, la valeur par défaut,
+  /// qui ne change rien pour les catégories existantes), ou recalculés à la
+  /// volée par nom ou par prix. S'applique à la fois au tableau de bord du
+  /// commerçant et à la vitrine du client — les deux doivent montrer le même
+  /// ordre.
+  sortMode    CategorySortMode @default(MANUAL)
 
   // Relations
   store       Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)

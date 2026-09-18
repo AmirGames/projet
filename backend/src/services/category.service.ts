@@ -5,6 +5,35 @@ export interface CategoryData {
   storeId: string;
   name: string;
   displayOrder?: number;
+  sortMode?: "MANUAL" | "ALPHA_ASC" | "ALPHA_DESC" | "PRICE_ASC" | "PRICE_DESC";
+}
+
+/**
+ * Trie les produits d'une catégorie selon le mode choisi par le commerçant.
+ *
+ * MANUEL (ou absent) laisse l'ordre déjà voulu — celui du glisser-déposer,
+ * porté par `displayOrder` en amont. Les autres modes recalculent l'ordre à
+ * la volée : rien à ranger en base, et le tri suit un changement de prix
+ * sans qu'on ait à y repenser.
+ */
+export function trierProduitsSelonCategorie<T extends { name: string; price: unknown }>(
+  produits: T[],
+  sortMode: string | null | undefined
+): T[] {
+  const prix = (p: T) => Number(p.price);
+
+  switch (sortMode) {
+    case "ALPHA_ASC":
+      return [...produits].sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }));
+    case "ALPHA_DESC":
+      return [...produits].sort((a, b) => b.name.localeCompare(a.name, "fr", { sensitivity: "base" }));
+    case "PRICE_ASC":
+      return [...produits].sort((a, b) => prix(a) - prix(b));
+    case "PRICE_DESC":
+      return [...produits].sort((a, b) => prix(b) - prix(a));
+    default:
+      return produits;
+  }
 }
 
 export class CategoryService {
@@ -54,6 +83,7 @@ export class CategoryService {
         data: {
           name: data.name,
           displayOrder: data.displayOrder,
+          sortMode: data.sortMode,
         },
         include: { products: true },
       });

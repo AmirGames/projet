@@ -4,6 +4,7 @@ import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint } from "../utils/geo";
 import { StoreHoursService } from "../services/store-hours.service";
+import { trierProduitsSelonCategorie } from "../services/category.service";
 import { DeliveryZoneService } from "../services/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";
 import {
@@ -206,7 +207,7 @@ function declinaisonsLisibles(produit: any) {
 }
 
 function regrouperParCategorie(produits: any[]) {
-  const categories = new Map<string, { ordre: number; produits: any[] }>();
+  const categories = new Map<string, { ordre: number; sortMode: string | undefined; produits: any[] }>();
 
   for (const produit of produits) {
     const nom = produit.category?.name || "Autres";
@@ -215,6 +216,7 @@ function regrouperParCategorie(produits: any[]) {
       categories.set(nom, {
         // Sans catégorie, on passe en dernier plutôt qu'en premier.
         ordre: produit.category ? produit.category.displayOrder ?? 0 : Number.MAX_SAFE_INTEGER,
+        sortMode: produit.category?.sortMode,
         produits: [],
       });
     }
@@ -232,7 +234,9 @@ function regrouperParCategorie(produits: any[]) {
     return a[0].localeCompare(b[0], "fr");
   });
 
-  return Object.fromEntries(ordonnees.map(([nom, groupe]) => [nom, groupe.produits]));
+  return Object.fromEntries(
+    ordonnees.map(([nom, groupe]) => [nom, trierProduitsSelonCategorie(groupe.produits, groupe.sortMode)])
+  );
 }
 
 // GET /api/client/stores/:id - Get store details with menu (public)

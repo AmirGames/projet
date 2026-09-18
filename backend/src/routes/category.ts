@@ -16,6 +16,7 @@ const createCategorySchema = z.object({
 const updateCategorySchema = z.object({
   name: z.string().min(2).optional(),
   displayOrder: z.number().int().min(0).optional(),
+  sortMode: z.enum(["MANUAL", "ALPHA_ASC", "ALPHA_DESC", "PRICE_ASC", "PRICE_DESC"]).optional(),
 });
 
 // POST /categories - Create category (protected)
