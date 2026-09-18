@@ -470,6 +470,22 @@ export class StoreHoursService {
     return false;
   }
 
+  /**
+   * La boutique est-elle ouverte à cet instant, tout compris.
+   *
+   * Deux interrupteurs distincts, jamais croisés jusqu'ici : le planning
+   * hebdomadaire (`operatingHours`, un jour fermé, un service terminé) et le
+   * bouton rapide (`isOpen`, une fermeture exceptionnelle — un imprévu, une
+   * rupture de stock totale). Un jour fermé dans le planning doit fermer la
+   * boutique même si le bouton rapide est resté sur « ouverte » ; et le
+   * bouton rapide doit pouvoir fermer même pendant un service normalement
+   * ouvert. Les deux doivent donc être vrais à la fois.
+   */
+  static isOpenNow(store: { operatingHours: unknown; isOpen: boolean }): boolean {
+    if (store.isOpen === false) return false;
+    return this.ouvertMaintenant(lireLesHoraires(store.operatingHours));
+  }
+
   private static validateTimeFormat(start: string, end: string) {
     if (!HEURE.test(start) || !HEURE.test(end)) {
       throw new ApiError(400, "Invalid time format. Use HH:mm", "INVALID_TIME_FORMAT");
