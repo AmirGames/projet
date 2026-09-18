@@ -371,6 +371,12 @@ export default function DeliveryZonesPage() {
             </p>
           )}
 
+          {boutique?.latitude != null && (
+            <p className="text-sm text-slate-400 mb-3">
+              
+            </p>
+          )}
+
           <CarteZones
             latitude={boutique?.latitude ?? null}
             longitude={boutique?.longitude ?? null}
@@ -384,7 +390,12 @@ export default function DeliveryZonesPage() {
                   }
                 : null
             }
-            onPosition={enregistrerPosition}
+            // Le point ne se règle qu'une fois, à la première mise en place :
+            // une fois la boutique située, il devient fixe. Le déplacer plus
+            // tard changerait silencieusement l'adresse de facturation et la
+            // portée de toutes les zones déjà réglées — ça doit passer par les
+            // réglages de la boutique (et par le support, une fois validée).
+            onPosition={boutique?.latitude == null ? enregistrerPosition : undefined}
             onRayon={(km) => setFormData((actuel) => ({ ...actuel, radiusKm: String(km) }))}
           />
         </div>

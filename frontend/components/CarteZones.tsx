@@ -265,7 +265,9 @@ export function CarteZones({
           ? 'Votre boutique n’est pas encore située : renseignez son adresse ou posez-la sur la carte.'
           : zoneActive
             ? 'Tirez la poignée orange pour régler le rayon, et le point de la boutique pour la déplacer.'
-            : 'Déplacez le point de la boutique pour corriger sa position.'}
+            : ' Position fixée d’après l’adresse de la boutique. Pour la corriger, contactez le support depuis vos réglages.'}
+
+            
       </p>
     </div>
   );
