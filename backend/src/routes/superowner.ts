@@ -260,7 +260,8 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
                 commissionPercent: true,
                 commissionAmount: true,
                 tierAtOrder: true,
-                commissionFrozen: true,
+                // commissionFrozen n'existe en base qu'après la migration
+                // add_tax_per_item_and_invoice_seq. On le traite en mémoire.
               },
             })
           : [];
@@ -290,7 +291,9 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
            * sans tierAtOrder. On recalcule avec le taux du plan *d'alors*
            * (tierAtOrder) si disponible, sinon avec le taux du jour.
            */
-          if ((c as any).commissionFrozen) return somme + Number(c.commissionAmount);
+          // commissionFrozen n'est pas en base tant que la migration n'est pas
+          // appliquée. On considère que commissionAmount > 0 signifie qu'il est figé.
+          if (Number(c.commissionAmount) > 0) return somme + Number(c.commissionAmount);
 
           // Ancienne commande : tierAtOrder contient le code du plan qui
           // valait ce jour-là ; tauxParFormule le convertit en taux.
@@ -1035,14 +1038,21 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
       if (storeIds.length > 0) {
         // On récupère les commandes non figées du mois pour recalculer
         // commissionAmount au centime près avant de les figer.
-        const nonFigees = await db.order.findMany({
+        // commissionFrozen n'existe pas encore en base si la migration
+        // add_tax_per_item_and_invoice_seq n'a pas été appliquée.
+        // On récupère toutes les commandes du mois et on filtre en mémoire :
+        // on ne retouche que celles dont commissionAmount = 0 (non figées).
+        const toutesCommandes = await db.order.findMany({
           where: {
             storeId: { in: storeIds },
             createdAt: { gte: debutMois },
-            commissionFrozen: false,
           },
-          select: { id: true, totalAmount: true },
+          select: { id: true, totalAmount: true, commissionAmount: true },
         });
+
+        const nonFigees = toutesCommandes.filter(
+          (c) => Number(c.commissionAmount) === 0
+        );
 
         const taux = Number(ancienTaux.commissionPercent);
 
@@ -1054,7 +1064,7 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
                 commissionPercent: taux,
                 commissionAmount:  Number((Number(c.totalAmount) * taux / 100).toFixed(2)),
                 tierAtOrder:       existante.tier,
-                commissionFrozen:  true,
+                // commissionFrozen sera mis à true une fois la migration appliquée.
               },
             })
           )

@@ -21,10 +21,10 @@ import {
   AlertTriangle,
   ArrowLeft,
   ExternalLink,
+  FileText,
   MapPin,
   Pencil,
   Power,
-  ReceiptText,
   Store as StoreIcon,
 } from 'lucide-react';
 
@@ -580,7 +580,7 @@ export default function FicheBoutiquePage() {
           {/* ── Dernières commandes avec commission ───────────────────── */}
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-3">
             <h2 className="font-semibold text-white flex items-center gap-2">
-              <ReceiptText size={18} className="text-orange-500" />
+              <FileText size={18} className="text-orange-500" />
               Dernières commandes
             </h2>
 
@@ -606,15 +606,25 @@ export default function FicheBoutiquePage() {
                         <td className="py-2 pr-4">{c.customerName || '—'}</td>
                         <td className="py-2 pr-4 text-right">{euro(c.totalAmount)}</td>
                         <td className="py-2 pr-4 text-right">
-                          <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
-                            {c.tierAtOrder || fiche.org.tier}
-                          </span>
+                          {/* tierAtOrder = null sur les commandes antérieures
+                              à la migration. On déduit la formule depuis le
+                              taux pour ne pas afficher "PRO" sur une commande
+                              facturée à 8 % (taux FREE). */}
+                          {c.tierAtOrder ? (
+                            <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
+                              {c.tierAtOrder}
+                            </span>
+                          ) : (
+                            <span className="text-xs bg-gray-700/50 px-2 py-0.5 rounded text-gray-400" title="Formule inconnue — migration non appliquée">
+                              ~{c.commissionPercent.toFixed(0)} %
+                            </span>
+                          )}
                         </td>
                         <td className="py-2 pr-4 text-right">
-                          {c.commissionFrozen ? (
+                          {c.commissionAmount > 0 ? (
                             <span className="text-blue-400">{c.commissionPercent.toFixed(2)} %</span>
                           ) : (
-                            <span className="text-yellow-400" title="Taux figé au changement de plan">
+                            <span className="text-yellow-400" title="Commande non encore facturée">
                               ~{c.commissionPercent.toFixed(2)} %
                             </span>
                           )}
