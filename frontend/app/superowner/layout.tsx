@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -41,6 +42,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   const pathname = usePathname();
   const { logout } = useAuth();
   const { isReady } = useProtectedRoute(true);
+  const t = useTranslations('superowner');
 
   const handleLogout = () => {
     logout();
@@ -52,7 +54,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p>Chargement...</p>
+          <p>{t('loading')}</p>
         </div>
       </div>
     );
@@ -61,47 +63,47 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   const navSections = [
     {
       title: null,
-      items: [{ label: 'Dashboard', icon: Home, href: '/superowner' }],
+      items: [{ label: t('nav.dashboard'), icon: Home, href: '/superowner' }],
     },
     {
-      title: 'Activité',
+      title: t('nav.sectionActivity'),
       items: [
-        { label: 'Organisations', icon: Building2, href: '/superowner/organizations' },
-        { label: 'Boutiques', icon: Store, href: '/superowner/stores' },
-        { label: 'Livreurs', icon: Truck, href: '/superowner/drivers' },
-        { label: 'Versements', icon: Banknote, href: '/superowner/payouts' },
-        { label: 'Analytics', icon: TrendingUp, href: '/superowner/analytics' },
-        { label: 'Facturation', icon: CreditCard, href: '/superowner/billing' },
-        { label: 'Formules', icon: Layers, href: '/superowner/formules' },
-        { label: 'Rapports', icon: BarChart3, href: '/superowner/financial-reports' },
-        { label: 'Exports', icon: Download, href: '/superowner/exports' },
+        { label: t('nav.organizations'), icon: Building2, href: '/superowner/organizations' },
+        { label: t('nav.stores'), icon: Store, href: '/superowner/stores' },
+        { label: t('nav.drivers'), icon: Truck, href: '/superowner/drivers' },
+        { label: t('nav.payouts'), icon: Banknote, href: '/superowner/payouts' },
+        { label: t('nav.analytics'), icon: TrendingUp, href: '/superowner/analytics' },
+        { label: t('nav.billing'), icon: CreditCard, href: '/superowner/billing' },
+        { label: t('nav.formules'), icon: Layers, href: '/superowner/formules' },
+        { label: t('nav.financialReports'), icon: BarChart3, href: '/superowner/financial-reports' },
+        { label: t('nav.exports'), icon: Download, href: '/superowner/exports' },
       ],
     },
     {
-      title: 'Support',
+      title: t('nav.sectionSupport'),
       items: [
-        { label: 'Tickets', icon: LifeBuoy, href: '/superowner/support-tickets' },
-        { label: 'Annonces', icon: Megaphone, href: '/superowner/notifications' },
-        { label: 'Administrateurs', icon: Users, href: '/superowner/user-management' },
+        { label: t('nav.supportTickets'), icon: LifeBuoy, href: '/superowner/support-tickets' },
+        { label: t('nav.notifications'), icon: Megaphone, href: '/superowner/notifications' },
+        { label: t('nav.userManagement'), icon: Users, href: '/superowner/user-management' },
       ],
     },
     {
-      title: 'Plateforme',
+      title: t('nav.sectionPlatform'),
       items: [
-        { label: 'Clés API', icon: Key, href: '/superowner/api-keys' },
-        { label: 'Webhooks', icon: Webhook, href: '/superowner/webhooks' },
-        { label: 'Configuration', icon: Settings, href: '/superowner/system-config' },
-        { label: 'Avancé', icon: Sliders, href: '/superowner/advanced-settings' },
+        { label: t('nav.apiKeys'), icon: Key, href: '/superowner/api-keys' },
+        { label: t('nav.webhooks'), icon: Webhook, href: '/superowner/webhooks' },
+        { label: t('nav.systemConfig'), icon: Settings, href: '/superowner/system-config' },
+        { label: t('nav.advancedSettings'), icon: Sliders, href: '/superowner/advanced-settings' },
       ],
     },
     {
-      title: 'Supervision',
+      title: t('nav.sectionSupervision'),
       items: [
-        { label: 'Santé système', icon: Activity, href: '/superowner/health' },
-        { label: 'Données', icon: Database, href: '/superowner/data-management' },
-        { label: 'Sécurité', icon: Shield, href: '/superowner/security-audit' },
-        { label: 'Journal', icon: FileText, href: '/superowner/audit-logs' },
-        { label: 'Connexions', icon: LogIn, href: '/superowner/access-logs' },
+        { label: t('nav.health'), icon: Activity, href: '/superowner/health' },
+        { label: t('nav.dataManagement'), icon: Database, href: '/superowner/data-management' },
+        { label: t('nav.securityAudit'), icon: Shield, href: '/superowner/security-audit' },
+        { label: t('nav.auditLogs'), icon: FileText, href: '/superowner/audit-logs' },
+        { label: t('nav.accessLogs'), icon: LogIn, href: '/superowner/access-logs' },
       ],
     },
   ];
@@ -120,7 +122,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
             <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center font-bold">
               <Lock size={20} />
             </div>
-            {sidebarOpen && <span className="font-bold text-lg">SuperOwner</span>}
+            {sidebarOpen && <span className="font-bold text-lg">{t('brand')}</span>}
           </div>
         </div>
 
@@ -163,7 +165,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-900/20 transition-colors text-red-400"
           >
             <LogOut size={20} />
-            {sidebarOpen && <span>Déconnexion</span>}
+            {sidebarOpen && <span>{t('logout')}</span>}
           </button>
         </div>
       </aside>
@@ -181,7 +183,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-400 flex items-center gap-2">
               <Lock size={16} className="text-red-600" />
-              SuperOwner - Gestion Complète
+              {t('headerTitle')}
             </div>
             {/* La cloche suit la plateforme partout : un ticket ouvert pendant
                 qu'on consulte les journaux doit se voir sans changer de page. */}

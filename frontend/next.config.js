@@ -1,3 +1,12 @@
+const createNextIntlPlugin = require("next-intl/plugin");
+
+// La locale ne vit pas dans l'URL (pas de /fr/, /en/) : trois domaines se
+// partagent déjà le routage (voir middleware.ts) et ajouter un préfixe de
+// langue par-dessus aurait voulu dire déplacer les 80 et quelques pages sous
+// un segment [locale]. La locale se lit plutôt dans un cookie, voir
+// i18n/request.ts.
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -83,4 +92,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withNextIntl(nextConfig);

@@ -2,16 +2,19 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { LogOut, Menu } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { espaceDAccueil } from '@/lib/espace-utilisateur';
 
 export default function Navbar() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const t = useTranslations('nav');
 
   // Un seul lien « Dashboard », qui mène à l'espace correspondant au compte :
   // /dashboard renvoyait vers l'ancienne interface commerçant.
@@ -39,26 +42,27 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
+            <LanguageSwitcher />
             {!user ? (
               <>
                 <Link href="/restaurants" className="text-gray-300 hover:text-white transition">
-                  Restaurants
+                  {t('restaurants')}
                 </Link>
                 <Link href="/login" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">
-                  Connexion
+                  {t('login')}
                 </Link>
                 <Link href="/signup" className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition font-medium">
-                  S'inscrire
+                  {t('signup')}
                 </Link>
               </>
             ) : (
               <>
                 <Link href={lienEspace} className="text-gray-300 hover:text-white transition">
-                  Dashboard
+                  {t('dashboard')}
                 </Link>
                 {user.isSuperOwner && (
                   <Link href="/superowner" className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition font-medium text-sm">
-                    👑 Super Owner
+                    👑 {t('superOwner')}
                   </Link>
                 )}
                 <NotificationBell />
@@ -67,7 +71,7 @@ export default function Navbar() {
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition text-white"
                 >
                   <LogOut size={18} />
-                  Logout
+                  {t('logout')}
                 </button>
               </>
             )}
@@ -85,25 +89,28 @@ export default function Navbar() {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="md:hidden pb-4 space-y-2">
+            <div className="px-4 py-2">
+              <LanguageSwitcher />
+            </div>
             {!user ? (
               <>
                 <Link
                   href="/restaurants"
                   className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
                 >
-                  Restaurants
+                  {t('restaurants')}
                 </Link>
                 <Link
                   href="/login"
                   className="block px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium"
                 >
-                  Connexion
+                  {t('login')}
                 </Link>
                 <Link
                   href="/signup"
                   className="block px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium"
                 >
-                  S'inscrire
+                  {t('signup')}
                 </Link>
               </>
             ) : (
@@ -112,14 +119,14 @@ export default function Navbar() {
                   href={lienEspace}
                   className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
                 >
-                  Dashboard
+                  {t('dashboard')}
                 </Link>
                 {user.isSuperOwner && (
                   <Link
                     href="/superowner"
                     className="block px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-white"
                   >
-                    👑 Super Owner
+                    👑 {t('superOwner')}
                   </Link>
                 )}
                 <button
@@ -127,7 +134,7 @@ export default function Navbar() {
                   className="w-full flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
                 >
                   <LogOut size={18} />
-                  Logout
+                  {t('logout')}
                 </button>
               </>
             )}
