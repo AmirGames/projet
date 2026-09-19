@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Database, Clock, Download, RotateCcw, Trash2 } from 'lucide-react';
 
 interface DataStats {
@@ -26,6 +27,9 @@ interface DataResponse {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function DataManagementPage() {
+  const t = useTranslations('superownerDataManagement');
+  const locale = useLocale();
+  const localeFormat = locale === 'en' ? 'en-US' : 'fr-FR';
   const [data, setData] = useState<DataResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -45,13 +49,13 @@ export default function DataManagementPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.error || 'Erreur lors du chargement des données');
+        throw new Error(data?.error || t('loadError'));
       }
       const response = await res.json();
       setData(response);
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+      setError(err instanceof Error ? err.message : t('genericError'));
     } finally {
       setLoading(false);
     }
@@ -68,21 +72,18 @@ export default function DataManagementPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.error || 'Erreur lors de la création de la sauvegarde');
+        throw new Error(data?.error || t('createError'));
       }
       await fetchData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+      setError(err instanceof Error ? err.message : t('genericError'));
     } finally {
       setCreating(false);
     }
   };
 
   const actionSauvegarde = async (id: string, action: 'restore' | 'delete') => {
-    const confirmation =
-      action === 'restore'
-        ? 'Réinjecter le contenu de cette sauvegarde ? Les enregistrements déjà présents seront conservés tels quels.'
-        : 'Supprimer définitivement cette sauvegarde et son fichier ?';
+    const confirmation = action === 'restore' ? t('confirmRestore') : t('confirmDelete');
 
     if (!confirm(confirmation)) return;
 
@@ -95,13 +96,13 @@ export default function DataManagementPage() {
 
       if (!res.ok) {
         const corps = await res.json().catch(() => null);
-        throw new Error(corps?.error || "L'opération a échoué");
+        throw new Error(corps?.error || t('operationFailed'));
       }
 
       setError('');
       fetchData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "L'opération a échoué");
+      setError(err instanceof Error ? err.message : t('operationFailed'));
     }
   };
 
@@ -114,7 +115,7 @@ export default function DataManagementPage() {
 
       if (!res.ok) {
         const corps = await res.json().catch(() => null);
-        throw new Error(corps?.error || 'Téléchargement impossible');
+        throw new Error(corps?.error || t('downloadFailed'));
       }
 
       // Le fichier arrive via une requête authentifiée : on le matérialise ici.
@@ -126,7 +127,7 @@ export default function DataManagementPage() {
       lien.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Téléchargement impossible');
+      setError(err instanceof Error ? err.message : t('downloadFailed'));
     }
   };
 
@@ -152,9 +153,9 @@ export default function DataManagementPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <Database className="w-8 h-8" />
-          Gestion des Données
+          {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">Gestion des sauvegardes et des statistiques de base de données</p>
+        <p className="text-gray-400 mt-2">{t('subtitle')}</p>
       </div>
 
       {error && (
@@ -167,44 +168,44 @@ export default function DataManagementPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-2">Enregistrements Totaux</p>
-              <p className="text-3xl font-bold text-white">{data.stats.totalRecords.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 mt-2">Tous les types</p>
+              <p className="text-gray-400 text-sm mb-2">{t('totalRecords')}</p>
+              <p className="text-3xl font-bold text-white">{data.stats.totalRecords.toLocaleString(localeFormat)}</p>
+              <p className="text-xs text-gray-500 mt-2">{t('allTypes')}</p>
             </div>
 
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-2">Taille BD</p>
+              <p className="text-gray-400 text-sm mb-2">{t('dbSize')}</p>
               <p className="text-3xl font-bold text-blue-400">{data.stats.databaseSize}</p>
-              <p className="text-xs text-gray-500 mt-2">Stockage utilisé</p>
+              <p className="text-xs text-gray-500 mt-2">{t('storageUsed')}</p>
             </div>
 
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-2">Dernière Sauvegarde</p>
-              <p className="text-sm text-white font-medium">{new Date(data.stats.lastBackup).toLocaleDateString('fr-FR')}</p>
-              <p className="text-xs text-gray-500 mt-2">{new Date(data.stats.lastBackup).toLocaleTimeString('fr-FR')}</p>
+              <p className="text-gray-400 text-sm mb-2">{t('lastBackup')}</p>
+              <p className="text-sm text-white font-medium">{new Date(data.stats.lastBackup).toLocaleDateString(localeFormat)}</p>
+              <p className="text-xs text-gray-500 mt-2">{new Date(data.stats.lastBackup).toLocaleTimeString(localeFormat)}</p>
             </div>
 
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-2">Sauvegardes</p>
+              <p className="text-gray-400 text-sm mb-2">{t('backups')}</p>
               <p className="text-3xl font-bold text-green-400">{data.stats.backupCount}</p>
-              <p className="text-xs text-gray-500 mt-2">Disponibles</p>
+              <p className="text-xs text-gray-500 mt-2">{t('available')}</p>
             </div>
           </div>
 
           <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">Sauvegardes Récentes</h2>
+              <h2 className="text-xl font-bold text-white">{t('recentBackups')}</h2>
               <button
                 onClick={createBackup}
                 disabled={creating}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition font-medium"
               >
-                {creating ? 'Création...' : 'Nouvelle Sauvegarde'}
+                {creating ? t('creating') : t('newBackup')}
               </button>
             </div>
 
             {data.backups.length === 0 ? (
-              <p className="text-gray-400">Aucune sauvegarde trouvée</p>
+              <p className="text-gray-400">{t('empty')}</p>
             ) : (
               <div className="space-y-3">
                 {data.backups.map((backup) => (
@@ -213,7 +214,7 @@ export default function DataManagementPage() {
                       <p className="font-medium text-white">{backup.name}</p>
                       <div className="flex items-center gap-2 mt-1 text-sm text-gray-400">
                         <Clock size={14} />
-                        <span>{new Date(backup.createdAt).toLocaleDateString('fr-FR')}</span>
+                        <span>{new Date(backup.createdAt).toLocaleDateString(localeFormat)}</span>
                         <span>•</span>
                         <span>{backup.size}</span>
                       </div>
@@ -226,14 +227,14 @@ export default function DataManagementPage() {
                         <>
                           <button
                             onClick={() => telecharger(backup.id, backup.name)}
-                            title="Télécharger"
+                            title={t('download')}
                             className="p-2 bg-gray-700 hover:bg-gray-600 rounded"
                           >
                             <Download size={16} />
                           </button>
                           <button
                             onClick={() => actionSauvegarde(backup.id, 'restore')}
-                            title="Restaurer"
+                            title={t('restore')}
                             className="p-2 bg-blue-600 hover:bg-blue-700 rounded"
                           >
                             <RotateCcw size={16} />
@@ -242,7 +243,7 @@ export default function DataManagementPage() {
                       )}
                       <button
                         onClick={() => actionSauvegarde(backup.id, 'delete')}
-                        title="Supprimer"
+                        title={t('delete')}
                         className="p-2 bg-red-600 hover:bg-red-700 rounded"
                       >
                         <Trash2 size={16} />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface AuditEvent {
@@ -31,6 +32,9 @@ interface AuditResponse {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function SecurityAuditPage() {
+  const t = useTranslations('superownerSecurityAudit');
+  const locale = useLocale();
+  const localeFormat = locale === 'en' ? 'en-US' : 'fr-FR';
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [summary, setSummary] = useState({ totalEvents: 0, criticalEvents: 0, lastEvent: '' });
   const [loading, setLoading] = useState(true);
@@ -56,14 +60,14 @@ export default function SecurityAuditPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors du chargement des événements d\'audit');
+      if (!res.ok) throw new Error(t('loadError'));
       const data: AuditResponse = await res.json();
       setEvents(data.events);
       setSummary(data.summary);
       setTotal(data.pagination.total);
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+      setError(err instanceof Error ? err.message : t('genericError'));
     } finally {
       setLoading(false);
     }
@@ -93,9 +97,9 @@ export default function SecurityAuditPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <Shield className="w-8 h-8" />
-          Audit de Sécurité
+          {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">Événements de sécurité et activités du système</p>
+        <p className="text-gray-400 mt-2">{t('subtitle')}</p>
       </div>
 
       {error && (
@@ -108,29 +112,29 @@ export default function SecurityAuditPage() {
         <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 flex items-start gap-3">
           <AlertTriangle size={20} className="text-red-400 mt-1 flex-shrink-0" />
           <div>
-            <p className="font-bold text-red-400">{summary.criticalEvents} Événement(s) Critique(s)</p>
-            <p className="text-sm text-red-400/80">Attention requise</p>
+            <p className="font-bold text-red-400">{t('criticalEvents', { count: summary.criticalEvents })}</p>
+            <p className="text-sm text-red-400/80">{t('attentionRequired')}</p>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Total des Événements</p>
+          <p className="text-gray-400 text-sm mb-2">{t('totalEvents')}</p>
           <p className="text-3xl font-bold text-white">{summary.totalEvents}</p>
-          <p className="text-xs text-gray-500 mt-2">Enregistrés</p>
+          <p className="text-xs text-gray-500 mt-2">{t('recorded')}</p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Événements Critiques</p>
+          <p className="text-gray-400 text-sm mb-2">{t('criticalEventsLabel')}</p>
           <p className="text-3xl font-bold text-red-400">{summary.criticalEvents}</p>
-          <p className="text-xs text-gray-500 mt-2">Nécessitant attention</p>
+          <p className="text-xs text-gray-500 mt-2">{t('requiringAttention')}</p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Dernier Événement</p>
-          <p className="text-sm font-medium text-white">{new Date(summary.lastEvent).toLocaleDateString('fr-FR')}</p>
-          <p className="text-xs text-gray-500 mt-2">{new Date(summary.lastEvent).toLocaleTimeString('fr-FR')}</p>
+          <p className="text-gray-400 text-sm mb-2">{t('lastEvent')}</p>
+          <p className="text-sm font-medium text-white">{new Date(summary.lastEvent).toLocaleDateString(localeFormat)}</p>
+          <p className="text-xs text-gray-500 mt-2">{new Date(summary.lastEvent).toLocaleTimeString(localeFormat)}</p>
         </div>
       </div>
 
@@ -141,7 +145,7 @@ export default function SecurityAuditPage() {
       ) : events.length === 0 ? (
         <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700/50">
           <CheckCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Aucun événement trouvé</p>
+          <p className="text-gray-400">{t('empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -157,13 +161,13 @@ export default function SecurityAuditPage() {
                 </span>
               </div>
               <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
-                <span>Acteur: {event.actor}</span>
+                <span>{t('actor')}: {event.actor}</span>
                 <span>•</span>
-                <span>Cible: {event.target}</span>
+                <span>{t('target')}: {event.target}</span>
                 <span>•</span>
                 <span className={getStatusColor(event.status)}>{event.status}</span>
                 <span>•</span>
-                <span>{new Date(event.createdAt).toLocaleDateString('fr-FR')}</span>
+                <span>{new Date(event.createdAt).toLocaleDateString(localeFormat)}</span>
               </div>
             </div>
           ))}
@@ -172,7 +176,7 @@ export default function SecurityAuditPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur {total}
+          {t('showingRange', { from: offset + 1, to: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
@@ -180,14 +184,14 @@ export default function SecurityAuditPage() {
             disabled={offset === 0}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            Précédent
+            {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            Suivant
+            {t('next')}
           </button>
         </div>
       </div>

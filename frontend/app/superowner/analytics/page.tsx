@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { TrendingUp } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -29,6 +30,9 @@ interface AnalyticsResponse {
 type TimeRange = '7days' | '30days' | '90days' | '1year';
 
 export default function AnalyticsDashboard() {
+  const t = useTranslations('superownerAnalytics');
+  const locale = useLocale();
+  const euro = (v: number) => (v || 0).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' });
   const [data, setData] = useState<AnalyticsData[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -47,13 +51,13 @@ export default function AnalyticsDashboard() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors du chargement des analytics');
+      if (!res.ok) throw new Error(t('loadError'));
       const analyticsData: AnalyticsResponse = await res.json();
       setData(analyticsData.data);
       setSummary(analyticsData.summary);
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+      setError(err instanceof Error ? err.message : t('genericError'));
     } finally {
       setLoading(false);
     }
@@ -63,15 +67,22 @@ export default function AnalyticsDashboard() {
     return growth >= 0 ? 'text-green-400' : 'text-red-400';
   };
 
+  const ranges: { key: TimeRange; label: string }[] = [
+    { key: '7days', label: t('range7days') },
+    { key: '30days', label: t('range30days') },
+    { key: '90days', label: t('range90days') },
+    { key: '1year', label: t('range1year') },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center gap-2">
             <TrendingUp className="w-8 h-8" />
-            Analytics Avancées
+            {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">Analyse détaillée des performances de la plateforme</p>
+          <p className="text-gray-400 mt-2">{t('subtitle')}</p>
         </div>
       </div>
 
@@ -82,46 +93,19 @@ export default function AnalyticsDashboard() {
       )}
 
       <div className="flex gap-2">
-        <button
-          onClick={() => setTimeRange('7days')}
-          className={`px-4 py-2 rounded transition ${
-            timeRange === '7days'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
-        >
-          7 jours
-        </button>
-        <button
-          onClick={() => setTimeRange('30days')}
-          className={`px-4 py-2 rounded transition ${
-            timeRange === '30days'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
-        >
-          30 jours
-        </button>
-        <button
-          onClick={() => setTimeRange('90days')}
-          className={`px-4 py-2 rounded transition ${
-            timeRange === '90days'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
-        >
-          90 jours
-        </button>
-        <button
-          onClick={() => setTimeRange('1year')}
-          className={`px-4 py-2 rounded transition ${
-            timeRange === '1year'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
-        >
-          1 an
-        </button>
+        {ranges.map((range) => (
+          <button
+            key={range.key}
+            onClick={() => setTimeRange(range.key)}
+            className={`px-4 py-2 rounded transition ${
+              timeRange === range.key
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            {range.label}
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -132,60 +116,60 @@ export default function AnalyticsDashboard() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">Revenu Total</p>
+              <p className="text-gray-400 text-sm mb-1">{t('totalRevenue')}</p>
               <p className="text-3xl font-bold text-white">
-                {(summary?.totalRevenue || 0).toFixed(2)} €
+                {euro(summary?.totalRevenue)}
               </p>
-              <p className="text-xs text-gray-500 mt-2">Période sélectionnée</p>
+              <p className="text-xs text-gray-500 mt-2">{t('selectedPeriod')}</p>
             </div>
 
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">Transactions</p>
+              <p className="text-gray-400 text-sm mb-1">{t('transactions')}</p>
               <p className="text-3xl font-bold text-white">{summary?.totalTransactions || 0}</p>
-              <p className="text-xs text-gray-500 mt-2">Nombre total</p>
+              <p className="text-xs text-gray-500 mt-2">{t('totalCount')}</p>
             </div>
 
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">Panier Moyen</p>
+              <p className="text-gray-400 text-sm mb-1">{t('averageCart')}</p>
               <p className="text-3xl font-bold text-white">
-                {(summary?.averageOrderValue || 0).toFixed(2)} €
+                {euro(summary?.averageOrderValue)}
               </p>
               <p className="text-xs text-gray-500 mt-2">AOV</p>
             </div>
 
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">Taux de Conversion</p>
+              <p className="text-gray-400 text-sm mb-1">{t('conversionRate')}</p>
               <p className="text-3xl font-bold text-white">{(summary?.conversionRate || 0).toFixed(2)}%</p>
-              <p className="text-xs text-gray-500 mt-2">Conversion rate</p>
+              <p className="text-xs text-gray-500 mt-2">{t('conversionRate')}</p>
             </div>
           </div>
 
           <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
             <div className="border-b border-gray-700 p-6">
-              <h2 className="text-xl font-bold text-white">Évolution Journalière</h2>
+              <h2 className="text-xl font-bold text-white">{t('dailyEvolution')}</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-700/50 border-b border-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold">Période</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold">Revenu</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold">Frais</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold">Utilisateurs</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold">Transactions</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold">AOV</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold">Croissance</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">{t('colPeriod')}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">{t('colRevenue')}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">{t('colFees')}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">{t('colUsers')}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">{t('colTransactions')}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">{t('colAov')}</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold">{t('colGrowth')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
                   {data.map((item, idx) => (
                     <tr key={idx} className="hover:bg-gray-700/50 transition">
                       <td className="px-6 py-4 text-sm">{item.period}</td>
-                      <td className="px-6 py-4 text-sm">{item.totalRevenue.toFixed(2)} €</td>
-                      <td className="px-6 py-4 text-sm">{item.platformFees.toFixed(2)} €</td>
+                      <td className="px-6 py-4 text-sm">{euro(item.totalRevenue)}</td>
+                      <td className="px-6 py-4 text-sm">{euro(item.platformFees)}</td>
                       <td className="px-6 py-4 text-sm">{item.activeUsers}</td>
                       <td className="px-6 py-4 text-sm">{item.transactions}</td>
-                      <td className="px-6 py-4 text-sm">{item.averageOrderValue.toFixed(2)} €</td>
+                      <td className="px-6 py-4 text-sm">{euro(item.averageOrderValue)}</td>
                       <td className={`px-6 py-4 text-sm font-semibold ${getGrowthColor(item.growthRate)}`}>
                         {item.growthRate >= 0 ? '+' : ''}{item.growthRate.toFixed(2)}%
                       </td>

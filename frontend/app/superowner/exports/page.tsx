@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { FileJson, FileText } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function ExportsPage() {
+  const t = useTranslations('superownerExports');
   const [loading, setLoading] = useState('');
   const [message, setMessage] = useState('');
 
@@ -34,11 +36,11 @@ export default function ExportsPage() {
         downloadFile([data], `stats-${new Date().toISOString().split('T')[0]}`, format);
       }
 
-      setMessage('✅ Fichier exporté avec succès!');
+      setMessage(t('success'));
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Erreur:', error);
-      setMessage('❌ Erreur lors de l\'export');
+      setMessage(t('error'));
       setTimeout(() => setMessage(''), 3000);
     } finally {
       setLoading('');
@@ -85,8 +87,8 @@ export default function ExportsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Export de données</h1>
-        <p className="text-gray-400 mt-1">Télécharger les données du système</p>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
       </div>
 
       {/* Message */}
@@ -101,8 +103,8 @@ export default function ExportsPage() {
         {/* Merchants Export */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
           <div>
-            <h3 className="text-lg font-bold mb-2">📊 Commerçants</h3>
-            <p className="text-gray-400 text-sm">Données de tous les commerçants</p>
+            <h3 className="text-lg font-bold mb-2">{t('merchantsTitle')}</h3>
+            <p className="text-gray-400 text-sm">{t('merchantsSubtitle')}</p>
           </div>
 
           <div className="flex gap-2">
@@ -128,8 +130,8 @@ export default function ExportsPage() {
         {/* Commissions Export */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
           <div>
-            <h3 className="text-lg font-bold mb-2">💰 Commissions</h3>
-            <p className="text-gray-400 text-sm">Historique des commissions</p>
+            <h3 className="text-lg font-bold mb-2">{t('commissionsTitle')}</h3>
+            <p className="text-gray-400 text-sm">{t('commissionsSubtitle')}</p>
           </div>
 
           <div className="flex gap-2">
@@ -155,8 +157,8 @@ export default function ExportsPage() {
         {/* Stats Export */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
           <div>
-            <h3 className="text-lg font-bold mb-2">📈 Statistiques</h3>
-            <p className="text-gray-400 text-sm">Vue d'ensemble du système</p>
+            <h3 className="text-lg font-bold mb-2">{t('statsTitle')}</h3>
+            <p className="text-gray-400 text-sm">{t('statsSubtitle')}</p>
           </div>
 
           <div className="flex gap-2">
@@ -182,8 +184,8 @@ export default function ExportsPage() {
         {/* Audit Logs Export */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
           <div>
-            <h3 className="text-lg font-bold mb-2">📝 Journaux d'audit</h3>
-            <p className="text-gray-400 text-sm">Historique des actions admin</p>
+            <h3 className="text-lg font-bold mb-2">{t('auditTitle')}</h3>
+            <p className="text-gray-400 text-sm">{t('auditSubtitle')}</p>
           </div>
 
           <div className="flex gap-2">
@@ -202,15 +204,14 @@ export default function ExportsPage() {
               JSON
             </button>
           </div>
-          <p className="text-xs text-gray-500">Voir la page Journaux d'audit</p>
+          <p className="text-xs text-gray-500">{t('auditNote')}</p>
         </div>
       </div>
 
       {/* Info */}
       <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
         <p className="text-blue-400 text-sm">
-          💡 Les exports contiennent toutes les données de la catégorie sélectionnée.
-          Les formats CSV et JSON sont compatibles avec Excel et les outils d'analyse.
+          {t('infoNote')}
         </p>
       </div>
     </div>

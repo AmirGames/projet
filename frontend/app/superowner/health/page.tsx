@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Activity,
   AlertTriangle,
@@ -44,17 +45,19 @@ const ICONES: Record<string, JSX.Element> = {
   PANNE: <XCircle size={20} className="text-red-400" />,
 };
 
-const ETIQUETTES: Record<string, string> = {
-  OK: 'Rien à signaler',
-  ATTENTION: 'À surveiller',
-  PANNE: 'À traiter',
-};
-
 export default function SanteSystemePage() {
+  const t = useTranslations('superownerHealth');
+  const locale = useLocale();
   const [sante, setSante] = useState<{ score: number; controles: Controle[] } | null>(null);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState('');
   const [releveA, setReleveA] = useState<Date | null>(null);
+
+  const ETIQUETTES: Record<string, string> = {
+    OK: t('statusOk'),
+    ATTENTION: t('statusWarning'),
+    PANNE: t('statusDown'),
+  };
 
   const charger = useCallback(async () => {
     setChargement(true);
@@ -67,7 +70,7 @@ export default function SanteSystemePage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Impossible de relever la santé de la plateforme');
+        setErreur(donnees.error || t('loadError'));
         return;
       }
 
@@ -75,11 +78,11 @@ export default function SanteSystemePage() {
       setReleveA(new Date());
       setErreur('');
     } catch {
-      setErreur('Le serveur ne répond pas');
+      setErreur(t('serverUnreachable'));
     } finally {
       setChargement(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     charger();
@@ -93,8 +96,8 @@ export default function SanteSystemePage() {
         <div className="flex items-center gap-4">
           <Link
             href="/superowner"
-            aria-label="Retour"
-            title="Retour au tableau de bord"
+            aria-label={t('back')}
+            title={t('backToDashboard')}
             className="p-2 hover:bg-gray-800 rounded-lg transition"
           >
             <ArrowLeft size={20} />
@@ -102,10 +105,10 @@ export default function SanteSystemePage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Activity size={28} className="text-red-500" />
-              Santé système
+              {t('title')}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              Cinq relevés, chacun valant un nombre de points fixe.
+              {t('subtitle')}
             </p>
           </div>
         </div>
@@ -117,7 +120,7 @@ export default function SanteSystemePage() {
           className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 hover:bg-gray-700 rounded-lg transition disabled:opacity-60"
         >
           <RefreshCw size={16} className={chargement ? 'animate-spin' : ''} />
-          {chargement ? 'Relevé…' : 'Relever à nouveau'}
+          {chargement ? t('refreshing') : t('refresh')}
         </button>
       </div>
 
@@ -132,7 +135,7 @@ export default function SanteSystemePage() {
           <section className="bg-gray-800 border border-gray-700 rounded-lg p-6">
             <div className="flex items-baseline gap-3 flex-wrap">
               <p className={`text-5xl font-bold ${teinteTexte(sante.score)}`}>{sante.score}%</p>
-              <p className="text-gray-400">{sante.score} points sur 100</p>
+              <p className="text-gray-400">{t('pointsOutOf100', { score: sante.score })}</p>
             </div>
 
             <div className="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
@@ -144,11 +147,9 @@ export default function SanteSystemePage() {
 
             <p className="text-sm text-gray-500 mt-3">
               {aTraiter.length === 0
-                ? 'Tous les relevés sont au vert.'
-                : `${aTraiter.length} relevé${aTraiter.length > 1 ? 's' : ''} ${
-                    aTraiter.length > 1 ? 'demandent' : 'demande'
-                  } votre attention.`}
-              {releveA && ` Relevé à ${releveA.toLocaleTimeString('fr-FR')}.`}
+                ? t('allGreen')
+                : t('needsAttention', { count: aTraiter.length })}
+              {releveA && t('measuredAt', { time: releveA.toLocaleTimeString(locale === 'en' ? 'en-US' : 'fr-FR') })}
             </p>
           </section>
 
@@ -161,7 +162,7 @@ export default function SanteSystemePage() {
                   <div className="flex items-baseline justify-between gap-3 flex-wrap">
                     <h2 className="font-bold text-lg">{controle.libelle}</h2>
                     <span className="text-sm text-gray-400">
-                      {controle.pointsObtenus} / {controle.poids} points
+                      {t('pointsEarned', { earned: controle.pointsObtenus, weight: controle.poids })}
                     </span>
                   </div>
 
@@ -191,13 +192,12 @@ export default function SanteSystemePage() {
           </section>
 
           <p className="text-sm text-gray-500">
-            Un relevé sans rien à mesurer — aucune livraison, aucun webhook sur les dernières
-            24 heures — rend tous ses points : on mesure ce qui existe.
+            {t('footerNote')}
           </p>
         </>
       )}
 
-      {!sante && chargement && <p className="text-gray-400">Relevé en cours…</p>}
+      {!sante && chargement && <p className="text-gray-400">{t('loadingLabel')}</p>}
     </div>
   );
 }
