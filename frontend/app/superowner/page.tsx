@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Users, DollarSign, AlertCircle, Server, Lock, ChevronRight } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -31,6 +32,7 @@ const teinteFond = (score: number) =>
       : 'bg-red-600/20 text-red-400';
 
 export default function SuperOwnerDashboard() {
+  const t = useTranslations('superownerDashboard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -55,7 +57,7 @@ export default function SuperOwnerDashboard() {
     }
   };
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
+  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
 
   return (
     <div className="space-y-6">
@@ -63,9 +65,9 @@ export default function SuperOwnerDashboard() {
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Lock size={32} className="text-red-600" />
-          Dashboard Superowner
+          {t('title')}
         </h1>
-        <p className="text-gray-400 mt-1">Vue d'ensemble complète de la plateforme</p>
+        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
       </div>
 
       {/* Critical Alerts */}
@@ -74,8 +76,8 @@ export default function SuperOwnerDashboard() {
           <div className="flex items-start gap-3">
             <AlertCircle size={24} className="text-red-400 mt-1" />
             <div>
-              <p className="font-bold text-red-400">{stats.criticalAlerts} Alerte(s) Critique(s)</p>
-              <p className="text-sm text-red-400/80">Attention requise immédiate</p>
+              <p className="font-bold text-red-400">{t('criticalAlerts', { count: stats.criticalAlerts })}</p>
+              <p className="text-sm text-red-400/80">{t('criticalAlertsSubtitle')}</p>
             </div>
           </div>
         </div>
@@ -94,7 +96,7 @@ export default function SuperOwnerDashboard() {
               </span>
             ) : null}
           </div>
-          <p className="text-gray-400 text-sm mb-1">Revenu Total</p>
+          <p className="text-gray-400 text-sm mb-1">{t('totalRevenue')}</p>
           <p className="text-3xl font-bold">{euro((stats?.totalRevenue || 0), 0)}</p>
         </div>
 
@@ -104,7 +106,7 @@ export default function SuperOwnerDashboard() {
               <DollarSign size={24} />
             </div>
           </div>
-          <p className="text-gray-400 text-sm mb-1">Frais Plateforme</p>
+          <p className="text-gray-400 text-sm mb-1">{t('platformFee')}</p>
           <p className="text-3xl font-bold text-blue-400">{euro((stats?.platformFee || 0), 0)}</p>
         </div>
 
@@ -114,14 +116,14 @@ export default function SuperOwnerDashboard() {
               <Users size={24} />
             </div>
           </div>
-          <p className="text-gray-400 text-sm mb-1">Organisations</p>
+          <p className="text-gray-400 text-sm mb-1">{t('organizations')}</p>
           <p className="text-3xl font-bold text-purple-400">{stats?.activeOrganizations || 0}</p>
         </div>
 
         {/* Le chiffre seul ici ; ce qui le compose est sur sa propre page. */}
         <Link
           href="/superowner/health"
-          title="Voir le détail de la santé système"
+          title={t('systemHealthTitle')}
           className="bg-gray-800 border border-gray-700 rounded-lg p-6 block hover:border-gray-500 transition"
         >
           <div className="flex justify-between items-start mb-4">
@@ -132,7 +134,7 @@ export default function SuperOwnerDashboard() {
             </div>
             <ChevronRight size={18} className="text-gray-500" />
           </div>
-          <p className="text-gray-400 text-sm mb-1">Santé Système</p>
+          <p className="text-gray-400 text-sm mb-1">{t('systemHealth')}</p>
           <p className={`text-3xl font-bold ${teinteTexte(stats?.systemHealth ?? 0)}`}>
             {stats?.systemHealth ?? 0}%
           </p>
@@ -142,49 +144,49 @@ export default function SuperOwnerDashboard() {
       {/* Secondary Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Utilisateurs Totaux</p>
+          <p className="text-gray-400 text-sm mb-2">{t('totalUsers')}</p>
           <p className="text-4xl font-bold">{stats?.totalUsers || 0}</p>
-          <p className="text-xs text-gray-500 mt-2">Clients actifs sur la plateforme</p>
+          <p className="text-xs text-gray-500 mt-2">{t('totalUsersSubtitle')}</p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Revenu Récurrent (MRR)</p>
+          <p className="text-gray-400 text-sm mb-2">{t('mrr')}</p>
           <p className="text-4xl font-bold text-green-400">{euro((stats?.monthlyRecurring || 0), 0)}</p>
-          <p className="text-xs text-gray-500 mt-2">Revenue mensuel récurrent</p>
+          <p className="text-xs text-gray-500 mt-2">{t('mrrSubtitle')}</p>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-        <h2 className="text-lg font-bold mb-4">Actions Rapides</h2>
+        <h2 className="text-lg font-bold mb-4">{t('quickActions')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Link
             href="/superowner/organizations"
             className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
           >
             <p className="text-2xl mb-2">🏢</p>
-            <p className="text-sm font-medium">Organisations</p>
+            <p className="text-sm font-medium">{t('quickOrganizations')}</p>
           </Link>
           <Link
             href="/superowner/billing"
             className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
           >
             <p className="text-2xl mb-2">💳</p>
-            <p className="text-sm font-medium">Facturation</p>
+            <p className="text-sm font-medium">{t('quickBilling')}</p>
           </Link>
           <Link
             href="/superowner/system-config"
             className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
           >
             <p className="text-2xl mb-2">⚙️</p>
-            <p className="text-sm font-medium">Configuration</p>
+            <p className="text-sm font-medium">{t('quickConfig')}</p>
           </Link>
           <Link
             href="/superowner/security-audit"
             className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
           >
             <p className="text-2xl mb-2">🔒</p>
-            <p className="text-sm font-medium">Audit Sécurité</p>
+            <p className="text-sm font-medium">{t('quickSecurityAudit')}</p>
           </Link>
         </div>
       </div>
@@ -192,7 +194,7 @@ export default function SuperOwnerDashboard() {
       {/* Info */}
       <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
         <p className="text-blue-400 text-sm">
-          🔐 Vous êtes connecté en tant que Superowner. Vous avez accès complet à tous les systèmes.
+          {t('loggedInAs')}
         </p>
       </div>
     </div>

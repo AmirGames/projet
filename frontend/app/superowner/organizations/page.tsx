@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTranslations, useLocale } from 'next-intl';
 import { Building2, Users, Ban, CheckCircle, XCircle, Eye } from 'lucide-react';
 
 interface Organization {
@@ -27,6 +28,8 @@ interface OrganizationsResponse {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function OrganizationsPage() {
+  const t = useTranslations('superownerOrganizations');
+  const locale = useLocale();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -54,13 +57,13 @@ export default function OrganizationsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Changement de formule impossible');
+        setError(data.error || t('tierChangeFailed'));
         return;
       }
 
       await fetchOrganizations();
     } catch {
-      setError('Erreur de connexion au serveur');
+      setError(t('connectionError'));
     } finally {
       setAction('');
     }
@@ -71,16 +74,16 @@ export default function OrganizationsPage() {
     operation: 'suspend' | 'unsuspend' | 'close'
   ) => {
     const libelles = {
-      suspend: 'suspendre',
-      unsuspend: 'réactiver',
-      close: 'fermer définitivement',
+      suspend: t('verbSuspend'),
+      unsuspend: t('verbUnsuspend'),
+      close: t('verbClose'),
     };
 
     let reason = '';
     if (operation !== 'unsuspend') {
-      reason = window.prompt(`Motif pour ${libelles[operation]} « ${org.name} » :`) || '';
+      reason = window.prompt(t('promptReason', { action: libelles[operation], name: org.name })) || '';
       if (!reason.trim()) return;
-    } else if (!window.confirm(`Réactiver « ${org.name} » ?`)) {
+    } else if (!window.confirm(t('confirmReactivate', { name: org.name }))) {
       return;
     }
 
@@ -101,13 +104,13 @@ export default function OrganizationsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || `Impossible de ${libelles[operation]} ce commerçant`);
+        setError(data.error || t('actionFailed', { action: libelles[operation] }));
         return;
       }
 
       await fetchOrganizations();
     } catch {
-      setError('Erreur de connexion au serveur');
+      setError(t('connectionError'));
     } finally {
       setAction('');
     }
@@ -130,13 +133,13 @@ export default function OrganizationsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors du chargement des organisations');
+      if (!res.ok) throw new Error(t('loadError'));
       const data: OrganizationsResponse = await res.json();
       setOrganizations(data.organizations);
       setTotal(data.pagination?.total ?? data.organizations?.length ?? 0);
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+      setError(err instanceof Error ? err.message : t('genericError'));
     } finally {
       setLoading(false);
     }
@@ -149,6 +152,15 @@ export default function OrganizationsPage() {
       CLOSED: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
     };
     return colors[status] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: { [key: string]: string } = {
+      ACTIVE: t('statusActive'),
+      SUSPENDED: t('statusSuspended'),
+      CLOSED: t('statusClosed'),
+    };
+    return labels[status] || status;
   };
 
   const getTierColor = (tier: string) => {
@@ -165,9 +177,9 @@ export default function OrganizationsPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <Building2 className="w-8 h-8" />
-          Organisations
+          {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">Gestion de toutes les organisations de la plateforme</p>
+        <p className="text-gray-400 mt-2">{t('subtitle')}</p>
       </div>
 
       {error && (
@@ -183,7 +195,7 @@ export default function OrganizationsPage() {
       ) : organizations.length === 0 ? (
         <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700/50">
           <Building2 className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Aucune organisation trouvée</p>
+          <p className="text-gray-400">{t('empty')}</p>
         </div>
       ) : (
         <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 overflow-hidden">
@@ -191,14 +203,14 @@ export default function OrganizationsPage() {
             <table className="w-full">
               <thead className="bg-gray-900/50 border-b border-gray-700/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Nom</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Email</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Plan</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Status</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">Utilisateurs</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Revenu</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Date</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">Actions</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('colName')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('colEmail')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('colPlan')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('colStatus')}</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">{t('colUsers')}</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">{t('colRevenue')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('colDate')}</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">{t('colActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
@@ -216,7 +228,7 @@ export default function OrganizationsPage() {
                         value={org.tier}
                         onChange={(e) => changerFormule(org, e.target.value)}
                         disabled={action === org.id}
-                        title="Formule d'abonnement"
+                        title={t('tierTitle')}
                         className={`px-3 py-1 rounded text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-40 ${getTierColor(
                           org.tier
                         )}`}
@@ -228,7 +240,7 @@ export default function OrganizationsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(org.status)}`}>
-                        {org.status}
+                        {getStatusLabel(org.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -238,10 +250,10 @@ export default function OrganizationsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <p className="font-bold text-green-400">{Number(org.revenue || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</p>
+                      <p className="font-bold text-green-400">{Number(org.revenue || 0).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' })}</p>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {new Date(org.createdAt).toLocaleDateString('fr-FR')}
+                      {new Date(org.createdAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR')}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
@@ -249,7 +261,7 @@ export default function OrganizationsPage() {
                             accédait uniquement en tapant l'adresse. */}
                         <Link
                           href={`/superowner/organizations/${org.id}`}
-                          title="Voir la fiche détaillée"
+                          title={t('viewDetails')}
                           className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
                         >
                           <Eye size={16} />
@@ -258,7 +270,7 @@ export default function OrganizationsPage() {
                           <button
                             onClick={() => agirSurCommercant(org, 'suspend')}
                             disabled={action === org.id}
-                            title="Suspendre ce commerçant"
+                            title={t('suspend')}
                             className="p-2 bg-orange-600/80 hover:bg-orange-600 disabled:opacity-40 rounded-lg text-white transition"
                           >
                             <Ban size={16} />
@@ -268,7 +280,7 @@ export default function OrganizationsPage() {
                           <button
                             onClick={() => agirSurCommercant(org, 'unsuspend')}
                             disabled={action === org.id}
-                            title="Réactiver ce commerçant"
+                            title={t('unsuspend')}
                             className="p-2 bg-green-600/80 hover:bg-green-600 disabled:opacity-40 rounded-lg text-white transition"
                           >
                             <CheckCircle size={16} />
@@ -278,14 +290,14 @@ export default function OrganizationsPage() {
                           <button
                             onClick={() => agirSurCommercant(org, 'close')}
                             disabled={action === org.id}
-                            title="Fermer définitivement ce commerçant"
+                            title={t('close')}
                             className="p-2 bg-red-600/80 hover:bg-red-600 disabled:opacity-40 rounded-lg text-white transition"
                           >
                             <XCircle size={16} />
                           </button>
                         )}
                         {org.status === 'CLOSED' && (
-                          <span className="text-xs text-gray-500">Fermé</span>
+                          <span className="text-xs text-gray-500">{t('closedLabel')}</span>
                         )}
                       </div>
                     </td>
@@ -299,7 +311,7 @@ export default function OrganizationsPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur {total}
+          {t('showingRange', { from: offset + 1, to: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
@@ -307,14 +319,14 @@ export default function OrganizationsPage() {
             disabled={offset === 0}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            Précédent
+            {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            Suivant
+            {t('next')}
           </button>
         </div>
       </div>

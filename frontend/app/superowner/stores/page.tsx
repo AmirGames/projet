@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Store as StoreIcon, Search, Package, ShoppingCart, ExternalLink } from 'lucide-react';
 
 import { lienVersEspace } from '@/lib/domaines';
@@ -28,6 +29,8 @@ const COULEURS_ORG: Record<string, string> = {
 };
 
 export default function BoutiquesAdminPage() {
+  const t = useTranslations('superownerStores');
+  const tOrg = useTranslations('superownerOrganizations');
   const [boutiques, setBoutiques] = useState<Boutique[]>([]);
   const [total, setTotal] = useState(0);
   const [recherche, setRecherche] = useState('');
@@ -35,6 +38,15 @@ export default function BoutiquesAdminPage() {
   const [erreur, setErreur] = useState('');
   const [offset, setOffset] = useState(0);
   const limit = 50;
+
+  const libelleStatutOrg = (statut: string | undefined) => {
+    const labels: Record<string, string> = {
+      ACTIVE: tOrg('statusActive'),
+      SUSPENDED: tOrg('statusSuspended'),
+      CLOSED: tOrg('statusClosed'),
+    };
+    return (statut && labels[statut]) || statut;
+  };
 
   const charger = useCallback(async () => {
     setLoading(true);
@@ -55,18 +67,18 @@ export default function BoutiquesAdminPage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Impossible de charger les boutiques');
+        setErreur(donnees.error || t('loadError'));
         return;
       }
 
       setBoutiques(donnees.stores || []);
       setTotal(donnees.pagination?.total ?? 0);
     } catch {
-      setErreur('Erreur de connexion au serveur');
+      setErreur(t('connectionError'));
     } finally {
       setLoading(false);
     }
-  }, [offset, recherche]);
+  }, [offset, recherche, t]);
 
   useEffect(() => {
     // Petite temporisation pour ne pas interroger l'API à chaque frappe.
@@ -79,10 +91,10 @@ export default function BoutiquesAdminPage() {
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <StoreIcon size={28} className="text-green-500" />
-          Boutiques
+          {t('title')}
         </h1>
         <p className="text-gray-400 mt-1">
-          Toutes les boutiques de la plateforme, tous commerçants confondus
+          {t('subtitle')}
         </p>
       </div>
 
@@ -101,7 +113,7 @@ export default function BoutiquesAdminPage() {
             setOffset(0);
             setRecherche(e.target.value);
           }}
-          placeholder="Rechercher par nom, ville ou identifiant..."
+          placeholder={t('searchPlaceholder')}
           className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-green-500"
         />
       </div>
@@ -113,7 +125,7 @@ export default function BoutiquesAdminPage() {
       ) : boutiques.length === 0 ? (
         <div className="text-center py-12 bg-gray-800 border border-gray-700 rounded-lg">
           <StoreIcon size={40} className="text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400">Aucune boutique ne correspond à cette recherche</p>
+          <p className="text-gray-400">{t('empty')}</p>
         </div>
       ) : (
         <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
@@ -121,12 +133,12 @@ export default function BoutiquesAdminPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-900/50 border-b border-gray-700 text-gray-300">
                 <tr>
-                  <th className="px-6 py-3 text-left">Boutique</th>
-                  <th className="px-6 py-3 text-left">Commerçant</th>
-                  <th className="px-6 py-3 text-center">Produits</th>
-                  <th className="px-6 py-3 text-center">Commandes</th>
-                  <th className="px-6 py-3 text-center">État</th>
-                  <th className="px-6 py-3 text-right">Vitrine</th>
+                  <th className="px-6 py-3 text-left">{t('colStore')}</th>
+                  <th className="px-6 py-3 text-left">{t('colMerchant')}</th>
+                  <th className="px-6 py-3 text-center">{t('colProducts')}</th>
+                  <th className="px-6 py-3 text-center">{t('colOrders')}</th>
+                  <th className="px-6 py-3 text-center">{t('colStatus')}</th>
+                  <th className="px-6 py-3 text-right">{t('colStorefront')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -141,7 +153,7 @@ export default function BoutiquesAdminPage() {
                         {boutique.name}
                       </Link>
                       <p className="text-xs text-gray-500">
-                        {boutique.city || 'Ville non renseignée'}
+                        {boutique.city || t('cityUnknown')}
                       </p>
                     </td>
                     <td className="px-6 py-4">
@@ -157,7 +169,7 @@ export default function BoutiquesAdminPage() {
                           'bg-gray-500/20 text-gray-400'
                         }`}
                       >
-                        {boutique.organization?.status}
+                        {libelleStatutOrg(boutique.organization?.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -178,7 +190,7 @@ export default function BoutiquesAdminPage() {
                             : 'bg-gray-500/20 text-gray-400'
                         }`}
                       >
-                        {boutique.isOpen ? 'Ouverte' : 'Fermée'}
+                        {boutique.isOpen ? t('open') : t('closed')}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -188,7 +200,7 @@ export default function BoutiquesAdminPage() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
                       >
-                        Voir <ExternalLink size={14} />
+                        {t('view')} <ExternalLink size={14} />
                       </a>
                     </td>
                   </tr>
@@ -202,8 +214,8 @@ export default function BoutiquesAdminPage() {
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
           {total === 0
-            ? 'Aucune boutique'
-            : `${offset + 1} à ${Math.min(offset + limit, total)} sur ${total}`}
+            ? t('noneCount')
+            : t('showingRange', { from: offset + 1, to: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
@@ -211,14 +223,14 @@ export default function BoutiquesAdminPage() {
             disabled={offset === 0}
             className="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition-colors"
           >
-            Précédent
+            {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
             className="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition-colors"
           >
-            Suivant
+            {t('next')}
           </button>
         </div>
       </div>
