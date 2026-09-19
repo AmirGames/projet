@@ -260,6 +260,7 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
                 commissionPercent: true,
                 commissionAmount: true,
                 tierAtOrder: true,
+                commissionFrozen: true,
               },
             })
           : [];
@@ -280,11 +281,24 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
         const tauxDuJour = tauxParFormule.get(org.tier) ?? tauxParDefaut;
 
         const commission = commandes.reduce((somme, c) => {
-          const figee = Number(c.commissionAmount);
+          /**
+           * commissionFrozen = true → le montant a été calculé au serveur au
+           * moment de la commande : on l'utilise tel quel, même s'il vaut 0
+           * (formule FREE à 0 %, vente annulée, etc.).
+           *
+           * commissionFrozen = false → commande antérieure à ce champ, ou
+           * sans tierAtOrder. On recalcule avec le taux du plan *d'alors*
+           * (tierAtOrder) si disponible, sinon avec le taux du jour.
+           */
+          if ((c as any).commissionFrozen) return somme + Number(c.commissionAmount);
 
-          if (figee > 0) return somme + figee;
+          // Ancienne commande : tierAtOrder contient le code du plan qui
+          // valait ce jour-là ; tauxParFormule le convertit en taux.
+          const tauxHistorique = (c as any).tierAtOrder
+            ? tauxParFormule.get((c as any).tierAtOrder) ?? tauxDuJour
+            : tauxDuJour;
 
-          return somme + (Number(c.totalAmount) * tauxDuJour) / 100;
+          return somme + (Number(c.totalAmount) * tauxHistorique) / 100;
         }, 0);
 
         // Les taux réellement appliqués sur la période : plusieurs en cas de
@@ -296,7 +310,7 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
               .map((c) => Number(c.commissionPercent))
               .filter((t) => t > 0)
           ),
-        ].sort((a, b) => a - b);
+        ].sort((a: number, b: number) => a - b);
 
         const dejaFacture = org.commissionHistory.length > 0;
 
@@ -992,6 +1006,62 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
       );
     }
 
+    // ── Figer la commission sur les commandes non encore figées ────────────
+    //
+    // Si le commerçant passe de FREE (8 %) à PRO (3 %), les commandes passées
+    // ce mois-ci avant le changement doivent rester à 8 %. Sans ce bloc, la
+    // facturation mensuelle tombe sur le taux du jour pour toute commande dont
+    // commissionFrozen = false, et recalcule l'ensemble du mois au nouveau taux.
+    //
+    // On fixe ici le taux de l'ancien plan sur toutes les commandes du mois
+    // qui n'ont pas encore de taux figé (commissionFrozen = false).
+    // Les commandes récentes ont déjà commissionFrozen = true : elles ne sont
+    // pas touchées.
+    const ancienTaux = await db.planTier.findUnique({
+      where: { code: existante.tier as any },
+      select: { commissionPercent: true },
+    });
+
+    if (ancienTaux) {
+      const debutMois = new Date();
+      debutMois.setDate(1);
+      debutMois.setHours(0, 0, 0, 0);
+
+      const storeIds = (await db.store.findMany({
+        where: { orgId },
+        select: { id: true },
+      })).map((s) => s.id);
+
+      if (storeIds.length > 0) {
+        // On récupère les commandes non figées du mois pour recalculer
+        // commissionAmount au centime près avant de les figer.
+        const nonFigees = await db.order.findMany({
+          where: {
+            storeId: { in: storeIds },
+            createdAt: { gte: debutMois },
+            commissionFrozen: false,
+          },
+          select: { id: true, totalAmount: true },
+        });
+
+        const taux = Number(ancienTaux.commissionPercent);
+
+        await Promise.all(
+          nonFigees.map((c) =>
+            db.order.update({
+              where: { id: c.id },
+              data: {
+                commissionPercent: taux,
+                commissionAmount:  Number((Number(c.totalAmount) * taux / 100).toFixed(2)),
+                tierAtOrder:       existante.tier,
+                commissionFrozen:  true,
+              },
+            })
+          )
+        );
+      }
+    }
+
     const organisation = await db.organization.update({
       where: { id: orgId },
       data: { tier: body.tier },
@@ -1000,6 +1070,7 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
     await journaliser(req, "MERCHANT_TIER_CHANGED", orgId, {
       avant: existante.tier,
       apres: body.tier,
+      commandesFigees: typeof ancienTaux !== 'undefined' ? true : false,
     });
 
     res.json({

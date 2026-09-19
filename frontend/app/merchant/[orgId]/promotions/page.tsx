@@ -18,6 +18,9 @@ interface Promotion {
   startDate?: string;
   endDate?: string;
   maxUses?: number;
+  activeFromTime?: string | null;
+  activeToTime?: string | null;
+  activeDays?: number[];
   currentUses: number;
   status: string;
   createdAt: string;
@@ -41,6 +44,9 @@ export default function PromotionsPage() {
     maxUses: '',
     startDate: '',
     endDate: '',
+    activeFromTime: '',
+    activeToTime: '',
+    activeDays: [] as number[],
   });
 
   useEffect(() => {
@@ -93,6 +99,9 @@ export default function PromotionsPage() {
         maxUses: formData.maxUses ? parseInt(formData.maxUses) : undefined,
         startDate: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
+        activeFromTime: formData.activeFromTime || null,
+        activeToTime:   formData.activeToTime   || null,
+        activeDays:     formData.activeDays,
       };
 
       if (editingPromo) {
@@ -194,6 +203,9 @@ export default function PromotionsPage() {
       maxUses: promo.maxUses?.toString() || '',
       startDate: promo.startDate ? new Date(promo.startDate).toISOString().split('T')[0] : '',
       endDate: promo.endDate ? new Date(promo.endDate).toISOString().split('T')[0] : '',
+      activeFromTime: promo.activeFromTime ?? '',
+      activeToTime:   promo.activeToTime   ?? '',
+      activeDays:     promo.activeDays     ?? [],
     });
     setShowForm(true);
   };
@@ -210,6 +222,9 @@ export default function PromotionsPage() {
       maxUses: '',
       startDate: '',
       endDate: '',
+      activeFromTime: '',
+      activeToTime: '',
+      activeDays: [],
     });
   };
 
@@ -229,6 +244,27 @@ export default function PromotionsPage() {
     if (promo.startDate && new Date(promo.startDate) > now) return false;
     if (promo.endDate && new Date(promo.endDate) < now) return false;
     return true;
+  };
+
+  const JOURS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+
+  const libellePlage = (promo: Promotion): string | null => {
+    const h = promo.activeFromTime || promo.activeToTime
+      ? `${promo.activeFromTime ?? '00:00'} – ${promo.activeToTime ?? '24:00'}`
+      : null;
+    const j = promo.activeDays && promo.activeDays.length > 0
+      ? promo.activeDays.map(d => JOURS[d]).join(', ')
+      : null;
+    return h || j ? [h, j].filter(Boolean).join(' · ') : null;
+  };
+
+  const toggleJour = (j: number) => {
+    setFormData(f => ({
+      ...f,
+      activeDays: f.activeDays.includes(j)
+        ? f.activeDays.filter(d => d !== j)
+        : [...f.activeDays, j].sort((a, b) => a - b),
+    }));
   };
 
   if (loading) {
@@ -377,8 +413,14 @@ export default function PromotionsPage() {
                       )}
                     </div>
 
+                    {libellePlage(promo) && (
+                      <div className="mt-2 text-xs text-orange-400 flex items-center gap-1">
+                        🕐 {libellePlage(promo)}
+                      </div>
+                    )}
+
                     {!promo.applicableToAll && (
-                      <div className="mt-2 text-xs text-yellow-400">
+                      <div className="mt-1 text-xs text-yellow-400">
                         ⚠️ Limité à certains produits/catégories
                       </div>
                     )}
@@ -521,6 +563,63 @@ export default function PromotionsPage() {
                 </div>
               </div>
 
+              {/* ── Plage horaire d'activation ─────────────────────────────── */}
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">
+                  Plage horaire d&apos;activation
+                  <span className="ml-1 text-gray-500">(facultatif)</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">De</label>
+                    <input
+                      type="time"
+                      value={formData.activeFromTime}
+                      onChange={(e) => setFormData({ ...formData, activeFromTime: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">À</label>
+                    <input
+                      type="time"
+                      value={formData.activeToTime}
+                      onChange={(e) => setFormData({ ...formData, activeToTime: e.target.value })}
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                </div>
+                {formData.activeFromTime && formData.activeToTime && (
+                  <p className="mt-1 text-xs text-orange-400">
+                    La promo ne sera valable qu&apos;entre {formData.activeFromTime} et {formData.activeToTime}.
+                  </p>
+                )}
+              </div>
+
+              {/* ── Jours de la semaine ──────────────────────────────────────── */}
+              <div>
+                <label className="text-sm text-gray-400 block mb-2">
+                  Jours actifs
+                  <span className="ml-1 text-gray-500">(tous si aucun coché)</span>
+                </label>
+                <div className="flex gap-1 flex-wrap">
+                  {(['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'] as const).map((nom, j) => (
+                    <button
+                      key={j}
+                      type="button"
+                      onClick={() => toggleJour(j)}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                        formData.activeDays.includes(j)
+                          ? 'bg-orange-600 text-white'
+                          : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                      }`}
+                    >
+                      {nom}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
@@ -530,7 +629,7 @@ export default function PromotionsPage() {
                   className="rounded"
                 />
                 <label htmlFor="applicableToAll" className="text-sm text-gray-400">
-                  S'applique à tous les produits
+                  S&apos;applique à tous les produits
                 </label>
               </div>
 
