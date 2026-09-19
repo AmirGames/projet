@@ -118,6 +118,23 @@
     "loadError": "Error loading organizations",
     "genericError": "Something went wrong"
   },
+  "superownerFinancialReports": {
+    "title": "Financial Reports",
+    "subtitle": "Detailed analysis of revenue and transactions",
+    "empty": "No reports found",
+    "colPeriod": "Period",
+    "colTotalRevenue": "Total Revenue",
+    "colPlatformFees": "Platform Fees",
+    "colRefunds": "Refunds",
+    "colNetRevenue": "Net Revenue",
+    "colTransactions": "Transactions",
+    "colAverageValue": "Average Value",
+    "showingRange": "Showing {from} to {to} of {total}",
+    "previous": "Previous",
+    "next": "Next",
+    "loadError": "Error loading reports",
+    "genericError": "Something went wrong"
+  },
   "superownerStores": {
     "title": "Stores",
     "subtitle": "All stores on the platform, across every merchant",

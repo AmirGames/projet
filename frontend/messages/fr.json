@@ -118,6 +118,23 @@
     "loadError": "Erreur lors du chargement des organisations",
     "genericError": "Une erreur s'est produite"
   },
+  "superownerFinancialReports": {
+    "title": "Rapports Financiers",
+    "subtitle": "Analyse détaillée des revenus et des transactions",
+    "empty": "Aucun rapport trouvé",
+    "colPeriod": "Période",
+    "colTotalRevenue": "Revenu Total",
+    "colPlatformFees": "Frais Plateforme",
+    "colRefunds": "Remboursements",
+    "colNetRevenue": "Revenu Net",
+    "colTransactions": "Transactions",
+    "colAverageValue": "Valeur Moyenne",
+    "showingRange": "Affichage {from} à {to} sur {total}",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "loadError": "Erreur lors du chargement des rapports",
+    "genericError": "Une erreur s'est produite"
+  },
   "superownerStores": {
     "title": "Boutiques",
     "subtitle": "Toutes les boutiques de la plateforme, tous commerçants confondus",
