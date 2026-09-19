@@ -36,8 +36,10 @@ export default function RootLayoutContent({
 
   // Ces espaces ont leur propre barre latérale : la navigation publique y
   // ferait double emploi. `/impression` est une feuille à imprimer : elle ne
-  // porte aucun élément du site, c'est tout l'intérêt.
-  const hideNavbar = pathname?.startsWith('/superowner') ||
+  // porte aucun élément du site, c'est tout l'intérêt. La page d'accueil a
+  // désormais son propre en-tête clair : la Navbar sombre ferait doublon.
+  const hideNavbar = pathname === '/' ||
+                     pathname?.startsWith('/superowner') ||
                      pathname?.startsWith('/merchant') ||
                      pathname?.startsWith('/client') ||
                      pathname?.startsWith('/driver') ||
