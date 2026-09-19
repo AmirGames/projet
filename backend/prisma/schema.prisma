@@ -1107,6 +1107,15 @@ model Promotion {
   expiresAt   DateTime?
   isActive    Boolean         @default(true)
 
+  /// Heure de début d'activation au format HH:MM (ex : "12:00").
+  /// NULL = aucune restriction horaire.
+  activeFromTime String?
+  /// Heure de fin d'activation au format HH:MM (ex : "14:00").
+  activeToTime   String?
+  /// Jours de la semaine actifs : 0 = dimanche … 6 = samedi.
+  /// Tableau vide = tous les jours.
+  activeDays     Int[]   @default([])
+
   // Limits
   minOrderAmount Decimal?     @db.Decimal(10, 2)
   maxUses     Int?            // null = unlimited

@@ -78,7 +78,7 @@ export class StoreSupportService {
       throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
     }
 
-    const [commandes, derniere] = await Promise.all([
+    const [commandes, derniere, dernieresCommandes] = await Promise.all([
       db.order.aggregate({
         where: { storeId, deletedAt: null },
         _sum: { totalAmount: true },
@@ -87,6 +87,26 @@ export class StoreSupportService {
         where: { storeId, deletedAt: null },
         orderBy: { createdAt: "desc" },
         select: { createdAt: true, status: true },
+      }),
+      // Les 20 dernières commandes avec leur commission figée — ce que le
+      // superowner ne pouvait plus voir après la refonte.
+      db.order.findMany({
+        where: { storeId, deletedAt: null },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        // commissionFrozen et tierAtOrder sont ajoutés par la migration
+        // add_tax_per_item_and_invoice_seq. Si elle n'est pas encore appliquée,
+        // retirer ces deux champs du select évite le crash.
+        select: {
+          id: true,
+          createdAt: true,
+          status: true,
+          totalAmount: true,
+          commissionPercent: true,
+          commissionAmount: true,
+          customerName: true,
+          paymentStatus: true,
+        },
       }),
     ]);
 
@@ -102,6 +122,20 @@ export class StoreSupportService {
       })),
       chiffreDaffaires: Number(commandes._sum.totalAmount || 0),
       derniereCommande: derniere,
+      dernieresCommandes: dernieresCommandes.map((c) => ({
+        id:                c.id,
+        createdAt:         c.createdAt,
+        status:            c.status,
+        totalAmount:       Number(c.totalAmount),
+        commissionPercent: Number(c.commissionPercent),
+        commissionAmount:  Number(c.commissionAmount),
+        customerName:      c.customerName,
+        paymentStatus:     c.paymentStatus,
+        // Ces deux champs viennent de la migration add_tax_per_item_and_invoice_seq.
+        // Valeur par défaut tant qu'elle n'est pas appliquée.
+        commissionFrozen:  false,
+        tierAtOrder:       null,
+      })),
       /**
        * Sans coordonnées, la boutique est invisible de l'attribution et des
        * zones : c'est le premier point à regarder quand un commerçant dit ne

@@ -19,6 +19,11 @@ const createPromotionSchema = z.object({
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   maxUses: z.number().int().positive().optional(),
+  // Plage horaire — format HH:MM, null = pas de restriction
+  activeFromTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+  activeToTime:   z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+  // Jours actifs : 0=dim … 6=sam — tableau vide = tous les jours
+  activeDays:     z.array(z.number().int().min(0).max(6)).optional(),
 });
 
 const updatePromotionSchema = z.object({
@@ -31,6 +36,9 @@ const updatePromotionSchema = z.object({
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   maxUses: z.number().int().positive().optional(),
+  activeFromTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+  activeToTime:   z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+  activeDays:     z.array(z.number().int().min(0).max(6)).optional(),
 });
 
 const validatePromotionSchema = z.object({
@@ -48,8 +56,11 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
 
     const promotion = await PromotionService.create({
       ...body,
-      startDate: body.startDate ? new Date(body.startDate) : undefined,
-      endDate: body.endDate ? new Date(body.endDate) : undefined,
+      startDate:     body.startDate ? new Date(body.startDate) : undefined,
+      endDate:       body.endDate   ? new Date(body.endDate)   : undefined,
+      activeFromTime: body.activeFromTime,
+      activeToTime:   body.activeToTime,
+      activeDays:     body.activeDays,
     });
 
     res.status(201).json({
@@ -155,8 +166,11 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response, next: Nex
 
     const promotion = await PromotionService.update(id, {
       ...body,
-      startDate: body.startDate ? new Date(body.startDate) : undefined,
-      endDate: body.endDate ? new Date(body.endDate) : undefined,
+      startDate:     body.startDate ? new Date(body.startDate) : undefined,
+      endDate:       body.endDate   ? new Date(body.endDate)   : undefined,
+      activeFromTime: body.activeFromTime,
+      activeToTime:   body.activeToTime,
+      activeDays:     body.activeDays,
     });
 
     res.json({

@@ -24,6 +24,7 @@ import {
   MapPin,
   Pencil,
   Power,
+  ReceiptText,
   Store as StoreIcon,
 } from 'lucide-react';
 
@@ -81,6 +82,18 @@ interface Fiche {
   _count: { products: number; orders: number; categories: number };
   deliveryZones: Zone[];
   derniereCommande: { createdAt: string; status: string } | null;
+  dernieresCommandes: {
+    id: string;
+    createdAt: string;
+    status: string;
+    totalAmount: number;
+    commissionPercent: number;
+    commissionAmount: number;
+    commissionFrozen: boolean;
+    tierAtOrder: string | null;
+    customerName: string;
+    paymentStatus: string;
+  }[];
 }
 
 /** Les champs que la plateforme corrige, et rien d'autre. */
@@ -561,6 +574,73 @@ export default function FicheBoutiquePage() {
                   </li>
                 ))}
               </ul>
+            )}
+          </div>
+
+          {/* ── Dernières commandes avec commission ───────────────────── */}
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-3">
+            <h2 className="font-semibold text-white flex items-center gap-2">
+              <ReceiptText size={18} className="text-orange-500" />
+              Dernières commandes
+            </h2>
+
+            {(!fiche.dernieresCommandes || fiche.dernieresCommandes.length === 0) ? (
+              <p className="text-sm text-gray-400">Aucune commande pour l&apos;instant.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-gray-400 border-b border-gray-700">
+                      <th className="text-left py-2 pr-4">Date</th>
+                      <th className="text-left py-2 pr-4">Client</th>
+                      <th className="text-right py-2 pr-4">Total</th>
+                      <th className="text-right py-2 pr-4">Formule</th>
+                      <th className="text-right py-2 pr-4">Commission</th>
+                      <th className="text-right py-2">Montant dû</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fiche.dernieresCommandes.map((c) => (
+                      <tr key={c.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+                        <td className="py-2 pr-4 text-gray-400">{jour(c.createdAt)}</td>
+                        <td className="py-2 pr-4">{c.customerName || '—'}</td>
+                        <td className="py-2 pr-4 text-right">{euro(c.totalAmount)}</td>
+                        <td className="py-2 pr-4 text-right">
+                          <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
+                            {c.tierAtOrder || fiche.org.tier}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4 text-right">
+                          {c.commissionFrozen ? (
+                            <span className="text-blue-400">{c.commissionPercent.toFixed(2)} %</span>
+                          ) : (
+                            <span className="text-yellow-400" title="Taux figé au changement de plan">
+                              ~{c.commissionPercent.toFixed(2)} %
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2 text-right font-medium text-orange-400">
+                          {euro(c.commissionAmount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-gray-600">
+                      <td colSpan={5} className="py-2 text-gray-400 text-xs">
+                        Total commissions sur ces 20 commandes
+                      </td>
+                      <td className="py-2 text-right font-bold text-orange-400">
+                        {euro(fiche.dernieresCommandes.reduce((s, c) => s + c.commissionAmount, 0))}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+                <p className="text-xs text-gray-500 mt-2">
+                  <span className="text-blue-400">Bleu</span> = taux figé à la commande. &nbsp;
+                  <span className="text-yellow-400">Jaune</span> = commande ancienne, taux estimé.
+                </p>
+              </div>
             )}
           </div>
 

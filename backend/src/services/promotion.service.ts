@@ -13,6 +13,18 @@ export interface PromotionData {
   startDate?: Date;
   endDate?: Date;
   maxUses?: number;
+  /** Heure de début HH:MM, null = pas de restriction */
+  activeFromTime?: string | null;
+  /** Heure de fin HH:MM, null = pas de restriction */
+  activeToTime?: string | null;
+  /** Jours actifs : 0=dim … 6=sam. Vide = tous les jours */
+  activeDays?: number[];
+}
+
+/** Convertit "HH:MM" en nombre de minutes depuis minuit. */
+function enMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + (m || 0);
 }
 
 export class PromotionService {
@@ -31,6 +43,9 @@ export class PromotionService {
           startDate: data.startDate,
           endDate: data.endDate,
           maxUses: data.maxUses,
+          activeFromTime: data.activeFromTime ?? null,
+          activeToTime:   data.activeToTime   ?? null,
+          activeDays:     data.activeDays     ?? [],
         },
       });
 
@@ -121,6 +136,47 @@ export class PromotionService {
       throw new ApiError(400, "Ce code promo a atteint sa limite d'utilisation", "MAX_USES_REACHED");
     }
 
+    // ── Plage horaire ──────────────────────────────────────────────────────
+    // Les prix sont TTC et vérifiés côté serveur : la plage horaire doit l'être
+    // aussi. Un client qui sait que la promo est valable de 12h à 14h n'a qu'à
+    // attendre que l'heure tourne côté serveur si on ne vérifie que le frontend.
+    if ((promotion as any).activeFromTime || (promotion as any).activeToTime) {
+      const now2 = new Date();
+      const minutesMaintenant = now2.getHours() * 60 + now2.getMinutes();
+      const debut = (promotion as any).activeFromTime ? enMinutes((promotion as any).activeFromTime) : 0;
+      const fin   = (promotion as any).activeToTime   ? enMinutes((promotion as any).activeToTime)   : 24 * 60;
+
+      const dansLaPlage =
+        fin > debut
+          ? minutesMaintenant >= debut && minutesMaintenant < fin   // même jour (12h–14h)
+          : minutesMaintenant >= debut || minutesMaintenant < fin;  // passe minuit (22h–02h)
+
+      if (!dansLaPlage) {
+        const de = (promotion as any).activeFromTime ?? "00:00";
+        const a  = (promotion as any).activeToTime   ?? "24:00";
+        throw new ApiError(
+          400,
+          `Ce code promo n'est valable qu'entre ${de} et ${a}`,
+          "OUTSIDE_TIME_WINDOW"
+        );
+      }
+    }
+
+    // ── Jours de la semaine ────────────────────────────────────────────────
+    const jours = (promotion as any).activeDays as number[] | undefined;
+    if (jours && jours.length > 0) {
+      const jourSemaine = new Date().getDay(); // 0 = dimanche
+      if (!jours.includes(jourSemaine)) {
+        const NOMS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+        const joursNoms = jours.map((j) => NOMS[j]).join(", ");
+        throw new ApiError(
+          400,
+          `Ce code promo n'est valable que le : ${joursNoms}`,
+          "OUTSIDE_DAY_WINDOW"
+        );
+      }
+    }
+
     if (
       !promotion.applicableToAll &&
       productIds.length > 0 &&
@@ -174,6 +230,9 @@ export class PromotionService {
           ...(data.startDate && { startDate: data.startDate }),
           ...(data.endDate && { endDate: data.endDate }),
           ...(data.maxUses !== undefined && { maxUses: data.maxUses }),
+          ...(data.activeFromTime !== undefined && { activeFromTime: data.activeFromTime }),
+          ...(data.activeToTime   !== undefined && { activeToTime:   data.activeToTime }),
+          ...(data.activeDays     !== undefined && { activeDays:     data.activeDays }),
         },
       });
     } catch (error: any) {
