@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Key, Plus, Copy, Trash2 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -25,6 +26,8 @@ interface ApiKeysResponse {
 }
 
 export default function ApiKeysPage() {
+  const t = useTranslations('superownerApiKeys');
+  const locale = useLocale();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -52,13 +55,13 @@ export default function ApiKeysPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors du chargement des clés API');
+      if (!res.ok) throw new Error(t('loadError'));
       const data: ApiKeysResponse = await res.json();
       setKeys(data.keys);
       setTotal(data.pagination.total);
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+      setError(err instanceof Error ? err.message : t('genericError'));
     } finally {
       setLoading(false);
     }
@@ -68,7 +71,7 @@ export default function ApiKeysPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      setError('Nom de clé requis');
+      setError(t('nameRequired'));
       return;
     }
 
@@ -85,7 +88,7 @@ export default function ApiKeysPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.error || 'Erreur lors de la création');
+        throw new Error(data?.error || t('createError'));
       }
 
       const data = await res.json();
@@ -95,12 +98,12 @@ export default function ApiKeysPage() {
       setShowForm(false);
       fetchApiKeys();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+      setError(err instanceof Error ? err.message : t('genericError'));
     }
   };
 
   const handleRevokeKey = async (keyId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir révoquer cette clé?')) return;
+    if (!confirm(t('revokeConfirm'))) return;
 
     try {
       const token = localStorage.getItem('accessToken');
@@ -111,11 +114,11 @@ export default function ApiKeysPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.error || 'Erreur lors de la révocation');
+        throw new Error(data?.error || t('revokeError'));
       }
       fetchApiKeys();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+      setError(err instanceof Error ? err.message : t('genericError'));
     }
   };
 
@@ -129,16 +132,16 @@ export default function ApiKeysPage() {
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center gap-2">
             <Key className="w-8 h-8" />
-            Clés API
+            {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">Gestion des clés API pour les intégrations</p>
+          <p className="text-gray-400 mt-2">{t('subtitle')}</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
         >
           <Plus size={20} />
-          Nouvelle Clé
+          {t('newKey')}
         </button>
       </div>
 
@@ -151,14 +154,14 @@ export default function ApiKeysPage() {
       {nouvelleCle && (
         <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg space-y-3">
           <p className="text-green-400 font-semibold">
-            Clé créée — copiez-la maintenant, elle ne sera plus affichée
+            {t('keyCreated')}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             <code className="bg-gray-900 px-3 py-2 rounded text-sm break-all">{nouvelleCle}</code>
             <button
               onClick={() => copyToClipboard(nouvelleCle)}
               className="p-2 bg-gray-700 hover:bg-gray-600 rounded"
-              title="Copier"
+              title={t('copy')}
             >
               <Copy size={16} />
             </button>
@@ -166,7 +169,7 @@ export default function ApiKeysPage() {
               onClick={() => setNouvelleCle(null)}
               className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
             >
-              J'ai copié
+              {t('copied')}
             </button>
           </div>
         </div>
@@ -174,29 +177,29 @@ export default function ApiKeysPage() {
 
       {showForm && (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-white mb-4">Nouvelle Clé API</h2>
+          <h2 className="text-xl font-bold text-white mb-4">{t('newKeyTitle')}</h2>
           <form onSubmit={handleCreateKey} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Nom de la clé</label>
+              <label className="block text-sm font-medium mb-2">{t('keyName')}</label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                placeholder="Ma clé API"
+                placeholder={t('keyNamePlaceholder')}
                 required
               />
             </div>
             <div className="flex gap-2">
               <button type="submit" className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
-                Créer
+                {t('create')}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
                 className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded"
               >
-                Annuler
+                {t('cancel')}
               </button>
             </div>
           </form>
@@ -210,18 +213,18 @@ export default function ApiKeysPage() {
       ) : keys.length === 0 ? (
         <div className="text-center py-12 bg-gray-800/50 rounded-lg">
           <Key className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Aucune clé API</p>
+          <p className="text-gray-400">{t('empty')}</p>
         </div>
       ) : (
         <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-700/50 border-b border-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold">Nom</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold">Clé</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold">Statut</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold">Dernier Accès</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">Actions</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">{t('colName')}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">{t('colKey')}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">{t('colStatus')}</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">{t('colLastUsed')}</th>
+                <th className="px-6 py-3 text-right text-sm font-semibold">{t('colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
@@ -243,7 +246,7 @@ export default function ApiKeysPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-400">
-                    {apiKey.lastUsed ? new Date(apiKey.lastUsed).toLocaleDateString('fr-FR') : 'Jamais'}
+                    {apiKey.lastUsed ? new Date(apiKey.lastUsed).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR') : t('never')}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
@@ -263,7 +266,7 @@ export default function ApiKeysPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur {total}
+          {t('showingRange', { from: offset + 1, to: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
@@ -271,14 +274,14 @@ export default function ApiKeysPage() {
             disabled={offset === 0}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
           >
-            Précédent
+            {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
           >
-            Suivant
+            {t('next')}
           </button>
         </div>
       </div>
