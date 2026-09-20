@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Layers, Save, Plus, X, Users } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -27,6 +28,7 @@ interface Formule {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function FormulesPage() {
+  const t = useTranslations('superownerFormules');
   const [formules, setFormules] = useState<Formule[]>([]);
   const [brouillons, setBrouillons] = useState<Record<string, Formule>>({});
   const [chargement, setChargement] = useState(true);
@@ -45,7 +47,7 @@ export default function FormulesPage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Impossible de charger les formules');
+        setErreur(donnees.error || t('loadError'));
         return;
       }
 
@@ -54,11 +56,11 @@ export default function FormulesPage() {
       setBrouillons(Object.fromEntries(grille.map((formule) => [formule.code, { ...formule }])));
       setErreur('');
     } catch {
-      setErreur('Le serveur ne répond pas');
+      setErreur(t('serverUnreachable'));
     } finally {
       setChargement(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     charger();
@@ -100,14 +102,14 @@ export default function FormulesPage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Enregistrement refusé');
+        setErreur(donnees.error || t('saveError'));
         return;
       }
 
-      setMessage(donnees.message || 'Formule enregistrée');
+      setMessage(donnees.message || t('saved'));
       await charger();
     } catch {
-      setErreur('Le serveur ne répond pas');
+      setErreur(t('serverUnreachable'));
     } finally {
       setEnregistrement('');
     }
@@ -118,7 +120,7 @@ export default function FormulesPage() {
 
   if (chargement) {
     return (
-      <div className="p-8 text-gray-400">Chargement des formules…</div>
+      <div className="p-8 text-gray-400">{t('loading')}</div>
     );
   }
 
@@ -127,9 +129,9 @@ export default function FormulesPage() {
       <div className="flex items-center gap-3">
         <Layers size={28} className="text-red-500" />
         <div>
-          <h1 className="text-3xl font-bold">Formules</h1>
+          <h1 className="text-3xl font-bold">{t('title')}</h1>
           <p className="text-gray-400 text-sm">
-            Ce que voient les commerçants, et ce que leur formule les autorise à ouvrir.
+            {t('subtitle')}
           </p>
         </div>
       </div>
@@ -160,14 +162,14 @@ export default function FormulesPage() {
                 </span>
                 <span className="flex items-center gap-1 text-xs text-gray-400">
                   <Users size={14} />
-                  {formule.abonnes} abonné{formule.abonnes > 1 ? 's' : ''}
+                  {t('subscribers', { count: formule.abonnes })}
                 </span>
               </div>
 
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1" htmlFor={`nom-${formule.code}`}>
-                    Nom affiché
+                    {t('displayName')}
                   </label>
                   <input
                     id={`nom-${formule.code}`}
@@ -183,7 +185,7 @@ export default function FormulesPage() {
                       className="block text-sm text-gray-400 mb-1"
                       htmlFor={`prix-${formule.code}`}
                     >
-                      € / mois
+                      {t('priceMonthly')}
                     </label>
                     <input
                       id={`prix-${formule.code}`}
@@ -203,7 +205,7 @@ export default function FormulesPage() {
                       className="block text-sm text-gray-400 mb-1"
                       htmlFor={`quota-${formule.code}`}
                     >
-                      Boutiques
+                      {t('stores')}
                     </label>
                     <input
                       id={`quota-${formule.code}`}
@@ -224,7 +226,7 @@ export default function FormulesPage() {
                       className="block text-sm text-gray-400 mb-1"
                       htmlFor={`commission-${formule.code}`}
                     >
-                      Commission %
+                      {t('commission')}
                     </label>
                     <input
                       id={`commission-${formule.code}`}
@@ -242,7 +244,7 @@ export default function FormulesPage() {
                 </div>
 
                 <div>
-                  <span className="block text-sm text-gray-400 mb-1">Arguments de vente</span>
+                  <span className="block text-sm text-gray-400 mb-1">{t('sellingPoints')}</span>
                   <div className="space-y-2">
                     {brouillon.avantages.map((avantage, index) => (
                       <div key={index} className="flex items-center gap-2">
@@ -258,7 +260,7 @@ export default function FormulesPage() {
                         />
                         <button
                           type="button"
-                          aria-label={`Retirer l’argument ${index + 1}`}
+                          aria-label={t('removeArgument', { index: index + 1 })}
                           onClick={() =>
                             modifier(formule.code, {
                               avantages: brouillon.avantages.filter((_, i) => i !== index),
@@ -278,7 +280,7 @@ export default function FormulesPage() {
                       }
                       className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition"
                     >
-                      <Plus size={16} /> Ajouter une ligne
+                      <Plus size={16} /> {t('addLine')}
                     </button>
                   </div>
                 </div>
@@ -295,13 +297,16 @@ export default function FormulesPage() {
                 }`}
               >
                 <Save size={18} />
-                {enregistrement === formule.code ? 'Enregistrement…' : 'Enregistrer'}
+                {enregistrement === formule.code ? t('saving') : t('save')}
               </button>
 
               <p className="text-xs text-gray-500">
-                Vue commerçant : {brouillon.libelle} — {euro(brouillon.prixMensuel)} / mois,{' '}
-                {brouillon.maxBoutiques} boutique{brouillon.maxBoutiques > 1 ? 's' : ''},{' '}
-                {brouillon.commission} % de commission sur les ventes.
+                {t('merchantView', {
+                  name: brouillon.libelle,
+                  price: euro(brouillon.prixMensuel),
+                  stores: brouillon.maxBoutiques,
+                  commission: brouillon.commission,
+                })}
               </p>
             </section>
           );
@@ -309,9 +314,7 @@ export default function FormulesPage() {
       </div>
 
       <p className="text-sm text-gray-500">
-        Le code d'une formule ne change pas : il rattache les commerçants déjà abonnés.
-        Un quota ne peut pas passer sous ce que des commerçants exploitent déjà — faites-les
-        migrer d'abord.
+        {t('footerNote')}
       </p>
     </div>
   );

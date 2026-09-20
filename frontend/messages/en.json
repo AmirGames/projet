@@ -370,5 +370,26 @@
     "next": "Next",
     "loadError": "Error loading admins",
     "genericError": "Something went wrong"
+  },
+  "superownerFormules": {
+    "loading": "Loading plans…",
+    "title": "Plans",
+    "subtitle": "What merchants see, and what their plan lets them open.",
+    "loadError": "Could not load the plans",
+    "serverUnreachable": "The server is not responding",
+    "saveError": "Save was refused",
+    "saved": "Plan saved",
+    "subscribers": "{count, plural, one {# subscriber} other {# subscribers}}",
+    "displayName": "Display name",
+    "priceMonthly": "€ / month",
+    "stores": "Stores",
+    "commission": "Commission %",
+    "sellingPoints": "Selling points",
+    "removeArgument": "Remove point {index}",
+    "addLine": "Add a line",
+    "saving": "Saving…",
+    "save": "Save",
+    "merchantView": "Merchant view: {name} — {price} / month, {stores, plural, one {# store} other {# stores}}, {commission}% commission on sales.",
+    "footerNote": "A plan's code never changes: it links already-subscribed merchants. A quota can't drop below what merchants already use — migrate them first."
   }
 }
