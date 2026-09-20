@@ -1,19 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { HelpCircle, MessageSquare, Clock, AlertCircle } from 'lucide-react';
 
 import { TicketConversation } from '@/components/TicketConversation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-/** L'état du ticket, en français : la base le stocke en anglais. */
-const LIBELLES_STATUT: Record<string, string> = {
-  OPEN: 'Ouvert',
-  IN_PROGRESS: 'En cours',
-  RESOLVED: 'Résolu',
-  CLOSED: 'Clos',
-};
 
 interface SupportTicket {
   id: string;
@@ -41,6 +34,18 @@ interface TicketsResponse {
 }
 
 export default function SupportTicketsPage() {
+  const t = useTranslations('superownerSupportTickets');
+  const locale = useLocale();
+
+  /** L'état du ticket, en français ou anglais selon la langue : la base le
+   * stocke toujours en anglais (OPEN, IN_PROGRESS, ...). */
+  const LIBELLES_STATUT: Record<string, string> = {
+    OPEN: t('statusOpen'),
+    IN_PROGRESS: t('statusInProgress'),
+    RESOLVED: t('statusResolved'),
+    CLOSED: t('statusClosed'),
+  };
+
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -85,13 +90,13 @@ export default function SupportTicketsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors du chargement des tickets');
+      if (!res.ok) throw new Error(t('loadError'));
       const data: TicketsResponse = await res.json();
       setTickets(data.tickets);
       setTotal(data.pagination.total);
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+      setError(err instanceof Error ? err.message : t('genericError'));
     } finally {
       setLoading(false);
     }
@@ -109,10 +114,10 @@ export default function SupportTicketsPage() {
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (!res.ok) throw new Error('Erreur lors de la mise à jour');
+      if (!res.ok) throw new Error(t('updateError'));
       fetchTickets();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+      setError(err instanceof Error ? err.message : t('genericError'));
     }
   };
 
@@ -128,14 +133,14 @@ export default function SupportTicketsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Changement de priorité impossible');
+        setError(data.error || t('priorityChangeError'));
         return;
       }
 
       setError('');
       fetchTickets();
     } catch {
-      setError('Erreur de connexion au serveur');
+      setError(t('connectionError'));
     }
   };
 
@@ -165,9 +170,9 @@ export default function SupportTicketsPage() {
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center gap-2">
             <HelpCircle className="w-8 h-8" />
-            Support & Tickets
+            {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">Gestion des tickets de support utilisateurs</p>
+          <p className="text-gray-400 mt-2">{t('subtitle')}</p>
         </div>
       </div>
 
@@ -180,7 +185,7 @@ export default function SupportTicketsPage() {
 
       {/* Un ticket clos est archivé : sans cette bascule, la plateforme ne
           pouvait plus le relire ni le rouvrir. */}
-      <div className="flex gap-2" role="group" aria-label="Tickets à afficher">
+      <div className="flex gap-2" role="group" aria-label={t('ticketsToShow')}>
         <button
           onClick={() => {
             setVoirArchives(false);
@@ -190,7 +195,7 @@ export default function SupportTicketsPage() {
             voirArchives ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-blue-600 text-white'
           }`}
         >
-          En cours
+          {t('ongoing')}
         </button>
         <button
           onClick={() => {
@@ -201,13 +206,13 @@ export default function SupportTicketsPage() {
             voirArchives ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
           }`}
         >
-          Archivés
+          {t('archived')}
         </button>
       </div>
 
       <div className="flex gap-4">
         <div className="flex-1">
-          <label className="block text-sm font-medium mb-2">Filtrer par statut</label>
+          <label className="block text-sm font-medium mb-2">{t('filterByStatus')}</label>
           <select
             value={filterStatus}
             onChange={(e) => {
@@ -216,15 +221,15 @@ export default function SupportTicketsPage() {
             }}
             className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
           >
-            <option value="ALL">Tous les statuts</option>
-            <option value="OPEN">Ouvert</option>
-            <option value="IN_PROGRESS">En cours</option>
-            <option value="RESOLVED">Résolu</option>
-            <option value="CLOSED">Fermé</option>
+            <option value="ALL">{t('allStatuses')}</option>
+            <option value="OPEN">{t('statusOpen')}</option>
+            <option value="IN_PROGRESS">{t('statusInProgress')}</option>
+            <option value="RESOLVED">{t('statusResolved')}</option>
+            <option value="CLOSED">{t('statusClosed')}</option>
           </select>
         </div>
         <div className="flex-1">
-          <label className="block text-sm font-medium mb-2">Filtrer par priorité</label>
+          <label className="block text-sm font-medium mb-2">{t('filterByPriority')}</label>
           <select
             value={filterPriority}
             onChange={(e) => {
@@ -233,11 +238,11 @@ export default function SupportTicketsPage() {
             }}
             className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
           >
-            <option value="ALL">Toutes les priorités</option>
-            <option value="URGENT">Urgent</option>
-            <option value="HIGH">Élevée</option>
-            <option value="MEDIUM">Moyenne</option>
-            <option value="LOW">Basse</option>
+            <option value="ALL">{t('allPriorities')}</option>
+            <option value="URGENT">{t('priorityUrgent')}</option>
+            <option value="HIGH">{t('priorityHigh')}</option>
+            <option value="MEDIUM">{t('priorityMedium')}</option>
+            <option value="LOW">{t('priorityLow')}</option>
           </select>
         </div>
       </div>
@@ -250,7 +255,7 @@ export default function SupportTicketsPage() {
         <div className="text-center py-12 bg-gray-800/50 rounded-lg">
           <HelpCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
           <p className="text-gray-400">
-            {voirArchives ? 'Aucun ticket archivé' : 'Aucun ticket de support en cours'}
+            {voirArchives ? t('emptyArchived') : t('emptyOngoing')}
           </p>
         </div>
       ) : (
@@ -272,7 +277,7 @@ export default function SupportTicketsPage() {
                     </span>
                     {ticket.archivedAt && (
                       <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-900 text-gray-400">
-                        Archivé
+                        {t('archivedBadge')}
                       </span>
                     )}
                   </div>
@@ -282,11 +287,11 @@ export default function SupportTicketsPage() {
                     <span>{ticket.userEmail}</span>
                     <span className="flex items-center gap-1">
                       <Clock size={14} />
-                      {new Date(ticket.createdAt).toLocaleDateString('fr-FR')}
+                      {new Date(ticket.createdAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR')}
                     </span>
                     <span className="flex items-center gap-1">
                       <MessageSquare size={14} />
-                      {ticket.messageCount} messages
+                      {ticket.messageCount} {t('messages')}
                     </span>
                   </div>
                 </div>
@@ -309,7 +314,7 @@ export default function SupportTicketsPage() {
                     value={ticket.priority}
                     onChange={(e) => handleUpdatePriority(ticket.id, e.target.value)}
                     className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white"
-                    title="Priorité du ticket"
+                    title={t('ticketPriority')}
                   >
                     {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((p) => (
                       <option key={p} value={p}>
@@ -322,14 +327,14 @@ export default function SupportTicketsPage() {
                       onClick={() => rouvrir(ticket.id)}
                       className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded text-sm transition"
                     >
-                      Rouvrir
+                      {t('reopen')}
                     </button>
                   )}
                   <button
                     onClick={() => setTicketOuvert(ticketOuvert === ticket.id ? null : ticket.id)}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition"
                   >
-                    {ticketOuvert === ticket.id ? 'Replier' : 'Voir la discussion'}
+                    {ticketOuvert === ticket.id ? t('collapse') : t('viewConversation')}
                   </button>
                 </div>
               </div>
@@ -351,7 +356,7 @@ export default function SupportTicketsPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur {total}
+          {t('showingRange', { from: offset + 1, to: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
@@ -359,14 +364,14 @@ export default function SupportTicketsPage() {
             disabled={offset === 0}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
           >
-            Précédent
+            {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
           >
-            Suivant
+            {t('next')}
           </button>
         </div>
       </div>
