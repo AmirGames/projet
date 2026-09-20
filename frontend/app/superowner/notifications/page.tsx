@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Bell, Search, Trash2, Settings, AlertCircle, Info, CheckCircle } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -18,6 +19,7 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
+  const t = useTranslations('superownerNotifications');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -49,7 +51,7 @@ export default function NotificationsPage() {
       const data = await response.json();
       setNotifications(data.notifications || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -62,27 +64,25 @@ export default function NotificationsPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/api/admin/notifications`, {
+      const response = await fetch(`${API_URL}/api/admin/notifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(formData),
       });
 
-      const lue = await reponse.json().catch(() => null);
+      const data = await response.json().catch(() => null);
 
-      // Le refus était avalé : le formulaire se fermait, et la plateforme
-      // croyait avoir diffusé une annonce que le serveur venait de rejeter.
-      if (!reponse.ok) {
-        setErreur(lue?.error || 'Annonce refusée');
+      if (!response.ok) {
+        setErreur(data?.error || t('errorMessage'));
         return;
       }
 
-      setMessage(lue?.message || 'Annonce diffusée');
+      setMessage(data?.message || t('success'));
       setFormData({ title: '', message: '', type: 'INFO', priority: 'MEDIUM', targetAudience: 'ALL' });
       setShowForm(false);
       fetchNotifications();
     } catch (error) {
-      setErreur('Le serveur ne répond pas');
+      setErreur(t('serverError'));
     }
   };
 
@@ -95,7 +95,7 @@ export default function NotificationsPage() {
       });
       fetchNotifications();
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Error:', error);
     }
   };
 
@@ -108,7 +108,7 @@ export default function NotificationsPage() {
       });
       fetchNotifications();
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Error:', error);
     }
   };
 
@@ -149,22 +149,21 @@ export default function NotificationsPage() {
     }
   };
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
+  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Bell size={32} />
-            Notifications & Alertes
+            {t('title')}
           </h1>
-          <p className="text-gray-400 mt-1">Gestion des alertes système et notifications</p>
+          <p className="text-gray-400 mt-1">{t('subtitle')}</p>
         </div>
         <div className="text-right">
           <p className="text-3xl font-bold text-red-400">{unreadCount}</p>
-          <p className="text-sm text-gray-400">non lus</p>
+          <p className="text-sm text-gray-400">{t('unread')}</p>
         </div>
       </div>
 
@@ -174,19 +173,17 @@ export default function NotificationsPage() {
         </p>
       )}
 
-      {/* Create Notification Button */}
       <button
         onClick={() => setShowForm(!showForm)}
         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 rounded-lg px-4 py-2 font-medium transition-colors"
       >
         <Settings size={20} />
-        Créer une notification
+        {t('create')}
       </button>
 
-      {/* Create Notification Form */}
       {showForm && (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-bold mb-4">Nouvelle notification</h2>
+          <h2 className="text-lg font-bold mb-4">{t('createNew')}</h2>
           {erreur && (
             <p role="status" className="mb-4 text-sm text-red-400">
               {erreur}
@@ -194,7 +191,7 @@ export default function NotificationsPage() {
           )}
           <form onSubmit={handleSendNotification} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Titre</label>
+              <label className="block text-sm font-medium mb-2">{t('titleLabel')}</label>
               <input
                 type="text"
                 value={formData.title}
@@ -204,7 +201,7 @@ export default function NotificationsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Message</label>
+              <label className="block text-sm font-medium mb-2">{t('messageLabel')}</label>
               <textarea
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
@@ -215,43 +212,43 @@ export default function NotificationsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Type</label>
+                <label className="block text-sm font-medium mb-2">{t('typeLabel')}</label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                 >
-                  <option value="INFO">Info</option>
-                  <option value="SUCCESS">Succès</option>
-                  <option value="WARNING">Avertissement</option>
-                  <option value="ALERT">Alerte</option>
+                  <option value="INFO">{t('type_info')}</option>
+                  <option value="SUCCESS">{t('type_success')}</option>
+                  <option value="WARNING">{t('type_warning')}</option>
+                  <option value="ALERT">{t('type_alert')}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Priorité</label>
+                <label className="block text-sm font-medium mb-2">{t('priorityLabel')}</label>
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                 >
-                  <option value="LOW">Basse</option>
-                  <option value="MEDIUM">Moyenne</option>
-                  <option value="HIGH">Haute</option>
-                  <option value="CRITICAL">Critique</option>
+                  <option value="LOW">{t('priority_low')}</option>
+                  <option value="MEDIUM">{t('priority_medium')}</option>
+                  <option value="HIGH">{t('priority_high')}</option>
+                  <option value="CRITICAL">{t('priority_critical')}</option>
                 </select>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Audience</label>
+              <label className="block text-sm font-medium mb-2">{t('audienceLabel')}</label>
               <select
                 value={formData.targetAudience}
                 onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
               >
-                <option value="ALL">Tout le monde</option>
-                <option value="MERCHANTS">Les commerçants</option>
-                <option value="CUSTOMERS">Les clients</option>
-                <option value="DRIVERS">Les livreurs</option>
+                <option value="ALL">{t('audience_all')}</option>
+                <option value="MERCHANTS">{t('audience_merchants')}</option>
+                <option value="CUSTOMERS">{t('audience_customers')}</option>
+                <option value="DRIVERS">{t('audience_drivers')}</option>
               </select>
             </div>
             <div className="flex gap-2 justify-end">
@@ -260,27 +257,26 @@ export default function NotificationsPage() {
                 onClick={() => setShowForm(false)}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
               >
-                Annuler
+                {t('send')}
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
               >
-                Envoyer
+                {t('send')}
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Filters */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-2">
             <Search size={20} className="text-gray-400" />
             <input
               type="text"
-              placeholder="Chercher..."
+              placeholder={t('search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
@@ -292,11 +288,11 @@ export default function NotificationsPage() {
             onChange={(e) => setTypeFilter(e.target.value as any)}
             className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
           >
-            <option value="ALL">Tous les types</option>
-            <option value="INFO">Info</option>
-            <option value="SUCCESS">Succès</option>
-            <option value="WARNING">Avertissement</option>
-            <option value="ALERT">Alerte</option>
+            <option value="ALL">{t('filterByType')}</option>
+            <option value="INFO">{t('type_info')}</option>
+            <option value="SUCCESS">{t('type_success')}</option>
+            <option value="WARNING">{t('type_warning')}</option>
+            <option value="ALERT">{t('type_alert')}</option>
           </select>
 
           <select
@@ -304,18 +300,17 @@ export default function NotificationsPage() {
             onChange={(e) => setReadFilter(e.target.value as any)}
             className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
           >
-            <option value="ALL">Tous</option>
-            <option value="UNREAD">Non lus</option>
-            <option value="READ">Lus</option>
+            <option value="ALL">{t('filterByRead')}</option>
+            <option value="UNREAD">{t('filterByReadUnread')}</option>
+            <option value="READ">{t('filterByReadRead')}</option>
           </select>
         </div>
       </div>
 
-      {/* Notifications List */}
       <div className="space-y-3">
         {filteredNotifications.length === 0 ? (
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center text-gray-400">
-            Aucune notification trouvée.
+            {t('noNotifications')}
           </div>
         ) : (
           filteredNotifications.map((notif) => (
@@ -358,7 +353,7 @@ export default function NotificationsPage() {
                   <button
                     onClick={() => handleMarkAsRead(notif.id)}
                     className="p-2 hover:bg-gray-700 rounded transition-colors"
-                    title="Marquer comme lu"
+                    title={t('mark_as_read')}
                   >
                     <CheckCircle size={18} className="text-green-400" />
                   </button>
@@ -366,7 +361,7 @@ export default function NotificationsPage() {
                 <button
                   onClick={() => handleDelete(notif.id)}
                   className="p-2 hover:bg-gray-700 rounded transition-colors text-red-400 hover:text-red-300"
-                  title="Supprimer"
+                  title={t('delete')}
                 >
                   <Trash2 size={18} />
                 </button>
@@ -377,7 +372,7 @@ export default function NotificationsPage() {
       </div>
 
       <div className="text-gray-400 text-sm">
-        Total: <strong>{filteredNotifications.length}</strong> notification(s) • Non lus: <strong>{unreadCount}</strong>
+        {t('total')}: <strong>{filteredNotifications.length}</strong> {t('totalCount')} • {t('unread')}: <strong>{unreadCount}</strong>
       </div>
     </div>
   );

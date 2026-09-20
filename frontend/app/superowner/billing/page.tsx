@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { CreditCard } from 'lucide-react';
 
 interface BillingData {
@@ -13,18 +14,11 @@ interface BillingData {
   period: string;
   nextBillingDate: string;
   createdAt: string;
-  /**
-   * D'où vient le montant.
-   *
-   * L'écran n'affichait qu'un total : « 1,50 € » sans dire qu'il s'agissait
-   * d'un pourcentage des ventes du mois, ni lequel.
-   */
   revenue?: number;
   ordersCount?: number;
   commissionPercent?: number;
 }
 
-/** Le détail d'un commerçant : ses commandes du mois, et la part prélevée. */
 interface LigneDetail {
   id: string;
   numero: string;
@@ -77,18 +71,13 @@ interface BillingResponse {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function BillingPage() {
+  const t = useTranslations('superownerBilling');
   const [billings, setBillings] = useState<BillingData[]>([]);
   const [summary, setSummary] = useState({ totalRevenue: 0, pendingAmount: 0, activeSubscriptions: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
-  /**
-   * Le commerçant dont on regarde le détail.
-   *
-   * La page n'affichait qu'un montant par ligne, sans dire de quelles commandes
-   * il venait ni ce qui avait été prélevé sur chacune.
-   */
   const [detail, setDetail] = useState<DetailFacturation | null>(null);
   const [detailEnCours, setDetailEnCours] = useState<string | null>(null);
   const limit = 20;
@@ -110,7 +99,7 @@ export default function BillingPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error('Erreur lors du chargement de la facturation');
+      if (!res.ok) throw new Error(t('loadError'));
       const data: BillingResponse = await res.json();
       setBillings(data.billings || []);
       setSummary(
@@ -119,13 +108,12 @@ export default function BillingPage() {
       setTotal(data.pagination?.total ?? data.billings?.length ?? 0);
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur s\'est produite');
+      setError(err instanceof Error ? err.message : t('genericError'));
     } finally {
       setLoading(false);
     }
   };
 
-  // Les montants arrivent en euros (Decimal Prisma).
   const euro = (valeur: number) =>
     Number(valeur || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
@@ -139,7 +127,6 @@ export default function BillingPage() {
   };
 
   const ouvrirLeDetail = async (billing: BillingData) => {
-    // Un deuxième clic replie.
     if (detail?.organization.id === billing.id) {
       setDetail(null);
       return;
@@ -155,11 +142,10 @@ export default function BillingPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (!res.ok) throw new Error('Erreur lors du chargement du détail');
-
+      if (!res.ok) throw new Error(t('loadError'));
       setDetail(await res.json());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setError(err instanceof Error ? err.message : t('genericError'));
     } finally {
       setDetailEnCours(null);
     }
@@ -170,9 +156,9 @@ export default function BillingPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <CreditCard className="w-8 h-8" />
-          Facturation & Abonnements
+          {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">Gestion des abonnements et des revenus</p>
+        <p className="text-gray-400 mt-2">{t('subtitle')}</p>
       </div>
 
       {error && (
@@ -183,21 +169,21 @@ export default function BillingPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-6">
-          <p className="text-sm text-green-400 mb-2">Revenu Total</p>
+          <p className="text-sm text-green-400 mb-2">{t('totalRevenue')}</p>
           <p className="text-3xl font-bold text-green-400">{euro(summary.totalRevenue)}</p>
-          <p className="text-xs text-green-400/60 mt-2">Tous les abonnements</p>
+          <p className="text-xs text-green-400/60 mt-2">{t('allSubscriptions')}</p>
         </div>
 
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-6">
-          <p className="text-sm text-yellow-400 mb-2">Montant En Attente</p>
+          <p className="text-sm text-yellow-400 mb-2">{t('pendingAmount')}</p>
           <p className="text-3xl font-bold text-yellow-400">{euro(summary.pendingAmount)}</p>
-          <p className="text-xs text-yellow-400/60 mt-2">À collecter</p>
+          <p className="text-xs text-yellow-400/60 mt-2">{t('pendingAmount')}</p>
         </div>
 
         <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
-          <p className="text-sm text-blue-400 mb-2">Abonnements Actifs</p>
+          <p className="text-sm text-blue-400 mb-2">{t('activeSubscriptions')}</p>
           <p className="text-3xl font-bold text-blue-400">{summary.activeSubscriptions}</p>
-          <p className="text-xs text-blue-400/60 mt-2">Organisations</p>
+          <p className="text-xs text-blue-400/60 mt-2">{t('colOrganization')}</p>
         </div>
       </div>
 
@@ -206,86 +192,91 @@ export default function BillingPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : billings.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700/50">
-          <CreditCard className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Aucune facturation trouvée</p>
+        <div className="text-center py-12 bg-gray-800/50 rounded-lg">
+          <p className="text-gray-400">{t('empty')}</p>
         </div>
       ) : (
-        <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-900/50 border-b border-gray-700/50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Organisation</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Plan</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Période</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
-                    Ventes du mois
-                  </th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
-                    Commission
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Status</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Prochain Paiement</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700/50">
-                {billings.map((billing) => (
-                  <tr
-                    key={billing.id}
-                    onClick={() => ouvrirLeDetail(billing)}
-                    className={`cursor-pointer transition ${
-                      detail?.organization.id === billing.id
-                        ? 'bg-blue-900/20'
-                        : 'hover:bg-gray-700/20'
-                    }`}
-                  >
-                    <td className="px-6 py-4 text-sm text-white font-medium">
-                      {billing.organization}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-700/50 border-b border-gray-700">
+              <tr>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                  {t('colOrganization')}
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                  {t('colTier')}
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                  {t('colPeriod')}
+                </th>
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
+                  {t('colRevenue')}
+                </th>
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
+                  {t('colCommission')}
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                  {t('colStatus')}
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                  {t('colNextBilling')}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-700/50">
+              {billings.map((billing) => (
+                <tr
+                  key={billing.id}
+                  onClick={() => ouvrirLeDetail(billing)}
+                  className={`cursor-pointer transition ${
+                    detail?.organization.id === billing.id
+                      ? 'bg-blue-900/20'
+                      : 'hover:bg-gray-700/20'
+                  }`}
+                >
+                  <td className="px-6 py-4 text-sm text-white font-medium">
+                    {billing.organization}
+                    <span className="block text-xs text-gray-500">
+                      {detailEnCours === billing.id
+                        ? t('loading')
+                        : detail?.organization.id === billing.id
+                          ? t('collapseDetail')
+                          : t('seeOrders')}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-400">{billing.tier}</td>
+                  <td className="px-6 py-4 text-sm text-gray-400">{billing.period}</td>
+                  <td className="px-6 py-4 text-right text-sm text-gray-300">
+                    {euro(billing.revenue ?? 0)}
+                    {billing.ordersCount !== undefined && (
                       <span className="block text-xs text-gray-500">
-                        {detailEnCours === billing.id
-                          ? 'Chargement…'
-                          : detail?.organization.id === billing.id
-                            ? 'Replier le détail'
-                            : 'Voir les commandes'}
+                        {billing.ordersCount} {billing.ordersCount > 1 ? t('orders_plural') : t('orders')}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{billing.tier}</td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{billing.period}</td>
-                    <td className="px-6 py-4 text-right text-sm text-gray-300">
-                      {euro(billing.revenue ?? 0)}
-                      {billing.ordersCount !== undefined && (
-                        <span className="block text-xs text-gray-500">
-                          {billing.ordersCount} commande{billing.ordersCount > 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <p className="font-bold text-green-400">{euro(billing.amount)}</p>
-                      {billing.commissionPercent !== undefined && (
-                        <span className="block text-xs text-gray-500">
-                          {billing.commissionPercent} % des ventes
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(billing.status)}`}>
-                        {billing.status}
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <p className="font-bold text-green-400">{euro(billing.amount)}</p>
+                    {billing.commissionPercent !== undefined && (
+                      <span className="block text-xs text-gray-500">
+                        {billing.commissionPercent} % {t('colRevenue')}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {new Date(billing.nextBillingDate).toLocaleDateString('fr-FR')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(billing.status)}`}>
+                      {billing.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {new Date(billing.nextBillingDate).toLocaleDateString('fr-FR')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* Le détail d'un commerçant : ses commandes du mois, et la part prélevée
-          sur chacune. La page n'affichait qu'un total sans son origine. */}
       {detail && (
         <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg overflow-hidden">
           <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-gray-700/50 px-6 py-4">
@@ -293,8 +284,6 @@ export default function BillingPage() {
               <h2 className="text-lg font-bold text-white">
                 {detail.organization.legalName || detail.organization.name}
               </h2>
-              {/* Les mentions de la facture : sans elles, le document n'en est
-                  pas une, et personne ne le voyait avant de l'éditer. */}
               <p className="text-sm text-gray-400">
                 {[
                   detail.organization.billingAddress,
@@ -305,39 +294,36 @@ export default function BillingPage() {
                   detail.organization.vatNumber && `TVA ${detail.organization.vatNumber}`,
                 ]
                   .filter(Boolean)
-                  .join(' · ') || 'Identité de facturation non renseignée'}
+                  .join(' · ') || t('incompleteInvoice')}
               </p>
               <p className="text-sm text-gray-400">
-                {detail.period} — formule {detail.tierLabel}, {detail.commissionPercent} % de
-                commission sur les ventes
+                {detail.period} — {detail.tierLabel}, {detail.commissionPercent} % de commission
               </p>
               {detail.organization.manquePourFacturer.length > 0 && (
                 <p role="status" className="text-sm text-amber-300 mt-1">
-                  Facture incomplète : il manque{' '}
-                  {detail.organization.manquePourFacturer.join(', ')}.{' '}
+                  {t('incompleteInvoice')} {detail.organization.manquePourFacturer.join(', ')}.{' '}
                   <Link
                     href={`/superowner/organizations/${detail.organization.id}`}
                     className="underline hover:text-amber-200"
                   >
-                    Voir son dossier
+                    {t('seeFiled')}
                   </Link>
                 </p>
               )}
             </div>
             <div className="text-right text-sm">
               <p className="text-gray-300">
-                {detail.summary.ordersCount} commande{detail.summary.ordersCount > 1 ? 's' : ''} —{' '}
-                {euro(detail.summary.revenue)}
+                {detail.summary.ordersCount} {detail.summary.ordersCount > 1 ? t('orders_plural') : t('orders')} — {euro(detail.summary.revenue)}
               </p>
               <p className="font-bold text-green-400">
-                Commission : {euro(detail.summary.commission)}
+                {t('commission')}: {euro(detail.summary.commission)}
               </p>
             </div>
           </div>
 
           {detail.orders.length === 0 ? (
             <p className="px-6 py-8 text-center text-gray-400">
-              Aucune commande sur cette période.
+              {t('noOrders')}
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -345,17 +331,17 @@ export default function BillingPage() {
                 <thead className="bg-gray-900/50 border-b border-gray-700/50">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
-                      Commande
+                      {t('colOrganization')}
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Date</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
                       Boutique
                     </th>
                     <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
-                      Total
+                      {t('total')}
                     </th>
                     <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
-                      Commission
+                      {t('commission')}
                     </th>
                   </tr>
                 </thead>
@@ -379,7 +365,7 @@ export default function BillingPage() {
                         {euro(ligne.total)}
                         {ligne.remise > 0 && (
                           <span className="block text-xs text-green-400">
-                            − {euro(ligne.remise)} de remise
+                            − {euro(ligne.remise)} de {t('discount')}
                           </span>
                         )}
                       </td>
@@ -400,7 +386,7 @@ export default function BillingPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur {total}
+          {t('showingRange', { offset: offset + 1, limit: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
@@ -408,14 +394,14 @@ export default function BillingPage() {
             disabled={offset === 0}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            Précédent
+            {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            Suivant
+            {t('next')}
           </button>
         </div>
       </div>
