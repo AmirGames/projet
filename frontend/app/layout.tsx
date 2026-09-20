@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { AuthProvider } from "@/lib/auth-context";
@@ -9,7 +9,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "SaaS Local - Digitalisation Commerces Locaux",
   description: "Plateforme SaaS pour digitaliser votre commerce local",
-  viewport: "width=device-width, initial-scale=1",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default async function RootLayout({
