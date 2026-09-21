@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Bike, Car, Check, ExternalLink, Truck, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
 
@@ -57,22 +58,6 @@ interface Dossier {
   dossierComplet: boolean;
 }
 
-const ETATS: { valeur: string; libelle: string }[] = [
-  { valeur: 'PENDING', libelle: 'À valider' },
-  { valeur: 'ACTIVE', libelle: 'Actifs' },
-  { valeur: 'SUSPENDED', libelle: 'Suspendus' },
-  { valeur: 'REJECTED', libelle: 'Refusés' },
-  { valeur: 'ALL', libelle: 'Tous' },
-];
-
-const LIBELLES: Record<string, string> = {
-  PENDING: 'En attente',
-  ACTIVE: 'Actif',
-  REJECTED: 'Refusé',
-  SUSPENDED: 'Suspendu',
-  INACTIVE: 'Désactivé',
-};
-
 const COULEURS: Record<string, string> = {
   PENDING: 'bg-amber-500/20 text-amber-300',
   ACTIVE: 'bg-green-500/20 text-green-300',
@@ -88,6 +73,9 @@ const VEHICULES: Record<string, { icone: typeof Car; libelle: string }> = {
 };
 
 export default function LivreursPage() {
+  const t = useTranslations('superownerDrivers');
+  const tCommon = useTranslations('common');
+
   const [livreurs, setLivreurs] = useState<Livreur[]>([]);
   const [comptes, setComptes] = useState<Record<string, number>>({});
   const [filtre, setFiltre] = useState('PENDING');
@@ -107,17 +95,17 @@ export default function LivreursPage() {
         headers: { Authorization: `Bearer ${jeton()}` },
       });
 
-      if (!reponse.ok) throw new Error('Chargement impossible');
+      if (!reponse.ok) throw new Error(t('loadError'));
 
       const lu = await reponse.json();
       setLivreurs(lu.drivers || []);
       setComptes(lu.counts || {});
     } catch (err) {
-      setErreur(err instanceof Error ? err.message : 'Erreur inconnue');
+      setErreur(err instanceof Error ? err.message : tCommon('error'));
     } finally {
       setChargement(false);
     }
-  }, [filtre]);
+  }, [filtre, t, tCommon]);
 
   useEffect(() => {
     charger();
@@ -138,7 +126,7 @@ export default function LivreursPage() {
 
       if (reponse.ok) setDossier(await reponse.json());
     } catch {
-      setErreur('Dossier illisible');
+      setErreur(t('loadError'));
     }
   };
 
@@ -156,7 +144,7 @@ export default function LivreursPage() {
       const lu = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Action refusée');
+        setErreur(lu?.error || t('actionFailed'));
         return;
       }
 
@@ -168,7 +156,35 @@ export default function LivreursPage() {
       if (rafraichi.ok) setDossier(await rafraichi.json());
       await charger();
     } catch {
-      setErreur('Erreur de connexion');
+      setErreur(t('connectionError'));
+    }
+  };
+
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'PENDING':
+        return t('statusPending');
+      case 'ACTIVE':
+        return t('statusActive');
+      case 'SUSPENDED':
+        return t('statusSuspended');
+      case 'REJECTED':
+        return t('statusRejected');
+      case 'INACTIVE':
+        return tCommon('inactive');
+      default:
+        return status;
+    }
+  };
+
+  const getDocumentStatus = (status: string): string => {
+    switch (status) {
+      case 'APPROVED':
+        return t('documentApproved');
+      case 'REJECTED':
+        return t('documentRejected');
+      default:
+        return t('documentPending');
     }
   };
 
@@ -177,10 +193,10 @@ export default function LivreursPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <Truck className="w-8 h-8" />
-          Livreurs
+          {t('title')}
         </h1>
         <p className="text-gray-400 mt-2">
-          Un livreur ne reçoit de course qu&apos;une fois son dossier validé.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -190,8 +206,14 @@ export default function LivreursPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer les livreurs">
-        {ETATS.map((etat) => (
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t('filterDrivers')}>
+        {[
+          { valeur: 'PENDING', key: 'statusPending' },
+          { valeur: 'ACTIVE', key: 'statusActive' },
+          { valeur: 'SUSPENDED', key: 'statusSuspended' },
+          { valeur: 'REJECTED', key: 'statusRejected' },
+          { valeur: 'ALL', key: 'statusAll' },
+        ].map((etat) => (
           <button
             key={etat.valeur}
             onClick={() => setFiltre(etat.valeur)}
@@ -201,7 +223,7 @@ export default function LivreursPage() {
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            {etat.libelle}
+            {t(etat.key)}
             {comptes[etat.valeur] !== undefined && (
               <span className="ml-2 text-xs opacity-75">{comptes[etat.valeur]}</span>
             )}
@@ -215,89 +237,78 @@ export default function LivreursPage() {
         </div>
       ) : livreurs.length === 0 ? (
         <div className="text-center py-12 bg-gray-800/50 rounded-lg">
-          <p className="text-gray-400">Aucun livreur dans cet état</p>
+          <p className="text-gray-400">{t('empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
           {livreurs.map((livreur) => {
-            const vehicule = VEHICULES[livreur.vehicleType] || VEHICULES.car;
-            const IconeVehicule = vehicule.icone;
             const ouvert = dossier?.driver.id === livreur.id;
+            const vehicule = VEHICULES[livreur.vehicleType] || {
+              icone: Car,
+              libelle: livreur.vehicleType,
+            };
+            const IconeVehicule = vehicule.icone;
 
             return (
-              <div
-                key={livreur.id}
-                className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden"
-              >
+              <div key={livreur.id} className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
                 <button
                   onClick={() => ouvrirDossier(livreur)}
-                  className="w-full text-left p-5 hover:bg-gray-700/30 transition"
+                  className="w-full px-5 py-4 flex items-start justify-between gap-4 hover:bg-gray-700/50 transition"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-white font-semibold">{livreur.name}</h3>
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                            COULEURS[livreur.status] || COULEURS.INACTIVE
-                          }`}
-                        >
-                          {LIBELLES[livreur.status] || livreur.status}
-                        </span>
-                        {livreur.isOnline && (
-                          <span className="px-2 py-0.5 rounded text-xs bg-green-500/20 text-green-300">
-                            En ligne
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="text-sm text-gray-400">
-                        {livreur.email} · {livreur.phone}
-                      </p>
-
-                      <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <IconeVehicule size={14} />
-                          {vehicule.libelle}
-                          {livreur.vehiclePlate ? ` · ${livreur.vehiclePlate}` : ''}
-                        </span>
-                        {/* « 0/4 pièces validées » : l'accord suit le nombre
-                            attendu, pas le nombre déjà validé. */}
-                        <span>
-                          {livreur.piecesValidees}/{livreur.piecesAttendues} pièce
-                          {livreur.piecesAttendues > 1 ? 's' : ''} validée
-                          {livreur.piecesAttendues > 1 ? 's' : ''}
-                        </span>
-                        <span>{livreur.totalDeliveries} course{livreur.totalDeliveries > 1 ? 's' : ''}</span>
-                        <span>{euro(livreur.totalEarnings)} gagnés</span>
-                        {/* La note manquait entièrement : la plateforme
-                            classait ses livreurs sans jamais voir ce que les
-                            clients en disaient. */}
-                        <span className={livreur.rating != null && livreur.rating < 3 ? 'text-red-300' : ''}>
-                          {livreur.rating == null
-                            ? 'jamais noté'
-                            : `${livreur.rating.toFixed(1).replace('.', ',')} ★ (${livreur.avis} avis)`}
-                        </span>
-                      </div>
-
-                      {livreur.statusReason && (
-                        <p className="text-xs text-red-300 mt-2">{livreur.statusReason}</p>
-                      )}
+                  <div className="min-w-0 text-left">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-white font-semibold">{livreur.name}</h3>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                          COULEURS[livreur.status] || COULEURS.INACTIVE
+                        }`}
+                      >
+                        {getStatusLabel(livreur.status)}
+                      </span>
                     </div>
 
-                    <span className="text-sm text-gray-400">
-                      {ouvert ? 'Replier' : 'Voir le dossier'}
-                    </span>
+                    <p className="text-sm text-gray-400">
+                      {livreur.email} · {livreur.phone}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <IconeVehicule size={14} />
+                        {vehicule.libelle}
+                        {livreur.vehiclePlate ? ` · ${livreur.vehiclePlate}` : ''}
+                      </span>
+                      <span>
+                        {livreur.piecesValidees}/{livreur.piecesAttendues} {t('piecesLabel')}
+                        {livreur.piecesAttendues > 1 ? 's' : ''}
+                      </span>
+                      <span>
+                        {livreur.totalDeliveries} {livreur.totalDeliveries > 1 ? t('deliveries_plural') : t('delivery')}
+                      </span>
+                      <span>{euro(livreur.totalEarnings)} {t('earned')}</span>
+                      <span className={livreur.rating != null && livreur.rating < 3 ? 'text-red-300' : ''}>
+                        {livreur.rating == null
+                          ? t('neverRated')
+                          : `${livreur.rating.toFixed(1).replace('.', ',')} ★ (${livreur.avis} ${t('reviews')})`}
+                      </span>
+                    </div>
+
+                    {livreur.statusReason && (
+                      <p className="text-xs text-red-300 mt-2">{livreur.statusReason}</p>
+                    )}
                   </div>
+
+                  <span className="text-sm text-gray-400 flex-shrink-0">
+                    {ouvert ? t('collapse') : t('viewFile')}
+                  </span>
                 </button>
 
                 {ouvert && dossier && (
                   <div className="border-t border-gray-700 p-5 space-y-4">
-                    <h4 className="font-semibold text-white">Pièces du dossier</h4>
+                    <h4 className="font-semibold text-white">{t('documentsParts')}</h4>
 
                     {dossier.documents.length === 0 ? (
                       <p className="text-sm text-gray-400">
-                        Aucune pièce déposée pour le moment.
+                        {t('noDocuments')}
                       </p>
                     ) : (
                       <ul className="space-y-2">
@@ -318,17 +329,12 @@ export default function LivreursPage() {
                                         : 'text-gray-400'
                                   }`}
                                 >
-                                  {piece.status === 'APPROVED'
-                                    ? 'validée'
-                                    : piece.status === 'REJECTED'
-                                      ? 'refusée'
-                                      : 'à examiner'}
+                                  {getDocumentStatus(piece.status)}
                                 </span>
                               </p>
                               {piece.expiryDate && (
                                 <p className="text-xs text-gray-500">
-                                  Expire le{' '}
-                                  {new Date(piece.expiryDate).toLocaleDateString('fr-FR')}
+                                  {t('expiresOn')} {new Date(piece.expiryDate).toLocaleDateString('fr-FR')}
                                 </p>
                               )}
                               {piece.reviewNote && (
@@ -344,13 +350,13 @@ export default function LivreursPage() {
                                 className="flex items-center gap-1 text-xs text-blue-400 hover:underline"
                               >
                                 <ExternalLink size={12} />
-                                Ouvrir
+                                {t('open')}
                               </a>
                               <button
                                 onClick={() =>
                                   agir(`${livreur.id}/documents/${piece.id}`, { approuve: true })
                                 }
-                                aria-label={`Valider ${piece.libelle}`}
+                                aria-label={t('approveDocument', { name: piece.libelle })}
                                 className="p-1.5 rounded bg-green-600/20 text-green-300 hover:bg-green-600/40"
                               >
                                 <Check size={14} />
@@ -359,12 +365,10 @@ export default function LivreursPage() {
                                 onClick={() =>
                                   agir(`${livreur.id}/documents/${piece.id}`, {
                                     approuve: false,
-                                    // Un refus sans motif est refusé par le
-                                    // serveur : on prend celui de la case.
-                                    note: motif || 'Pièce illisible ou non conforme',
+                                    note: motif || t('defaultRejectReason'),
                                   })
                                 }
-                                aria-label={`Refuser ${piece.libelle}`}
+                                aria-label={t('rejectDocument', { name: piece.libelle })}
                                 className="p-1.5 rounded bg-red-600/20 text-red-300 hover:bg-red-600/40"
                               >
                                 <X size={14} />
@@ -377,7 +381,7 @@ export default function LivreursPage() {
 
                     {dossier.piecesManquantes.length > 0 && (
                       <p className="text-sm text-amber-300">
-                        Reste à valider :{' '}
+                        {t('remainingToValidate')}:{' '}
                         {dossier.piecesAttendues
                           .filter((attendue) => dossier.piecesManquantes.includes(attendue.type))
                           .map((attendue) => attendue.libelle)
@@ -387,13 +391,13 @@ export default function LivreursPage() {
 
                     <div className="border-t border-gray-700 pt-4 space-y-3">
                       <label htmlFor={`motif-${livreur.id}`} className="block text-sm text-gray-400">
-                        Motif (pour un refus ou une suspension)
+                        {t('reasonLabel')}
                       </label>
                       <input
                         id={`motif-${livreur.id}`}
                         value={motif}
                         onChange={(e) => setMotif(e.target.value)}
-                        placeholder="Assurance expirée, permis illisible…"
+                        placeholder={t('reasonPlaceholder')}
                         className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
                       />
 
@@ -403,7 +407,7 @@ export default function LivreursPage() {
                           disabled={!dossier.dossierComplet || livreur.status === 'ACTIVE'}
                           className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-sm font-medium transition"
                         >
-                          Valider le livreur
+                          {t('approveDriver')}
                         </button>
 
                         {livreur.status === 'ACTIVE' ? (
@@ -411,24 +415,24 @@ export default function LivreursPage() {
                             onClick={() =>
                               agir(`${livreur.id}/reject`, {
                                 etat: 'SUSPENDED',
-                                raison: motif || 'Suspension décidée par la plateforme',
+                                raison: motif || t('defaultSuspendReason'),
                               })
                             }
                             className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded text-sm font-medium transition"
                           >
-                            Suspendre
+                            {t('suspendDriver')}
                           </button>
                         ) : (
                           <button
                             onClick={() =>
                               agir(`${livreur.id}/reject`, {
                                 etat: 'REJECTED',
-                                raison: motif || 'Dossier non conforme',
+                                raison: motif || t('defaultRejectDriverReason'),
                               })
                             }
                             className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded text-sm font-medium transition"
                           >
-                            Refuser le dossier
+                            {t('rejectDriver')}
                           </button>
                         )}
 
@@ -437,7 +441,7 @@ export default function LivreursPage() {
                             onClick={() => agir(`${livreur.id}/reactivate`)}
                             className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded text-sm font-medium transition"
                           >
-                            Rétablir
+                            {t('reactivate')}
                           </button>
                         )}
                       </div>

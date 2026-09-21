@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
@@ -34,6 +36,8 @@ interface MerchantDetail {
 }
 
 export default function MerchantDetailPage() {
+  const t = useTranslations('superownerOrganizationDetail');
+  const tCommon = useTranslations('common'); {
   const router = useRouter();
   const params = useParams();
   // Le segment s'appelle [orgId] depuis le regroupement des espaces
@@ -70,7 +74,7 @@ export default function MerchantDetailPage() {
 
       // « Failed to fetch » était annoncé pour un simple 404 : le message
       // faisait croire à une panne réseau. ensureOk remonte la vraie raison.
-      await ensureOk(response, 'Commerçant introuvable');
+      await ensureOk(response, t('merchantNotFound'));
 
       const data = await response.json();
       setMerchant(data);
@@ -99,11 +103,11 @@ export default function MerchantDetailPage() {
         body: JSON.stringify({ tier: newTier }),
       });
 
-      await ensureOk(response, 'Échec de la mise à jour');
+      await ensureOk(response, t('updateFailed'));
 
       fetchMerchant();
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Action impossible');
+      setActionError(error instanceof Error ? error.message : t('actionFailed'));
     } finally {
       setSaving(false);
     }
@@ -124,13 +128,13 @@ export default function MerchantDetailPage() {
         body: JSON.stringify({ reason: actionReason }),
       });
 
-      await ensureOk(response, 'Échec de la suspension');
+      await ensureOk(response, t('suspensionFailed'));
 
       setActionReason('');
       setShowActionModal(null);
       fetchMerchant();
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Action impossible');
+      setActionError(error instanceof Error ? error.message : t('actionFailed'));
     } finally {
       setSaving(false);
     }
@@ -150,12 +154,12 @@ export default function MerchantDetailPage() {
         },
       });
 
-      await ensureOk(response, 'Échec de la réactivation');
+      await ensureOk(response, t('reactivationFailed'));
 
       setShowActionModal(null);
       fetchMerchant();
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Action impossible');
+      setActionError(error instanceof Error ? error.message : t('actionFailed'));
     } finally {
       setSaving(false);
     }
@@ -176,13 +180,13 @@ export default function MerchantDetailPage() {
         body: JSON.stringify({ reason: actionReason }),
       });
 
-      await ensureOk(response, 'Échec de la fermeture');
+      await ensureOk(response, t('closureFailed'));
 
       setActionReason('');
       setShowActionModal(null);
       fetchMerchant();
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Action impossible');
+      setActionError(error instanceof Error ? error.message : t('actionFailed'));
     } finally {
       setSaving(false);
     }
@@ -202,12 +206,12 @@ export default function MerchantDetailPage() {
         },
       });
 
-      await ensureOk(response, 'Échec de la restauration');
+      await ensureOk(response, t('restoreFailed'));
 
       setShowActionModal(null);
       fetchMerchant();
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Action impossible');
+      setActionError(error instanceof Error ? error.message : t('actionFailed'));
     } finally {
       setSaving(false);
     }
@@ -339,7 +343,7 @@ export default function MerchantDetailPage() {
               disabled={saving}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors font-medium text-sm col-span-2"
             >
-              {saving ? 'Réactivation...' : 'Réactiver'}
+              {saving ? 'Réactivation...' : t('reactivate')}
             </button>
           )}
 
@@ -349,7 +353,7 @@ export default function MerchantDetailPage() {
               disabled={saving}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors font-medium text-sm col-span-2"
             >
-              {saving ? 'Restauration...' : 'Restaurer depuis backup'}
+              {saving ? 'Restauration...' : t('restoreFromBackup')}
             </button>
           )}
         </div>
@@ -379,7 +383,7 @@ export default function MerchantDetailPage() {
               disabled={saving}
               className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors font-medium"
             >
-              {saving ? 'Sauvegarde...' : 'Mettre à jour'}
+              {saving ? t('saving') : t('update')}
             </button>
           </div>
         </div>
@@ -390,9 +394,9 @@ export default function MerchantDetailPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full space-y-4">
             <h3 className="text-xl font-bold">
-              {showActionModal === 'suspend' && 'Suspendre le compte'}
-              {showActionModal === 'close' && 'Fermer le compte'}
-              {showActionModal === 'restore' && 'Restaurer le compte'}
+              {showActionModal === 'suspend' && t('suspendAccount')}
+              {showActionModal === 'close' && t('closeAccountModal')}
+              {showActionModal === 'restore' && t('restoreAccount')}
             </h3>
 
             {showActionModal === 'restore' ? (
@@ -439,7 +443,7 @@ export default function MerchantDetailPage() {
                   'bg-green-600 hover:bg-green-700'
                 } disabled:opacity-50`}
               >
-                {saving ? 'Traitement...' : 'Confirmer'}
+                {saving ? 'Traitement...' : t('confirm')}
               </button>
             </div>
           </div>
