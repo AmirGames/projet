@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Banknote, CalendarRange, Check, FileText, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
 
@@ -37,19 +38,6 @@ interface Reste {
   livreurs: number;
 }
 
-const ETATS = [
-  { valeur: 'PENDING', libelle: 'À verser' },
-  { valeur: 'PAID', libelle: 'Versés' },
-  { valeur: 'CANCELLED', libelle: 'Annulés' },
-  { valeur: 'ALL', libelle: 'Tous' },
-];
-
-const MOYENS = [
-  { valeur: 'BANK_TRANSFER', libelle: 'Virement bancaire' },
-  { valeur: 'CASH', libelle: 'Espèces' },
-  { valeur: 'OTHER', libelle: 'Autre' },
-];
-
 const jour = (date: string) => new Date(date).toLocaleDateString('fr-FR');
 
 /** La borne de fin est exclue : on l'affiche comme la veille. */
@@ -75,6 +63,9 @@ const pourChamp = (date: string) => {
 };
 
 export default function VersementsPage() {
+  const t = useTranslations('superownerPayouts');
+  const tCommon = useTranslations('common');
+  
   const [releves, setReleves] = useState<Releve[]>([]);
   const [comptes, setComptes] = useState<Record<string, number>>({});
   const [totaux, setTotaux] = useState<Record<string, number>>({});
@@ -100,7 +91,7 @@ export default function VersementsPage() {
         headers: { Authorization: `Bearer ${jeton()}` },
       });
 
-      if (!reponse.ok) throw new Error('Chargement impossible');
+      if (!reponse.ok) throw new Error(t('loadError'));
 
       const lu = await reponse.json();
       setReleves(lu.payouts || []);
@@ -119,11 +110,11 @@ export default function VersementsPage() {
             }
       );
     } catch (err) {
-      setErreur(err instanceof Error ? err.message : 'Erreur inconnue');
+      setErreur(err instanceof Error ? err.message : tCommon('error'));
     } finally {
       setChargement(false);
     }
-  }, [filtre]);
+  }, [filtre, t, tCommon]);
 
   useEffect(() => {
     charger();
@@ -143,7 +134,7 @@ export default function VersementsPage() {
       const lu = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Action refusée');
+        setErreur(lu?.error || t('actionFailed'));
         return false;
       }
 
@@ -152,14 +143,14 @@ export default function VersementsPage() {
       await charger();
       return true;
     } catch {
-      setErreur('Erreur de connexion');
+      setErreur(t('connectionError'));
       return false;
     }
   };
 
   const arreter = async () => {
     if (!bornes.debut || !bornes.fin) {
-      setErreur('Donnez les deux bornes de la période');
+      setErreur(t('requireBothDates'));
       return;
     }
 
@@ -183,7 +174,7 @@ export default function VersementsPage() {
   };
 
   const annuler = async (releve: Releve) => {
-    const raison = window.prompt('Pourquoi ce relevé est-il annulé ?');
+    const raison = window.prompt(t('cancelReason'));
 
     if (!raison) return;
 
@@ -195,10 +186,10 @@ export default function VersementsPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <Banknote className="w-8 h-8" />
-          Versements aux livreurs
+          {t('title')}
         </h1>
         <p className="text-gray-400 mt-2">
-          Une course livrée est due tant qu&apos;aucun relevé ne la porte.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -219,15 +210,15 @@ export default function VersementsPage() {
       {reste && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-2">Reste à devoir</p>
+            <p className="text-gray-400 text-sm mb-2">{t('restAmount')}</p>
             <p className="text-3xl font-bold text-amber-300">{euro(reste.montant)}</p>
           </div>
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-2">Courses non payées</p>
+            <p className="text-gray-400 text-sm mb-2">{t('unpaidDeliveries')}</p>
             <p className="text-3xl font-bold text-white">{reste.courses}</p>
           </div>
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-2">Livreurs concernés</p>
+            <p className="text-gray-400 text-sm mb-2">{t('concernedDrivers')}</p>
             <p className="text-3xl font-bold text-white">{reste.livreurs}</p>
           </div>
         </div>
@@ -236,13 +227,13 @@ export default function VersementsPage() {
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
         <h2 className="font-semibold text-white flex items-center gap-2">
           <CalendarRange size={18} className="text-orange-500" />
-          Arrêter les relevés d&apos;une période
+          {t('drawPeriod')}
         </h2>
 
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <label htmlFor="periode-debut" className="block text-sm text-gray-400 mb-1">
-              Du
+              {t('from')}
             </label>
             <input
               id="periode-debut"
@@ -255,7 +246,7 @@ export default function VersementsPage() {
 
           <div>
             <label htmlFor="periode-fin" className="block text-sm text-gray-400 mb-1">
-              Au (exclu)
+              {t('toExcluded')}
             </label>
             <input
               id="periode-fin"
@@ -270,18 +261,22 @@ export default function VersementsPage() {
             onClick={arreter}
             className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded text-sm font-medium transition"
           >
-            Arrêter les relevés
+            {t('drawButton')}
           </button>
         </div>
 
         <p className="text-xs text-gray-500">
-          Un relevé est créé par livreur ayant des courses livrées non payées sur la période. Une
-          course déjà portée par un relevé n&apos;est jamais reprise.
+          {t('drawExplanation')}
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer les relevés">
-        {ETATS.map((etat) => (
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t('filterPayouts')}>
+        {[
+          { valeur: 'PENDING', key: 'statusPending' },
+          { valeur: 'PAID', key: 'statusPaid' },
+          { valeur: 'CANCELLED', key: 'statusCancelled' },
+          { valeur: 'ALL', key: 'statusAll' },
+        ].map((etat) => (
           <button
             key={etat.valeur}
             onClick={() => setFiltre(etat.valeur)}
@@ -291,7 +286,7 @@ export default function VersementsPage() {
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            {etat.libelle}
+            {t(etat.key)}
             {comptes[etat.valeur] !== undefined && (
               <span className="ml-2 text-xs opacity-75">{comptes[etat.valeur]}</span>
             )}
@@ -308,7 +303,7 @@ export default function VersementsPage() {
         </div>
       ) : releves.length === 0 ? (
         <div className="text-center py-12 bg-gray-800/50 rounded-lg">
-          <p className="text-gray-400">Aucun relevé dans cet état</p>
+          <p className="text-gray-400">{t('noPayouts')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -329,10 +324,10 @@ export default function VersementsPage() {
                       }`}
                     >
                       {releve.status === 'PAID'
-                        ? 'Versé'
+                        ? t('statusPaid')
                         : releve.status === 'CANCELLED'
-                          ? 'Annulé'
-                          : 'À verser'}
+                          ? t('statusCancelled')
+                          : t('statusPending')}
                     </span>
                   </div>
 
@@ -341,11 +336,11 @@ export default function VersementsPage() {
                   <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-500">
                     <span>{periode(releve)}</span>
                     <span>
-                      {releve.deliveryCount} course{releve.deliveryCount > 1 ? 's' : ''}
+                      {releve.deliveryCount} {releve.deliveryCount > 1 ? t('deliveries_plural') : t('delivery')}
                     </span>
                     {releve.paidAt && (
                       <span>
-                        Versé le {jour(releve.paidAt)}
+                        {t('paidOn')} {jour(releve.paidAt)}
                         {releve.methodLibelle ? ` · ${releve.methodLibelle}` : ''}
                         {releve.reference ? ` · ${releve.reference}` : ''}
                       </span>
@@ -353,7 +348,7 @@ export default function VersementsPage() {
                   </div>
 
                   {releve.note && releve.status === 'CANCELLED' && (
-                    <p className="text-xs text-gray-400 mt-2">Motif : {releve.note}</p>
+                    <p className="text-xs text-gray-400 mt-2">{t('cancelReason')}: {releve.note}</p>
                   )}
                 </div>
 
@@ -369,11 +364,11 @@ export default function VersementsPage() {
                         className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-medium transition"
                       >
                         <Check size={14} />
-                        Marquer versé
+                        {t('markPaid')}
                       </button>
                       <button
                         onClick={() => annuler(releve)}
-                        aria-label={`Annuler le relevé de ${releve.driverName}`}
+                        aria-label={t('cancelPayout', { driver: releve.driverName })}
                         className="p-1.5 rounded bg-red-600/20 text-red-300 hover:bg-red-600/40"
                       >
                         <X size={14} />
@@ -391,7 +386,7 @@ export default function VersementsPage() {
                         htmlFor={`moyen-${releve.id}`}
                         className="block text-sm text-gray-400 mb-1"
                       >
-                        Moyen
+                        {t('method')}
                       </label>
                       <select
                         id={`moyen-${releve.id}`}
@@ -399,11 +394,9 @@ export default function VersementsPage() {
                         onChange={(e) => setVersement({ ...versement, method: e.target.value })}
                         className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
                       >
-                        {MOYENS.map((moyen) => (
-                          <option key={moyen.valeur} value={moyen.valeur}>
-                            {moyen.libelle}
-                          </option>
-                        ))}
+                        <option value="BANK_TRANSFER">{t('methodBankTransfer')}</option>
+                        <option value="CASH">{t('methodCash')}</option>
+                        <option value="OTHER">{t('methodOther')}</option>
                       </select>
                     </div>
 
@@ -412,13 +405,13 @@ export default function VersementsPage() {
                         htmlFor={`reference-${releve.id}`}
                         className="block text-sm text-gray-400 mb-1"
                       >
-                        Référence
+                        {t('reference')}
                       </label>
                       <input
                         id={`reference-${releve.id}`}
                         value={versement.reference}
                         onChange={(e) => setVersement({ ...versement, reference: e.target.value })}
-                        placeholder="Numéro de virement, pour que le livreur le retrouve"
+                        placeholder={t('referencePlaceholder')}
                         className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
                       />
                     </div>
@@ -427,14 +420,14 @@ export default function VersementsPage() {
                       onClick={verser}
                       className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-medium transition"
                     >
-                      Confirmer le versement
+                      {t('confirmPayout')}
                     </button>
 
                     <button
                       onClick={() => setVersement(null)}
                       className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition"
                     >
-                      Annuler
+                      {tCommon('cancel')}
                     </button>
                   </div>
                 </div>
