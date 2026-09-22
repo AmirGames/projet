@@ -137,7 +137,7 @@ export async function compteRestreint(req: Request, res: Response, next: NextFun
     return next();
   }
 
-  if (!charge?.orgId) return next();
+  if (!charge?.userId) return next();
 
   // La plateforme n'est pas un commerçant : elle doit pouvoir travailler même
   // sur un compte qu'elle vient de suspendre.
@@ -148,24 +148,35 @@ export async function compteRestreint(req: Request, res: Response, next: NextFun
 
   if (utilisateur?.isSuperOwner || utilisateur?.isSystemAdmin) return next();
 
-  const statut = await statutDuCompte(charge.orgId);
-  const refus = MESSAGES[statut];
+  // Load user's organizations and check their status
+  const memberships = await db.membership.findMany({
+    where: { userId: charge.userId },
+    select: { orgId: true },
+  });
 
-  if (!refus) return next();
+  // Check if any organization is suspended or closed
+  for (const membership of memberships) {
+    const statut = await statutDuCompte(membership.orgId);
+    const refus = MESSAGES[statut];
 
-  if (
-    statut === "SUSPENDED" &&
-    CHEMINS_OUVERTS_SI_SUSPENDU.some((chemin) => req.path.startsWith(chemin))
-  ) {
-    return next();
+    if (!refus) continue;
+
+    if (
+      statut === "SUSPENDED" &&
+      CHEMINS_OUVERTS_SI_SUSPENDU.some((chemin) => req.path.startsWith(chemin))
+    ) {
+      continue;
+    }
+
+    return res.status(403).json({
+      error: refus.message,
+      code: refus.code,
+      // La page a besoin de savoir quoi montrer, pas seulement qu'elle est
+      // refusée : sans cela elle affiche une erreur muette.
+      accountStatus: statut,
+      supportOnly: true,
+    });
   }
 
-  return res.status(403).json({
-    error: refus.message,
-    code: refus.code,
-    // La page a besoin de savoir quoi montrer, pas seulement qu'elle est
-    // refusée : sans cela elle affiche une erreur muette.
-    accountStatus: statut,
-    supportOnly: true,
-  });
+  return next();
 }

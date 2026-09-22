@@ -14,7 +14,6 @@ import {
   DUREE_CONFIRMATION_MS,
   DUREE_REINITIALISATION_MS,
 } from "../services/account-token.service";
-import { generateSlug } from "../utils/validation";
 import { db } from "../services/db";
 
 const router = Router();
@@ -160,7 +159,6 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
     // Tous les comptes n'appartiennent pas à une organisation : un livreur,
     // par exemple, n'en a aucune. Le refuser ici l'empêchait de se connecter.
     const primaryMembership = memberships[0];
-    const storeIds = primaryMembership ? primaryMembership.org.stores.map((s) => s.id) : [];
 
     const livreur = primaryMembership
       ? null
@@ -226,7 +224,6 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
     // Tous les comptes n'appartiennent pas à une organisation : un livreur,
     // par exemple, n'en a aucune. Le refuser ici l'empêchait de se connecter.
     const primaryMembership = memberships[0];
-    const storeIds = primaryMembership ? primaryMembership.org.stores.map((s) => s.id) : [];
 
     const livreur = primaryMembership
       ? null
