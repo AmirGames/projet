@@ -1,9 +1,11 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Store } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 
 export function StoreSwitcher() {
+  const t = useTranslations('storeSwitcher');
   const { stores, storeId, selectStore, loading } = useCurrentStore();
 
   if (loading || stores.length === 0) return null;
@@ -24,7 +26,7 @@ export function StoreSwitcher() {
       <select
         value={storeId}
         onChange={(e) => selectStore(e.target.value)}
-        title="Boutique gérée"
+        title={t('managedStore')}
         className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-orange-500 max-w-[220px]"
       >
         {stores.map((store) => (

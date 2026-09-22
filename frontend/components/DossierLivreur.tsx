@@ -10,6 +10,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { AlertCircle, Check, Clock, FileText, Upload, X } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -67,10 +68,11 @@ const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: st
   APPROVED: { icone: Check, classe: 'text-green-400', libelle: 'Validée' },
   REJECTED: { icone: X, classe: 'text-red-400', libelle: 'Refusée' },
   EXPIRED: { icone: AlertCircle, classe: 'text-amber-400', libelle: 'Expirée' },
-  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: 'En attente d’examen' },
+  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: "En attente d'examen" },
 };
 
 export function DossierLivreur({ surChangement }: { surChangement?: () => void }) {
+  const t = useTranslations('dossierLivreur');
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
@@ -105,7 +107,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
     setErreur('');
 
     if (!formulaire.type || !formulaire.documentUrl) {
-      setErreur('Choisissez une pièce et donnez son lien');
+      setErreur(t('chooseDocumentError'));
       return;
     }
 
@@ -128,7 +130,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
       const lu = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Dépôt impossible');
+        setErreur(lu?.error || t('depositError'));
         return;
       }
 
@@ -136,7 +138,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
       await charger();
       surChangement?.();
     } catch {
-      setErreur('Erreur de connexion');
+      setErreur(t('connectionError'));
     } finally {
       setEnvoi(false);
     }
@@ -159,7 +161,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
         <div className="bg-gray-800 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <FileText size={20} className="text-orange-500" />
-            Vos pièces
+            {t('yourDocuments')}
           </h2>
 
           <ul className="space-y-2">
@@ -183,7 +185,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                         )}
                       </>
                     ) : (
-                      <p className="text-xs text-gray-400">Pas encore déposée</p>
+                      <p className="text-xs text-gray-400">{t('notYetSubmitted')}</p>
                     )}
                   </div>
 
@@ -202,7 +204,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
 
             <div>
               <label htmlFor="piece-type" className="block text-sm text-gray-400 mb-1">
-                Pièce à déposer
+                {t('documentToSubmit')}
               </label>
               <select
                 id="piece-type"
@@ -210,7 +212,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                 onChange={(e) => setFormulaire({ ...formulaire, type: e.target.value })}
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
               >
-                <option value="">Choisir…</option>
+                <option value="">{t('choose')}</option>
                 {dossier.piecesAttendues.map((attendue) => (
                   <option key={attendue.type} value={attendue.type}>
                     {attendue.libelle}
@@ -221,7 +223,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
 
             <div>
               <label htmlFor="piece-lien" className="block text-sm text-gray-400 mb-1">
-                Lien vers le document
+                {t('documentLink')}
               </label>
               <input
                 id="piece-lien"
@@ -234,14 +236,13 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
               {/* L'hébergement de fichiers n'est pas branché : le dire plutôt
                   que de laisser croire à un envoi. */}
               <p className="text-xs text-gray-500 mt-1">
-                L&apos;envoi de fichiers n&apos;est pas encore disponible : déposez un lien vers
-                votre document.
+                {t('fileUploadNotAvailable')}
               </p>
             </div>
 
             <div>
               <label htmlFor="piece-expiration" className="block text-sm text-gray-400 mb-1">
-                Date d&apos;expiration (si la pièce en a une)
+                {t('expirationDate')}
               </label>
               <input
                 id="piece-expiration"
@@ -258,7 +259,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
               className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg transition"
             >
               <Upload size={16} />
-              {envoi ? 'Dépôt…' : 'Déposer la pièce'}
+              {envoi ? t('submitting') : t('submitDocument')}
             </button>
           </form>
         </div>

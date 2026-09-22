@@ -2094,15 +2094,41 @@
   },
   "propositionsCourses": {
     "saveError": "La réponse n'a pas été enregistrée.",
-    "networkError": "Serveur injoignable.",
+    "networkError": "Serveur injoignable. Vérifiez votre connexion.",
     "defaultName": "Course à prendre",
-    "timeRemaining": "Temps restant pour répondre"
+    "timeRemaining": "Temps restant pour répondre",
+    "locationDenied": "Localisation refusée. Sans votre position, aucune course ne peut vous être proposée.",
+    "waitingForDelivery": "En attente d'une course...",
+    "youWillBeNotified": "Vous serez prévenu dès qu'une commande est prête près de vous.",
+    "delivery": "Livraison",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "unknownDistance": "distance inconnue"
   },
   "rootLayoutContent": {
-    "themeError": "Erreur lors du chargement du thème"
+    "themeError": "Erreur lors du chargement du thème:"
   },
   "storeSwitcher": {
     "managedStore": "Boutique gérée"
+  },
+  "dossierLivreur": {
+    "documentInfo": "Déposez les pièces demandées.",
+    "validated": "Compte validé",
+    "rejected": "Dossier refusé",
+    "rejectHelp": "Corrigez les pièces signalées et déposez-les à nouveau.",
+    "disabled": "Compte désactivé",
+    "yourDocuments": "Vos pièces",
+    "notYetSubmitted": "Pas encore déposée",
+    "documentToSubmit": "Pièce à déposer",
+    "choose": "Choisir…",
+    "documentLink": "Lien vers le document",
+    "fileUploadNotAvailable": "L'envoi de fichiers n'est pas encore disponible : déposez un lien vers votre document.",
+    "expirationDate": "Date d'expiration (si la pièce en a une)",
+    "submitting": "Dépôt…",
+    "submitDocument": "Déposer la pièce",
+    "chooseDocumentError": "Choisissez une pièce et donnez son lien",
+    "depositError": "Dépôt impossible",
+    "connectionError": "Erreur de connexion"
   },
   "suiviLivraison": {
     "pickedUp": "Commande récupérée, en route vers vous",

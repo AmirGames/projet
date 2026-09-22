@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import Navbar from './Navbar';
 import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
 
@@ -12,6 +13,7 @@ export default function RootLayoutContent({
 }: {
   children: React.ReactNode;
 }) {
+  const t = useTranslations('rootLayoutContent');
   const pathname = usePathname();
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export default function RootLayoutContent({
           loadSavedTheme();
         }
       } catch (error) {
-        console.error('Erreur lors du chargement du thème:', error);
+        console.error(t('themeError'), error);
         loadSavedTheme();
       }
     };

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { MapPin, Navigation, Timer, Wallet } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -44,6 +45,7 @@ interface Props {
  * c'est elle qui décide à qui la prochaine course sera proposée.
  */
 export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
+  const t = useTranslations('propositionsCourses');
   const [propositions, setPropositions] = useState<Proposition[]>([]);
   const [maintenant, setMaintenant] = useState(() => Date.now());
   const [enCours, setEnCours] = useState<string | null>(null);
@@ -141,7 +143,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
       const donnees = await resultat.json();
 
       if (!resultat.ok) {
-        setErreur(donnees.error || "La réponse n'a pas été enregistrée.");
+        setErreur(donnees.error || t('saveError'));
         await relever();
         return;
       }
@@ -150,7 +152,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
 
       if (reponse === 'accept') surAcceptation?.();
     } catch {
-      setErreur('Serveur injoignable. Vérifiez votre connexion.');
+      setErreur(t('networkError'));
     } finally {
       setEnCours(null);
     }
@@ -164,7 +166,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
     <div className="space-y-3">
       {positionRefusee && (
         <div className="bg-amber-900/30 border border-amber-700/50 text-amber-200 rounded-lg p-3 text-sm">
-          Localisation refusée. Sans votre position, aucune course ne peut vous être proposée.
+          {t('locationDenied')}
         </div>
       )}
 
@@ -177,9 +179,9 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
       {visibles.length === 0 && (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center text-gray-400">
           <Navigation size={28} className="mx-auto mb-2 text-gray-600" />
-          <p>En attente d&apos;une course...</p>
+          <p>{t('waitingForDelivery')}</p>
           <p className="text-xs text-gray-500 mt-1">
-            Vous serez prévenu dès qu&apos;une commande est prête près de vous.
+            {t('youWillBeNotified')}
           </p>
         </div>
       )}
@@ -207,7 +209,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
               </div>
 
               <span
-                title="Temps restant pour répondre"
+                title={t('timeRemaining')}
                 className={`flex items-center gap-1 px-2 py-1 rounded font-mono text-sm flex-shrink-0 ${
                   restant <= 10 ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-200'
                 }`}
@@ -220,7 +222,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
             <div className="flex items-center gap-4 text-sm">
               <span className="flex items-center gap-1 text-gray-300">
                 <MapPin size={14} className="text-orange-500" />
-                {proposition.distanceKm != null ? `${proposition.distanceKm} km` : 'distance inconnue'}
+                {proposition.distanceKm != null ? `${proposition.distanceKm} km` : t('defaultName')}
               </span>
               <span className="flex items-center gap-1 font-semibold text-green-400">
                 <Wallet size={14} />
@@ -229,7 +231,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
             </div>
 
             <div className="text-sm text-gray-400 border-t border-gray-700 pt-2">
-              <p className="text-xs uppercase tracking-wide text-gray-500">Livraison</p>
+              <p className="text-xs uppercase tracking-wide text-gray-500">{t('delivery')}</p>
               <p className="text-gray-300">
                 {proposition.adresse}
                 {proposition.codePostal || proposition.ville
@@ -245,7 +247,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
                 disabled={enCours === proposition.id}
                 className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition"
               >
-                {enCours === proposition.id ? '...' : 'Accepter'}
+                {enCours === proposition.id ? '...' : t('accept')}
               </button>
               <button
                 type="button"
@@ -253,7 +255,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
                 disabled={enCours === proposition.id}
                 className="px-5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-200 py-3 rounded-lg transition"
               >
-                Refuser
+                {t('decline')}
               </button>
             </div>
           </div>

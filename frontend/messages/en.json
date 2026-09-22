@@ -2094,15 +2094,41 @@
   },
   "propositionsCourses": {
     "saveError": "Response could not be saved.",
-    "networkError": "Server unreachable.",
+    "networkError": "Server unreachable. Check your connection.",
     "defaultName": "Delivery to take",
-    "timeRemaining": "Time remaining to respond"
+    "timeRemaining": "Time remaining to respond",
+    "locationDenied": "Location denied. Without your location, no delivery can be proposed to you.",
+    "waitingForDelivery": "Waiting for a delivery...",
+    "youWillBeNotified": "You'll be notified as soon as an order is ready near you.",
+    "delivery": "Delivery",
+    "accept": "Accept",
+    "decline": "Decline",
+    "unknownDistance": "unknown distance"
   },
   "rootLayoutContent": {
-    "themeError": "Error loading theme"
+    "themeError": "Error loading theme:"
   },
   "storeSwitcher": {
     "managedStore": "Managed store"
+  },
+  "dossierLivreur": {
+    "documentInfo": "Submit the requested documents.",
+    "validated": "Account validated",
+    "rejected": "File rejected",
+    "rejectHelp": "Correct flagged documents and resubmit.",
+    "disabled": "Account disabled",
+    "yourDocuments": "Your documents",
+    "notYetSubmitted": "Not yet submitted",
+    "documentToSubmit": "Document to submit",
+    "choose": "Choose…",
+    "documentLink": "Link to document",
+    "fileUploadNotAvailable": "File upload is not yet available: provide a link to your document.",
+    "expirationDate": "Expiration date (if applicable)",
+    "submitting": "Submitting…",
+    "submitDocument": "Submit document",
+    "chooseDocumentError": "Choose a document and provide its link",
+    "depositError": "Submission impossible",
+    "connectionError": "Connection error"
   },
   "suiviLivraison": {
     "pickedUp": "Order picked up, on the way",
