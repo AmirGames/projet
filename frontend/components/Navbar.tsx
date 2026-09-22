@@ -43,6 +43,9 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <LanguageSwitcher />
+            <Link href="/" className="text-slate-700 hover:text-primary font-medium transition">
+              Accueil
+            </Link>
             {!user ? (
               <>
                 <Link href="/restaurants" className="text-slate-700 hover:text-primary font-medium transition">
@@ -92,6 +95,12 @@ export default function Navbar() {
             <div className="px-4 py-2">
               <LanguageSwitcher />
             </div>
+            <Link
+              href="/"
+              className="block px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-lg font-medium"
+            >
+              Accueil
+            </Link>
             {!user ? (
               <>
                 <Link
