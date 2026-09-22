@@ -2013,5 +2013,89 @@
     "addButton": "Ajouter",
     "priceHelper": "Un prix laissé vide reprend celui du plat ({price}). Dès qu'une déclinaison existe, le client doit en choisir une pour commander.",
     "collapse": "Replier"
+  },
+  "dossierCommercant": {
+    "approved": "Validé",
+    "rejected": "Refusé",
+    "pending": "En attente d'examen",
+    "title": "Dossier du commerçant",
+    "itemsToReview": "pièces à examiner",
+    "examError": "Examen impossible",
+    "serverError": "Le serveur ne répond pas",
+    "incompleteFile": "Dossier incomplet",
+    "legalName": "Raison sociale",
+    "registration": "Immatriculation",
+    "vat": "Numéro de TVA",
+    "billingAddress": "Adresse de facturation",
+    "country": "Pays",
+    "owner": "Propriétaire",
+    "ownerEmail": "E-mail du propriétaire",
+    "ownerPhone": "Téléphone du propriétaire",
+    "accountHolder": "Titulaire du compte",
+    "iban": "IBAN",
+    "documents": "Justificatifs",
+    "noDocuments": "Aucune pièce déposée.",
+    "reasonPlaceholder": "Motif (obligatoire pour refuser)",
+    "approve": "Valider",
+    "reject": "Refuser"
+  },
+  "dossierLivreur": {
+    "documentInfo": "Déposez les pièces demandées.",
+    "validated": "Compte validé",
+    "rejected": "Dossier refusé",
+    "rejectHelp": "Corrigez les pièces signalées et déposez-les à nouveau.",
+    "disabled": "Compte désactivé"
+  },
+  "maintenanceGate": {
+    "title": "Maintenance",
+    "message": "La plateforme est en maintenance."
+  },
+  "mesVersements": {
+    "title": "Mes versements"
+  },
+  "noterLivreur": {
+    "veryBad": "Très mauvaise",
+    "bad": "Mauvaise",
+    "ok": "Convenable",
+    "good": "Bonne",
+    "excellent": "Excellente",
+    "saveError": "La note n'a pas pu être enregistrée",
+    "networkError": "La note n'a pas pu être envoyée"
+  },
+  "notesRecues": {
+    "title": "Notes reçues"
+  },
+  "notificationBell": {
+    "noNotifications": "Aucune notification"
+  },
+  "propositionsCourses": {
+    "saveError": "La réponse n'a pas été enregistrée.",
+    "networkError": "Serveur injoignable.",
+    "defaultName": "Course à prendre",
+    "timeRemaining": "Temps restant pour répondre"
+  },
+  "rootLayoutContent": {
+    "themeError": "Erreur lors du chargement du thème"
+  },
+  "storeSwitcher": {
+    "managedStore": "Boutique gérée"
+  },
+  "suiviLivraison": {
+    "pickedUp": "Commande récupérée, en route vers vous",
+    "delivered": "Livrée",
+    "now": "à l'instant",
+    "confirmed": "Remise confirmée"
+  },
+  "tunnelCommande": {
+    "verificationError": "Vérification impossible",
+    "timeError": "Veuillez sélectionner une heure de retrait",
+    "createError": "Erreur lors de la création",
+    "connectionError": "Erreur de connexion",
+    "verifying": "Vérification…",
+    "apply": "Appliquer"
+  },
+  "stripePayment": {
+    "loading": "Traitement...",
+    "error": "Erreur de paiement"
   }
 }

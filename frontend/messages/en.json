@@ -2013,5 +2013,89 @@
     "addButton": "Add",
     "priceHelper": "Leave price empty to use dish price ({price}). Once a variant exists, customers must choose one to order.",
     "collapse": "Collapse"
+  },
+  "dossierCommercant": {
+    "approved": "Validated",
+    "rejected": "Rejected",
+    "pending": "Pending review",
+    "title": "Merchant file",
+    "itemsToReview": "items to review",
+    "examError": "Review impossible",
+    "serverError": "Server not responding",
+    "incompleteFile": "Incomplete file",
+    "legalName": "Legal name",
+    "registration": "Registration",
+    "vat": "VAT number",
+    "billingAddress": "Billing address",
+    "country": "Country",
+    "owner": "Owner",
+    "ownerEmail": "Owner email",
+    "ownerPhone": "Owner phone",
+    "accountHolder": "Account holder",
+    "iban": "IBAN",
+    "documents": "Documents",
+    "noDocuments": "No documents submitted.",
+    "reasonPlaceholder": "Reason (required to reject)",
+    "approve": "Approve",
+    "reject": "Reject"
+  },
+  "dossierLivreur": {
+    "documentInfo": "Submit requested documents.",
+    "validated": "Account validated",
+    "rejected": "File rejected",
+    "rejectHelp": "Correct flagged documents and resubmit.",
+    "disabled": "Account disabled"
+  },
+  "maintenanceGate": {
+    "title": "Maintenance",
+    "message": "Platform is under maintenance."
+  },
+  "mesVersements": {
+    "title": "My payouts"
+  },
+  "noterLivreur": {
+    "veryBad": "Very poor",
+    "bad": "Poor",
+    "ok": "Acceptable",
+    "good": "Good",
+    "excellent": "Excellent",
+    "saveError": "Rating could not be saved",
+    "networkError": "Rating could not be sent"
+  },
+  "notesRecues": {
+    "title": "Ratings received"
+  },
+  "notificationBell": {
+    "noNotifications": "No notifications"
+  },
+  "propositionsCourses": {
+    "saveError": "Response could not be saved.",
+    "networkError": "Server unreachable.",
+    "defaultName": "Delivery to take",
+    "timeRemaining": "Time remaining to respond"
+  },
+  "rootLayoutContent": {
+    "themeError": "Error loading theme"
+  },
+  "storeSwitcher": {
+    "managedStore": "Managed store"
+  },
+  "suiviLivraison": {
+    "pickedUp": "Order picked up, on the way",
+    "delivered": "Delivered",
+    "now": "just now",
+    "confirmed": "Delivery confirmed"
+  },
+  "tunnelCommande": {
+    "verificationError": "Verification unavailable",
+    "timeError": "Please select a pickup time",
+    "createError": "Error creating order",
+    "connectionError": "Connection error",
+    "verifying": "Verifying…",
+    "apply": "Apply"
+  },
+  "stripePayment": {
+    "loading": "Processing...",
+    "error": "Payment error"
   }
 }
