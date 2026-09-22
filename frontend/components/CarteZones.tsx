@@ -101,7 +101,7 @@ export function CarteZones({
   const polygones = useRef<Polygon[]>([]);
   const anneauActif = useRef<Circle | null>(null);
   const poignee = useRef<Marker | null>(null);
-  const traceDessin = useRef<Polyline | null>(null);
+  const traceDessin = useRef<Polygon | Polyline | null>(null);
   const sommetsDessin = useRef<CircleMarker[]>([]);
   const leaflet = useRef<typeof import('leaflet') | null>(null);
 
