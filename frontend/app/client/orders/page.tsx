@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { ArrowLeft, Clock, MapPin, ChevronRight } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -39,6 +40,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function OrdersPage() {
+  const t = useTranslations('clientOrders');
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,9 +91,9 @@ export default function OrdersPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <Link href="/client" className="flex items-center gap-2 text-orange-500 hover:text-orange-400 mb-4">
             <ArrowLeft size={20} />
-            Retour
+            {t('back')}
           </Link>
-          <h1 className="text-3xl font-bold text-white">Mes commandes</h1>
+          <h1 className="text-3xl font-bold text-white">{t('title')}</h1>
         </div>
       </header>
 
@@ -100,9 +102,9 @@ export default function OrdersPage() {
         <div className="flex gap-2 mb-6">
           {(
             [
-              { value: 'all', label: 'Toutes' },
-              { value: 'active', label: 'En cours' },
-              { value: 'completed', label: 'Terminées' }
+              { value: 'all', key: 'all' },
+              { value: 'active', key: 'active' },
+              { value: 'completed', key: 'completed' }
             ] as const
           ).map(tab => (
             <button
@@ -114,20 +116,20 @@ export default function OrdersPage() {
                   : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
               }`}
             >
-              {tab.label}
+              {t(tab.key)}
             </button>
           ))}
         </div>
 
         {loading ? (
           <div className="text-center py-20">
-            <p className="text-white text-lg">Chargement des commandes...</p>
+            <p className="text-white text-lg">{t('loading')}</p>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="text-center py-20 bg-gray-800 rounded-lg">
-            <p className="text-white text-xl mb-4">Aucune commande</p>
+            <p className="text-white text-xl mb-4">{t('noOrders')}</p>
             <Link href="/client" className="text-orange-500 hover:text-orange-400">
-              Commencer à chercher des restaurants →
+              {t('startSearching')}
             </Link>
           </div>
         ) : (
@@ -158,14 +160,14 @@ export default function OrdersPage() {
 
                     <div className="grid grid-cols-2 gap-4 mb-3">
                       <div>
-                        <p className="text-gray-400 text-sm mb-1">Adresse</p>
+                        <p className="text-gray-400 text-sm mb-1">{t('address')}</p>
                         <p className="text-white flex items-center gap-2">
                           <MapPin size={14} />
                           <span className="line-clamp-1">{order.deliveryAddress}</span>
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-gray-400 text-sm mb-1">Montant</p>
+                        <p className="text-gray-400 text-sm mb-1">{t('amount')}</p>
                         <p className="text-orange-400 font-bold text-lg">
                           {euro(order.totalAmount)}
                         </p>

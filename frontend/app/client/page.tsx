@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Search, MapPin, Star, Clock, TrendingUp, Heart } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -30,6 +31,7 @@ interface Store {
 }
 
 export default function ClientHomePage() {
+  const t = useTranslations('clientDashboard');
   const [stores, setStores] = useState<Store[]>([]);
   const [filteredStores, setFilteredStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,7 @@ export default function ClientHomePage() {
 
   const getLocationByGPS = useCallback(() => {
     if (!navigator.geolocation) {
-      alert('Géolocalisation non supportée');
+      alert(t('geoLocationNotSupported'));
       return;
     }
 
@@ -92,10 +94,10 @@ export default function ClientHomePage() {
       },
       (error) => {
         console.error('GPS error:', error);
-        alert('Impossible d\'accéder à votre localisation');
+        alert(t('geoLocationError'));
       }
     );
-  }, [loadNearbyStores]);
+  }, [loadNearbyStores, t]);
 
   const filterAndSortStores = () => {
     let filtered = stores;
@@ -124,8 +126,8 @@ export default function ClientHomePage() {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl font-bold mb-4">Commandes en Ligne</h1>
-          <p className="text-xl mb-8 text-orange-100">Découvrez les meilleurs restaurants près de vous</p>
+          <h1 className="text-4xl font-bold mb-4">{t('title')}</h1>
+          <p className="text-xl mb-8 text-orange-100">{t('subtitle')}</p>
 
           {/* Search & Location */}
           <div className="space-y-4 mb-6">
@@ -134,7 +136,7 @@ export default function ClientHomePage() {
               <Search className="absolute left-4 top-3 text-gray-400" size={20} />
               <input
                 type="text"
-                placeholder="Chercher un restaurant, un plat..."
+                placeholder={t('searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none"
@@ -147,7 +149,7 @@ export default function ClientHomePage() {
                 <MapPin className="absolute left-4 top-3 text-gray-400" size={20} />
                 <input
                   type="text"
-                  placeholder="Adresse ou ville..."
+                  placeholder={t('addressPlaceholder')}
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none"
@@ -158,23 +160,23 @@ export default function ClientHomePage() {
                 className="bg-white text-red-600 font-semibold py-3 px-6 rounded-lg hover:bg-orange-50 flex items-center justify-center gap-2"
               >
                 <MapPin size={18} />
-                Ma Localisation
+                {t('myLocation')}
               </button>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-4 py-3 rounded-lg text-gray-900 bg-white focus:outline-none"
               >
-                <option value="rating">Meilleure note</option>
-                <option value="distance">Plus proche</option>
-                <option value="delivery">Frais réduits</option>
+                <option value="rating">{t('bestRating')}</option>
+                <option value="distance">{t('closest')}</option>
+                <option value="delivery">{t('cheapestDelivery')}</option>
               </select>
             </div>
 
             {/* GPS Status */}
             {useGPS && location.lat && (
               <p className="text-sm text-orange-100">
-                ✓ Localisation: {location.lat.toFixed(4)}, {location.lng?.toFixed(4)}
+                {t('locationStatus', { lat: location.lat.toFixed(4), lng: location.lng?.toFixed(4) })}
               </p>
             )}
           </div>
@@ -185,19 +187,19 @@ export default function ClientHomePage() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <p className="text-white text-lg">Chargement des restaurants...</p>
+            <p className="text-white text-lg">{t('loading')}</p>
           </div>
         ) : filteredStores.length === 0 ? (
           <div className="text-center py-20">
             <TrendingUp size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-white text-lg">Aucun restaurant trouvé</p>
-            <p className="text-gray-400">Essayez une autre recherche</p>
+            <p className="text-white text-lg">{t('noRestaurants')}</p>
+            <p className="text-gray-400">{t('tryAnotherSearch')}</p>
           </div>
         ) : (
           <>
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-white mb-4">
-                {searchQuery ? 'Résultats de recherche' : 'Restaurants à proximité'} ({filteredStores.length})
+                {searchQuery ? t('searchResults') : t('nearbyRestaurants')} {t('count', { count: filteredStores.length })}
               </h2>
 
               {/* Restaurants Grid */}
@@ -216,7 +218,7 @@ export default function ClientHomePage() {
                             client croyait le commerce parti. */}
                         {store.isOpenNow === false && (
                           <span className="absolute inset-x-0 bottom-0 bg-gray-900/80 py-1.5 text-center text-xs font-semibold text-amber-300">
-                            {store.isOpen === false ? 'Momentanément indisponible' : 'Fermé pour le moment'}
+                            {store.isOpen === false ? t('temporarilyUnavailable') : t('closedNow')}
                           </span>
                         )}
                       </div>
@@ -274,7 +276,7 @@ export default function ClientHomePage() {
 
                         {/* CTA Button */}
                         <button className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition">
-                          Voir le menu →
+                          {t('viewMenu')}
                         </button>
                       </div>
                     </div>

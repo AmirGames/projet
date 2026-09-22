@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { ArrowLeft, MapPin, Clock, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { SuiviLivraison, type Course } from '@/components/SuiviLivraison';
 import { useOrderTracking } from '@/lib/use-order-tracking';
@@ -30,6 +31,7 @@ interface Order {
 type OrderDelivery = Course;
 
 export default function OrderTrackingPage() {
+  const t = useTranslations('clientOrderDetail');
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
@@ -71,7 +73,7 @@ export default function OrderTrackingPage() {
         const orderData = await orderResponse.json();
         setOrder(orderData.data ?? orderData);
       } else if (orderResponse.status === 404) {
-        setError('Commande non trouvée');
+        setError(t('error'));
       }
 
       const deliveryResponse = await fetch(`${API_URL}/api/client/deliveries/${orderId}`, {
@@ -86,7 +88,7 @@ export default function OrderTrackingPage() {
       setLoading(false);
     } catch (err) {
       console.error('Error loading order:', err);
-      setError('Erreur lors du chargement de la commande');
+      setError(t('error'));
       setLoading(false);
     }
   };
@@ -115,7 +117,7 @@ export default function OrderTrackingPage() {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-white text-lg mb-4">Chargement de la commande...</p>
+          <p className="text-white text-lg mb-4">{t('loading')}</p>
           <div className="w-12 h-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
         </div>
       </div>
@@ -129,7 +131,7 @@ export default function OrderTrackingPage() {
           <div className="max-w-7xl mx-auto px-4 py-4">
             <Link href="/client/orders" className="flex items-center gap-2 text-orange-500 hover:text-orange-400">
               <ArrowLeft size={20} />
-              Retour aux commandes
+              {t('backToOrders')}
             </Link>
           </div>
         </header>
@@ -137,7 +139,7 @@ export default function OrderTrackingPage() {
           <div className="bg-red-900 border border-red-700 rounded-lg p-4 text-red-200 flex items-center gap-3">
             <AlertCircle size={24} />
             <div>
-              <p className="font-semibold mb-1">Erreur</p>
+              <p className="font-semibold mb-1">{t('error')}</p>
               <p>{error}</p>
             </div>
           </div>
@@ -158,7 +160,7 @@ export default function OrderTrackingPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <Link href="/client/orders" className="flex items-center gap-2 text-orange-500 hover:text-orange-400 mb-4">
             <ArrowLeft size={20} />
-            Retour aux commandes
+            {t('backToOrders')}
           </Link>
           <div className="flex justify-between items-center">
             <div>
@@ -171,12 +173,12 @@ export default function OrderTrackingPage() {
               {isConnected ? (
                 <>
                   <Wifi size={16} className="text-green-500 animate-pulse" />
-                  <span className="text-green-400 text-sm">En direct</span>
+                  <span className="text-green-400 text-sm">{t('online')}</span>
                 </>
               ) : (
                 <>
                   <WifiOff size={16} className="text-orange-500" />
-                  <span className="text-orange-400 text-sm">Hors ligne</span>
+                  <span className="text-orange-400 text-sm">{t('offline')}</span>
                 </>
               )}
             </div>
@@ -190,14 +192,14 @@ export default function OrderTrackingPage() {
           <div className="lg:col-span-2 space-y-8">
             {/* Order Status */}
             <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-bold text-white mb-6">Statut de la commande</h2>
+              <h2 className="text-xl font-bold text-white mb-6">{t('orderStatus')}</h2>
 
               {/* Status Badge */}
               <div className="mb-6 p-4 bg-gray-700 rounded-lg">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-3xl">{statusInfo.icon}</span>
                   <div>
-                    <p className="text-gray-400 text-sm">Statut actuel</p>
+                    <p className="text-gray-400 text-sm">{t('currentStatus')}</p>
                     <p className="text-white text-xl font-semibold">{statusInfo.label}</p>
                   </div>
                 </div>
@@ -248,7 +250,7 @@ export default function OrderTrackingPage() {
             {/* Order Items */}
             {order.items && order.items.length > 0 && (
               <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-bold text-white mb-4">Articles commandés</h2>
+                <h2 className="text-xl font-bold text-white mb-4">{t('orderedItems')}</h2>
 
                 <div className="space-y-3">
                   {order.items.map((item: any) => (
@@ -287,7 +289,7 @@ export default function OrderTrackingPage() {
             <div className="bg-gray-800 rounded-lg p-6 sticky top-8 space-y-6">
               {/* Delivery Address */}
               <div>
-                <p className="text-gray-400 text-sm mb-2">Adresse de livraison</p>
+                <p className="text-gray-400 text-sm mb-2">{t('deliveryAddress')}</p>
                 <div className="flex gap-2 text-white">
                   <MapPin size={20} className="text-orange-500 flex-shrink-0 mt-0.5" />
                   <p className="font-semibold">{order.deliveryAddress}</p>
@@ -297,7 +299,7 @@ export default function OrderTrackingPage() {
               {/* ETA */}
               {eta && (
                 <div className="p-4 bg-orange-900 rounded-lg">
-                  <p className="text-orange-200 text-sm mb-1">Temps estimé</p>
+                  <p className="text-orange-200 text-sm mb-1">{t('estimatedTime')}</p>
                   <p className="text-white text-2xl font-bold flex items-center gap-2">
                     <Clock size={24} />
                     {eta} min
@@ -308,19 +310,19 @@ export default function OrderTrackingPage() {
               {/* Le total, et la TVA qu'il contient : les prix sont TTC, la
                   taxe s'en extrait. Le client n'en voyait rien. */}
               <div className="pt-4 border-t border-gray-700">
-                <p className="text-gray-400 text-sm mb-2">Total TTC</p>
+                <p className="text-gray-400 text-sm mb-2">{t('totalTTC')}</p>
                 <p className="text-white text-2xl font-bold">
                   {euro(order.totalAmount)}
                 </p>
                 {Number(order.taxAmount) > 0 && (
                   <div className="mt-2 space-y-1 text-sm text-gray-400">
                     <div className="flex justify-between">
-                      <span>Total HT</span>
+                      <span>{t('totalHT')}</span>
                       <span>{euro(Number(order.totalAmount) - Number(order.taxAmount))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>
-                        dont TVA
+                        {t('taxLabel')}
                         {Number(order.taxRate) > 0 ? ` ${Number(order.taxRate)} %` : ''}
                       </span>
                       <span>{euro(order.taxAmount)}</span>
@@ -331,7 +333,7 @@ export default function OrderTrackingPage() {
 
               {/* Help */}
               <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
-                Besoin d'aide ?
+                {t('needHelp')}
               </button>
             </div>
           </div>

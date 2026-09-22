@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { ArrowLeft, Star, MapPin, Heart, Trash2 } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -28,6 +29,7 @@ interface FavoriteStore {
 }
 
 export default function FavoritesPage() {
+  const t = useTranslations('clientFavorites');
   const router = useRouter();
   const [favorites, setFavorites] = useState<FavoriteStore[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,9 +87,9 @@ export default function FavoritesPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <Link href="/client" className="flex items-center gap-2 text-orange-500 hover:text-orange-400 mb-4">
             <ArrowLeft size={20} />
-            Retour
+            {t('back')}
           </Link>
-          <h1 className="text-3xl font-bold text-white">Mes restaurants favoris</h1>
+          <h1 className="text-3xl font-bold text-white">{t('title')}</h1>
         </div>
       </header>
 
@@ -100,14 +102,14 @@ export default function FavoritesPage() {
 
         {loading ? (
           <div className="text-center py-20">
-            <p className="text-white text-lg">Chargement des favoris...</p>
+            <p className="text-white text-lg">{t('loading')}</p>
           </div>
         ) : favorites.length === 0 ? (
           <div className="text-center py-20 bg-gray-800 rounded-lg">
             <Heart size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-white text-xl mb-4">Aucun restaurant favori</p>
+            <p className="text-white text-xl mb-4">{t('noFavorites')}</p>
             <Link href="/client" className="text-orange-500 hover:text-orange-400">
-              Découvrir des restaurants →
+              {t('discoverRestaurants')}
             </Link>
           </div>
         ) : (
@@ -162,7 +164,7 @@ export default function FavoritesPage() {
 
                       {store.deliveryCost !== undefined && (
                         <div className="text-gray-400">
-                          Frais: {euro(store.deliveryCost)}
+                          {t('deliveryCost')} {euro(store.deliveryCost)}
                         </div>
                       )}
                     </div>
@@ -170,7 +172,7 @@ export default function FavoritesPage() {
                     {/* CTA Button */}
                     <Link href={`/store/${store.slug}`} className="w-full block">
                       <button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition">
-                        Voir le menu →
+                        {t('viewMenu')}
                       </button>
                     </Link>
                   </div>
