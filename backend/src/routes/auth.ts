@@ -62,12 +62,7 @@ router.post("/signup", async (req: Request, res: Response, next: NextFunction) =
     );
 
     // Generate tokens
-    const accessToken = AuthService.generateAccessToken({
-      userId: user.id,
-      orgId: org.id,
-      storeIds: [],
-      role: "ADMIN",
-    });
+    const accessToken = AuthService.generateAccessToken(user.id);
 
     const refreshToken = AuthService.generateRefreshToken(user.id);
 
@@ -175,12 +170,7 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
     }
 
     // Generate tokens
-    const accessToken = AuthService.generateAccessToken({
-      userId: user.id,
-      orgId: primaryMembership?.org.id || "",
-      storeIds,
-      role: (primaryMembership?.role || (livreur ? "DRIVER" : "ADMIN")) as any,
-    });
+    const accessToken = AuthService.generateAccessToken(user.id);
 
     const refreshToken = AuthService.generateRefreshToken(user.id);
 
@@ -245,12 +235,7 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
       throw new ApiError(403, "Ce compte n'est rattaché à aucun espace", "NO_WORKSPACE");
     }
 
-    const accessToken = AuthService.generateAccessToken({
-      userId: user.id,
-      orgId: primaryMembership?.org.id || "",
-      storeIds,
-      role: (primaryMembership?.role || (livreur ? "DRIVER" : "ADMIN")) as any,
-    });
+    const accessToken = AuthService.generateAccessToken(user.id);
 
     /**
      * Le compte accompagne le jeton.
@@ -434,12 +419,7 @@ router.post("/merchant-register", async (req: Request, res: Response, next: Next
     });
 
     // Generate tokens
-    const accessToken = AuthService.generateAccessToken({
-      userId: user.id,
-      orgId: organization.id,
-      storeIds: [store.id],
-      role: "ADMIN",
-    });
+    const accessToken = AuthService.generateAccessToken(user.id);
 
     const refreshToken = AuthService.generateRefreshToken(user.id);
 

@@ -83,9 +83,7 @@ export async function authMiddleware(req: Request, _res: Response, next: NextFun
     }
 
     req.userId = payload.userId;
-    req.orgId = payload.orgId;
-    req.storeIds = payload.storeIds;
-    req.role = payload.role;
+    // orgId, storeIds, and role are no longer in JWT; routes must load them from DB
     req.user = payload;
     req.compte = compte;
 

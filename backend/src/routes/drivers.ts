@@ -91,12 +91,7 @@ router.post("/register", async (req: Request, res: Response, next: NextFunction)
 
     // Un livreur n'appartient à aucune organisation : le jeton ne porte donc
     // ni orgId ni boutique.
-    const accessToken = AuthService.generateAccessToken({
-      userId: utilisateur.id,
-      orgId: "",
-      storeIds: [],
-      role: "DRIVER" as any,
-    });
+    const accessToken = AuthService.generateAccessToken(utilisateur.id);
     const refreshToken = AuthService.generateRefreshToken(utilisateur.id);
 
     res.status(201).json({
