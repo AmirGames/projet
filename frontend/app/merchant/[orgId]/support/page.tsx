@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { MessageCircle, Plus, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { TicketConversation } from '@/components/TicketConversation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -30,6 +31,7 @@ interface Ticket {
 }
 
 export default function SupportPage() {
+  const t = useTranslations('merchantSupport');
   const params = useParams();
   const orgId = params.orgId as string;
 
@@ -131,9 +133,9 @@ export default function SupportPage() {
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center gap-2">
             <MessageCircle size={32} />
-            Support
+            {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">Gérez vos tickets de support</p>
+          <p className="text-gray-400 mt-2">{t('description')}</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -143,14 +145,14 @@ export default function SupportPage() {
             }}
             className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm"
           >
-            {showArchived ? 'Voir les tickets actifs' : 'Voir les archives'}
+            {showArchived ? t('viewActive') : t('viewArchived')}
           </button>
           <button
             onClick={() => setShowForm(!showForm)}
             className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg"
           >
             <Plus size={20} />
-            Nouveau ticket
+            {t('newTicket')}
           </button>
         </div>
       </div>
@@ -158,11 +160,11 @@ export default function SupportPage() {
       {/* New Ticket Form */}
       {showForm && (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-bold text-white mb-4">Créer un ticket</h2>
+          <h2 className="text-lg font-bold text-white mb-4">{t('createTicket')}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Sujet
+                {t('formLabelSubject')}
               </label>
               <input
                 type="text"
@@ -172,13 +174,13 @@ export default function SupportPage() {
                 }
                 required
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
-                placeholder="Décrivez votre problème..."
+                placeholder={t('placeholderSubject')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Description
+                {t('formLabelDescription')}
               </label>
               <textarea
                 value={formData.description}
@@ -188,13 +190,13 @@ export default function SupportPage() {
                 required
                 rows={4}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
-                placeholder="Détails supplémentaires..."
+                placeholder={t('placeholderDescription')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Priorité
+                {t('formLabelPriority')}
               </label>
               <select
                 value={formData.priority}
@@ -203,9 +205,9 @@ export default function SupportPage() {
                 }
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500"
               >
-                <option value="LOW">Basse</option>
-                <option value="MEDIUM">Moyenne</option>
-                <option value="HIGH">Haute</option>
+                <option value="LOW">{t('priorityLow')}</option>
+                <option value="MEDIUM">{t('priorityMedium')}</option>
+                <option value="HIGH">{t('priorityHigh')}</option>
               </select>
             </div>
 
@@ -215,14 +217,14 @@ export default function SupportPage() {
                 disabled={submitting}
                 className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-2 rounded-lg"
               >
-                {submitting ? 'Envoi...' : 'Soumettre'}
+                {submitting ? t('submitting') : t('submit')}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
                 className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded-lg"
               >
-                Annuler
+                {t('cancel')}
               </button>
             </div>
           </form>
@@ -232,12 +234,12 @@ export default function SupportPage() {
       {/* Tickets List */}
       {loading ? (
         <div className="text-center py-12">
-          <p className="text-gray-400">Chargement...</p>
+          <p className="text-gray-400">{t('loading')}</p>
         </div>
       ) : tickets.length === 0 ? (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
           <MessageCircle size={48} className="mx-auto text-gray-600 mb-4" />
-          <p className="text-gray-400">Aucun ticket pour le moment</p>
+          <p className="text-gray-400">{t('empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -265,7 +267,7 @@ export default function SupportPage() {
                       <span>{LIBELLES_STATUT[ticket.status] || ticket.status}</span>
                       {/* Clos, le ticket est archivé : il n'accepte plus de
                           message, et le dire évite de chercher le champ. */}
-                      {ticket.archivedAt && <span className="text-gray-400">Archivé</span>}
+                      {ticket.archivedAt && <span className="text-gray-400">{t('archived')}</span>}
                       {(ticket._count?.messages ?? 0) > 0 && (
                         <span className="flex items-center gap-1 text-blue-400">
                           <MessageCircle size={12} />

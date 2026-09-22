@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { TrendingUp, Calendar, DollarSign, ShoppingCart, Users, Clock } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { useCurrentStore } from '@/lib/current-store';
 
@@ -28,6 +29,7 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
+  const t = useTranslations('merchantAnalytics');
   const { storeId } = useCurrentStore();
 
   // Les montants sont déjà en euros : aucune division par 100.
@@ -116,7 +118,7 @@ export default function AnalyticsPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">Chargement des analyses...</p>
+            <p className="text-gray-400">{t('loading')}</p>
           </div>
         </div>
       </div>
@@ -127,7 +129,7 @@ export default function AnalyticsPage() {
     return (
       <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
         <div className="text-center py-12">
-          <p className="text-gray-400">Aucune donnée disponible</p>
+          <p className="text-gray-400">{t('empty')}</p>
         </div>
       </div>
     );
@@ -139,18 +141,18 @@ export default function AnalyticsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">📈 Analytics</h1>
-            <p className="text-gray-400 mt-1">Consultez vos statistiques de vente</p>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
+            <p className="text-gray-400 mt-1">{t('description')}</p>
           </div>
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
             className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-red-500"
           >
-            <option value="7">Derniers 7 jours</option>
-            <option value="30">Derniers 30 jours</option>
-            <option value="90">Derniers 90 jours</option>
-            <option value="365">Cette année</option>
+            <option value="7">{t('timeRange7')}</option>
+            <option value="30">{t('timeRange30')}</option>
+            <option value="90">{t('timeRange90')}</option>
+            <option value="365">{t('timeRangeYear')}</option>
           </select>
         </div>
 
@@ -162,9 +164,9 @@ export default function AnalyticsPage() {
                 <ShoppingCart size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">Total Commandes</p>
+            <p className="text-gray-400 text-sm mb-1">{t('kpiTotalOrders')}</p>
             <p className="text-3xl font-bold">{analytics.totalOrders}</p>
-            <p className="text-xs text-gray-500 mt-2">Depuis le début</p>
+            <p className="text-xs text-gray-500 mt-2">{t('since')}</p>
           </div>
 
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
@@ -173,9 +175,9 @@ export default function AnalyticsPage() {
                 <DollarSign size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">Revenu Total</p>
+            <p className="text-gray-400 text-sm mb-1">{t('kpiTotalRevenue')}</p>
             <p className="text-3xl font-bold">{euro(analytics.totalRevenue, 0)}</p>
-            <p className="text-xs text-gray-500 mt-2">Depuis le début</p>
+            <p className="text-xs text-gray-500 mt-2">{t('since')}</p>
           </div>
 
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
@@ -184,9 +186,9 @@ export default function AnalyticsPage() {
                 <TrendingUp size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">Ticket Moyen</p>
+            <p className="text-gray-400 text-sm mb-1">{t('kpiAverageOrder')}</p>
             <p className="text-3xl font-bold">{euro(analytics.averageOrderValue)}</p>
-            <p className="text-xs text-gray-500 mt-2">Par commande</p>
+            <p className="text-xs text-gray-500 mt-2">{t('perOrder')}</p>
           </div>
 
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
@@ -195,9 +197,9 @@ export default function AnalyticsPage() {
                 <Calendar size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">Commandes Ce Mois</p>
+            <p className="text-gray-400 text-sm mb-1">{t('kpiOrdersThisMonth')}</p>
             <p className="text-3xl font-bold">{analytics.ordersThisMonth}</p>
-            <p className="text-xs text-gray-500 mt-2">Mois en cours</p>
+            <p className="text-xs text-gray-500 mt-2">{t('currentMonth')}</p>
           </div>
 
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
@@ -206,9 +208,9 @@ export default function AnalyticsPage() {
                 <Clock size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">En Attente</p>
+            <p className="text-gray-400 text-sm mb-1">{t('kpiPending')}</p>
             <p className="text-3xl font-bold text-yellow-400">{analytics.pendingOrders}</p>
-            <p className="text-xs text-gray-500 mt-2">À traiter</p>
+            <p className="text-xs text-gray-500 mt-2">{t('toProcess')}</p>
           </div>
 
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
@@ -217,15 +219,15 @@ export default function AnalyticsPage() {
                 <Users size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">Commandes Complétées</p>
+            <p className="text-gray-400 text-sm mb-1">{t('kpiCompleted')}</p>
             <p className="text-3xl font-bold text-green-400">{analytics.completedOrders}</p>
-            <p className="text-xs text-gray-500 mt-2">Livrées/Retirées</p>
+            <p className="text-xs text-gray-500 mt-2">{t('delivered')}</p>
           </div>
         </div>
 
         {/* Status Breakdown */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-bold mb-4">Répartition par Statut</h2>
+          <h2 className="text-lg font-bold mb-4">{t('statusBreakdown')}</h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {analytics.statusBreakdown.map(item => (
               <div key={item.status} className="text-center p-4 bg-gray-700 rounded-lg">
@@ -239,13 +241,13 @@ export default function AnalyticsPage() {
         {/* Daily Revenue Chart */}
         {analytics.dailyRevenue.length > 0 && (
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <h2 className="text-lg font-bold mb-4">Revenu Quotidien</h2>
+            <h2 className="text-lg font-bold mb-4">{t('dailyRevenue')}</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="text-left py-2">Date</th>
-                    <th className="text-right py-2">Revenu</th>
+                    <th className="text-left py-2">{t('tableDate')}</th>
+                    <th className="text-right py-2">{t('tableRevenue')}</th>
                   </tr>
                 </thead>
                 <tbody>
