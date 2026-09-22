@@ -934,7 +934,12 @@
     "actionDelete": "Delete",
     "paginationPage": "Page {page} of {totalPages}",
     "paginationPrev": "Previous",
-    "paginationNext": "Next"
+    "paginationNext": "Next",
+    "backDashboard": "Back to dashboard",
+    "confirmDelete": "Confirm deletion",
+    "deleteWarning": "Are you sure you want to delete this customer? This action is irreversible.",
+    "deleting": "Deleting...",
+    "cancel": "Cancel"
   },
   "merchantAnalytics": {
     "loading": "Loading analytics...",

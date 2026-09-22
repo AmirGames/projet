@@ -934,7 +934,12 @@
     "actionDelete": "Supprimer",
     "paginationPage": "Page {page} sur {totalPages}",
     "paginationPrev": "Précédent",
-    "paginationNext": "Suivant"
+    "paginationNext": "Suivant",
+    "backDashboard": "Retour au tableau de bord",
+    "confirmDelete": "Confirmer la suppression",
+    "deleteWarning": "Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible.",
+    "deleting": "Suppression...",
+    "cancel": "Annuler"
   },
   "merchantAnalytics": {
     "loading": "Chargement des analyses...",
