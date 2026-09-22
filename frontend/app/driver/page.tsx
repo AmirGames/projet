@@ -393,6 +393,18 @@ export default function DriverDashboard() {
                   </p>
                 )}
 
+                <Link href="/driver/profile" className="block">
+                  <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
+                    Mon profil
+                  </button>
+                </Link>
+
+                <Link href="/driver/deliveries" className="block">
+                  <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
+                    Mes livraisons
+                  </button>
+                </Link>
+
                 <Link href="/driver/earnings" className="block">
                   <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
                     Voir les revenus
