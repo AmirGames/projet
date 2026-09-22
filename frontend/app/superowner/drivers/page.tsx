@@ -9,10 +9,11 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Bike, Car, Check, ExternalLink, Truck, X } from 'lucide-react';
+import { Bike, Car, Check, Eye, ExternalLink, Truck, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
+import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -83,6 +84,7 @@ export default function LivreursPage() {
   const [erreur, setErreur] = useState('');
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [motif, setMotif] = useState('');
+  const [previewPiece, setPreviewPiece] = useState<Piece | null>(null);
 
   const jeton = () => localStorage.getItem('accessToken');
 
@@ -343,14 +345,22 @@ export default function LivreursPage() {
                             </div>
 
                             <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setPreviewPiece(piece)}
+                                className="flex items-center gap-1 text-xs text-blue-400 hover:underline"
+                                aria-label={t('preview')}
+                              >
+                                <Eye size={12} />
+                                {t('preview')}
+                              </button>
                               <a
                                 href={piece.documentUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex items-center gap-1 text-xs text-blue-400 hover:underline"
+                                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-300"
+                                title={t('downloadDocument')}
                               >
                                 <ExternalLink size={12} />
-                                {t('open')}
                               </a>
                               <button
                                 onClick={() =>
@@ -452,6 +462,14 @@ export default function LivreursPage() {
             );
           })}
         </div>
+      )}
+
+      {previewPiece && (
+        <DocumentPreviewModal
+          documentUrl={previewPiece.documentUrl}
+          libelle={previewPiece.libelle}
+          onClose={() => setPreviewPiece(null)}
+        />
       )}
     </div>
   );
