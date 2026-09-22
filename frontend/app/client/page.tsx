@@ -29,9 +29,16 @@ interface Store {
   products?: any[];
 }
 
+interface StoreStats {
+  totalReviews: number;
+  averageRating: number;
+  satisfactionPercentage: number;
+}
+
 export default function ClientHomePage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [filteredStores, setFilteredStores] = useState<Store[]>([]);
+  const [storeStats, setStoreStats] = useState<Record<string, StoreStats>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState({ lat: null as number | null, lng: null as number | null });
@@ -54,11 +61,37 @@ export default function ClientHomePage() {
       if (!response.ok) throw new Error('Failed to load stores');
 
       const data = await response.json();
-      setStores(data.data || []);
+      const storeList = data.data || [];
+      setStores(storeList);
+
+      // Charger les stats pour chaque restaurant
+      await loadStoresStats(storeList);
     } catch (err) {
       console.error('Error loading stores:', err);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const loadStoresStats = useCallback(async (storeList: Store[]) => {
+    try {
+      const stats: Record<string, StoreStats> = {};
+
+      for (const store of storeList) {
+        try {
+          const response = await fetch(`${API_URL}/api/reviews/${store.id}/store/stats`);
+          if (response.ok) {
+            const data = await response.json();
+            stats[store.id] = data;
+          }
+        } catch (error) {
+          console.error(`Error fetching stats for store ${store.id}:`, error);
+        }
+      }
+
+      setStoreStats(stats);
+    } catch (error) {
+      console.error('Error fetching stores stats:', error);
     }
   }, []);
 
@@ -69,13 +102,17 @@ export default function ClientHomePage() {
       if (!response.ok) throw new Error('Failed to load nearby stores');
 
       const data = await response.json();
-      setStores(data.data || []);
+      const storeList = data.data || [];
+      setStores(storeList);
+
+      // Charger les stats pour chaque restaurant
+      await loadStoresStats(storeList);
     } catch (err) {
       console.error('Error loading nearby stores:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadStoresStats]);
 
   const getLocationByGPS = useCallback(() => {
     if (!navigator.geolocation) {
@@ -232,12 +269,17 @@ export default function ClientHomePage() {
                         <p className="text-sm text-gray-400 mb-3 line-clamp-2">{store.description}</p>
 
                         {/* Rating & Reviews */}
-                        <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center gap-2 mb-3 flex-wrap">
                           <div className="flex items-center gap-1">
                             <Star size={16} className="text-yellow-500 fill-yellow-500" />
                             <span className="text-white font-semibold">{store.rating || 4.5}</span>
                           </div>
                           <span className="text-gray-500 text-sm">({store.totalRatings || 0} avis)</span>
+                          {storeStats[store.id] && storeStats[store.id].totalReviews > 0 && (
+                            <span className="text-green-400 text-sm font-semibold">
+                              👍 {storeStats[store.id].satisfactionPercentage}%
+                            </span>
+                          )}
                         </div>
 
                         {/* Location & Delivery */}

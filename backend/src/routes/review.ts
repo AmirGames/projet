@@ -230,7 +230,7 @@ router.get("/:storeId/:productId/stats", authMiddleware, async (req: Request, re
   }
 });
 
-router.get("/:storeId/store/stats", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:storeId/store/stats", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
 
