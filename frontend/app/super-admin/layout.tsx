@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
 import { NotificationBell } from '@/components/NotificationBell';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import {
   BarChart3,
   Users,
@@ -139,6 +140,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           </button>
           <div className="flex items-center gap-4">
             <NotificationBell />
+            <LanguageSwitcher />
             <span className="text-sm text-gray-400">Super Admin - Gestion Système</span>
           </div>
         </header>

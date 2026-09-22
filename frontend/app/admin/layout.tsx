@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import {
   Settings,
   LogOut,
@@ -103,7 +104,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <div className="text-sm text-gray-400">Admin Dashboard</div>
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-400">Admin Dashboard</div>
+            <LanguageSwitcher />
+          </div>
         </header>
 
         {/* Page Content */}
