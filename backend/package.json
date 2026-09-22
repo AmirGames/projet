@@ -19,13 +19,16 @@
     "verif": "node scripts/verification/tout.mjs"
   },
   "dependencies": {
+    "@types/multer": "^2.2.0",
     "bcrypt": "latest",
     "bull": "latest",
+    "cloudinary": "^2.11.0",
     "cors": "latest",
     "dotenv": "latest",
     "express": "latest",
     "helmet": "latest",
     "jsonwebtoken": "latest",
+    "multer": "^2.4.0",
     "nodemailer": "^10.0.9",
     "redis": "latest",
     "socket.io": "^4.7.2",

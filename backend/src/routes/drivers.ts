@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
+import { uploadMiddleware } from "../middleware/file-upload";
 import { emitDeliveryUpdate } from "../config/socket";
 import { DispatchService } from "../services/dispatch.service";
 import { AuthService } from "../services/auth.service";
@@ -328,6 +329,43 @@ router.post("/documents", authMiddleware, async (req: Request, res: Response, ne
     next(err);
   }
 });
+
+// POST /drivers/documents/upload - Déposer une pièce via upload de fichier
+router.post(
+  "/documents/upload",
+  authMiddleware,
+  uploadMiddleware.single("file"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const livreur = await livreurConnecte(req);
+
+      if (!req.file) {
+        throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
+      }
+
+      const schema = z.object({
+        type: z.enum(TYPES_DOCUMENT),
+        expiryDate: z.string().optional().nullable(),
+      });
+
+      const body = schema.parse(req.body);
+
+      const piece = await DriverApprovalService.deposerFichier(livreur.id, {
+        type: body.type,
+        file: req.file.buffer,
+        filename: req.file.originalname,
+        expiryDate: body.expiryDate,
+      });
+
+      res.status(201).json({
+        message: `${libelleDuDocument(piece.type)} déposée, en attente de validation`,
+        data: piece,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 /**
  * GET /drivers/payouts - Ce qui est dû au livreur, et ce qui lui a été versé
