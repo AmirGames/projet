@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/lib/use-notifications';
 
 export function NotificationBell() {
+  const t = useTranslations('notificationBell');
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -46,10 +48,10 @@ export function NotificationBell() {
         onClick={() => setOpen(!open)}
         className="relative p-2 text-gray-300 hover:text-white transition"
         aria-label={
-          unreadCount > 0 ? `Notifications, ${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Notifications'
+          unreadCount > 0 ? `${t('notifications')}, ${unreadCount} ${t('unread', { count: unreadCount })}` : t('notifications')
         }
         aria-expanded={open}
-        title="Notifications"
+        title={t('notifications')}
       >
         <Bell size={20} />
         {unreadCount > 0 && (
@@ -62,19 +64,19 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
           <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-            <h3 className="font-semibold text-white">Notifications</h3>
+            <h3 className="font-semibold text-white">{t('notifications')}</h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
                 className="text-xs text-orange-500 hover:text-orange-400"
               >
-                Marquer tout comme lu
+                {t('markAllAsRead')}
               </button>
             )}
           </div>
 
           {notifications.length === 0 ? (
-            <div className="p-4 text-center text-gray-400">Aucune notification</div>
+            <div className="p-4 text-center text-gray-400">{t('noNotifications')}</div>
           ) : (
             <div className="divide-y divide-gray-700">
               {notifications.map((notif) => (

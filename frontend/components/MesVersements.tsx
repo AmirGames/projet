@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Banknote, Clock, FileText, Hourglass } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -46,6 +47,7 @@ const periode = (releve: Releve) => {
 };
 
 export function MesVersements() {
+  const t = useTranslations('mesVersements');
   const [situation, setSituation] = useState<Situation | null>(null);
 
   const charger = useCallback(async () => {
@@ -75,56 +77,57 @@ export function MesVersements() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Pas encore arrêté</p>
+            <p className="text-gray-400 text-sm">{t('notYetStopped')}</p>
             <Hourglass size={18} className="text-gray-500" />
           </div>
           <p className="text-3xl font-bold">{euro(situation.duNonArrete)}</p>
           <p className="text-xs text-gray-500 mt-1">
-            {situation.coursesDues} course{situation.coursesDues > 1 ? 's' : ''} livrée
-            {situation.coursesDues > 1 ? 's' : ''} en attente d&apos;arrêté
+            {situation.coursesDues} {t('course', { count: situation.coursesDues })}
+            {' livrée'}
+            {situation.coursesDues > 1 ? 's' : ''} {t('pendingStop')}
           </p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">En attente de versement</p>
+            <p className="text-gray-400 text-sm">{t('pendingPayout')}</p>
             <Clock size={18} className="text-amber-500" />
           </div>
           <p className="text-3xl font-bold text-amber-300">
             {euro(situation.enAttenteDeVersement)}
           </p>
-          <p className="text-xs text-gray-500 mt-1">Relevé arrêté, virement à venir</p>
+          <p className="text-xs text-gray-500 mt-1">{t('reportStoppedTransferComing')}</p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Déjà versé</p>
+            <p className="text-gray-400 text-sm">{t('alreadyPaid')}</p>
             <Banknote size={18} className="text-green-500" />
           </div>
           <p className="text-3xl font-bold text-green-400">{euro(situation.verse)}</p>
-          <p className="text-xs text-gray-500 mt-1">Sur votre compte</p>
+          <p className="text-xs text-gray-500 mt-1">{t('onYourAccount')}</p>
         </div>
       </div>
 
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
           <FileText size={20} className="text-orange-500" />
-          Vos relevés
+          {t('yourReports')}
         </h2>
 
         {situation.releves.length === 0 ? (
           <p className="text-gray-400 text-sm">
-            Aucun relevé pour le moment. Vos courses livrées y seront regroupées par période.
+            {t('noReportsYet')}
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-gray-400 border-b border-gray-700">
                 <tr>
-                  <th className="text-left py-2">Période</th>
-                  <th className="text-right py-2">Courses</th>
-                  <th className="text-right py-2">Montant</th>
-                  <th className="text-left py-2 pl-4">État</th>
+                  <th className="text-left py-2">{t('period')}</th>
+                  <th className="text-right py-2">{t('deliveries')}</th>
+                  <th className="text-right py-2">{t('amount')}</th>
+                  <th className="text-left py-2 pl-4">{t('status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -136,12 +139,12 @@ export function MesVersements() {
                     <td className="py-3 pl-4">
                       {releve.status === 'PAID' ? (
                         <span className="text-green-400">
-                          Versé le {jour(releve.paidAt as string)}
+                          {t('paidOn')} {jour(releve.paidAt as string)}
                           {releve.methodLibelle ? ` · ${releve.methodLibelle}` : ''}
                           {releve.reference ? ` · ${releve.reference}` : ''}
                         </span>
                       ) : (
-                        <span className="text-amber-300">En attente de versement</span>
+                        <span className="text-amber-300">{t('pendingPayout')}</span>
                       )}
                     </td>
                   </tr>

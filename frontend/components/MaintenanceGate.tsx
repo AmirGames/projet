@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Wrench } from 'lucide-react';
 
 // Ces écrans restent joignables en maintenance, côté API comme côté interface :
@@ -18,6 +19,7 @@ const CHEMINS_EXEMPTS = ['/login', '/superowner'];
  * enveloppe donc `fetch` une seule fois, au lieu de modifier chaque page.
  */
 export function MaintenanceGate() {
+  const t = useTranslations('maintenanceGate');
   const [message, setMessage] = useState('');
   const pathname = usePathname();
   const exempt = CHEMINS_EXEMPTS.some((chemin) => (pathname || '').startsWith(chemin));
@@ -57,8 +59,8 @@ export function MaintenanceGate() {
         <div className="w-16 h-16 rounded-full bg-orange-500/20 flex items-center justify-center mx-auto">
           <Wrench size={32} className="text-orange-400" />
         </div>
-        <h1 className="text-2xl font-bold text-white">Maintenance en cours</h1>
-        <p className="text-gray-300">{message}</p>
+        <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
+        <p className="text-gray-300">{message || t('message')}</p>
         <button
           onClick={() => window.location.reload()}
           className="px-6 py-3 bg-orange-600 hover:bg-orange-500 rounded-lg font-medium transition-colors"

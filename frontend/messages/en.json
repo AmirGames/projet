@@ -2048,10 +2048,26 @@
   },
   "maintenanceGate": {
     "title": "Maintenance",
-    "message": "Platform is under maintenance."
+    "message": "Platform is under maintenance.",
+    "retryButton": "Retry"
   },
   "mesVersements": {
-    "title": "My payouts"
+    "title": "My payouts",
+    "notYetStopped": "Not yet finalized",
+    "course_singular": "delivery",
+    "course_plural": "deliveries",
+    "pendingStop": "pending finalization",
+    "pendingPayout": "Awaiting transfer",
+    "reportStoppedTransferComing": "Report stopped, transfer coming",
+    "alreadyPaid": "Already paid",
+    "onYourAccount": "In your account",
+    "yourReports": "Your reports",
+    "noReportsYet": "No reports yet. Your completed deliveries will be grouped by period.",
+    "period": "Period",
+    "deliveries": "Deliveries",
+    "amount": "Amount",
+    "status": "Status",
+    "paidOn": "Paid on"
   },
   "noterLivreur": {
     "veryBad": "Very poor",
@@ -2063,9 +2079,17 @@
     "networkError": "Rating could not be sent"
   },
   "notesRecues": {
-    "title": "Ratings received"
+    "title": "Ratings received",
+    "whatCustomersSay": "What customers say",
+    "reviews_singular": "review",
+    "reviews_plural": "reviews",
+    "noRatingsYet": "No ratings yet. Customers can rate you once they've received their order."
   },
   "notificationBell": {
+    "notifications": "Notifications",
+    "unread_singular": "unread",
+    "unread_plural": "unread",
+    "markAllAsRead": "Mark all as read",
     "noNotifications": "No notifications"
   },
   "propositionsCourses": {
