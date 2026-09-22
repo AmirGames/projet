@@ -44,6 +44,12 @@ interface Product {
   createdAt: string;
 }
 
+interface ProductStats {
+  totalReviews: number;
+  averageRating: number;
+  satisfactionPercentage: number;
+}
+
 type CategorySortMode = 'MANUAL' | 'ALPHA_ASC' | 'ALPHA_DESC' | 'PRICE_ASC' | 'PRICE_DESC';
 
 /** Même logique que côté serveur (voir category.service.ts) : le tri appliqué
@@ -64,7 +70,7 @@ function trierProduits(produits: Product[], sortMode: CategorySortMode | undefin
   }
 }
 
-function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triManuel = true }: any) {
+function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triManuel = true, stats }: any) {
   const t = useTranslations('merchantProducts');
   const {
     attributes,
@@ -142,6 +148,16 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
                   {product.isAvailable ? t('availableYes') : t('availableNo')}
                 </p>
               </div>
+              {stats && stats.totalReviews > 0 && (
+                <div>
+                  <p className="text-gray-500">Avis</p>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-yellow-400">★ {stats.averageRating}</span>
+                    <span className="text-gray-400">({stats.totalReviews})</span>
+                  </div>
+                  <p className="text-xs text-green-400 mt-1">👍 {stats.satisfactionPercentage}%</p>
+                </div>
+              )}
             </div>
             {product.category && (
               <div className="mt-2">
@@ -203,6 +219,7 @@ export default function ProductsPage() {
   const t = useTranslations('merchantProducts');
   const { storeId } = useCurrentStore();
   const [products, setProducts] = useState<Product[]>([]);
+  const [productStats, setProductStats] = useState<Record<string, ProductStats>>({});
 
   const [categories, setCategories] = useState<Array<{ id: string; name: string; sortMode?: CategorySortMode }>>([]);
   const [loading, setLoading] = useState(true);
@@ -262,11 +279,40 @@ export default function ProductsPage() {
         const data = await response.json();
         const sorted = (data.products || []).sort((a: Product, b: Product) => a.displayOrder - b.displayOrder);
         setProducts(sorted);
+
+        // Charger les stats pour chaque produit
+        await fetchProductsStats(sorted);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProductsStats = async (productList: Product[]) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const stats: Record<string, ProductStats> = {};
+
+      for (const product of productList) {
+        try {
+          const response = await fetch(`${API_URL}/api/reviews/${storeId}/${product.id}/stats`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            stats[product.id] = data;
+          }
+        } catch (error) {
+          console.error(`Error fetching stats for product ${product.id}:`, error);
+        }
+      }
+
+      setProductStats(stats);
+    } catch (error) {
+      console.error('Error fetching products stats:', error);
     }
   };
 
@@ -683,6 +729,7 @@ export default function ProductsPage() {
                             onDelete={handleDelete}
                             onToggleAvailability={basculerDisponibilite}
                             triManuel={triManuel}
+                            stats={productStats[product.id]}
                           />
                         ))}
                       </div>
