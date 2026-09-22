@@ -117,7 +117,7 @@ export class DriverApprovalService {
   /** Dépose une pièce via upload de fichier. */
   static async deposerFichier(
     driverId: string,
-    piece: { type: TypeDocument; file: Buffer; filename: string; expiryDate?: string | null }
+    piece: { type: TypeDocument; file: Buffer; filename: string; mimeType?: string; expiryDate?: string | null }
   ) {
     const expire = piece.expiryDate ? new Date(piece.expiryDate) : null;
 
@@ -137,7 +137,8 @@ export class DriverApprovalService {
     const { url } = await FileUploadService.uploadDocument(
       piece.file,
       `driver-${driverId}-${piece.type}-${Date.now()}`,
-      "drivers"
+      "drivers",
+      piece.mimeType
     );
 
     const valeurs = {

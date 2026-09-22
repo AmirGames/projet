@@ -363,6 +363,7 @@ router.post(
         type: body.type,
         file: req.file.buffer,
         filename: req.file.originalname || `document.${req.file.mimetype.split("/")[1]}`,
+        mimeType: req.file.mimetype,
         expiryDate: body.expiryDate,
       });
 
