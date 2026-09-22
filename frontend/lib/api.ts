@@ -335,6 +335,43 @@ export const api = {
     });
     return response.json();
   },
+
+  // User roles endpoints
+  getRoles: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/user/roles`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error("Erreur lors du chargement des rôles");
+    }
+    return response.json();
+  },
+
+  becomeMerchant: async (data: any) => {
+    const response = await fetch(`${API_BASE_URL}/api/user/become-merchant`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Erreur lors de la création du commerce");
+    }
+    return response.json();
+  },
+
+  becomeDriver: async (data: any) => {
+    const response = await fetch(`${API_BASE_URL}/api/user/become-driver`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Erreur lors de la création du profil livreur");
+    }
+    return response.json();
+  },
 };
 
 export const apiClient = api;

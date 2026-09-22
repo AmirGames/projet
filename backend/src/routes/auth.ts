@@ -164,7 +164,12 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
       ? null
       : await db.driver.findUnique({ where: { userId: user.id }, select: { id: true } });
 
-    if (!primaryMembership && !livreur && !user.isSuperOwner && !user.isSystemAdmin) {
+    // Check if user has a customer profile (all users get one at signup)
+    const customer = !primaryMembership && !livreur
+      ? await db.customer.findUnique({ where: { userId: user.id }, select: { id: true } })
+      : null;
+
+    if (!primaryMembership && !livreur && !customer && !user.isSuperOwner && !user.isSystemAdmin) {
       throw new ApiError(403, "Ce compte n'est rattaché à aucun espace", "NO_WORKSPACE");
     }
 
@@ -229,7 +234,12 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
       ? null
       : await db.driver.findUnique({ where: { userId: user.id }, select: { id: true } });
 
-    if (!primaryMembership && !livreur && !user.isSuperOwner && !user.isSystemAdmin) {
+    // Check if user has a customer profile (all users get one at signup)
+    const customer = !primaryMembership && !livreur
+      ? await db.customer.findUnique({ where: { userId: user.id }, select: { id: true } })
+      : null;
+
+    if (!primaryMembership && !livreur && !customer && !user.isSuperOwner && !user.isSystemAdmin) {
       throw new ApiError(403, "Ce compte n'est rattaché à aucun espace", "NO_WORKSPACE");
     }
 
