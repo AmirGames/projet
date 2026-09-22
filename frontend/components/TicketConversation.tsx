@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Send } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, onSent }: Props) {
+  const t = useTranslations('ticketConversation');
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(true);
@@ -40,14 +42,14 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        throw new Error(data?.error || 'Impossible de charger la conversation');
+        throw new Error(data?.error || t('loadError'));
       }
 
       const data = await response.json();
       setMessages(data.data || []);
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de charger la conversation');
+      setError(err instanceof Error ? err.message : t('loadError'));
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,7 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        throw new Error(data?.error || "Échec de l'envoi");
+        throw new Error(data?.error || t('sendError'));
       }
 
       setBody('');
@@ -84,7 +86,7 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
       await fetchMessages();
       onSent?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Échec de l'envoi");
+      setError(err instanceof Error ? err.message : t('sendError'));
     } finally {
       setSending(false);
     }
@@ -94,9 +96,9 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
     <div className="space-y-4">
       <div className="max-h-80 overflow-y-auto space-y-3 pr-1">
         {loading ? (
-          <p className="text-gray-400 text-sm">Chargement de la conversation...</p>
+          <p className="text-gray-400 text-sm">{t('loadingConversation')}</p>
         ) : messages.length === 0 ? (
-          <p className="text-gray-400 text-sm">Aucun message pour l'instant.</p>
+          <p className="text-gray-400 text-sm">{t('noMessages')}</p>
         ) : (
           messages.map((message) => {
             const fromViewer = message.authorRole === viewerRole;
@@ -114,7 +116,7 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
                     {message.authorName}
                     <span className="text-gray-500">
                       {' · '}
-                      {message.authorRole === 'ADMIN' ? 'Support' : 'Commerçant'}
+                      {message.authorRole === 'ADMIN' ? t('roleSupport') : t('roleMerchant')}
                     </span>
                   </p>
                   <p className="text-sm text-white whitespace-pre-wrap">{message.body}</p>
@@ -136,7 +138,7 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
 
       {readOnly ? (
         <p className="text-sm text-gray-400">
-          Ce ticket est archivé : la conversation est en lecture seule.
+          {t('readOnlyMessage')}
         </p>
       ) : (
         <form onSubmit={handleSend} className="flex gap-2">
@@ -144,7 +146,7 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={2}
-            placeholder="Écrivez votre réponse..."
+            placeholder={t('replyPlaceholder')}
             className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none"
           />
           <button
@@ -153,7 +155,7 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
             className="px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
           >
             <Send size={18} />
-            {sending ? '...' : 'Envoyer'}
+            {sending ? '...' : t('sendButton')}
           </button>
         </form>
       )}

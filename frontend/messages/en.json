@@ -1386,5 +1386,16 @@
     "errorDelete": "Error deleting tag",
     "edit": "Edit",
     "delete": "Delete"
+  },
+  "ticketConversation": {
+    "loadingConversation": "Loading conversation…",
+    "noMessages": "No messages yet.",
+    "loadError": "Unable to load conversation",
+    "sendError": "Failed to send",
+    "replyPlaceholder": "Write your reply…",
+    "sendButton": "Send",
+    "roleSupport": "Support",
+    "roleMerchant": "Merchant",
+    "readOnlyMessage": "This ticket is archived: conversation is read-only."
   }
 }

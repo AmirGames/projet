@@ -1386,5 +1386,16 @@
     "errorDelete": "Erreur lors de la suppression",
     "edit": "Modifier",
     "delete": "Supprimer"
+  },
+  "ticketConversation": {
+    "loadingConversation": "Chargement de la conversation…",
+    "noMessages": "Aucun message pour l'instant.",
+    "loadError": "Impossible de charger la conversation",
+    "sendError": "Échec de l'envoi",
+    "replyPlaceholder": "Écrivez votre réponse…",
+    "sendButton": "Envoyer",
+    "roleSupport": "Support",
+    "roleMerchant": "Commerçant",
+    "readOnlyMessage": "Ce ticket est archivé : la conversation est en lecture seule."
   }
 }
