@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, ShoppingCart, Heart, User, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function ClientLayout({
   children,
@@ -103,6 +104,7 @@ export default function ClientLayout({
                   </Link>
                 );
               })}
+              <LanguageSwitcher />
             </div>
 
             <Link

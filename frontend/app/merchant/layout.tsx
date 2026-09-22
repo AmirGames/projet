@@ -17,6 +17,7 @@ import {
 
 import { memoriserBoutique } from '@/lib/current-store';
 import { NotificationBell } from '@/components/NotificationBell';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -240,6 +241,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             {/* Une réponse du support arrive souvent pendant qu'on choisit sa
                 boutique : la cloche manquait à ce niveau-là. */}
             <NotificationBell />
+            <LanguageSwitcher />
           </div>
         </header>
 

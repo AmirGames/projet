@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
 import { NotificationBell } from '@/components/NotificationBell';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import {
   Home,
   Building2,
@@ -188,6 +189,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
             {/* La cloche suit la plateforme partout : un ticket ouvert pendant
                 qu'on consulte les journaux doit se voir sans changer de page. */}
             <NotificationBell />
+            <LanguageSwitcher />
           </div>
         </header>
 
