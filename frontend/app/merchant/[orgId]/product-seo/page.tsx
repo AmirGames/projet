@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Search } from "lucide-react";
 
 import { useCurrentStore } from "@/lib/current-store";
@@ -19,6 +20,7 @@ interface ProductSeo {
 }
 
 export default function ProductSeoPage() {
+  const t = useTranslations('merchantProductSeo');
   const [productId, setProductId] = useState("");
   const [produits, setProduits] = useState<{ id: string; name: string }[]>([]);
 
@@ -60,7 +62,7 @@ export default function ProductSeoPage() {
 
   const fetchSeo = async () => {
     if (!productId) {
-      setError("Veuillez entrer un ID de produit");
+      setError(t('errorProductRequired'));
       return;
     }
 
@@ -72,7 +74,7 @@ export default function ProductSeoPage() {
         },
       });
 
-      if (!res.ok) throw new Error("Erreur lors du chargement du SEO");
+      if (!res.ok) throw new Error(t('errorLoadingSeo'));
       const data: ProductSeo = await res.json();
       setFormData({
         metaTitle: data.metaTitle || "",
@@ -102,8 +104,8 @@ export default function ProductSeoPage() {
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error("Erreur lors de la mise à jour");
-      setSuccess("SEO mis à jour avec succès");
+      if (!res.ok) throw new Error(t('errorUpdatingSeo'));
+      setSuccess(t('successSeoUpdated'));
       setError("");
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
@@ -125,10 +127,10 @@ export default function ProductSeoPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <Search className="w-8 h-8" />
-          SEO du Produit
+          {t('title')}
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Optimisez les métadonnées SEO et les balises Open Graph
+          {t('description')}
         </p>
       </div>
 
@@ -146,7 +148,7 @@ export default function ProductSeoPage() {
 
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Sélectionner un Produit
+          {t('sectionSelectProduct')}
         </h2>
         <div className="flex gap-2">
           <select
@@ -154,7 +156,7 @@ export default function ProductSeoPage() {
             onChange={(e) => setProductId(e.target.value)}
             className="flex-1 px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           >
-            <option value="">— Choisir un produit —</option>
+            <option value="">{t('productPlaceholder')}</option>
             {produits.map((produit) => (
               <option key={produit.id} value={produit.id}>
                 {produit.name}
@@ -166,7 +168,7 @@ export default function ProductSeoPage() {
             disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-700 dark:hover:bg-blue-600"
           >
-            Charger
+            {t('buttonLoad')}
           </button>
         </div>
       </div>
@@ -179,19 +181,19 @@ export default function ProductSeoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-4">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Métadonnées SEO
+              {t('sectionSeoMetadata')}
             </h2>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Titre Meta
+                {t('labelMetaTitle')}
               </label>
               <input
                 type="text"
                 name="metaTitle"
                 value={formData.metaTitle}
                 onChange={handleInputChange}
-                placeholder="Titre de la page (60 caractères max)"
+                placeholder={t('placeholderMetaTitle')}
                 maxLength={60}
                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
@@ -202,13 +204,13 @@ export default function ProductSeoPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Description Meta
+                {t('labelMetaDescription')}
               </label>
               <textarea
                 name="metaDescription"
                 value={formData.metaDescription}
                 onChange={handleInputChange}
-                placeholder="Description (160 caractères max)"
+                placeholder={t('placeholderMetaDescription')}
                 maxLength={160}
                 rows={3}
                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -220,14 +222,14 @@ export default function ProductSeoPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Mots-clés
+                {t('labelMetaKeywords')}
               </label>
               <input
                 type="text"
                 name="metaKeywords"
                 value={formData.metaKeywords}
                 onChange={handleInputChange}
-                placeholder="Séparés par des virgules"
+                placeholder={t('placeholderMetaKeywords')}
                 maxLength={200}
                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
@@ -235,14 +237,14 @@ export default function ProductSeoPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Slug
+                {t('labelSlug')}
               </label>
               <input
                 type="text"
                 name="slug"
                 value={formData.slug}
                 onChange={handleInputChange}
-                placeholder="URL amicale (ex: mon-produit)"
+                placeholder={t('placeholderSlug')}
                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
@@ -250,12 +252,12 @@ export default function ProductSeoPage() {
 
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-4">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Open Graph
+              {t('sectionOpenGraph')}
             </h2>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Image OG
+                {t('labelOgImage')}
               </label>
               <input
                 type="url"
@@ -276,13 +278,13 @@ export default function ProductSeoPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Description OG
+                {t('labelOgDescription')}
               </label>
               <textarea
                 name="ogDescription"
                 value={formData.ogDescription}
                 onChange={handleInputChange}
-                placeholder="Description pour les réseaux sociaux"
+                placeholder={t('placeholderOgDescription')}
                 maxLength={200}
                 rows={3}
                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -297,7 +299,7 @@ export default function ProductSeoPage() {
               disabled={loading}
               className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-600"
             >
-              Enregistrer le SEO
+              {t('buttonSaveSeo')}
             </button>
           </div>
         </div>
@@ -305,7 +307,7 @@ export default function ProductSeoPage() {
         <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-400">
-            Sélectionnez un produit pour modifier son SEO
+            {t('empty')}
           </p>
         </div>
       )}

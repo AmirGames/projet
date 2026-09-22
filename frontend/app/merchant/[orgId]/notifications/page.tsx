@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Bell, Trash2, Check } from "lucide-react";
 
 import { useCurrentStore } from "@/lib/current-store";
@@ -26,6 +27,7 @@ interface NotificationsResponse {
 }
 
 export default function NotificationsPage() {
+  const t = useTranslations('merchantNotifications');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -165,10 +167,10 @@ export default function NotificationsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Bell className="w-8 h-8" />
-            Notifications
+            {t('title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {unreadCount} non-lues
+            {t('unreadCount', { count: unreadCount })}
           </p>
         </div>
         {unreadCount > 0 && (
@@ -176,7 +178,7 @@ export default function NotificationsPage() {
             onClick={markAllAsRead}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
           >
-            Marquer tout comme lu
+            {t('markAllAsRead')}
           </button>
         )}
       </div>
@@ -201,9 +203,9 @@ export default function NotificationsPage() {
                 : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
             }`}
           >
-            {filter === "all" && "Tous"}
-            {filter === "read" && "Lus"}
-            {filter === "unread" && "Non-lus"}
+            {filter === "all" && t('filterAll')}
+            {filter === "read" && t('filterRead')}
+            {filter === "unread" && t('filterUnread')}
           </button>
         ))}
       </div>
@@ -215,7 +217,7 @@ export default function NotificationsPage() {
       ) : notifications.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Aucune notification</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -253,7 +255,7 @@ export default function NotificationsPage() {
                     <button
                       onClick={() => markAsRead(notification.id)}
                       className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
-                      title="Marquer comme lu"
+                      title={t('markAsRead')}
                     >
                       <Check className="w-5 h-5 text-green-600" />
                     </button>
@@ -261,7 +263,7 @@ export default function NotificationsPage() {
                   <button
                     onClick={() => deleteNotification(notification.id)}
                     className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
-                    title="Supprimer"
+                    title={t('delete')}
                   >
                     <Trash2 className="w-5 h-5 text-red-600" />
                   </button>
@@ -274,7 +276,7 @@ export default function NotificationsPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Affichage {skip + 1} à {Math.min(skip + take, total)} sur {total}
+          {t('pagination', { from: skip + 1, to: Math.min(skip + take, total), total })}
         </p>
         <div className="flex gap-2">
           <button
@@ -282,14 +284,14 @@ export default function NotificationsPage() {
             disabled={skip === 0}
             className="px-3 py-1 border rounded-lg disabled:opacity-50 dark:border-gray-600"
           >
-            Précédent
+            {t('previous')}
           </button>
           <button
             onClick={() => setSkip(skip + take)}
             disabled={skip + take >= total}
             className="px-3 py-1 border rounded-lg disabled:opacity-50 dark:border-gray-600"
           >
-            Suivant
+            {t('next')}
           </button>
         </div>
       </div>

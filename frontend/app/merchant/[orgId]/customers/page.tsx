@@ -155,7 +155,7 @@ export default function CustomersPage() {
               href={`/merchant/${orgId}/dashboard`}
               className="text-gray-400 hover:text-gray-300 text-sm"
             >
-              ← Back to dashboard
+              ← {t('backDashboard')}
             </Link>
           </div>
           <p className="text-gray-400">{t('description')}</p>
@@ -257,9 +257,9 @@ export default function CustomersPage() {
                             ? 'bg-red-600/20 text-red-400'
                             : 'bg-gray-600/20 text-gray-400'
                         }`}>
-                          {customer.status === 'ACTIVE' && '✓ Actif'}
-                          {customer.status === 'BLOCKED' && '✕ Bloqué'}
-                          {customer.status === 'INACTIVE' && '⊘ Inactif'}
+                          {customer.status === 'ACTIVE' && `✓ ${t('statusActive')}`}
+                          {customer.status === 'BLOCKED' && `✕ ${t('statusBlocked')}`}
+                          {customer.status === 'INACTIVE' && `⊘ ${t('statusInactive')}`}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-center">
@@ -300,7 +300,6 @@ export default function CustomersPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
               <p className="text-sm text-gray-400">{t('paginationPage', { page: page + 1, totalPages })}
-                Page {page + 1} sur {totalPages}
               </p>
               <div className="flex gap-2">
                 <button
@@ -308,14 +307,14 @@ export default function CustomersPage() {
                   disabled={page === 0}
                   className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
                 >
-                  Précédent
+                  {t('paginationPrev')}
                 </button>
                 <button
                   onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                   disabled={page === totalPages - 1}
                   className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
                 >
-                  Suivant
+                  {t('paginationNext')}
                 </button>
               </div>
             </div>
@@ -326,23 +325,23 @@ export default function CustomersPage() {
         {showDeleteModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-sm mx-4">
-              <h3 className="text-xl font-bold mb-4">Confirmer la suppression</h3>
+              <h3 className="text-xl font-bold mb-4">{t('confirmDelete')}</h3>
               <p className="text-gray-400 mb-6">
-                Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible.
+                {t('deleteWarning')}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteModal(null)}
                   className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
                 >
-                  Annuler
+                  {t('cancel')}
                 </button>
                 <button
                   onClick={() => handleDelete(showDeleteModal)}
                   disabled={deleting}
                   className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 rounded-lg font-medium transition-colors"
                 >
-                  {deleting ? 'Suppression...' : 'Supprimer'}
+                  {deleting ? t('deleting') : t('actionDelete')}
                 </button>
               </div>
             </div>

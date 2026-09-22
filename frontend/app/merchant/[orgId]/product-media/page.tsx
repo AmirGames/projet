@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Image as ImageIcon, Trash2, GripVertical } from "lucide-react";
 
 import { useCurrentStore } from "@/lib/current-store";
@@ -20,6 +21,7 @@ interface MediaResponse {
 }
 
 export default function ProductMediaPage() {
+  const t = useTranslations('merchantProductMedia');
   const [productId, setProductId] = useState("");
   const [produits, setProduits] = useState<{ id: string; name: string }[]>([]);
 
@@ -57,7 +59,7 @@ export default function ProductMediaPage() {
 
   const fetchMedia = async () => {
     if (!productId) {
-      setError("Veuillez entrer un ID de produit");
+      setError(t('errorProductRequired'));
       return;
     }
 
@@ -82,7 +84,7 @@ export default function ProductMediaPage() {
 
   const addMedia = async () => {
     if (!mediaUrl) {
-      setError("L'URL du média est requise");
+      setError(t('errorUrlRequired'));
       return;
     }
 
@@ -178,10 +180,10 @@ export default function ProductMediaPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <ImageIcon className="w-8 h-8" />
-          Médias des Produits
+          {t('title')}
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Gérez les images et vidéos de vos produits
+          {t('description')}
         </p>
       </div>
 
@@ -193,19 +195,19 @@ export default function ProductMediaPage() {
 
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Charger un média
+          {t('sectionTitle')}
         </h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Produit
+              {t('productLabel')}
             </label>
             <select
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
-              <option value="">— Choisir un produit —</option>
+              <option value="">{t('productPlaceholder')}</option>
               {produits.map((produit) => (
                 <option key={produit.id} value={produit.id}>
                   {produit.name}
@@ -218,41 +220,41 @@ export default function ProductMediaPage() {
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  URL du Média
+                  {t('urlLabel')}
                 </label>
                 <input
                   type="url"
                   value={mediaUrl}
                   onChange={(e) => setMediaUrl(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
+                  placeholder={t('urlPlaceholder')}
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Texte Alternatif
+                  {t('altLabel')}
                 </label>
                 <input
                   type="text"
                   value={mediaAlt}
                   onChange={(e) => setMediaAlt(e.target.value)}
-                  placeholder="Description du média"
+                  placeholder={t('altPlaceholder')}
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Type de Média
+                  {t('typeLabel')}
                 </label>
                 <select
                   value={mediaType}
                   onChange={(e) => setMediaType(e.target.value as "image" | "video")}
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
-                  <option value="image">Image</option>
-                  <option value="video">Vidéo</option>
+                  <option value="image">{t('typeImage')}</option>
+                  <option value="video">{t('typeVideo')}</option>
                 </select>
               </div>
 
@@ -261,13 +263,13 @@ export default function ProductMediaPage() {
                   onClick={addMedia}
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
                 >
-                  Ajouter le Média
+                  {t('buttonAddMedia')}
                 </button>
                 <button
                   onClick={fetchMedia}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
                 >
-                  Charger les Médias
+                  {t('buttonLoadMedia')}
                 </button>
               </div>
             </>
@@ -282,7 +284,7 @@ export default function ProductMediaPage() {
       ) : media.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Aucun média pour ce produit</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('empty')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -322,14 +324,14 @@ export default function ProductMediaPage() {
                   </p>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-500">
-                  Ordre: {item.displayOrder}
+                  {t('orderLabel')}: {item.displayOrder}
                 </p>
                 <button
                   onClick={() => deleteMedia(item.id)}
                   className="mt-2 w-full p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800 flex items-center justify-center gap-2"
                 >
                   <Trash2 className="w-4 h-4" />
-                  Supprimer
+                  {t('delete')}
                 </button>
               </div>
             </div>

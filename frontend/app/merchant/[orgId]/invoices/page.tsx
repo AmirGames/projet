@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Download, Eye } from 'lucide-react';
 import Link from 'next/link';
 
@@ -30,6 +31,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function InvoicesPage() {
+  const t = useTranslations('merchantInvoices');
   const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
@@ -174,7 +176,7 @@ export default function InvoicesPage() {
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-400">Chargement des factures...</p>
+              <p className="text-gray-400">{t('loading')}</p>
             </div>
           </div>
         </div>
@@ -188,34 +190,34 @@ export default function InvoicesPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">Factures</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
             <Link
               href={`/merchant/${orgId}/dashboard`}
               className="text-gray-400 hover:text-gray-300 text-sm"
             >
-              ← Retour au tableau de bord
+              {t('backDashboard')}
             </Link>
           </div>
-          <p className="text-gray-400">Consultez et téléchargez vos factures</p>
+          <p className="text-gray-400">{t('description')}</p>
         </div>
 
         {/* Revenue Stats */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">Revenu Total</p>
+              <p className="text-gray-400 text-sm mb-1">{t('statsTotalRevenue')}</p>
               <p className="text-3xl font-bold text-green-400">{euro(stats.totalRevenue)}</p>
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">Revenu Net</p>
+              <p className="text-gray-400 text-sm mb-1">{t('statsNetRevenue')}</p>
               <p className="text-3xl font-bold">{euro(stats.netRevenue)}</p>
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">Nombre Factures</p>
+              <p className="text-gray-400 text-sm mb-1">{t('statsInvoiceCount')}</p>
               <p className="text-3xl font-bold">{stats.invoiceCount}</p>
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">Moyenne/Facture</p>
+              <p className="text-gray-400 text-sm mb-1">{t('statsAverageInvoice')}</p>
               <p className="text-3xl font-bold">{euro(stats.averageInvoiceAmount)}</p>
             </div>
           </div>
@@ -236,7 +238,7 @@ export default function InvoicesPage() {
                   : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-300 border border-gray-700'
               }`}
             >
-              {status === 'ALL' ? 'Toutes' : status}
+              {status === 'ALL' ? t('filterAll') : status}
             </button>
           ))}
         </div>
@@ -247,20 +249,20 @@ export default function InvoicesPage() {
             <table className="w-full">
               <thead className="bg-gray-700 border-b border-gray-600">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Numéro</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Client</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Montant</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Articles</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Statut Paiement</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Date</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold">Actions</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colNumber')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colCustomer')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colAmount')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colItems')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colPaymentStatus')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colDate')}</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold">{t('colActions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {invoices.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
-                      Aucune facture trouvée
+                      {t('empty')}
                     </td>
                   </tr>
                 ) : (
@@ -283,9 +285,9 @@ export default function InvoicesPage() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[invoice.status] || statusColors.PENDING}`}>
-                          {invoice.status === 'SUCCEEDED' && 'Payée'}
-                          {invoice.status === 'PENDING' && 'En Attente'}
-                          {invoice.status === 'FAILED' && 'Échouée'}
+                          {invoice.status === 'SUCCEEDED' && t('statusSucceeded')}
+                          {invoice.status === 'PENDING' && t('statusPending')}
+                          {invoice.status === 'FAILED' && t('statusFailed')}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-400">
@@ -296,14 +298,14 @@ export default function InvoicesPage() {
                           <Link
                             href={`/merchant/${orgId}/invoices/${invoice.orderId}`}
                             className="p-1 hover:bg-gray-600 rounded transition-colors"
-                            title="Voir facture"
+                            title={t('actionView')}
                           >
                             <Eye size={18} className="text-blue-400" />
                           </Link>
                           <button
                             onClick={() => handleDownloadInvoice(invoice.orderId, invoice.invoiceNumber)}
                             className="p-1 hover:bg-gray-600 rounded transition-colors"
-                            title="Télécharger"
+                            title={t('actionDownload')}
                           >
                             <Download size={18} className="text-green-400" />
                           </button>
@@ -320,7 +322,7 @@ export default function InvoicesPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
               <p className="text-sm text-gray-400">
-                Page {page + 1} sur {totalPages}
+                {t('pagination', { page: page + 1, totalPages })}
               </p>
               <div className="flex gap-2">
                 <button
@@ -328,14 +330,14 @@ export default function InvoicesPage() {
                   disabled={page === 0}
                   className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
                 >
-                  Précédent
+                  {t('previous')}
                 </button>
                 <button
                   onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                   disabled={page === totalPages - 1}
                   className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
                 >
-                  Suivant
+                  {t('next')}
                 </button>
               </div>
             </div>
