@@ -94,16 +94,21 @@ export default function OrderTrackingPage() {
   };
 
   const getStatusInfo = (status: string) => {
-    const statuses: Record<string, { label: string; color: string; icon: string }> = {
-      PENDING: { label: 'En attente', color: 'yellow', icon: '⏳' },
-      CONFIRMED: { label: 'Confirmée', color: 'blue', icon: '✓' },
-      PREPARING: { label: 'En préparation', color: 'orange', icon: '👨‍🍳' },
-      READY: { label: 'Prête', color: 'green', icon: '📦' },
-      PICKED_UP: { label: 'En route', color: 'purple', icon: '🚗' },
-      DELIVERED: { label: 'Livrée', color: 'green', icon: '✓✓' },
-      CANCELLED: { label: 'Annulée', color: 'red', icon: '✗' },
+    const statusMap: Record<string, { key: string; color: string; icon: string }> = {
+      PENDING: { key: 'statusPending', color: 'yellow', icon: '⏳' },
+      CONFIRMED: { key: 'statusConfirmed', color: 'blue', icon: '✓' },
+      PREPARING: { key: 'statusPreparing', color: 'orange', icon: '👨‍🍳' },
+      READY: { key: 'statusReady', color: 'green', icon: '📦' },
+      PICKED_UP: { key: 'statusPickedUp', color: 'purple', icon: '🚗' },
+      DELIVERED: { key: 'statusDelivered', color: 'green', icon: '✓✓' },
+      CANCELLED: { key: 'statusCancelled', color: 'red', icon: '✗' },
     };
-    return statuses[status] || { label: status, color: 'gray', icon: '?' };
+    const statusInfo = statusMap[status] || { key: 'error', color: 'gray', icon: '?' };
+    return {
+      label: t(statusInfo.key),
+      color: statusInfo.color,
+      icon: statusInfo.icon,
+    };
   };
 
   const getProgressPercentage = () => {

@@ -2252,7 +2252,14 @@
     "totalTTC": "Total TTC",
     "totalHT": "Total HT",
     "taxLabel": "including VAT",
-    "needHelp": "Need help?"
+    "needHelp": "Need help?",
+    "statusPending": "Pending",
+    "statusConfirmed": "Confirmed",
+    "statusPreparing": "Preparing",
+    "statusReady": "Ready",
+    "statusPickedUp": "On the way",
+    "statusDelivered": "Delivered",
+    "statusCancelled": "Cancelled"
   },
   "clientProfile": {
     "title": "My Profile",
