@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import Link from "next/link";
 import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
 
 export default function SignupPage() {
   const router = useRouter();
+  const t = useTranslations('auth.signup');
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,7 +22,7 @@ export default function SignupPage() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas");
+      setError(t("passwordsMismatch"));
       return;
     }
 
@@ -30,7 +32,7 @@ export default function SignupPage() {
       const result = await api.signup(email, password, name);
 
       if (result.error) {
-        setError(result.error || result.message || "Erreur d'inscription");
+        setError(result.error || result.message || t("error"));
         return;
       }
 
@@ -49,7 +51,7 @@ export default function SignupPage() {
         router.push(espaceDAccueilLocal());
       }
     } catch (err) {
-      setError("Erreur d'inscription");
+      setError(t("error"));
       console.error(err);
     } finally {
       setLoading(false);
@@ -60,7 +62,7 @@ export default function SignupPage() {
     <div className="min-h-screen bg-white flex items-center justify-center px-6 py-12">
       <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg w-full max-w-md">
         <h1 className="text-3xl font-bold text-slate-900 mb-6 text-center">
-          Inscription
+          {t("title")}
         </h1>
 
         {error && (
@@ -71,19 +73,19 @@ export default function SignupPage() {
 
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
-            <label className="block text-slate-700 font-medium mb-2">Nom</label>
+            <label className="block text-slate-700 font-medium mb-2">{t("name")}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Votre nom"
+              placeholder={t("name")}
               required
             />
           </div>
 
           <div>
-            <label className="block text-slate-700 font-medium mb-2">Email</label>
+            <label className="block text-slate-700 font-medium mb-2">{t("email")}</label>
             <input
               type="email"
               value={email}
@@ -95,7 +97,7 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="block text-slate-700 font-medium mb-2">Mot de passe</label>
+            <label className="block text-slate-700 font-medium mb-2">{t("password")}</label>
             <input
               type="password"
               value={password}
@@ -107,7 +109,7 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="block text-slate-700 font-medium mb-2">Confirmer le mot de passe</label>
+            <label className="block text-slate-700 font-medium mb-2">{t("confirmPassword")}</label>
             <input
               type="password"
               value={confirmPassword}
@@ -123,15 +125,15 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full bg-accent hover:bg-accent-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 transition"
           >
-            {loading ? "Inscription..." : "S'inscrire"}
+            {loading ? t("registering") : t("submit")}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-slate-600">
-            Déjà inscrit?{" "}
+            {t("haveAccount")}{" "}
             <Link href="/login" className="text-primary hover:text-primary-hover font-medium transition">
-              Se connecter
+              {t("login")}
             </Link>
           </p>
         </div>

@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
 import { Plus, Edit2, Trash2, Search, MapPin, Crosshair } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 
@@ -14,7 +15,7 @@ const CarteZones = dynamic(() => import('@/components/CarteZones'), {
   ssr: false,
   loading: () => (
     <div className="h-[560px] w-full rounded-lg border border-slate-700 bg-slate-800 flex items-center justify-center text-slate-500">
-      Chargement de la carte…
+      {t('mapLoadingMessage')}
     </div>
   ),
 });
@@ -43,7 +44,7 @@ interface DeliveryZone {
 }
 
 export default function DeliveryZonesPage() {
-
+  const t = useTranslations('merchantDeliveryZones');
   const { storeId } = useCurrentStore();
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [loading, setLoading] = useState(true);
@@ -206,18 +207,18 @@ export default function DeliveryZonesPage() {
     setFormError('');
 
     if (!formData.name.trim()) {
-      setFormError('Le nom de la zone est requis');
+      setFormError(t('errorNameRequired'));
       return;
     }
 
     if (!formData.baseFee) {
-      setFormError('Les frais de base sont requis');
+      setFormError(t('errorFeeRequired'));
       return;
     }
 
     const baseFeeNum = parseFloat(formData.baseFee);
     if (baseFeeNum < 0) {
-      setFormError('Les frais de base doivent être positifs');
+      setFormError(t('errorFeePositive'));
       return;
     }
 
@@ -228,18 +229,18 @@ export default function DeliveryZonesPage() {
       // s'appliquerait jamais.
       rayon = parseFloat(formData.radiusKm);
       if (!(rayon > 0)) {
-        setFormError('Indiquez un rayon en kilomètres, supérieur à zéro');
+        setFormError(t('errorRadiusRequired'));
         return;
       }
     } else {
       // À la création, ou après avoir cliqué « Redessiner » : les nouveaux
       // sommets font foi. Sinon, une zone existante garde son tracé.
       if (dessin && dessin.length > 0 && dessin.length < 3) {
-        setFormError('Un polygone a besoin d’au moins 3 sommets — continuez à cliquer sur la carte');
+        setFormError(t(‘errorPolygonVertices’));
         return;
       }
       if (!editingZone && (!dessin || dessin.length < 3)) {
-        setFormError('Dessinez la zone sur la carte : au moins 3 sommets');
+        setFormError(t('errorPolygonDraw'));
         return;
       }
     }
@@ -286,11 +287,11 @@ export default function DeliveryZonesPage() {
         setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', deliveryMinutes: '' }); setDessin(null);
       } else {
         // Un refus muet laissait croire que la zone était enregistrée.
-        setFormError(donnees?.error || 'Enregistrement refusé');
+        setFormError(donnees?.error || t('saveRefused'));
       }
     } catch (error) {
       console.error('Error saving delivery zone:', error);
-      setFormError('Le serveur ne répond pas');
+      setFormError(t('serverError'));
     } finally {
       setSaving(false);
     }
@@ -368,9 +369,9 @@ export default function DeliveryZonesPage() {
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
               <MapPin className="text-amber-500" />
-              Zones de Livraison
+              {t('title')}
             </h1>
-            <p className="text-slate-400 mt-2">Gérez vos zones de livraison et frais</p>
+            <p className="text-slate-400 mt-2">{t('description')}</p>
           </div>
           <button
             onClick={handleAddZone}

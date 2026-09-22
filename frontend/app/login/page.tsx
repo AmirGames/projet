@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { RAISON_DECONNEXION, useAuth } from "@/lib/auth-context";
 import Link from "next/link";
@@ -11,6 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 export default function LoginPage() {
   const router = useRouter();
   const { refreshAuth } = useAuth();
+  const t = useTranslations('auth.login');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -40,7 +42,7 @@ export default function LoginPage() {
   }, []);
 
   const renvoyerConfirmation = async () => {
-    setLienRenvoye("Envoi...");
+    setLienRenvoye(t("resending"));
 
     try {
       const reponse = await fetch(`${API_URL}/api/auth/resend-verification`, {
@@ -105,7 +107,7 @@ export default function LoginPage() {
 
       router.push(redirectPath);
     } catch (err) {
-      setError("Erreur de connexion");
+      setError(t("errorConnection"));
       console.error(err);
     } finally {
       setLoading(false);
@@ -116,7 +118,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-white flex items-center justify-center px-6 py-12">
       <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg w-full max-w-md">
         <h1 className="text-3xl font-bold text-slate-900 mb-6 text-center">
-          Connexion
+          {t("title")}
         </h1>
 
         {raison && !error && (
@@ -142,7 +144,7 @@ export default function LoginPage() {
                     onClick={renvoyerConfirmation}
                     className="underline hover:no-underline font-medium"
                   >
-                    Renvoyer le lien de confirmation
+                    {t("resendConfirmation")}
                   </button>
                 )}
               </div>
@@ -152,7 +154,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-slate-700 font-medium mb-2">Email</label>
+            <label className="block text-slate-700 font-medium mb-2">{t("email")}</label>
             <input
               type="email"
               value={email}
@@ -164,7 +166,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-slate-700 font-medium mb-2">Mot de passe</label>
+            <label className="block text-slate-700 font-medium mb-2">{t("password")}</label>
             <input
               type="password"
               value={password}
@@ -180,7 +182,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-accent hover:bg-accent-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 transition"
           >
-            {loading ? "Connexion..." : "Se connecter"}
+            {loading ? t("connecting") : t("submit")}
           </button>
         </form>
 
@@ -190,13 +192,13 @@ export default function LoginPage() {
               href="/mot-de-passe-oublie"
               className="text-primary hover:text-primary-hover font-medium transition"
             >
-              Mot de passe oublié ?
+              {t("forgotPassword")}
             </Link>
           </p>
           <p className="text-slate-600">
-            Pas encore inscrit?{" "}
+            {t("noAccount")}{" "}
             <Link href="/signup" className="text-primary hover:text-primary-hover font-medium transition">
-              S'inscrire
+              {t("signup")}
             </Link>
           </p>
         </div>
