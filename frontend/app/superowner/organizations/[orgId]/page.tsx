@@ -37,7 +37,7 @@ interface MerchantDetail {
 
 export default function MerchantDetailPage() {
   const t = useTranslations('superownerOrganizationDetail');
-  const tCommon = useTranslations('common'); {
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   // Le segment s'appelle [orgId] depuis le regroupement des espaces

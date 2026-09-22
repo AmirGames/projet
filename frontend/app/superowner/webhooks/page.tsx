@@ -203,18 +203,18 @@ export default function WebhooksPage() {
   };
 
   const essayer = async (id: string) => {
-    setMessage(t(‘testSending’));
+    setMessage(t('testSending'));
 
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/webhooks/${id}/essai`, {
-        method: ‘POST’,
+        method: 'POST',
         headers: { Authorization: `Bearer ${jeton()}` },
       });
 
       const lu = await reponse.json();
 
       if (!reponse.ok) {
-        setMessage(lu?.error || t(‘testError’));
+        setMessage(lu?.error || t('testError'));
         return;
       }
 
@@ -223,7 +223,7 @@ export default function WebhooksPage() {
       if (historiqueDe === id) await voirLHistorique(id);
       await charger();
     } catch {
-      setMessage(t(‘connectionError’));
+      setMessage(t('connectionError'));
     }
   };
 
@@ -385,14 +385,14 @@ export default function WebhooksPage() {
               disabled={envoiEnCours}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg font-medium transition"
             >
-              {envoiEnCours ? t(‘creating’) : t(‘create_button’)}
+              {envoiEnCours ? t('creating') : t('create_button')}
             </button>
             <button
               type="button"
               onClick={() => setFormulaireOuvert(false)}
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition"
             >
-              {tCommon(‘cancel’)}
+              {tCommon('cancel')}
             </button>
           </div>
         </form>
@@ -405,7 +405,7 @@ export default function WebhooksPage() {
         </div>
       ) : abonnements.length === 0 ? (
         <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-8 text-center">
-          <p className="text-gray-400">{t(‘empty’)}</p>
+          <p className="text-gray-400">{t('empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -439,18 +439,18 @@ export default function WebhooksPage() {
 
                   <button
                     onClick={() => essayer(abonnement.id)}
-                    aria-label={t(‘test_send_label’, { url: abonnement.url })}
+                    aria-label={t('test_send_label', { url: abonnement.url })}
                     className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
-                    title={t(‘test_send’)}
+                    title={t('test_send')}
                   >
                     <Send size={14} />
                   </button>
 
                   <button
                     onClick={() => voirLHistorique(abonnement.id)}
-                    aria-label={t(‘history_label’, { url: abonnement.url })}
+                    aria-label={t('history_label', { url: abonnement.url })}
                     className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
-                    title={t(‘history’)}
+                    title={t('history')}
                   >
                     <History size={14} />
                   </button>
@@ -488,17 +488,17 @@ export default function WebhooksPage() {
 
               <p className="text-xs text-gray-500">
                 {abonnement.lastTriggered
-                  ? t(‘lastSent’, { date: new Date(abonnement.lastTriggered).toLocaleString(‘fr-FR’) })
-                  : t(‘noSent’)}
+                  ? t('lastSent', { date: new Date(abonnement.lastTriggered).toLocaleString('fr-FR') })
+                  : t('noSent')}
                 {abonnement.retryCount > 0 &&
-                  ` · ${t(‘abandonedAttempts’, { count: abonnement.retryCount })}`}
+                  ` · ${t('abandonedAttempts', { count: abonnement.retryCount })}`}
               </p>
 
               {/* Un abonnement coupé ne dit pas de lui-même comment repartir. */}
-              {abonnement.status === ‘FAILED’ && (
+              {abonnement.status === 'FAILED' && (
                 <p className="text-xs text-red-400 flex items-start gap-2">
                   <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-                  {t(‘failedWarning’)}
+                  {t('failedWarning')}
                 </p>
               )}
 
