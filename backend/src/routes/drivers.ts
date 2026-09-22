@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
+import { uploadMiddleware } from "../middleware/file-upload";
+import { logger } from "../config/logger";
 import { emitDeliveryUpdate } from "../config/socket";
 import { DispatchService } from "../services/dispatch.service";
 import { AuthService } from "../services/auth.service";
@@ -14,6 +16,7 @@ import {
 import { DriverPayoutService } from "../services/driver-payout.service";
 import { DeliveryProofService } from "../services/delivery-proof.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
+import { FileUploadService } from "../services/file-upload.service";
 import { z } from "zod";
 
 const router = Router();
@@ -312,7 +315,7 @@ const pieceSchema = z.object({
   expiryDate: z.string().optional().nullable(),
 });
 
-// POST /drivers/documents - Déposer une pièce du dossier
+// POST /drivers/documents - Déposer une pièce du dossier par URL
 router.post("/documents", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const livreur = await livreurConnecte(req);
@@ -328,6 +331,51 @@ router.post("/documents", authMiddleware, async (req: Request, res: Response, ne
     next(err);
   }
 });
+
+// POST /drivers/documents/upload - Déposer une pièce du dossier par upload de fichier
+router.post(
+  "/documents/upload",
+  authMiddleware,
+  uploadMiddleware.single("file"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const livreur = await livreurConnecte(req);
+
+      if (!req.file) {
+        throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
+      }
+
+      const schema = z.object({
+        type: z.enum(TYPES_DOCUMENT),
+        expiryDate: z.string().optional().nullable(),
+      });
+
+      const body = schema.parse(req.body);
+
+      logger.info("Driver file upload", {
+        driverId: livreur.id,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      });
+
+      const piece = await DriverApprovalService.deposerFichier(livreur.id, {
+        type: body.type,
+        file: req.file.buffer,
+        filename: req.file.originalname || `document.${req.file.mimetype.split("/")[1]}`,
+        mimeType: req.file.mimetype,
+        expiryDate: body.expiryDate,
+      });
+
+      res.status(201).json({
+        message: `${libelleDuDocument(piece.type)} déposée, en attente de validation`,
+        data: piece,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 /**
  * GET /drivers/payouts - Ce qui est dû au livreur, et ce qui lui a été versé

@@ -19,6 +19,7 @@
     "verif": "node scripts/verification/tout.mjs"
   },
   "dependencies": {
+    "@types/multer": "^2.2.0",
     "bcrypt": "latest",
     "bull": "latest",
     "cors": "latest",
@@ -26,12 +27,16 @@
     "express": "latest",
     "helmet": "latest",
     "jsonwebtoken": "latest",
+    "multer": "latest",
     "nodemailer": "^10.0.9",
     "redis": "latest",
     "socket.io": "^4.7.2",
     "stripe": "^22.6.2",
     "winston": "latest",
     "zod": "latest"
+  },
+  "optionalDependencies": {
+    "cloudinary": "^2.11.0"
   },
   "devDependencies": {
     "@jest/globals": "latest",
@@ -41,6 +46,7 @@
     "@types/express": "latest",
     "@types/jest": "latest",
     "@types/jsonwebtoken": "latest",
+    "@types/multer": "latest",
     "@types/node": "latest",
     "@types/nodemailer": "^8.0.1",
     "@types/stripe": "^8.0.416",

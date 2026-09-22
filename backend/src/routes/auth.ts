@@ -164,7 +164,12 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
       ? null
       : await db.driver.findUnique({ where: { userId: user.id }, select: { id: true } });
 
-    if (!primaryMembership && !livreur && !user.isSuperOwner && !user.isSystemAdmin) {
+    // Check if user has a customer profile (all users get one at signup)
+    const customer = !primaryMembership && !livreur
+      ? await db.customer.findUnique({ where: { userId: user.id }, select: { id: true } })
+      : null;
+
+    if (!primaryMembership && !livreur && !customer && !user.isSuperOwner && !user.isSystemAdmin) {
       throw new ApiError(403, "Ce compte n'est rattaché à aucun espace", "NO_WORKSPACE");
     }
 
@@ -229,7 +234,12 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
       ? null
       : await db.driver.findUnique({ where: { userId: user.id }, select: { id: true } });
 
-    if (!primaryMembership && !livreur && !user.isSuperOwner && !user.isSystemAdmin) {
+    // Check if user has a customer profile (all users get one at signup)
+    const customer = !primaryMembership && !livreur
+      ? await db.customer.findUnique({ where: { userId: user.id }, select: { id: true } })
+      : null;
+
+    if (!primaryMembership && !livreur && !customer && !user.isSuperOwner && !user.isSystemAdmin) {
       throw new ApiError(403, "Ce compte n'est rattaché à aucun espace", "NO_WORKSPACE");
     }
 
@@ -469,12 +479,13 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
     }
 
     const body = z.object({
-      name: z.string().min(1).max(200),
-      email: z.string().email(),
       phone: z.string().min(1).max(20),
-      vehicleType: z.string().min(1).max(50),
-      vehiclePlate: z.string().min(1).max(50),
+      vehicleType: z.enum(["car", "scooter", "bike"]),
+      vehiclePlate: z.string().optional(),
     }).parse(req.body);
+
+    // Get current user
+    const user = await UserService.getUserById(userId);
 
     // Check if driver already exists
     const existingDriver = await db.driver.findUnique({
@@ -485,16 +496,16 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
       throw new ApiError(400, "Vous avez déjà un profil livreur", "DRIVER_EXISTS");
     }
 
-    // Create driver
+    // Create driver using user's existing email and name
     const driver = await db.driver.create({
       data: {
         userId,
-        name: body.name,
-        email: body.email,
+        name: user.name || user.email.split("@")[0],
+        email: user.email,
         phone: body.phone,
         vehicleType: body.vehicleType,
-        vehiclePlate: body.vehiclePlate,
-        licensePlate: body.vehiclePlate,
+        vehiclePlate: body.vehiclePlate || null,
+        licensePlate: body.vehiclePlate || null,
         status: "PENDING",
       },
     });
@@ -504,8 +515,14 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
       driverId: driver.id,
     });
 
+    // Generate new tokens to reflect driver status
+    const accessToken = AuthService.generateAccessToken(userId);
+    const refreshToken = AuthService.generateRefreshToken(userId);
+
     res.status(201).json({
       message: "Candidature de livreur soumise avec succès",
+      accessToken,
+      refreshToken,
       driver: {
         id: driver.id,
         name: driver.name,

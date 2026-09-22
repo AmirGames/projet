@@ -1,29 +1,178 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
+import { useAuth } from '@/lib/auth-context';
+import Link from 'next/link';
+import { Store, Bike, Crown } from 'lucide-react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
- * Ancien tableau de bord commerçant, remplacé par /merchant/:orgId.
+ * Page d'accueil des utilisateurs connectés.
  *
- * La page est conservée en simple redirection : d'anciens liens, favoris et
- * redirections pointent encore ici. Elle n'affiche plus d'interface, ce qui
- * supprime au passage la double barre de navigation (celle du site plus
- * l'en-tête que cette page dessinait elle-même).
+ * Gère les redirections intelligentes :
+ * - Si un seul rôle (commerçant OU livreur) et pas superowner → redirection auto
+ * - Si multiple rôles OU superowner → affiche un sélecteur visuel
  */
-export default function AncienTableauDeBord() {
+export default function DashboardPage() {
   const router = useRouter();
+  const { user, isLoading } = useAuth();
+  const [roles, setRoles] = useState<any>(null);
+  const [rolesLoading, setRolesLoading] = useState(true);
 
   useEffect(() => {
-    router.replace(espaceDAccueilLocal());
-  }, [router]);
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
+  useEffect(() => {
+    if (user && !isLoading) {
+      fetchRoles();
+    }
+  }, [user, isLoading]);
+
+  const fetchRoles = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/api/auth/me/roles`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRoles(data.roles);
+
+        const isMerchant = data.roles?.merchant?.active;
+        const isDriver = data.roles?.driver?.active;
+
+        // Redirection automatique si un seul rôle (et pas superowner)
+        if (!user?.isSuperOwner) {
+          if (isMerchant && !isDriver) {
+            router.push('/merchant');
+          } else if (isDriver && !isMerchant) {
+            router.push('/driver');
+          }
+        }
+        // Sinon, on affiche le choix
+      }
+    } catch (error) {
+      console.error('Failed to fetch roles:', error);
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
+  const isMerchant = roles?.merchant?.active ?? false;
+  const isDriver = roles?.driver?.active ?? false;
+  const isSuperOwner = user?.isSuperOwner ?? false;
+  const hasMultipleRoles = (isMerchant && isDriver) || isSuperOwner ||
+                          (isSuperOwner && isMerchant) ||
+                          (isSuperOwner && isDriver);
+
+  if (isLoading || rolesLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
+          <p className="text-slate-400">Chargement de votre espace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isMerchant && !isDriver) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-white mb-4">Aucun rôle trouvé</h1>
+          <p className="text-slate-400 mb-8">Vous devez être commerçant ou livreur pour accéder à cet espace.</p>
+          <Link href="/" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition">
+            Retour à l'accueil
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Afficher le choix seulement si on a plusieurs rôles
+  if (!hasMultipleRoles) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
+          <p className="text-slate-400">Redirection vers votre espace...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mx-auto mb-4" />
-        <p className="text-gray-400">Redirection vers votre espace...</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl font-bold text-white mb-3">Bienvenue, {user?.email}</h1>
+          <p className="text-slate-400">Sélectionnez l'espace que vous souhaitez gérer</p>
+        </div>
+
+        <div className={`grid gap-8 ${isSuperOwner && (isMerchant || isDriver) ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+          {isMerchant && (
+            <Link
+              href="/merchant"
+              className="group bg-slate-800 border-2 border-slate-700 hover:border-blue-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
+            >
+              <div className="flex items-center justify-center w-16 h-16 bg-blue-600 group-hover:bg-blue-700 rounded-lg mb-6 mx-auto transition">
+                <Store size={32} className="text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white text-center mb-2">Mes commerces</h2>
+              <p className="text-slate-400 text-center mb-6 text-sm">
+                Gérez vos boutiques, produits, commandes et livreurs
+              </p>
+              <div className="flex items-center justify-center gap-2 text-blue-400 group-hover:text-blue-300 font-semibold transition">
+                Accéder aux commerces →
+              </div>
+            </Link>
+          )}
+
+          {isDriver && (
+            <Link
+              href="/driver"
+              className="group bg-slate-800 border-2 border-slate-700 hover:border-orange-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
+            >
+              <div className="flex items-center justify-center w-16 h-16 bg-orange-600 group-hover:bg-orange-700 rounded-lg mb-6 mx-auto transition">
+                <Bike size={32} className="text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white text-center mb-2">Mes livraisons</h2>
+              <p className="text-slate-400 text-center mb-6 text-sm">
+                Consultez vos courses, revenus et votre historique
+              </p>
+              <div className="flex items-center justify-center gap-2 text-orange-400 group-hover:text-orange-300 font-semibold transition">
+                Voir mes courses →
+              </div>
+            </Link>
+          )}
+
+          {isSuperOwner && (
+            <Link
+              href="/superowner"
+              className="group bg-slate-800 border-2 border-slate-700 hover:border-purple-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
+            >
+              <div className="flex items-center justify-center w-16 h-16 bg-purple-600 group-hover:bg-purple-700 rounded-lg mb-6 mx-auto transition">
+                <Crown size={32} className="text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white text-center mb-2">Administration</h2>
+              <p className="text-slate-400 text-center mb-6 text-sm">
+                Gérez l'ensemble de la plateforme, utilisateurs et paramètres
+              </p>
+              <div className="flex items-center justify-center gap-2 text-purple-400 group-hover:text-purple-300 font-semibold transition">
+                Accéder à l'admin →
+              </div>
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );
