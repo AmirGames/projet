@@ -22,7 +22,6 @@
     "@types/multer": "^2.2.0",
     "bcrypt": "latest",
     "bull": "latest",
-    "cloudinary": "^2.11.0",
     "cors": "latest",
     "dotenv": "latest",
     "express": "latest",
@@ -35,6 +34,9 @@
     "stripe": "^22.6.2",
     "winston": "latest",
     "zod": "latest"
+  },
+  "optionalDependencies": {
+    "cloudinary": "^2.11.0"
   },
   "devDependencies": {
     "@jest/globals": "latest",

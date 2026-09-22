@@ -1,4 +1,3 @@
-import { v2 as cloudinary } from "cloudinary";
 import { promises as fs } from "fs";
 import { join } from "path";
 import { getEnv } from "../config/env";
@@ -8,16 +7,28 @@ const env = getEnv();
 const UPLOADS_DIR = join(process.cwd(), "uploads");
 const API_URL = env.API_URL || "http://localhost:3001";
 
-if (
-  env.CLOUDINARY_CLOUD_NAME &&
-  env.CLOUDINARY_API_KEY &&
-  env.CLOUDINARY_API_SECRET
-) {
-  cloudinary.config({
-    cloud_name: env.CLOUDINARY_CLOUD_NAME,
-    api_key: env.CLOUDINARY_API_KEY,
-    api_secret: env.CLOUDINARY_API_SECRET,
-  });
+let cloudinary: any = null;
+
+// Lazy-load cloudinary seulement si configuré
+async function getCloudinary() {
+  if (!cloudinary && isCloudinaryConfigured()) {
+    const { v2 } = await import("cloudinary");
+    cloudinary = v2;
+    cloudinary.config({
+      cloud_name: env.CLOUDINARY_CLOUD_NAME,
+      api_key: env.CLOUDINARY_API_KEY,
+      api_secret: env.CLOUDINARY_API_SECRET,
+    });
+  }
+  return cloudinary;
+}
+
+function isCloudinaryConfigured(): boolean {
+  return !!(
+    env.CLOUDINARY_CLOUD_NAME &&
+    env.CLOUDINARY_API_KEY &&
+    env.CLOUDINARY_API_SECRET
+  );
 }
 
 async function ensureUploadsDir() {
@@ -29,20 +40,12 @@ async function ensureUploadsDir() {
 }
 
 export class FileUploadService {
-  static isCloudinaryConfigured(): boolean {
-    return !!(
-      env.CLOUDINARY_CLOUD_NAME &&
-      env.CLOUDINARY_API_KEY &&
-      env.CLOUDINARY_API_SECRET
-    );
-  }
-
   static async uploadDocument(
     buffer: Buffer,
     filename: string,
     folder: "drivers" | "merchants"
   ): Promise<{ url: string; publicId: string }> {
-    if (this.isCloudinaryConfigured()) {
+    if (isCloudinaryConfigured()) {
       return this.uploadToCloudinary(buffer, filename, folder);
     } else {
       return this.uploadLocal(buffer, filename, folder);
@@ -54,8 +57,10 @@ export class FileUploadService {
     filename: string,
     folder: "drivers" | "merchants"
   ): Promise<{ url: string; publicId: string }> {
+    const cloud = await getCloudinary();
+
     return new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
+      const stream = cloud.uploader.upload_stream(
         {
           folder: `documents/${folder}`,
           resource_type: "auto",
@@ -63,7 +68,7 @@ export class FileUploadService {
           overwrite: true,
           access_mode: "token",
         },
-        (error, result) => {
+        (error: any, result: any) => {
           if (error) {
             logger.error("Cloudinary upload failed", { error });
             reject(error);
@@ -112,9 +117,10 @@ export class FileUploadService {
   }
 
   static async deleteDocument(publicId: string): Promise<void> {
-    if (this.isCloudinaryConfigured()) {
+    if (isCloudinaryConfigured()) {
       try {
-        await cloudinary.uploader.destroy(publicId);
+        const cloud = await getCloudinary();
+        await cloud.uploader.destroy(publicId);
       } catch (error) {
         logger.warn("Failed to delete document from Cloudinary", {
           publicId,
