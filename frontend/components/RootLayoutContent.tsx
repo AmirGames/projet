@@ -34,15 +34,11 @@ export default function RootLayoutContent({
     initializeTheme();
   }, [API_URL]);
 
-  // Ces espaces ont leur propre barre latérale : la navigation publique y
-  // ferait double emploi. `/impression` est une feuille à imprimer : elle ne
-  // porte aucun élément du site, c'est tout l'intérêt. La page d'accueil a
-  // désormais son propre en-tête clair : la Navbar sombre ferait doublon.
+  // Masquer la navbar uniquement sur la page d'accueil (qui a son propre header)
+  // et sur les pages d'impression (qui ne portent que le document à imprimer).
+  // La navbar s'affiche partout ailleurs pour permettre la navigation entre
+  // les espaces (superowner, merchant, driver, client, etc.).
   const hideNavbar = pathname === '/' ||
-                     pathname?.startsWith('/superowner') ||
-                     pathname?.startsWith('/merchant') ||
-                     pathname?.startsWith('/client') ||
-                     pathname?.startsWith('/driver') ||
                      pathname?.startsWith('/impression');
 
   return (
