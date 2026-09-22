@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
@@ -32,6 +34,7 @@ interface MerchantDetail {
 }
 
 export default function MerchantDetailPage() {
+  const t = useTranslations('superadminMerchantsDetail');
   const router = useRouter();
   const params = useParams();
   const merchantId = params.id as string;
@@ -213,7 +216,7 @@ export default function MerchantDetailPage() {
     return Math.max(0, days);
   };
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
+  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
   if (!merchant) return <div className="text-center py-8 text-red-400">Commerçant non trouvé</div>;
 
   return (

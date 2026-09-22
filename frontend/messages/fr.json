@@ -1477,6 +1477,10 @@
     "monthlyTrend": "Tendance mensuelle",
     "periods": "périodes",
     "perPeriod": "par période",
+    "monthlyDetails": "Détails par mois",
+    "orders": "commandes",
+    "revenue": "de revenu",
+    "topMerchants": "Top commerçants (par revenu)",
     "loadError": "Erreur de chargement",
     "noData": "Aucune donnée"
   },

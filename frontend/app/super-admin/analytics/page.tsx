@@ -115,7 +115,7 @@ export default function AnalyticsPage() {
 
       {/* Monthly Breakdown */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-        <h2 className="text-lg font-bold mb-4">Détails par mois</h2>
+        <h2 className="text-lg font-bold mb-4">{t('monthlyDetails')}</h2>
         <div className="space-y-3">
           {months.map((month, idx) => {
             const prevMonth = months[idx + 1];
@@ -127,7 +127,7 @@ export default function AnalyticsPage() {
                   <div className="flex-1">
                     <p className="font-medium">{month.period}</p>
                     <p className="text-sm text-gray-400">
-                      {month.ordersCount} commandes • {month.totalRevenue.toFixed(2)} € de revenu
+                      {month.ordersCount} {t('orders')} • {month.totalRevenue.toFixed(2)} € {t('revenue')}
                     </p>
                   </div>
                   <div className="text-right">
@@ -148,7 +148,7 @@ export default function AnalyticsPage() {
       {/* Top Merchants by Commission */}
       {data.commissions.length > 0 && (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-bold mb-4">Top commerçants (par revenu)</h2>
+          <h2 className="text-lg font-bold mb-4">{t('topMerchants')}</h2>
           <div className="space-y-3">
             {[...data.commissions]
               .sort((a, b) => Number(b.totalRevenue) - Number(a.totalRevenue))

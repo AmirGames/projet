@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import { useEffect, useState } from 'react';
 import { Search, Download, Filter } from 'lucide-react';
 
@@ -20,6 +22,7 @@ interface Commission {
 }
 
 export default function CommissionsPage() {
+  const t = useTranslations('superadminCommissions');
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -87,7 +90,7 @@ export default function CommissionsPage() {
     a.click();
   };
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
+  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
 
   return (
     <div className="space-y-6">

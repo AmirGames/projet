@@ -1477,6 +1477,10 @@
     "monthlyTrend": "Monthly Trend",
     "periods": "periods",
     "perPeriod": "per period",
+    "monthlyDetails": "Monthly Details",
+    "orders": "orders",
+    "revenue": "in revenue",
+    "topMerchants": "Top Merchants (by revenue)",
     "loadError": "Loading error",
     "noData": "No data"
   },

@@ -1,11 +1,14 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import { useState } from 'react';
 import { FileJson, FileText } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function ExportsPage() {
+  const t = useTranslations('superadminExports');
   const [loading, setLoading] = useState('');
   const [message, setMessage] = useState('');
 
