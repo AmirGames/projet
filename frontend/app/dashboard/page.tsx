@@ -48,12 +48,16 @@ export default function DashboardPage() {
 
         const isMerchant = data.roles?.merchant?.active;
         const isDriver = data.roles?.driver?.active;
+        const isCustomer = data.roles?.customer?.active;
+
+        // Compter les rôles actifs
+        const activeRoles = [isMerchant, isDriver, isCustomer].filter(Boolean).length;
 
         // Redirection automatique si un seul rôle (et pas superowner)
-        if (!user?.isSuperOwner) {
-          if (isMerchant && !isDriver) {
+        if (!user?.isSuperOwner && activeRoles === 1) {
+          if (isMerchant) {
             router.push('/merchant');
-          } else if (isDriver && !isMerchant) {
+          } else if (isDriver) {
             router.push('/driver');
           }
         }
