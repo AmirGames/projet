@@ -405,6 +405,7 @@ export default function DriverDashboard() {
             <NotesRecues />
           </div>
         </div>
+      </div>
     </div>
   );
 }
