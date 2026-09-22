@@ -34,12 +34,14 @@ export default function RootLayoutContent({
     initializeTheme();
   }, [API_URL]);
 
-  // Masquer la navbar uniquement sur la page d'accueil (qui a son propre header)
-  // et sur les pages d'impression (qui ne portent que le document à imprimer).
-  // La navbar s'affiche partout ailleurs pour permettre la navigation entre
-  // les espaces (superowner, merchant, driver, client, etc.).
+  // Masquer la navbar sur :
+  // - la page d'accueil (qui a son propre header)
+  // - les pages d'impression (qui ne portent que le document à imprimer)
+  // - les pages superowner (qui ont leur propre navigation sidebar + topbar)
+  // La navbar s'affiche partout ailleurs pour permettre la navigation.
   const hideNavbar = pathname === '/' ||
-                     pathname?.startsWith('/impression');
+                     pathname?.startsWith('/impression') ||
+                     pathname?.startsWith('/superowner');
 
   return (
     <>
