@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 
@@ -13,6 +14,7 @@ interface Analytics {
 }
 
 export default function AdminAnalytics() {
+  const t = useTranslations('adminAnalytics');
   const [analytics, setAnalytics] = useState<Analytics>({
     totalRevenue: 0,
     totalOrders: 0,
@@ -82,20 +84,20 @@ export default function AdminAnalytics() {
         })),
       });
     } catch (error) {
-      console.error('Erreur chargement analytics:', error);
+      console.error(t('loadError'), error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
+  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Analytics</h1>
-        <p className="text-gray-400 mt-1">Vue d'ensemble de votre boutique</p>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
       </div>
 
       {/* Key Metrics */}
@@ -103,43 +105,43 @@ export default function AdminAnalytics() {
         {/* Total Revenue */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Chiffre d'affaires total</p>
+            <p className="text-gray-400 text-sm">{t('totalRevenue')}</p>
             <TrendingUp size={20} className="text-green-500" />
           </div>
           <p className="text-3xl font-bold">{analytics.totalRevenue.toFixed(2)} €</p>
-          <p className="text-sm text-green-400 mt-2">+12% ce mois</p>
+          <p className="text-sm text-green-400 mt-2">{t('revenueMonth')}</p>
         </div>
 
         {/* Total Orders */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Commandes</p>
+            <p className="text-gray-400 text-sm">{t('orders')}</p>
             <BarChart3 size={20} className="text-blue-500" />
           </div>
           <p className="text-3xl font-bold">{analytics.totalOrders}</p>
-          <p className="text-sm text-blue-400 mt-2">+8% ce mois</p>
+          <p className="text-sm text-blue-400 mt-2">{t('ordersMonth')}</p>
         </div>
 
         {/* Average Order */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Panier moyen</p>
+            <p className="text-gray-400 text-sm">{t('averageOrder')}</p>
             <TrendingUp size={20} className="text-purple-500" />
           </div>
           <p className="text-3xl font-bold">{analytics.averageOrderValue.toFixed(2)} €</p>
-          <p className="text-sm text-purple-400 mt-2">+5% ce mois</p>
+          <p className="text-sm text-purple-400 mt-2">{t('averageMonth')}</p>
         </div>
       </div>
 
       {/* Top Products */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Produits les plus vendus</h2>
+        <h2 className="text-xl font-bold mb-4">{t('topProducts')}</h2>
         <div className="space-y-3">
           {analytics.topProducts.map((product, idx) => (
             <div key={idx} className="flex items-center justify-between p-3 bg-gray-700/50 rounded">
               <div className="flex-1">
                 <p className="font-medium">{product.name}</p>
-                <p className="text-sm text-gray-400">{product.sales} ventes</p>
+                <p className="text-sm text-gray-400">{product.sales} {t('sales')}</p>
               </div>
               <p className="font-bold text-green-400">{product.revenue.toFixed(2)} €</p>
             </div>
@@ -149,7 +151,7 @@ export default function AdminAnalytics() {
 
       {/* Daily Revenue */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Chiffre d'affaires quotidien</h2>
+        <h2 className="text-xl font-bold mb-4">{t('dailyRevenue')}</h2>
         <div className="space-y-3">
           {analytics.dailyRevenue.slice(0, 7).map((day, idx) => (
             <div key={idx} className="flex items-center gap-4">
