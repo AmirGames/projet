@@ -806,9 +806,9 @@ router.post(
 );
 
 // Serve document files with proper CORS headers for preview modal
-router.get("/documents/file/:path(*)", async (req: Request, res: Response, next: NextFunction) => {
+router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const filePath = req.params.path;
+    const filePath = (req.params as any)[0];
     const fs = require("fs");
     const { join } = require("path");
     const fullPath = join(process.cwd(), "uploads", filePath);
