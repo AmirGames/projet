@@ -110,7 +110,12 @@ export function createApp(): Express {
 
   // ===== Static files (uploads) =====
   const uploadsDir = join(process.cwd(), "uploads");
-  app.use("/uploads", express.static(uploadsDir));
+  app.use("/uploads", (_req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type");
+    next();
+  }, express.static(uploadsDir));
 
   // ===== API Routes =====
   app.use("/api/auth", authRouter);
