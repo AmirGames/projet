@@ -18,6 +18,8 @@ import { DeliveryProofService } from "../services/delivery-proof.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
 import { FileUploadService } from "../services/file-upload.service";
 import { z } from "zod";
+import fs from "fs";
+import { join } from "path";
 
 const router = Router();
 
@@ -809,8 +811,6 @@ router.post(
 router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const filePath = (req.params as any)[0];
-    const fs = require("fs");
-    const { join } = require("path");
     const fullPath = join(process.cwd(), "uploads", filePath);
 
     // Security: prevent directory traversal
