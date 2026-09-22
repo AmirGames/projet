@@ -4,15 +4,16 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
-import { Store, Bike } from 'lucide-react';
+import { Store, Bike, Crown } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
  * Page d'accueil des utilisateurs connectés.
  *
- * Si l'utilisateur n'a qu'un rôle (commerçant OU livreur), il est redirigé
- * automatiquement vers son espace. S'il en a plusieurs, il peut choisir.
+ * Gère les redirections intelligentes :
+ * - Si un seul rôle (commerçant OU livreur) et pas superowner → redirection auto
+ * - Si multiple rôles OU superowner → affiche un sélecteur visuel
  */
 export default function DashboardPage() {
   const router = useRouter();
@@ -48,11 +49,13 @@ export default function DashboardPage() {
         const isMerchant = data.roles?.merchant?.active;
         const isDriver = data.roles?.driver?.active;
 
-        // Redirection automatique si un seul rôle
-        if (isMerchant && !isDriver) {
-          router.push('/merchant');
-        } else if (isDriver && !isMerchant) {
-          router.push('/driver');
+        // Redirection automatique si un seul rôle (et pas superowner)
+        if (!user?.isSuperOwner) {
+          if (isMerchant && !isDriver) {
+            router.push('/merchant');
+          } else if (isDriver && !isMerchant) {
+            router.push('/driver');
+          }
         }
         // Sinon, on affiche le choix
       }
@@ -65,7 +68,10 @@ export default function DashboardPage() {
 
   const isMerchant = roles?.merchant?.active ?? false;
   const isDriver = roles?.driver?.active ?? false;
-  const hasMultipleRoles = isMerchant && isDriver;
+  const isSuperOwner = user?.isSuperOwner ?? false;
+  const hasMultipleRoles = (isMerchant && isDriver) || isSuperOwner ||
+                          (isSuperOwner && isMerchant) ||
+                          (isSuperOwner && isDriver);
 
   if (isLoading || rolesLoading) {
     return (
@@ -112,7 +118,7 @@ export default function DashboardPage() {
           <p className="text-slate-400">Sélectionnez l'espace que vous souhaitez gérer</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className={`grid gap-8 ${isSuperOwner && (isMerchant || isDriver) ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
           {isMerchant && (
             <Link
               href="/merchant"
@@ -145,6 +151,24 @@ export default function DashboardPage() {
               </p>
               <div className="flex items-center justify-center gap-2 text-orange-400 group-hover:text-orange-300 font-semibold transition">
                 Voir mes courses →
+              </div>
+            </Link>
+          )}
+
+          {isSuperOwner && (
+            <Link
+              href="/superowner"
+              className="group bg-slate-800 border-2 border-slate-700 hover:border-purple-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
+            >
+              <div className="flex items-center justify-center w-16 h-16 bg-purple-600 group-hover:bg-purple-700 rounded-lg mb-6 mx-auto transition">
+                <Crown size={32} className="text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white text-center mb-2">Administration</h2>
+              <p className="text-slate-400 text-center mb-6 text-sm">
+                Gérez l'ensemble de la plateforme, utilisateurs et paramètres
+              </p>
+              <div className="flex items-center justify-center gap-2 text-purple-400 group-hover:text-purple-300 font-semibold transition">
+                Accéder à l'admin →
               </div>
             </Link>
           )}
