@@ -29,14 +29,15 @@ const statusColors: Record<string, string> = {
   CANCELLED: 'red'
 };
 
-const statusLabels: Record<string, string> = {
-  PENDING: 'En attente',
-  CONFIRMED: 'Confirmée',
-  PREPARING: 'En préparation',
-  READY: 'Prête à être livrée',
-  PICKED_UP: 'Livreur en route',
-  DELIVERED: 'Livrée',
-  CANCELLED: 'Annulée'
+// Status keys for translation - values will be translated using useTranslations
+const statusTranslationKeys: Record<string, string> = {
+  PENDING: 'statusPending',
+  CONFIRMED: 'statusConfirmed',
+  PREPARING: 'statusPreparing',
+  READY: 'statusReady',
+  PICKED_UP: 'statusPickedUp',
+  DELIVERED: 'statusDelivered',
+  CANCELLED: 'statusCancelled'
 };
 
 export default function OrdersPage() {
@@ -135,7 +136,8 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-3">
             {filteredOrders.map(order => {
-              const statusLabel = statusLabels[order.status] || order.status;
+              const statusKey = statusTranslationKeys[order.status];
+              const statusLabel = statusKey ? t(statusKey) : order.status;
               const statusColor = statusColors[order.status] || 'gray';
 
               return (
