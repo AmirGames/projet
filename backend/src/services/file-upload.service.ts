@@ -94,8 +94,14 @@ export class FileUploadService {
   ): Promise<{ url: string; publicId: string }> {
     await ensureUploadsDir();
 
-    const ext = filename.split(".").pop() || "bin";
-    const safeFilename = `${folder}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    // Extraire l'extension du fichier original
+    const lastDot = filename.lastIndexOf(".");
+    const ext = lastDot > 0 ? filename.substring(lastDot + 1).toLowerCase() : "bin";
+
+    // Générer un nom de fichier sécurisé avec l'extension
+    const randomId = Math.random().toString(36).slice(2, 10);
+    const timestamp = Date.now();
+    const safeFilename = `${timestamp}-${randomId}.${ext}`;
     const relativePath = join(folder, safeFilename);
     const fullPath = join(UPLOADS_DIR, relativePath);
 
@@ -104,7 +110,7 @@ export class FileUploadService {
       await fs.writeFile(fullPath, buffer);
 
       const url = `${API_URL}/uploads/${relativePath}`;
-      logger.info("Local file uploaded", { path: relativePath });
+      logger.info("Local file uploaded", { path: relativePath, size: buffer.length });
 
       return {
         url,
