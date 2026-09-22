@@ -549,7 +549,7 @@ export default function ProductsPage() {
       const response = await fetch(`${API_URL}/api/products/${product.id}/availability`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ isAvailable: !product.isAvailable }),
+        body: JSON.stringify({ isAvailable: !product.isAvailable, storeId }),
       });
 
       const donnees = await response.json();
