@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Clock, CheckCircle, AlertCircle, Package, Eye } from 'lucide-react';
 import Link from 'next/link';
 
@@ -53,6 +54,7 @@ const statusIcons: Record<string, any> = {
 };
 
 export default function OrdersPage() {
+  const t = useTranslations('merchantOrders');
   const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
@@ -165,7 +167,7 @@ export default function OrdersPage() {
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-400">Chargement des commandes...</p>
+              <p className="text-gray-400">{t('loading')}</p>
             </div>
           </div>
         </div>
@@ -179,42 +181,42 @@ export default function OrdersPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">Commandes</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
             <Link
               href={`/merchant/${orgId}/dashboard`}
               className="text-gray-400 hover:text-gray-300 text-sm"
             >
-              ← Retour au tableau de bord
+              {t('backToDashboard')}
             </Link>
           </div>
-          <p className="text-gray-400">Gérez et traitez vos commandes</p>
+          <p className="text-gray-400">{t('description')}</p>
         </div>
 
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-8">
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-              <p className="text-gray-400 text-xs mb-1">Total</p>
+              <p className="text-gray-400 text-xs mb-1">{t('statsTotal')}</p>
               <p className="text-2xl font-bold">{stats.totalOrders}</p>
             </div>
             <div className="bg-yellow-600/20 border border-yellow-600/50 rounded-lg p-4">
-              <p className="text-yellow-400 text-xs mb-1">En Attente</p>
+              <p className="text-yellow-400 text-xs mb-1">{t('statsPending')}</p>
               <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
             </div>
             <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
-              <p className="text-blue-400 text-xs mb-1">Acceptées</p>
+              <p className="text-blue-400 text-xs mb-1">{t('statsAccepted')}</p>
               <p className="text-2xl font-bold text-blue-400">{stats.accepted}</p>
             </div>
             <div className="bg-green-600/20 border border-green-600/50 rounded-lg p-4">
-              <p className="text-green-400 text-xs mb-1">Prêtes</p>
+              <p className="text-green-400 text-xs mb-1">{t('statsReady')}</p>
               <p className="text-2xl font-bold text-green-400">{stats.ready}</p>
             </div>
             <div className="bg-purple-600/20 border border-purple-600/50 rounded-lg p-4">
-              <p className="text-purple-400 text-xs mb-1">Terminées</p>
+              <p className="text-purple-400 text-xs mb-1">{t('statsCompleted')}</p>
               <p className="text-2xl font-bold text-purple-400">{stats.completed}</p>
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-              <p className="text-gray-400 text-xs mb-1">Revenu</p>
+              <p className="text-gray-400 text-xs mb-1">{t('statsRevenue')}</p>
               <p className="text-2xl font-bold">{euro(stats.totalRevenue, 0)}</p>
             </div>
           </div>
@@ -235,7 +237,7 @@ export default function OrdersPage() {
                   : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-300 border border-gray-700'
               }`}
             >
-              {status === 'ALL' ? 'Toutes les commandes' : status}
+              {status === 'ALL' ? t('filterAll') : status}
             </button>
           ))}
         </div>
@@ -244,7 +246,7 @@ export default function OrdersPage() {
         <div className="space-y-4">
           {orders.length === 0 ? (
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center text-gray-400">
-              Aucune commande trouvée
+              {t('empty')}
             </div>
           ) : (
             orders.map((order) => {
@@ -256,7 +258,7 @@ export default function OrdersPage() {
                     <div>
                       <div className="flex items-start justify-between mb-4">
                         <div>
-                          <p className="text-sm text-gray-400 mb-1">Commande #{order.id.slice(0, 8)}</p>
+                          <p className="text-sm text-gray-400 mb-1">{t('orderNumber', { id: order.id.slice(0, 8) })}</p>
                           <p className="text-lg font-bold">{order.customerName}</p>
                           <p className="text-sm text-gray-400">{order.customerEmail}</p>
                         </div>
@@ -268,10 +270,10 @@ export default function OrdersPage() {
 
                       <div className="text-sm mb-4">
                         <p className="text-gray-400">
-                          <span className="font-semibold text-gray-300">{order.items.length}</span> article{order.items.length > 1 ? 's' : ''}
+                          <span className="font-semibold text-gray-300">{order.items.length}</span> {order.items.length > 1 ? t('orderItems_plural') : t('orderItems_singular')}
                         </p>
                         <p className="text-gray-400">
-                          Montant: <span className="text-green-400 font-bold">{euro(order.totalAmount)}</span>
+                          {t('orderAmount')} <span className="text-green-400 font-bold">{euro(order.totalAmount)}</span>
                         </p>
                         <p className="text-gray-400 text-xs mt-2">
                           {new Date(order.createdAt).toLocaleDateString('fr-FR', {
@@ -290,14 +292,14 @@ export default function OrdersPage() {
                           className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded text-xs font-medium hover:bg-blue-600/30 transition-colors"
                         >
                           <Eye size={14} className="inline mr-1" />
-                          Détails
+                          {t('orderDetails')}
                         </Link>
                       </div>
                     </div>
 
                     {/* Status Change */}
                     <div>
-                      <p className="text-sm font-semibold text-gray-300 mb-3">Changer le statut</p>
+                      <p className="text-sm font-semibold text-gray-300 mb-3">{t('statusChange')}</p>
                       <div className="grid grid-cols-2 gap-2">
                         {(['PENDING', 'ACCEPTED', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
                           <button
@@ -326,7 +328,7 @@ export default function OrdersPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-8 px-6 py-4 bg-gray-800 border border-gray-700 rounded-lg">
             <p className="text-sm text-gray-400">
-              Page {page + 1} sur {totalPages}
+              {t('paginationPage', { page: page + 1, totalPages })}
             </p>
             <div className="flex gap-2">
               <button
@@ -334,14 +336,14 @@ export default function OrdersPage() {
                 disabled={page === 0}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
               >
-                Précédent
+                {t('paginationPrev')}
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
               >
-                Suivant
+                {t('paginationNext')}
               </button>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useCurrentStore } from '@/lib/current-store';
 import { lienVersEspace } from '@/lib/domaines';
 import {
@@ -43,6 +44,7 @@ interface DashboardStats {
 }
 
 export default function MerchantDashboard() {
+  const t = useTranslations('merchantDashboard');
   const params = useParams();
   const router = useRouter();
   const orgId = params?.orgId as string;
@@ -101,7 +103,7 @@ export default function MerchantDashboard() {
         totalProducts: productsData.pagination?.total ?? 0,
       });
     } catch (err) {
-      setError('Impossible de charger les données du tableau de bord');
+      setError(t('loadError'));
     } finally {
       setLoading(false);
     }
@@ -113,7 +115,7 @@ export default function MerchantDashboard() {
     if (orgId && !storesLoading) fetchDashboardData();
   }, [orgId, storesLoading, fetchDashboardData]);
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
+  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
 
   const euro = (value: number) =>
     value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -122,17 +124,17 @@ export default function MerchantDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Tableau de bord</h1>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
         <p className="text-gray-400 mt-1">
           {currentStore
-            ? `Vue d'ensemble de ${currentStore.name}`
+            ? t('storeOverviewCurrentStore', { name: currentStore.name })
             : org?.name
-              ? `Vue d'ensemble de ${org.name}`
-              : "Vue d'ensemble de votre commerce"}
+              ? t('storeOverviewCurrentStore', { name: org.name })
+              : t('storeOverviewDefault')}
           {stores.length > 1 && (
             <span className="text-gray-500">
               {' '}
-              — changez de boutique en haut à droite
+              {t('changeSwitcher')}
             </span>
           )}
         </p>
@@ -148,40 +150,40 @@ export default function MerchantDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Commandes</p>
+            <p className="text-gray-400 text-sm">{t('metricsOrders')}</p>
             <ShoppingCart size={20} className="text-blue-500" />
           </div>
           <p className="text-3xl font-bold">{stats?.totalOrders ?? 0}</p>
-          <p className="text-sm text-gray-400 mt-2">depuis le début</p>
+          <p className="text-sm text-gray-400 mt-2">{t('metricsSince')}</p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Chiffre d'affaires</p>
+            <p className="text-gray-400 text-sm">{t('metricsRevenue')}</p>
             <Wallet size={20} className="text-green-500" />
           </div>
           <p className="text-3xl font-bold">{euro(stats?.totalRevenue ?? 0)} €</p>
           <p className="text-sm text-gray-400 mt-2">
-            Panier moyen : {euro(stats?.averageOrderValue ?? 0)} €
+            {t('metricsAverageOrder', { value: euro(stats?.averageOrderValue ?? 0) })}
           </p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Clients</p>
+            <p className="text-gray-400 text-sm">{t('metricsCustomers')}</p>
             <Users size={20} className="text-purple-500" />
           </div>
           <p className="text-3xl font-bold">{stats?.uniqueCustomers ?? 0}</p>
-          <p className="text-sm text-gray-400 mt-2">clients uniques</p>
+          <p className="text-sm text-gray-400 mt-2">{t('metricsCustomersUnique')}</p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Produits</p>
+            <p className="text-gray-400 text-sm">{t('metricsProducts')}</p>
             <Package size={20} className="text-yellow-500" />
           </div>
           <p className="text-3xl font-bold">{stats?.totalProducts ?? 0}</p>
-          <p className="text-sm text-gray-400 mt-2">au catalogue</p>
+          <p className="text-sm text-gray-400 mt-2">{t('metricsCatalog')}</p>
         </div>
       </div>
 
@@ -190,19 +192,19 @@ export default function MerchantDashboard() {
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <AlertCircle size={20} className="text-orange-500" />
-            Commandes en attente
+            {t('alertsPending')}
           </h2>
           <p className="text-3xl font-bold text-orange-400">{stats?.pendingOrders ?? 0}</p>
-          <p className="text-sm text-gray-400 mt-2">à traiter</p>
+          <p className="text-sm text-gray-400 mt-2">{t('alertsToProcess')}</p>
         </div>
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <TrendingUp size={20} className="text-green-500" />
-            Panier moyen
+            {t('alertsAverage')}
           </h2>
           <p className="text-3xl font-bold text-green-400">{euro(stats?.averageOrderValue ?? 0)} €</p>
-          <p className="text-sm text-gray-400 mt-2">par commande</p>
+          <p className="text-sm text-gray-400 mt-2">{t('alertsPerOrder')}</p>
         </div>
       </div>
 
@@ -210,7 +212,7 @@ export default function MerchantDashboard() {
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
           <StoreIcon size={20} className="text-blue-500" />
-          Mes boutiques ({org?.stores?.length ?? 0})
+          {t('storesMyStores', { count: org?.stores?.length ?? 0 })}
         </h2>
         {org?.stores && org.stores.length > 0 ? (
           <div className="space-y-2">
@@ -228,12 +230,12 @@ export default function MerchantDashboard() {
                     {store.name}
                     {store.id === storeId && (
                       <span className="ml-2 text-xs font-normal text-blue-400">
-                        boutique affichée
+                        {t('storeCurrent')}
                       </span>
                     )}
                   </p>
                   <p className="text-sm text-gray-400 truncate">
-                    {store.city || 'Ville non renseignée'}
+                    {store.city || t('storeNoCity')}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
@@ -244,7 +246,7 @@ export default function MerchantDashboard() {
                         : 'bg-gray-500/20 text-gray-400'
                     }`}
                   >
-                    {store.isOpen ? 'Ouverte' : 'Fermée'}
+                    {store.isOpen ? t('storeOpen') : t('storeClosed')}
                   </span>
                   <a
                     href={lienVersEspace('public', `/store/${store.slug}`)}
@@ -252,44 +254,44 @@ export default function MerchantDashboard() {
                     rel="noopener noreferrer"
                     className="text-blue-400 hover:text-blue-300 flex items-center gap-1 text-sm"
                   >
-                    Voir <ExternalLink size={14} />
+                    {t('storeLink')} <ExternalLink size={14} />
                   </a>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-400">Aucune boutique pour le moment</p>
+          <p className="text-gray-400">{t('storeEmpty')}</p>
         )}
       </div>
 
       {/* Quick Actions */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-        <h2 className="text-lg font-bold mb-4">Actions rapides</h2>
+        <h2 className="text-lg font-bold mb-4">{t('quickActions')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Link
             href={`/merchant/${orgId}/orders`}
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
-            Voir les commandes
+            {t('quickOrders')}
           </Link>
           <Link
             href={`/merchant/${orgId}/products`}
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
-            Gérer le catalogue
+            {t('quickProducts')}
           </Link>
           <Link
             href={`/merchant/${orgId}/analytics`}
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
-            Voir les statistiques
+            {t('quickAnalytics')}
           </Link>
           <Link
             href={`/merchant/${orgId}/settings`}
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
-            Paramètres
+            {t('quickSettings')}
           </Link>
         </div>
       </div>

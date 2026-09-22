@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Search, Mail, Phone, Trash2, Lock, Eye } from 'lucide-react';
 import Link from 'next/link';
 
@@ -27,6 +28,7 @@ interface Customer {
 }
 
 export default function CustomersPage() {
+  const t = useTranslations('merchantCustomers');
   const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
@@ -134,7 +136,7 @@ export default function CustomersPage() {
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-400">Chargement des clients...</p>
+              <p className="text-gray-400">{t('loading')}</p>
             </div>
           </div>
         </div>
@@ -148,29 +150,29 @@ export default function CustomersPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">Clients</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
             <Link
               href={`/merchant/${orgId}/dashboard`}
               className="text-gray-400 hover:text-gray-300 text-sm"
             >
-              ← Retour au tableau de bord
+              ← Back to dashboard
             </Link>
           </div>
-          <p className="text-gray-400">Gérez et suivez vos clients</p>
+          <p className="text-gray-400">{t('description')}</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-1">Total Clients</p>
+            <p className="text-gray-400 text-sm mb-1">{t('statsTotalClients')}</p>
             <p className="text-3xl font-bold">{total}</p>
           </div>
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-1">Clients Actifs</p>
+            <p className="text-gray-400 text-sm mb-1">{t('statsActiveClients')}</p>
             <p className="text-3xl font-bold">{customers.filter(c => c.status === 'ACTIVE').length}</p>
           </div>
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-1">Clients Bloqués</p>
+            <p className="text-gray-400 text-sm mb-1">{t('statsBlockedClients')}</p>
             <p className="text-3xl font-bold text-red-400">{customers.filter(c => c.status === 'BLOCKED').length}</p>
           </div>
         </div>
@@ -181,7 +183,7 @@ export default function CustomersPage() {
             <Search className="absolute left-4 top-3 text-gray-500" size={20} />
             <input
               type="text"
-              placeholder="Rechercher par nom, email ou téléphone..."
+              placeholder={t('searchPlaceholder')}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -198,20 +200,20 @@ export default function CustomersPage() {
             <table className="w-full">
               <thead className="bg-gray-700 border-b border-gray-600">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Nom</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Téléphone</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Commandes</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Dépense</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Statut</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold">Actions</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colName')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colEmail')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colPhone')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colOrders')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colSpending')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('colStatus')}</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold">{t('colActions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {customers.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
-                      Aucun client trouvé
+                      {t('empty')}
                     </td>
                   </tr>
                 ) : (
@@ -265,7 +267,7 @@ export default function CustomersPage() {
                           <Link
                             href={`/merchant/${orgId}/customers/${customer.id}`}
                             className="p-1 hover:bg-gray-600 rounded transition-colors"
-                            title="Voir détails"
+                            title={t('actionView')}
                           >
                             <Eye size={18} className="text-blue-400" />
                           </Link>
@@ -273,7 +275,7 @@ export default function CustomersPage() {
                             <button
                               onClick={() => handleBlockCustomer(customer.id)}
                               className="p-1 hover:bg-gray-600 rounded transition-colors"
-                              title="Bloquer client"
+                              title={t('actionBlock')}
                             >
                               <Lock size={18} className="text-orange-400" />
                             </button>
@@ -281,7 +283,7 @@ export default function CustomersPage() {
                           <button
                             onClick={() => setShowDeleteModal(customer.id)}
                             className="p-1 hover:bg-gray-600 rounded transition-colors"
-                            title="Supprimer"
+                            title={t('actionDelete')}
                           >
                             <Trash2 size={18} className="text-red-400" />
                           </button>
@@ -297,7 +299,7 @@ export default function CustomersPage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-400">{t('paginationPage', { page: page + 1, totalPages })}
                 Page {page + 1} sur {totalPages}
               </p>
               <div className="flex gap-2">

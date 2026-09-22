@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Plus, Edit2, Trash2, Search, AlertCircle, Package, GripVertical } from 'lucide-react';
 import {
   DndContext,
@@ -100,7 +101,7 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
                 ? 'cursor-grab active:cursor-grabbing text-gray-600 hover:text-gray-400'
                 : 'cursor-not-allowed text-gray-800'
             }`}
-            title={triManuel ? 'Glissez pour réorganiser' : 'Tri automatique actif — passez en "Ordre manuel" pour réorganiser à la main'}
+            title={triManuel ? t('dragToReorder') : t('autoSortDisabled')}
           >
             <GripVertical size={18} />
           </button>
@@ -109,7 +110,7 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
               <h3 className="text-lg font-bold">{product.name}</h3>
               {!product.isAvailable && (
                 <span className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-orange-600/30 text-orange-400">
-                  <AlertCircle size={12} /> Épuisé
+                  <AlertCircle size={12} /> {t('outOfStock')}
                 </span>
               )}
               <span className={`text-xs px-2 py-1 rounded ${
@@ -127,17 +128,17 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
             )}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
               <div>
-                <p className="text-gray-500">Prix</p>
+                <p className="text-gray-500">{t('price')}</p>
                 <p className="font-semibold text-red-400">{euro(product.price)}</p>
               </div>
               <div>
-                <p className="text-gray-500">SKU</p>
+                <p className="text-gray-500">{t('sku')}</p>
                 <p className="font-mono text-sm">{product.sku}</p>
               </div>
               <div>
-                <p className="text-gray-500">Disponibilité</p>
+                <p className="text-gray-500">{t('availability')}</p>
                 <p className={`font-semibold ${product.isAvailable ? 'text-green-400' : 'text-orange-400'}`}>
-                  {product.isAvailable ? 'Disponible' : 'Épuisé'}
+                  {product.isAvailable ? t('availableYes') : t('availableNo')}
                 </p>
               </div>
             </div>
@@ -184,12 +185,12 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
                 : 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
             }`}
           >
-            {product.isAvailable ? 'Marquer épuisé' : 'Remettre en vente'}
+            {product.isAvailable ? t('outOfStock') : t('restockButton')}
           </button>
           <span className="text-xs text-gray-500">
             {product.isAvailable
-              ? 'Commandable par vos clients'
-              : 'Affiché mais non commandable'}
+              ? t('commandable')
+              : t('notCommandable')}
           </span>
         </div>
       )}
@@ -198,6 +199,7 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
 }
 
 export default function ProductsPage() {
+  const t = useTranslations('merchantProducts');
   const { storeId } = useCurrentStore();
   const [products, setProducts] = useState<Product[]>([]);
 
@@ -328,15 +330,15 @@ export default function ProductsPage() {
 
       if (!response.ok) {
         setCategories(precedent);
-        setMessage('❌ Le tri de la catégorie n\'a pas pu être changé');
+        setMessage(t('errorSortChange'));
         return;
       }
 
-      setMessage('✅ Tri de la catégorie mis à jour');
+      setMessage(t('successSortChange'));
       setTimeout(() => setMessage(''), 3000);
     } catch {
       setCategories(precedent);
-      setMessage('❌ Erreur de connexion au serveur');
+      setMessage(t('errorConnection'));
     }
   };
 
@@ -344,12 +346,12 @@ export default function ProductsPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      setMessage('❌ Le nom du produit est requis');
+      setMessage(t('errorNameRequired'));
       return;
     }
 
     if (!formData.price || parseFloat(formData.price) <= 0) {
-      setMessage('❌ Le prix doit être supérieur à 0');
+      setMessage(t('errorPriceInvalid'));
       return;
     }
 
@@ -375,18 +377,18 @@ export default function ProductsPage() {
         });
 
         if (response.ok) {
-          setMessage('✅ Produit mis à jour');
+          setMessage(t('successProductUpdate'));
           resetForm();
           await fetchProducts();
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.error || errorData.message || 'Erreur lors de la mise à jour';
+          const errorMsg = errorData.error || errorData.message || t('errorProductUpdate');
           setMessage(`❌ ${errorMsg}`);
         }
       } else {
         if (!storeId) {
-          setMessage('❌ Aucune boutique sélectionnée');
+          setMessage(t('errorNoStore'));
           return;
         }
 
@@ -414,24 +416,24 @@ export default function ProductsPage() {
         });
 
         if (response.ok) {
-          setMessage('✅ Produit créé');
+          setMessage(t('successProductCreate'));
           resetForm();
           await fetchProducts();
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.error || errorData.message || 'Erreur lors de la création';
+          const errorMsg = errorData.error || errorData.message || t('errorProductCreate');
           setMessage(`❌ ${errorMsg}`);
         }
       }
     } catch (error) {
       console.error('Error saving product:', error);
-      setMessage('❌ Erreur lors de la sauvegarde');
+      setMessage(t('errorProductSave'));
     }
   };
 
   const handleDelete = async (productId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit?')) {
+    if (!confirm(t('confirmDelete'))) {
       return;
     }
 
@@ -443,17 +445,17 @@ export default function ProductsPage() {
       });
 
       if (response.ok) {
-        setMessage('✅ Produit supprimé');
+        setMessage(t('successProductDelete'));
         await fetchProducts();
         setTimeout(() => setMessage(''), 3000);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.error || errorData.message || 'Erreur lors de la suppression';
+        const errorMsg = errorData.error || errorData.message || t('errorProductDelete');
         setMessage(`❌ ${errorMsg}`);
       }
     } catch (error) {
       console.error('Error deleting product:', error);
-      setMessage('❌ Erreur lors de la suppression');
+      setMessage(t('errorProductDelete'));
     }
   };
 
@@ -522,7 +524,7 @@ export default function ProductsPage() {
     if (!acc[categoryId]) {
       const categorie = categories.find(c => c.id === categoryId);
       acc[categoryId] = {
-        category: product.category || { id: 'uncategorized', name: 'Sans catégorie' },
+        category: product.category || { id: 'uncategorized', name: t('noCategory') },
         sortMode: categorie?.sortMode || 'MANUAL',
         products: [],
       };
@@ -537,7 +539,7 @@ export default function ProductsPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">Chargement des produits...</p>
+            <p className="text-gray-400">{t('loading')}</p>
           </div>
         </div>
       </div>
@@ -549,15 +551,15 @@ export default function ProductsPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">📦 Gestion des Produits</h1>
-            <p className="text-gray-400 mt-1">Gérez votre catalogue (glissez pour réorganiser)</p>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
+            <p className="text-gray-400 mt-1">{t('description')}</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
             className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors disabled:opacity-50"
             disabled={isReordering}
           >
-            <Plus size={20} /> Ajouter Produit
+            <Plus size={20} /> {t('addButton')}
           </button>
         </div>
 
@@ -577,9 +579,7 @@ export default function ProductsPage() {
               <AlertCircle size={20} className="text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-orange-400 mb-2">
-                  {produitsEpuises.length} produit{produitsEpuises.length > 1 ? 's' : ''} épuisé
-                  {produitsEpuises.length > 1 ? 's' : ''} — invisible
-                  {produitsEpuises.length > 1 ? 's' : ''} à la commande
+                  {t('outOfStockProducts', { count: produitsEpuises.length, plural: produitsEpuises.length > 1 ? 's' : '' })}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {produitsEpuises.slice(0, 6).map((p) => (
@@ -605,15 +605,15 @@ export default function ProductsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Total de produits</p>
+            <p className="text-gray-400 text-sm">{t('stats_total')}</p>
             <p className="text-3xl font-bold">{products.length}</p>
           </div>
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Produits actifs</p>
+            <p className="text-gray-400 text-sm">{t('stats_active')}</p>
             <p className="text-3xl font-bold">{products.filter(p => p.status === 'ACTIVE').length}</p>
           </div>
           <div className="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4">
-            <p className="text-orange-400 text-sm">Épuisés</p>
+            <p className="text-orange-400 text-sm">{t('stats_exhausted')}</p>
             <p className="text-3xl font-bold text-orange-400">
               {products.filter((p) => !p.isAvailable).length}
             </p>
@@ -625,7 +625,7 @@ export default function ProductsPage() {
             <Search size={20} className="text-gray-500 mt-2" />
             <input
               type="text"
-              placeholder="Rechercher par nom ou SKU..."
+              placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
@@ -636,7 +636,7 @@ export default function ProductsPage() {
         <div className="space-y-6">
           {filteredProducts.length === 0 ? (
             <div className="text-center py-12 bg-gray-800 border border-gray-700 rounded-lg">
-              <p className="text-gray-400">Aucun produit trouvé</p>
+              <p className="text-gray-400">{t('empty')}</p>
             </div>
           ) : (
             <DndContext
@@ -663,13 +663,13 @@ export default function ProductsPage() {
                             value={group.sortMode}
                             onChange={(e) => changerTriCategorie(group.category.id, e.target.value as CategorySortMode)}
                             className="ml-auto bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-red-500"
-                            title="Ordre d'affichage des produits, au tableau de bord et sur la vitrine"
+                            title={t('sortTitle')}
                           >
-                            <option value="MANUAL">Ordre manuel</option>
-                            <option value="ALPHA_ASC">Alphabétique (A→Z)</option>
-                            <option value="ALPHA_DESC">Alphabétique (Z→A)</option>
-                            <option value="PRICE_ASC">Prix croissant</option>
-                            <option value="PRICE_DESC">Prix décroissant</option>
+                            <option value="MANUAL">{t('sortMode_manual')}</option>
+                            <option value="ALPHA_ASC">{t('sortMode_alpha_asc')}</option>
+                            <option value="ALPHA_DESC">{t('sortMode_alpha_desc')}</option>
+                            <option value="PRICE_ASC">{t('sortMode_price_asc')}</option>
+                            <option value="PRICE_DESC">{t('sortMode_price_desc')}</option>
                           </select>
                         )}
                       </div>
@@ -699,7 +699,7 @@ export default function ProductsPage() {
           <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="border-b border-gray-700 p-6 flex items-center justify-between sticky top-0 bg-gray-800">
               <h2 className="text-2xl font-bold">
-                {editingProduct ? 'Modifier Produit' : 'Ajouter Produit'}
+                {editingProduct ? t('formTitle_edit') : t('formTitle_add')}
               </h2>
               <button
                 onClick={resetForm}
@@ -711,36 +711,36 @@ export default function ProductsPage() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Nom du produit *</label>
+                <label className="text-sm text-gray-400 block mb-2">{t('formLabel_name')}</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                  placeholder="Ex: Pizza Margherita"
+                  placeholder={t('formPlaceholder_name')}
                   required
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">SKU (optionnel)</label>
+                <label className="text-sm text-gray-400 block mb-2">{t('formLabel_sku')}</label>
                 <input
                   type="text"
                   value={formData.sku}
                   onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                   className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                  placeholder="Ex: PIZZA-001 (auto-généré si vide)"
+                  placeholder={t('formPlaceholder_sku')}
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Catégorie</label>
+                <label className="text-sm text-gray-400 block mb-2">{t('formLabel_category')}</label>
                 <select
                   value={formData.categoryId}
                   onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                   className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
                 >
-                  <option value="">Sélectionner une catégorie</option>
+                  <option value="">{t('formSelect_category')}</option>
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
@@ -748,19 +748,19 @@ export default function ProductsPage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Description</label>
+                <label className="text-sm text-gray-400 block mb-2">{t('formLabel_description')}</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                  placeholder="Détails du produit..."
+                  placeholder={t('formPlaceholder_description')}
                   rows={3}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Prix ($) *</label>
+                  <label className="text-sm text-gray-400 block mb-2">{t('formLabel_price')}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -772,7 +772,7 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Disponibilité</label>
+                  <label className="text-sm text-gray-400 block mb-2">{t('formLabel_availability')}</label>
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, isAvailable: !formData.isAvailable })}
@@ -782,21 +782,21 @@ export default function ProductsPage() {
                         : 'bg-orange-600/20 text-orange-400 border border-orange-600/50'
                     }`}
                   >
-                    {formData.isAvailable ? '✓ Disponible' : '✕ Épuisé'}
+                    {formData.isAvailable ? t('formButton_available') : t('formButton_exhausted')}
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Statut</label>
+                <label className="text-sm text-gray-400 block mb-2">{t('formLabel_status')}</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                   className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
                 >
-                  <option value="DRAFT">Brouillon</option>
-                  <option value="ACTIVE">Actif</option>
-                  <option value="ARCHIVED">Archivé</option>
+                  <option value="DRAFT">{t('statusDraft')}</option>
+                  <option value="ACTIVE">{t('statusActive')}</option>
+                  <option value="ARCHIVED">{t('statusArchived')}</option>
                 </select>
               </div>
 
@@ -806,13 +806,13 @@ export default function ProductsPage() {
                   onClick={resetForm}
                   className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors"
                 >
-                  Annuler
+                  {t('formButton_cancel')}
                 </button>
                 <button
                   type="submit"
                   className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors"
                 >
-                  {editingProduct ? 'Mettre à jour' : 'Créer'}
+                  {editingProduct ? t('formButton_update') : t('formButton_create')}
                 </button>
               </div>
             </form>
