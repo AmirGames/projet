@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { History } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -24,6 +25,7 @@ interface AuditLogsResponse {
 }
 
 export default function AuditLogsPage() {
+  const t = useTranslations('adminAuditLogs');
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -49,13 +51,13 @@ export default function AuditLogsPage() {
         },
       });
 
-      if (!res.ok) throw new Error("Erreur lors du chargement des logs");
+      if (!res.ok) throw new Error(t('loadError'));
       const data: AuditLogsResponse = await res.json();
       setLogs(data.logs);
       setTotal(data.pagination.total);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : t('error'));
     } finally {
       setLoading(false);
     }
@@ -76,13 +78,13 @@ export default function AuditLogsPage() {
 
   const getActionLabel = (action: string) => {
     const labels: { [key: string]: string } = {
-      CREATE: "✨ Créé",
-      READ: "👁️ Consulté",
-      UPDATE: "✏️ Modifié",
-      DELETE: "🗑️ Supprimé",
-      UPDATE_SYSTEM_CONFIG: "⚙️ Config système",
-      UPDATE_MERCHANT: "🏪 Commerçant",
-      UPDATE_TICKET: "🎫 Ticket",
+      CREATE: t('actionCreate'),
+      READ: t('actionRead'),
+      UPDATE: t('actionUpdate'),
+      DELETE: t('actionDelete'),
+      UPDATE_SYSTEM_CONFIG: t('actionConfigSystem'),
+      UPDATE_MERCHANT: t('actionUpdateMerchant'),
+      UPDATE_TICKET: t('actionUpdateTicket'),
     };
     return labels[action] || action;
   };
@@ -92,10 +94,10 @@ export default function AuditLogsPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <History className="w-8 h-8" />
-          Logs d'Audit
+          {t('title')}
         </h1>
         <p className="text-gray-400 mt-2">
-          Historique de toutes les actions administrateur
+          {t('subtitle')}
         </p>
       </div>
 
@@ -112,7 +114,7 @@ export default function AuditLogsPage() {
       ) : logs.length === 0 ? (
         <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700/50">
           <History className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Aucun log trouvé</p>
+          <p className="text-gray-400">{t('empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -142,14 +144,14 @@ export default function AuditLogsPage() {
                       ({log.admin.email})
                     </p>
                     <p className="text-sm text-gray-400">
-                      Cible: <span className="font-mono text-gray-500">{log.target}</span>
+                      {t('target')} <span className="font-mono text-gray-500">{log.target}</span>
                     </p>
                   </div>
 
                   {Object.keys(log.changes).length > 0 && (
                     <div className="mt-3 p-3 bg-gray-900/50 rounded text-xs font-mono text-gray-400">
                       <p className="font-semibold text-gray-300 mb-2">
-                        Modifications:
+                        {t('changes')}
                       </p>
                       <div className="space-y-1">
                         {Object.entries(log.changes).map(([key, value]) => (
@@ -178,8 +180,7 @@ export default function AuditLogsPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur{" "}
-          {total}
+          {t('pagination', { from: offset + 1, to: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
@@ -187,14 +188,14 @@ export default function AuditLogsPage() {
             disabled={offset === 0}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            Précédent
+            {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            Suivant
+            {t('next')}
           </button>
         </div>
       </div>

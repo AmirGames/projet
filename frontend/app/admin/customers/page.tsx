@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Search, Eye, Mail } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 
@@ -14,6 +15,7 @@ interface Customer {
 }
 
 export default function AdminCustomers() {
+  const t = useTranslations('adminCustomers');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,7 +53,7 @@ export default function AdminCustomers() {
 
       setCustomers(Array.from(customerMap.values()));
     } catch (error) {
-      console.error('Erreur chargement clients:', error);
+      console.error(t('loadError'), error);
     } finally {
       setLoading(false);
     }
@@ -62,14 +64,14 @@ export default function AdminCustomers() {
     c.phone.includes(searchTerm)
   );
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
+  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Clients</h1>
-        <p className="text-gray-400 mt-1">{customers.length} clients</p>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <p className="text-gray-400 mt-1">{customers.length} {t('totalCustomers')}</p>
       </div>
 
       {/* Search */}
@@ -77,7 +79,7 @@ export default function AdminCustomers() {
         <Search size={20} className="absolute left-3 top-3 text-gray-400" />
         <input
           type="text"
-          placeholder="Rechercher par email ou téléphone..."
+          placeholder={t('placeholder')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
@@ -89,12 +91,12 @@ export default function AdminCustomers() {
         <table className="w-full">
           <thead className="bg-gray-700/50 border-b border-gray-700">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Téléphone</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Commandes</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Total dépensé</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">Date inscription</th>
-              <th className="px-6 py-3 text-right text-sm font-semibold">Actions</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">{t('email')}</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">{t('phone')}</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">{t('orders')}</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">{t('totalSpent')}</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">{t('joinDate')}</th>
+              <th className="px-6 py-3 text-right text-sm font-semibold">{t('actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-700">
@@ -125,7 +127,7 @@ export default function AdminCustomers() {
             ) : (
               <tr>
                 <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
-                  Aucun client trouvé
+                  {t('empty')}
                 </td>
               </tr>
             )}
