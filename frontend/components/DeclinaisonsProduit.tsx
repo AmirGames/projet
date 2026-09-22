@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp, Layers, Plus, Save, Trash2, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
 
@@ -32,6 +33,7 @@ export function DeclinaisonsProduit({
   productId: string;
   prixDuPlat: number;
 }) {
+  const t = useTranslations('declinaisonsProduit');
   const [ouvert, setOuvert] = useState(false);
   const [declinaisons, setDeclinaisons] = useState<Declinaison[]>([]);
   const [libelleDuChoix, setLibelleDuChoix] = useState('');
@@ -77,14 +79,14 @@ export function DeclinaisonsProduit({
       const donnees = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreur(donnees?.error || 'Action refusée');
+        setErreur(donnees?.error || t('actionRefused'));
         return false;
       }
 
       await charger();
       return true;
     } catch {
-      setErreur('Le serveur ne répond pas');
+      setErreur(t('serverError'));
       return false;
     } finally {
       setChargement(false);
@@ -162,7 +164,7 @@ export function DeclinaisonsProduit({
       >
         <Layers size={16} />
         <span>
-          Déclinaisons
+          {t('title')}
           {declinaisons.length > 0 && ` (${declinaisons.length})`}
         </span>
         {ouvert ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -188,19 +190,19 @@ export function DeclinaisonsProduit({
               htmlFor={`choix-${productId}`}
               className="block text-sm text-gray-400 mb-1"
             >
-              Question posée au client
+              {t('questionLabel')}
             </label>
             <div className="flex gap-2">
               <input
                 id={`choix-${productId}`}
                 value={libelleDuChoix}
                 onChange={(e) => setLibelleDuChoix(e.target.value)}
-                placeholder="Type de pâtes, Taille…"
+                placeholder={t('questionPlaceholder')}
                 className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
               />
               <button
                 type="button"
-                aria-label="Enregistrer l’intitulé"
+                aria-label="Enregistrer l'intitulé"
                 onClick={enregistrerLibelle}
                 disabled={chargement || libelleDuChoix === libelleEnregistre}
                 className={`px-3 rounded transition ${
@@ -208,13 +210,13 @@ export function DeclinaisonsProduit({
                     ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                     : 'bg-orange-600 hover:bg-orange-700'
                 }`}
-                title="Enregistrer l’intitulé"
+                title="Enregistrer l'intitulé"
               >
                 <Save size={16} />
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Sans elle, le client voit des choix sans savoir ce qu’il choisit.
+              Sans elle, le client voit des choix sans savoir ce qu'il choisit.
             </p>
           </div>
 
@@ -285,7 +287,7 @@ export function DeclinaisonsProduit({
                         : 'bg-green-600/20 text-green-300 hover:bg-green-600/30'
                     }`}
                   >
-                    {declinaison.isAvailable ? 'Épuiser' : 'Remettre'}
+                    {declinaison.isAvailable ? t('depleted') : t('restore')}
                   </button>
 
                   <button
@@ -304,7 +306,7 @@ export function DeclinaisonsProduit({
           <div className="flex gap-2 items-end flex-wrap">
             <div className="flex-1 min-w-[8rem]">
               <label htmlFor={`nom-${productId}`} className="block text-xs text-gray-400 mb-1">
-                Nouvelle déclinaison
+                {t('newVariantLabel')}
               </label>
               <input
                 id={`nom-${productId}`}
@@ -313,14 +315,14 @@ export function DeclinaisonsProduit({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') ajouter();
                 }}
-                placeholder="Penne"
+                placeholder={t('newVariantPlaceholder')}
                 className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
               />
             </div>
 
             <div>
               <label htmlFor={`prix-${productId}`} className="block text-xs text-gray-400 mb-1">
-                Prix
+                {t('priceLabel')}
               </label>
               <input
                 id={`prix-${productId}`}
@@ -337,7 +339,7 @@ export function DeclinaisonsProduit({
             <button
               type="button"
               onClick={ajouter}
-              aria-label="Ajouter la déclinaison"
+              aria-label={t('addLabel')}
               disabled={chargement || !nouveauNom.trim()}
               className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-semibold transition ${
                 nouveauNom.trim()
@@ -345,12 +347,12 @@ export function DeclinaisonsProduit({
                   : 'bg-gray-700 text-gray-500 cursor-not-allowed'
               }`}
             >
-              <Plus size={16} /> Ajouter
+              <Plus size={16} /> {t('addButton')}
             </button>
           </div>
 
           <p className="text-xs text-gray-500">
-            Un prix laissé vide reprend celui du plat ({euro(prixDuPlat)}). Dès qu’une
+            Un prix laissé vide reprend celui du plat ({euro(prixDuPlat)}). Dès qu'une
             déclinaison existe, le client doit en choisir une pour commander.
           </p>
 
@@ -366,3 +368,4 @@ export function DeclinaisonsProduit({
     </div>
   );
 }
+

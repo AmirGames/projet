@@ -2196,6 +2196,11 @@
   },
   "stripePayment": {
     "loading": "Traitement...",
-    "error": "Erreur de paiement"
+    "error": "Erreur de paiement",
+    "stripeNotLoaded": "Stripe non chargé",
+    "intentFailed": "Impossible de créer la demande de paiement",
+    "cardNotFound": "Élément de carte non trouvé",
+    "paymentFailed": "Le paiement a échoué",
+    "payButton": "Payer {amount}"
   }
 }

@@ -2196,6 +2196,11 @@
   },
   "stripePayment": {
     "loading": "Processing...",
-    "error": "Payment error"
+    "error": "Payment error",
+    "stripeNotLoaded": "Stripe not loaded",
+    "intentFailed": "Failed to create payment intent",
+    "cardNotFound": "Card element not found",
+    "paymentFailed": "Payment failed",
+    "payButton": "Pay {amount}"
   }
 }

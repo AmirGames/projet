@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -16,6 +17,7 @@ interface StripePaymentProps {
 }
 
 function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPaymentComplete }: StripePaymentProps) {
+  const t = useTranslations('stripePayment');
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,7 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
     e.preventDefault();
 
     if (!stripe || !elements) {
-      setError('Stripe not loaded');
+      setError(t('stripeNotLoaded'));
       return;
     }
 
@@ -49,14 +51,14 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
       });
 
       if (!intentResponse.ok) {
-        throw new Error('Failed to create payment intent');
+        throw new Error(t('intentFailed'));
       }
 
       const { clientSecret } = await intentResponse.json();
 
       // Confirm payment with Stripe
       const cardElement = elements.getElement(CardElement);
-      if (!cardElement) throw new Error('Card element not found');
+      if (!cardElement) throw new Error(t('cardNotFound'));
 
       const result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
@@ -69,13 +71,13 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
       });
 
       if (result.error) {
-        setError(result.error.message || 'Payment failed');
+        setError(result.error.message || t('paymentFailed'));
         onPaymentComplete(false);
       } else if (result.paymentIntent?.status === 'succeeded') {
         onPaymentComplete(true);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment error');
+      setError(err instanceof Error ? err.message : t('error'));
       onPaymentComplete(false);
     } finally {
       setLoading(false);
@@ -110,7 +112,7 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
         disabled={loading}
         className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-semibold py-3 rounded-lg transition"
       >
-        {loading ? 'Traitement...' : `Payer ${euro(amount)}`}
+        {loading ? t('loading') : t('payButton', { amount: euro(amount) })}
       </button>
     </form>
   );
@@ -123,3 +125,4 @@ export function StripePayment(props: StripePaymentProps) {
     </Elements>
   );
 }
+
