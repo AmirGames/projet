@@ -159,7 +159,7 @@ export default function DashboardPage() {
 
           {isCustomer && (
             <Link
-              href="/client"
+              href="/client/orders"
               className="group bg-slate-800 border-2 border-slate-700 hover:border-green-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
             >
               <div className="flex items-center justify-center w-16 h-16 bg-green-600 group-hover:bg-green-700 rounded-lg mb-6 mx-auto transition">
