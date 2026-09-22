@@ -910,6 +910,20 @@
     "commandable": "Commandable par vos clients",
     "notCommandable": "Affiché mais non commandable"
   },
+  "merchantNotifications": {
+    "title": "Notifications",
+    "unreadCount": "{count} non-lues",
+    "markAllAsRead": "Marquer tout comme lu",
+    "filterAll": "Tous",
+    "filterRead": "Lus",
+    "filterUnread": "Non-lus",
+    "empty": "Aucune notification",
+    "markAsRead": "Marquer comme lu",
+    "delete": "Supprimer",
+    "pagination": "Affichage {from} à {to} sur {total}",
+    "previous": "Précédent",
+    "next": "Suivant"
+  },
   "merchantCustomers": {
     "loading": "Chargement des clients...",
     "title": "Clients",

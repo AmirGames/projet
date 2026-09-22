@@ -910,6 +910,20 @@
     "commandable": "Orderable by your customers",
     "notCommandable": "Displayed but not orderable"
   },
+  "merchantNotifications": {
+    "title": "Notifications",
+    "unreadCount": "{count} unread",
+    "markAllAsRead": "Mark all as read",
+    "filterAll": "All",
+    "filterRead": "Read",
+    "filterUnread": "Unread",
+    "empty": "No notifications",
+    "markAsRead": "Mark as read",
+    "delete": "Delete",
+    "pagination": "Showing {from} to {to} of {total}",
+    "previous": "Previous",
+    "next": "Next"
+  },
   "merchantCustomers": {
     "loading": "Loading customers...",
     "title": "Customers",
