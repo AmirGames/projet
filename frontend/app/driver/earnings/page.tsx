@@ -36,6 +36,14 @@ export default function RevenusLivreurPage() {
   const [loading, setLoading] = useState(true);
   const [erreur, setErreur] = useState('');
 
+  useEffect(() => {
+    // Vérifier l'authentification avant de charger les données
+    const token = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');
+    if (!token) {
+      router.push('/driver/login');
+    }
+  }, [router]);
+
   const charger = useCallback(async () => {
     const token = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');
 

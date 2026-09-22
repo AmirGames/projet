@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -28,11 +29,19 @@ interface FormErrors {
 
 export default function MerchantRegisterPage() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [successMessage, setSuccessMessage] = useState('');
   const [apiError, setApiError] = useState('');
+
+  // Rediriger vers onboard si connecté
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/merchant/onboard');
+    }
+  }, [user, authLoading, router]);
 
   const [formData, setFormData] = useState<FormData>({
     businessName: '',

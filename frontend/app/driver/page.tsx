@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Package, Clock, DollarSign, LogOut } from 'lucide-react';
+import { MapPin, Package, Clock, DollarSign } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { PropositionsCourses } from '@/components/PropositionsCourses';
@@ -151,10 +151,14 @@ export default function DriverDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('driverToken');
-    router.push('/driver/login');
-  };
+
+  // Vérifier le token avant de rien afficher
+  useEffect(() => {
+    const token = localStorage.getItem('driverToken');
+    if (!token) {
+      router.push('/driver/login');
+    }
+  }, [router]);
 
   if (loading) {
     return (
@@ -183,28 +187,10 @@ export default function DriverDashboard() {
     );
   }
 
+  const isAccountActive = driver.status === 'ACTIVE';
+
   return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Tableau de bord livreur</h1>
-              <p className="text-gray-400">Bienvenue, {driver.name}</p>
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition"
-            >
-              <LogOut size={18} />
-              Déconnexion
-            </button>
-          </div>
-        </div>
-      </header>
-
+    <div className="bg-gray-900 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Le dossier passe avant tout le reste : sans validation, aucune
             course n'arrivera, et un écran normal ne le dirait pas. */}
@@ -402,11 +388,12 @@ export default function DriverDashboard() {
               <div className="pt-6 border-t border-gray-700 space-y-4">
                 <button
                   onClick={basculerDisponibilite}
+                  disabled={!isAccountActive}
                   className={`w-full font-semibold py-2 rounded-lg transition ${
                     isAvailable
                       ? 'bg-green-600 hover:bg-green-700 text-white'
                       : 'bg-gray-700 hover:bg-gray-600 text-white'
-                  }`}
+                  } ${!isAccountActive ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {isAvailable ? '✓ En ligne' : 'Hors ligne'}
                 </button>
@@ -417,11 +404,29 @@ export default function DriverDashboard() {
                   </p>
                 )}
 
-                <Link href="/driver/earnings" className="block">
+                <Link href="/driver/profile" className="block">
                   <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
-                    Voir les revenus
+                    Mon profil
                   </button>
                 </Link>
+
+                <Link href="/driver/deliveries" className="block">
+                  <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
+                    Mes livraisons
+                  </button>
+                </Link>
+
+                {isAccountActive ? (
+                  <Link href="/driver/earnings" className="block">
+                    <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
+                      Voir les revenus
+                    </button>
+                  </Link>
+                ) : (
+                  <button disabled className="w-full bg-gray-600 text-gray-400 font-semibold py-2 rounded-lg opacity-50 cursor-not-allowed">
+                    Revenus (compte à valider)
+                  </button>
+                )}
               </div>
             </div>
 

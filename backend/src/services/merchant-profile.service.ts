@@ -2,6 +2,7 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
+import { FileUploadService } from "./file-upload.service";
 
 /**
  * Le profil du commerçant : son identité de facturation, son propriétaire, son
@@ -291,6 +292,50 @@ export class MerchantProfileService {
     return existante
       ? db.organizationDocument.update({ where: { id: existante.id }, data: valeurs })
       : db.organizationDocument.create({ data: { orgId, type: piece.type, ...valeurs } });
+  }
+
+  /** Dépose une pièce via upload de fichier. */
+  static async deposerFichier(
+    orgId: string,
+    piece: { type: TypeDocumentCommercant; file: Buffer; filename: string; expiryDate?: string | null }
+  ) {
+    const expire = piece.expiryDate ? new Date(piece.expiryDate) : null;
+
+    if (expire && expire.getTime() < Date.now()) {
+      throw new ApiError(
+        400,
+        `${libelleDuDocumentCommercant(piece.type)} : ce document est déjà expiré.`,
+        "DOCUMENT_EXPIRED"
+      );
+    }
+
+    const existante = await db.organizationDocument.findFirst({
+      where: { orgId, type: piece.type },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const { url } = await FileUploadService.uploadDocument(
+      piece.file,
+      `merchant-${orgId}-${piece.type}-${Date.now()}`,
+      "merchants"
+    );
+
+    const valeurs = {
+      documentUrl: url,
+      fileName: piece.filename,
+      expiryDate: expire,
+      status: "PENDING",
+      reviewNote: null,
+      reviewedAt: null,
+    };
+
+    const deposee = existante
+      ? await db.organizationDocument.update({ where: { id: existante.id }, data: valeurs })
+      : await db.organizationDocument.create({ data: { orgId, type: piece.type, ...valeurs } });
+
+    logger.info("Merchant document uploaded", { orgId, type: piece.type });
+
+    return deposee;
   }
 
   /** Retire une pièce du dossier. */
