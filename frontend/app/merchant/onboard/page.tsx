@@ -126,6 +126,12 @@ export default function MerchantOnboardPage() {
       }
 
       setSuccessMessage('Boutique créée avec succès !');
+
+      // Stocker l'orgId pour le contexte d'authentification
+      if (data.organization?.id) {
+        localStorage.setItem('currentOrgId', data.organization.id);
+      }
+
       setTimeout(() => {
         router.push(`/merchant/${data.organization?.id || ''}`);
       }, 1500);
