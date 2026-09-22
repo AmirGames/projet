@@ -32,7 +32,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function SystemConfigPage() {
   const t = useTranslations('superownerSystemConfig');
-  const tCommon = useTranslations('common');
   const [config, setConfig] = useState<Configuration | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
