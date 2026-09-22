@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { LogOut } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -20,6 +21,7 @@ interface AdminStats {
 }
 
 export default function AdminDashboard() {
+  const t = useTranslations('adminDashboard');
   const router = useRouter();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export default function AdminDashboard() {
 
       if (!response.ok) {
         const donnees = await response.json().catch(() => ({}));
-        setError(donnees.error || 'Erreur lors du chargement');
+        setError(donnees.error || t('loadError'));
         setLoading(false);
         return;
       }
@@ -63,7 +65,7 @@ export default function AdminDashboard() {
       setLoading(false);
     } catch (err) {
       console.error('Error:', err);
-      setError('Erreur lors du chargement');
+      setError(t('loadError'));
       setLoading(false);
     }
   };
@@ -77,7 +79,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-white">Chargement...</p>
+          <p className="text-white">{t('loading')}</p>
         </div>
       </div>
     );
@@ -88,13 +90,13 @@ export default function AdminDashboard() {
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-white">Tableau de bord administrateur</h1>
+            <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 bg-red-600 text-white font-semibold py-2 px-4 rounded-lg"
             >
               <LogOut size={18} />
-              Déconnexion
+              {t('logout')}
             </button>
           </div>
         </div>
@@ -106,19 +108,19 @@ export default function AdminDashboard() {
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-gray-800 rounded-lg p-6">
-              <p className="text-gray-400">Utilisateurs</p>
+              <p className="text-gray-400">{t('users')}</p>
               <p className="text-white text-3xl font-bold">{stats.totalUsers}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6">
-              <p className="text-gray-400">Restaurants</p>
+              <p className="text-gray-400">{t('restaurants')}</p>
               <p className="text-white text-3xl font-bold">{stats.totalStores}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6">
-              <p className="text-gray-400">Commandes</p>
+              <p className="text-gray-400">{t('orders')}</p>
               <p className="text-white text-3xl font-bold">{stats.totalOrders}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6">
-              <p className="text-gray-400">Revenus</p>
+              <p className="text-gray-400">{t('revenue')}</p>
               <p className="text-white text-3xl font-bold">{euro(stats.totalRevenue, 0)}</p>
             </div>
           </div>
@@ -127,19 +129,19 @@ export default function AdminDashboard() {
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-gray-800 rounded-lg p-6">
-              <p className="text-gray-400">Clients</p>
+              <p className="text-gray-400">{t('customers')}</p>
               <p className="text-white text-3xl font-bold">{stats.totalCustomers}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6">
-              <p className="text-gray-400">Produits</p>
+              <p className="text-gray-400">{t('products')}</p>
               <p className="text-white text-3xl font-bold">{stats.totalProducts}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6">
-              <p className="text-gray-400">Tickets ouverts</p>
+              <p className="text-gray-400">{t('openTickets')}</p>
               <p className="text-white text-3xl font-bold">{stats.openTickets}</p>
             </div>
             <div className="bg-gray-800 rounded-lg p-6">
-              <p className="text-gray-400">Commission plateforme</p>
+              <p className="text-gray-400">{t('platformCommission')}</p>
               <p className="text-white text-3xl font-bold">{euro(stats.platformCommission)}</p>
             </div>
           </div>
