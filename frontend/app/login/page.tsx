@@ -86,24 +86,23 @@ export default function LoginPage() {
       });
 
       // Redirect based on role
-      const orgId = result.organization?.id;
-      if (orgId) {
-        localStorage.setItem("currentOrgId", orgId);
-      }
+      const isSuperOwner = result.user?.isSuperOwner;
 
-      // Le commerçant choisit son commerce depuis /merchant plutôt que
-      // d'être envoyé d'office sur une boutique.
-      const redirectPath = result.user?.isSuperOwner
-        ? "/superowner"
-        : orgId
-          ? "/merchant"
-          : "/login";
+      // If user has organizations from login, save the first one
+      if (result.organizations && result.organizations.length > 0) {
+        localStorage.setItem("currentOrgId", result.organizations[0].id);
+      }
 
       // Sans cela le contexte reste sur l'état déconnecté et les pages
       // protégées renvoient aussitôt vers /login.
       await refreshAuth();
 
-      router.push(redirectPath);
+      // Redirect based on role
+      if (isSuperOwner) {
+        router.push("/superowner");
+      } else {
+        router.push("/auth/role-selection");
+      }
     } catch (err) {
       setError("Erreur de connexion");
       console.error(err);

@@ -39,15 +39,10 @@ export default function SignupPage() {
       localStorage.setItem("refreshToken", result.refreshToken);
       localStorage.setItem("isSuperOwner", result.user?.isSuperOwner ? "true" : "false");
 
-      // Show success message briefly
       setError("");
 
-      // Redirect based on role
-      if (result.user?.isSuperOwner) {
-        router.push("/superowner");
-      } else {
-        router.push(espaceDAccueilLocal());
-      }
+      // Redirect to role selection to choose customer/merchant/driver roles
+      router.push("/auth/role-selection");
     } catch (err) {
       setError("Erreur d'inscription");
       console.error(err);
