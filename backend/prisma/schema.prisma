@@ -34,6 +34,7 @@ model User {
   memberships   Membership[]
   auditLogs     SystemAuditLog[]
   driver        Driver?
+  customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
   ticketMessages TicketMessage[]
 
   createdAt DateTime @default(now())
@@ -1200,7 +1201,13 @@ model FavoriteStore {
 
 model Customer {
   id              String    @id @default(cuid())
+
+  // REFONTE IDENTITÉ UNIFIÉE: Lien avec User (nullable pour transition)
+  userId          String?   @unique
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   // GLOBAL CLIENT - peut commander chez tous les restaurants
+  // Déprécié : utiliser user.name, user.email, user.phone
   name            String
   email           String    @unique
   phone           String?
@@ -1233,6 +1240,7 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
   @@index([status])
   @@index([createdAt])
   @@index([deletedAt])
