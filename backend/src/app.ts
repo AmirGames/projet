@@ -110,10 +110,14 @@ export function createApp(): Express {
 
   // ===== Static files (uploads) =====
   const uploadsDir = join(process.cwd(), "uploads");
-  app.use("/uploads", (_req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
+  app.use("/uploads", (req, res, next) => {
+    res.header("Access-Control-Allow-Origin", originesAutorisees.includes(req.get("origin") || "") ? req.get("origin") : originesAutorisees[0]);
     res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Credentials", "true");
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
     next();
   }, express.static(uploadsDir));
 
