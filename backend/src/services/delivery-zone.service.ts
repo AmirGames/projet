@@ -205,7 +205,7 @@ export class DeliveryZoneService {
     }
 
     if (existante.type === "RADIUS" && data.radiusKm !== undefined) {
-      if (!(data.radiusKm > 0)) {
+      if (data.radiusKm === null || !(data.radiusKm > 0)) {
         throw new ApiError(400, "Le rayon doit être supérieur à zéro", "INVALID_RADIUS");
       }
 
@@ -225,7 +225,7 @@ export class DeliveryZoneService {
       }
     }
 
-    if (existante.type === "POLYGON" && data.polygon !== undefined && data.polygon.length < 3) {
+    if (existante.type === "POLYGON" && data.polygon !== undefined && data.polygon !== null && data.polygon.length < 3) {
       throw new ApiError(400, "Un polygone a besoin d'au moins 3 sommets", "INVALID_POLYGON");
     }
 
