@@ -85,13 +85,13 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
       if (!reponse.ok) {
         // Le message du serveur dit ce qui ne va pas — déjà notée, course non
         // remise. Le remplacer par « une erreur est survenue » le perdrait.
-        setErreur(donnees?.message || donnees?.error || 'La note n’a pas pu être enregistrée');
+        setErreur(donnees?.message || donnees?.error || 'La note n'a pas pu être enregistrée');
         return;
       }
 
       onNote?.({ note: choisie, commentaire: commentaire.trim() || null });
     } catch {
-      setErreur('La note n’a pas pu être envoyée : vérifiez votre connexion.');
+      setErreur('La note n'a pas pu être envoyée : vérifiez votre connexion.');
     } finally {
       setEnvoi(false);
     }
@@ -102,7 +102,7 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
   return (
     <div className="border-t border-gray-700 pt-4">
       <p className="text-sm text-white font-semibold">
-        Comment s’est passée votre livraison{prenomLivreur ? ` avec ${prenomLivreur}` : ''} ?
+        Comment s'est passée votre livraison{prenomLivreur ? ` avec ${prenomLivreur}` : ''} ?
       </p>
 
       <div

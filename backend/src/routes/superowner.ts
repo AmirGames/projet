@@ -3,7 +3,6 @@ import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, oublierCompte } from "../middleware/auth";
-import { uploadMiddleware } from "../middleware/file-upload";
 import { ApiKeyService } from "../services/api-key.service";
 import { WebhookService, EVENEMENTS_WEBHOOK } from "../services/webhook.service";
 import { BackupService } from "../services/backup.service";

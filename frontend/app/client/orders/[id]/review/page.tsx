@@ -94,10 +94,10 @@ export default function ReviewPage() {
         }, 2000);
       } else {
         const data = await response.json();
-        setError(data.error || data.message || 'Erreur lors de la soumission de l\'avis');
+        setError(data.error || data.message || "Erreur lors de la soumission de l\'avis");
       }
     } catch (err) {
-      setError('Erreur lors de la soumission de l\'avis');
+      setError("Erreur lors de la soumission de l\'avis");
       console.error('Error submitting review:', err);
     } finally {
       setSubmitting(false);

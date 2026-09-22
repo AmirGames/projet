@@ -152,6 +152,14 @@ export default function DriverDashboard() {
   };
 
 
+  // Vérifier le token avant de rien afficher
+  useEffect(() => {
+    const token = localStorage.getItem('driverToken');
+    if (!token) {
+      router.push('/driver/login');
+    }
+  }, [router]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -178,6 +186,8 @@ export default function DriverDashboard() {
       </div>
     );
   }
+
+  const isAccountActive = driver.status === 'ACTIVE';
 
   return (
     <div className="bg-gray-900 min-h-screen">
@@ -378,11 +388,12 @@ export default function DriverDashboard() {
               <div className="pt-6 border-t border-gray-700 space-y-4">
                 <button
                   onClick={basculerDisponibilite}
+                  disabled={!isAccountActive}
                   className={`w-full font-semibold py-2 rounded-lg transition ${
                     isAvailable
                       ? 'bg-green-600 hover:bg-green-700 text-white'
                       : 'bg-gray-700 hover:bg-gray-600 text-white'
-                  }`}
+                  } ${!isAccountActive ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {isAvailable ? '✓ En ligne' : 'Hors ligne'}
                 </button>
@@ -405,11 +416,17 @@ export default function DriverDashboard() {
                   </button>
                 </Link>
 
-                <Link href="/driver/earnings" className="block">
-                  <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
-                    Voir les revenus
+                {isAccountActive ? (
+                  <Link href="/driver/earnings" className="block">
+                    <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
+                      Voir les revenus
+                    </button>
+                  </Link>
+                ) : (
+                  <button disabled className="w-full bg-gray-600 text-gray-400 font-semibold py-2 rounded-lg opacity-50 cursor-not-allowed">
+                    Revenus (compte à valider)
                   </button>
-                </Link>
+                )}
               </div>
             </div>
 

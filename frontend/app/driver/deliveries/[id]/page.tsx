@@ -51,6 +51,14 @@ export default function DeliveryTrackingPage() {
   const steps = ['Aller au restaurant', 'Récupérer la commande', 'Aller au client', 'Livrer & Confirmer'];
 
   useEffect(() => {
+    // Vérifier l'authentification avant de charger les données
+    const token = localStorage.getItem('driverToken');
+    if (!token) {
+      router.push('/driver/login');
+    }
+  }, [router]);
+
+  useEffect(() => {
     loadDeliveryData();
     startLocationTracking();
   }, [deliveryId]);
@@ -183,7 +191,7 @@ export default function DeliveryTrackingPage() {
         const lu = await response.json().catch(() => null);
 
         if (nextStatus === 'DELIVERED') {
-          setRefus(lu?.error || 'La remise n’a pas pu être confirmée');
+          setRefus(lu?.error || 'La remise n'a pas pu être confirmée');
           // Code bloqué : la photo devient la seule issue, autant y basculer.
           if (lu?.code === 'CODE_LOCKED') setModePhoto(true);
           await loadDeliveryData();

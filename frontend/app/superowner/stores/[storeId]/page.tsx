@@ -533,7 +533,7 @@ export default function FicheBoutiquePage() {
                 ['Produits', String(fiche._count.products)],
                 ['Catégories', String(fiche._count.categories)],
                 ['Commandes', String(fiche._count.orders)],
-                ['Chiffre d’affaires', euro(fiche.chiffreDaffaires)],
+                ['Chiffre d'affaires', euro(fiche.chiffreDaffaires)],
                 ['Note', `${fiche.rating.toFixed(2)} / 5`],
                 [
                   'Dernière commande',

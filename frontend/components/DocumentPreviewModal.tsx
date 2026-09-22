@@ -9,7 +9,16 @@ interface DocumentPreviewModalProps {
 }
 
 export function DocumentPreviewModal({ documentUrl, libelle, onClose }: DocumentPreviewModalProps) {
-  const isPdf = documentUrl.toLowerCase().endsWith('.pdf');
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+  // Convert static upload URLs to API proxy route for proper CORS handling
+  let fileUrl = documentUrl;
+  if (documentUrl.includes('/uploads/')) {
+    const uploadPath = documentUrl.split('/uploads/')[1];
+    fileUrl = `${API_URL}/api/drivers/documents/file/${uploadPath}`;
+  }
+
+  const isPdf = fileUrl.toLowerCase().endsWith('.pdf');
 
   return (
     <div
@@ -39,13 +48,13 @@ export function DocumentPreviewModal({ documentUrl, libelle, onClose }: Document
         <div className="flex-1 overflow-auto bg-gray-900 flex items-center justify-center">
           {isPdf ? (
             <iframe
-              src={documentUrl}
+              src={fileUrl}
               className="w-full h-full border-none"
               title={libelle}
             />
           ) : (
             <img
-              src={documentUrl}
+              src={fileUrl}
               alt={libelle}
               className="max-w-full max-h-full object-contain"
             />

@@ -242,7 +242,7 @@ export function TunnelCommande({
 
       if (!reponse.ok) {
         setRemise(null);
-        setCodeRefuse(lu?.error || 'Ce code promo n’est pas valable');
+        setCodeRefuse(lu?.error || 'Ce code promo n'est pas valable');
         return;
       }
 
@@ -250,7 +250,7 @@ export function TunnelCommande({
 
       if (!(montant > 0)) {
         setRemise(null);
-        setCodeRefuse('Ce code n’accorde aucune remise sur ce panier');
+        setCodeRefuse('Ce code n'accorde aucune remise sur ce panier');
         return;
       }
 

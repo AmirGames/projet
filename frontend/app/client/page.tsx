@@ -92,7 +92,7 @@ export default function ClientHomePage() {
       },
       (error) => {
         console.error('GPS error:', error);
-        alert('Impossible d\'accéder à votre localisation');
+        alert("Impossible d\'accéder à votre localisation");
       }
     );
   }, [loadNearbyStores]);

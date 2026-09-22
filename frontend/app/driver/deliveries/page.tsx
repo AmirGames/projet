@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Clock, DollarSign, Package, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Package, CheckCircle, AlertCircle } from 'lucide-react';
 import { euro } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';

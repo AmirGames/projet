@@ -49,7 +49,7 @@ interface Dossier {
 const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
   APPROVED: { icone: Check, classe: 'text-green-400', libelle: 'Validé' },
   REJECTED: { icone: X, classe: 'text-red-400', libelle: 'Refusé' },
-  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: 'En attente d’examen' },
+  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: 'En attente d'examen' },
 };
 
 function Ligne({ libelle, valeur }: { libelle: string; valeur: string | null }) {

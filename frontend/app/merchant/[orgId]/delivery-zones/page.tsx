@@ -153,7 +153,7 @@ export default function DeliveryZonesPage() {
       .join(' ');
 
     if (texte.trim().length < 3) {
-      setErreurCarte('Renseignez d’abord l’adresse de la boutique dans ses réglages');
+      setErreurCarte('Renseignez d'abord l'adresse de la boutique dans ses réglages');
       return;
     }
 
@@ -177,7 +177,7 @@ export default function DeliveryZonesPage() {
 
       await enregistrerPosition(point.latitude, point.longitude);
     } catch {
-      setErreurCarte('Le service d’adresses ne répond pas');
+      setErreurCarte('Le service d'adresses ne répond pas');
     } finally {
       setSituation(false);
     }
@@ -234,7 +234,7 @@ export default function DeliveryZonesPage() {
       // À la création, ou après avoir cliqué « Redessiner » : les nouveaux
       // sommets font foi. Sinon, une zone existante garde son tracé.
       if (dessin && dessin.length > 0 && dessin.length < 3) {
-        setFormError('Un polygone a besoin d’au moins 3 sommets — continuez à cliquer sur la carte');
+        setFormError('Un polygone a besoin d'au moins 3 sommets — continuez à cliquer sur la carte');
         return;
       }
       if (!editingZone && (!dessin || dessin.length < 3)) {
@@ -413,14 +413,14 @@ export default function DeliveryZonesPage() {
 
           {boutique?.latitude == null && (
             <p className="text-sm text-amber-300 mb-3">
-              Votre boutique n’est pas située. Tant qu’elle ne l’est pas, aucune zone ne
-              s’applique et aucun livreur ne vous est proposé.
+              Votre boutique n'est pas située. Tant qu'elle ne l'est pas, aucune zone ne
+              s'applique et aucun livreur ne vous est proposé.
             </p>
           )}
 
           {boutique?.latitude != null && (
             <p className="text-sm text-slate-400 mb-3">
-              Position fixée d’après l’adresse de la boutique. Pour la corriger, contactez le
+              Position fixée d'après l'adresse de la boutique. Pour la corriger, contactez le
               support depuis vos réglages.
             </p>
           )}
