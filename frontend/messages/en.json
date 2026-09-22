@@ -951,6 +951,27 @@
     "previous": "Previous",
     "next": "Next"
   },
+  "merchantProductMedia": {
+    "title": "Product Media",
+    "description": "Manage images and videos for your products",
+    "sectionTitle": "Upload media",
+    "productLabel": "Product",
+    "productPlaceholder": "— Select a product —",
+    "urlLabel": "Media URL",
+    "urlPlaceholder": "https://example.com/image.jpg",
+    "altLabel": "Alternative Text",
+    "altPlaceholder": "Media description",
+    "typeLabel": "Media Type",
+    "typeImage": "Image",
+    "typeVideo": "Video",
+    "buttonAddMedia": "Add Media",
+    "buttonLoadMedia": "Load Media",
+    "empty": "No media for this product",
+    "orderLabel": "Order",
+    "delete": "Delete",
+    "errorProductRequired": "Please enter a product ID",
+    "errorUrlRequired": "Media URL is required"
+  },
   "merchantCustomers": {
     "loading": "Loading customers...",
     "title": "Customers",

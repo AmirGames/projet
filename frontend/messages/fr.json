@@ -951,6 +951,27 @@
     "previous": "Précédent",
     "next": "Suivant"
   },
+  "merchantProductMedia": {
+    "title": "Médias des Produits",
+    "description": "Gérez les images et vidéos de vos produits",
+    "sectionTitle": "Charger un média",
+    "productLabel": "Produit",
+    "productPlaceholder": "— Choisir un produit —",
+    "urlLabel": "URL du Média",
+    "urlPlaceholder": "https://example.com/image.jpg",
+    "altLabel": "Texte Alternatif",
+    "altPlaceholder": "Description du média",
+    "typeLabel": "Type de Média",
+    "typeImage": "Image",
+    "typeVideo": "Vidéo",
+    "buttonAddMedia": "Ajouter le Média",
+    "buttonLoadMedia": "Charger les Médias",
+    "empty": "Aucun média pour ce produit",
+    "orderLabel": "Ordre",
+    "delete": "Supprimer",
+    "errorProductRequired": "Veuillez entrer un ID de produit",
+    "errorUrlRequired": "L'URL du média est requise"
+  },
   "merchantCustomers": {
     "loading": "Chargement des clients...",
     "title": "Clients",
