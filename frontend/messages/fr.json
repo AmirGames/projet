@@ -2277,6 +2277,7 @@
     "back": "Retour",
     "title": "Mes restaurants favoris",
     "loading": "Chargement des favoris...",
+    "loadingError": "Erreur lors du chargement des favoris",
     "noFavorites": "Aucun restaurant favori",
     "discoverRestaurants": "Découvrir des restaurants →",
     "deliveryCost": "Frais:",

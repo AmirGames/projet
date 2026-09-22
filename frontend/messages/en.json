@@ -2277,6 +2277,7 @@
     "back": "Back",
     "title": "My Favorite Restaurants",
     "loading": "Loading favorites...",
+    "loadingError": "Error loading favorites",
     "noFavorites": "No favorite restaurants",
     "discoverRestaurants": "Discover restaurants →",
     "deliveryCost": "Delivery:",

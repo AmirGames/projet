@@ -58,7 +58,7 @@ export default function FavoritesPage() {
       }
     } catch (err) {
       console.error('Error loading favorites:', err);
-      setError('Erreur lors du chargement des favoris');
+      setError(t('loadingError'));
     } finally {
       setLoading(false);
     }
