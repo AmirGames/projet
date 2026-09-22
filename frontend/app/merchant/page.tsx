@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Store, ShoppingCart, TrendingUp } from 'lucide-react';
 
 import { memoriserBoutique } from '@/lib/current-store';
@@ -26,6 +27,7 @@ interface Order {
 }
 
 export default function MerchantDashboard() {
+  const t = useTranslations('merchantMainDashboard');
   const router = useRouter();
   const [stores, setStores] = useState<Store[]>([]);
   const [orgId, setOrgId] = useState('');
@@ -102,7 +104,7 @@ export default function MerchantDashboard() {
         }));
       }
     } catch (error) {
-      console.error('Erreur lors du chargement du dashboard:', error);
+      console.error(t('loadError'), error);
     } finally {
       setLoading(false);
     }
@@ -127,9 +129,9 @@ export default function MerchantDashboard() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <TrendingUp size={32} className="text-orange-600" />
-          Tableau de Bord
+          {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">Bienvenue sur votre tableau de bord merchant</p>
+        <p className="text-gray-400 mt-2">{t('subtitle')}</p>
       </div>
 
       {/* Stats */}
@@ -137,7 +139,7 @@ export default function MerchantDashboard() {
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total de Boutiques</p>
+              <p className="text-gray-400 text-sm">{t('totalStores')}</p>
               <p className="text-3xl font-bold text-white mt-2">{stats.totalStores}</p>
             </div>
             <Store size={32} className="text-orange-600" />
@@ -147,7 +149,7 @@ export default function MerchantDashboard() {
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Commandes</p>
+              <p className="text-gray-400 text-sm">{t('orders')}</p>
               <p className="text-3xl font-bold text-white mt-2">{stats.totalOrders}</p>
             </div>
             <ShoppingCart size={32} className="text-orange-600" />
@@ -157,7 +159,7 @@ export default function MerchantDashboard() {
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Revenu Total</p>
+              <p className="text-gray-400 text-sm">{t('totalRevenue')}</p>
               <p className="text-3xl font-bold text-white mt-2">{euro(stats.totalRevenue)}</p>
             </div>
             <TrendingUp size={32} className="text-orange-600" />
@@ -169,11 +171,10 @@ export default function MerchantDashboard() {
       <div>
         <div className="flex justify-between items-center mb-4 gap-4 flex-wrap">
           <div>
-            <h2 className="text-xl font-bold text-white">Mes Boutiques</h2>
+            <h2 className="text-xl font-bold text-white">{t('myStores')}</h2>
             {quota && (
               <p className="text-sm text-gray-400 mt-1">
-                Formule {quota.tierLabel} — {quota.used} boutique
-                {quota.used > 1 ? 's' : ''} sur {quota.max}
+                {t('plan')} {quota.tierLabel} — {t('storeCount', { used: quota.used, max: quota.max })}
               </p>
             )}
           </div>
@@ -181,7 +182,7 @@ export default function MerchantDashboard() {
           {quota && !quota.canCreate ? (
             <div className="text-right">
               <p className="text-sm text-orange-400">
-                Vous avez atteint la limite de votre formule.
+                {t('limitReached')}
               </p>
               {/* La page des formules dit ce que chacune contient ; le support
                   ne sert que lorsqu'il n'y a plus de palier au-dessus. */}
@@ -196,8 +197,8 @@ export default function MerchantDashboard() {
                 className="text-sm text-orange-500 hover:text-orange-400 underline"
               >
                 {quota.upgradeAvailable
-                  ? 'Voir les formules'
-                  : 'Demander une boutique supplémentaire'}
+                  ? t('seePlans')
+                  : t('requestStore')}
               </Link>
             </div>
           ) : (
@@ -205,7 +206,7 @@ export default function MerchantDashboard() {
               href="/store/new"
               className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition"
             >
-              + Créer une boutique
+              {t('createStore')}
             </Link>
           )}
         </div>
@@ -213,12 +214,12 @@ export default function MerchantDashboard() {
         {stores.length === 0 ? (
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
             <Store size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-gray-400">Aucune boutique pour le moment</p>
+            <p className="text-gray-400">{t('noStores')}</p>
             <Link
               href="/store/new"
               className="inline-block mt-4 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition"
             >
-              Créer votre première boutique
+              {t('createFirstStore')}
             </Link>
           </div>
         ) : (
@@ -246,7 +247,7 @@ export default function MerchantDashboard() {
                       )}
                     </div>
                     <div className="text-right">
-                      <p className="text-orange-600 hover:text-orange-500 transition">Gérer →</p>
+                      <p className="text-orange-600 hover:text-orange-500 transition">{t('manage')}</p>
                     </div>
                   </div>
                 </div>
@@ -258,12 +259,12 @@ export default function MerchantDashboard() {
 
       {/* Recent Orders Section */}
       <div>
-        <h2 className="text-xl font-bold text-white mb-4">Commandes Récentes</h2>
+        <h2 className="text-xl font-bold text-white mb-4">{t('recentOrders')}</h2>
 
         {recentOrders.length === 0 ? (
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
             <ShoppingCart size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-gray-400">Aucune commande pour le moment</p>
+            <p className="text-gray-400">{t('noOrders')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -274,7 +275,7 @@ export default function MerchantDashboard() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white font-semibold">Commande #{order.id.slice(0, 8)}</p>
+                    <p className="text-white font-semibold">{t('orderNumber', { id: order.id.slice(0, 8) })}</p>
                     <p className="text-gray-400 text-sm mt-1">
                       {new Date(order.createdAt).toLocaleDateString('fr-FR')}
                     </p>
