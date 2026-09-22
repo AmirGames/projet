@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -111,6 +112,8 @@ const CHAMPS = [
 const jour = (date: string) => new Date(date).toLocaleDateString('fr-FR');
 
 export default function FicheBoutiquePage() {
+  const t = useTranslations('superownerStoreDetail');
+  const tCommon = useTranslations('common');
   const params = useParams();
   const storeId = params.storeId as string;
 
@@ -146,18 +149,18 @@ export default function FicheBoutiquePage() {
 
       if (!reponse.ok) {
         throw new Error(
-          reponse.status === 404 ? 'Cette boutique est introuvable' : 'Chargement impossible'
+          reponse.status === 404 ? t('storeNotFound') : t('loadError')
         );
       }
 
       const lu = await reponse.json();
       setFiche(lu.store);
     } catch (err) {
-      setErreur(err instanceof Error ? err.message : 'Erreur inconnue');
+      setErreur(err instanceof Error ? err.message : t('unknownError'));
     } finally {
       setChargement(false);
     }
-  }, [storeId]);
+  }, [storeId, t]);
 
   useEffect(() => {
     charger();
@@ -207,7 +210,7 @@ export default function FicheBoutiquePage() {
     }
 
     if (Object.keys(change).length === 0) {
-      setErreur('Aucun changement à enregistrer');
+      setErreur(t('noChanges'));
       return;
     }
 
@@ -221,15 +224,15 @@ export default function FicheBoutiquePage() {
       const lu = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Correction refusée');
+        setErreur(lu?.error || t('updateFailed'));
         return;
       }
 
-      setMessage(lu?.message || 'Correction enregistrée');
+      setMessage(lu?.message || t('updateSuccess'));
       setEnEdition(false);
       await charger();
     } catch {
-      setErreur('Erreur de connexion');
+      setErreur(t('connectionError'));
     }
   };
 
@@ -248,16 +251,16 @@ export default function FicheBoutiquePage() {
       const lu = await reponse.json().catch(() => null);
 
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Changement refusé');
+        setErreur(lu?.error || t('changeStateFailed'));
         return;
       }
 
-      setMessage(lu?.message || 'Ouverture modifiée');
+      setMessage(lu?.message || t('stateChanged'));
       setFermetureEnCours(false);
       setMotifFermeture('');
       await charger();
     } catch {
-      setErreur('Erreur de connexion');
+      setErreur(t('connectionError'));
     } finally {
       setBascule(false);
     }
@@ -275,10 +278,10 @@ export default function FicheBoutiquePage() {
     return (
       <div className="space-y-4">
         <Link href="/superowner/stores" className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm">
-          <ArrowLeft size={16} /> Retour aux boutiques
+          <ArrowLeft size={16} /> {t('back')}
         </Link>
         <p className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
-          {erreur || 'Cette boutique est introuvable'}
+          {erreur || t('storeNotFound')}
         </p>
       </div>
     );
@@ -291,7 +294,7 @@ export default function FicheBoutiquePage() {
           href="/superowner/stores"
           className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-2"
         >
-          <ArrowLeft size={16} /> Retour aux boutiques
+          <ArrowLeft size={16} /> {t('back')}
         </Link>
 
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -304,7 +307,7 @@ export default function FicheBoutiquePage() {
               <Link href="/superowner/organizations" className="hover:underline">
                 {fiche.org.name}
               </Link>{' '}
-              · formule {fiche.org.tier} · {fiche.isOpen ? 'ouverte' : 'fermée'}
+              · {t('plan')} {fiche.org.tier} · {fiche.isOpen ? t('active') : t('closed')}
             </p>
           </div>
 
@@ -316,7 +319,7 @@ export default function FicheBoutiquePage() {
               className="inline-flex items-center gap-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition"
             >
               <ExternalLink size={14} />
-              Voir la vitrine
+              {t('seeShowcase')}
             </a>
             {/* Fermer demande un motif : une boutique fermée sans explication
                 se traduit par un appel au support. Rouvrir n'en demande pas. */}
@@ -327,7 +330,7 @@ export default function FicheBoutiquePage() {
                 className="inline-flex items-center gap-1 px-4 py-2 bg-red-600/80 hover:bg-red-600 disabled:opacity-50 text-white rounded text-sm font-medium transition"
               >
                 <Power size={14} />
-                Fermer la boutique
+                {t('closeStore')}
               </button>
             ) : (
               <button
@@ -336,7 +339,7 @@ export default function FicheBoutiquePage() {
                 className="inline-flex items-center gap-1 px-4 py-2 bg-green-600/80 hover:bg-green-600 disabled:opacity-50 text-white rounded text-sm font-medium transition"
               >
                 <Power size={14} />
-                Rouvrir la boutique
+                {t('reopenStore')}
               </button>
             )}
 
@@ -346,7 +349,7 @@ export default function FicheBoutiquePage() {
                 className="inline-flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium transition"
               >
                 <Pencil size={14} />
-                Corriger
+                {t('edit')}
               </button>
             )}
           </div>
@@ -356,11 +359,9 @@ export default function FicheBoutiquePage() {
       {fermetureEnCours && (
         <div className="p-4 bg-gray-800 border border-red-600/40 rounded-lg space-y-3">
           <div>
-            <p className="font-semibold text-white">Fermer {fiche.name}</p>
+            <p className="font-semibold text-white">{t('closeStoreTitle', { name: fiche.name })}</p>
             <p className="text-sm text-gray-400 mt-1">
-              Elle cesse de recevoir des commandes, et le commerçant en est prévenu. Ses
-              commandes en cours ne sont pas touchées. C&apos;est différent d&apos;une
-              suspension de compte, qui ferme tout son espace.
+              {t('closeStoreExplanation')}
             </p>
           </div>
 
@@ -368,8 +369,8 @@ export default function FicheBoutiquePage() {
             id="motif-fermeture"
             value={motifFermeture}
             onChange={(e) => setMotifFermeture(e.target.value)}
-            placeholder="Motif — il sera lu par le commerçant"
-            aria-label="Motif de fermeture"
+            placeholder={t('closureReason')}
+            aria-label={t('closureReasonLabel')}
             className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
           />
 
@@ -379,7 +380,7 @@ export default function FicheBoutiquePage() {
               disabled={bascule || !motifFermeture.trim()}
               className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white rounded text-sm font-medium transition"
             >
-              Confirmer la fermeture
+              {t('confirmClose')}
             </button>
             <button
               onClick={() => {
@@ -388,7 +389,7 @@ export default function FicheBoutiquePage() {
               }}
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition"
             >
-              Annuler
+              {tCommon('cancel')}
             </button>
           </div>
         </div>

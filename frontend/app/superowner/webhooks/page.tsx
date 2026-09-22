@@ -26,6 +26,7 @@ import {
   Trash2,
   Webhook as WebhookIcon,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -71,6 +72,8 @@ const LIBELLE_ETAT: Record<string, string> = {
 const jeton = () => localStorage.getItem('accessToken');
 
 export default function WebhooksPage() {
+  const t = useTranslations('superownerWebhooks');
+  const tCommon = useTranslations('common');
   const [abonnements, setAbonnements] = useState<Abonnement[]>([]);
   const [evenements, setEvenements] = useState<Evenement[]>([]);
   const [chargement, setChargement] = useState(true);
@@ -98,7 +101,7 @@ export default function WebhooksPage() {
       const lu = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(lu?.error || 'Chargement impossible');
+        setErreur(lu?.error || t('loadError'));
         return;
       }
 
@@ -107,11 +110,11 @@ export default function WebhooksPage() {
       setEvenements(lu.availableEvents || []);
       setErreur('');
     } catch {
-      setErreur('Erreur de connexion au serveur');
+      setErreur(t('connectionError'));
     } finally {
       setChargement(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     charger();
@@ -121,7 +124,7 @@ export default function WebhooksPage() {
     e.preventDefault();
 
     if (formulaire.events.length === 0) {
-      setMessage('❌ Choisissez au moins un événement');
+      setMessage(t('no_events'));
       return;
     }
 
@@ -138,7 +141,7 @@ export default function WebhooksPage() {
       const lu = await reponse.json();
 
       if (!reponse.ok) {
-        setMessage(`❌ ${lu?.error || 'Création impossible'}`);
+        setMessage(lu?.error || t('createError'));
         return;
       }
 
@@ -149,14 +152,14 @@ export default function WebhooksPage() {
       setMessage('');
       await charger();
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage(t('connectionError'));
     } finally {
       setEnvoiEnCours(false);
     }
   };
 
   const supprimer = async (id: string, url: string) => {
-    if (!confirm(`Supprimer l'abonnement vers ${url} ? Son secret sera perdu.`)) return;
+    if (!confirm(t('delete_confirm', { url }))) return;
 
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/webhooks/${id}`, {
@@ -166,14 +169,14 @@ export default function WebhooksPage() {
 
       if (!reponse.ok) {
         const lu = await reponse.json().catch(() => null);
-        setMessage(`❌ ${lu?.error || 'Suppression impossible'}`);
+        setMessage(lu?.error || t('deleteError'));
         return;
       }
 
-      setMessage('✅ Abonnement supprimé');
+      setMessage(t('deleteSuccess'));
       await charger();
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage(t('connectionError'));
     }
   };
 
@@ -188,39 +191,39 @@ export default function WebhooksPage() {
       const lu = await reponse.json();
 
       if (!reponse.ok) {
-        setMessage(`❌ ${lu?.error || 'Changement impossible'}`);
+        setMessage(lu?.error || t('changeStateError'));
         return;
       }
 
-      setMessage(`✅ ${lu.message}`);
+      setMessage(lu.message);
       await charger();
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage(t('connectionError'));
     }
   };
 
   const essayer = async (id: string) => {
-    setMessage('Envoi d’essai en cours…');
+    setMessage(t(‘testSending’));
 
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/webhooks/${id}/essai`, {
-        method: 'POST',
+        method: ‘POST’,
         headers: { Authorization: `Bearer ${jeton()}` },
       });
 
       const lu = await reponse.json();
 
       if (!reponse.ok) {
-        setMessage(`❌ ${lu?.error || 'Essai impossible'}`);
+        setMessage(lu?.error || t(‘testError’));
         return;
       }
 
-      setMessage(`${lu.envoi?.success ? '✅' : '❌'} ${lu.message}`);
+      setMessage(lu.message);
 
       if (historiqueDe === id) await voirLHistorique(id);
       await charger();
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage(t(‘connectionError’));
     }
   };
 
@@ -238,14 +241,14 @@ export default function WebhooksPage() {
       const lu = await reponse.json();
 
       if (!reponse.ok) {
-        setMessage(`❌ ${lu?.error || 'Historique indisponible'}`);
+        setMessage(lu?.error || t('historyUnavailable'));
         return;
       }
 
       setHistorique(lu.deliveries || []);
       setHistoriqueDe(id);
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage(t('connectionError'));
     }
   };
 
@@ -262,12 +265,10 @@ export default function WebhooksPage() {
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center gap-2">
             <WebhookIcon className="w-8 h-8" />
-            Webhooks
+            {t('title')}
           </h1>
           <p className="text-gray-400 mt-2">
-            Chaque événement est envoyé en <code className="text-gray-300">POST</code>, signé avec le
-            secret de l&apos;abonnement. Un envoi raté est relancé trois fois — après une minute,
-            cinq, puis trente.
+            {t('subtitle')}
           </p>
         </div>
 
@@ -276,7 +277,7 @@ export default function WebhooksPage() {
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition"
         >
           <Plus size={16} />
-          Nouvel abonnement
+          {t('new_webhook')}
         </button>
       </div>
 
@@ -299,12 +300,10 @@ export default function WebhooksPage() {
             <AlertCircle size={18} className="text-green-400 mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-green-400 font-semibold">
-                Copiez ce secret maintenant : il ne sera plus jamais affiché.
+                {t('secret_warning')}
               </p>
               <p className="text-sm text-gray-400 mt-1">
-                Il sert à vérifier l&apos;en-tête <code>X-Webhook-Signature</code> de chaque envoi
-                vers <span className="text-gray-300">{secret.url}</span>. Sans lui, votre serveur ne
-                peut pas s&apos;assurer que l&apos;envoi vient bien de la plateforme.
+                {t('secret_explanation', { url: secret.url })}
               </p>
             </div>
           </div>
@@ -327,7 +326,7 @@ export default function WebhooksPage() {
               onClick={() => setSecret(null)}
               className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition"
             >
-              C&apos;est copié
+              {t('secret_copied')}
             </button>
           </div>
         </div>
@@ -340,7 +339,7 @@ export default function WebhooksPage() {
           className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6 space-y-4"
         >
           <div>
-            <label className="block text-sm text-gray-400 mb-2">URL de votre serveur</label>
+            <label className="block text-sm text-gray-400 mb-2">{t('url')}</label>
             <input
               type="url"
               required
@@ -354,8 +353,7 @@ export default function WebhooksPage() {
 
           <div>
             <label className="block text-sm text-gray-400 mb-2">
-              Événements ({formulaire.events.length} choisi
-              {formulaire.events.length > 1 ? 's' : ''})
+              {t('events', { count: formulaire.events.length })}
             </label>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -387,14 +385,14 @@ export default function WebhooksPage() {
               disabled={envoiEnCours}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg font-medium transition"
             >
-              {envoiEnCours ? 'Création…' : 'Créer l’abonnement'}
+              {envoiEnCours ? t(‘creating’) : t(‘create_button’)}
             </button>
             <button
               type="button"
               onClick={() => setFormulaireOuvert(false)}
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition"
             >
-              Annuler
+              {tCommon(‘cancel’)}
             </button>
           </div>
         </form>
@@ -407,7 +405,7 @@ export default function WebhooksPage() {
         </div>
       ) : abonnements.length === 0 ? (
         <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-8 text-center">
-          <p className="text-gray-400">Aucun abonnement pour l’instant.</p>
+          <p className="text-gray-400">{t(‘empty’)}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -436,23 +434,23 @@ export default function WebhooksPage() {
                   <span
                     className={`px-2 py-1 rounded text-xs font-semibold ${COULEUR_ETAT[abonnement.status]}`}
                   >
-                    {LIBELLE_ETAT[abonnement.status]}
+                    {t(abonnement.status.toLowerCase())}
                   </span>
 
                   <button
                     onClick={() => essayer(abonnement.id)}
-                    aria-label={`Envoi d’essai vers ${abonnement.url}`}
+                    aria-label={t(‘test_send_label’, { url: abonnement.url })}
                     className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
-                    title="Envoi d’essai"
+                    title={t(‘test_send’)}
                   >
                     <Send size={14} />
                   </button>
 
                   <button
                     onClick={() => voirLHistorique(abonnement.id)}
-                    aria-label={`Historique de ${abonnement.url}`}
+                    aria-label={t(‘history_label’, { url: abonnement.url })}
                     className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
-                    title="Derniers envois"
+                    title={t(‘history’)}
                   >
                     <History size={14} />
                   </button>
@@ -460,18 +458,18 @@ export default function WebhooksPage() {
                   {abonnement.status === 'ACTIVE' ? (
                     <button
                       onClick={() => changerLEtat(abonnement.id, 'INACTIVE')}
-                      aria-label={`Mettre en pause ${abonnement.url}`}
+                      aria-label={t('pause_label', { url: abonnement.url })}
                       className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
-                      title="Mettre en pause"
+                      title={t('pause')}
                     >
                       <Pause size={14} />
                     </button>
                   ) : (
                     <button
                       onClick={() => changerLEtat(abonnement.id, 'ACTIVE')}
-                      aria-label={`Réactiver ${abonnement.url}`}
+                      aria-label={t('resume_label', { url: abonnement.url })}
                       className="p-2 bg-green-600/80 hover:bg-green-600 rounded-lg text-white transition"
-                      title="Réactiver"
+                      title={t('resume')}
                     >
                       <Play size={14} />
                     </button>
@@ -479,9 +477,9 @@ export default function WebhooksPage() {
 
                   <button
                     onClick={() => supprimer(abonnement.id, abonnement.url)}
-                    aria-label={`Supprimer ${abonnement.url}`}
+                    aria-label={t('delete_label', { url: abonnement.url })}
                     className="p-2 bg-red-600/80 hover:bg-red-600 rounded-lg text-white transition"
-                    title="Supprimer"
+                    title={t('delete')}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -490,34 +488,32 @@ export default function WebhooksPage() {
 
               <p className="text-xs text-gray-500">
                 {abonnement.lastTriggered
-                  ? `Dernier envoi le ${new Date(abonnement.lastTriggered).toLocaleString('fr-FR')}`
-                  : 'Aucun envoi pour l’instant'}
+                  ? t(‘lastSent’, { date: new Date(abonnement.lastTriggered).toLocaleString(‘fr-FR’) })
+                  : t(‘noSent’)}
                 {abonnement.retryCount > 0 &&
-                  ` · ${abonnement.retryCount} envoi${abonnement.retryCount > 1 ? 's' : ''} abandonné${abonnement.retryCount > 1 ? 's' : ''} d’affilée`}
+                  ` · ${t(‘abandonedAttempts’, { count: abonnement.retryCount })}`}
               </p>
 
               {/* Un abonnement coupé ne dit pas de lui-même comment repartir. */}
-              {abonnement.status === 'FAILED' && (
+              {abonnement.status === ‘FAILED’ && (
                 <p className="text-xs text-red-400 flex items-start gap-2">
                   <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-                  Cinq envois ont été abandonnés d’affilée : plus rien n’est envoyé vers cette
-                  adresse. Corrigez votre serveur, puis réactivez l’abonnement — le secret ne change
-                  pas.
+                  {t(‘failedWarning’)}
                 </p>
               )}
 
               {historiqueDe === abonnement.id && (
                 <div className="border-t border-gray-700 pt-3">
                   {historique.length === 0 ? (
-                    <p className="text-sm text-gray-500">Aucun envoi enregistré.</p>
+                    <p className="text-sm text-gray-500">{t('noDeliveries')}</p>
                   ) : (
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="text-left text-gray-500 text-xs">
-                          <th className="pb-2">Événement</th>
-                          <th className="pb-2">Réponse</th>
-                          <th className="pb-2">Tentatives</th>
-                          <th className="pb-2">Quand</th>
+                          <th className="pb-2">{t('history_event')}</th>
+                          <th className="pb-2">{t('history_response')}</th>
+                          <th className="pb-2">{t('history_attempts')}</th>
+                          <th className="pb-2">{t('history_when')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-700/50">
@@ -540,12 +536,11 @@ export default function WebhooksPage() {
                               {envoi.nextAttemptAt && !envoi.success && (
                                 <span className="text-amber-400">
                                   {' '}
-                                  · relance à{' '}
-                                  {new Date(envoi.nextAttemptAt).toLocaleTimeString('fr-FR')}
+                                  · {t('retryAt', { time: new Date(envoi.nextAttemptAt).toLocaleTimeString('fr-FR') })}
                                 </span>
                               )}
                               {envoi.abandonedAt && (
-                                <span className="text-red-400"> · abandonné</span>
+                                <span className="text-red-400"> · {t('abandoned')}</span>
                               )}
                             </td>
                             <td className="py-2 text-gray-500 text-xs">

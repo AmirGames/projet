@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Settings, Key, Copy, Save, Database, Webhook, Wrench } from 'lucide-react';
 
 interface ApiKey {
@@ -31,6 +32,8 @@ interface Configuration {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function SystemConfigPage() {
+  const t = useTranslations('superownerSystemConfig');
+  const tCommon = useTranslations('common');
   const [config, setConfig] = useState<Configuration | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -59,7 +62,7 @@ export default function SystemConfigPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Erreur lors du chargement de la configuration');
+        setError(data.error || t('loadError'));
         return;
       }
 
@@ -76,11 +79,11 @@ export default function SystemConfigPage() {
       });
       setError('');
     } catch {
-      setError('Erreur de connexion au serveur');
+      setError(t('connectionError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchConfig();
@@ -107,14 +110,14 @@ export default function SystemConfigPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setMessage(`❌ ${data.error || 'Enregistrement impossible'}`);
+        setMessage(data.error || t('saveFailed'));
         return;
       }
 
-      setMessage('✅ Configuration enregistrée');
+      setMessage(t('saveSuccess'));
       await fetchConfig();
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage(t('connectionError'));
     } finally {
       setSaving(false);
     }
@@ -122,7 +125,7 @@ export default function SystemConfigPage() {
 
   const generateApiKey = async () => {
     if (!newKeyName.trim()) {
-      setMessage('❌ Le nom de la clé est requis');
+      setMessage(t('keyNameRequired'));
       return;
     }
 
@@ -140,17 +143,17 @@ export default function SystemConfigPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setMessage(`❌ ${data.error || 'Création impossible'}`);
+        setMessage(data.error || t('createKeyFailed'));
         return;
       }
 
       // La valeur complète n'est renvoyée qu'à la création.
       setNouvelleCle(data.key?.key || '');
       setNewKeyName('');
-      setMessage('✅ Clé créée — copiez-la maintenant, elle ne sera plus affichée');
+      setMessage(t('keyCreated'));
       await fetchConfig();
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage(t('connectionError'));
     } finally {
       setCreating(false);
     }
@@ -169,9 +172,9 @@ export default function SystemConfigPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <Settings className="w-8 h-8" />
-          Configuration Système
+          {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">Paramètres de la plateforme et accès techniques</p>
+        <p className="text-gray-400 mt-2">{t('subtitle')}</p>
       </div>
 
       {error && (
@@ -193,25 +196,18 @@ export default function SystemConfigPage() {
             onSubmit={enregistrer}
             className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6 space-y-4"
           >
-            <h2 className="text-xl font-bold text-white">Bornes des commandes</h2>
+            <h2 className="text-xl font-bold text-white">{t('order_bounds')}</h2>
 
             {/* La commission se réglait ici, pour tout le monde à la fois. Elle
                 appartient maintenant à chaque formule : deux réglages du même
                 taux ne pouvaient que se contredire. */}
             <p className="text-sm text-gray-400">
-              Ces deux montants encadrent <strong>toutes</strong> les commandes de la plateforme,
-              quel que soit le commerce. Laissez le minimum à 0 pour ne rien imposer — chaque
-              commerçant a déjà son propre minimum par zone de livraison. La commission, elle, se
-              règle par formule dans{' '}
-              <Link href="/superowner/formules" className="text-blue-400 hover:underline">
-                Formules
-              </Link>
-              .
+              {t('order_bounds_note')}
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Commande minimum (€)</label>
+                <label className="block text-sm text-gray-400 mb-2">{t('min_order')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -222,7 +218,7 @@ export default function SystemConfigPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Commande maximum (€)</label>
+                <label className="block text-sm text-gray-400 mb-2">{t('max_order')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -246,12 +242,11 @@ export default function SystemConfigPage() {
                 />
                 <span className="text-white flex items-center gap-2">
                   <Wrench size={16} className="text-orange-400" />
-                  Activer le mode maintenance
+                  {t('maintenance_mode')}
                 </span>
               </label>
               <p className="text-xs text-gray-500 ml-7">
-                La vitrine et les espaces commerçants deviennent inaccessibles. La connexion et
-                l&apos;administration restent ouvertes pour pouvoir désactiver le mode.
+                {t('maintenance_on')}
               </p>
 
               <input
@@ -260,7 +255,7 @@ export default function SystemConfigPage() {
                 onChange={(e) =>
                   setFormulaire({ ...formulaire, maintenanceMessage: e.target.value })
                 }
-                placeholder="Message affiché aux visiteurs pendant la maintenance"
+                placeholder={t('maintenance_message')}
                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
               />
             </div>
@@ -270,7 +265,7 @@ export default function SystemConfigPage() {
               disabled={saving}
               className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg font-medium text-white transition"
             >
-              <Save size={16} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
+              <Save size={16} /> {saving ? t('saving') : t('save')}
             </button>
           </form>
 
@@ -278,7 +273,7 @@ export default function SystemConfigPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm">Base de données</p>
+                <p className="text-gray-400 text-sm">{t('database')}</p>
                 <Database size={18} className="text-green-400" />
               </div>
               <p className="text-xl font-bold text-white">{config.database.status}</p>
@@ -287,16 +282,16 @@ export default function SystemConfigPage() {
 
             <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm">Webhooks</p>
+                <p className="text-gray-400 text-sm">{t('webhooks')}</p>
                 <Webhook size={18} className="text-blue-400" />
               </div>
               <p className="text-xl font-bold text-white">{config.webhooks.count}</p>
-              <p className="text-xs text-gray-500 mt-1">{config.webhooks.active} actifs</p>
+              <p className="text-xs text-gray-500 mt-1">{config.webhooks.active} {t('active')}</p>
             </div>
 
             <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm">Environnement</p>
+                <p className="text-gray-400 text-sm">{t('environment')}</p>
                 <Settings size={18} className="text-purple-400" />
               </div>
               <p className="text-xl font-bold text-white">{config.environment}</p>
@@ -308,7 +303,7 @@ export default function SystemConfigPage() {
           <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-white">Clés API</h2>
+                <h2 className="text-xl font-bold text-white">{t('api_keys')}</h2>
                 <Key size={20} className="text-blue-400" />
               </div>
               <span className="text-sm text-gray-400">{config.apiKeys?.length || 0} clés</span>
