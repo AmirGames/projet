@@ -42,6 +42,7 @@ export default function ReviewPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<'restaurant' | 'delivery' | 'products'>('restaurant');
+  const [expressMode, setExpressMode] = useState(false);
 
   const [reviews, setReviews] = useState<ReviewState>({
     restaurant: { rating: 5, comment: '' },
@@ -240,8 +241,23 @@ export default function ReviewPage() {
 
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="bg-gray-800 rounded-lg p-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Évaluer votre commande</h1>
-          <p className="text-gray-400 mb-8">Notez le restaurant, le livreur et les produits</p>
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Évaluer votre commande</h1>
+              <p className="text-gray-400">Notez le restaurant, le livreur et les produits</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpressMode(!expressMode)}
+              className={`px-4 py-2 rounded-lg font-semibold transition whitespace-nowrap ml-4 ${
+                expressMode
+                  ? 'bg-orange-600 text-white hover:bg-orange-700'
+                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+              }`}
+            >
+              ⚡ {expressMode ? 'Mode Rapide' : 'Mode Détaillé'}
+            </button>
+          </div>
 
           {success ? (
             <div className="text-center py-12">
@@ -305,19 +321,21 @@ export default function ReviewPage() {
                     <p className="text-gray-400 text-sm mt-2">{getRatingText(reviews.restaurant.rating)}</p>
                   </div>
 
-                  <div>
-                    <label className="block text-white font-semibold mb-4">Commentaire (optionnel)</label>
-                    <textarea
-                      value={reviews.restaurant.comment}
-                      onChange={(e) => setReviews(prev => ({
-                        ...prev,
-                        restaurant: { ...prev.restaurant, comment: e.target.value }
-                      }))}
-                      placeholder="Qualité du repas, présentation, température..."
-                      rows={4}
-                      className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
-                    />
-                  </div>
+                  {!expressMode && (
+                    <div>
+                      <label className="block text-white font-semibold mb-4">Commentaire (optionnel)</label>
+                      <textarea
+                        value={reviews.restaurant.comment}
+                        onChange={(e) => setReviews(prev => ({
+                          ...prev,
+                          restaurant: { ...prev.restaurant, comment: e.target.value }
+                        }))}
+                        placeholder="Qualité du repas, présentation, température..."
+                        rows={4}
+                        className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -332,19 +350,21 @@ export default function ReviewPage() {
                     <p className="text-gray-400 text-sm mt-2">{getRatingText(reviews.delivery.rating)}</p>
                   </div>
 
-                  <div>
-                    <label className="block text-white font-semibold mb-4">Commentaire (optionnel)</label>
-                    <textarea
-                      value={reviews.delivery.comment}
-                      onChange={(e) => setReviews(prev => ({
-                        ...prev,
-                        delivery: { ...prev.delivery, comment: e.target.value }
-                      }))}
-                      placeholder="Rapidité, politesse du livreur, état du colis..."
-                      rows={4}
-                      className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
-                    />
-                  </div>
+                  {!expressMode && (
+                    <div>
+                      <label className="block text-white font-semibold mb-4">Commentaire (optionnel)</label>
+                      <textarea
+                        value={reviews.delivery.comment}
+                        onChange={(e) => setReviews(prev => ({
+                          ...prev,
+                          delivery: { ...prev.delivery, comment: e.target.value }
+                        }))}
+                        placeholder="Rapidité, politesse du livreur, état du colis..."
+                        rows={4}
+                        className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -374,19 +394,21 @@ export default function ReviewPage() {
                           <p className="text-gray-400 text-sm mt-2">{getRatingText(reviews.products[item.id]?.rating || 5)}</p>
                         </div>
 
-                        <textarea
-                          value={reviews.products[item.id]?.comment || ''}
-                          onChange={(e) => setReviews(prev => ({
-                            ...prev,
-                            products: {
-                              ...prev.products,
-                              [item.id]: { ...prev.products[item.id], comment: e.target.value }
-                            }
-                          }))}
-                          placeholder="Goût, fraîcheur, portion..."
-                          rows={3}
-                          className="w-full px-4 py-3 bg-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500 text-sm"
-                        />
+                        {!expressMode && (
+                          <textarea
+                            value={reviews.products[item.id]?.comment || ''}
+                            onChange={(e) => setReviews(prev => ({
+                              ...prev,
+                              products: {
+                                ...prev.products,
+                                [item.id]: { ...prev.products[item.id], comment: e.target.value }
+                              }
+                            }))}
+                            placeholder="Goût, fraîcheur, portion..."
+                            rows={3}
+                            className="w-full px-4 py-3 bg-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500 text-sm"
+                          />
+                        )}
                       </div>
                     ))
                   ) : (
@@ -401,11 +423,11 @@ export default function ReviewPage() {
                 disabled={submitting}
                 className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-3 rounded-lg transition"
               >
-                {submitting ? 'Envoi en cours...' : 'Soumettre tous les avis'}
+                {submitting ? 'Envoi en cours...' : expressMode ? '⚡ Soumettre rapidement' : 'Soumettre tous les avis'}
               </button>
 
               <p className="text-gray-400 text-xs text-center">
-                Vos avis nous aident à améliorer notre service
+                {expressMode ? '⚡ Mode rapide : 30 secondes pour noter' : 'Vos avis nous aident à améliorer notre service'}
               </p>
             </form>
           )}
