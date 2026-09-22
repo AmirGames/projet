@@ -65,6 +65,7 @@ function trierProduits(produits: Product[], sortMode: CategorySortMode | undefin
 }
 
 function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triManuel = true }: any) {
+  const t = useTranslations('merchantProducts');
   const {
     attributes,
     listeners,
