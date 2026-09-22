@@ -199,16 +199,26 @@ export default function RoleSelectionPage() {
                   Créer votre première boutique
                 </p>
               )}
-              <button
-                onClick={() => setShowMerchantForm(!showMerchantForm)}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg"
-              >
-                {showMerchantForm
-                  ? "Annuler"
-                  : roles.merchant.active
-                    ? "+ Ajouter une boutique"
-                    : "Devenir commerçant"}
-              </button>
+              <div className="space-y-2">
+                {roles.merchant.active && (
+                  <button
+                    onClick={() => router.push("/merchant")}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
+                  >
+                    Accéder
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowMerchantForm(!showMerchantForm)}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg"
+                >
+                  {showMerchantForm
+                    ? "Annuler"
+                    : roles.merchant.active
+                      ? "+ Ajouter une boutique"
+                      : "Devenir commerçant"}
+                </button>
+              </div>
             </div>
 
             {/* Driver Role */}

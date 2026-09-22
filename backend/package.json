@@ -19,6 +19,7 @@
     "verif": "node scripts/verification/tout.mjs"
   },
   "dependencies": {
+    "@types/multer": "^2.2.0",
     "bcrypt": "latest",
     "bull": "latest",
     "cors": "latest",
@@ -33,6 +34,9 @@
     "stripe": "^22.6.2",
     "winston": "latest",
     "zod": "latest"
+  },
+  "optionalDependencies": {
+    "cloudinary": "^2.11.0"
   },
   "devDependencies": {
     "@jest/globals": "latest",

@@ -1,151 +1,182 @@
-import path from 'path';
-import fs from 'fs';
-import { logger } from '../config/logger';
-import { ApiError } from '../middleware/errorHandler';
+import { promises as fs } from "fs";
+import { join } from "path";
+import { getEnv } from "../config/env";
+import { logger } from "../config/logger";
+
+const env = getEnv();
+const UPLOADS_DIR = join(process.cwd(), "uploads");
+const API_URL = env.API_URL || "http://localhost:3001";
+
+let cloudinary: any = null;
+
+const MIME_TO_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'application/pdf': 'pdf',
+};
+
+// Lazy-load cloudinary seulement si configuré
+async function getCloudinary() {
+  if (!cloudinary && isCloudinaryConfigured()) {
+    const { v2 } = await import("cloudinary");
+    cloudinary = v2;
+    cloudinary.config({
+      cloud_name: env.CLOUDINARY_CLOUD_NAME,
+      api_key: env.CLOUDINARY_API_KEY,
+      api_secret: env.CLOUDINARY_API_SECRET,
+    });
+  }
+  return cloudinary;
+}
+
+function isCloudinaryConfigured(): boolean {
+  return !!(
+    env.CLOUDINARY_CLOUD_NAME &&
+    env.CLOUDINARY_API_KEY &&
+    env.CLOUDINARY_API_SECRET
+  );
+}
+
+async function ensureUploadsDir() {
+  try {
+    await fs.mkdir(UPLOADS_DIR, { recursive: true });
+  } catch (error) {
+    logger.error("Failed to create uploads directory", { error });
+  }
+}
 
 /**
- * Service de gestion des uploads de fichiers.
- * Stocke localement dans ./uploads, avec extraction correcte de l'extension.
+ * Extrait l'extension correcte du MIME type, avec fallback sur le nom du fichier.
  */
+function extractExtension(mimeType: string | undefined, originalName: string): string {
+  // Essayer d'abord via MIME type
+  if (mimeType && MIME_TO_EXT[mimeType]) {
+    return MIME_TO_EXT[mimeType];
+  }
+
+  // Fallback: extraire de originalName si présent
+  if (originalName && originalName.trim()) {
+    const trimmed = originalName.trim();
+    const lastDot = trimmed.lastIndexOf(".");
+    if (lastDot > 0 && lastDot < trimmed.length - 1) {
+      const potentialExt = trimmed.substring(lastDot + 1).toLowerCase();
+      if (/^[a-z0-9]{2,10}$/.test(potentialExt)) {
+        return potentialExt;
+      }
+    }
+  }
+
+  // Default fallback
+  return "bin";
+}
+
 export class FileUploadService {
-  private static readonly UPLOAD_DIR = path.join(process.cwd(), 'uploads');
-  private static readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-  private static readonly ALLOWED_MIME_TYPES = [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'application/pdf',
-  ];
-
-  private static readonly MIME_TO_EXT: Record<string, string> = {
-    'image/jpeg': '.jpg',
-    'image/png': '.png',
-    'image/webp': '.webp',
-    'application/pdf': '.pdf',
-  };
-
-  static {
-    // Créer le répertoire uploads s'il n'existe pas
-    if (!fs.existsSync(FileUploadService.UPLOAD_DIR)) {
-      fs.mkdirSync(FileUploadService.UPLOAD_DIR, { recursive: true });
+  static async uploadDocument(
+    buffer: Buffer,
+    filename: string,
+    folder: "drivers" | "merchants",
+    mimeType?: string
+  ): Promise<{ url: string; publicId: string }> {
+    if (isCloudinaryConfigured()) {
+      return this.uploadToCloudinary(buffer, filename, folder);
+    } else {
+      return this.uploadLocal(buffer, filename, folder, mimeType);
     }
   }
 
-  /**
-   * Upload un fichier et retourne l'URL d'accès.
-   * @param file - Fichier upload via multer
-   * @param context - Contexte de l'upload (ex: "driver-identity")
-   * @returns URL d'accès au fichier
-   */
-  static uploadFile(
-    file: Express.Multer.File,
-    context: string
-  ): string {
-    if (!file) {
-      throw new ApiError(400, 'Aucun fichier fourni', 'NO_FILE');
-    }
+  private static async uploadToCloudinary(
+    buffer: Buffer,
+    filename: string,
+    folder: "drivers" | "merchants"
+  ): Promise<{ url: string; publicId: string }> {
+    const cloud = await getCloudinary();
 
-    // Vérifier le type MIME
-    if (!this.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      throw new ApiError(
-        400,
-        `Type de fichier non autorisé: ${file.mimetype}. Acceptés: ${this.ALLOWED_MIME_TYPES.join(', ')}`,
-        'INVALID_FILE_TYPE'
+    return new Promise((resolve, reject) => {
+      const stream = cloud.uploader.upload_stream(
+        {
+          folder: `documents/${folder}`,
+          resource_type: "auto",
+          public_id: filename.replace(/\.[^.]+$/, ""),
+          overwrite: true,
+          access_mode: "token",
+        },
+        (error: any, result: any) => {
+          if (error) {
+            logger.error("Cloudinary upload failed", { error });
+            reject(error);
+          } else if (result) {
+            resolve({
+              url: result.secure_url,
+              publicId: result.public_id,
+            });
+          } else {
+            reject(new Error("No result from Cloudinary"));
+          }
+        }
       );
-    }
 
-    // Vérifier la taille
-    if (file.size > this.MAX_FILE_SIZE) {
-      throw new ApiError(
-        400,
-        `Fichier trop volumineux. Maximum: ${this.MAX_FILE_SIZE / 1024 / 1024}MB`,
-        'FILE_TOO_LARGE'
-      );
-    }
+      stream.end(buffer);
+    });
+  }
 
-    // Extraire l'extension correcte du MIME type
-    const extension = this.MIME_TO_EXT[file.mimetype] || '';
-    if (!extension) {
-      throw new ApiError(
-        400,
-        'Impossible de déterminer le type de fichier',
-        'UNKNOWN_FILE_TYPE'
-      );
-    }
+  private static async uploadLocal(
+    buffer: Buffer,
+    filename: string,
+    folder: "drivers" | "merchants",
+    mimeType?: string
+  ): Promise<{ url: string; publicId: string }> {
+    await ensureUploadsDir();
 
-    // Générer un nom de fichier unique
+    // Extraire l'extension correcte (fixe le bug du .bin)
+    const ext = extractExtension(mimeType, filename);
+
+    logger.info("uploadLocal - Processing file:", { filename, mimeType, extractedExt: ext });
+
+    // Générer un nom de fichier sécurisé avec l'extension
+    const randomId = Math.random().toString(36).slice(2, 10);
     const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(2, 9);
-    const filename = `${context}-${randomStr}-${timestamp}${extension}`;
-
-    const filepath = path.join(this.UPLOAD_DIR, filename);
+    const safeFilename = `${timestamp}-${randomId}.${ext}`;
+    const relativePath = join(folder, safeFilename);
+    const fullPath = join(UPLOADS_DIR, relativePath);
 
     try {
-      // Sauvegarder le fichier
-      fs.writeFileSync(filepath, file.buffer);
+      await fs.mkdir(join(UPLOADS_DIR, folder), { recursive: true });
+      await fs.writeFile(fullPath, buffer);
 
-      logger.info('File uploaded', {
-        filename,
-        context,
-        originalName: file.originalname,
-        size: file.size,
-        mimetype: file.mimetype,
-        extension,
-      });
+      const url = `${API_URL}/uploads/${relativePath}`;
+      logger.info("Local file uploaded", { path: relativePath, size: buffer.length, ext });
 
-      // Retourner l'URL relative (le frontend ou proxy servira les fichiers)
-      return `/uploads/${filename}`;
+      return {
+        url,
+        publicId: safeFilename,
+      };
     } catch (error) {
-      throw new ApiError(500, 'Erreur lors de la sauvegarde du fichier', 'UPLOAD_FAILED');
+      logger.error("Failed to upload file locally", { error, filename, ext });
+      throw error;
     }
   }
 
-  /**
-   * Supprime un fichier.
-   */
-  static deleteFile(fileUrl: string): void {
-    try {
-      const filename = path.basename(fileUrl);
-      const filepath = path.join(this.UPLOAD_DIR, filename);
-
-      // Vérifier que le chemin est bien dans le répertoire uploads
-      const resolvedPath = path.resolve(filepath);
-      const resolvedDir = path.resolve(this.UPLOAD_DIR);
-
-      if (!resolvedPath.startsWith(resolvedDir)) {
-        throw new ApiError(403, 'Accès refusé', 'INVALID_PATH');
+  static async deleteDocument(publicId: string): Promise<void> {
+    if (isCloudinaryConfigured()) {
+      try {
+        const cloud = await getCloudinary();
+        await cloud.uploader.destroy(publicId);
+      } catch (error) {
+        logger.warn("Failed to delete document from Cloudinary", {
+          publicId,
+          error,
+        });
       }
-
-      if (fs.existsSync(filepath)) {
-        fs.unlinkSync(filepath);
-        logger.info('File deleted', { filename });
+    } else {
+      try {
+        const fullPath = join(UPLOADS_DIR, publicId);
+        await fs.unlink(fullPath);
+        logger.info("Local file deleted", { publicId });
+      } catch (error) {
+        logger.warn("Failed to delete local file", { publicId, error });
       }
-    } catch (error) {
-      logger.warn('Failed to delete file', {
-        fileUrl,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-    }
-  }
-
-  /**
-   * Vérifie que le fichier existe et est accessible.
-   */
-  static fileExists(fileUrl: string): boolean {
-    try {
-      const filename = path.basename(fileUrl);
-      const filepath = path.join(this.UPLOAD_DIR, filename);
-
-      const resolvedPath = path.resolve(filepath);
-      const resolvedDir = path.resolve(this.UPLOAD_DIR);
-
-      if (!resolvedPath.startsWith(resolvedDir)) {
-        return false;
-      }
-
-      return fs.existsSync(filepath);
-    } catch {
-      return false;
     }
   }
 }

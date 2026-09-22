@@ -75,8 +75,9 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
   const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
-  const [formulaire, setFormulaire] = useState({ type: '', documentUrl: '', file: null as File | null, expiryDate: '' });
-  const [modeUpload, setModeUpload] = useState<'url' | 'file'>('file');
+  const [formulaire, setFormulaire] = useState({ type: '', documentUrl: '', expiryDate: '' });
+  const [fichier, setFichier] = useState<File | null>(null);
+  const [modeUpload, setModeUpload] = useState<'link' | 'file'>('file');
 
   const charger = useCallback(async () => {
     try {
@@ -110,13 +111,13 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
       return;
     }
 
-    if (modeUpload === 'url' && !formulaire.documentUrl) {
-      setErreur('Donnez un lien vers le document');
+    if (modeUpload === 'file' && !fichier) {
+      setErreur('Choisissez un fichier');
       return;
     }
 
-    if (modeUpload === 'file' && !formulaire.file) {
-      setErreur('Choisissez un fichier');
+    if (modeUpload === 'link' && !formulaire.documentUrl) {
+      setErreur('Donnez un lien vers le document');
       return;
     }
 
@@ -124,14 +125,14 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
 
     try {
       const token = localStorage.getItem('driverToken');
-      let reponse;
+      let reponse: Response;
 
-      if (modeUpload === 'file' && formulaire.file) {
+      if (modeUpload === 'file') {
         const formData = new FormData();
         formData.append('type', formulaire.type);
-        formData.append('file', formulaire.file);
+        formData.append('file', fichier!);
         if (formulaire.expiryDate) {
-          formData.append('expiryDate', new Date(formulaire.expiryDate).toISOString());
+          formData.append('expiryDate', formulaire.expiryDate);
         }
 
         reponse = await fetch(`${API_URL}/api/drivers/documents/upload`, {
@@ -160,7 +161,8 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
         return;
       }
 
-      setFormulaire({ type: '', documentUrl: '', file: null, expiryDate: '' });
+      setFormulaire({ type: '', documentUrl: '', expiryDate: '' });
+      setFichier(null);
       await charger();
       surChangement?.();
     } catch {
@@ -247,65 +249,66 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Mode de dépôt</label>
-              <div className="flex gap-2">
+            <div className="bg-gray-700/30 border border-gray-600 rounded p-3">
+              <div className="flex gap-2 mb-3">
                 <button
                   type="button"
                   onClick={() => setModeUpload('file')}
-                  className={`flex-1 py-2 px-3 rounded text-sm font-medium transition ${
+                  className={`flex-1 px-3 py-1 rounded text-sm font-medium transition ${
                     modeUpload === 'file'
                       ? 'bg-orange-600 text-white'
-                      : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
                 >
                   Fichier
                 </button>
                 <button
                   type="button"
-                  onClick={() => setModeUpload('url')}
-                  className={`flex-1 py-2 px-3 rounded text-sm font-medium transition ${
-                    modeUpload === 'url'
+                  onClick={() => setModeUpload('link')}
+                  className={`flex-1 px-3 py-1 rounded text-sm font-medium transition ${
+                    modeUpload === 'link'
                       ? 'bg-orange-600 text-white'
-                      : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
                 >
-                  Lien
+                  Lien URL
                 </button>
               </div>
-            </div>
 
-            {modeUpload === 'file' ? (
-              <div>
-                <label htmlFor="piece-file" className="block text-sm text-gray-400 mb-1">
-                  Fichier (JPG, PNG, PDF - max 10MB)
-                </label>
-                <input
-                  id="piece-file"
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.pdf,.webp"
-                  onChange={(e) => setFormulaire({ ...formulaire, file: e.target.files?.[0] || null })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white file:bg-orange-600 file:border-0 file:px-3 file:py-1 file:mr-2 file:text-white file:rounded file:cursor-pointer"
-                />
-                {formulaire.file && (
-                  <p className="text-xs text-green-400 mt-1">{formulaire.file.name}</p>
-                )}
-              </div>
-            ) : (
-              <div>
-                <label htmlFor="piece-lien" className="block text-sm text-gray-400 mb-1">
-                  Lien vers le document
-                </label>
-                <input
-                  id="piece-lien"
-                  type="url"
-                  value={formulaire.documentUrl}
-                  onChange={(e) => setFormulaire({ ...formulaire, documentUrl: e.target.value })}
-                  placeholder="https://…"
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                />
-              </div>
-            )}
+              {modeUpload === 'file' ? (
+                <div>
+                  <label htmlFor="piece-fichier" className="block text-sm text-gray-400 mb-1">
+                    Sélectionner un fichier (JPG, PNG, PDF)
+                  </label>
+                  <input
+                    id="piece-fichier"
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,.pdf"
+                    onChange={(e) => setFichier(e.target.files?.[0] || null)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm file:bg-gray-600 file:border-0 file:px-2 file:py-1 file:text-white file:cursor-pointer"
+                  />
+                  {fichier && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Fichier sélectionné: {fichier.name} ({Math.round(fichier.size / 1024)} KB)
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="piece-lien" className="block text-sm text-gray-400 mb-1">
+                    Lien vers le document
+                  </label>
+                  <input
+                    id="piece-lien"
+                    type="url"
+                    value={formulaire.documentUrl}
+                    onChange={(e) => setFormulaire({ ...formulaire, documentUrl: e.target.value })}
+                    placeholder="https://…"
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  />
+                </div>
+              )}
+            </div>
 
             <div>
               <label htmlFor="piece-expiration" className="block text-sm text-gray-400 mb-1">

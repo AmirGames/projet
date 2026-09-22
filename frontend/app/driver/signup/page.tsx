@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth-context';
 import { Bike, Car, Truck } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -15,6 +16,7 @@ const VEHICULES = [
 
 export default function InscriptionLivreurPage() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
 
   const [formulaire, setFormulaire] = useState({
     name: '',
@@ -26,6 +28,13 @@ export default function InscriptionLivreurPage() {
   });
   const [erreur, setErreur] = useState('');
   const [envoi, setEnvoi] = useState(false);
+
+  // Rediriger vers onboard si connecté
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/driver/onboard');
+    }
+  }, [user, authLoading, router]);
 
   const soumettre = async (e: React.FormEvent) => {
     e.preventDefault();

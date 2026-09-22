@@ -1,8 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
-import multer from "multer";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
+import { uploadMiddleware } from "../middleware/file-upload";
+import { logger } from "../config/logger";
 import { emitDeliveryUpdate } from "../config/socket";
 import { DispatchService } from "../services/dispatch.service";
 import { AuthService } from "../services/auth.service";
@@ -19,20 +20,6 @@ import { FileUploadService } from "../services/file-upload.service";
 import { z } from "zod";
 
 const router = Router();
-
-// Configuration de multer pour les uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-  fileFilter: (_req, file, cb) => {
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-    if (allowedMimes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new ApiError(400, `Type de fichier non autorisé: ${file.mimetype}`, 'INVALID_FILE_TYPE'));
-    }
-  },
-});
 
 // Résout le livreur rattaché au compte connecté. Sans ce contrôle, n'importe
 // quel utilisateur authentifié pourrait manipuler les courses des autres.
@@ -345,48 +332,39 @@ router.post("/documents", authMiddleware, async (req: Request, res: Response, ne
   }
 });
 
+<<<<<<< HEAD
 // POST /drivers/documents/upload - Déposer une pièce du dossier par upload de fichier
 router.post(
   "/documents/upload",
   authMiddleware,
-  upload.single("file"),
+  uploadMiddleware.single("file"),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const livreur = await livreurConnecte(req);
 
-      // Valider le type de document
-      const type = req.body.type as string;
-      if (!type || !TYPES_DOCUMENT.includes(type as any)) {
-        throw new ApiError(400, "Type de document invalide", "INVALID_DOCUMENT_TYPE");
-      }
-
-      // Vérifier qu'un fichier a été uploadé
       if (!req.file) {
         throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
       }
 
-      // Uploader le fichier
-      const documentUrl = FileUploadService.uploadFile(req.file, `driver-${livreur.id}-${type}`);
+      const schema = z.object({
+        type: z.enum(TYPES_DOCUMENT),
+        expiryDate: z.string().optional().nullable(),
+      });
 
-      // Déposer la pièce avec l'URL du fichier uploadé
-      const expiryDate = req.body.expiryDate
-        ? new Date(req.body.expiryDate)
-        : undefined;
+      const body = schema.parse(req.body);
 
-      if (expiryDate && expiryDate.getTime() < Date.now()) {
-        // Supprimer le fichier s'il est expiré
-        FileUploadService.deleteFile(documentUrl);
-        throw new ApiError(
-          400,
-          `${libelleDuDocument(type)} : ce document est déjà expiré.`,
-          "DOCUMENT_EXPIRED"
-        );
-      }
+      logger.info("Driver file upload", {
+        driverId: livreur.id,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      });
 
-      const piece = await DriverApprovalService.deposerPiece(livreur.id, {
-        type: type as any,
-        documentUrl,
-        expiryDate: expiryDate?.toISOString(),
+      const piece = await DriverApprovalService.deposerFichier(livreur.id, {
+        type: body.type,
+        file: req.file.buffer,
+        filename: req.file.originalname || `document.${req.file.mimetype.split("/")[1]}`,
+        expiryDate: body.expiryDate,
       });
 
       res.status(201).json({

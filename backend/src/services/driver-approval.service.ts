@@ -2,6 +2,7 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
+import { FileUploadService } from "./file-upload.service";
 
 /**
  * Le dossier d'un livreur, et sa validation par la plateforme.
@@ -109,6 +110,49 @@ export class DriverApprovalService {
       : await db.driverDocument.create({ data: { driverId, type: piece.type, ...valeurs } });
 
     logger.info("Driver document submitted", { driverId, type: piece.type });
+
+    return deposee;
+  }
+
+  /** Dépose une pièce via upload de fichier. */
+  static async deposerFichier(
+    driverId: string,
+    piece: { type: TypeDocument; file: Buffer; filename: string; expiryDate?: string | null }
+  ) {
+    const expire = piece.expiryDate ? new Date(piece.expiryDate) : null;
+
+    if (expire && expire.getTime() < Date.now()) {
+      throw new ApiError(
+        400,
+        `${libelleDuDocument(piece.type)} : ce document est déjà expiré.`,
+        "DOCUMENT_EXPIRED"
+      );
+    }
+
+    const existante = await db.driverDocument.findFirst({
+      where: { driverId, type: piece.type },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const { url } = await FileUploadService.uploadDocument(
+      piece.file,
+      `driver-${driverId}-${piece.type}-${Date.now()}`,
+      "drivers"
+    );
+
+    const valeurs = {
+      documentUrl: url,
+      expiryDate: expire,
+      status: "PENDING",
+      reviewNote: null,
+      reviewedAt: null,
+    };
+
+    const deposee = existante
+      ? await db.driverDocument.update({ where: { id: existante.id }, data: valeurs })
+      : await db.driverDocument.create({ data: { driverId, type: piece.type, ...valeurs } });
+
+    logger.info("Driver document uploaded", { driverId, type: piece.type });
 
     return deposee;
   }
