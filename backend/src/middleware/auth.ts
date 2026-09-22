@@ -118,7 +118,20 @@ export function verifyToken(token: string) {
 
 export async function checkOrgStatus(req: Request, _res: Response, next: NextFunction) {
   try {
-    const orgId = req.orgId;
+    // Load orgId from request body (storeId) if not in JWT
+    const storeId = (req.body?.storeId || req.query?.storeId) as string;
+    let orgId = req.orgId;
+
+    if (!orgId && storeId) {
+      const store = await db.store.findUnique({
+        where: { id: storeId },
+        select: { orgId: true },
+      });
+      if (store) {
+        orgId = store.orgId;
+      }
+    }
+
     if (!orgId) {
       return next(new ApiError(401, "Organisation non identifiée", "MISSING_ORG"));
     }
