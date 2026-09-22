@@ -332,7 +332,6 @@ router.post("/documents", authMiddleware, async (req: Request, res: Response, ne
   }
 });
 
-<<<<<<< HEAD
 // POST /drivers/documents/upload - Déposer une pièce du dossier par upload de fichier
 router.post(
   "/documents/upload",
