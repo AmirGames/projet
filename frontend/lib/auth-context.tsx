@@ -46,7 +46,7 @@ function oublierLaSession() {
      */
     sessionStorage.setItem(
       RAISON_DECONNEXION,
-      'Votre session n'est plus valable. Reconnectez-vous.'
+      "Votre session n'est plus valable. Reconnectez-vous."
     );
   } catch {
     // Stockage refusé : il n'y avait rien à effacer.

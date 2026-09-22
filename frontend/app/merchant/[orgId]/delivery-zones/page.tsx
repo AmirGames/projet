@@ -153,7 +153,7 @@ export default function DeliveryZonesPage() {
       .join(' ');
 
     if (texte.trim().length < 3) {
-      setErreurCarte('Renseignez d'abord l'adresse de la boutique dans ses réglages');
+      setErreurCarte("Renseignez d'abord l'adresse de la boutique dans ses réglages");
       return;
     }
 
@@ -177,7 +177,7 @@ export default function DeliveryZonesPage() {
 
       await enregistrerPosition(point.latitude, point.longitude);
     } catch {
-      setErreurCarte('Le service d'adresses ne répond pas');
+      setErreurCarte("Le service d'adresses ne répond pas");
     } finally {
       setSituation(false);
     }
@@ -234,7 +234,7 @@ export default function DeliveryZonesPage() {
       // À la création, ou après avoir cliqué « Redessiner » : les nouveaux
       // sommets font foi. Sinon, une zone existante garde son tracé.
       if (dessin && dessin.length > 0 && dessin.length < 3) {
-        setFormError('Un polygone a besoin d'au moins 3 sommets — continuez à cliquer sur la carte');
+        setFormError("Un polygone a besoin d'au moins 3 sommets — continuez à cliquer sur la carte");
         return;
       }
       if (!editingZone && (!dessin || dessin.length < 3)) {

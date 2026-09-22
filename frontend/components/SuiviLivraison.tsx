@@ -65,7 +65,7 @@ interface Props {
  */
 
 const LIBELLES: Record<string, string> = {
-  PENDING: 'En attente d'un livreur',
+  PENDING: "En attente d'un livreur",
   ACCEPTED: 'Livreur en route vers le commerce',
   PICKED_UP: 'Commande récupérée, en route vers vous',
   DELIVERED: 'Livrée',
@@ -83,7 +83,7 @@ function ilYA(horodatage?: string | null) {
 
   const secondes = Math.round((Date.now() - new Date(horodatage).getTime()) / 1000);
 
-  if (secondes < 0) return 'à l'instant';
+  if (secondes < 0) return "à l'instant";
   if (secondes < 60) return `il y a ${secondes} s`;
   if (secondes < 3600) return `il y a ${Math.floor(secondes / 60)} min`;
 
@@ -239,7 +239,7 @@ export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
           </p>
           <p className="text-white font-semibold mt-1">
             {positionDirecte
-              ? 'à l'instant'
+              ? "à l'instant"
               : ilYA(course.position?.misAJourLe) || 'Pas encore'}
           </p>
         </div>
