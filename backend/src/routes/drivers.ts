@@ -805,4 +805,41 @@ router.post(
   }
 );
 
+// Serve document files with proper CORS headers for preview modal
+router.get("/documents/file/:path(*)", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const filePath = req.params.path;
+    const fs = require("fs");
+    const { join } = require("path");
+    const fullPath = join(process.cwd(), "uploads", filePath);
+
+    // Security: prevent directory traversal
+    if (!fullPath.startsWith(join(process.cwd(), "uploads"))) {
+      return res.status(403).send("Access denied");
+    }
+
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).send("File not found");
+    }
+
+    // Set CORS headers explicitly
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    // Determine content type
+    const ext = fullPath.split(".").pop()?.toLowerCase();
+    let contentType = "application/octet-stream";
+    if (ext === "jpg" || ext === "jpeg") contentType = "image/jpeg";
+    else if (ext === "png") contentType = "image/png";
+    else if (ext === "webp") contentType = "image/webp";
+    else if (ext === "pdf") contentType = "application/pdf";
+
+    res.header("Content-Type", contentType);
+    res.sendFile(fullPath);
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
