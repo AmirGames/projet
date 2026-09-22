@@ -75,7 +75,7 @@ interface Profil {
 const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
   APPROVED: { icone: Check, classe: 'text-green-400', libelle: 'Validé' },
   REJECTED: { icone: X, classe: 'text-red-400', libelle: 'Refusé' },
-  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: 'En attente d’examen' },
+  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: 'En attente d'examen' },
 };
 
 /** Une date ISO ramenée à ce qu'un champ `date` attend, sans décalage d'heure. */

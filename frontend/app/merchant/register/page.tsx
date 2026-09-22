@@ -54,11 +54,11 @@ export default function MerchantRegisterPage() {
     const newErrors: FormErrors = {};
 
     if (!formData.businessName.trim()) {
-      newErrors.businessName = 'Le nom de l\'entreprise est requis';
+      newErrors.businessName = "Le nom de l\'entreprise est requis";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'L\'email est requis';
+      newErrors.email = "L\'email est requis";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email invalide';
     }
@@ -78,7 +78,7 @@ export default function MerchantRegisterPage() {
     }
 
     if (!formData.address.trim()) {
-      newErrors.address = 'L\'adresse est requise';
+      newErrors.address = "L\'adresse est requise";
     }
 
     if (!formData.city.trim()) {
@@ -98,9 +98,9 @@ export default function MerchantRegisterPage() {
     }
 
     if (!formData.storeSlug.trim()) {
-      newErrors.storeSlug = 'L\'URL de la boutique est requise';
+      newErrors.storeSlug = "L\'URL de la boutique est requise";
     } else if (!/^[a-z0-9-]+$/.test(formData.storeSlug)) {
-      newErrors.storeSlug = 'L\'URL ne peut contenir que des lettres minuscules, chiffres et tirets';
+      newErrors.storeSlug = "L\'URL ne peut contenir que des lettres minuscules, chiffres et tirets";
     }
 
     setErrors(newErrors);
@@ -172,7 +172,7 @@ export default function MerchantRegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setApiError(data.error || data.message || 'Erreur lors de l\'inscription');
+        setApiError(data.error || data.message || "Erreur lors de l\'inscription");
         return;
       }
 

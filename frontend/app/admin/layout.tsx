@@ -46,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: 'Boutiques', icon: Store, href: '/admin/stores' },
     { label: 'Tickets', icon: AlertCircle, href: '/admin/tickets' },
     { label: 'Commissions', icon: DollarSign, href: '/admin/commissions' },
-    { label: 'Logs d\'Audit', icon: History, href: '/admin/audit-logs' },
+    { label: "Logs d\'Audit", icon: History, href: '/admin/audit-logs' },
     { label: 'Configuration', icon: Settings, href: '/admin/settings/admin-settings' },
   ];
 
