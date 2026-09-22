@@ -305,8 +305,8 @@ export default function MerchantRegisterPage() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
-                      errors.phone ? 'border-red-500' : 'border-gray-600'
+                    className={`w-full px-4 py-2 bg-slate-50 border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary ${
+                      errors.phone ? 'border-red-500' : 'border-slate-200'
                     }`}
                     placeholder="+33 6 12 34 56 78"
                   />
@@ -322,8 +322,8 @@ export default function MerchantRegisterPage() {
                     value={formData.description}
                     onChange={handleChange}
                     rows={3}
-                    className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
-                      errors.description ? 'border-red-500' : 'border-gray-600'
+                    className={`w-full px-4 py-2 bg-slate-50 border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary ${
+                      errors.description ? 'border-red-500' : 'border-slate-200'
                     }`}
                     placeholder="Décrivez votre commerce, spécialités, etc..."
                   />
@@ -363,8 +363,8 @@ export default function MerchantRegisterPage() {
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
-                      errors.address ? 'border-red-500' : 'border-gray-600'
+                    className={`w-full px-4 py-2 bg-slate-50 border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary ${
+                      errors.address ? 'border-red-500' : 'border-slate-200'
                     }`}
                     placeholder="123 Rue de la Paix"
                   />
@@ -380,8 +380,8 @@ export default function MerchantRegisterPage() {
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
-                      errors.city ? 'border-red-500' : 'border-gray-600'
+                    className={`w-full px-4 py-2 bg-slate-50 border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary ${
+                      errors.city ? 'border-red-500' : 'border-slate-200'
                     }`}
                     placeholder="Paris"
                   />
@@ -397,8 +397,8 @@ export default function MerchantRegisterPage() {
                     name="postalCode"
                     value={formData.postalCode}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
-                      errors.postalCode ? 'border-red-500' : 'border-gray-600'
+                    className={`w-full px-4 py-2 bg-slate-50 border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary ${
+                      errors.postalCode ? 'border-red-500' : 'border-slate-200'
                     }`}
                     placeholder="75001"
                   />
@@ -424,8 +424,8 @@ export default function MerchantRegisterPage() {
                     name="storeName"
                     value={formData.storeName}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
-                      errors.storeName ? 'border-red-500' : 'border-gray-600'
+                    className={`w-full px-4 py-2 bg-slate-50 border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary ${
+                      errors.storeName ? 'border-red-500' : 'border-slate-200'
                     }`}
                     placeholder="Ma Boutique"
                   />
@@ -445,8 +445,8 @@ export default function MerchantRegisterPage() {
                       name="storeSlug"
                       value={formData.storeSlug}
                       onChange={handleChange}
-                      className={`flex-1 px-4 py-2 bg-gray-700 border rounded-r-lg text-white focus:outline-none focus:border-red-500 ${
-                        errors.storeSlug ? 'border-red-500' : 'border-gray-600'
+                      className={`flex-1 px-4 py-2 bg-slate-50 border rounded-r-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary ${
+                        errors.storeSlug ? 'border-red-500' : 'border-slate-200'
                       }`}
                       placeholder="ma-boutique"
                     />
@@ -477,8 +477,8 @@ export default function MerchantRegisterPage() {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
-                      errors.password ? 'border-red-500' : 'border-gray-600'
+                    className={`w-full px-4 py-2 bg-slate-50 border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary ${
+                      errors.password ? 'border-red-500' : 'border-slate-200'
                     }`}
                     placeholder="••••••••"
                   />
@@ -494,8 +494,8 @@ export default function MerchantRegisterPage() {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
-                      errors.confirmPassword ? 'border-red-500' : 'border-gray-600'
+                    className={`w-full px-4 py-2 bg-slate-50 border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary ${
+                      errors.confirmPassword ? 'border-red-500' : 'border-slate-200'
                     }`}
                     placeholder="••••••••"
                   />
