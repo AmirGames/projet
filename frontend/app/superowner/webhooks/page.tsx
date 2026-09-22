@@ -63,12 +63,6 @@ const COULEUR_ETAT: Record<string, string> = {
   FAILED: 'bg-red-500/20 text-red-400',
 };
 
-const LIBELLE_ETAT: Record<string, string> = {
-  ACTIVE: 'Actif',
-  INACTIVE: 'En pause',
-  FAILED: 'Coupé',
-};
-
 const jeton = () => localStorage.getItem('accessToken');
 
 export default function WebhooksPage() {

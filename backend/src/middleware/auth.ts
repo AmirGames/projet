@@ -118,17 +118,20 @@ export function verifyToken(token: string) {
 
 export async function checkOrgStatus(req: Request, _res: Response, next: NextFunction) {
   try {
-    // Load orgId from request body (storeId) if not in JWT
-    const storeId = (req.body?.storeId || req.query?.storeId) as string;
-    let orgId = req.orgId;
+    // Load orgId from request body or query if not in JWT
+    let orgId = req.orgId || (req.body?.orgId as string) || (req.query?.orgId as string);
 
-    if (!orgId && storeId) {
-      const store = await db.store.findUnique({
-        where: { id: storeId },
-        select: { orgId: true },
-      });
-      if (store) {
-        orgId = store.orgId;
+    // If still no orgId, try to load it from storeId
+    if (!orgId) {
+      const storeId = (req.body?.storeId || req.query?.storeId) as string;
+      if (storeId) {
+        const store = await db.store.findUnique({
+          where: { id: storeId },
+          select: { orgId: true },
+        });
+        if (store) {
+          orgId = store.orgId;
+        }
       }
     }
 

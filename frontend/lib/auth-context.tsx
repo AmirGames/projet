@@ -145,6 +145,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (data.refreshToken) {
       localStorage.setItem('refreshToken', data.refreshToken);
     }
+
+    // Store organization and driver info
+    if (data.organization?.id) {
+      localStorage.setItem('currentOrgId', data.organization.id);
+    }
+    if (data.driver?.id) {
+      localStorage.setItem('currentDriverId', data.driver.id);
+    }
+
     setUser(data.user);
   };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Layers, Save, Plus, X, Users } from 'lucide-react';
 
 import { euro } from '@/lib/format';

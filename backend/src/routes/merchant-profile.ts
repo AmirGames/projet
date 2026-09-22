@@ -4,9 +4,11 @@ import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
+import { uploadMiddleware } from "../middleware/file-upload";
 import {
   MerchantProfileService,
   TYPES_DOCUMENT_COMMERCANT,
+  libelleDuDocumentCommercant,
 } from "../services/merchant-profile.service";
 
 const router = Router();
@@ -103,6 +105,52 @@ router.post(
         success: true,
         message: "Document déposé, il sera examiné par la plateforme",
         document: await MerchantProfileService.deposerPiece(orgId, piece),
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /merchant-profile/:orgId/documents/upload - Déposer une pièce via upload de fichier
+router.post(
+  "/:orgId/documents/upload",
+  authMiddleware,
+  uploadMiddleware.single("file"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const orgId = req.params.orgId as string;
+      await verifierAppartenance(orgId, req);
+
+      if (!req.file) {
+        throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
+      }
+
+      const schema = z.object({
+        type: z.enum(TYPES_DOCUMENT_COMMERCANT),
+        expiryDate: z.string().optional().nullable(),
+      });
+
+      const body = schema.parse(req.body);
+
+      // Debug logging
+      console.log("File details:", {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      });
+
+      const document = await MerchantProfileService.deposerFichier(orgId, {
+        type: body.type,
+        file: req.file.buffer,
+        filename: req.file.originalname || `document.${req.file.mimetype.split("/")[1]}`,
+        expiryDate: body.expiryDate,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: `${libelleDuDocumentCommercant(document.type)} déposé, il sera examiné par la plateforme`,
+        document,
       });
     } catch (err) {
       next(err);

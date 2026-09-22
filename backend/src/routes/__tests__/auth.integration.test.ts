@@ -1,8 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import request from 'supertest';
+import { describe, it, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import { db } from '../../services/db';
-
-let app: any;
 
 // Mock server setup - since we can't easily import the express app,
 // we'll document the test cases that should be run
