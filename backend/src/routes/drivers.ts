@@ -350,10 +350,17 @@ router.post(
 
       const body = schema.parse(req.body);
 
+      // Debug logging
+      console.log("Driver file details:", {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      });
+
       const piece = await DriverApprovalService.deposerFichier(livreur.id, {
         type: body.type,
         file: req.file.buffer,
-        filename: req.file.originalname,
+        filename: req.file.originalname || `document.${req.file.mimetype.split("/")[1]}`,
         expiryDate: body.expiryDate,
       });
 

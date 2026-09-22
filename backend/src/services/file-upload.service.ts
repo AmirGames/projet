@@ -95,8 +95,20 @@ export class FileUploadService {
     await ensureUploadsDir();
 
     // Extraire l'extension du fichier original
-    const lastDot = filename.lastIndexOf(".");
-    const ext = lastDot > 0 ? filename.substring(lastDot + 1).toLowerCase() : "bin";
+    let ext = "bin";
+    if (filename && filename.trim()) {
+      const trimmed = filename.trim();
+      const lastDot = trimmed.lastIndexOf(".");
+      if (lastDot > 0 && lastDot < trimmed.length - 1) {
+        const potentialExt = trimmed.substring(lastDot + 1).toLowerCase();
+        // Valider que c'est une extension valide (2-10 caractères alphanumériques)
+        if (/^[a-z0-9]{2,10}$/.test(potentialExt)) {
+          ext = potentialExt;
+        }
+      }
+    }
+
+    console.log("uploadLocal - Processing file:", { filename, extractedExt: ext });
 
     // Générer un nom de fichier sécurisé avec l'extension
     const randomId = Math.random().toString(36).slice(2, 10);
@@ -110,14 +122,15 @@ export class FileUploadService {
       await fs.writeFile(fullPath, buffer);
 
       const url = `${API_URL}/uploads/${relativePath}`;
-      logger.info("Local file uploaded", { path: relativePath, size: buffer.length });
+      logger.info("Local file uploaded", { path: relativePath, size: buffer.length, ext });
+      console.log("uploadLocal - File saved:", { safeFilename, url });
 
       return {
         url,
         publicId: safeFilename,
       };
     } catch (error) {
-      logger.error("Failed to upload file locally", { error });
+      logger.error("Failed to upload file locally", { error, filename, ext });
       throw error;
     }
   }
