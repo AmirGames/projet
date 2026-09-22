@@ -81,7 +81,7 @@ export default function Home() {
           </Link>
         ) : (
           <Link
-            href={isMerchant ? "/merchant" : (isDriver ? "/driver/deliveries" : "/dashboard")}
+            href="/dashboard"
             className="rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white transition hover:bg-accent-hover md:px-6 md:py-3 md:text-base"
           >
             Mon espace
@@ -264,7 +264,7 @@ export default function Home() {
                 </Link>
               </>
             ) : (
-              <Link href={isMerchant ? "/merchant" : (isDriver ? "/driver/deliveries" : "/dashboard")} className="mb-2 block text-slate-300 hover:text-white">
+              <Link href="/dashboard" className="mb-2 block text-slate-300 hover:text-white">
                 Mon espace
               </Link>
             )}

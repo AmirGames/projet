@@ -101,7 +101,7 @@ export default function DriverOnboardPage() {
       localStorage.setItem('driverToken', data.accessToken);
 
       setTimeout(() => {
-        router.push('/driver/deliveries');
+        router.push('/driver');
       }, 1500);
     } catch (error) {
       setApiError('Erreur de connexion au serveur');
