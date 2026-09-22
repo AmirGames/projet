@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import Link from "next/link";
-import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
 
 export default function SignupPage() {
   const router = useRouter();
