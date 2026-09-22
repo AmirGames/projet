@@ -808,6 +808,13 @@ router.post(
 );
 
 // Serve document files with proper CORS headers for preview modal
+router.options(/^\/documents\/file\/(.+)$/, (_req: Request, res: Response) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.sendStatus(200);
+});
+
 router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const filePath = (req.params as any)[0];
@@ -823,9 +830,9 @@ router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next
     }
 
     // Set CORS headers explicitly
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
     // Determine content type
     const ext = fullPath.split(".").pop()?.toLowerCase();
@@ -835,7 +842,7 @@ router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next
     else if (ext === "webp") contentType = "image/webp";
     else if (ext === "pdf") contentType = "application/pdf";
 
-    res.header("Content-Type", contentType);
+    res.setHeader("Content-Type", contentType);
     res.sendFile(fullPath);
   } catch (err) {
     next(err);
