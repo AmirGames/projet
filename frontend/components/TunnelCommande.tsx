@@ -20,6 +20,7 @@ import { AlertCircle } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { totalDuPanier, type LignePanier } from '@/lib/paniers';
+import { useAuth } from '@/lib/auth-context';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -64,6 +65,7 @@ export function TunnelCommande({
   surAnnulation,
   disposition = 'modale',
 }: Props) {
+  const { user } = useAuth();
   const [livraison, setLivraison] = useState<Livraison | null>(null);
   // Créneaux réellement proposables, déduits des horaires de la boutique.
   const [creneaux, setCreneaux] = useState<
@@ -101,6 +103,40 @@ export function TunnelCommande({
     pickupTime: '',
     notes: '',
   });
+
+  // Charger les informations du profil utilisateur si connecté.
+  useEffect(() => {
+    if (!user) return;
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    let annule = false;
+
+    fetch(`${API_URL}/api/client/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) => {
+        if (annule || !donnees?.data) return;
+
+        const profil = donnees.data;
+        setCheckoutForm((formulaire) => ({
+          ...formulaire,
+          customerName: profil.name || formulaire.customerName,
+          customerEmail: profil.email || formulaire.customerEmail,
+          customerPhone: profil.phone || formulaire.customerPhone,
+          deliveryAddress: profil.address || formulaire.deliveryAddress,
+          deliveryCity: profil.city || formulaire.deliveryCity,
+          deliveryPostal: profil.postalCode || formulaire.deliveryPostal,
+        }));
+      })
+      .catch(() => undefined);
+
+    return () => {
+      annule = true;
+    };
+  }, [user]);
 
   // Les conditions de livraison se lisent dès que l'adresse est retenue.
   useEffect(() => {
