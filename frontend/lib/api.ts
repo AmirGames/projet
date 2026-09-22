@@ -338,7 +338,7 @@ export const api = {
 
   // User roles endpoints
   getRoles: async () => {
-    const response = await fetch(`${API_BASE_URL}/api/user/roles`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/me/roles`, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) {
@@ -348,7 +348,7 @@ export const api = {
   },
 
   becomeMerchant: async (data: any) => {
-    const response = await fetch(`${API_BASE_URL}/api/user/become-merchant`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/me/become-merchant`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -361,7 +361,7 @@ export const api = {
   },
 
   becomeDriver: async (data: any) => {
-    const response = await fetch(`${API_BASE_URL}/api/user/become-driver`, {
+    const response = await fetch(`${API_BASE_URL}/api/auth/me/become-driver`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
