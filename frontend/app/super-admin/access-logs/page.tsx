@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Search, Download, Filter, Clock } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -18,6 +19,7 @@ interface AccessLog {
 }
 
 export default function AccessLogsPage() {
+  const t = useTranslations('superadminAccessLogs');
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -89,35 +91,35 @@ export default function AccessLogsPage() {
     a.click();
   };
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
+  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Journaux d'Accès</h1>
-        <p className="text-gray-400 mt-1">Suivi détaillé des accès aux ressources</p>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
       </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-gray-400 text-sm mb-2">Total</p>
+          <p className="text-gray-400 text-sm mb-2">{t('total')}</p>
           <p className="text-2xl font-bold text-white">{stats.total}</p>
-          <p className="text-xs text-gray-400 mt-1">accès enregistrés</p>
+          <p className="text-xs text-gray-400 mt-1">{t('recordedAccesses')}</p>
         </div>
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-gray-400 text-sm mb-2">Réussis</p>
+          <p className="text-gray-400 text-sm mb-2">{t('successful')}</p>
           <p className="text-2xl font-bold text-green-400">{stats.success}</p>
           <p className="text-xs text-gray-400 mt-1">{((stats.success / stats.total) * 100).toFixed(1)}%</p>
         </div>
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-gray-400 text-sm mb-2">Échoués</p>
+          <p className="text-gray-400 text-sm mb-2">{t('failed')}</p>
           <p className="text-2xl font-bold text-red-400">{stats.failed}</p>
           <p className="text-xs text-gray-400 mt-1">{((stats.failed / stats.total) * 100).toFixed(1)}%</p>
         </div>
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-gray-400 text-sm mb-2">Refusés</p>
+          <p className="text-gray-400 text-sm mb-2">{t('denied')}</p>
           <p className="text-2xl font-bold text-yellow-400">{stats.denied}</p>
           <p className="text-xs text-gray-400 mt-1">{((stats.denied / stats.total) * 100).toFixed(1)}%</p>
         </div>
@@ -130,7 +132,7 @@ export default function AccessLogsPage() {
             <Search size={20} className="text-gray-400" />
             <input
               type="text"
-              placeholder="Chercher par email, ressource ou IP..."
+              placeholder={t('searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
@@ -144,10 +146,10 @@ export default function AccessLogsPage() {
               onChange={(e) => setStatusFilter(e.target.value as any)}
               className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
             >
-              <option value="ALL">Tous les statuts</option>
-              <option value="SUCCESS">Réussis</option>
-              <option value="FAILED">Échoués</option>
-              <option value="DENIED">Refusés</option>
+              <option value="ALL">{t('allStatuses')}</option>
+              <option value="SUCCESS">{t('successful')}</option>
+              <option value="FAILED">{t('failed')}</option>
+              <option value="DENIED">{t('denied')}</option>
             </select>
           </div>
 
@@ -156,7 +158,7 @@ export default function AccessLogsPage() {
             onChange={(e) => setActionFilter(e.target.value)}
             className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
           >
-            <option value="">Toutes les actions</option>
+            <option value="">{t('allActions')}</option>
             {actions.map(action => (
               <option key={action} value={action}>{action}</option>
             ))}
@@ -168,7 +170,7 @@ export default function AccessLogsPage() {
           className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 rounded-lg px-4 py-2 font-medium transition-colors w-full md:w-auto"
         >
           <Download size={20} />
-          Exporter CSV
+          {t('exportCsv')}
         </button>
       </div>
 
@@ -176,19 +178,19 @@ export default function AccessLogsPage() {
       <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
         {filteredLogs.length === 0 ? (
           <div className="p-8 text-center text-gray-400">
-            Aucun journal d'accès trouvé.
+            {t('noLogs')}
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-700 border-b border-gray-600">
               <tr>
-                <th className="px-6 py-4 text-left">Date/Heure</th>
-                <th className="px-6 py-4 text-left">Utilisateur</th>
-                <th className="px-6 py-4 text-left">Ressource</th>
-                <th className="px-6 py-4 text-left">Action</th>
-                <th className="px-6 py-4 text-center">Statut</th>
-                <th className="px-6 py-4 text-left">IP</th>
-                <th className="px-6 py-4 text-right">Durée (ms)</th>
+                <th className="px-6 py-4 text-left">{t('colDateTime')}</th>
+                <th className="px-6 py-4 text-left">{t('colUser')}</th>
+                <th className="px-6 py-4 text-left">{t('colResource')}</th>
+                <th className="px-6 py-4 text-left">{t('colAction')}</th>
+                <th className="px-6 py-4 text-center">{t('colStatus')}</th>
+                <th className="px-6 py-4 text-left">{t('colIp')}</th>
+                <th className="px-6 py-4 text-right">{t('colDuration')}</th>
               </tr>
             </thead>
             <tbody>
@@ -240,7 +242,7 @@ export default function AccessLogsPage() {
       </div>
 
       <div className="text-gray-400 text-sm">
-        Affichés: <strong>{filteredLogs.length}</strong> sur <strong>{stats.total}</strong> journal(s)
+        {t('shown')} <strong>{filteredLogs.length}</strong> {t('on')} <strong>{stats.total}</strong> {t('logs')}
       </div>
     </div>
   );

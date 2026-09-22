@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -24,6 +25,7 @@ interface CommissionData {
 }
 
 export default function AnalyticsPage() {
+  const t = useTranslations('superadminAnalytics');
   const [data, setData] = useState<CommissionData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -51,8 +53,8 @@ export default function AnalyticsPage() {
     }
   };
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
-  if (!data) return <div className="text-center py-8 text-red-400">Erreur de chargement</div>;
+  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
+  if (!data) return <div className="text-center py-8 text-red-400">{t('loadError')}</div>;
 
   // Calculate monthly trend
   const sortedCommissions = [...data.commissions].sort((a, b) =>
@@ -71,33 +73,33 @@ export default function AnalyticsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Analytics & Commissions</h1>
-        <p className="text-gray-400 mt-1">Analyse des commissions et revenus</p>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Total Commissions */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Commission totale</p>
+          <p className="text-gray-400 text-sm mb-2">{t('totalCommission')}</p>
           <p className="text-3xl font-bold">{data.summary.totalAmount.toFixed(2)} €</p>
-          <p className="text-sm text-gray-400 mt-2">{data.summary.count} périodes</p>
+          <p className="text-sm text-gray-400 mt-2">{data.summary.count} {t('periods')}</p>
         </div>
 
         {/* Average Commission */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Commission moyenne</p>
+          <p className="text-gray-400 text-sm mb-2">{t('averageCommission')}</p>
           <p className="text-3xl font-bold">
             {(data.summary.totalAmount / (data.summary.count || 1)).toFixed(2)} €
           </p>
-          <p className="text-sm text-gray-400 mt-2">par période</p>
+          <p className="text-sm text-gray-400 mt-2">{t('perPeriod')}</p>
         </div>
 
         {/* Monthly Trend */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm mb-2">Tendance mensuelle</p>
+              <p className="text-gray-400 text-sm mb-2">{t('monthlyTrend')}</p>
               <p className="text-3xl font-bold">
                 {monthlyChange >= 0 ? '+' : ''}{monthlyChange.toFixed(1)}%
               </p>

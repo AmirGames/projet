@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Trash2, Plus } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -14,6 +15,7 @@ interface Admin {
 }
 
 export default function AdminManagementPage() {
+  const t = useTranslations('superadminAdminManagement');
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -54,34 +56,34 @@ export default function AdminManagementPage() {
 
       if (!response.ok) throw new Error('Failed to create admin');
 
-      setMessage('✅ Admin ajouté avec succès!');
+      setMessage(t('successAdded'));
       setFormData({ email: '', name: '', password: '' });
       setShowForm(false);
       setTimeout(() => setMessage(''), 3000);
       fetchAdmins();
     } catch (error) {
       console.error('Erreur:', error);
-      setMessage('❌ Erreur lors de la création');
+      setMessage(t('errorCreating'));
       setTimeout(() => setMessage(''), 3000);
     }
   };
 
-  if (loading) return <div className="text-center py-8">Chargement...</div>;
+  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Gestion des admins</h1>
-          <p className="text-gray-400 mt-1">Super administrateurs du système</p>
+          <h1 className="text-3xl font-bold">{t('title')}</h1>
+          <p className="text-gray-400 mt-1">{t('subtitle')}</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 rounded-lg px-4 py-2 font-medium transition-colors"
         >
           <Plus size={20} />
-          Ajouter un admin
+          {t('addButton')}
         </button>
       </div>
 
@@ -95,10 +97,10 @@ export default function AdminManagementPage() {
       {/* Add Admin Form */}
       {showForm && (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-bold mb-4">Nouvel administrateur</h2>
+          <h2 className="text-lg font-bold mb-4">{t('formTitle')}</h2>
           <form onSubmit={handleAddAdmin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Email</label>
+              <label className="block text-sm font-medium mb-2">{t('email')}</label>
               <input
                 type="email"
                 value={formData.email}
@@ -108,7 +110,7 @@ export default function AdminManagementPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Nom</label>
+              <label className="block text-sm font-medium mb-2">{t('name')}</label>
               <input
                 type="text"
                 value={formData.name}
@@ -118,7 +120,7 @@ export default function AdminManagementPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Mot de passe</label>
+              <label className="block text-sm font-medium mb-2">{t('password')}</label>
               <input
                 type="password"
                 value={formData.password}
@@ -133,13 +135,13 @@ export default function AdminManagementPage() {
                 onClick={() => setShowForm(false)}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
               >
-                Annuler
+                {t('cancel')}
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
               >
-                Créer admin
+                {t('createButton')}
               </button>
             </div>
           </form>
@@ -150,16 +152,16 @@ export default function AdminManagementPage() {
       <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
         {admins.length === 0 ? (
           <div className="p-8 text-center text-gray-400">
-            Aucun administrateur trouvé. Créez le premier!
+            {t('noAdmins')}
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-700 border-b border-gray-600">
               <tr>
-                <th className="px-6 py-4 text-left">Nom</th>
-                <th className="px-6 py-4 text-left">Email</th>
-                <th className="px-6 py-4 text-left">Créé le</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-6 py-4 text-left">{t('colName')}</th>
+                <th className="px-6 py-4 text-left">{t('colEmail')}</th>
+                <th className="px-6 py-4 text-left">{t('colCreatedAt')}</th>
+                <th className="px-6 py-4 text-right">{t('colActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -185,8 +187,8 @@ export default function AdminManagementPage() {
       {/* Info */}
       <div className="bg-yellow-600/20 border border-yellow-600/50 rounded-lg p-4">
         <p className="text-yellow-400 text-sm">
-          ⚠️ Les super administrateurs ont accès à tous les paramètres du système.
-          À utiliser avec prudence!
+          ⚠️ {t('warningTitle')}
+          {' '}{t('warningSubtitle')}
         </p>
       </div>
     </div>

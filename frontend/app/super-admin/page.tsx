@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Users, ShoppingCart, TrendingUp, AlertCircle } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -19,6 +20,7 @@ interface Stats {
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
+  const t = useTranslations('superadminDashboard');
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -58,24 +60,24 @@ export default function SuperAdminDashboard() {
   };
 
   if (loading)
-    return <div className="text-center py-8">Chargement...</div>;
+    return <div className="text-center py-8">{t('loading')}</div>;
 
   if (!stats)
-    return <div className="text-center py-8 text-red-400">Erreur d'accès</div>;
+    return <div className="text-center py-8 text-red-400">{t('accessDenied')}</div>;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Tableau de bord</h1>
-        <p className="text-gray-400 mt-1">Vue d'ensemble du système</p>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
       </div>
 
       {/* Maintenance Mode Alert */}
       {stats.config.maintenanceMode && (
         <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 flex items-center gap-3">
           <AlertCircle size={20} className="text-yellow-400" />
-          <span className="text-yellow-400">Mode maintenance activé</span>
+          <span className="text-yellow-400">{t('maintenanceEnabled')}</span>
         </div>
       )}
 
@@ -84,41 +86,41 @@ export default function SuperAdminDashboard() {
         {/* Merchants */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Commerçants Actifs</p>
+            <p className="text-gray-400 text-sm">{t('activeMerchants')}</p>
             <Users size={20} className="text-blue-500" />
           </div>
           <p className="text-3xl font-bold">{stats.merchants.active}</p>
-          <p className="text-sm text-gray-400 mt-2">sur {stats.merchants.total} total</p>
+          <p className="text-sm text-gray-400 mt-2">{t('outOf')} {stats.merchants.total} {t('total')}</p>
         </div>
 
         {/* Stores */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Boutiques</p>
+            <p className="text-gray-400 text-sm">{t('stores')}</p>
             <ShoppingCart size={20} className="text-green-500" />
           </div>
           <p className="text-3xl font-bold">{stats.stores.total}</p>
-          <p className="text-sm text-gray-400 mt-2">dont {stats.stores.active} ouvertes</p>
+          <p className="text-sm text-gray-400 mt-2">{t('of')} {stats.stores.active} {t('open')}</p>
         </div>
 
         {/* Orders */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Commandes</p>
+            <p className="text-gray-400 text-sm">{t('orders')}</p>
             <TrendingUp size={20} className="text-purple-500" />
           </div>
           <p className="text-3xl font-bold">{stats.orders.total}</p>
-          <p className="text-sm text-gray-400 mt-2">total</p>
+          <p className="text-sm text-gray-400 mt-2">{t('total')}</p>
         </div>
 
         {/* Revenue */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">Revenu</p>
+            <p className="text-gray-400 text-sm">{t('revenue')}</p>
             <TrendingUp size={20} className="text-yellow-500" />
           </div>
           <p className="text-3xl font-bold">{euro(stats.revenue.total)}</p>
-          <p className="text-sm text-gray-400 mt-2">Commission: {stats.config.platformFeePercent}%</p>
+          <p className="text-sm text-gray-400 mt-2">{t('commission')} {stats.config.platformFeePercent}%</p>
         </div>
       </div>
 
@@ -128,44 +130,44 @@ export default function SuperAdminDashboard() {
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <AlertCircle size={20} className="text-red-500" />
-            Commerçants suspendus
+            {t('suspendedMerchants')}
           </h2>
           <p className="text-3xl font-bold text-red-400">{stats.merchants.suspended}</p>
-          <p className="text-sm text-gray-400 mt-2">À investiguer</p>
+          <p className="text-sm text-gray-400 mt-2">{t('investigate')}</p>
         </div>
 
         {/* Open Tickets */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <AlertCircle size={20} className="text-orange-500" />
-            Support en attente
+            {t('supportPending')}
           </h2>
           <p className="text-3xl font-bold text-orange-400">{stats.tickets.open}</p>
-          <p className="text-sm text-gray-400 mt-2">Tickets ouverts</p>
+          <p className="text-sm text-gray-400 mt-2">{t('openTickets')}</p>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-        <h2 className="text-lg font-bold mb-4">Actions rapides</h2>
+        <h2 className="text-lg font-bold mb-4">{t('quickActions')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <a
             href="/super-admin/merchants"
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
-            Gérer les commerçants
+            {t('manageMerchants')}
           </a>
           <a
             href="/super-admin/tickets"
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
-            Voir le support
+            {t('viewSupport')}
           </a>
           <a
             href="/super-admin/settings"
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
-            Paramètres système
+            {t('systemSettings')}
           </a>
         </div>
       </div>
