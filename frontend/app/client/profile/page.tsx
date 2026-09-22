@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { User, Mail, ShoppingBag, Wallet, Save } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
@@ -21,6 +22,7 @@ interface Profil {
 }
 
 export default function ProfilClientPage() {
+  const t = useTranslations('clientProfile');
   const router = useRouter();
 
   const [profil, setProfil] = useState<Profil | null>(null);
@@ -53,10 +55,7 @@ export default function ProfilClientPage() {
 
       if (!reponse.ok) {
         // Un compte qui n'a jamais commandé n'a pas encore de fiche client.
-        setErreur(
-          donnees.error ||
-            "Votre profil sera créé lors de votre première commande."
-        );
+        setErreur(donnees.error || t('loading'));
         return;
       }
 
@@ -69,11 +68,11 @@ export default function ProfilClientPage() {
         postalCode: donnees.data.postalCode || '',
       });
     } catch {
-      setErreur('Erreur de connexion au serveur');
+      setErreur(t('connectionError'));
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     charger();
@@ -101,13 +100,13 @@ export default function ProfilClientPage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setMessage(`❌ ${donnees.error || 'Enregistrement impossible'}`);
+        setMessage(`❌ ${donnees.error || t('saveError')}`);
         return;
       }
 
-      setMessage('✅ Profil mis à jour');
+      setMessage(t('savedSuccess'));
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage(t('connectionError'));
     } finally {
       setEnregistrement(false);
     }
@@ -132,11 +131,11 @@ export default function ProfilClientPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <User size={28} className="text-orange-500" />
-          Mon profil
+          {t('title')}
         </h1>
         {profil && (
           <p className="text-gray-400 mt-1">
-            Client depuis le {new Date(profil.memberSince).toLocaleDateString('fr-FR')}
+            {t('memberSince', { date: new Date(profil.memberSince).toLocaleDateString('fr-FR') })}
           </p>
         )}
       </div>
@@ -152,14 +151,14 @@ export default function ProfilClientPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm">Commandes passées</p>
+                <p className="text-gray-400 text-sm">{t('ordersPlaced')}</p>
                 <ShoppingBag size={20} className="text-blue-500" />
               </div>
               <p className="text-3xl font-bold text-white">{profil.totalOrders}</p>
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm">Total dépensé</p>
+                <p className="text-gray-400 text-sm">{t('totalSpent')}</p>
                 <Wallet size={20} className="text-green-500" />
               </div>
               <p className="text-3xl font-bold text-white">{euro(profil.totalSpent)}</p>
@@ -167,25 +166,25 @@ export default function ProfilClientPage() {
           </div>
 
           <form onSubmit={enregistrer} className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
-            <h2 className="text-lg font-bold text-white">Mes coordonnées</h2>
+            <h2 className="text-lg font-bold text-white">{t('myInfo')}</h2>
 
             {message && (
               <div className="bg-gray-700 rounded-lg p-3 text-sm text-white">{message}</div>
             )}
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Adresse e-mail</label>
+              <label className="block text-sm text-gray-400 mb-1">{t('email')}</label>
               <div className="flex items-center gap-2 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-gray-400">
                 <Mail size={16} />
                 <span className="break-all">{profil.email}</span>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                L&apos;adresse e-mail relie votre compte à vos commandes et ne peut pas être modifiée ici.
+                {t('emailInfo')}
               </p>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Nom complet</label>
+              <label className="block text-sm text-gray-400 mb-1">{t('fullName')}</label>
               <input
                 type="text"
                 required
@@ -196,7 +195,7 @@ export default function ProfilClientPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Téléphone</label>
+              <label className="block text-sm text-gray-400 mb-1">{t('phone')}</label>
               <input
                 type="tel"
                 {...champ('phone')}
@@ -205,7 +204,7 @@ export default function ProfilClientPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Adresse de livraison</label>
+              <label className="block text-sm text-gray-400 mb-1">{t('deliveryAddress')}</label>
               <AddressAutocomplete
                 value={formulaire.address}
                 onChange={(valeur) => setFormulaire({ ...formulaire, address: valeur })}
@@ -223,7 +222,7 @@ export default function ProfilClientPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-1">
-                <label className="block text-sm text-gray-400 mb-1">Code postal</label>
+                <label className="block text-sm text-gray-400 mb-1">{t('postalCode')}</label>
                 <input
                   type="text"
                   {...champ('postalCode')}
@@ -231,7 +230,7 @@ export default function ProfilClientPage() {
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm text-gray-400 mb-1">Ville</label>
+                <label className="block text-sm text-gray-400 mb-1">{t('city')}</label>
                 <input
                   type="text"
                   {...champ('city')}
@@ -245,7 +244,7 @@ export default function ProfilClientPage() {
               disabled={enregistrement}
               className="flex items-center gap-2 px-5 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 rounded-lg font-medium text-white transition-colors"
             >
-              <Save size={16} /> Enregistrer
+              <Save size={16} /> {t('save')}
             </button>
           </form>
         </>

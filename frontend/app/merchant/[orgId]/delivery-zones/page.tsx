@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus, Edit2, Trash2, Search, MapPin, Crosshair } from 'lucide-react';

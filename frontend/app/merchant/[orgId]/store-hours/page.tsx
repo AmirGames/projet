@@ -1,5 +1,6 @@
 'use client';
 
+
 /**
  * Les horaires d'ouverture de la boutique.
  *
