@@ -75,7 +75,8 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
   const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
-  const [formulaire, setFormulaire] = useState({ type: '', documentUrl: '', expiryDate: '' });
+  const [formulaire, setFormulaire] = useState({ type: '', documentUrl: '', file: null as File | null, expiryDate: '' });
+  const [modeUpload, setModeUpload] = useState<'url' | 'file'>('file');
 
   const charger = useCallback(async () => {
     try {
@@ -104,8 +105,18 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
     e.preventDefault();
     setErreur('');
 
-    if (!formulaire.type || !formulaire.documentUrl) {
-      setErreur('Choisissez une pièce et donnez son lien');
+    if (!formulaire.type) {
+      setErreur('Choisissez une pièce');
+      return;
+    }
+
+    if (modeUpload === 'url' && !formulaire.documentUrl) {
+      setErreur('Donnez un lien vers le document');
+      return;
+    }
+
+    if (modeUpload === 'file' && !formulaire.file) {
+      setErreur('Choisissez un fichier');
       return;
     }
 
@@ -113,17 +124,34 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
 
     try {
       const token = localStorage.getItem('driverToken');
-      const reponse = await fetch(`${API_URL}/api/drivers/documents`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          type: formulaire.type,
-          documentUrl: formulaire.documentUrl,
-          expiryDate: formulaire.expiryDate
-            ? new Date(formulaire.expiryDate).toISOString()
-            : undefined,
-        }),
-      });
+      let reponse;
+
+      if (modeUpload === 'file' && formulaire.file) {
+        const formData = new FormData();
+        formData.append('type', formulaire.type);
+        formData.append('file', formulaire.file);
+        if (formulaire.expiryDate) {
+          formData.append('expiryDate', new Date(formulaire.expiryDate).toISOString());
+        }
+
+        reponse = await fetch(`${API_URL}/api/drivers/documents/upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+      } else {
+        reponse = await fetch(`${API_URL}/api/drivers/documents`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            type: formulaire.type,
+            documentUrl: formulaire.documentUrl,
+            expiryDate: formulaire.expiryDate
+              ? new Date(formulaire.expiryDate).toISOString()
+              : undefined,
+          }),
+        });
+      }
 
       const lu = await reponse.json().catch(() => null);
 
@@ -132,7 +160,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
         return;
       }
 
-      setFormulaire({ type: '', documentUrl: '', expiryDate: '' });
+      setFormulaire({ type: '', documentUrl: '', file: null, expiryDate: '' });
       await charger();
       surChangement?.();
     } catch {
@@ -220,24 +248,64 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
             </div>
 
             <div>
-              <label htmlFor="piece-lien" className="block text-sm text-gray-400 mb-1">
-                Lien vers le document
-              </label>
-              <input
-                id="piece-lien"
-                type="url"
-                value={formulaire.documentUrl}
-                onChange={(e) => setFormulaire({ ...formulaire, documentUrl: e.target.value })}
-                placeholder="https://…"
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-              />
-              {/* L'hébergement de fichiers n'est pas branché : le dire plutôt
-                  que de laisser croire à un envoi. */}
-              <p className="text-xs text-gray-500 mt-1">
-                L&apos;envoi de fichiers n&apos;est pas encore disponible : déposez un lien vers
-                votre document.
-              </p>
+              <label className="block text-sm text-gray-400 mb-2">Mode de dépôt</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModeUpload('file')}
+                  className={`flex-1 py-2 px-3 rounded text-sm font-medium transition ${
+                    modeUpload === 'file'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                  }`}
+                >
+                  Fichier
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModeUpload('url')}
+                  className={`flex-1 py-2 px-3 rounded text-sm font-medium transition ${
+                    modeUpload === 'url'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                  }`}
+                >
+                  Lien
+                </button>
+              </div>
             </div>
+
+            {modeUpload === 'file' ? (
+              <div>
+                <label htmlFor="piece-file" className="block text-sm text-gray-400 mb-1">
+                  Fichier (JPG, PNG, PDF - max 10MB)
+                </label>
+                <input
+                  id="piece-file"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.pdf,.webp"
+                  onChange={(e) => setFormulaire({ ...formulaire, file: e.target.files?.[0] || null })}
+                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white file:bg-orange-600 file:border-0 file:px-3 file:py-1 file:mr-2 file:text-white file:rounded file:cursor-pointer"
+                />
+                {formulaire.file && (
+                  <p className="text-xs text-green-400 mt-1">{formulaire.file.name}</p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <label htmlFor="piece-lien" className="block text-sm text-gray-400 mb-1">
+                  Lien vers le document
+                </label>
+                <input
+                  id="piece-lien"
+                  type="url"
+                  value={formulaire.documentUrl}
+                  onChange={(e) => setFormulaire({ ...formulaire, documentUrl: e.target.value })}
+                  placeholder="https://…"
+                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                />
+              </div>
+            )}
 
             <div>
               <label htmlFor="piece-expiration" className="block text-sm text-gray-400 mb-1">

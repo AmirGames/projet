@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import multer from "multer";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
@@ -14,9 +15,24 @@ import {
 import { DriverPayoutService } from "../services/driver-payout.service";
 import { DeliveryProofService } from "../services/delivery-proof.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
+import { FileUploadService } from "../services/file-upload.service";
 import { z } from "zod";
 
 const router = Router();
+
+// Configuration de multer pour les uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (_req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new ApiError(400, `Type de fichier non autorisé: ${file.mimetype}`, 'INVALID_FILE_TYPE'));
+    }
+  },
+});
 
 // Résout le livreur rattaché au compte connecté. Sans ce contrôle, n'importe
 // quel utilisateur authentifié pourrait manipuler les courses des autres.
@@ -312,7 +328,7 @@ const pieceSchema = z.object({
   expiryDate: z.string().optional().nullable(),
 });
 
-// POST /drivers/documents - Déposer une pièce du dossier
+// POST /drivers/documents - Déposer une pièce du dossier par URL
 router.post("/documents", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const livreur = await livreurConnecte(req);
@@ -328,6 +344,60 @@ router.post("/documents", authMiddleware, async (req: Request, res: Response, ne
     next(err);
   }
 });
+
+// POST /drivers/documents/upload - Déposer une pièce du dossier par upload de fichier
+router.post(
+  "/documents/upload",
+  authMiddleware,
+  upload.single("file"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const livreur = await livreurConnecte(req);
+
+      // Valider le type de document
+      const type = req.body.type as string;
+      if (!type || !TYPES_DOCUMENT.includes(type as any)) {
+        throw new ApiError(400, "Type de document invalide", "INVALID_DOCUMENT_TYPE");
+      }
+
+      // Vérifier qu'un fichier a été uploadé
+      if (!req.file) {
+        throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
+      }
+
+      // Uploader le fichier
+      const documentUrl = FileUploadService.uploadFile(req.file, `driver-${livreur.id}-${type}`);
+
+      // Déposer la pièce avec l'URL du fichier uploadé
+      const expiryDate = req.body.expiryDate
+        ? new Date(req.body.expiryDate)
+        : undefined;
+
+      if (expiryDate && expiryDate.getTime() < Date.now()) {
+        // Supprimer le fichier s'il est expiré
+        FileUploadService.deleteFile(documentUrl);
+        throw new ApiError(
+          400,
+          `${libelleDuDocument(type)} : ce document est déjà expiré.`,
+          "DOCUMENT_EXPIRED"
+        );
+      }
+
+      const piece = await DriverApprovalService.deposerPiece(livreur.id, {
+        type: type as any,
+        documentUrl,
+        expiryDate: expiryDate?.toISOString(),
+      });
+
+      res.status(201).json({
+        message: `${libelleDuDocument(piece.type)} déposée, en attente de validation`,
+        data: piece,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 /**
  * GET /drivers/payouts - Ce qui est dû au livreur, et ce qui lui a été versé
