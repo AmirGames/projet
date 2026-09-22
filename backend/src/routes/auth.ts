@@ -53,13 +53,14 @@ router.post("/signup", async (req: Request, res: Response, next: NextFunction) =
       await envoyerConfirmation(user);
     }
 
-    // Create default organization for user
-    const slug = generateSlug(body.name || body.email.split("@")[0]);
-    const org = await UserService.createOrganization(
-      body.name || body.email.split("@")[0],
-      slug,
-      user.id
-    );
+    // Create customer profile linked to user (unified identity)
+    const customer = await db.customer.create({
+      data: {
+        userId: user.id,
+        name: body.name || user.email.split("@")[0],
+        email: user.email,
+      },
+    });
 
     // Generate tokens
     const accessToken = AuthService.generateAccessToken(user.id);
@@ -77,10 +78,10 @@ router.post("/signup", async (req: Request, res: Response, next: NextFunction) =
         isSuperOwner: user.isSuperOwner,
         isSystemAdmin: user.isSystemAdmin,
       },
-      organization: {
-        id: org.id,
-        name: org.name,
-        slug: org.slug,
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
       },
     });
   } catch (err) {
@@ -293,6 +294,226 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         suspensionReason: m.org.suspensionReason,
         closureReason: m.org.closureReason,
       })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /me/roles - Get user's current and available roles
+router.get("/me/roles", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).userId;
+
+    if (!userId) {
+      throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
+    }
+
+    const user = await UserService.getUserById(userId);
+    const memberships = await UserService.getUserOrganizations(userId);
+    const driver = await db.driver.findUnique({
+      where: { userId },
+      select: { id: true, status: true },
+    });
+    const customer = await db.customer.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        isSuperOwner: user.isSuperOwner,
+        isSystemAdmin: user.isSystemAdmin,
+      },
+      roles: {
+        customer: {
+          active: !!customer,
+          customerId: customer?.id || null,
+        },
+        driver: {
+          active: !!driver,
+          driverId: driver?.id || null,
+          status: driver?.status || null,
+        },
+        merchant: {
+          active: memberships.length > 0,
+          organizations: memberships.map((m) => ({
+            id: m.org.id,
+            name: m.org.name,
+            role: m.role,
+          })),
+        },
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /me/become-merchant - Existing user becomes merchant
+router.post("/me/become-merchant", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).userId;
+
+    if (!userId) {
+      throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
+    }
+
+    const body = z.object({
+      businessName: z.string().min(1).max(200),
+      storeName: z.string().min(1).max(200),
+      storeSlug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+      businessType: z.string().min(1).max(50),
+      phone: z.string().min(1).max(20),
+      address: z.string().min(1).max(500),
+      city: z.string().min(1).max(100),
+      postalCode: z.string().min(1).max(20),
+      description: z.string().min(1).max(1000),
+    }).parse(req.body);
+
+    const user = await UserService.getUserById(userId);
+
+    // Check if slug already exists
+    const existingOrg = await db.organization.findUnique({
+      where: { slug: body.storeSlug },
+    });
+
+    if (existingOrg) {
+      throw new ApiError(400, "Cette URL est déjà utilisée", "SLUG_EXISTS");
+    }
+
+    // Create organization
+    const organization = await db.organization.create({
+      data: {
+        name: body.businessName,
+        email: user.email,
+        slug: body.storeSlug,
+        tier: "FREE",
+        plan: "STARTER",
+        status: "ACTIVE",
+      },
+    });
+
+    // Create membership
+    await db.membership.create({
+      data: {
+        userId,
+        orgId: organization.id,
+        role: "ADMIN",
+        storeIds: [],
+      },
+    });
+
+    // Create store
+    const store = await db.store.create({
+      data: {
+        orgId: organization.id,
+        name: body.storeName,
+        slug: body.storeSlug,
+        address: body.address,
+        city: body.city,
+        postalCode: body.postalCode,
+        phone: body.phone,
+        email: user.email,
+        description: body.description,
+        settings: {
+          businessType: body.businessType,
+          createdAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    // Update membership with store ID
+    await db.membership.update({
+      where: {
+        userId_orgId: {
+          userId,
+          orgId: organization.id,
+        },
+      },
+      data: {
+        storeIds: [store.id],
+      },
+    });
+
+    logger.info("User became merchant", {
+      userId,
+      organizationId: organization.id,
+      storeId: store.id,
+    });
+
+    res.status(201).json({
+      message: "Rôle de commerçant activé avec succès",
+      organization: {
+        id: organization.id,
+        name: organization.name,
+        slug: organization.slug,
+      },
+      store: {
+        id: store.id,
+        name: store.name,
+        slug: store.slug,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /me/become-driver - Existing user becomes driver
+router.post("/me/become-driver", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).userId;
+
+    if (!userId) {
+      throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
+    }
+
+    const body = z.object({
+      name: z.string().min(1).max(200),
+      email: z.string().email(),
+      phone: z.string().min(1).max(20),
+      vehicleType: z.string().min(1).max(50),
+      vehiclePlate: z.string().min(1).max(50),
+    }).parse(req.body);
+
+    // Check if driver already exists
+    const existingDriver = await db.driver.findUnique({
+      where: { userId },
+    });
+
+    if (existingDriver) {
+      throw new ApiError(400, "Vous avez déjà un profil livreur", "DRIVER_EXISTS");
+    }
+
+    // Create driver
+    const driver = await db.driver.create({
+      data: {
+        userId,
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+        vehicleType: body.vehicleType,
+        vehiclePlate: body.vehiclePlate,
+        licensePlate: body.vehiclePlate,
+        status: "PENDING",
+      },
+    });
+
+    logger.info("User became driver", {
+      userId,
+      driverId: driver.id,
+    });
+
+    res.status(201).json({
+      message: "Candidature de livreur soumise avec succès",
+      driver: {
+        id: driver.id,
+        name: driver.name,
+        status: driver.status,
+      },
     });
   } catch (err) {
     next(err);
