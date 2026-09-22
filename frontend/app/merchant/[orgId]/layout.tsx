@@ -5,6 +5,7 @@ import { useRouter, useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { NotificationBell } from '@/components/NotificationBell';
 import { StoreSwitcher } from '@/components/StoreSwitcher';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { CurrentStoreProvider } from '@/lib/current-store';
 import { useStatutCompte } from '@/lib/use-statut-compte';
 import {
@@ -239,6 +240,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
           <div className="flex items-center gap-4">
             <StoreSwitcher />
             <NotificationBell />
+            <LanguageSwitcher />
           </div>
         </header>
 
