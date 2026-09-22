@@ -118,7 +118,7 @@ export function createApp(): Express {
     if (req.method === "OPTIONS") {
       return res.sendStatus(200);
     }
-    next();
+    return next();
   }, express.static(uploadsDir));
 
   // ===== API Routes =====

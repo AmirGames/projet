@@ -16,7 +16,6 @@ import {
 import { DriverPayoutService } from "../services/driver-payout.service";
 import { DeliveryProofService } from "../services/delivery-proof.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
-import { FileUploadService } from "../services/file-upload.service";
 import { z } from "zod";
 import fs from "fs";
 import { join } from "path";
@@ -843,9 +842,9 @@ router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next
     else if (ext === "pdf") contentType = "application/pdf";
 
     res.setHeader("Content-Type", contentType);
-    res.sendFile(fullPath);
+    return res.sendFile(fullPath);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
