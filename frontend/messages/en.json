@@ -939,5 +939,38 @@
     "paginationPage": "Page {page} of {totalPages}",
     "paginationPrev": "Previous",
     "paginationNext": "Next"
+  },
+  "superownerMembers": {
+    "loading": "Loading...",
+    "searchPlaceholder": "Search by name or email...",
+    "filters": "Filters",
+    "empty": "No members found",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "storeName": "Store Name",
+    "companyName": "Company",
+    "vehicleType": "Vehicle Type",
+    "joinDate": "Join Date",
+    "status": "Status",
+    "actions": "Actions",
+    "view": "View details",
+    "edit": "Edit",
+    "delete": "Delete",
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "suspended": "Suspended",
+      "closed": "Closed",
+      "inactive": "Inactive"
+    },
+    "clientsTitle": "Clients",
+    "clientsSubtitle": "Manage all clients on the platform",
+    "merchantsTitle": "Merchants",
+    "merchantsSubtitle": "Manage all merchants on the platform",
+    "deliveriesTitle": "Deliveries",
+    "deliveriesSubtitle": "Manage all delivery companies on the platform",
+    "driversTitle": "Drivers",
+    "driversSubtitle": "Manage all drivers on the platform"
   }
 }

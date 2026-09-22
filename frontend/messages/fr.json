@@ -939,5 +939,38 @@
     "paginationPage": "Page {page} sur {totalPages}",
     "paginationPrev": "Précédent",
     "paginationNext": "Suivant"
+  },
+  "superownerMembers": {
+    "loading": "Chargement...",
+    "searchPlaceholder": "Rechercher par nom ou email...",
+    "filters": "Filtres",
+    "empty": "Aucun membre trouvé",
+    "name": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "storeName": "Nom du magasin",
+    "companyName": "Entreprise",
+    "vehicleType": "Type de véhicule",
+    "joinDate": "Date d'adhésion",
+    "status": "Statut",
+    "actions": "Actions",
+    "view": "Voir détails",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "status": {
+      "all": "Tous",
+      "active": "Actif",
+      "suspended": "Suspendu",
+      "closed": "Fermé",
+      "inactive": "Inactif"
+    },
+    "clientsTitle": "Clients",
+    "clientsSubtitle": "Gérez tous les clients de la plateforme",
+    "merchantsTitle": "Commerçants",
+    "merchantsSubtitle": "Gérez tous les commerçants de la plateforme",
+    "deliveriesTitle": "Livreurs",
+    "deliveriesSubtitle": "Gérez toutes les entreprises de livraison de la plateforme",
+    "driversTitle": "Chauffeurs",
+    "driversSubtitle": "Gérez tous les chauffeurs de la plateforme"
   }
 }
