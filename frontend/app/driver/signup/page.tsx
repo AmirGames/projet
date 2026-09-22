@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Bike, Car, Truck } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -15,6 +16,7 @@ const VEHICULES = [
 
 export default function InscriptionLivreurPage() {
   const router = useRouter();
+  const t = useTranslations('driverSignup');
 
   const [formulaire, setFormulaire] = useState({
     name: '',
@@ -51,7 +53,7 @@ export default function InscriptionLivreurPage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || donnees.message || "Échec de l'inscription");
+        setErreur(donnees.error || donnees.message || t('signupError'));
         return;
       }
 
@@ -60,7 +62,7 @@ export default function InscriptionLivreurPage() {
       localStorage.setItem('accessToken', donnees.accessToken);
       router.push('/driver');
     } catch {
-      setErreur('Erreur de connexion au serveur');
+      setErreur(t('error'));
     } finally {
       setEnvoi(false);
     }

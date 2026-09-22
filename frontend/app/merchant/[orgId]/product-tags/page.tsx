@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Tag, Plus, Trash2, Edit2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { useCurrentStore } from "@/lib/current-store";
 
@@ -24,6 +25,7 @@ interface TagsResponse {
 }
 
 export default function ProductTagPage() {
+  const t = useTranslations('merchantProductTags');
   const [tags, setTags] = useState<ProductTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -131,7 +133,7 @@ export default function ProductTagPage() {
       if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
       fetchTags();
       closeModal();
-      setSuccess(editingId ? "Étiquette mise à jour" : "Étiquette créée");
+      setSuccess(editingId ? t('successUpdated') : t('successCreated'));
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur s'est produite");
@@ -139,7 +141,7 @@ export default function ProductTagPage() {
   };
 
   const deleteTag = async (tagId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette étiquette ?"))
+    if (!confirm(t('deleteConfirm')))
       return;
 
     try {
@@ -152,7 +154,7 @@ export default function ProductTagPage() {
 
       if (!res.ok) throw new Error("Erreur lors de la suppression");
       fetchTags();
-      setSuccess("Étiquette supprimée");
+      setSuccess(t('successDeleted'));
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur s'est produite");
