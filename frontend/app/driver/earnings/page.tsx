@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { ArrowLeft, Wallet, Package, Star, CalendarDays } from 'lucide-react';
 import { euro } from '@/lib/format';
@@ -31,6 +32,7 @@ interface Revenus {
 
 export default function RevenusLivreurPage() {
   const router = useRouter();
+  const t = useTranslations('driverEarnings');
 
   const [revenus, setRevenus] = useState<Revenus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -84,14 +86,14 @@ export default function RevenusLivreurPage() {
             href="/driver"
             className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-2"
           >
-            <ArrowLeft size={16} /> Retour au tableau de bord
+            <ArrowLeft size={16} /> {t('backToDashboard')}
           </Link>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Wallet size={28} className="text-green-500" />
-            Mes revenus
+            {t('title')}
           </h1>
           <p className="text-gray-400 mt-1">
-            La rémunération annoncée à l&apos;attribution de chaque course terminée
+            {t('subtitle')}
           </p>
         </div>
 
@@ -109,19 +111,19 @@ export default function RevenusLivreurPage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <p className="text-gray-400 text-sm mb-2">Aujourd&apos;hui</p>
+                <p className="text-gray-400 text-sm mb-2">{t('today')}</p>
                 <p className="text-3xl font-bold text-green-400">{euro(revenus.today)}</p>
               </div>
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <p className="text-gray-400 text-sm mb-2">Cette semaine</p>
+                <p className="text-gray-400 text-sm mb-2">{t('thisWeek')}</p>
                 <p className="text-3xl font-bold">{euro(revenus.week)}</p>
               </div>
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <p className="text-gray-400 text-sm mb-2">Ce mois-ci</p>
+                <p className="text-gray-400 text-sm mb-2">{t('thisMonth')}</p>
                 <p className="text-3xl font-bold">{euro(revenus.month)}</p>
               </div>
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <p className="text-gray-400 text-sm mb-2">Depuis le début</p>
+                <p className="text-gray-400 text-sm mb-2">{t('allTime')}</p>
                 <p className="text-3xl font-bold">{euro(revenus.total)}</p>
               </div>
             </div>
@@ -129,22 +131,22 @@ export default function RevenusLivreurPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-gray-400 text-sm">Courses livrées</p>
+                  <p className="text-gray-400 text-sm">{t('deliveriesCompleted')}</p>
                   <Package size={20} className="text-blue-500" />
                 </div>
                 <p className="text-3xl font-bold">{revenus.deliveryCount}</p>
               </div>
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-gray-400 text-sm">Note moyenne</p>
+                  <p className="text-gray-400 text-sm">{t('averageRating')}</p>
                   <Star size={20} className="text-yellow-500" />
                 </div>
                 {revenus.rating == null ? (
-                  <p className="text-gray-500 text-lg font-semibold mt-2">Pas encore noté</p>
+                  <p className="text-gray-500 text-lg font-semibold mt-2">{t('notRated')}</p>
                 ) : (
                   <p className="text-3xl font-bold">
                     {revenus.rating.toFixed(2).replace('.', ',')} / 5
-                    <span className="text-gray-500 text-sm font-normal"> · {revenus.avis} avis</span>
+                    <span className="text-gray-500 text-sm font-normal"> · {revenus.avis} {t('reviews')}</span>
                   </p>
                 )}
               </div>
@@ -153,22 +155,22 @@ export default function RevenusLivreurPage() {
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <CalendarDays size={20} className="text-orange-500" />
-                Détail des courses
+                {t('deliveryDetails')}
               </h2>
 
               {revenus.deliveries.length === 0 ? (
                 <p className="text-gray-400">
-                  Aucune course terminée pour le moment. Vos gains apparaîtront ici.
+                  {t('noDeliveries')}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="text-gray-400 border-b border-gray-700">
                       <tr>
-                        <th className="text-left py-2">Course</th>
-                        <th className="text-left py-2">Livrée le</th>
-                        <th className="text-right py-2">Montant commande</th>
-                        <th className="text-right py-2">Votre gain</th>
+                        <th className="text-left py-2">{t('order')}</th>
+                        <th className="text-left py-2">{t('deliveredOn')}</th>
+                        <th className="text-right py-2">{t('orderAmount')}</th>
+                        <th className="text-right py-2">{t('yourEarning')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700">
