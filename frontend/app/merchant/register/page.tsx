@@ -202,49 +202,49 @@ export default function MerchantRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Inscrivez votre Commerçant</h1>
-          <p className="text-gray-400">Créez votre compte et lancez votre site de commande en 5 minutes</p>
+          <h1 className="text-4xl font-bold text-slate-900 mb-2">Inscrivez votre Commerçant</h1>
+          <p className="text-slate-600">Créez votre compte et lancez votre site de commande en 5 minutes</p>
         </div>
 
         {/* Success Message */}
         {submitted && successMessage && (
-          <div className="mb-6 p-4 bg-green-600/20 border border-green-600/50 rounded-lg flex items-center gap-3">
-            <CheckCircle size={24} className="text-green-400" />
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+            <CheckCircle size={24} className="text-green-600" />
             <div>
-              <p className="font-semibold text-green-400">Succès!</p>
-              <p className="text-green-400/80 text-sm">{successMessage}</p>
+              <p className="font-semibold text-green-900">Succès!</p>
+              <p className="text-green-800 text-sm">{successMessage}</p>
             </div>
           </div>
         )}
 
         {/* Error Message */}
         {apiError && (
-          <div className="mb-6 p-4 bg-red-600/20 border border-red-600/50 rounded-lg flex items-center gap-3">
-            <AlertCircle size={24} className="text-red-400" />
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+            <AlertCircle size={24} className="text-red-600" />
             <div>
-              <p className="font-semibold text-red-400">Erreur</p>
-              <p className="text-red-400/80 text-sm">{apiError}</p>
+              <p className="font-semibold text-red-900">Erreur</p>
+              <p className="text-red-800 text-sm">{apiError}</p>
             </div>
           </div>
         )}
 
         {/* Registration Form */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-8">
+        <div className="bg-white border border-slate-200 rounded-3xl p-8">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Section 1: Information Commerciale */}
             <div>
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-sm">1</span>
+              <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-sm text-white">1</span>
                 Informations Commerciales
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Nom de l'Entreprise *
                   </label>
                   <input
@@ -252,23 +252,23 @@ export default function MerchantRegisterPage() {
                     name="businessName"
                     value={formData.businessName}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
-                      errors.businessName ? 'border-red-500' : 'border-gray-600'
+                    className={`w-full px-4 py-2 bg-slate-50 border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary ${
+                      errors.businessName ? 'border-red-500' : 'border-slate-200'
                     }`}
                     placeholder="Ex: Restaurant ACME"
                   />
-                  {errors.businessName && <p className="text-red-400 text-sm mt-1">{errors.businessName}</p>}
+                  {errors.businessName && <p className="text-red-600 text-sm mt-1">{errors.businessName}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Type de Commerce *
                   </label>
                   <select
                     name="businessType"
                     value={formData.businessType}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="RESTAURANT">Restaurant</option>
                     <option value="CAFE">Café</option>
@@ -280,7 +280,7 @@ export default function MerchantRegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Email Professionnel *
                   </label>
                   <input
@@ -288,16 +288,16 @@ export default function MerchantRegisterPage() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
-                      errors.email ? 'border-red-500' : 'border-gray-600'
+                    className={`w-full px-4 py-2 bg-slate-50 border rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary ${
+                      errors.email ? 'border-red-500' : 'border-slate-200'
                     }`}
                     placeholder="contact@example.com"
                   />
-                  {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
+                  {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Téléphone *
                   </label>
                   <input
@@ -310,11 +310,11 @@ export default function MerchantRegisterPage() {
                     }`}
                     placeholder="+33 6 12 34 56 78"
                   />
-                  {errors.phone && <p className="text-red-400 text-sm mt-1">{errors.phone}</p>}
+                  {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Description du Commerce *
                   </label>
                   <textarea
@@ -327,11 +327,11 @@ export default function MerchantRegisterPage() {
                     }`}
                     placeholder="Décrivez votre commerce, spécialités, etc..."
                   />
-                  {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description}</p>}
+                  {errors.description && <p className="text-red-600 text-sm mt-1">{errors.description}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Site Web (optionnel)
                   </label>
                   <input
@@ -339,7 +339,7 @@ export default function MerchantRegisterPage() {
                     name="website"
                     value={formData.website}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="https://example.com"
                   />
                 </div>
@@ -348,14 +348,14 @@ export default function MerchantRegisterPage() {
 
             {/* Section 2: Adresse */}
             <div>
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-sm">2</span>
+              <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-sm text-white">2</span>
                 Adresse
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Adresse *
                   </label>
                   <input
@@ -368,11 +368,11 @@ export default function MerchantRegisterPage() {
                     }`}
                     placeholder="123 Rue de la Paix"
                   />
-                  {errors.address && <p className="text-red-400 text-sm mt-1">{errors.address}</p>}
+                  {errors.address && <p className="text-red-600 text-sm mt-1">{errors.address}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Ville *
                   </label>
                   <input
@@ -385,11 +385,11 @@ export default function MerchantRegisterPage() {
                     }`}
                     placeholder="Paris"
                   />
-                  {errors.city && <p className="text-red-400 text-sm mt-1">{errors.city}</p>}
+                  {errors.city && <p className="text-red-600 text-sm mt-1">{errors.city}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Code Postal *
                   </label>
                   <input
@@ -402,21 +402,21 @@ export default function MerchantRegisterPage() {
                     }`}
                     placeholder="75001"
                   />
-                  {errors.postalCode && <p className="text-red-400 text-sm mt-1">{errors.postalCode}</p>}
+                  {errors.postalCode && <p className="text-red-600 text-sm mt-1">{errors.postalCode}</p>}
                 </div>
               </div>
             </div>
 
             {/* Section 3: Boutique */}
             <div>
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-sm">3</span>
+              <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-sm text-white">3</span>
                 Configuration de la Boutique
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Nom de la Boutique *
                   </label>
                   <input
@@ -429,15 +429,15 @@ export default function MerchantRegisterPage() {
                     }`}
                     placeholder="Ma Boutique"
                   />
-                  {errors.storeName && <p className="text-red-400 text-sm mt-1">{errors.storeName}</p>}
+                  {errors.storeName && <p className="text-red-600 text-sm mt-1">{errors.storeName}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     URL de la Boutique *
                   </label>
                   <div className="flex items-center">
-                    <span className="px-3 py-2 bg-gray-700 border border-gray-600 border-r-0 rounded-l-lg text-gray-400 text-sm">
+                    <span className="px-3 py-2 bg-slate-50 border border-slate-200 border-r-0 rounded-l-lg text-slate-600 text-sm">
                       app.local/store/
                     </span>
                     <input
@@ -451,25 +451,25 @@ export default function MerchantRegisterPage() {
                       placeholder="ma-boutique"
                     />
                   </div>
-                  {errors.storeSlug && <p className="text-red-400 text-sm mt-1">{errors.storeSlug}</p>}
+                  {errors.storeSlug && <p className="text-red-600 text-sm mt-1">{errors.storeSlug}</p>}
                 </div>
               </div>
 
-              <p className="text-gray-400 text-sm mt-2">
+              <p className="text-slate-600 text-sm mt-2">
                 💡 L'URL se génère automatiquement à partir du nom de la boutique. Elle ne peut contenir que des lettres minuscules, chiffres et tirets.
               </p>
             </div>
 
             {/* Section 4: Sécurité */}
             <div>
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-sm">4</span>
+              <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-sm text-white">4</span>
                 Sécurité
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Mot de Passe *
                   </label>
                   <input
@@ -482,11 +482,11 @@ export default function MerchantRegisterPage() {
                     }`}
                     placeholder="••••••••"
                   />
-                  {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
+                  {errors.password && <p className="text-red-600 text-sm mt-1">{errors.password}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Confirmer le Mot de Passe *
                   </label>
                   <input
@@ -499,11 +499,11 @@ export default function MerchantRegisterPage() {
                     }`}
                     placeholder="••••••••"
                   />
-                  {errors.confirmPassword && <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
+                  {errors.confirmPassword && <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>}
                 </div>
               </div>
 
-              <p className="text-gray-400 text-sm mt-2">
+              <p className="text-slate-600 text-sm mt-2">
                 🔒 Minimum 8 caractères. Utilisez une combinaison de lettres, chiffres et caractères spéciaux.
               </p>
             </div>
@@ -512,7 +512,7 @@ export default function MerchantRegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -525,9 +525,9 @@ export default function MerchantRegisterPage() {
             </button>
 
             {/* Sign In Link */}
-            <p className="text-center text-gray-400 text-sm">
+            <p className="text-center text-slate-600 text-sm">
               Déjà inscrit?{' '}
-              <a href="/login" className="text-red-400 hover:text-red-300 font-semibold">
+              <a href="/login" className="text-primary hover:text-primary-hover font-semibold transition">
                 Se connecter
               </a>
             </p>
@@ -535,8 +535,8 @@ export default function MerchantRegisterPage() {
         </div>
 
         {/* Info Box */}
-        <div className="mt-6 p-4 bg-blue-600/20 border border-blue-600/50 rounded-lg">
-          <p className="text-blue-400 text-sm">
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-blue-900 text-sm">
             ℹ️ <strong>Après inscription:</strong> Votre boutique en ligne sera créée automatiquement et accessible depuis votre tableau de bord. Vous pourrez immédiatement ajouter des produits et commencer à recevoir des commandes.
           </p>
         </div>

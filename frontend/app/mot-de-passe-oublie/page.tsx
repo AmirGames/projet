@@ -46,38 +46,38 @@ export default function MotDePasseOublie() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
+      <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg w-full max-w-md">
         {envoye ? (
           <div className="text-center space-y-4">
-            <MailCheck size={48} className="mx-auto text-green-400" />
-            <h1 className="text-2xl font-bold text-white">Regardez vos e-mails</h1>
-            <p className="text-gray-300">
-              Si un compte existe pour <strong className="text-white">{email}</strong>, un lien de
+            <MailCheck size={48} className="mx-auto text-primary" />
+            <h1 className="text-2xl font-bold text-slate-900">Regardez vos e-mails</h1>
+            <p className="text-slate-600">
+              Si un compte existe pour <strong className="text-slate-900">{email}</strong>, un lien de
               réinitialisation vient d&apos;y être envoyé.
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-slate-500">
               Le lien est valable une heure. Pensez à regarder dans les indésirables.
             </p>
             <Link
               href="/login"
-              className="inline-block mt-2 text-orange-400 hover:text-orange-300"
+              className="inline-block mt-2 text-primary hover:text-primary-hover font-medium transition"
             >
               Retour à la connexion
             </Link>
           </div>
         ) : (
           <>
-            <h1 className="text-3xl font-bold text-white mb-2 text-center">Mot de passe oublié</h1>
-            <p className="text-gray-400 text-center mb-6">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2 text-center">Mot de passe oublié</h1>
+            <p className="text-slate-600 text-center mb-6">
               Indiquez votre adresse, nous vous enverrons un lien pour en choisir un nouveau.
             </p>
 
-            {erreur && <div className="bg-red-600 text-white p-4 rounded-lg mb-4">{erreur}</div>}
+            {erreur && <div className="bg-red-50 border border-red-200 text-red-900 p-4 rounded-lg mb-4">{erreur}</div>}
 
             <form onSubmit={envoyer} className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-gray-300 mb-2">
+                <label htmlFor="email" className="block text-slate-700 font-medium mb-2">
                   Adresse e-mail
                 </label>
                 <input
@@ -85,7 +85,7 @@ export default function MotDePasseOublie() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="vous@exemple.fr"
                   required
                   autoFocus
@@ -95,14 +95,14 @@ export default function MotDePasseOublie() {
               <button
                 type="submit"
                 disabled={envoiEnCours}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
+                className="w-full bg-accent hover:bg-accent-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 transition"
               >
                 {envoiEnCours ? 'Envoi...' : 'Envoyer le lien'}
               </button>
             </form>
 
             <div className="mt-6 text-center">
-              <Link href="/login" className="text-gray-400 hover:text-gray-300">
+              <Link href="/login" className="text-slate-600 hover:text-primary font-medium transition">
                 Retour à la connexion
               </Link>
             </div>

@@ -45,38 +45,38 @@ export default function DriverLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-orange-600 to-red-600 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="bg-gray-900 rounded-lg shadow-xl p-8">
+        <div className="bg-white border border-slate-200 rounded-3xl shadow-lg p-8">
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-accent rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xl">🚗</span>
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-white text-center mb-2">Espace Livreur</h1>
-          <p className="text-gray-400 text-center mb-8">Connectez-vous pour gérer vos livraisons</p>
+          <h1 className="text-2xl font-bold text-slate-900 text-center mb-2">Espace Livreur</h1>
+          <p className="text-slate-600 text-center mb-8">Connectez-vous pour gérer vos livraisons</p>
 
           {error && (
-            <div className="bg-red-900 border border-red-700 rounded-lg p-4 mb-6 flex gap-3">
-              <AlertCircle size={20} className="text-red-400 flex-shrink-0" />
-              <p className="text-red-200 text-sm">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex gap-3">
+              <AlertCircle size={20} className="text-red-600 flex-shrink-0" />
+              <p className="text-red-900 text-sm">{error}</p>
             </div>
           )}
 
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email */}
             <div>
-              <label className="block text-gray-300 text-sm font-semibold mb-2">Email</label>
+              <label className="block text-slate-700 text-sm font-semibold mb-2">Email</label>
               <div className="relative">
-                <Mail size={18} className="absolute left-3 top-3 text-gray-500" />
+                <Mail size={18} className="absolute left-3 top-3 text-slate-400" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="votre@email.com"
-                  className="w-full pl-10 pr-4 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>
@@ -84,15 +84,15 @@ export default function DriverLoginPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-gray-300 text-sm font-semibold mb-2">Mot de passe</label>
+              <label className="block text-slate-700 text-sm font-semibold mb-2">Mot de passe</label>
               <div className="relative">
-                <Lock size={18} className="absolute left-3 top-3 text-gray-500" />
+                <Lock size={18} className="absolute left-3 top-3 text-slate-400" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>
@@ -102,22 +102,22 @@ export default function DriverLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-3 rounded-lg transition"
+              className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-bold py-3 rounded-lg transition"
             >
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
 
           {/* Footer */}
-          <p className="text-gray-400 text-center text-sm mt-8">
+          <p className="text-slate-600 text-center text-sm mt-8">
             Pas encore inscrit ?{' '}
-            <Link href="/driver/signup" className="text-orange-500 hover:text-orange-400">
+            <Link href="/driver/signup" className="text-primary hover:text-primary-hover font-medium transition">
               S'inscrire ici
             </Link>
           </p>
 
-          <p className="text-gray-500 text-center text-xs mt-6 border-t border-gray-700 pt-6">
-            Besoin d'aide ? <Link href="/" className="text-orange-500">Contactez le support</Link>
+          <p className="text-slate-500 text-center text-xs mt-6 border-t border-slate-200 pt-6">
+            Besoin d'aide ? <Link href="/" className="text-primary hover:text-primary-hover font-medium transition">Contactez le support</Link>
           </p>
         </div>
       </div>

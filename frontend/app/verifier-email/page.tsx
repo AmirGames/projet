@@ -53,8 +53,8 @@ function Confirmation() {
   if (etat === 'en-cours') {
     return (
       <div className="text-center space-y-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mx-auto" />
-        <p className="text-gray-400">Confirmation en cours...</p>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto" />
+        <p className="text-slate-600">Confirmation en cours...</p>
       </div>
     );
   }
@@ -62,16 +62,16 @@ function Confirmation() {
   if (etat === 'confirme') {
     return (
       <div className="text-center space-y-4">
-        <CheckCircle2 size={48} className="mx-auto text-green-400" />
-        <h1 className="text-2xl font-bold text-white">Adresse confirmée</h1>
+        <CheckCircle2 size={48} className="mx-auto text-primary" />
+        <h1 className="text-2xl font-bold text-slate-900">Adresse confirmée</h1>
         {message && (
-          <p className="text-gray-300">
-            <strong className="text-white">{message}</strong> est bien la vôtre.
+          <p className="text-slate-600">
+            <strong className="text-slate-900">{message}</strong> est bien la vôtre.
           </p>
         )}
         <Link
           href="/login"
-          className="inline-block bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg"
+          className="inline-block bg-accent hover:bg-accent-hover text-white font-bold py-2 px-6 rounded-full transition"
         >
           Se connecter
         </Link>
@@ -81,14 +81,14 @@ function Confirmation() {
 
   return (
     <div className="text-center space-y-4">
-      <XCircle size={48} className="mx-auto text-red-400" />
-      <h1 className="text-2xl font-bold text-white">Confirmation impossible</h1>
-      <p className="text-gray-300">{message}</p>
-      <p className="text-sm text-gray-500">
+      <XCircle size={48} className="mx-auto text-red-500" />
+      <h1 className="text-2xl font-bold text-slate-900">Confirmation impossible</h1>
+      <p className="text-slate-600">{message}</p>
+      <p className="text-sm text-slate-500">
         Un lien de confirmation expire au bout de 24 heures. Connectez-vous pour en demander un
         nouveau.
       </p>
-      <Link href="/login" className="inline-block text-orange-400 hover:text-orange-300">
+      <Link href="/login" className="inline-block text-primary hover:text-primary-hover font-medium transition">
         Retour à la connexion
       </Link>
     </div>
@@ -97,10 +97,10 @@ function Confirmation() {
 
 export default function VerifierEmail() {
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
+      <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg w-full max-w-md">
         {/* useSearchParams impose une frontière de suspense au rendu statique. */}
-        <Suspense fallback={<p className="text-center text-gray-400">Chargement...</p>}>
+        <Suspense fallback={<p className="text-center text-slate-600">Chargement...</p>}>
           <Confirmation />
         </Suspense>
       </div>
