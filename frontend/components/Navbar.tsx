@@ -41,8 +41,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
-            <LanguageSwitcher />
+          <div className="hidden md:flex items-center gap-6 flex-1">
             <Link href="/" className="text-slate-700 hover:text-primary font-medium transition">
               Accueil
             </Link>
@@ -80,21 +79,21 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 hover:bg-slate-100 text-slate-900 rounded-lg"
-          >
-            <Menu size={24} />
-          </button>
+          {/* Right Side: Language Switcher + Mobile Menu Button */}
+          <div className="flex items-center gap-4 ml-auto">
+            <LanguageSwitcher />
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 hover:bg-slate-100 text-slate-900 rounded-lg"
+            >
+              <Menu size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="md:hidden pb-4 space-y-2">
-            <div className="px-4 py-2">
-              <LanguageSwitcher />
-            </div>
             <Link
               href="/"
               className="block px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-lg font-medium"
