@@ -37,11 +37,11 @@ export default function ExportsPage() {
         downloadFile([data], `stats-${new Date().toISOString().split('T')[0]}`, format);
       }
 
-      setMessage('✅ Fichier exporté avec succès!');
+      setMessage(t('success'));
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Erreur:', error);
-      setMessage('❌ Erreur lors de l\'export');
+      setMessage(t('error'));
       setTimeout(() => setMessage(''), 3000);
     } finally {
       setLoading('');
@@ -88,8 +88,8 @@ export default function ExportsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Export de données</h1>
-        <p className="text-gray-400 mt-1">Télécharger les données du système</p>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
       </div>
 
       {/* Message */}
