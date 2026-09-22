@@ -1981,5 +1981,37 @@
     "actionsColumn": "Actions",
     "emptyState": "Aucun produit trouvé",
     "productCount": "{count} produits"
+  },
+  "addressAutocomplete": {
+    "placeholder": "Commencez à saisir une adresse...",
+    "suggestionsUnavailable": "Suggestions indisponibles — saisissez l'adresse manuellement."
+  },
+  "carteTrajet": {
+    "commerce": "Le commerce",
+    "yourAddress": "Votre adresse",
+    "driver": "Le livreur"
+  },
+  "carteZones": {
+    "yourStore": "Votre boutique — déplacez-la pour la situer",
+    "dragRadius": "Tirez pour régler le rayon"
+  },
+  "declinaisonsProduit": {
+    "actionRefused": "Action refusée",
+    "serverError": "Le serveur ne répond pas",
+    "title": "Déclinaisons",
+    "questionLabel": "Question posée au client",
+    "questionPlaceholder": "Type de pâtes, Taille…",
+    "saveLabel": "Enregistrer l'intitulé",
+    "saveTitle": "Enregistrer l'intitulé",
+    "helperText": "Sans elle, le client voit des choix sans savoir ce qu'il choisit.",
+    "depleted": "Épuiser",
+    "restore": "Remettre",
+    "newVariantLabel": "Nouvelle déclinaison",
+    "newVariantPlaceholder": "Penne",
+    "priceLabel": "Prix",
+    "addLabel": "Ajouter la déclinaison",
+    "addButton": "Ajouter",
+    "priceHelper": "Un prix laissé vide reprend celui du plat ({price}). Dès qu'une déclinaison existe, le client doit en choisir une pour commander.",
+    "collapse": "Replier"
   }
 }

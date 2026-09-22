@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { MapPin } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -37,16 +38,20 @@ export function AddressAutocomplete({
   value,
   onChange,
   onSelect,
-  placeholder = 'Commencez à saisir une adresse...',
+  placeholder,
   className = '',
   required,
   id,
 }: Props) {
+  const t = useTranslations('addressAutocomplete');
   const [suggestions, setSuggestions] = useState<AdresseChoisie[]>([]);
   const [ouvert, setOuvert] = useState(false);
   const [chargement, setChargement] = useState(false);
   const [indiceActif, setIndiceActif] = useState(-1);
   const [serviceIndisponible, setServiceIndisponible] = useState(false);
+
+  // Utiliser la traduction si pas de placeholder fourni
+  const placeholderValue = placeholder ?? t('placeholder');
 
   const conteneur = useRef<HTMLDivElement>(null);
   // Une sélection ne doit pas relancer une recherche sur le texte qu'elle vient
@@ -138,7 +143,7 @@ export function AddressAutocomplete({
         type="text"
         value={value}
         required={required}
-        placeholder={placeholder}
+        placeholder={placeholderValue}
         autoComplete="off"
         onChange={(e) => {
           onChange(e.target.value);
@@ -190,7 +195,7 @@ export function AddressAutocomplete({
 
       {serviceIndisponible && value.trim().length >= 3 && (
         <p className="text-xs text-gray-500 mt-1">
-          Suggestions indisponibles — saisissez l&apos;adresse manuellement.
+          {t('suggestionsUnavailable')}
         </p>
       )}
     </div>

@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { Circle, Polygon, Polyline, CircleMarker, Map as CarteLeaflet, Marker } from 'leaflet';
 
 import 'leaflet/dist/leaflet.css';
@@ -94,6 +95,7 @@ export function CarteZones({
   couleurDessin = '#f59e0b',
   hauteur = 560,
 }: Props) {
+  const t = useTranslations('carteZones');
   const conteneur = useRef<HTMLDivElement>(null);
   const carte = useRef<CarteLeaflet | null>(null);
   const boutique = useRef<Marker | null>(null);
@@ -179,7 +181,7 @@ export function CarteZones({
         // d'adresses a mal placée, ou pas placée du tout.
         draggable: !!rappels.current.onPosition,
         icon: L.divIcon({ html: PASTILLE, className: '', iconSize: [18, 18], iconAnchor: [9, 9] }),
-        title: 'Votre boutique — déplacez-la pour la situer',
+        title: t('yourStore'),
       }).addTo(carte.current);
 
       boutique.current.on('dragend', () => {
@@ -321,7 +323,7 @@ export function CarteZones({
       poignee.current = L.marker(positionPoignee, {
         draggable: true,
         icon: L.divIcon({ html: POIGNEE, className: '', iconSize: [14, 14], iconAnchor: [7, 7] }),
-        title: 'Tirez pour régler le rayon',
+        title: t('dragRadius'),
       }).addTo(carte.current);
 
       // Le rayon suit la poignée pendant qu'on la tire, et non au relâcher :

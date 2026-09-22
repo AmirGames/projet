@@ -1981,5 +1981,37 @@
     "actionsColumn": "Actions",
     "emptyState": "No products found",
     "productCount": "{count} products"
+  },
+  "addressAutocomplete": {
+    "placeholder": "Start typing an address...",
+    "suggestionsUnavailable": "Suggestions unavailable — enter the address manually."
+  },
+  "carteTrajet": {
+    "commerce": "Store",
+    "yourAddress": "Your address",
+    "driver": "Driver"
+  },
+  "carteZones": {
+    "yourStore": "Your store — drag to reposition",
+    "dragRadius": "Drag to adjust radius"
+  },
+  "declinaisonsProduit": {
+    "actionRefused": "Action refused",
+    "serverError": "Server is not responding",
+    "title": "Variants",
+    "questionLabel": "Customer question",
+    "questionPlaceholder": "Pasta type, Size…",
+    "saveLabel": "Save label",
+    "saveTitle": "Save label",
+    "helperText": "Without it, customers see choices without knowing what they're choosing.",
+    "depleted": "Mark out",
+    "restore": "Restore",
+    "newVariantLabel": "New variant",
+    "newVariantPlaceholder": "Penne",
+    "priceLabel": "Price",
+    "addLabel": "Add variant",
+    "addButton": "Add",
+    "priceHelper": "Leave price empty to use dish price ({price}). Once a variant exists, customers must choose one to order.",
+    "collapse": "Collapse"
   }
 }

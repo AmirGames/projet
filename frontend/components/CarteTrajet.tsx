@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { Map as CarteLeaflet, Marker, Polyline } from 'leaflet';
 
 import 'leaflet/dist/leaflet.css';
@@ -53,6 +54,7 @@ const MAISON = pastille('#16a34a', '🏠');
 const LIVREUR = pastille('#ea580c', '🛵');
 
 export function CarteTrajet({ retrait, destination, livreur, livree, hauteur = 260 }: Props) {
+  const t = useTranslations('carteTrajet');
   const conteneur = useRef<HTMLDivElement>(null);
   const carte = useRef<CarteLeaflet | null>(null);
   const leaflet = useRef<typeof import('leaflet') | null>(null);
@@ -142,12 +144,12 @@ export function CarteTrajet({ retrait, destination, livreur, livree, hauteur = 2
         .addTo(carte.current!);
     };
 
-    poser('retrait', retrait, COMMERCE, 'Le commerce');
-    poser('destination', destination, MAISON, 'Votre adresse');
+    poser('retrait', retrait, COMMERCE, t('commerce'));
+    poser('destination', destination, MAISON, t('yourAddress'));
     // Une fois livrée, la pastille du livreur n'a plus rien à montrer : elle
     // resterait figée sur sa dernière position, comme s'il était encore en
     // route.
-    poser('livreur', livree ? null : livreur, LIVREUR, 'Le livreur');
+    poser('livreur', livree ? null : livreur, LIVREUR, t('driver'));
 
     // Deux traits plutôt qu'un : ce qui est fait est plein, ce qui reste est
     // pointillé. Sans livreur, le trajet entier reste à faire.
