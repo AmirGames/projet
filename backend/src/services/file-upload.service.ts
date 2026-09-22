@@ -1,8 +1,12 @@
 import { v2 as cloudinary } from "cloudinary";
+import { promises as fs } from "fs";
+import { join } from "path";
 import { getEnv } from "../config/env";
 import { logger } from "../config/logger";
 
 const env = getEnv();
+const UPLOADS_DIR = join(process.cwd(), "uploads");
+const API_URL = env.API_URL || "http://localhost:3001";
 
 if (
   env.CLOUDINARY_CLOUD_NAME &&
@@ -16,8 +20,16 @@ if (
   });
 }
 
+async function ensureUploadsDir() {
+  try {
+    await fs.mkdir(UPLOADS_DIR, { recursive: true });
+  } catch (error) {
+    logger.error("Failed to create uploads directory", { error });
+  }
+}
+
 export class FileUploadService {
-  static isConfigured(): boolean {
+  static isCloudinaryConfigured(): boolean {
     return !!(
       env.CLOUDINARY_CLOUD_NAME &&
       env.CLOUDINARY_API_KEY &&
@@ -30,10 +42,18 @@ export class FileUploadService {
     filename: string,
     folder: "drivers" | "merchants"
   ): Promise<{ url: string; publicId: string }> {
-    if (!this.isConfigured()) {
-      throw new Error("Cloudinary is not configured");
+    if (this.isCloudinaryConfigured()) {
+      return this.uploadToCloudinary(buffer, filename, folder);
+    } else {
+      return this.uploadLocal(buffer, filename, folder);
     }
+  }
 
+  private static async uploadToCloudinary(
+    buffer: Buffer,
+    filename: string,
+    folder: "drivers" | "merchants"
+  ): Promise<{ url: string; publicId: string }> {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
@@ -62,18 +82,53 @@ export class FileUploadService {
     });
   }
 
-  static async deleteDocument(publicId: string): Promise<void> {
-    if (!this.isConfigured()) {
-      return;
-    }
+  private static async uploadLocal(
+    buffer: Buffer,
+    filename: string,
+    folder: "drivers" | "merchants"
+  ): Promise<{ url: string; publicId: string }> {
+    await ensureUploadsDir();
+
+    const ext = filename.split(".").pop() || "bin";
+    const safeFilename = `${folder}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const relativePath = join(folder, safeFilename);
+    const fullPath = join(UPLOADS_DIR, relativePath);
 
     try {
-      await cloudinary.uploader.destroy(publicId);
+      await fs.mkdir(join(UPLOADS_DIR, folder), { recursive: true });
+      await fs.writeFile(fullPath, buffer);
+
+      const url = `${API_URL}/uploads/${relativePath}`;
+      logger.info("Local file uploaded", { path: relativePath });
+
+      return {
+        url,
+        publicId: safeFilename,
+      };
     } catch (error) {
-      logger.warn("Failed to delete document from Cloudinary", {
-        publicId,
-        error,
-      });
+      logger.error("Failed to upload file locally", { error });
+      throw error;
+    }
+  }
+
+  static async deleteDocument(publicId: string): Promise<void> {
+    if (this.isCloudinaryConfigured()) {
+      try {
+        await cloudinary.uploader.destroy(publicId);
+      } catch (error) {
+        logger.warn("Failed to delete document from Cloudinary", {
+          publicId,
+          error,
+        });
+      }
+    } else {
+      try {
+        const fullPath = join(UPLOADS_DIR, publicId);
+        await fs.unlink(fullPath);
+        logger.info("Local file deleted", { publicId });
+      } catch (error) {
+        logger.warn("Failed to delete local file", { publicId, error });
+      }
     }
   }
 }

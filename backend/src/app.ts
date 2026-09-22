@@ -1,6 +1,7 @@
 import express, { Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import { join } from "path";
 import { getEnv } from "./config/env";
 import { requestLogger } from "./config/logger";
 import { middlewareOrigine } from "./config/origine";
@@ -106,6 +107,10 @@ export function createApp(): Express {
   // toutes les routes, et non route par route : deux routeurs sur vingt-cinq
   // faisaient le contrôle.
   app.use(cloisonnement);
+
+  // ===== Static files (uploads) =====
+  const uploadsDir = join(process.cwd(), "uploads");
+  app.use("/uploads", express.static(uploadsDir));
 
   // ===== API Routes =====
   app.use("/api/auth", authRouter);
