@@ -51,6 +51,14 @@ export default function DeliveryTrackingPage() {
   const steps = ['Aller au restaurant', 'Récupérer la commande', 'Aller au client', 'Livrer & Confirmer'];
 
   useEffect(() => {
+    // Vérifier l'authentification avant de charger les données
+    const token = localStorage.getItem('driverToken');
+    if (!token) {
+      router.push('/driver/login');
+    }
+  }, [router]);
+
+  useEffect(() => {
     loadDeliveryData();
     startLocationTracking();
   }, [deliveryId]);
