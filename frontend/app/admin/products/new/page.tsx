@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 
 export default function NewProductPage() {
+  const t = useTranslations('adminProductNew');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -41,7 +43,7 @@ export default function NewProductPage() {
 
       router.push('/admin/products');
     } catch (error) {
-      console.error('Erreur création produit:', error);
+      console.error(t('error'), error);
     } finally {
       setLoading(false);
     }
@@ -55,8 +57,8 @@ export default function NewProductPage() {
           <ArrowLeft size={20} />
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">Nouveau produit</h1>
-          <p className="text-gray-400 mt-1">Créer un nouveau produit pour votre boutique</p>
+          <h1 className="text-3xl font-bold">{t('title')}</h1>
+          <p className="text-gray-400 mt-1">{t('subtitle')}</p>
         </div>
       </div>
 
@@ -64,26 +66,26 @@ export default function NewProductPage() {
       <form onSubmit={handleSubmit} className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Nom du produit</label>
+            <label className="block text-sm font-medium mb-2">{t('productNameLabel')}</label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Ex: Pizza Margherita"
+              placeholder={t('productNamePlaceholder')}
               required
               className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">SKU</label>
+            <label className="block text-sm font-medium mb-2">{t('skuLabel')}</label>
             <input
               type="text"
               name="sku"
               value={formData.sku}
               onChange={handleChange}
-              placeholder="Ex: PIZZA-MAR-001"
+              placeholder={t('skuPlaceholder')}
               required
               className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
             />
@@ -91,12 +93,12 @@ export default function NewProductPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Description</label>
+          <label className="block text-sm font-medium mb-2">{t('descriptionLabel')}</label>
           <textarea
             name="description"
             value={formData.description}
             onChange={handleChange}
-            placeholder="Description du produit"
+            placeholder={t('descriptionPlaceholder')}
             rows={4}
             className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
           />
@@ -104,13 +106,13 @@ export default function NewProductPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Prix (€)</label>
+            <label className="block text-sm font-medium mb-2">{t('priceLabel')}</label>
             <input
               type="number"
               name="price"
               value={formData.price}
               onChange={handleChange}
-              placeholder="0.00"
+              placeholder={t('pricePlaceholder')}
               step="0.01"
               required
               className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
@@ -118,13 +120,13 @@ export default function NewProductPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Stock</label>
+            <label className="block text-sm font-medium mb-2">{t('stockLabel')}</label>
             <input
               type="number"
               name="stock"
               value={formData.stock}
               onChange={handleChange}
-              placeholder="0"
+              placeholder={t('stockPlaceholder')}
               required
               className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
             />
@@ -133,7 +135,7 @@ export default function NewProductPage() {
           <div>
             <label className="block text-sm font-medium mb-2">&nbsp;</label>
             <div className="text-sm text-gray-400 py-2 px-4 bg-gray-700 rounded-lg">
-              Statut: ACTIVE
+              {t('statusLabel')}
             </div>
           </div>
         </div>
@@ -144,14 +146,14 @@ export default function NewProductPage() {
             href="/admin/products"
             className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
           >
-            Annuler
+            {t('cancelButton')}
           </Link>
           <button
             type="submit"
             disabled={loading}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors font-medium"
           >
-            {loading ? 'Création...' : 'Créer le produit'}
+            {loading ? t('creating') : t('submitButton')}
           </button>
         </div>
       </form>

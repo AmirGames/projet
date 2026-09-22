@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Settings, AlertTriangle } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -15,6 +16,7 @@ interface SystemConfig {
 }
 
 export default function AdminSettingsPage() {
+  const t = useTranslations("adminSystemSettings");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -39,7 +41,7 @@ export default function AdminSettingsPage() {
         },
       });
 
-      if (!res.ok) throw new Error("Erreur lors du chargement de la config");
+      if (!res.ok) throw new Error(t("loadError"));
       const data: SystemConfig = await res.json();
       setFormData({
         platformFeePercent: data.platformFeePercent || 5,
@@ -50,7 +52,7 @@ export default function AdminSettingsPage() {
       });
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : t("error"));
     } finally {
       setLoading(false);
     }
@@ -88,12 +90,12 @@ export default function AdminSettingsPage() {
         }),
       });
 
-      if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
-      setSuccess("Configuration mise à jour avec succès");
+      if (!res.ok) throw new Error(t("saveError"));
+      setSuccess(t("successMessage"));
       setError("");
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : t("error"));
     } finally {
       setSaving(false);
     }
@@ -112,10 +114,10 @@ export default function AdminSettingsPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <Settings className="w-8 h-8" />
-          Configuration Système
+          {t("title")}
         </h1>
         <p className="text-gray-400 mt-2">
-          Gérez les paramètres globaux de la plateforme
+          {t("subtitle")}
         </p>
       </div>
 
@@ -135,9 +137,9 @@ export default function AdminSettingsPage() {
         <div className="p-4 bg-yellow-500/10 text-yellow-400 rounded-lg border border-yellow-500/20 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold">Mode Maintenance Activé</p>
+            <p className="font-semibold">{t("maintenanceActiveTitle")}</p>
             <p className="text-sm mt-1">
-              La plateforme est actuellement en mode maintenance
+              {t("maintenanceActiveDesc")}
             </p>
           </div>
         </div>
@@ -146,12 +148,12 @@ export default function AdminSettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700/50 space-y-4">
           <h2 className="text-lg font-semibold text-white">
-            Paramètres Financiers
+            {t("financialSection")}
           </h2>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Commission Plateforme (%)
+              {t("platformFeeLabel")}
             </label>
             <input
               type="number"
@@ -164,13 +166,13 @@ export default function AdminSettingsPage() {
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Pourcentage prélevé sur chaque commande
+              {t("platformFeeDesc")}
             </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Montant Minimum Commande (€)
+              {t("minOrderLabel")}
             </label>
             <input
               type="number"
@@ -185,7 +187,7 @@ export default function AdminSettingsPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Montant Maximum Commande (€)
+              {t("maxOrderLabel")}
             </label>
             <input
               type="number"
@@ -201,7 +203,7 @@ export default function AdminSettingsPage() {
 
         <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700/50 space-y-4">
           <h2 className="text-lg font-semibold text-white">
-            Mode Maintenance
+            {t("maintenanceSection")}
           </h2>
 
           <div className="flex items-center gap-4">
@@ -213,20 +215,20 @@ export default function AdminSettingsPage() {
               className="w-5 h-5 bg-gray-700 border border-gray-600 rounded cursor-pointer"
             />
             <label className="text-sm text-gray-300">
-              Activer le mode maintenance
+              {t("maintenanceModeLabel")}
             </label>
           </div>
 
           {formData.maintenanceMode && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Message de Maintenance
+                {t("maintenanceMessageLabel")}
               </label>
               <textarea
                 name="maintenanceMessage"
                 value={formData.maintenanceMessage}
                 onChange={handleInputChange}
-                placeholder="Message affiché aux utilisateurs"
+                placeholder={t("maintenanceMessagePlaceholder")}
                 rows={3}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
               />
@@ -241,14 +243,14 @@ export default function AdminSettingsPage() {
           disabled={saving}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition font-medium"
         >
-          {saving ? "Enregistrement..." : "Enregistrer"}
+          {saving ? t("saving") : t("save")}
         </button>
         <button
           onClick={fetchConfig}
           disabled={loading}
           className="px-6 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition font-medium"
         >
-          Annuler
+          {t("cancel")}
         </button>
       </div>
     </div>
