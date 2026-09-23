@@ -621,6 +621,10 @@ router.get("/system-config", authMiddleware, isSuperOwner, async (_req: Request,
         maxOrderAmount: Number(config.maxOrderAmount),
         maintenanceMode: config.maintenanceMode,
         maintenanceMessage: config.maintenanceMessage || "",
+        driverMaxRadiusKm: config.driverMaxRadiusKm,
+        driverOfferSeconds: config.driverOfferSeconds,
+        driverBaseFee: Number(config.driverBaseFee),
+        driverPerKmFee: Number(config.driverPerKmFee),
       },
     });
   } catch (err) {
@@ -1146,6 +1150,11 @@ router.put("/system-config", authMiddleware, isSuperOwner, async (req: Request, 
       maxOrderAmount: z.number().min(0).optional(),
       maintenanceMode: z.boolean().optional(),
       maintenanceMessage: z.string().optional(),
+      // Attribution des courses aux livreurs
+      driverMaxRadiusKm: z.number().min(1).max(50).optional(),
+      driverOfferSeconds: z.number().int().min(10).max(600).optional(),
+      driverBaseFee: z.number().min(0).optional(),
+      driverPerKmFee: z.number().min(0).optional(),
     });
     const body = schema.parse(req.body);
 
@@ -1178,6 +1187,10 @@ router.put("/system-config", authMiddleware, isSuperOwner, async (req: Request, 
         maxOrderAmount: Number(misAJour.maxOrderAmount),
         maintenanceMode: misAJour.maintenanceMode,
         maintenanceMessage: misAJour.maintenanceMessage || "",
+        driverMaxRadiusKm: misAJour.driverMaxRadiusKm,
+        driverOfferSeconds: misAJour.driverOfferSeconds,
+        driverBaseFee: Number(misAJour.driverBaseFee),
+        driverPerKmFee: Number(misAJour.driverPerKmFee),
       },
     });
   } catch (err) {

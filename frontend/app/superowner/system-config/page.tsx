@@ -26,6 +26,10 @@ interface Configuration {
   maxOrderAmount: number;
   maintenanceMode: boolean;
   maintenanceMessage: string;
+  driverMaxRadiusKm: number;
+  driverOfferSeconds: number;
+  driverBaseFee: number;
+  driverPerKmFee: number;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -47,6 +51,10 @@ export default function SystemConfigPage() {
     maxOrderAmount: '',
     maintenanceMode: false,
     maintenanceMessage: '',
+    driverMaxRadiusKm: '',
+    driverOfferSeconds: '',
+    driverBaseFee: '',
+    driverPerKmFee: '',
   });
 
   const fetchConfig = useCallback(async () => {
@@ -74,6 +82,10 @@ export default function SystemConfigPage() {
         maxOrderAmount: String(c.maxOrderAmount ?? ''),
         maintenanceMode: !!c.maintenanceMode,
         maintenanceMessage: c.maintenanceMessage || '',
+        driverMaxRadiusKm: String(c.driverMaxRadiusKm ?? ''),
+        driverOfferSeconds: String(c.driverOfferSeconds ?? ''),
+        driverBaseFee: String(c.driverBaseFee ?? ''),
+        driverPerKmFee: String(c.driverPerKmFee ?? ''),
       });
       setError('');
     } catch {
@@ -102,6 +114,10 @@ export default function SystemConfigPage() {
           maxOrderAmount: Number(formulaire.maxOrderAmount),
           maintenanceMode: formulaire.maintenanceMode,
           maintenanceMessage: formulaire.maintenanceMessage,
+          driverMaxRadiusKm: Number(formulaire.driverMaxRadiusKm),
+          driverOfferSeconds: Math.round(Number(formulaire.driverOfferSeconds)),
+          driverBaseFee: Number(formulaire.driverBaseFee),
+          driverPerKmFee: Number(formulaire.driverPerKmFee),
         }),
       });
 
@@ -225,6 +241,62 @@ export default function SystemConfigPage() {
                   onChange={(e) => setFormulaire({ ...formulaire, maxOrderAmount: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                 />
+              </div>
+            </div>
+
+            {/* Attribution des courses : ces réglages existaient en base sans
+                aucun écran pour les changer, le rayon restait bloqué à 8 km. */}
+            <div className="border-t border-gray-700 pt-4 space-y-3">
+              <h3 className="text-lg font-semibold text-white">Livraison et livreurs</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Rayon de recherche des livreurs (km)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="1" max="50"
+                  value={formulaire.driverMaxRadiusKm}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverMaxRadiusKm: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Distance maximale boutique ↔ livreur pour proposer une course</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Délai d'acceptation (secondes)</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="10" max="600"
+                  value={formulaire.driverOfferSeconds}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverOfferSeconds: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Temps laissé au livreur avant de passer au suivant</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Rémunération de base (€)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={formulaire.driverBaseFee}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverBaseFee: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Montant fixe par course</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Rémunération par km (€)</label>
+                <input
+                  type="number"
+                  step="0.05"
+                  min="0"
+                  value={formulaire.driverPerKmFee}
+                  onChange={(e) => setFormulaire({ ...formulaire, driverPerKmFee: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Ajouté pour chaque km</p>
+              </div>
               </div>
             </div>
 
