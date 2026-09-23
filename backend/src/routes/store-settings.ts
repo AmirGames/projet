@@ -27,6 +27,10 @@ const updateSettingsSchema = z.object({
     reviewNotifications: z.boolean().optional(),
     emailNotifications: z.boolean().optional(),
   }).optional(),
+  delivery: z.object({
+    useOwnDelivery: z.boolean().optional(),
+    maxDeliveryRadius: z.number().min(1).max(50).optional(),
+  }).optional(),
   // Ce que vend ce commerce, et ce qu'on y mange.
   businessType: z.string().max(40).optional(),
   cuisineType: z.string().max(40).nullable().optional(),

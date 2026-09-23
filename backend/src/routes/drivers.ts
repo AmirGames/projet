@@ -889,4 +889,81 @@ router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next
   }
 });
 
+// GET /drivers/available - Get available delivery drivers within radius
+router.get("/available", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const storeId = req.query.storeId as string;
+    const radius = Math.min(parseInt(req.query.radius as string) || 8, 50);
+
+    if (!storeId) {
+      throw new ApiError(400, "storeId est requis", "STORE_ID_REQUIRED");
+    }
+
+    const store = await db.store.findUnique({
+      where: { id: storeId },
+      select: {
+        id: true,
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    if (!store || store.latitude == null || store.longitude == null) {
+      throw new ApiError(404, "Boutique ou coordonnées introuvables", "STORE_NOT_FOUND");
+    }
+
+    const drivers = await db.driver.findMany({
+      where: {
+        latitude: { not: null },
+        longitude: { not: null },
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+      const R = 6371;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    const availableDrivers = drivers
+      .map((driver) => ({
+        id: driver.id,
+        name: driver.name,
+        phone: driver.phone,
+        distance: calculateDistance(
+          store.latitude as number,
+          store.longitude as number,
+          driver.latitude as number,
+          driver.longitude as number
+        ),
+      }))
+      .filter((driver) => driver.distance <= radius)
+      .sort((a, b) => a.distance - b.distance);
+
+    res.json({
+      success: true,
+      deliveryMen: availableDrivers,
+      total: availableDrivers.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
