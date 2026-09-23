@@ -392,6 +392,7 @@
     "subscribers": "{count, plural, one {# abonné} other {# abonnés}}",
     "displayName": "Nom affiché",
     "priceMonthly": "€ / mois",
+    "priceWeekly": "≈ {price} / semaine",
     "stores": "Boutiques",
     "commission": "Commission % (propre livraison)",
     "platformCommission": "Commission % (livreurs plateforme)",
@@ -401,7 +402,7 @@
     "addLine": "Ajouter une ligne",
     "saving": "Enregistrement…",
     "save": "Enregistrer",
-    "merchantView": "Vue commerçant : {name} — {price} / mois, {stores, plural, one {# boutique} other {# boutiques}}, {commission}% de commission sur les ventes avec sa propre livraison, {platformCommission}% avec les livreurs de la plateforme.",
+    "merchantView": "Vue commerçant : {name} — {weeklyPrice} / semaine (facturé {price} / mois), {stores, plural, one {# boutique} other {# boutiques}}, {commission}% de commission sur les ventes avec sa propre livraison, {platformCommission}% avec les livreurs de la plateforme.",
     "footerNote": "Le code d'une formule ne change pas : il rattache les commerçants déjà abonnés. Un quota ne peut pas passer sous ce que des commerçants exploitent déjà — faites-les migrer d'abord."
   },
   "superownerAdvancedSettings": {

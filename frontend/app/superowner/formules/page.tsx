@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Layers, Save, Plus, X, Users } from 'lucide-react';
 
-import { euro } from '@/lib/format';
+import { euro, parSemaine } from '@/lib/format';
 
 /**
  * La grille tarifaire, réglable.
@@ -201,6 +201,9 @@ export default function FormulesPage() {
                       }
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {t('priceWeekly', { price: euro(parSemaine(brouillon.prixMensuel)) })}
+                    </p>
                   </div>
 
                   <div>
@@ -331,6 +334,7 @@ export default function FormulesPage() {
                 {t('merchantView', {
                   name: brouillon.libelle,
                   price: euro(brouillon.prixMensuel),
+                  weeklyPrice: euro(parSemaine(brouillon.prixMensuel)),
                   stores: brouillon.maxBoutiques,
                   commission: brouillon.commission,
                   platformCommission: brouillon.commissionLivreursPlateforme,

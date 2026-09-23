@@ -19,3 +19,13 @@ export function euro(valeur: number | string | null | undefined, decimales = 2) 
 export function sommeEuros<T>(lignes: T[], champ: (ligne: T) => number | string | null | undefined) {
   return lignes.reduce((total, ligne) => total + Number(champ(ligne) || 0), 0);
 }
+
+/**
+ * L'équivalent à la semaine d'un tarif mensuel.
+ *
+ * La facturation reste mensuelle ; le prix à la semaine n'est qu'un
+ * argument d'affichage. Un mois compte en moyenne 52 / 12 semaines.
+ */
+export function parSemaine(prixMensuel: number | string | null | undefined) {
+  return (Number(prixMensuel || 0) * 12) / 52;
+}
