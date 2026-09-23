@@ -987,6 +987,11 @@ router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next
 // GET /drivers/available - Get available delivery drivers within radius
 router.get("/available", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // Désactiver le cache pour cette route (elle retourne des données dynamiques)
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     const storeId = req.query.storeId as string;
     const radius = Math.min(parseInt(req.query.radius as string) || 8, 50);
 
