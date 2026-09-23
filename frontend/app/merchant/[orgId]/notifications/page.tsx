@@ -203,8 +203,8 @@ export default function NotificationsPage() {
                 : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
             }`}
           >
-            {filter === "all" && "Tous"}
-            {filter === "read" && "Lus"}
+            {filter === "all" && {t('filterByRead')}}
+            {filter === "read" && {t('filterByReadRead')}}
             {filter === "unread" && "Non-lus"}
           </button>
         ))}
@@ -255,7 +255,7 @@ export default function NotificationsPage() {
                     <button
                       onClick={() => markAsRead(notification.id)}
                       className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
-                      title="Marquer comme lu"
+                      title={t('mark_as_read')}
                     >
                       <Check className="w-5 h-5 text-green-600" />
                     </button>

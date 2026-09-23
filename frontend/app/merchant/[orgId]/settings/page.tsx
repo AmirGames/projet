@@ -172,7 +172,7 @@ export default function StoreSettings() {
       setFacturation(data.facturation || null);
     } catch (error) {
       console.error('Error fetching settings:', error);
-      setMessage({ type: 'error', text: 'Erreur lors du chargement des paramètres' });
+      setMessage({ type: 'error', text: {t('loadError')} });
     } finally {
       setLoading(false);
     }
@@ -399,7 +399,7 @@ export default function StoreSettings() {
                       value={formData.city}
                       onChange={(e) => handleInputChange('city', e.target.value)}
                       className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
-                      placeholder="Ville"
+                      placeholder={t('city')}
                     />
                   </div>
 
@@ -717,7 +717,7 @@ export default function StoreSettings() {
             disabled={saving}
             className="px-6 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 rounded-lg font-medium transition-colors"
           >
-            {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+            {saving ? {t('saving')} : 'Enregistrer les modifications'}
           </button>
         </div>
       </div>

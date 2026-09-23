@@ -143,7 +143,7 @@ export default function DeliveryZonesPage() {
 
       setMessageCarte('Position de la boutique enregistrée');
     } catch {
-      setErreurCarte('Le serveur ne répond pas');
+      setErreurCarte({t('serverError')});
       await chargerBoutique();
     }
   };
@@ -287,11 +287,11 @@ export default function DeliveryZonesPage() {
         setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', deliveryMinutes: '' }); setDessin(null);
       } else {
         // Un refus muet laissait croire que la zone était enregistrée.
-        setFormError(donnees?.error || 'Enregistrement refusé');
+        setFormError(donnees?.error || {t('saveError')});
       }
     } catch (error) {
       console.error('Error saving delivery zone:', error);
-      setFormError('Le serveur ne répond pas');
+      setFormError({t('serverError')});
     } finally {
       setSaving(false);
     }
@@ -638,7 +638,7 @@ export default function DeliveryZonesPage() {
                 disabled={saving}
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
               >
-                {editingZone ? 'Mettre à Jour' : 'Créer'}
+                {editingZone ? 'Mettre à Jour' : {t('create')}}
               </button>
               <button
                 onClick={() => {

@@ -76,7 +76,7 @@ export default function ProductMediaPage() {
       setMedia(data.data.sort((a, b) => a.displayOrder - b.displayOrder));
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : {t('genericError')});
     } finally {
       setLoading(false);
     }
@@ -109,7 +109,7 @@ export default function ProductMediaPage() {
       setMediaType("image");
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : {t('genericError')});
     }
   };
 
@@ -122,10 +122,10 @@ export default function ProductMediaPage() {
         },
       });
 
-      if (!res.ok) throw new Error("Erreur lors de la suppression");
+      if (!res.ok) throw new Error({t('deleteError')});
       fetchMedia();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : {t('genericError')});
     }
   };
 
@@ -146,7 +146,7 @@ export default function ProductMediaPage() {
 
       if (!res.ok) throw new Error("Erreur lors de la réorganisation");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : {t('genericError')});
     }
   };
 

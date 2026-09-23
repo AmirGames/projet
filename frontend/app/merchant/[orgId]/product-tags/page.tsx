@@ -68,7 +68,7 @@ export default function ProductTagPage() {
       setTotal(data.total);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : {t('genericError')});
     } finally {
       setLoading(false);
     }
@@ -130,13 +130,13 @@ export default function ProductTagPage() {
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error("Erreur lors de la sauvegarde");
+      if (!res.ok) throw new Error({t('saveError')});
       fetchTags();
       closeModal();
       setSuccess(editingId ? "Étiquette mise à jour" : "Étiquette créée");
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : {t('genericError')});
     }
   };
 
@@ -152,12 +152,12 @@ export default function ProductTagPage() {
         },
       });
 
-      if (!res.ok) throw new Error("Erreur lors de la suppression");
+      if (!res.ok) throw new Error({t('deleteError')});
       fetchTags();
       setSuccess("Étiquette supprimée");
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : {t('genericError')});
     }
   };
 

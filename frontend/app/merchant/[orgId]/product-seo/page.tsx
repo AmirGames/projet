@@ -86,7 +86,7 @@ export default function ProductSeoPage() {
       });
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : {t('genericError')});
     } finally {
       setLoading(false);
     }
@@ -104,12 +104,12 @@ export default function ProductSeoPage() {
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error("Erreur lors de la mise à jour");
+      if (!res.ok) throw new Error({t('updateError')});
       setSuccess("SEO mis à jour avec succès");
       setError("");
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(err instanceof Error ? err.message : {t('genericError')});
     } finally {
       setLoading(false);
     }

@@ -227,7 +227,7 @@ export default function CategoriesPage() {
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.error || errorData.message || 'Erreur lors de la mise à jour';
+          const errorMsg = errorData.error || errorData.message || {t('updateError')};
           setMessage(`❌ ${errorMsg}`);
         }
       } else {
@@ -256,7 +256,7 @@ export default function CategoriesPage() {
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.error || errorData.message || 'Erreur lors de la création';
+          const errorMsg = errorData.error || errorData.message || {t('createError')};
           setMessage(`❌ ${errorMsg}`);
         }
       }
@@ -284,7 +284,7 @@ export default function CategoriesPage() {
         setTimeout(() => setMessage(''), 3000);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.error || errorData.message || 'Erreur lors de la suppression';
+        const errorMsg = errorData.error || errorData.message || {t('deleteError')};
         setMessage(`❌ ${errorMsg}`);
       }
     } catch (error) {
@@ -427,7 +427,7 @@ export default function CategoriesPage() {
                   type="submit"
                   className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors"
                 >
-                  {editingCategory ? 'Mettre à jour' : 'Créer'}
+                  {editingCategory ? {t('update')} : {t('create')}}
                 </button>
               </div>
             </form>

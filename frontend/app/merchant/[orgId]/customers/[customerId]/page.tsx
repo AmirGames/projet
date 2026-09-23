@@ -118,7 +118,7 @@ export default function FicheClientPage() {
 
       setMessage('✅ Note enregistrée');
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage({t('connectionErrorFinal')});
     } finally {
       setEnregistrement(false);
     }
@@ -152,7 +152,7 @@ export default function FicheClientPage() {
       setMessage(bloque ? '✅ Client débloqué' : '✅ Client bloqué');
       await charger();
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage({t('connectionErrorFinal')});
     } finally {
       setEnregistrement(false);
     }
@@ -201,7 +201,7 @@ export default function FicheClientPage() {
               : 'bg-green-500/20 text-green-400'
           }`}
         >
-          {client.status === 'BLOCKED' ? 'Bloqué' : 'Actif'}
+          {client.status === 'BLOCKED' ? 'Bloqué' : {t('active')}}
         </span>
       </div>
 

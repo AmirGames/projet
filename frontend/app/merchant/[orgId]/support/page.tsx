@@ -10,9 +10,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** L'état du ticket, en français : la base le stocke en anglais. */
 const LIBELLES_STATUT: Record<string, string> = {
-  OPEN: 'Ouvert',
-  IN_PROGRESS: 'En cours',
-  RESOLVED: 'Résolu',
+  OPEN: {t('statusOpen')},
+  IN_PROGRESS: {t('active')},
+  RESOLVED: {t('statusResolved')},
   CLOSED: 'Clos',
 };
 

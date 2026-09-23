@@ -61,7 +61,7 @@ interface Commande {
 const STATUTS: { valeur: string; libelle: string }[] = [
   { valeur: 'PENDING', libelle: {t('pending')} },
   { valeur: 'ACCEPTED', libelle: {t('accepted')} },
-  { valeur: 'PREPARING', libelle: 'En préparation' },
+  { valeur: 'PREPARING', libelle: {t('statusPreparing')} },
   { valeur: 'READY', libelle: {t('ready')} },
   { valeur: 'COMPLETED', libelle: {t('completed')} },
   { valeur: 'REJECTED', libelle: 'Refusée' },
@@ -146,7 +146,7 @@ export default function DetailCommandePage() {
       setMessage('✅ Statut mis à jour');
       await charger();
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage({t('connectionErrorFinal')});
     } finally {
       setEnregistrement(false);
     }
@@ -177,7 +177,7 @@ export default function DetailCommandePage() {
       setNote('');
       await charger();
     } catch {
-      setMessage('❌ Erreur de connexion');
+      setMessage({t('connectionErrorFinal')});
     } finally {
       setEnregistrement(false);
     }
@@ -355,14 +355,14 @@ export default function DetailCommandePage() {
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
               <MapPin size={20} className="text-orange-500" />
-              {commande.deliveryType === 'DELIVERY' ? 'Livraison' : 'Retrait'}
+              {commande.deliveryType === 'DELIVERY' ? {t('delivery')} : 'Retrait'}
             </h2>
             {commande.deliveryType === 'DELIVERY' ? (
               <div className="text-sm text-gray-300 space-y-1">
                 <p>{commande.deliveryAddress || 'Adresse non renseignée'}</p>
                 <p>
                   {[commande.deliveryPostal, commande.deliveryCity].filter(Boolean).join(' ') ||
-                    'Ville non renseignée'}
+                    {t('cityUnknown')}}
                 </p>
               </div>
             ) : (

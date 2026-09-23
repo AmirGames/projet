@@ -184,8 +184,8 @@ export default function ReportsPage() {
             {[
               { id: 'sales' as TabType, label: 'Ventes', icon: ShoppingCart },
               { id: 'revenue' as TabType, label: 'Revenus', icon: DollarSign },
-              { id: 'products' as TabType, label: 'Produits', icon: TrendingUp },
-              { id: 'customers' as TabType, label: 'Clients', icon: Users },
+              { id: 'products' as TabType, label: {t('title')}, icon: TrendingUp },
+              { id: 'customers' as TabType, label: {t('customers')}, icon: Users },
             ].map(({ id, label }) => (
               <button
                 key={id}

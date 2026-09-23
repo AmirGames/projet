@@ -108,7 +108,7 @@ export default function MarketingPage() {
       const donnees = await response.json();
 
       if (!response.ok) {
-        setMessage(`❌ ${donnees.error || 'Création impossible'}`);
+        setMessage(`❌ ${donnees.error || {t('createKeyFailed')}}`);
         return;
       }
 
@@ -224,7 +224,7 @@ export default function MarketingPage() {
                   : 'bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700'
               }`}
             >
-              {s === 'ALL' ? 'Toutes' : s}
+              {s === 'ALL' ? {t('all')} : s}
             </button>
           ))}
         </div>
@@ -419,7 +419,7 @@ export default function MarketingPage() {
                   disabled={envoi}
                   className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
                 >
-                  {envoi ? 'Création...' : 'Créer la campagne'}
+                  {envoi ? {t('creating')} : 'Créer la campagne'}
                 </button>
                 <button
                   type="button"

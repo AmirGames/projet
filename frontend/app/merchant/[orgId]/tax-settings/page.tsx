@@ -311,7 +311,7 @@ export default function TaxSettingsPage() {
                           ? 'bg-green-600/20 text-green-400'
                           : 'bg-gray-600/20 text-gray-400'
                       }`}>
-                        {taxe.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                        {taxe.status === 'ACTIVE' ? {t('active')} : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -505,7 +505,7 @@ export default function TaxSettingsPage() {
                 type="submit" disabled={envoi}
                 className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
               >
-                {envoi ? 'Enregistrement…' : {t('save')}}
+                {envoi ? {t('saving')} : {t('save')}}
               </button>
               <button
                 type="button" onClick={() => setModaleOuverte(false)}

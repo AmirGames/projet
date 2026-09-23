@@ -143,7 +143,7 @@ export default function PromotionsPage() {
           setTimeout(() => setMessage(''), 3000);
         } else {
           const error = await response.json();
-          setMessage(`❌ ${error.error || error.message || 'Erreur lors de la création'}`);
+          setMessage(`❌ ${error.error || error.message || {t('createError')}}`);
         }
       }
     } catch (error) {
@@ -373,7 +373,7 @@ export default function PromotionsPage() {
                           ? 'bg-green-600/30 text-green-400'
                           : 'bg-gray-600/30 text-gray-400'
                       }`}>
-                        {promo.status === 'ACTIVE' ? 'Actif' : 'Inactif'}
+                        {promo.status === 'ACTIVE' ? {t('active')} : 'Inactif'}
                       </span>
                     </div>
 
@@ -647,7 +647,7 @@ export default function PromotionsPage() {
                   type="submit"
                   className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors"
                 >
-                  {editingPromo ? 'Mettre à jour' : 'Créer'}
+                  {editingPromo ? {t('update')} : {t('create')}}
                 </button>
               </div>
             </form>

@@ -83,7 +83,7 @@ export default function MaFormulePage() {
       setDemande(donnees.data.demandeEnCours || null);
       setErreur('');
     } catch {
-      setErreur('Le serveur ne répond pas');
+      setErreur({t('serverError')});
     } finally {
       setChargement(false);
     }
@@ -119,7 +119,7 @@ export default function MaFormulePage() {
       setMessage(donnees.message || 'Demande envoyée');
       await charger();
     } catch {
-      setErreur('Le serveur ne répond pas');
+      setErreur({t('serverError')});
     } finally {
       setEnvoi('');
     }
