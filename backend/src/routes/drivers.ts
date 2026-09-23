@@ -1012,6 +1012,8 @@ router.get("/available", authMiddleware, async (req: Request, res: Response, nex
         latitude: { not: null },
         longitude: { not: null },
         status: "ACTIVE",
+        isOnline: true,
+        isAvailable: true,
       },
       select: {
         id: true,
