@@ -690,11 +690,11 @@
     "new_webhook": "Nouvel abonnement",
     "url": "URL",
     "events": "Événements ({count} choisi{plural})",
-    "create_button": "Créer l'abonnement",
+    "create_button": "Créer l’abonnement",
     "creating": "Création…",
     "no_events": "Choisissez au moins un événement",
     "failed": "Coupé",
-    "test_send": "Envoi d'essai",
+    "test_send": "Envoi d’essai",
     "history": "Derniers envois",
     "pause": "Mettre en pause",
     "resume": "Réactiver",
@@ -725,8 +725,8 @@
     "secret_explanation": "Il sert à vérifier l'en-tête X-Webhook-Signature de chaque envoi vers {url}. Sans lui, votre serveur ne peut pas s'assurer que l'envoi vient bien de la plateforme.",
     "secret_warning": "Copiez ce secret maintenant : il ne sera plus jamais affiché.",
     "testError": "❌ Essai impossible",
-    "testSending": "Envoi d'essai en cours…",
-    "test_send_label": "Envoi d'essai vers {url}"
+    "testSending": "Envoi d’essai en cours…",
+    "test_send_label": "Envoi d’essai vers {url}"
   },
   "superownerStoreDetail": {
     "title": "Détail de la boutique",
