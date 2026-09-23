@@ -857,6 +857,91 @@ router.post(
   }
 );
 
+// PATCH /drivers/deliveries/:id/cancel - Annuler une course acceptée
+router.patch(
+  "/deliveries/:id/cancel",
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { reason } = req.body;
+      const deliveryId = req.params.id as string;
+
+      if (!reason || typeof reason !== "string" || reason.trim().length === 0) {
+        throw new ApiError(400, "La raison d'annulation est requise", "MISSING_REASON");
+      }
+
+      const { livreur, course } = await courseDuLivreur(req, deliveryId);
+
+      if (course.status !== "ACCEPTED") {
+        throw new ApiError(
+          409,
+          "Seule une course acceptée peut être annulée",
+          "INVALID_STATUS"
+        );
+      }
+
+      // Annuler la course
+      await db.orderDelivery.update({
+        where: { id: deliveryId },
+        data: {
+          status: "FAILED",
+          driverId: null,
+          assignedAt: null,
+          cancelledBy: "DRIVER",
+          cancellationReason: reason.trim(),
+        },
+      });
+
+      // Libérer le livreur
+      await db.driver.update({
+        where: { id: livreur.id },
+        data: {
+          currentOrderId: null,
+          isAvailable: true,
+        },
+      });
+
+      // Remettre la commande en READY pour permettre au restaurant de proposer à un autre livreur
+      const order = await db.order.update({
+        where: { id: course.orderId },
+        data: { status: "READY" },
+        select: { customerEmail: true },
+      });
+
+      // Notifier le client et le restaurant
+      if (order.customerEmail) {
+        await db.notification.create({
+          data: {
+            type: "DELIVERY_CANCELLED",
+            title: "Livraison annulée",
+            message: `Votre livraison a été annulée. Un autre livreur sera assigné sous peu.`,
+            recipientEmail: order.customerEmail,
+            link: `/client/orders/${course.orderId}`,
+            relatedOrderId: course.orderId,
+          },
+        });
+
+        const { emitNotification } = await import("../config/socket");
+        emitNotification(order.customerEmail, {
+          type: "delivery_cancelled",
+          orderId: course.orderId,
+          reason,
+          title: "Livraison annulée",
+          message: "Un autre livreur sera assigné.",
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Course annulée. Un autre livreur sera proposé au restaurant.",
+        data: { deliveryId, orderId: course.orderId },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // Serve document files with proper CORS headers for preview modal
 router.options(/^\/documents\/file\/(.+)$/, (_req: Request, res: Response) => {
   res.header("Access-Control-Allow-Origin", "*");

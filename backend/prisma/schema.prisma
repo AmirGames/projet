@@ -927,6 +927,10 @@ model OrderDelivery {
   /// les courses qui n'en ont pas.
   payoutId        String?
 
+  // Annulation de course
+  cancelledBy     String?   // DRIVER, RESTAURANT, CLIENT, SYSTEM
+  cancellationReason String?
+
   // Relations
   order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   driver          Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
