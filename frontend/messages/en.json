@@ -1076,6 +1076,7 @@
       "closed": "Closed",
       "inactive": "Inactive"
     },
+    "statusColumn": "Status",
     "actions": "Actions",
     "view": "View details",
     "edit": "Edit",

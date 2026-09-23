@@ -136,7 +136,7 @@ export default function DeliveriesPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('name')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('email')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('companyName')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('status')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('statusColumn')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('actions')}</th>
                 </tr>
               </thead>
