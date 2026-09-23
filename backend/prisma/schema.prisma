@@ -132,6 +132,15 @@ model Organization {
   bic                 String?
   accountHolder       String?
 
+  /// La promo « zéro commission », accordée à la main par la plateforme.
+  ///
+  /// Tant qu'elle court, aucune commission n'est prélevée sur les ventes du
+  /// commerçant, quelle que soit sa formule ou qui livre. Sans date de fin,
+  /// elle dure jusqu'à ce qu'on la retire.
+  commissionFreeActive Boolean   @default(false)
+  commissionFreeUntil  DateTime?
+  commissionFreeNote   String?
+
   /// La validation du commerce par la plateforme.
   ///
   /// Tant qu'elle manque, le commerçant prépare sa boutique — catalogue,
@@ -682,6 +691,10 @@ model Order {
   commissionAmount  Decimal    @default(0) @db.Decimal(10, 2)
   /// La formule du commerçant à cet instant, pour expliquer le taux retenu.
   tierAtOrder       String?
+  /// La commande est tombée pendant une promo « zéro commission ». Sa
+  /// commission vaut 0 et le reste : sans cette marque, un montant nul passe
+  /// pour « pas encore figé » et se refacture au taux du jour.
+  commissionWaived  Boolean    @default(false)
   /// Qui livre cette commande, figé à la commande : OWN (le commerçant, avec
   /// ses livreurs) ou PLATFORM (un livreur de la plateforme). Il décide du taux
   /// de commission, et de ce que deviennent les frais de livraison : gardés par

@@ -8,6 +8,7 @@ import { PromotionService } from "./promotion.service";
 import { emitWebhook } from "./webhook.service";
 import { TaxService } from "./tax.service";
 import { ModeDeLivraison } from "./delivery-mode.service";
+import { promoSansCommissionActive } from "./plan.service";
 
 export interface OrderData {
   storeId: string;
@@ -64,10 +65,18 @@ export class OrderService {
   ) {
     const boutique = await db.store.findUnique({
       where: { id: storeId },
-      select: { org: { select: { tier: true } } },
+      select: {
+        org: { select: { tier: true, commissionFreeActive: true, commissionFreeUntil: true } },
+      },
     });
 
     const tier = boutique?.org?.tier ?? null;
+
+    // La promo offerte par la plateforme passe avant la formule et le mode de
+    // livraison : rien n'est prélevé.
+    if (promoSansCommissionActive(boutique?.org)) {
+      return { tier, taux: 0, montant: 0, offerte: true };
+    }
 
     const formule = tier
       ? await db.planTier.findUnique({
@@ -96,6 +105,7 @@ export class OrderService {
       tier,
       taux,
       montant: Number(((montant * taux) / 100).toFixed(2)),
+      offerte: false,
     };
   }
 
@@ -408,6 +418,7 @@ export class OrderService {
           commissionPercent: commission.taux,
           commissionAmount: commission.montant,
           tierAtOrder: commission.tier,
+          commissionWaived: commission.offerte,
           deliveryMode: modeLivraison,
           status: "PENDING" as any,
           paymentStatus: "PENDING" as any,

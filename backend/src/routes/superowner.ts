@@ -9,7 +9,7 @@ import { BackupService } from "../services/backup.service";
 import { SecurityEventService } from "../services/security-event.service";
 import { invalidateMaintenanceCache } from "../middleware/maintenance";
 import { MerchantClosureService } from "../services/merchant-closure.service";
-import { PlanService } from "../services/plan.service";
+import { PlanService, promoSansCommissionActive } from "../services/plan.service";
 import {
   DriverApprovalService,
   libelleDuDocument,
@@ -201,6 +201,13 @@ router.get("/organizations", authMiddleware, isSuperOwner, async (req: Request, 
           createdAt: org.createdAt,
           approvedAt: org.approvedAt,
           activeUsers: org._count.memberships,
+          // La promo « zéro commission » : réglée, et en cours ou non.
+          commissionFree: {
+            active: org.commissionFreeActive,
+            until: org.commissionFreeUntil,
+            note: org.commissionFreeNote,
+            enCours: promoSansCommissionActive(org),
+          },
           revenue: Number(
             commandes.reduce((somme, c) => somme + Number(c.totalAmount), 0).toFixed(2)
           ),
@@ -269,6 +276,7 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
                 commissionPercent: true,
                 commissionAmount: true,
                 tierAtOrder: true,
+                commissionWaived: true,
                 // commissionFrozen n'existe en base qu'après la migration
                 // add_tax_per_item_and_invoice_seq. On le traite en mémoire.
               },
@@ -303,6 +311,8 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
           // commissionFrozen n'est pas en base tant que la migration n'est pas
           // appliquée. On considère que commissionAmount > 0 signifie qu'il est figé.
           if (Number(c.commissionAmount) > 0) return somme + Number(c.commissionAmount);
+          // Passée pendant une promo « zéro commission » : rien à facturer.
+          if (c.commissionWaived) return somme;
 
           // Ancienne commande : tierAtOrder contient le code du plan qui
           // valait ce jour-là ; tauxParFormule le convertit en taux.
@@ -445,6 +455,7 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
             customerName: true,
             commissionPercent: true,
             commissionAmount: true,
+            commissionWaived: true,
             deliveryMode: true,
           },
           orderBy: { createdAt: "desc" },
@@ -456,7 +467,8 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
       // La commission figée à la commande fait foi — son taux dépend de la
       // formule d'alors et de qui livrait. Les commandes antérieures au figeage
       // retombent sur le taux du jour.
-      const figee = Number(commande.commissionAmount) > 0;
+      // Une commande passée pendant une promo est figée à 0.
+      const figee = Number(commande.commissionAmount) > 0 || commande.commissionWaived;
 
       return {
         id: commande.id,
@@ -1077,11 +1089,12 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
             storeId: { in: storeIds },
             createdAt: { gte: debutMois },
           },
-          select: { id: true, totalAmount: true, commissionAmount: true },
+          select: { id: true, totalAmount: true, commissionAmount: true, commissionWaived: true },
         });
 
+        // Les commandes offertes par une promo restent à 0.
         const nonFigees = toutesCommandes.filter(
-          (c) => Number(c.commissionAmount) === 0
+          (c) => Number(c.commissionAmount) === 0 && !c.commissionWaived
         );
 
         const taux = Number(ancienTaux.commissionPercent);
@@ -1116,6 +1129,72 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
     res.json({
       message: `Formule passée en ${formuleCible.libelle}`,
       organization: { id: organisation.id, tier: organisation.tier },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * PATCH /superowner/organizations/:orgId/commission-promo
+ *
+ * Offre (ou retire) la promo « zéro commission » à un commerçant. Seules les
+ * commandes passées pendant la promo en profitent : celles d'avant gardent
+ * leur commission.
+ */
+router.patch("/organizations/:orgId/commission-promo", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+    const schema = z.object({
+      active: z.boolean(),
+      // Date de fin incluse (AAAA-MM-JJ). Absente : jusqu'à nouvel ordre.
+      until: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/, "Date de fin invalide")
+        .nullable()
+        .optional(),
+      note: z.string().max(200).nullable().optional(),
+    });
+    const body = schema.parse(req.body);
+
+    const existante = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { commissionFreeActive: true, commissionFreeUntil: true },
+    });
+
+    if (!existante) {
+      throw new ApiError(404, "Commerçant introuvable", "ORG_NOT_FOUND");
+    }
+
+    // La date de fin est incluse : la promo court jusqu'au soir de ce jour.
+    const fin = body.active && body.until ? new Date(`${body.until}T23:59:59.999`) : null;
+
+    if (fin && fin <= new Date()) {
+      throw new ApiError(400, "La date de fin est déjà passée", "PROMO_END_IN_PAST");
+    }
+
+    const organisation = await db.organization.update({
+      where: { id: orgId },
+      data: {
+        commissionFreeActive: body.active,
+        commissionFreeUntil: fin,
+        commissionFreeNote: body.active ? body.note?.trim() || null : null,
+      },
+    });
+
+    await journaliser(req, body.active ? "COMMISSION_PROMO_GRANTED" : "COMMISSION_PROMO_REMOVED", orgId, {
+      avant: existante,
+      apres: { active: body.active, until: fin, note: organisation.commissionFreeNote },
+    });
+
+    res.json({
+      message: body.active ? "Promo zéro commission activée" : "Promo zéro commission retirée",
+      commissionFree: {
+        active: organisation.commissionFreeActive,
+        until: organisation.commissionFreeUntil,
+        note: organisation.commissionFreeNote,
+        enCours: promoSansCommissionActive(organisation),
+      },
     });
   } catch (err) {
     next(err);
