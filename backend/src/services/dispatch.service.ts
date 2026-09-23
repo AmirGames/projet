@@ -4,6 +4,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint, Point } from "../utils/geo";
 import { emitDeliveryUpdate, emitDriverEvent } from "../config/socket";
 import { genererCode } from "./delivery-proof.service";
+import { obfusquerAdresse } from "../utils/address-obfuscation";
 
 /**
  * Attribution des courses aux livreurs.
@@ -86,6 +87,19 @@ export class DispatchService {
       );
     }
 
+    // Générer l'adresse obfusquée dès la création
+    let deliveryLatObfusquee = null;
+    let deliveryLngObfusquee = null;
+
+    if (commande.deliveryLat && commande.deliveryLng) {
+      const adresseObfusquee = obfusquerAdresse(
+        commande.deliveryLat,
+        commande.deliveryLng
+      );
+      deliveryLatObfusquee = adresseObfusquee.latitude;
+      deliveryLngObfusquee = adresseObfusquee.longitude;
+    }
+
     return db.orderDelivery.create({
       data: {
         orderId,
@@ -96,6 +110,9 @@ export class DispatchService {
         pickupLng: commande.store?.longitude ?? null,
         deliveryLat: commande.deliveryLat ?? null,
         deliveryLng: commande.deliveryLng ?? null,
+        // Adresse obfusquée
+        deliveryLatObfusquee,
+        deliveryLngObfusquee,
         // Le code de remise naît avec la course : le client le lit sur son
         // suivi, et le donne au livreur à la porte.
         deliveryCode: genererCode(),
@@ -213,10 +230,15 @@ export class DispatchService {
       pickupCity: course.order?.store?.city,
       pickupLat: course.order?.store?.latitude,
       pickupLng: course.order?.store?.longitude,
-      // Lieu de livraison
+      // Lieu de livraison (ADRESSE LISIBLE MAIS COORDONNÉES OBFUSQUÉES)
       deliveryAddress: course.order?.deliveryAddress,
       deliveryCity: course.order?.deliveryCity,
       deliveryPostal: course.order?.deliveryPostal,
+      // Coordonnées obfusquées que le livreur verra sur la map
+      deliveryLat: course.deliveryLatObfusquee,
+      deliveryLng: course.deliveryLngObfusquee,
+      // Note pour clarifier
+      obfuscationNote: "À ±50-100m pour votre confidentialité",
     });
 
     logger.info("Course proposée", { deliveryId, driverId: choisi.id, distance: choisi.distance });

@@ -887,6 +887,12 @@ model OrderDelivery {
   deliveryLat     Float?
   deliveryLng     Float?
 
+  // Adresse de livraison obfusquée pour protéger la confidentialité du client.
+  // Le livreur reçoit ces coordonnées au lieu des vraies jusqu'à ce qu'il soit
+  // assez proche (±200m) pour voir l'adresse exacte.
+  deliveryLatObfusquee Float?
+  deliveryLngObfusquee Float?
+
   // Position du livreur en chemin. Distincte des deux précédentes : elle était
   // écrite dans deliveryLat/Lng, ce qui effaçait l'adresse du client à chaque
   // envoi de position.
