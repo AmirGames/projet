@@ -30,6 +30,11 @@ interface Options {
    * utilisateurs légitimes les uns après les autres.
    */
   cle: (req: Request) => string;
+  /**
+   * Lu à chaque requête, pas au chargement du module : les variables
+   * d'environnement ne sont pas forcément chargées à ce moment-là.
+   */
+  active?: () => boolean;
 }
 
 /** Par adresse IP et par destinataire, pour les routes qui envoient un courriel. */
@@ -51,6 +56,8 @@ export function limiterCadence(options: Options) {
   };
 
   return (req: Request, _res: Response, next: NextFunction) => {
+    if (options.active && !options.active()) return next();
+
     const maintenant = Date.now();
 
     if (compteurs.size > 5000) purger(maintenant);
@@ -80,3 +87,35 @@ export function limiterCadence(options: Options) {
     next();
   };
 }
+
+/**
+ * Connexion : dix essais par quart d'heure, par adresse IP et par compte.
+ *
+ * De quoi se tromper plusieurs fois de mot de passe sans être gêné, pas de
+ * quoi en essayer des milliers. Compter par compte seul laisserait n'importe
+ * qui bloquer la connexion d'un autre en tapant son adresse ; par IP seule,
+ * un réseau partagé se bloquerait lui-même.
+ */
+export const limiterConnexions = limiterCadence({
+  max: 10,
+  fenetreMs: 15 * 60 * 1000,
+  message: "Trop de tentatives de connexion. Réessayez dans quelques minutes.",
+  cle: parDestinataire,
+});
+
+/**
+ * Inscriptions : dix comptes par heure et par adresse IP, tous formulaires
+ * confondus — client, commerçant et livreur partagent ce même compteur, sinon
+ * il suffirait de passer d'un formulaire à l'autre.
+ *
+ * Seulement en production : les vérifications créent des centaines de
+ * comptes depuis la même machine, et une limite qui les ferait échouer
+ * finirait désactivée pour de bon.
+ */
+export const limiterInscriptions = limiterCadence({
+  max: 10,
+  fenetreMs: 60 * 60 * 1000,
+  message: "Trop de comptes créés depuis cette connexion. Réessayez plus tard.",
+  cle: (req) => req.ip || "inconnue",
+  active: () => process.env.NODE_ENV === "production",
+});

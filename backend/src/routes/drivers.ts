@@ -3,6 +3,7 @@ import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { uploadMiddleware } from "../middleware/file-upload";
+import { limiterInscriptions } from "../middleware/throttle";
 import { logger } from "../config/logger";
 import { emitDeliveryUpdate } from "../config/socket";
 import { DispatchService } from "../services/dispatch.service";
@@ -81,7 +82,7 @@ const inscriptionSchema = z.object({
 });
 
 // POST /drivers/register - Inscription d'un livreur
-router.post("/register", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/register", limiterInscriptions, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = inscriptionSchema.parse(req.body);
 

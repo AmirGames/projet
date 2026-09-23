@@ -5,7 +5,12 @@ import { AuthService } from "../services/auth.service";
 import { UserService } from "../services/user.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, compteDuJeton } from "../middleware/auth";
-import { limiterCadence, parDestinataire } from "../middleware/throttle";
+import {
+  limiterCadence,
+  limiterConnexions,
+  limiterInscriptions,
+  parDestinataire,
+} from "../middleware/throttle";
 import { logger } from "../config/logger";
 import { SecurityEventService } from "../services/security-event.service";
 import { EmailService } from "../services/email.service";
@@ -19,7 +24,7 @@ import { db } from "../services/db";
 const router = Router();
 
 // POST /auth/signup
-router.post("/signup", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/signup", limiterInscriptions, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = signupSchema.parse(req.body);
 
@@ -89,7 +94,7 @@ router.post("/signup", async (req: Request, res: Response, next: NextFunction) =
 });
 
 // POST /auth/login
-router.post("/login", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/login", limiterConnexions, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = loginSchema.parse(req.body);
 
@@ -535,7 +540,7 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
 });
 
 // POST /auth/merchant-register - Merchant registration with automatic store creation
-router.post("/merchant-register", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/merchant-register", limiterInscriptions, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const schema = z.object({
       businessName: z.string().min(1).max(200),
