@@ -666,7 +666,7 @@
   },
   "superownerWebhooks": {
     "title": "Webhooks",
-    "subtitle": "Notify an external system of what happens here",
+    "subtitle": "Each event is sent as a POST, signed with the subscription secret. A failed delivery is retried three times — after one minute, five, then thirty.",
     "create": "Create Webhook",
     "edit": "Edit",
     "delete": "Delete",

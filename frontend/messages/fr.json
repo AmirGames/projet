@@ -666,7 +666,7 @@
   },
   "superownerWebhooks": {
     "title": "Webhooks",
-    "subtitle": "Prévenir un système extérieur de ce qui se passe ici",
+    "subtitle": "Chaque événement est envoyé en POST, signé avec le secret de l’abonnement. Un envoi raté est relancé trois fois — après une minute, cinq, puis trente.",
     "create": "Créer un webhook",
     "edit": "Modifier",
     "delete": "Supprimer",
