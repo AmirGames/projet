@@ -211,7 +211,7 @@ export default function RoleSelectionPage() {
                   className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg"
                 >
                   {showMerchantForm
-                    ? {t('cancel')}
+                    ? t('cancel')
                     : roles.merchant.active
                       ? "+ Ajouter une boutique"
                       : "Devenir commerçant"}
