@@ -1651,7 +1651,8 @@
   "merchantdeliveryzones": {
     "create": "Create",
     "saveError": "Save rejected",
-    "serverError": "The server is not responding"
+    "serverError": "The server is not responding",
+    "zonesExplanation": "Your zones can be rings around the shop or shapes drawn on the map. When several zones cover a customer’s address, the smallest one applies, with its fees and minimum order. Outside all your zones, delivery is refused."
   },
   "merchantInvoices": {
     "actionDownload": "Download",

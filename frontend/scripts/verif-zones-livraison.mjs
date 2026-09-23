@@ -124,7 +124,7 @@ await page.waitForTimeout(800);
 const formulaire = await texte();
 check(
   'le fonctionnement des anneaux est expliqué',
-  /anneaux autour de votre boutique/.test(formulaire),
+  /anneaux autour de la boutique/.test(formulaire) && /la plus petite qui s’applique/.test(formulaire),
   formulaire.slice(0, 900)
 );
 

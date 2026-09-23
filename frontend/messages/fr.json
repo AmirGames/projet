@@ -1651,7 +1651,8 @@
   "merchantdeliveryzones": {
     "create": "Créer",
     "saveError": "Enregistrement refusé",
-    "serverError": "Le serveur ne répond pas"
+    "serverError": "Le serveur ne répond pas",
+    "zonesExplanation": "Vos zones peuvent être des anneaux autour de la boutique ou des formes dessinées sur la carte. Quand plusieurs zones couvrent l’adresse d’un client, c’est la plus petite qui s’applique, avec ses frais et son minimum de commande. En dehors de toutes vos zones, la livraison est refusée."
   },
   "merchantInvoices": {
     "actionDownload": "Télécharger",
