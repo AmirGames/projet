@@ -18,7 +18,7 @@ interface Review {
   comment?: string;
   status: string;
   helpfulCount: number;
-  product: { name: string; sku: string };
+  product: { name: string; sku: string } | null;
   customer?: { name: string; email: string };
   createdAt: string;
 }
@@ -216,7 +216,7 @@ export default function ReviewsPage() {
               <div key={review.id} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <p className="text-sm text-gray-400 mb-1">{review.product.name}</p>
+                    <p className="text-sm text-gray-400 mb-1">{review.product ? review.product.name : t('storeReview')}</p>
                     <div className="flex items-center gap-3 mb-2">
                       <div className="flex items-center gap-1">
                         {Array.from({ length: 5 }).map((_, i) => (

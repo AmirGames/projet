@@ -124,6 +124,13 @@ check('avis sur le restaurant déposé', avisRestaurant.status === 201, `status=
 const doublonRestaurant = await post('/api/reviews', { orderId, type: 'STORE', rating: 2 }, cToken);
 check('second avis sur le restaurant refusé (409)', doublonRestaurant.status === 409, `status=${doublonRestaurant.status}`);
 
+// L'avis sur le restaurant ne porte sur aucun plat : ce sont ceux-là que
+// comptent les statistiques du commerce, pas les avis de plats.
+const statsCommerce = await j(await get(`/api/reviews/${storeId}/store/stats`, m.accessToken));
+const statsData = statsCommerce?.data || statsCommerce;
+check('les statistiques du commerce le comptent', statsData?.totalReviews === 1, JSON.stringify(statsCommerce));
+check('avec sa note', statsData?.averageRating === 4, JSON.stringify(statsCommerce));
+
 const noteInvalide = await post('/api/reviews', { orderId, productId, rating: 9 }, cToken);
 check('note hors barème refusée', noteInvalide.status === 400, `status=${noteInvalide.status}`);
 

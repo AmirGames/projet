@@ -1389,7 +1389,8 @@
     "previous": "Précédent",
     "next": "Suivant",
     "backToDashboard": "← Retour au tableau de bord",
-    "description": "Gérez et modérez les avis clients"
+    "description": "Gérez et modérez les avis clients",
+    "storeReview": "Avis sur le commerce"
   },
   "clientRestaurant": {
     "notFound": "Ce commerce est introuvable",

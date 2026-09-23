@@ -1389,7 +1389,8 @@
     "previous": "Previous",
     "next": "Next",
     "backToDashboard": "← Back to dashboard",
-    "description": "Manage and moderate customer reviews"
+    "description": "Manage and moderate customer reviews",
+    "storeReview": "Review of the shop"
   },
   "clientRestaurant": {
     "notFound": "This restaurant could not be found",
