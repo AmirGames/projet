@@ -48,7 +48,8 @@ export default function DriverDashboard() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeDelivery, setActiveDelivery] = useState<Delivery | null>(null);
-  const [isAvailable, setIsAvailable] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(false);
   const [refus, setRefus] = useState('');
   const [earnings, setEarnings] = useState(0);
 
@@ -73,8 +74,9 @@ export default function DriverDashboard() {
         const driverData = await driverResponse.json();
         setDriver(driverData.data);
         setEarnings(Number(driverData.data.totalEarnings || 0));
-        // isOnline est ce que le livreur a choisi ; isAvailable ce que
-        // l'attribution en a fait (pas de course en cours). On affiche isAvailable.
+        // isOnline: ce que le livreur a choisi (envoyer la position)
+        // isAvailable: disponibilité actuelle (pas de course en cours)
+        setIsOnline(driverData.data.isOnline === true);
         setIsAvailable(driverData.data.isAvailable === true);
       } else {
         throw new Error('Failed to load driver info');
@@ -102,8 +104,8 @@ export default function DriverDashboard() {
     const token = localStorage.getItem('driverToken');
     if (!token) return;
 
-    const nouvelEtat = !isAvailable;
-    setIsAvailable(nouvelEtat); // retour visuel immédiat
+    const nouvelEtat = !isOnline;
+    setIsOnline(nouvelEtat); // retour visuel immédiat
 
     try {
       const reponse = await fetch(`${API_URL}/api/drivers/availability`, {
@@ -113,7 +115,7 @@ export default function DriverDashboard() {
       });
 
       if (!reponse.ok) {
-        setIsAvailable(!nouvelEtat); // le serveur a refusé : on revient en arrière
+        setIsOnline(!nouvelEtat); // le serveur a refusé : on revient en arrière
 
         // Le bouton revenait en arrière sans un mot : le livreur cliquait,
         // rien ne bougeait, et il ne savait pas que son dossier était en cause.
@@ -124,7 +126,7 @@ export default function DriverDashboard() {
 
       setRefus('');
     } catch {
-      setIsAvailable(!nouvelEtat);
+      setIsOnline(!nouvelEtat);
       setRefus('Erreur de connexion');
     }
   };
@@ -248,8 +250,8 @@ export default function DriverDashboard() {
               <div>
                 <p className="text-gray-400 text-sm">Statut</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <div className={`w-3 h-3 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-                  <p className="text-white font-semibold">{isAvailable ? 'En ligne' : 'Hors ligne'}</p>
+                  <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                  <p className="text-white font-semibold">{isOnline ? 'En ligne' : 'Hors ligne'}</p>
                 </div>
               </div>
             </div>
@@ -260,7 +262,7 @@ export default function DriverDashboard() {
             vie, elles passent donc avant tout le reste. */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-white mb-3">Courses proposées</h2>
-          <PropositionsCourses enLigne={isAvailable} surAcceptation={loadDriverData} />
+          <PropositionsCourses isOnline={isOnline} isAvailable={isAvailable} surAcceptation={loadDriverData} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
