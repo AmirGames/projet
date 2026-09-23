@@ -37,7 +37,11 @@ export default function MerchantsPage() {
 
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      setMerchants(data.merchants || []);
+      // L'API renvoie les statuts de la base, en majuscules (ACTIVE) ; l'écran
+      // — couleurs, filtre, libellés — les attend en minuscules.
+      setMerchants(
+        (data.merchants || []).map((ligne: any) => ({ ...ligne, status: String(ligne.status || '').toLowerCase() }))
+      );
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -148,7 +152,7 @@ export default function MerchantsPage() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(merchant.status)}`}>
                         {getStatusIcon(merchant.status)}
-                        {t(`status.${merchant.status}`)}
+                        {t.has(`status.${merchant.status}`) ? t(`status.${merchant.status}`) : merchant.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">

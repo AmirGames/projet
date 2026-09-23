@@ -37,7 +37,11 @@ export default function ClientsPage() {
 
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      setClients(data.clients || []);
+      // L'API renvoie les statuts de la base, en majuscules (ACTIVE) ; l'écran
+      // — couleurs, filtre, libellés — les attend en minuscules.
+      setClients(
+        (data.clients || []).map((ligne: any) => ({ ...ligne, status: String(ligne.status || '').toLowerCase() }))
+      );
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -150,7 +154,7 @@ export default function ClientsPage() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(client.status)}`}>
                         {getStatusIcon(client.status)}
-                        {t(`status.${client.status}`)}
+                        {t.has(`status.${client.status}`) ? t(`status.${client.status}`) : client.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
