@@ -24,7 +24,7 @@ interface Review {
 }
 
 export default function ReviewsPage() {
-  const t = useTranslations('merchantreviews');
+  const t = useTranslations('merchantReviews');
   const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();
@@ -137,7 +137,7 @@ export default function ReviewsPage() {
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-400">Chargement des avis...</p>
+              <p className="text-gray-400">{t('loading')}</p>
             </div>
           </div>
         </div>
@@ -151,62 +151,65 @@ export default function ReviewsPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">Avis et Évaluations</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
             <Link
               href={`/merchant/${orgId}/dashboard`}
               className="text-gray-400 hover:text-gray-300 text-sm"
             >
-              ← Retour au tableau de bord
+              {t('backToDashboard')}
             </Link>
           </div>
-          <p className="text-gray-400">Gérez et modérez les avis clients</p>
+          <p className="text-gray-400">{t('description')}</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <p className="text-gray-400 text-xs mb-1">Total</p>
+            <p className="text-gray-400 text-xs mb-1">{t('total')}</p>
             <p className="text-2xl font-bold">{total}</p>
           </div>
           <div className="bg-yellow-600/20 border border-yellow-600/50 rounded-lg p-4">
-            <p className="text-yellow-400 text-xs mb-1">En Attente</p>
+            <p className="text-yellow-400 text-xs mb-1">{t('pending')}</p>
             <p className="text-2xl font-bold text-yellow-400">{reviews.filter(r => r.status === 'PENDING').length}</p>
           </div>
           <div className="bg-green-600/20 border border-green-600/50 rounded-lg p-4">
-            <p className="text-green-400 text-xs mb-1">Approuvés</p>
+            <p className="text-green-400 text-xs mb-1">{t('approved')}</p>
             <p className="text-2xl font-bold text-green-400">{reviews.filter(r => r.status === 'APPROVED').length}</p>
           </div>
           <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4">
-            <p className="text-red-400 text-xs mb-1">Rejetés</p>
+            <p className="text-red-400 text-xs mb-1">{t('rejected')}</p>
             <p className="text-2xl font-bold text-red-400">{reviews.filter(r => r.status === 'REJECTED').length}</p>
           </div>
         </div>
 
         {/* Filter Buttons */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map(s => (
-            <button
-              key={s}
-              onClick={() => {
-                setStatus(s);
-                setPage(0);
-              }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                status === s
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-300 border border-gray-700'
-              }`}
-            >
-              {s === 'ALL' ? 'Tous les avis' : s}
-            </button>
-          ))}
+          {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map(s => {
+            const labelKey = s === 'ALL' ? 'allReviews' : s.toLowerCase();
+            return (
+              <button
+                key={s}
+                onClick={() => {
+                  setStatus(s);
+                  setPage(0);
+                }}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  status === s
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-300 border border-gray-700'
+                }`}
+              >
+                {t(labelKey)}
+              </button>
+            );
+          })}
         </div>
 
         {/* Reviews List */}
         <div className="space-y-4">
           {reviews.length === 0 ? (
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center text-gray-400">
-              Aucun avis trouvé
+              {t('noReviews')}
             </div>
           ) : (
             reviews.map((review) => (
@@ -239,9 +242,9 @@ export default function ReviewsPage() {
                       ? 'bg-red-600/20 text-red-400 border-red-600/50'
                       : 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50'
                   }`}>
-                    {review.status === 'APPROVED' && '✓ Approuvé'}
-                    {review.status === 'REJECTED' && '✕ Rejeté'}
-                    {review.status === 'PENDING' && '⧖ En Attente'}
+                    {review.status === 'APPROVED' && t('approved_status')}
+                    {review.status === 'REJECTED' && t('rejected_status')}
+                    {review.status === 'PENDING' && t('pending_status')}
                   </span>
                 </div>
 
@@ -257,7 +260,7 @@ export default function ReviewsPage() {
                       className="px-3 py-2 bg-green-600/20 text-green-400 hover:bg-green-600/30 rounded text-xs font-medium transition-colors disabled:opacity-50"
                     >
                       {updating === review.id ? '...' : <CheckCircle size={14} className="inline mr-1" />}
-                      Approuver
+                      {t('approve')}
                     </button>
                   )}
                   <button
@@ -266,7 +269,7 @@ export default function ReviewsPage() {
                     className="px-3 py-2 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded text-xs font-medium transition-colors disabled:opacity-50"
                   >
                     {updating === review.id ? '...' : <Trash2 size={14} className="inline mr-1" />}
-                    Supprimer
+                    {t('delete')}
                   </button>
                 </div>
               </div>
@@ -278,7 +281,7 @@ export default function ReviewsPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-8 px-6 py-4 bg-gray-800 border border-gray-700 rounded-lg">
             <p className="text-sm text-gray-400">
-              Page {page + 1} sur {totalPages}
+              {t('pagination').replace('{page}', (page + 1).toString()).replace('{total}', totalPages.toString())}
             </p>
             <div className="flex gap-2">
               <button
@@ -286,14 +289,14 @@ export default function ReviewsPage() {
                 disabled={page === 0}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
               >
-                Précédent
+                {t('previous')}
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
               >
-                Suivant
+                {t('next')}
               </button>
             </div>
           </div>

@@ -49,9 +49,9 @@ export default function AncienneVitrineClient() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-6">
         <div className="text-center">
-          <p className="text-white font-semibold mb-2">Ce commerce est introuvable</p>
+          <p className="text-white font-semibold mb-2">{t('notFound')}</p>
           <Link href="/restaurants" className="text-orange-500 hover:underline">
-            Voir tous les commerces
+            {t('seeAll')}
           </Link>
         </div>
       </div>

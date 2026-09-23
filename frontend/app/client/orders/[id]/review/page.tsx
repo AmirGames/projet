@@ -33,7 +33,7 @@ interface ReviewState {
 }
 
 export default function ReviewPage() {
-  const t = useTranslations('clientorders');
+  const t = useTranslations('clientOrders');
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
@@ -84,7 +84,7 @@ export default function ReviewPage() {
       setLoading(false);
     } catch (err) {
       console.error('Error loading order:', err);
-      setError('Erreur lors du chargement de la commande');
+      setError(t('errorLoading'));
       setLoading(false);
     }
   };
@@ -166,10 +166,10 @@ export default function ReviewPage() {
           router.push(`/client/orders/${orderId}`);
         }, 2000);
       } else {
-        setError('Erreur lors de la soumission de certains avis');
+        setError(t('errorPartial'));
       }
     } catch (err) {
-      setError("Erreur lors de la soumission de l\'avis");
+      setError(t('errorSubmitting'));
       console.error('Error submitting review:', err);
     } finally {
       setSubmitting(false);
@@ -179,7 +179,7 @@ export default function ReviewPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <p className="text-white">Chargement...</p>
+        <p className="text-white">{t('loading')}</p>
       </div>
     );
   }
@@ -191,12 +191,12 @@ export default function ReviewPage() {
           <div className="max-w-2xl mx-auto px-4 py-4">
             <Link href="/client/orders" className="flex items-center gap-2 text-orange-500 hover:text-orange-400">
               <ArrowLeft size={20} />
-              Retour
+              {t('backToOrder')}
             </Link>
           </div>
         </header>
         <div className="max-w-2xl mx-auto px-4 py-8">
-          <p className="text-white">Commande non trouvée</p>
+          <p className="text-white">{t('orderNotFound')}</p>
         </div>
       </div>
     );
@@ -236,7 +236,7 @@ export default function ReviewPage() {
         <div className="max-w-2xl mx-auto px-4 py-4">
           <Link href={`/client/orders/${orderId}`} className="flex items-center gap-2 text-orange-500 hover:text-orange-400">
             <ArrowLeft size={20} />
-            Retour à la commande
+            {t('backToOrder')}
           </Link>
         </div>
       </header>
@@ -245,8 +245,8 @@ export default function ReviewPage() {
         <div className="bg-gray-800 rounded-lg p-8">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Évaluer votre commande</h1>
-              <p className="text-gray-400">Notez le restaurant, le livreur et les produits</p>
+              <h1 className="text-3xl font-bold text-white mb-2">{t('reviewTitle')}</h1>
+              <p className="text-gray-400">{t('reviewSubtitle')}</p>
             </div>
             <button
               type="button"
@@ -257,15 +257,15 @@ export default function ReviewPage() {
                   : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
               }`}
             >
-              ⚡ {expressMode ? 'Mode Rapide' : 'Mode Détaillé'}
+              ⚡ {expressMode ? t('expressMode') : t('detailedMode')}
             </button>
           </div>
 
           {success ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">✓</div>
-              <p className="text-white text-xl font-semibold mb-2">Merci pour votre avis !</p>
-              <p className="text-gray-400">Vous allez être redirigé...</p>
+              <p className="text-white text-xl font-semibold mb-2">{t('thankYou')}</p>
+              <p className="text-gray-400">{t('redirecting')}</p>
             </div>
           ) : (
             <form onSubmit={handleSubmitReview} className="space-y-8">
@@ -286,7 +286,7 @@ export default function ReviewPage() {
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  🍽️ Restaurant
+                  {t('restaurantTab')}
                 </button>
                 <button
                   type="button"
@@ -297,7 +297,7 @@ export default function ReviewPage() {
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  🚗 Livreur
+                  {t('deliveryTab')}
                 </button>
                 <button
                   type="button"
@@ -308,7 +308,7 @@ export default function ReviewPage() {
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  📦 Produits
+                  {t('productsTab')}
                 </button>
               </div>
 
@@ -316,7 +316,7 @@ export default function ReviewPage() {
               {activeTab === 'restaurant' && (
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-white font-semibold mb-4">Comment avez-vous trouvé le restaurant ?</label>
+                    <label className="block text-white font-semibold mb-4">{t('restaurantQuestion')}</label>
                     {renderStars(reviews.restaurant.rating, (r) =>
                       setReviews(prev => ({ ...prev, restaurant: { ...prev.restaurant, rating: r } }))
                     )}
@@ -325,14 +325,14 @@ export default function ReviewPage() {
 
                   {!expressMode && (
                     <div>
-                      <label className="block text-white font-semibold mb-4">Commentaire (optionnel)</label>
+                      <label className="block text-white font-semibold mb-4">{t('commentOptional')}</label>
                       <textarea
                         value={reviews.restaurant.comment}
                         onChange={(e) => setReviews(prev => ({
                           ...prev,
                           restaurant: { ...prev.restaurant, comment: e.target.value }
                         }))}
-                        placeholder="Qualité du repas, présentation, température..."
+                        placeholder={t('restaurantPlaceholder')}
                         rows={4}
                         className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
                       />
@@ -345,7 +345,7 @@ export default function ReviewPage() {
               {activeTab === 'delivery' && (
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-white font-semibold mb-4">Comment s'est passée la livraison ?</label>
+                    <label className="block text-white font-semibold mb-4">{t('deliveryQuestion')}</label>
                     {renderStars(reviews.delivery.rating, (r) =>
                       setReviews(prev => ({ ...prev, delivery: { ...prev.delivery, rating: r } }))
                     )}
@@ -354,14 +354,14 @@ export default function ReviewPage() {
 
                   {!expressMode && (
                     <div>
-                      <label className="block text-white font-semibold mb-4">Commentaire (optionnel)</label>
+                      <label className="block text-white font-semibold mb-4">{t('commentOptional')}</label>
                       <textarea
                         value={reviews.delivery.comment}
                         onChange={(e) => setReviews(prev => ({
                           ...prev,
                           delivery: { ...prev.delivery, comment: e.target.value }
                         }))}
-                        placeholder="Rapidité, politesse du livreur, état du colis..."
+                        placeholder={t('deliveryPlaceholder')}
                         rows={4}
                         className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
                       />
@@ -406,7 +406,7 @@ export default function ReviewPage() {
                                 [item.id]: { ...prev.products[item.id], comment: e.target.value }
                               }
                             }))}
-                            placeholder="Goût, fraîcheur, portion..."
+                            placeholder={t('productPlaceholder')}
                             rows={3}
                             className="w-full px-4 py-3 bg-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500 text-sm"
                           />
@@ -414,7 +414,7 @@ export default function ReviewPage() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-gray-400">Aucun produit à évaluer</p>
+                    <p className="text-gray-400">{t('noProducts')}</p>
                   )}
                 </div>
               )}
@@ -425,11 +425,11 @@ export default function ReviewPage() {
                 disabled={submitting}
                 className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-3 rounded-lg transition"
               >
-                {submitting ? 'Envoi en cours...' : expressMode ? '⚡ Soumettre rapidement' : 'Soumettre tous les avis'}
+                {submitting ? t('submitting') : expressMode ? t('submitExpress') : t('submitReview')}
               </button>
 
               <p className="text-gray-400 text-xs text-center">
-                {expressMode ? '⚡ Mode rapide : 30 secondes pour noter' : 'Vos avis nous aident à améliorer notre service'}
+                {expressMode ? t('expressMessage') : t('detailedMessage')}
               </p>
             </form>
           )}

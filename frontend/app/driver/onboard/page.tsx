@@ -51,13 +51,13 @@ export default function DriverOnboardPage() {
     const newErrors: FormErrors = {};
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Le téléphone est requis';
+      newErrors.phone = t('phoneRequired');
     } else if (!/^[\d\s+()-]{9,}$/.test(formData.phone)) {
-      newErrors.phone = 'Le numéro de téléphone est invalide';
+      newErrors.phone = t('phoneInvalid');
     }
 
     if (formData.vehicleType !== 'bike' && !formData.vehiclePlate.trim()) {
-      newErrors.vehiclePlate = 'La plaque est requise pour ce type de véhicule';
+      newErrors.vehiclePlate = t('plateRequired');
     }
 
     setErrors(newErrors);
@@ -93,11 +93,11 @@ export default function DriverOnboardPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setApiError(data.message || 'Une erreur est survenue');
+        setApiError(data.message || t('errorMessage'));
         return;
       }
 
-      setSuccessMessage('Inscription livreur réussie !');
+      setSuccessMessage(t('successMessage'));
 
       // Stocker les infos du livreur
       localStorage.setItem('driverToken', data.accessToken);
@@ -106,7 +106,7 @@ export default function DriverOnboardPage() {
         router.push('/driver');
       }, 1500);
     } catch (error) {
-      setApiError('Erreur de connexion au serveur');
+      setApiError(t('connectionError'));
       console.error('Error:', error);
     } finally {
       setLoading(false);
@@ -138,8 +138,8 @@ export default function DriverOnboardPage() {
               <Bike size={32} className="text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">Devenir livreur</h1>
-              <p className="text-slate-400">Connecté en tant que {user?.email}</p>
+              <h1 className="text-3xl font-bold text-white">{t('heading')}</h1>
+              <p className="text-slate-400">{t('subtitle').replace('{email}', user?.email || '')}</p>
             </div>
           </div>
         </div>
@@ -162,14 +162,14 @@ export default function DriverOnboardPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Numéro de téléphone *
+                {t('phoneLabel')}
               </label>
               <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                placeholder="+33 6 12 34 56 78"
+                placeholder={t('phonePlaceholder')}
                 className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
               />
               {errors.phone && <p className="text-red-400 text-sm mt-1">{errors.phone}</p>}
@@ -177,40 +177,43 @@ export default function DriverOnboardPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-3">
-                Type de véhicule *
+                {t('vehicleLabel')}
               </label>
               <div className="grid grid-cols-3 gap-3">
-                {VEHICULES.map(({ valeur, libelle, icone: Icon }) => (
-                  <button
-                    key={valeur}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, vehicleType: valeur as any })}
-                    className={`p-4 rounded-lg border-2 transition flex flex-col items-center gap-2 ${
-                      formData.vehicleType === valeur
-                        ? 'border-orange-500 bg-orange-500/20'
-                        : 'border-slate-600 hover:border-slate-500'
-                    }`}
-                  >
-                    <Icon size={24} className={formData.vehicleType === valeur ? 'text-orange-400' : 'text-slate-400'} />
-                    <span className={formData.vehicleType === valeur ? 'text-orange-400 font-medium' : 'text-slate-400'}>
-                      {libelle}
-                    </span>
-                  </button>
-                ))}
+                {VEHICULES.map(({ valeur, icone: Icon }) => {
+                  const labelKey = valeur === 'bike' ? 'vehicleBike' : valeur === 'scooter' ? 'vehicleScooter' : 'vehicleCar';
+                  return (
+                    <button
+                      key={valeur}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, vehicleType: valeur as any })}
+                      className={`p-4 rounded-lg border-2 transition flex flex-col items-center gap-2 ${
+                        formData.vehicleType === valeur
+                          ? 'border-orange-500 bg-orange-500/20'
+                          : 'border-slate-600 hover:border-slate-500'
+                      }`}
+                    >
+                      <Icon size={24} className={formData.vehicleType === valeur ? 'text-orange-400' : 'text-slate-400'} />
+                      <span className={formData.vehicleType === valeur ? 'text-orange-400 font-medium' : 'text-slate-400'}>
+                        {t(labelKey)}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {formData.vehicleType !== 'bike' && (
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Plaque d'immatriculation *
+                  {t('plateLabelRequired')}
                 </label>
                 <input
                   type="text"
                   name="vehiclePlate"
                   value={formData.vehiclePlate}
                   onChange={handleChange}
-                  placeholder="AB-123-CD"
+                  placeholder={t('platePlaceholder')}
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
                 />
                 {errors.vehiclePlate && <p className="text-red-400 text-sm mt-1">{errors.vehiclePlate}</p>}
@@ -219,7 +222,7 @@ export default function DriverOnboardPage() {
 
             <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
               <p className="text-slate-400 text-sm">
-                ℹ️ Votre dossier sera vérifié avant de pouvoir prendre vos premières courses. Vous devrez peut-être fournir des documents supplémentaires.
+                {t('infoMessage')}
               </p>
             </div>
 
@@ -230,13 +233,13 @@ export default function DriverOnboardPage() {
                 className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-600 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2"
               >
                 {loading ? <Loader className="animate-spin" size={20} /> : null}
-                {loading ? 'Inscription en cours...' : "S'inscrire comme livreur"}
+                {loading ? t('registering') : t('registerButton')}
               </button>
               <Link
                 href="/"
                 className="px-6 py-3 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white font-bold rounded-lg transition"
               >
-                Annuler
+                {t('cancelButton')}
               </Link>
             </div>
           </form>
