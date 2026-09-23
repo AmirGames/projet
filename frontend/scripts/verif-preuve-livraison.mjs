@@ -162,8 +162,11 @@ const contexte = await nav.newContext({
 
 const pageClient = await contexte.newPage();
 const erreursClient = [];
+// Les tuiles de la carte viennent d'OpenStreetMap : hors réseau, leur échec
+// de chargement n'est pas une erreur de la page.
+const HORS_RESEAU = /tile\.openstreetmap|net::ERR_/;
 pageClient.on('console', (m) => {
-  if (m.type() === 'error') erreursClient.push(m.text());
+  if (m.type() === 'error' && !HORS_RESEAU.test(m.text())) erreursClient.push(m.text());
 });
 
 titre('Le client lit son code de remise');
@@ -186,7 +189,7 @@ const erreurs = [];
 page.on('console', (m) => {
   // Un code refusé provoque un 400 attendu : c'est le comportement vérifié,
   // pas une erreur de la page.
-  if (m.type() === 'error' && !/400/.test(m.text())) erreurs.push(m.text());
+  if (m.type() === 'error' && !/400/.test(m.text()) && !HORS_RESEAU.test(m.text())) erreurs.push(m.text());
 });
 
 titre('Le livreur se voit demander le code');
