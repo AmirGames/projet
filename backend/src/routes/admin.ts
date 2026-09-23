@@ -82,6 +82,11 @@ router.put("/config", authMiddleware, isSystemAdmin, async (req: Request, res: R
       maintenanceMode: z.boolean().optional(),
       maintenanceMessage: z.string().optional(),
       selectedTheme: z.string().optional(),
+      // Attribution des courses aux livreurs
+      driverBaseFee: z.number().min(0).optional(),
+      driverPerKmFee: z.number().min(0).optional(),
+      driverOfferSeconds: z.number().int().min(10).max(600).optional(),
+      driverMaxRadiusKm: z.number().min(1).max(50).optional(),
     });
 
     const body = schema.parse(req.body);

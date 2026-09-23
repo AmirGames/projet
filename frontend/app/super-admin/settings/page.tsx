@@ -18,6 +18,10 @@ export default function SettingsPage() {
     maintenanceMode: false,
     maintenanceMessage: '',
     selectedTheme: 'dark',
+    driverBaseFee: 2.5,
+    driverPerKmFee: 0.8,
+    driverOfferSeconds: 30,
+    driverMaxRadiusKm: 8,
   });
 
   useEffect(() => {
@@ -41,6 +45,10 @@ export default function SettingsPage() {
         maintenanceMode: data.maintenanceMode,
         maintenanceMessage: data.maintenanceMessage || '',
         selectedTheme: data.selectedTheme || 'dark',
+        driverBaseFee: Number(data.driverBaseFee ?? 2.5),
+        driverPerKmFee: Number(data.driverPerKmFee ?? 0.8),
+        driverOfferSeconds: Number(data.driverOfferSeconds ?? 30),
+        driverMaxRadiusKm: Number(data.driverMaxRadiusKm ?? 8),
       });
       // Apply saved theme
       applyTheme(getTheme(data.selectedTheme || 'dark'));
@@ -82,6 +90,10 @@ export default function SettingsPage() {
           platformFeePercent: Number(formData.platformFeePercent),
           minOrderAmount: Number(formData.minOrderAmount),
           maxOrderAmount: Number(formData.maxOrderAmount),
+          driverBaseFee: Number(formData.driverBaseFee),
+          driverPerKmFee: Number(formData.driverPerKmFee),
+          driverOfferSeconds: Math.round(Number(formData.driverOfferSeconds)),
+          driverMaxRadiusKm: Number(formData.driverMaxRadiusKm),
         }),
       });
 
@@ -180,6 +192,68 @@ export default function SettingsPage() {
                 min="0"
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Section : Livraison */}
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+          <h2 className="text-lg font-bold">Livraison et livreurs</h2>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Rayon de recherche (km)</label>
+              <input
+                type="number"
+                name="driverMaxRadiusKm"
+                value={formData.driverMaxRadiusKm}
+                onChange={handleChange}
+                step="0.5"
+                min="1"
+                max="50"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">Distance maximale boutique ↔ livreur pour proposer une course</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Délai d'acceptation (s)</label>
+              <input
+                type="number"
+                name="driverOfferSeconds"
+                value={formData.driverOfferSeconds}
+                onChange={handleChange}
+                step="1"
+                min="10"
+                max="600"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">Temps laissé au livreur avant de passer au suivant</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Rémunération de base (€)</label>
+              <input
+                type="number"
+                name="driverBaseFee"
+                value={formData.driverBaseFee}
+                onChange={handleChange}
+                step="0.1"
+                min="0"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">Montant fixe par course</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Rémunération par km (€)</label>
+              <input
+                type="number"
+                name="driverPerKmFee"
+                value={formData.driverPerKmFee}
+                onChange={handleChange}
+                step="0.05"
+                min="0"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">Ajouté pour chaque km boutique ↔ livreur</p>
             </div>
           </div>
         </div>
