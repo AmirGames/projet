@@ -772,8 +772,8 @@
     "closeStoreTitle": "Close store « {name} »",
     "closeStoreExplanation": "A closed store no longer accepts orders. It can be reopened later.",
     "reopenStore": "Reopen store",
-    "closed": "Closed",
-    "active": "Active",
+    "closed": "closed",
+    "active": "open",
     "closureReason": "Reason for closure",
     "closureReasonLabel": "Why is this store closed?",
     "confirmClose": "Confirm closure",
@@ -783,7 +783,7 @@
     "updateFailed": "Unable to update store",
     "unknownError": "An unknown error occurred",
     "noChanges": "No changes to save",
-    "plan": "Plan"
+    "plan": "plan"
   },
   "superownerNotifications": {
     "title": "Notifications & Alerts",

@@ -772,8 +772,8 @@
     "closeStoreTitle": "Fermer la boutique « {name} »",
     "closeStoreExplanation": "Une boutique fermée n'accepte plus de commande. Elle peut être rouverte ultérieurement.",
     "reopenStore": "Rouvrir la boutique",
-    "closed": "Fermée",
-    "active": "Active",
+    "closed": "fermée",
+    "active": "ouverte",
     "closureReason": "Raison de la fermeture",
     "closureReasonLabel": "Pourquoi cette boutique est-elle fermée ?",
     "confirmClose": "Confirmer la fermeture",
@@ -783,7 +783,7 @@
     "updateFailed": "Impossible de mettre à jour la boutique",
     "unknownError": "Une erreur inconnue s'est produite",
     "noChanges": "Aucune modification à enregistrer",
-    "plan": "Plan"
+    "plan": "formule"
   },
   "superownerNotifications": {
     "title": "Notifications & Alertes",
