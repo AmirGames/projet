@@ -55,6 +55,21 @@ const statusIcons: Record<string, any> = {
   REJECTED: AlertCircle,
 };
 
+/** Explique au commerçant pourquoi aucun livreur n'est listé. */
+function expliquerAbsence(
+  d: { total: number; actifs: number; enLigne: number; libres: number; localises: number; plusProcheKm: number | null } | undefined,
+  rayon?: number
+): string | null {
+  if (!d) return null;
+  if (d.total === 0) return "Aucun livreur n'est inscrit sur la plateforme.";
+  if (d.actifs === 0) return `${d.total} livreur(s) inscrit(s), mais aucun dossier validé (statut ACTIVE) par la plateforme.`;
+  if (d.enLigne === 0) return `${d.actifs} livreur(s) validé(s), mais aucun n'est en ligne. Le livreur doit activer « En ligne » dans son espace.`;
+  if (d.libres === 0) return `${d.enLigne} livreur(s) en ligne, mais tous sont déjà en course.`;
+  if (d.localises === 0) return `${d.libres} livreur(s) en ligne, mais aucun n'a partagé sa position. Le livreur doit autoriser la localisation dans son navigateur.`;
+  if (d.plusProcheKm != null) return `Le livreur le plus proche est à ${d.plusProcheKm.toFixed(1)} km, au-delà du rayon de ${rayon ?? '?'} km.`;
+  return null;
+}
+
 export default function OrdersPage() {
   const t = useTranslations('merchantOrders');
   const { storeId } = useCurrentStore();
@@ -72,6 +87,7 @@ export default function OrdersPage() {
   const [useOwnDelivery, setUseOwnDelivery] = useState(false);
   const [showDeliveryModal, setShowDeliveryModal] = useState<string | null>(null);
   const [availableDeliveryMen, setAvailableDeliveryMen] = useState<any[]>([]);
+  const [driversDiagnostic, setDriversDiagnostic] = useState<string | null>(null);
   const [dispatchMessage, setDispatchMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [loadingDeliveryMen, setLoadingDeliveryMen] = useState(false);
 
@@ -191,6 +207,7 @@ export default function OrdersPage() {
       setLoadingDeliveryMen(true);
       setShowDeliveryModal(orderId);
       setDispatchMessage(null);
+      setDriversDiagnostic(null);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;
 
@@ -210,23 +227,28 @@ export default function OrdersPage() {
         throw new Error('Store ID not found in order');
       }
 
-      // Récupérer la liste des livreurs disponibles
+      // Récupérer la liste des livreurs disponibles (rayon réglé par la plateforme)
       const response = await fetch(
-        `${API_URL}/api/drivers/available?storeId=${storeId}&radius=8`,
+        `${API_URL}/api/drivers/available?storeId=${storeId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
+      const data = await response.json().catch(() => null);
+
       if (!response.ok) {
-        throw new Error('Failed to fetch available drivers');
+        throw new Error(data?.error || data?.message || `Erreur ${response.status}`);
       }
 
-      const data = await response.json();
       setAvailableDeliveryMen(data.deliveryMen || []);
+      if ((data.deliveryMen || []).length === 0) {
+        setDriversDiagnostic(expliquerAbsence(data.diagnostic, data.radiusKm));
+      }
     } catch (error) {
       console.error('Error fetching available drivers:', error);
       setAvailableDeliveryMen([]);
+      setDriversDiagnostic(error instanceof Error ? error.message : String(error));
     } finally {
       setLoadingDeliveryMen(false);
     }
@@ -491,6 +513,9 @@ export default function OrdersPage() {
                   <div className="space-y-3">
                     <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 text-center">
                       <p className="text-red-400 text-sm">Aucun livreur disponible à proximité</p>
+                      {driversDiagnostic && (
+                        <p className="text-gray-300 text-xs mt-2">{driversDiagnostic}</p>
+                      )}
                     </div>
                     <button
                       onClick={() => handleSelectDriver(null, showDeliveryModal)}

@@ -993,7 +993,10 @@ router.get("/available", authMiddleware, async (req: Request, res: Response, nex
     res.set('Expires', '0');
 
     const storeId = req.query.storeId as string;
-    const radius = Math.min(parseInt(req.query.radius as string) || 8, 50);
+    // Même rayon que l'attribution par défaut : un livreur listé ici doit
+    // pouvoir recevoir la course.
+    const reglages = await DispatchService.reglages();
+    const radius = Math.min(parseInt(req.query.radius as string) || reglages.maxRadiusKm, 50);
 
     if (!storeId) {
       throw new ApiError(400, "storeId est requis", "STORE_ID_REQUIRED");
@@ -1001,32 +1004,33 @@ router.get("/available", authMiddleware, async (req: Request, res: Response, nex
 
     const store = await db.store.findUnique({
       where: { id: storeId },
-      select: {
-        id: true,
-        latitude: true,
-        longitude: true,
-      },
+      select: { id: true, latitude: true, longitude: true },
     });
 
-    if (!store || store.latitude == null || store.longitude == null) {
-      throw new ApiError(404, "Boutique ou coordonnées introuvables", "STORE_NOT_FOUND");
+    if (!store) {
+      throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
     }
 
-    const drivers = await db.driver.findMany({
-      where: {
-        latitude: { not: null },
-        longitude: { not: null },
-        status: "ACTIVE",
-        isOnline: true,
-        isAvailable: true,
-        // Même filtre que l'attribution : un livreur déjà en course ne doit
-        // pas apparaître comme sélectionnable.
-        currentOrderId: null,
-      },
+    if (store.latitude == null || store.longitude == null) {
+      throw new ApiError(
+        400,
+        "La boutique n'a pas de coordonnées GPS : renseignez son adresse pour trouver des livreurs",
+        "STORE_WITHOUT_LOCATION"
+      );
+    }
+
+    // Tous les livreurs, puis filtrage étape par étape : quand la liste est
+    // vide, le commerçant voit à quelle condition ils ont tous échoué au lieu
+    // d'un simple « aucun livreur ».
+    const tous = await db.driver.findMany({
       select: {
         id: true,
         name: true,
         phone: true,
+        status: true,
+        isOnline: true,
+        isAvailable: true,
+        currentOrderId: true,
         latitude: true,
         longitude: true,
       },
@@ -1046,7 +1050,12 @@ router.get("/available", authMiddleware, async (req: Request, res: Response, nex
       return R * c;
     };
 
-    const availableDrivers = drivers
+    const actifs = tous.filter((d) => d.status === "ACTIVE");
+    const enLigne = actifs.filter((d) => d.isOnline);
+    const libres = enLigne.filter((d) => d.isAvailable && d.currentOrderId === null);
+    const localises = libres.filter((d) => d.latitude != null && d.longitude != null);
+
+    const avecDistance = localises
       .map((driver) => ({
         id: driver.id,
         name: driver.name,
@@ -1058,13 +1067,24 @@ router.get("/available", authMiddleware, async (req: Request, res: Response, nex
           driver.longitude as number
         ),
       }))
-      .filter((driver) => driver.distance <= radius)
       .sort((a, b) => a.distance - b.distance);
+
+    const availableDrivers = avecDistance.filter((driver) => driver.distance <= radius);
 
     res.json({
       success: true,
       deliveryMen: availableDrivers,
       total: availableDrivers.length,
+      radiusKm: radius,
+      diagnostic: {
+        total: tous.length,
+        actifs: actifs.length,
+        enLigne: enLigne.length,
+        libres: libres.length,
+        localises: localises.length,
+        dansLeRayon: availableDrivers.length,
+        plusProcheKm: avecDistance[0]?.distance ?? null,
+      },
     });
   } catch (err) {
     next(err);
