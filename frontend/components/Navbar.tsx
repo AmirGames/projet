@@ -34,7 +34,6 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <LanguageSwitcher />
             {!user ? (
               <>
                 <Link href="/restaurants" className="text-gray-300 hover:text-white transition">
@@ -67,23 +66,24 @@ export default function Navbar() {
                 </button>
               </>
             )}
+            <LanguageSwitcher />
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 hover:bg-gray-700 rounded-lg"
-          >
-            <Menu size={24} />
-          </button>
+          {/* Mobile : langue toujours visible, à côté du bouton menu */}
+          <div className="md:hidden flex items-center gap-2">
+            <LanguageSwitcher />
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 hover:bg-gray-700 rounded-lg"
+            >
+              <Menu size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="md:hidden pb-4 space-y-2">
-            <div className="px-4 py-2">
-              <LanguageSwitcher />
-            </div>
             {!user ? (
               <>
                 <Link
