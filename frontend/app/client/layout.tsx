@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Home, ShoppingCart, Heart, User, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { SelecteurEspace } from '@/components/SelecteurEspace';
 
 export default function ClientLayout({
   children,
@@ -36,12 +37,12 @@ export default function ClientLayout({
         {/* Mobile Navigation */}
         <nav className="md:hidden bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
           <div className="flex items-center justify-between p-4">
-            <Link href="/client" className="flex items-center gap-2">
+            <SelecteurEspace actuel="client" href="/client" className="gap-2 -ml-2 px-2 py-1">
               <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
                 UE
               </div>
               <span className="font-bold text-white">UberEats</span>
-            </Link>
+            </SelecteurEspace>
 
             <div className="flex items-center gap-2">
               <LanguageSwitcher />
@@ -82,12 +83,12 @@ export default function ClientLayout({
         {/* Desktop Navigation */}
         <nav className="hidden md:block bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/client" className="flex items-center gap-2">
+            <SelecteurEspace actuel="client" href="/client" className="gap-2 -ml-2 px-2 py-1">
               <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
                 UE
               </div>
               <span className="font-bold text-white text-lg">UberEats Like</span>
-            </Link>
+            </SelecteurEspace>
 
             <div className="flex items-center gap-4">
               {navItems.map(item => {

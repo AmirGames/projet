@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LogOut, Menu, X, Home, DollarSign, FileText, BarChart3, MessageCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { SelecteurEspace } from '@/components/SelecteurEspace';
 
 export default function DriverLayout({
   children,
@@ -58,12 +59,12 @@ export default function DriverLayout({
         {afficherBarre && (
           <nav className="md:hidden bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
             <div className="flex items-center justify-between p-4">
-              <Link href="/driver" className="flex items-center gap-2">
+              <SelecteurEspace actuel="driver" href="/driver" className="gap-2 -ml-2 px-2 py-1">
                 <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
                   DR
                 </div>
                 <span className="font-bold text-white">Livreur</span>
-              </Link>
+              </SelecteurEspace>
 
               <div className="flex items-center gap-2">
                 <LanguageSwitcher />
@@ -113,12 +114,12 @@ export default function DriverLayout({
         {afficherBarre && (
           <nav className="hidden md:block bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
             <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-              <Link href="/driver" className="flex items-center gap-2">
+              <SelecteurEspace actuel="driver" href="/driver" className="gap-2 -ml-2 px-2 py-1">
                 <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
                   DR
                 </div>
                 <span className="font-bold text-white text-lg">Espace Livreur</span>
-              </Link>
+              </SelecteurEspace>
 
               <div className="flex items-center gap-4">
                 {navItems.map(item => {

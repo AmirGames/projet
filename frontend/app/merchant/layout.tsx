@@ -18,6 +18,7 @@ import {
 import { memoriserBoutique } from '@/lib/current-store';
 import { NotificationBell } from '@/components/NotificationBell';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { SelecteurEspace } from '@/components/SelecteurEspace';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -117,7 +118,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
         } bg-gray-800 border-r border-gray-700 transition-all duration-300 flex flex-col`}
       >
         <div className="p-6 border-b border-gray-700">
-          <div className="flex items-center gap-3">
+          <SelecteurEspace actuel="merchant" href="/merchant" className="gap-3 -m-2 p-2 w-full min-w-0" chevron={menuOuvert}>
             <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
               <LayoutGrid size={20} />
             </div>
@@ -139,7 +140,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
                 </div>
               </div>
             )}
-          </div>
+          </SelecteurEspace>
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">

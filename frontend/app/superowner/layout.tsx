@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useProtectedRoute } from '@/lib/use-protected-route';
 import { NotificationBell } from '@/components/NotificationBell';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { SelecteurEspace } from '@/components/SelecteurEspace';
 import {
   Home,
   Building2,
@@ -149,12 +150,12 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       >
         {/* Logo */}
         <div className="p-6 border-b border-gray-700">
-          <div className="flex items-center gap-3">
+          <SelecteurEspace actuel="superowner" href="/superowner" className="gap-3 -m-2 p-2 w-full min-w-0" chevron={sidebarOpen}>
             <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center font-bold">
               <Lock size={20} />
             </div>
             {sidebarOpen && <span className="font-bold text-lg">{t('brand')}</span>}
-          </div>
+          </SelecteurEspace>
         </div>
 
         {/* Navigation */}

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { NotificationBell } from '@/components/NotificationBell';
 import { StoreSwitcher } from '@/components/StoreSwitcher';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { CurrentStoreProvider } from '@/lib/current-store';
 import { useStatutCompte } from '@/lib/use-statut-compte';
 import {
@@ -147,7 +148,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
       >
         {/* Logo */}
         <div className="p-6 border-b border-gray-700">
-          <div className="flex items-center gap-3">
+          <SelecteurEspace actuel="merchant" href="/merchant" className="gap-3 -m-2 p-2 w-full min-w-0" chevron={sidebarOpen}>
             <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
               {orgStatus?.name?.charAt(0).toUpperCase() || 'M'}
             </div>
@@ -169,7 +170,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
                 </div>
               </div>
             )}
-          </div>
+          </SelecteurEspace>
         </div>
 
         {/* Navigation */}
