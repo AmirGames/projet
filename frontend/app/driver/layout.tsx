@@ -17,11 +17,18 @@ export default function DriverLayout({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Relu à chaque changement de page : le layout reste monté d'une page à
+  // l'autre, et une déconnexion doit faire disparaître la barre livreur.
   useEffect(() => {
     const token = localStorage.getItem('driverToken');
     setIsAuthenticated(!!token);
     setIsLoading(false);
-  }, []);
+  }, [pathname]);
+
+  // Connexion et inscription portent la navbar globale : la barre livreur
+  // s'y ajouterait par-dessus (ancien jeton encore en mémoire).
+  const pageSansSession = pathname === '/driver/login' || pathname === '/driver/signup';
+  const afficherBarre = isAuthenticated && !pageSansSession;
 
   const navItems = [
     { href: '/driver', label: 'Tableau de bord', icon: Home },
@@ -48,7 +55,7 @@ export default function DriverLayout({
     <>
       <div className="min-h-screen bg-gray-900">
         {/* Mobile Navigation - Afficher uniquement si authentifié */}
-        {isAuthenticated && (
+        {afficherBarre && (
           <nav className="md:hidden bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
             <div className="flex items-center justify-between p-4">
               <Link href="/driver" className="flex items-center gap-2">
@@ -103,7 +110,7 @@ export default function DriverLayout({
         )}
 
         {/* Desktop Navigation - Afficher uniquement si authentifié */}
-        {isAuthenticated && (
+        {afficherBarre && (
           <nav className="hidden md:block bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
             <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
               <Link href="/driver" className="flex items-center gap-2">
