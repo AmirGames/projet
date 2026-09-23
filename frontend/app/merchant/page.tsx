@@ -11,7 +11,6 @@ import { euro } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-  const t = useTranslations('merchantDashboard');
 interface Store {
   id: string;
   name: string;
