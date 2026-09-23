@@ -50,6 +50,7 @@ router.get("/nearby-stores", async (req: Request, res: Response, next: NextFunct
     const stores = await db.store.findMany({
       where: {
         isOpen: true,
+        org: { status: "ACTIVE", approvedAt: { not: null } },
         latitude: { not: null },
         longitude: { not: null }
       },

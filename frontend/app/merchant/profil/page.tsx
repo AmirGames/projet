@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
+  AlertTriangle,
   ArrowLeft,
   Building2,
   Check,
@@ -41,7 +42,7 @@ interface Piece {
   documentUrl: string;
   fileName: string | null;
   expiryDate: string | null;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
   reviewNote: string | null;
 }
 
@@ -72,13 +73,24 @@ interface Profil {
   exempleTva: string | null;
   manquePourFacturer: string[];
   manquePourEtrePaye: string[];
+  validation: {
+    valide: boolean;
+    piecesExigees: { type: string; libelle: string }[];
+    piecesManquantes: { type: string; libelle: string }[];
+  };
 }
 
 const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
   APPROVED: { icone: Check, classe: 'text-green-400', libelle: 'Validé' },
   REJECTED: { icone: X, classe: 'text-red-400', libelle: 'Refusé' },
   PENDING: { icone: Clock, classe: 'text-gray-400', libelle: "En attente d'examen" },
+  EXPIRED: { icone: AlertTriangle, classe: 'text-amber-400', libelle: 'Expiré — déposez une version à jour' },
 };
+
+/** Le délai de prévenance : c'est aussi celui du rappel envoyé par la plateforme. */
+const JOURS_AVANT_EXPIRATION = 30;
+
+const joursAvant = (date: string) => Math.ceil((new Date(date).getTime() - Date.now()) / 86400000);
 
 /** Une date ISO ramenée à ce qu'un champ `date` attend, sans décalage d'heure. */
 const pourChamp = (date: string | null) => {
@@ -343,6 +355,29 @@ export default function ProfilCommercantPage() {
             </Link>
             . C&apos;est la plateforme qui lève la suspension.
           </p>
+        </div>
+      )}
+
+      {/* Tant que la plateforme n'a pas validé le commerce, il prépare sa
+          boutique mais ne peut pas l'ouvrir : lui dire quoi fournir. */}
+      {profil.validation && !profil.validation.valide && (
+        <div
+          role="status"
+          className="rounded-lg border border-blue-700/50 bg-blue-900/20 px-4 py-3 text-blue-100 text-sm space-y-1"
+        >
+          <p className="font-semibold">Votre commerce est en attente de validation</p>
+          <p>
+            Vous pouvez préparer votre boutique — produits, catégories, horaires — mais vous
+            pourrez l&apos;ouvrir une fois vos documents validés par la plateforme.
+          </p>
+          {profil.validation.piecesManquantes.length > 0 ? (
+            <p>
+              Pièces à fournir ou en cours d&apos;examen :{' '}
+              {profil.validation.piecesManquantes.map((piece) => piece.libelle).join(', ')}.
+            </p>
+          ) : (
+            <p>Vos pièces sont validées : la plateforme va valider votre commerce.</p>
+          )}
         </div>
       )}
 
@@ -654,6 +689,21 @@ export default function ProfilCommercantPage() {
                   <div className="min-w-0">
                     <p className="text-white text-sm font-medium">{document.libelle}</p>
                     <p className={`text-xs ${marque.classe}`}>{marque.libelle}</p>
+                    {document.expiryDate && document.status !== 'EXPIRED' && (
+                      <p
+                        className={`text-xs ${
+                          joursAvant(document.expiryDate) <= JOURS_AVANT_EXPIRATION
+                            ? 'text-amber-300 font-medium'
+                            : 'text-gray-400'
+                        }`}
+                      >
+                        Expire le {new Date(document.expiryDate).toLocaleDateString('fr-FR')}
+                        {joursAvant(document.expiryDate) <= JOURS_AVANT_EXPIRATION &&
+                          ` — dans ${joursAvant(document.expiryDate)} jour${
+                            joursAvant(document.expiryDate) > 1 ? 's' : ''
+                          }, déposez-en une nouvelle`}
+                      </p>
+                    )}
                     {document.reviewNote && (
                       <p className="text-xs text-red-300 mt-1">{document.reviewNote}</p>
                     )}

@@ -27,7 +27,9 @@ router.get("/stores", async (_req: Request, res: Response, next: NextFunction) =
        * Elle est maintenant listée avec son `isOpen`, que la vitrine affiche en
        * « momentanément indisponible » — on peut voir le menu, pas commander.
        */
-      where: { deletedAt: null, org: { status: "ACTIVE" } },
+      // Un commerce pas encore validé ne se montre pas : il prépare sa
+      // boutique, il ne vend pas encore.
+      where: { deletedAt: null, org: { status: "ACTIVE", approvedAt: { not: null } } },
       include: {
         org: {
           select: { id: true, name: true, slug: true }
@@ -74,7 +76,7 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
       where: {
         // Fermée ou non : c'est la vitrine qui le dit, pas cette liste.
         deletedAt: null,
-        org: { status: "ACTIVE" },
+        org: { status: "ACTIVE", approvedAt: { not: null } },
         latitude: { not: null },
         longitude: { not: null },
       },
@@ -138,7 +140,7 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
     const stores = await db.store.findMany({
       where: {
         deletedAt: null,
-        org: { status: "ACTIVE" },
+        org: { status: "ACTIVE", approvedAt: { not: null } },
         OR: [
           { name: { contains: searchQuery, mode: "insensitive" } },
           { description: { contains: searchQuery, mode: "insensitive" } },
@@ -248,7 +250,7 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
       where: { id: id as string },
       include: {
         org: {
-          select: { id: true, name: true, slug: true, email: true, status: true }
+          select: { id: true, name: true, slug: true, email: true, status: true, approvedAt: true }
         },
         products: {
           where: { status: "ACTIVE", deletedAt: null },
@@ -288,7 +290,10 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
       data: {
         ...store,
         menu: categorizedProducts,
-        isOpenNow: StoreHoursService.isOpenNow(store),
+        // La fiche reste lisible — le commerçant y prévisualise sa boutique —
+        // mais un commerce pas encore validé n'est jamais ouvert.
+        isOpenNow: !!store.org?.approvedAt && StoreHoursService.isOpenNow(store),
+        enAttenteDeValidation: !store.org?.approvedAt,
         averageRating:
           store.reviews.length > 0
             ? (

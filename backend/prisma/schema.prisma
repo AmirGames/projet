@@ -128,6 +128,16 @@ model Organization {
   bic                 String?
   accountHolder       String?
 
+  /// La validation du commerce par la plateforme.
+  ///
+  /// Tant qu'elle manque, le commerçant prépare sa boutique — catalogue,
+  /// catégories, horaires — mais ne peut ni l'ouvrir, ni recevoir de commande,
+  /// ni apparaître dans les listes du client. Distincte de `Store.isOpen`, qui
+  /// reste le bouton du commerçant : un champ qu'il pourrait basculer lui-même
+  /// ne validerait rien.
+  approvedAt          DateTime?
+  approvedBy          String?
+
   // Relations
   stores              Store[]
   memberships         Membership[]
@@ -158,10 +168,14 @@ model OrganizationDocument {
   documentUrl String
   fileName    String?
   expiryDate  DateTime?
-  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED, EXPIRED
   /// Le motif d'un refus, que le commerçant doit pouvoir lire.
   reviewNote  String?
   reviewedAt  DateTime?
+  /// Le jour où le commerçant a été prévenu de l'expiration prochaine. Sans
+  /// lui, la surveillance le relancerait à chaque passage ; un nouveau dépôt
+  /// le remet à zéro.
+  expiryReminderAt DateTime?
 
   org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 

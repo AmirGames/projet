@@ -12,6 +12,8 @@ interface Organization {
   status: 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
   tier: 'FREE' | 'PREMIUM' | 'PRO';
   createdAt: string;
+  /** Vide tant que la plateforme n'a pas validé le commerce. */
+  approvedAt: string | null;
   activeUsers: number;
   revenue: number;
 }
@@ -36,6 +38,8 @@ export default function OrganizationsPage() {
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const [action, setAction] = useState('');
+  // Les dossiers à valider, ce que la plateforme cherche en premier.
+  const [aValider, setAValider] = useState(false);
   const limit = 20;
 
   // Suspension et fermeture partagent le service de l'espace
@@ -118,7 +122,7 @@ export default function OrganizationsPage() {
 
   useEffect(() => {
     fetchOrganizations();
-  }, [offset]);
+  }, [offset, aValider]);
 
   const fetchOrganizations = async () => {
     setLoading(true);
@@ -127,6 +131,7 @@ export default function OrganizationsPage() {
       const query = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
+        ...(aValider ? { validation: 'attente' } : {}),
       });
 
       const res = await fetch(`${API_URL}/api/superowner/organizations?${query}`, {
@@ -180,6 +185,26 @@ export default function OrganizationsPage() {
           {t('title')}
         </h1>
         <p className="text-gray-400 mt-2">{t('subtitle')}</p>
+      </div>
+
+      <div className="flex gap-2">
+        {[false, true].map((filtre) => (
+          <button
+            key={String(filtre)}
+            type="button"
+            onClick={() => {
+              setOffset(0);
+              setAValider(filtre);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
+              aValider === filtre
+                ? 'bg-blue-600 border-blue-500 text-white'
+                : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            {filtre ? t('filterPending') : t('filterAll')}
+          </button>
+        ))}
       </div>
 
       {error && (
@@ -242,6 +267,14 @@ export default function OrganizationsPage() {
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(org.status)}`}>
                         {getStatusLabel(org.status)}
                       </span>
+                      {!org.approvedAt && (
+                        <span
+                          title={t('pendingApprovalTitle')}
+                          className="ml-2 px-3 py-1 rounded-full text-xs font-semibold border bg-blue-500/10 text-blue-300 border-blue-500/30"
+                        >
+                          {t('pendingApproval')}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-1">

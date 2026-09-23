@@ -117,11 +117,21 @@ export class OrderService {
        */
       const boutique = await db.store.findUnique({
         where: { id: data.storeId },
-        select: { isOpen: true, deletedAt: true, name: true },
+        select: { isOpen: true, deletedAt: true, name: true, org: { select: { approvedAt: true } } },
       });
 
       if (!boutique || boutique.deletedAt) {
         throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
+      }
+
+      // Une boutique dont le commerce attend sa validation ne vend pas, même
+      // ouverte : le verrou ne dépend pas d'un bouton qu'on aurait oublié.
+      if (!boutique.org.approvedAt) {
+        throw new ApiError(
+          400,
+          `« ${boutique.name} » n'est pas encore ouverte aux commandes.`,
+          "MERCHANT_NOT_APPROVED"
+        );
       }
 
       if (!boutique.isOpen) {

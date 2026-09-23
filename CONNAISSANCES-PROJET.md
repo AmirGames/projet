@@ -91,6 +91,13 @@ scripts de vérification (voir §6).
 - Retrouve une commande passée sans compte par son lien de suivi
 
 ### Le commerçant
+- Inscription, puis **validation du commerce par la plateforme** : pièces
+  exigées Kbis/BCE, identité, RIB. En attendant, il prépare sa boutique mais
+  **ni ouverture, ni commande, ni présence dans les listes du client** — verrou
+  côté serveur (`Organization.approvedAt`, distinct de `Store.isOpen`)
+- Rappel **30 jours avant l'expiration** d'une pièce (espace + courriel, une
+  seule fois) ; à échéance la pièce passe `EXPIRED`, la plateforme est prévenue,
+  le commerce n'est pas fermé d'office
 - Plusieurs boutiques par compte, selon la formule souscrite
 - Catalogue : catégories et plats réordonnables au glisser-déposer,
   déclinaisons, disponibilité basculable en direct
@@ -130,7 +137,8 @@ scripts de vérification (voir §6).
   dont la plateforme répond (voir la règle ci-dessous)
 - **Dossier d'un commerçant** : son identité de facturation, reportée sur sa
   facture du mois, et l'examen de ses justificatifs — un refus se motive, et le
-  commerçant en est prévenu
+  commerçant en est prévenu. **Validation du commerce** une fois les pièces
+  exigées validées ; filtre « À valider » dans la liste des commerçants
 - **Livreurs** : dossiers à traiter, examen des pièces, validation, suspension,
   rétablissement — chaque geste motivé et journalisé
 - **Versements** : ce qu'elle doit et à qui, arrêté des relevés d'une période,

@@ -122,7 +122,11 @@
     "actionFailed": "Could not {action} this merchant",
     "connectionError": "Connection error",
     "loadError": "Error loading organizations",
-    "genericError": "Something went wrong"
+    "genericError": "Something went wrong",
+    "pendingApproval": "To approve",
+    "pendingApprovalTitle": "Business awaiting approval: it can neither open nor sell",
+    "filterAll": "All businesses",
+    "filterPending": "To approve only"
   },
   "superownerFinancialReports": {
     "title": "Financial Reports",

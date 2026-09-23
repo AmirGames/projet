@@ -122,7 +122,11 @@
     "actionFailed": "Impossible de {action} ce commerçant",
     "connectionError": "Erreur de connexion au serveur",
     "loadError": "Erreur lors du chargement des organisations",
-    "genericError": "Une erreur s'est produite"
+    "genericError": "Une erreur s'est produite",
+    "pendingApproval": "À valider",
+    "pendingApprovalTitle": "Commerce en attente de validation : il ne peut ni ouvrir ni vendre",
+    "filterAll": "Tous les commerces",
+    "filterPending": "À valider uniquement"
   },
   "superownerFinancialReports": {
     "title": "Rapports Financiers",

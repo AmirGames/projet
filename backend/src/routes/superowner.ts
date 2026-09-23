@@ -22,6 +22,7 @@ import {
 } from "../services/driver-payout.service";
 import { StoreSupportService, libelleDuChamp } from "../services/store-support.service";
 import { MerchantProfileService } from "../services/merchant-profile.service";
+import { MerchantApprovalService } from "../services/merchant-approval.service";
 import { SystemHealthService } from "../services/system-health.service";
 
 const LIBELLES_STATUT: Record<string, string> = {
@@ -157,8 +158,14 @@ router.get("/organizations", authMiddleware, isSuperOwner, async (req: Request, 
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const offset = parseInt(req.query.offset as string) || 0;
     const status = req.query.status as string;
+    // « ?validation=attente » : les commerces qui attendent qu'on examine
+    // leur dossier, ce que la plateforme cherche en premier.
+    const enAttente = req.query.validation === "attente";
 
-    const where = status ? { status } : {};
+    const where = {
+      ...(status ? { status } : {}),
+      ...(enAttente ? { approvedAt: null } : {}),
+    };
 
     const [organisations, total] = await Promise.all([
       db.organization.findMany({
@@ -192,6 +199,7 @@ router.get("/organizations", authMiddleware, isSuperOwner, async (req: Request, 
           status: org.status,
           tier: org.tier,
           createdAt: org.createdAt,
+          approvedAt: org.approvedAt,
           activeUsers: org._count.memberships,
           revenue: Number(
             commandes.reduce((somme, c) => somme + Number(c.totalAmount), 0).toFixed(2)
@@ -2235,6 +2243,37 @@ router.patch(
       });
 
       res.json({ success: true, document: piece });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * POST /superowner/organizations/:orgId/approve - Valider un commerce
+ *
+ * Il pourra ouvrir sa boutique et recevoir des commandes. Refusé tant qu'une
+ * pièce exigée n'est pas validée.
+ */
+router.post(
+  "/organizations/:orgId/approve",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const orgId = req.params.orgId as string;
+      const org = await MerchantApprovalService.valider(orgId, req.userId as string);
+
+      await db.systemAuditLog.create({
+        data: {
+          adminId: req.userId as string,
+          action: "APPROVE_MERCHANT",
+          target: orgId,
+          changes: { approvedAt: org.approvedAt } as any,
+        },
+      });
+
+      res.json({ success: true, message: "Commerce validé", organization: org });
     } catch (err) {
       next(err);
     }

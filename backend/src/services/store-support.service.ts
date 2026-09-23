@@ -3,6 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
 import { AddressService } from "./address.service";
+import { MerchantApprovalService } from "./merchant-approval.service";
 
 /**
  * La fiche d'une boutique vue par la plateforme, et les rares champs qu'elle
@@ -342,6 +343,12 @@ export class StoreSupportService {
         ouvert ? "Cette boutique est déjà ouverte" : "Cette boutique est déjà fermée",
         "NOTHING_TO_CHANGE"
       );
+    }
+
+    // La plateforme non plus n'ouvre pas un commerce qu'elle n'a pas validé :
+    // c'est la validation qu'il faut donner, pas le bouton qu'il faut forcer.
+    if (ouvert) {
+      await MerchantApprovalService.exigerValidation(boutique.orgId);
     }
 
     // Fermer sans dire pourquoi laisse le commerçant sans recours : il voit sa

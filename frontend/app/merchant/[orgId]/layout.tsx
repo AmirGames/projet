@@ -245,6 +245,34 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
           </div>
         </header>
 
+        {/* Un commerce pas encore validé prépare sa boutique mais ne peut pas
+            l'ouvrir : le bandeau le dit sur chaque page, pas seulement au
+            moment où le bouton d'ouverture refuse. */}
+        {!loadingStatus && orgStatus?.validation && !orgStatus.validation.valide && (
+          <div className="bg-blue-500/10 border-b border-blue-500/50 px-6 py-4">
+            <div className="flex items-start gap-3">
+              <Clock size={20} className="text-blue-300 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 text-sm">
+                <h3 className="font-bold text-blue-300">Commerce en attente de validation</h3>
+                <p className="text-gray-300 mt-1">
+                  Préparez votre boutique : produits, catégories, horaires. Vous pourrez l&apos;ouvrir
+                  dès que la plateforme aura validé vos documents.
+                  {orgStatus.validation.piecesManquantes.length > 0 &&
+                    ` Reste à valider : ${orgStatus.validation.piecesManquantes
+                      .map((piece) => piece.libelle)
+                      .join(', ')}.`}
+                </p>
+                <Link
+                  href="/merchant/profil"
+                  className="inline-block mt-2 text-blue-300 underline hover:text-blue-200"
+                >
+                  Compléter mon dossier
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Status Banner */}
         {!loadingStatus && orgStatus && orgStatus.status !== 'ACTIVE' && (
           <div className={`${

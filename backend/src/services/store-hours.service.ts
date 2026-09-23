@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
+import { MerchantApprovalService } from "./merchant-approval.service";
 
 /**
  * Les horaires d'ouverture d'une boutique.
@@ -357,6 +358,17 @@ export class StoreHoursService {
   }
 
   static async setStoreStatus(storeId: string, isOpen: boolean) {
+    // Fermer reste toujours possible ; ouvrir attend la validation du commerce.
+    if (isOpen) {
+      const boutique = await db.store.findUnique({ where: { id: storeId }, select: { orgId: true } });
+
+      if (!boutique) {
+        throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
+      }
+
+      await MerchantApprovalService.exigerValidation(boutique.orgId);
+    }
+
     return await db.store.update({
       where: { id: storeId },
       data: { isOpen },

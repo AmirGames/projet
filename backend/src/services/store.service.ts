@@ -48,10 +48,17 @@ export class StoreService {
       }
     }
 
+    // Une nouvelle boutique d'un commerce pas encore validé naît fermée.
+    const org = await db.organization.findUnique({
+      where: { id: data.orgId },
+      select: { approvedAt: true },
+    });
+
     try {
       const store = await db.store.create({
         data: {
           orgId: data.orgId,
+          isOpen: !!org?.approvedAt,
           name: data.name,
           slug: data.slug,
           address: data.address,
