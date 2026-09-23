@@ -588,7 +588,7 @@
     "approveDocument": "Valider {name}",
     "rejectDocument": "Refuser {name}",
     "expiresOn": "Expire le",
-    "piecesLabel": "pièce",
+    "piecesLabel": "{count, plural, one {pièce validée} other {pièces validées}}",
     "deliveries_plural": "courses",
     "delivery": "course",
     "earned": "gagnés",
