@@ -7,6 +7,7 @@ import { initializeSocket } from "./config/socket";
 import { db } from "./services/db";
 import { ClosureJobs } from "./jobs/closure-jobs";
 import { DispatchJobs } from "./jobs/dispatch-jobs";
+import { DriverJobs } from "./jobs/driver-jobs";
 import { WebhookJobs } from "./jobs/webhook-jobs";
 
 // Load environment variables
@@ -40,6 +41,7 @@ const start = async () => {
     // Start background jobs
     ClosureJobs.startJobs();
     DispatchJobs.start();
+    DriverJobs.start();
     WebhookJobs.start();
 
     // Graceful shutdown

@@ -17,6 +17,7 @@ import { DriverPayoutService } from "../services/driver-payout.service";
 import { DeliveryProofService } from "../services/delivery-proof.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
 import { DriverActivityService, FiltreHistorique } from "../services/driver-activity.service";
+import { DriverAvailabilityService } from "../services/driver-availability.service";
 import { z } from "zod";
 import fs from "fs";
 import { join } from "path";
@@ -214,17 +215,65 @@ router.patch("/availability", authMiddleware, async (req: Request, res: Response
       );
     }
 
+    const enPause = DriverAvailabilityService.estEnPause(livreur);
+
     const misAJour = await db.driver.update({
       where: { id: livreur.id },
       data: {
         isOnline: voulu,
         // Se remettre en ligne ne rend pas disponible si une course est en
-        // cours : elle doit d'abord être terminée.
-        ...(voulu ? { isAvailable: livreur.currentOrderId === null } : { isAvailable: false }),
+        // cours (elle doit d'abord être terminée) ni pendant une pause.
+        ...(voulu
+          ? { isAvailable: livreur.currentOrderId === null && !enPause }
+          : // Se déconnecter met fin à la pause : elle n'a plus d'objet.
+            { isAvailable: false, pausedUntil: null, pauseReason: null }),
       },
     });
 
-    res.json({ isAvailable: misAJour.isAvailable, isOnline: misAJour.isOnline });
+    res.json({
+      isAvailable: misAJour.isAvailable,
+      isOnline: misAJour.isOnline,
+      pausedUntil: misAJour.pausedUntil,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /drivers/pause - Pause temporaire { minutes, reason? }
+router.post("/pause", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const body = z
+      .object({ minutes: z.number(), reason: z.string().max(200).optional() })
+      .parse(req.body);
+
+    const misAJour = await DriverAvailabilityService.mettreEnPause(livreur.id, body.minutes, body.reason);
+
+    res.json({
+      success: true,
+      isAvailable: misAJour.isAvailable,
+      isOnline: misAJour.isOnline,
+      pausedUntil: misAJour.pausedUntil,
+      pauseReason: misAJour.pauseReason,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /drivers/pause - Reprendre avant la fin de la pause
+router.delete("/pause", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const misAJour = await DriverAvailabilityService.reprendre(livreur.id);
+
+    res.json({
+      success: true,
+      isAvailable: misAJour.isAvailable,
+      isOnline: misAJour.isOnline,
+      pausedUntil: null,
+    });
   } catch (err) {
     next(err);
   }
@@ -275,6 +324,9 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         // n'arrivait.
         status: driver.status,
         statusReason: driver.statusReason,
+        pausedUntil: driver.pausedUntil,
+        pauseReason: driver.pauseReason,
+        gpsLostAt: driver.gpsLostAt,
         approvedAt: driver.approvedAt,
         piecesAttendues: piecesAttendues(driver.vehicleType),
       }

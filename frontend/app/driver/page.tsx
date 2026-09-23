@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -10,6 +10,7 @@ import { euro } from '@/lib/format';
 import { PropositionsCourses } from '@/components/PropositionsCourses';
 import { DossierLivreur } from '@/components/DossierLivreur';
 import { NotesRecues } from '@/components/NotesRecues';
+import { PauseLivreur } from '@/components/PauseLivreur';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Delivery {
@@ -52,6 +53,8 @@ export default function DriverDashboard() {
   const [isOnline, setIsOnline] = useState(false);
   const [isAvailable, setIsAvailable] = useState(false);
   const [refus, setRefus] = useState('');
+  const [pausedUntil, setPausedUntil] = useState<string | null>(null);
+  const [pauseReason, setPauseReason] = useState<string | null>(null);
   const [earnings, setEarnings] = useState(0);
 
   useEffect(() => {
@@ -79,6 +82,8 @@ export default function DriverDashboard() {
         // isAvailable: disponibilité actuelle (pas de course en cours)
         setIsOnline(driverData.data.isOnline === true);
         setIsAvailable(driverData.data.isAvailable === true);
+        setPausedUntil(driverData.data.pausedUntil || null);
+        setPauseReason(driverData.data.pauseReason || null);
       } else {
         throw new Error('Failed to load driver info');
       }
@@ -145,6 +150,7 @@ export default function DriverDashboard() {
       if (etat) {
         setIsOnline(etat.isOnline === true);
         setIsAvailable(etat.isAvailable === true);
+        setPausedUntil(etat.pausedUntil || null);
       }
 
       setRefus('');
@@ -153,6 +159,15 @@ export default function DriverDashboard() {
       setRefus(t('connectionError'));
     }
   };
+
+  const surChangementPause = useCallback(
+    (etat: { isAvailable: boolean; pausedUntil: string | null; pauseReason?: string | null }) => {
+      setIsAvailable(etat.isAvailable);
+      setPausedUntil(etat.pausedUntil);
+      setPauseReason(etat.pauseReason ?? null);
+    },
+    []
+  );
 
   const handleAcceptDelivery = async (delivery: Delivery) => {
     const token = localStorage.getItem('driverToken');
@@ -415,12 +430,14 @@ export default function DriverDashboard() {
                   onClick={basculerDisponibilite}
                   disabled={!isAccountActive}
                   className={`w-full font-semibold py-2 rounded-lg transition ${
-                    isAvailable
+                    isOnline
                       ? 'bg-green-600 hover:bg-green-700 text-white'
                       : 'bg-gray-700 hover:bg-gray-600 text-white'
                   } ${!isAccountActive ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {isAvailable ? t('onlineStatus') : t('offlineStatus')}
+                  {/* Le bouton reflète le choix du livreur (en ligne), pas la
+                      disponibilité : en pause ou en course, il reste en ligne. */}
+                  {isOnline ? t('onlineStatus') : t('offlineStatus')}
                 </button>
 
                 {refus && (
@@ -428,6 +445,14 @@ export default function DriverDashboard() {
                     {refus}
                   </p>
                 )}
+
+                <PauseLivreur
+                  isOnline={isOnline}
+                  enCourse={Boolean(activeDelivery)}
+                  pausedUntil={pausedUntil}
+                  pauseReason={pauseReason}
+                  surChangement={surChangementPause}
+                />
 
                 <Link href="/driver/profile" className="block">
                   <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">

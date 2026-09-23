@@ -135,6 +135,9 @@ export class DispatchService {
         isOnline: true,
         isAvailable: true,
         currentOrderId: null,
+        // Filet de sécurité : une pause écarte le livreur même si un autre
+        // chemin l'avait remis disponible.
+        OR: [{ pausedUntil: null }, { pausedUntil: { lte: new Date() } }],
       },
       select: {
         id: true,
