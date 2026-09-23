@@ -54,12 +54,15 @@ export default function DriverLayout({
                 <span className="font-bold text-white">Livreur</span>
               </Link>
 
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 hover:bg-gray-700 rounded-lg"
-              >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
+              <div className="flex items-center gap-2">
+                <LanguageSwitcher />
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-2 hover:bg-gray-700 rounded-lg"
+                >
+                  {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                </button>
+              </div>
             </div>
 
             {/* Mobile Menu */}
@@ -124,16 +127,18 @@ export default function DriverLayout({
                     </Link>
                   );
                 })}
-                <LanguageSwitcher />
               </div>
 
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition"
-              >
-                <LogOut size={18} />
-                Déconnexion
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition"
+                >
+                  <LogOut size={18} />
+                  Déconnexion
+                </button>
+                <LanguageSwitcher />
+              </div>
             </div>
           </nav>
         )}

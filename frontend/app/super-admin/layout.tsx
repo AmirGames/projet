@@ -139,9 +139,9 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-400">Super Admin - Gestion Système</span>
             <NotificationBell />
             <LanguageSwitcher />
-            <span className="text-sm text-gray-400">Super Admin - Gestion Système</span>
           </div>
         </header>
 

@@ -43,12 +43,15 @@ export default function ClientLayout({
               <span className="font-bold text-white">UberEats</span>
             </Link>
 
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 hover:bg-gray-700 rounded-lg"
-            >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 hover:bg-gray-700 rounded-lg"
+              >
+                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
           </div>
 
           {/* Mobile Menu */}
@@ -104,15 +107,17 @@ export default function ClientLayout({
                   </Link>
                 );
               })}
-              <LanguageSwitcher />
             </div>
 
-            <Link
-              href="/login"
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition"
-            >
-              Logout
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/login"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition"
+              >
+                Logout
+              </Link>
+              <LanguageSwitcher />
+            </div>
           </div>
         </nav>
 
