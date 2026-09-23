@@ -251,15 +251,41 @@ router.post("/:id/dispatch", authMiddleware, async (req: Request, res: Response,
     const driverId = typeof req.body?.driverId === "string" ? req.body.driverId : undefined;
     const proposition = await DispatchService.proposerAuSuivant(course.id, driverId);
 
+    if (proposition) {
+      res.json({
+        success: true,
+        message: "Course proposée à un livreur",
+        data: { deliveryId: course.id, propose: true, expiresAt: proposition.expiresAt },
+      });
+      return;
+    }
+
+    // Personne pour l'instant : dire pourquoi, et que la recherche continue
+    // d'elle-même.
+    const etat = await DispatchService.etatRecherche(course.id);
+    const heure = etat.prochaineTentative?.toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/Paris",
+    });
+
+    const livreurs =
+      etat.aPortee === 1 ? "Le seul livreur à proximité a" : `Les ${etat.aPortee} livreurs à proximité ont`;
+
     res.json({
       success: true,
-      message: proposition
-        ? "Course proposée à un livreur"
-        : "Aucun livreur disponible pour l'instant : relancez dans quelques minutes",
+      message:
+        etat.aPortee === 0
+          ? "Aucun livreur en ligne à proximité. La recherche continue automatiquement dès qu'un livreur se connecte."
+          : etat.prochaineTentative
+            ? `${livreurs} déjà été sollicité${etat.aPortee > 1 ? "s" : ""}. Nouvelle tentative automatique vers ${heure} — vous pouvez aussi choisir un livreur dans la liste.`
+            : `${livreurs} refusé cette course plusieurs fois. Choisissez un livreur dans la liste pour la lui proposer directement.`,
       data: {
         deliveryId: course.id,
-        propose: Boolean(proposition),
-        expiresAt: proposition?.expiresAt ?? null,
+        propose: false,
+        aPortee: etat.aPortee,
+        prochaineTentative: etat.prochaineTentative,
+        expiresAt: null,
       },
     });
   } catch (err) {

@@ -1,4 +1,5 @@
 import { DriverAvailabilityService } from "../services/driver-availability.service";
+import { DispatchService } from "../services/dispatch.service";
 import { logger } from "../config/logger";
 
 /**
@@ -25,6 +26,9 @@ export class DriverJobs {
       try {
         const pauses = await DriverAvailabilityService.leverPausesEchues();
         if (pauses > 0) logger.info("Pauses de livreurs terminées", { nombre: pauses });
+
+        const relancees = await DispatchService.relancerRecherches();
+        if (relancees > 0) logger.info("Courses sans preneur reproposées", { nombre: relancees });
 
         const gps = await DriverAvailabilityService.surveillerGps();
         if (gps.perdus > 0 || gps.misHorsLigne > 0) logger.info("Signaux GPS surveillés", gps);
