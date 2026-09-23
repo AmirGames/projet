@@ -35,11 +35,12 @@ interface Order {
   createdAt: string;
 }
 
-type OrderStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'READY' | 'COMPLETED';
+type OrderStatus = 'PENDING' | 'ACCEPTED' | 'PREPARING' | 'REJECTED' | 'READY' | 'COMPLETED';
 
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50',
   ACCEPTED: 'bg-blue-600/20 text-blue-400 border-blue-600/50',
+  PREPARING: 'bg-orange-600/20 text-orange-400 border-orange-600/50',
   READY: 'bg-green-600/20 text-green-400 border-green-600/50',
   COMPLETED: 'bg-purple-600/20 text-purple-400 border-purple-600/50',
   REJECTED: 'bg-red-600/20 text-red-400 border-red-600/50',
@@ -48,6 +49,7 @@ const statusColors: Record<string, string> = {
 const statusIcons: Record<string, any> = {
   PENDING: Clock,
   ACCEPTED: CheckCircle,
+  PREPARING: Clock,
   READY: Package,
   COMPLETED: CheckCircle,
   REJECTED: AlertCircle,
@@ -207,6 +209,10 @@ export default function OrdersPage() {
               <p className="text-blue-400 text-xs mb-1">{t('statsAccepted')}</p>
               <p className="text-2xl font-bold text-blue-400">{stats.accepted}</p>
             </div>
+            <div className="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4">
+              <p className="text-orange-400 text-xs mb-1">En préparation</p>
+              <p className="text-2xl font-bold text-orange-400">{stats.preparing || 0}</p>
+            </div>
             <div className="bg-green-600/20 border border-green-600/50 rounded-lg p-4">
               <p className="text-green-400 text-xs mb-1">{t('statsReady')}</p>
               <p className="text-2xl font-bold text-green-400">{stats.ready}</p>
@@ -224,7 +230,7 @@ export default function OrdersPage() {
 
         {/* Filter Buttons */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {(['ALL', 'PENDING', 'ACCEPTED', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
+          {(['ALL', 'PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
             <button
               key={status}
               onClick={() => {
@@ -301,7 +307,7 @@ export default function OrdersPage() {
                     <div>
                       <p className="text-sm font-semibold text-gray-300 mb-3">{t('statusChange')}</p>
                       <div className="grid grid-cols-2 gap-2">
-                        {(['PENDING', 'ACCEPTED', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
+                        {(['ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
                           <button
                             key={status}
                             onClick={() => handleStatusChange(order.id, status)}
