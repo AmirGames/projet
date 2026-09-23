@@ -34,6 +34,9 @@ backend/data/
 data/
 backend/uploads/
 
+# Bases SQLite locales : le projet tourne sur PostgreSQL
+*.db
+
 # Docker
 docker-compose.override.yml
 
