@@ -14,10 +14,36 @@ import { Notifier, enArrierePlan } from "./notifier.service";
  * Il a un délai pour répondre ; passé ce délai elle va au suivant, et ainsi de
  * suite jusqu'à ce que quelqu'un accepte ou que la liste soit épuisée.
  *
- * Un livreur n'est sollicité qu'une fois par course : re-proposer à quelqu'un
- * qui vient de refuser transforme le refus en harcèlement, et retarde la
- * course d'autant.
+ * Quand tout le monde a été sollicité, un nouveau tour commence : la course
+ * revient au plus proche, mais jamais à quelqu'un qui vient de répondre
+ * (délai de RELANCE_APRES_MS) ni plus de MAX_SOLLICITATIONS fois au même
+ * livreur. Auparavant un livreur sollicité était écarté pour toujours : si
+ * les dix livreurs du quartier laissaient passer la course, elle restait
+ * bloquée, même relancée à la main.
  */
+
+/** Délai avant de reproposer une course à un livreur qui a refusé ou laissé expirer. */
+export const RELANCE_APRES_MS = 3 * 60000;
+/** Au-delà, la course n'est plus proposée d'office à ce livreur. */
+export const MAX_SOLLICITATIONS = 3;
+/** Une recherche sans preneur est relancée automatiquement pendant cette durée. */
+export const RECHERCHE_MAX_MS = 3 * 60 * 60000;
+
+interface Sollicitation {
+  driverId: string;
+  status: string;
+  attempts: number;
+  expiresAt: Date;
+  respondedAt: Date | null;
+}
+
+/** Quand ce livreur pourra de nouveau recevoir la course d'office, ou null s'il ne la recevra plus. */
+function libreA(offre: Sollicitation, maintenant: number): number | null {
+  if (offre.status === "PENDING" && offre.expiresAt.getTime() > maintenant) return null;
+  if (offre.attempts >= MAX_SOLLICITATIONS) return null;
+  const derniere = (offre.respondedAt ?? offre.expiresAt).getTime();
+  return derniere + RELANCE_APRES_MS;
+}
 
 export interface Reglages {
   baseFee: number;
@@ -128,10 +154,10 @@ export class DispatchService {
    * à portée, et lui envoyer la course revient à la retarder du délai
    * d'expiration.
    */
-  static async livreursEligibles(retrait: Point, reglages: Reglages, dejaSollicites: string[]) {
+  static async livreursEligibles(retrait: Point, reglages: Reglages, exclus: string[] = []) {
     const candidats = await db.driver.findMany({
       where: {
-        id: { notIn: dejaSollicites },
+        id: { notIn: exclus },
         status: "ACTIVE",
         isOnline: true,
         isAvailable: true,
@@ -172,7 +198,9 @@ export class DispatchService {
     const course = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
       include: {
-        offers: { select: { driverId: true } },
+        offers: {
+          select: { driverId: true, status: true, attempts: true, expiresAt: true, respondedAt: true },
+        },
         order: {
           select: {
             deliveryAddress: true,
@@ -210,28 +238,54 @@ export class DispatchService {
     if (enCours) return enCours;
 
     const reglages = await this.reglages();
-    const dejaSollicites = course.offers.map((o) => o.driverId);
-    const candidats = await this.livreursEligibles(retrait, reglages, dejaSollicites);
+    const maintenant = Date.now();
+    const disponibles = await this.livreursEligibles(retrait, reglages);
 
-    if (candidats.length === 0) {
-      logger.info("Aucun livreur disponible pour la course", { deliveryId });
+    // Le commerçant peut désigner un livreur : son choix passe outre le délai
+    // de relance et la limite de sollicitations. Il l'a vu dans la liste des
+    // disponibles, il sait ce qu'il fait — c'est exactement le cas où la
+    // course avait expiré et ne pouvait plus lui être renvoyée.
+    const prefere = livreurPrefere ? disponibles.find((c) => c.id === livreurPrefere) : undefined;
+
+    const sollicitations = new Map(course.offers.map((o) => [o.driverId, o]));
+    const candidats = disponibles.filter((c) => {
+      const offre = sollicitations.get(c.id);
+      if (!offre) return true;
+      const libre = libreA(offre, maintenant);
+      return libre != null && libre <= maintenant;
+    });
+
+    const choisi = prefere || candidats[0];
+
+    if (!choisi) {
+      logger.info("Aucun livreur disponible pour la course", {
+        deliveryId,
+        aPortee: disponibles.length,
+      });
       return null;
     }
 
-    // Le commerçant peut désigner un livreur dans la liste des disponibles :
-    // il reçoit la course en premier s'il est toujours éligible, sinon elle
-    // part au plus proche.
-    const choisi =
-      (livreurPrefere && candidats.find((c) => c.id === livreurPrefere)) || candidats[0];
     const { payout } = this.remuneration(choisi.distance, reglages);
+    const expiresAt = new Date(maintenant + reglages.offerSeconds * 1000);
 
-    const proposition = await db.deliveryOffer.create({
-      data: {
+    // Une ligne par livreur et par course : un nouveau tour la rouvre.
+    const proposition = await db.deliveryOffer.upsert({
+      where: { deliveryId_driverId: { deliveryId, driverId: choisi.id } },
+      create: {
         deliveryId,
         driverId: choisi.id,
         distanceKm: choisi.distance,
         payout,
-        expiresAt: new Date(Date.now() + reglages.offerSeconds * 1000),
+        expiresAt,
+      },
+      update: {
+        status: "PENDING",
+        distanceKm: choisi.distance,
+        payout,
+        offeredAt: new Date(maintenant),
+        expiresAt,
+        respondedAt: null,
+        attempts: { increment: 1 },
       },
     });
 
@@ -274,6 +328,74 @@ export class DispatchService {
     logger.info("Course proposée", { deliveryId, driverId: choisi.id, distance: choisi.distance });
 
     return proposition;
+  }
+
+  /**
+   * Où en est la recherche d'une course restée sans preneur : combien de
+   * livreurs sont à portée, et quand l'un d'eux pourra la recevoir de nouveau.
+   * Sert à dire au commerçant autre chose que « relancez plus tard ».
+   */
+  static async etatRecherche(deliveryId: string) {
+    const course = await db.orderDelivery.findUnique({
+      where: { id: deliveryId },
+      select: {
+        pickupLat: true,
+        pickupLng: true,
+        offers: {
+          select: { driverId: true, status: true, attempts: true, expiresAt: true, respondedAt: true },
+        },
+      },
+    });
+    const retrait = { latitude: course?.pickupLat, longitude: course?.pickupLng };
+    if (!course || !estUnPoint(retrait)) return { aPortee: 0, prochaineTentative: null as Date | null };
+
+    const disponibles = await this.livreursEligibles(retrait, await this.reglages());
+    const maintenant = Date.now();
+    const echeances = disponibles
+      .map((d) => {
+        const offre = course.offers.find((o) => o.driverId === d.id);
+        return offre ? libreA(offre, maintenant) : maintenant;
+      })
+      .filter((t): t is number => t != null);
+
+    return {
+      aPortee: disponibles.length,
+      prochaineTentative: echeances.length ? new Date(Math.max(maintenant, Math.min(...echeances))) : null,
+    };
+  }
+
+  /**
+   * Relance les courses qui cherchent encore un livreur.
+   *
+   * Sans elle, une course dont tous les livreurs avaient été sollicités
+   * attendait que le commerçant pense à relancer. Elle repart désormais
+   * d'elle-même dès qu'un livreur redevient sollicitable ou se connecte.
+   */
+  static async relancerRecherches() {
+    const courses = await db.orderDelivery.findMany({
+      where: {
+        status: "PENDING",
+        driverId: null,
+        createdAt: { gt: new Date(Date.now() - RECHERCHE_MAX_MS) },
+        order: { status: { in: ["ACCEPTED", "PREPARING", "READY"] } },
+        offers: { none: { status: "PENDING", expiresAt: { gt: new Date() } } },
+      },
+      select: { id: true },
+      take: 50,
+    });
+
+    let relancees = 0;
+    for (const { id } of courses) {
+      try {
+        if (await this.proposerAuSuivant(id)) relancees += 1;
+      } catch (err) {
+        logger.warn("Relance de recherche impossible", {
+          deliveryId: id,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
+    }
+    return relancees;
   }
 
   /** Le livreur accepte : la course lui est attribuée, la rémunération figée. */

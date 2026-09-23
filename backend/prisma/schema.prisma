@@ -1056,13 +1056,18 @@ model DeliveryOffer {
   expiresAt   DateTime
   respondedAt DateTime?
 
+  /// Combien de fois cette course a été proposée à ce livreur. Après un refus
+  /// ou une expiration, elle peut lui revenir au tour suivant, dans la limite
+  /// de quelques sollicitations : au-delà, ce serait du harcèlement.
+  attempts    Int       @default(1)
+
   delivery    OrderDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
   driver      Driver        @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Un livreur n'est sollicité qu'une fois par course.
+  // Une ligne par livreur et par course, réutilisée à chaque nouveau tour.
   @@unique([deliveryId, driverId])
   @@index([driverId, status])
   @@index([status, expiresAt])
