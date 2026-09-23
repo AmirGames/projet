@@ -3,15 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { ArrowLeft, Wallet, Package, Star, CalendarDays } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { MesVersements } from '@/components/MesVersements';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-  const t = useTranslations('driverEarnings');
 interface CourseRemuneree {
   id: string;
   orderId: string;
@@ -33,8 +30,8 @@ interface Revenus {
 }
 
 export default function RevenusLivreurPage() {
-  const router = useRouter();
   const t = useTranslations('driverEarnings');
+  const router = useRouter();
 
   const [revenus, setRevenus] = useState<Revenus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,17 +61,17 @@ export default function RevenusLivreurPage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || 'Impossible de charger vos revenus');
+        setErreur(donnees.error || t('loadingError'));
         return;
       }
 
       setRevenus(donnees);
     } catch {
-      setErreur('Erreur de connexion au serveur');
+      setErreur(t('connectionError'));
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     charger();

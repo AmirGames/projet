@@ -329,8 +329,8 @@ export default function DriverProfilePage() {
                     Email
                   </label>
                   <input
-                    type="email"
-                    name="email"
+                    type={t('email')}
+                    name={t('email')}
                     value={formData.email}
                     onChange={handleInputChange}
                     disabled={!isEditing}
@@ -346,7 +346,7 @@ export default function DriverProfilePage() {
                   </label>
                   <input
                     type="tel"
-                    name="phone"
+                    name={t('phone')}
                     value={formData.phone}
                     onChange={handleInputChange}
                     disabled={!isEditing}

@@ -59,11 +59,11 @@ interface Commande {
 }
 
 const STATUTS: { valeur: string; libelle: string }[] = [
-  { valeur: 'PENDING', libelle: 'En attente' },
-  { valeur: 'ACCEPTED', libelle: 'Acceptée' },
+  { valeur: 'PENDING', libelle: {t('pending')} },
+  { valeur: 'ACCEPTED', libelle: {t('accepted')} },
   { valeur: 'PREPARING', libelle: 'En préparation' },
-  { valeur: 'READY', libelle: 'Prête' },
-  { valeur: 'COMPLETED', libelle: 'Terminée' },
+  { valeur: 'READY', libelle: {t('ready')} },
+  { valeur: 'COMPLETED', libelle: {t('completed')} },
   { valeur: 'REJECTED', libelle: 'Refusée' },
 ];
 

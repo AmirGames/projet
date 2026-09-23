@@ -1,4 +1,4 @@
-'use client';
+{t('actionBlock')};
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';

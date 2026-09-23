@@ -380,7 +380,7 @@ export default function DriverDashboard() {
           <div className="lg:col-span-1 space-y-8">
             <div className="bg-gray-800 rounded-lg p-6 space-y-6">
               <div>
-                <p className="text-gray-400 text-sm mb-2">Profil</p>
+                <p className="text-gray-400 text-sm mb-2">{t('profile')}</p>
                 <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                   {driver.name.charAt(0)}
                 </div>
@@ -398,7 +398,7 @@ export default function DriverDashboard() {
                       : 'bg-gray-700 hover:bg-gray-600 text-white'
                   } ${!isAccountActive ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {isAvailable ? '✓ En ligne' : 'Hors ligne'}
+                  {isAvailable ? t('onlineStatus') : t('offlineStatus')}
                 </button>
 
                 {refus && (
@@ -409,25 +409,25 @@ export default function DriverDashboard() {
 
                 <Link href="/driver/profile" className="block">
                   <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
-                    Mon profil
+                    {t('myProfile')}
                   </button>
                 </Link>
 
                 <Link href="/driver/deliveries" className="block">
                   <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
-                    Mes livraisons
+                    {t('myDeliveries')}
                   </button>
                 </Link>
 
                 {isAccountActive ? (
                   <Link href="/driver/earnings" className="block">
                     <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
-                      Voir les revenus
+                      {t('seeEarnings')}
                     </button>
                   </Link>
                 ) : (
                   <button disabled className="w-full bg-gray-600 text-gray-400 font-semibold py-2 rounded-lg opacity-50 cursor-not-allowed">
-                    Revenus (compte à valider)
+                    {t('earningsAccountValidation')}
                   </button>
                 )}
               </div>

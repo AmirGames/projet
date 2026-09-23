@@ -60,7 +60,7 @@ interface Genre {
   libelle: string;
 }
 
-type TabType = 'general' | 'contact' | 'notifications' | 'facturation' | 'livraison';
+type TabType = 'general' | 'contact' | {t('notifications')} | 'facturation' | 'livraison';
 
 export default function StoreSettings() {
   const t = useTranslations('merchantSettings');
@@ -269,7 +269,7 @@ export default function StoreSettings() {
         {/* Tabs */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg mb-6">
           <div className="flex border-b border-gray-700 overflow-x-auto">
-            {(['general', 'contact', 'notifications', 'facturation', 'livraison'] as TabType[]).map(tab => (
+            {(['general', 'contact', {t('notifications')}, 'facturation', 'livraison'] as TabType[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -281,7 +281,7 @@ export default function StoreSettings() {
               >
                 {tab === 'general' && '🏪 Général'}
                 {tab === 'contact' && '📍 Contact'}
-                {tab === 'notifications' && '🔔 Notifications'}
+                {tab === {t('notifications')} && '🔔 Notifications'}
                 {tab === 'facturation' && '🧾 Facturation'}
                 {tab === 'livraison' && '🚚 Livraison'}
               </button>
@@ -440,7 +440,7 @@ export default function StoreSettings() {
             )}
 
             {/* Notifications Tab */}
-            {activeTab === 'notifications' && (
+            {activeTab === {t('notifications')} && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg border border-gray-600">
                   <div>
@@ -450,7 +450,7 @@ export default function StoreSettings() {
                   <input
                     type="checkbox"
                     checked={formData.notifications.orderNotifications}
-                    onChange={(e) => handleNestedChange('notifications', 'orderNotifications', e.target.checked)}
+                    onChange={(e) => handleNestedChange({t('notifications')}, 'orderNotifications', e.target.checked)}
                     className="w-5 h-5 rounded"
                   />
                 </div>
@@ -463,7 +463,7 @@ export default function StoreSettings() {
                   <input
                     type="checkbox"
                     checked={formData.notifications.lowStockAlerts}
-                    onChange={(e) => handleNestedChange('notifications', 'lowStockAlerts', e.target.checked)}
+                    onChange={(e) => handleNestedChange({t('notifications')}, 'lowStockAlerts', e.target.checked)}
                     className="w-5 h-5 rounded"
                   />
                 </div>
@@ -476,7 +476,7 @@ export default function StoreSettings() {
                   <input
                     type="checkbox"
                     checked={formData.notifications.reviewNotifications}
-                    onChange={(e) => handleNestedChange('notifications', 'reviewNotifications', e.target.checked)}
+                    onChange={(e) => handleNestedChange({t('notifications')}, {t({t('notifications')})}, e.target.checked)}
                     className="w-5 h-5 rounded"
                   />
                 </div>
@@ -489,7 +489,7 @@ export default function StoreSettings() {
                   <input
                     type="checkbox"
                     checked={formData.notifications.emailNotifications}
-                    onChange={(e) => handleNestedChange('notifications', 'emailNotifications', e.target.checked)}
+                    onChange={(e) => handleNestedChange({t('notifications')}, {t('notifications')}, e.target.checked)}
                     className="w-5 h-5 rounded"
                   />
                 </div>

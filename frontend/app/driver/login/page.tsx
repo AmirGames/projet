@@ -82,7 +82,7 @@ export default function DriverLoginPage() {
               <div className="relative">
                 <Mail size={18} className="absolute left-3 top-3 text-slate-400" />
                 <input
-                  type="email"
+                  type={t('email')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="votre@email.com"

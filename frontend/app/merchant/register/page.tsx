@@ -438,7 +438,7 @@ export default function MerchantRegisterPage() {
                     className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
                       errors.storeName ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    placeholder="Ma Boutique"
+                    placeholder={t('myStores')}
                   />
                   {errors.storeName && <p className="text-red-400 text-sm mt-1">{errors.storeName}</p>}
                 </div>

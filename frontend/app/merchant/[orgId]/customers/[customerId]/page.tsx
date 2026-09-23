@@ -1,4 +1,4 @@
-'use client';
+{t('actionBlock')};
 
 
 import { useCallback, useEffect, useState } from 'react';

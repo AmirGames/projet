@@ -29,7 +29,7 @@ export default function DriverDeliveriesPage() {
   const router = useRouter();
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'accepted' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | {t('accepted')} | 'completed'>('all');
 
   useEffect(() => {
     loadDeliveries();
@@ -46,7 +46,7 @@ export default function DriverDeliveriesPage() {
       setLoading(true);
       let query = '';
 
-      if (filter === 'accepted') {
+      if (filter === {t('accepted')}) {
         query = '?status=ACCEPTED,PICKED_UP';
       } else if (filter === 'completed') {
         query = '?status=DELIVERED';
@@ -139,9 +139,9 @@ export default function DriverDeliveriesPage() {
             Toutes ({deliveries.length})
           </button>
           <button
-            onClick={() => setFilter('accepted')}
+            onClick={() => setFilter({t('accepted')})}
             className={`px-4 py-2 rounded-lg font-semibold transition ${
-              filter === 'accepted'
+              filter === {t('accepted')}
                 ? 'bg-orange-600 text-white'
                 : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
             }`}
@@ -174,7 +174,7 @@ export default function DriverDeliveriesPage() {
             <p className="text-white text-lg mb-2">Aucune livraison</p>
             <p className="text-gray-400">
               {filter === 'all' && 'Vous n\'avez pas de livraison pour le moment'}
-              {filter === 'accepted' && 'Vous n\'avez pas de livraison en cours'}
+              {filter === {t('accepted')} && 'Vous n\'avez pas de livraison en cours'}
               {filter === 'completed' && 'Vous n\'avez pas encore complété de livraison'}
             </p>
           </div>

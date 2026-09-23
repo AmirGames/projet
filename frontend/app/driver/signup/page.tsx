@@ -115,9 +115,9 @@ export default function InscriptionLivreurPage() {
           <div>
             <label className="block text-sm text-gray-400 mb-1">Adresse e-mail</label>
             <input
-              type="email"
+              type={t('email')}
               required
-              {...champ('email')}
+              {...champ({t('email')})}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
             />
           </div>
