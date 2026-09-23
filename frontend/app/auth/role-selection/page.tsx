@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import Link from "next/link";
+import { useTranslations } from 'next-intl';
 
 interface Roles {
   customer: {
@@ -26,6 +27,7 @@ interface Roles {
 }
 
 export default function RoleSelectionPage() {
+  const t = useTranslations('common');
   const router = useRouter();
   const [roles, setRoles] = useState<Roles | null>(null);
   const [loading, setLoading] = useState(true);

@@ -10,6 +10,7 @@ import { useOrderTracking } from '@/lib/use-order-tracking';
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
@@ -30,6 +31,7 @@ interface Order {
 type OrderDelivery = Course;
 
 export default function OrderTrackingPage() {
+  const t = useTranslations('clientOrderDetail');
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;

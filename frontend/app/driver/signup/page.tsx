@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { Bike, Car, Truck } from 'lucide-react';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const VEHICULES = [
@@ -15,6 +16,7 @@ const VEHICULES = [
 ];
 
 export default function InscriptionLivreurPage() {
+  const t = useTranslations('driverAuth');
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
 

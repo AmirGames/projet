@@ -1014,5 +1014,150 @@
     "deliveriesSubtitle": "Manage all delivery companies on the platform",
     "driversTitle": "Drivers",
     "driversSubtitle": "Manage all drivers on the platform"
+  },
+  "merchantDashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome to your dashboard",
+    "totalStores": "Total Stores",
+    "orders": "Orders",
+    "revenue": "Total Revenue",
+    "myStores": "My Stores",
+    "loading": "Loading…",
+    "error": "Loading error"
+  },
+  "merchantOrders": {
+    "title": "Orders",
+    "description": "Manage and process your orders",
+    "empty": "No orders found",
+    "loading": "Loading orders...",
+    "total": "Total",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "ready": "Ready",
+    "completed": "Completed",
+    "status": "Status",
+    "amount": "Amount",
+    "date": "Date",
+    "actions": "Actions",
+    "view": "View",
+    "details": "Details"
+  },
+  "merchantProducts": {
+    "title": "Products",
+    "description": "Manage your catalog",
+    "empty": "No products found",
+    "loading": "Loading products...",
+    "add": "Add Product",
+    "edit": "Edit",
+    "delete": "Delete",
+    "name": "Name",
+    "price": "Price",
+    "category": "Category",
+    "status": "Status",
+    "availability": "Availability",
+    "available": "Available",
+    "outOfStock": "Out of Stock",
+    "success": "Product created",
+    "error": "Error"
+  },
+  "merchantCategories": {
+    "title": "Categories",
+    "empty": "No categories",
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "merchantAnalytics": {
+    "title": "Analytics",
+    "subtitle": "Analyze your performance",
+    "period": "Period",
+    "revenue": "Revenue",
+    "orders": "Orders",
+    "customers": "Customers"
+  },
+  "merchantSettings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "store": "Store",
+    "payment": "Payment",
+    "notifications": "Notifications",
+    "save": "Save",
+    "success": "Settings saved"
+  },
+  "clientHome": {
+    "title": "Home",
+    "welcome": "Welcome",
+    "searchPlaceholder": "Search for a restaurant...",
+    "noRestaurants": "No restaurants found"
+  },
+  "clientOrders": {
+    "title": "My Orders",
+    "empty": "No orders",
+    "status": "Status",
+    "date": "Date",
+    "amount": "Amount",
+    "details": "Details",
+    "track": "Track"
+  },
+  "clientCheckout": {
+    "title": "Cart",
+    "items": "Items",
+    "subtotal": "Subtotal",
+    "delivery": "Delivery",
+    "tax": "Tax",
+    "total": "Total",
+    "checkout": "Checkout",
+    "empty": "Your cart is empty"
+  },
+  "clientProfile": {
+    "title": "My Profile",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "edit": "Edit",
+    "save": "Save",
+    "logout": "Logout"
+  },
+  "driverDeliveries": {
+    "title": "My Deliveries",
+    "empty": "No deliveries",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "accept": "Accept",
+    "decline": "Decline",
+    "start": "Start",
+    "complete": "Complete"
+  },
+  "driverEarnings": {
+    "title": "My Earnings",
+    "total": "Total",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "earnings": "Earnings",
+    "trips": "Trips",
+    "avgEarning": "Average Earning"
+  },
+  "driverProfile": {
+    "title": "My Profile",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "vehicle": "Vehicle",
+    "edit": "Edit",
+    "save": "Save"
+  },
+  "driverAuth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirm": "Confirm",
+    "submit": "Submit",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?"
   }
 }

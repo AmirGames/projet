@@ -7,6 +7,7 @@ import { ArrowLeft, Star, MapPin, Heart, Trash2 } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface FavoriteStore {
@@ -28,6 +29,7 @@ interface FavoriteStore {
 }
 
 export default function FavoritesPage() {
+  const t = useTranslations('clientFavorites');
   const router = useRouter();
   const [favorites, setFavorites] = useState<FavoriteStore[]>([]);
   const [loading, setLoading] = useState(true);

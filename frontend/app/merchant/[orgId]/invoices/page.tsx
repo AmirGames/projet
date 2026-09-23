@@ -9,6 +9,7 @@ import { useCurrentStore } from '@/lib/current-store';
 
 import { euro } from '@/lib/format';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Invoice {
@@ -30,6 +31,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function InvoicesPage() {
+  const t = useTranslations('merchantInvoices');
   const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();

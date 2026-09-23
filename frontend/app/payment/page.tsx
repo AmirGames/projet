@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from 'next-intl';
 
 interface OrderInfo {
   orderId: string;
@@ -10,6 +11,7 @@ interface OrderInfo {
 }
 
 export default function PaymentPage() {
+  const t = useTranslations('common');
   const router = useRouter();
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
   const [loading, setLoading] = useState(false);

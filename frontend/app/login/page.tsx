@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { RAISON_DECONNEXION, useAuth } from "@/lib/auth-context";
 import Link from "next/link";
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function LoginPage() {
+  const t = useTranslations('common');
   const router = useRouter();
   const { refreshAuth } = useAuth();
   const [email, setEmail] = useState("");

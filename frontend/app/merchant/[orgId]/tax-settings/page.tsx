@@ -6,6 +6,7 @@ import { Trash2, Edit2, Plus, X, Info } from 'lucide-react';
 import Link from 'next/link';
 
 import { useCurrentStore } from '@/lib/current-store';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -33,6 +34,7 @@ const VIDE_FORM = {
 };
 
 export default function TaxSettingsPage() {
+  const t = useTranslations('merchanttaxsettings');
   const { storeId } = useCurrentStore();
   const params  = useParams();
   const router  = useRouter();

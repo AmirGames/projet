@@ -5,8 +5,10 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 export default function ProductDetailPage() {
+  const t = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   const productId = params.id as string;

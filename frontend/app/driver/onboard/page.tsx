@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { AlertCircle, CheckCircle, Loader, Bike, Car, Truck } from 'lucide-react';
 import Link from 'next/link';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const VEHICULES = [
@@ -25,6 +26,7 @@ interface FormErrors {
 }
 
 export default function DriverOnboardPage() {
+  const t = useTranslations('driverOnboard');
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);

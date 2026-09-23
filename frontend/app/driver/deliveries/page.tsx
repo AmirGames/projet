@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, MapPin, Clock, Package, CheckCircle, AlertCircle } from 'lucide-react';
 import { euro } from '@/lib/format';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Delivery {
@@ -24,6 +25,7 @@ interface Delivery {
 }
 
 export default function DriverDeliveriesPage() {
+  const t = useTranslations('driverDeliveries');
   const router = useRouter();
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);

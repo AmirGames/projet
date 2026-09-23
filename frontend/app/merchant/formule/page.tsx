@@ -6,6 +6,7 @@ import { ArrowLeft, Check, CreditCard, Clock, Store } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 
+import { useTranslations } from 'next-intl';
 /**
  * La formule du commerçant, et le moyen d'en changer.
  *
@@ -44,6 +45,7 @@ interface Demande {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function MaFormulePage() {
+  const t = useTranslations('merchantSubscription');
   const [grille, setGrille] = useState<Formule[]>([]);
   const [quota, setQuota] = useState<Quota | null>(null);
   const [demande, setDemande] = useState<Demande | null>(null);

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -32,6 +33,7 @@ interface ReviewState {
 }
 
 export default function ReviewPage() {
+  const t = useTranslations('clientorders');
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;

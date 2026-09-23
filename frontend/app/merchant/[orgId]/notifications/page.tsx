@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Bell, Trash2, Check } from "lucide-react";
 
 import { useCurrentStore } from "@/lib/current-store";
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -26,6 +27,7 @@ interface NotificationsResponse {
 }
 
 export default function NotificationsPage() {
+  const t = useTranslations('merchantnotifications');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

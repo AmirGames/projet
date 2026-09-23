@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Image as ImageIcon, Trash2, GripVertical } from "lucide-react";
 
 import { useCurrentStore } from "@/lib/current-store";
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -20,6 +21,7 @@ interface MediaResponse {
 }
 
 export default function ProductMediaPage() {
+  const t = useTranslations('merchantproductmedia');
   const [productId, setProductId] = useState("");
   const [produits, setProduits] = useState<{ id: string; name: string }[]>([]);
 

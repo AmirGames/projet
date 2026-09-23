@@ -6,6 +6,7 @@ import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
 import { SuiviLivraisonClient } from '@/components/SuiviLivraisonClient';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -69,6 +70,7 @@ const statusColors: { [key: string]: string } = {
 };
 
 export default function TrackOrderPage() {
+  const t = useTranslations('common');
   const [searchQuery, setSearchQuery] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
   const [delivery, setDelivery] = useState<Delivery | null>(null);

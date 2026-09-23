@@ -17,6 +17,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface LigneCommande {
@@ -75,6 +76,7 @@ const COULEURS: Record<string, string> = {
 };
 
 export default function DetailCommandePage() {
+  const t = useTranslations('merchantOrderDetail');
   const params = useParams();
   const orgId = params?.orgId as string;
   const orderId = params?.orderId as string;

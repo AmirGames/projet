@@ -6,6 +6,7 @@ import { AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface StoreSettings {
@@ -62,6 +63,7 @@ interface Genre {
 type TabType = 'general' | 'contact' | 'notifications' | 'facturation' | 'livraison';
 
 export default function StoreSettings() {
+  const t = useTranslations('merchantSettings');
   const params = useParams();
   const router = useRouter();
   const orgId = params?.orgId as string;

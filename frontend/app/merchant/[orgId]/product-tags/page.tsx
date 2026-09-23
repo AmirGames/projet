@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Tag, Plus, Trash2, Edit2 } from "lucide-react";
 
 import { useCurrentStore } from "@/lib/current-store";
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,6 +25,7 @@ interface TagsResponse {
 }
 
 export default function ProductTagPage() {
+  const t = useTranslations('merchantproducttags');
   const [tags, setTags] = useState<ProductTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

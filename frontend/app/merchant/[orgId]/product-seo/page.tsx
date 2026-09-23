@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 
 import { useCurrentStore } from "@/lib/current-store";
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -19,6 +20,7 @@ interface ProductSeo {
 }
 
 export default function ProductSeoPage() {
+  const t = useTranslations('merchantproductseo');
   const [productId, setProductId] = useState("");
   const [produits, setProduits] = useState<{ id: string; name: string }[]>([]);
 

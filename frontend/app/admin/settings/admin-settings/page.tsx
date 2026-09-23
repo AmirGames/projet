@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Settings, AlertTriangle } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -15,6 +16,7 @@ interface SystemConfig {
 }
 
 export default function AdminSettingsPage() {
+  const t = useTranslations('common');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");

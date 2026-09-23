@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface FormData {
@@ -28,6 +29,7 @@ interface FormErrors {
 }
 
 export default function MerchantRegisterPage() {
+  const t = useTranslations('merchantAuth');
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);

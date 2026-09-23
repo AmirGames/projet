@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Edit2, Trash2, Search, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -27,6 +28,7 @@ interface Promotion {
 }
 
 export default function PromotionsPage() {
+  const t = useTranslations('merchantpromotions');
 
   const { storeId } = useCurrentStore();
   const [promotions, setPromotions] = useState<Promotion[]>([]);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bell, Search, Trash2, Settings, AlertCircle, Info, CheckCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -18,6 +19,7 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
+  const t = useTranslations('common');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

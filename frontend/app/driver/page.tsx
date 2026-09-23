@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Package, Clock, DollarSign } from 'lucide-react';
@@ -12,6 +13,7 @@ import { NotesRecues } from '@/components/NotesRecues';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+  const t = useTranslations('driverDeliveries');
 interface Delivery {
   id: string;
   orderId: string;

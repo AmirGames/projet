@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Store, ShoppingCart, TrendingUp } from 'lucide-react';
@@ -10,6 +11,7 @@ import { euro } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+  const t = useTranslations('merchantDashboard');
 interface Store {
   id: string;
   name: string;

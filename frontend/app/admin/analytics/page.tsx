@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 interface Analytics {
   totalRevenue: number;
@@ -13,6 +14,7 @@ interface Analytics {
 }
 
 export default function AdminAnalytics() {
+  const t = useTranslations('common');
   const [analytics, setAnalytics] = useState<Analytics>({
     totalRevenue: 0,
     totalOrders: 0,

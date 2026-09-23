@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Search, MapPin, Star, Clock, TrendingUp, Heart } from 'lucide-react';
 
@@ -8,6 +9,7 @@ import { euro } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+  const t = useTranslations('clientHome');
 interface Store {
   id: string;
   name: string;

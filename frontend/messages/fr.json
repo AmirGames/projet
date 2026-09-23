@@ -1014,5 +1014,150 @@
     "deliveriesSubtitle": "Gérez toutes les entreprises de livraison de la plateforme",
     "driversTitle": "Chauffeurs",
     "driversSubtitle": "Gérez tous les chauffeurs de la plateforme"
+  },
+  "merchantDashboard": {
+    "title": "Tableau de Bord",
+    "welcome": "Bienvenue sur votre tableau de bord",
+    "totalStores": "Total de Boutiques",
+    "orders": "Commandes",
+    "revenue": "Revenu Total",
+    "myStores": "Mes Boutiques",
+    "loading": "Chargement…",
+    "error": "Erreur de chargement"
+  },
+  "merchantOrders": {
+    "title": "Commandes",
+    "description": "Gérez et traitez vos commandes",
+    "empty": "Aucune commande trouvée",
+    "loading": "Chargement des commandes...",
+    "total": "Total",
+    "pending": "En Attente",
+    "accepted": "Acceptées",
+    "ready": "Prêtes",
+    "completed": "Terminées",
+    "status": "Statut",
+    "amount": "Montant",
+    "date": "Date",
+    "actions": "Actions",
+    "view": "Voir",
+    "details": "Détails"
+  },
+  "merchantProducts": {
+    "title": "Produits",
+    "description": "Gérez votre catalogue",
+    "empty": "Aucun produit trouvé",
+    "loading": "Chargement des produits...",
+    "add": "Ajouter Produit",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "name": "Nom",
+    "price": "Prix",
+    "category": "Catégorie",
+    "status": "Statut",
+    "availability": "Disponibilité",
+    "available": "Disponible",
+    "outOfStock": "Épuisé",
+    "success": "Produit créé",
+    "error": "Erreur"
+  },
+  "merchantCategories": {
+    "title": "Catégories",
+    "empty": "Aucune catégorie",
+    "add": "Ajouter",
+    "edit": "Modifier",
+    "delete": "Supprimer"
+  },
+  "merchantAnalytics": {
+    "title": "Analytics",
+    "subtitle": "Analyse de vos performances",
+    "period": "Période",
+    "revenue": "Revenu",
+    "orders": "Commandes",
+    "customers": "Clients"
+  },
+  "merchantSettings": {
+    "title": "Paramètres",
+    "profile": "Profil",
+    "store": "Boutique",
+    "payment": "Paiement",
+    "notifications": "Notifications",
+    "save": "Enregistrer",
+    "success": "Paramètres sauvegardés"
+  },
+  "clientHome": {
+    "title": "Accueil",
+    "welcome": "Bienvenue",
+    "searchPlaceholder": "Rechercher un restaurant...",
+    "noRestaurants": "Aucun restaurant trouvé"
+  },
+  "clientOrders": {
+    "title": "Mes Commandes",
+    "empty": "Aucune commande",
+    "status": "Statut",
+    "date": "Date",
+    "amount": "Montant",
+    "details": "Détails",
+    "track": "Suivre"
+  },
+  "clientCheckout": {
+    "title": "Panier",
+    "items": "Articles",
+    "subtotal": "Sous-total",
+    "delivery": "Livraison",
+    "tax": "Taxes",
+    "total": "Total",
+    "checkout": "Valider",
+    "empty": "Votre panier est vide"
+  },
+  "clientProfile": {
+    "title": "Mon Profil",
+    "name": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "logout": "Déconnexion"
+  },
+  "driverDeliveries": {
+    "title": "Mes Livraisons",
+    "empty": "Aucune livraison",
+    "pending": "En Attente",
+    "accepted": "Acceptée",
+    "inProgress": "En Cours",
+    "completed": "Terminée",
+    "cancelled": "Annulée",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "start": "Commencer",
+    "complete": "Terminer"
+  },
+  "driverEarnings": {
+    "title": "Mes Gains",
+    "total": "Total",
+    "thisWeek": "Cette Semaine",
+    "thisMonth": "Ce Mois",
+    "earnings": "Gains",
+    "trips": "Courses",
+    "avgEarning": "Gain Moyen"
+  },
+  "driverProfile": {
+    "title": "Mon Profil",
+    "name": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "vehicle": "Véhicule",
+    "edit": "Modifier",
+    "save": "Enregistrer"
+  },
+  "driverAuth": {
+    "login": "Connexion",
+    "signup": "Inscription",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirm": "Confirmer",
+    "submit": "Envoyer",
+    "noAccount": "Pas de compte ?",
+    "haveAccount": "Déjà inscrit ?"
   }
 }

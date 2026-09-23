@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import Link from "next/link";
+import { useTranslations } from 'next-intl';
 
 export default function SignupPage() {
+  const t = useTranslations('common');
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

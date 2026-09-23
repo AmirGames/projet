@@ -21,6 +21,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useCurrentStore } from '@/lib/current-store';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Category {
@@ -33,6 +34,7 @@ interface Category {
 }
 
 function SortableCategory({ category, onEdit, onDelete }: any) {
+  const t = useTranslations('merchantCategories');
   const {
     attributes,
     listeners,

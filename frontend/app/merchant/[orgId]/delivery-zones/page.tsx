@@ -6,6 +6,7 @@ import { Plus, Edit2, Trash2, Search, MapPin, Crosshair } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 
 import { euro } from '@/lib/format';
+import { useTranslations } from 'next-intl';
 
 // Leaflet touche à `window` dès son chargement : la carte ne peut pas être
 // rendue côté serveur.
@@ -42,6 +43,7 @@ interface DeliveryZone {
 }
 
 export default function DeliveryZonesPage() {
+  const t = useTranslations('merchantdeliveryzones');
 
   const { storeId } = useCurrentStore();
   const [zones, setZones] = useState<DeliveryZone[]>([]);

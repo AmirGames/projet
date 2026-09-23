@@ -5,6 +5,7 @@ import { TrendingUp, Calendar, DollarSign, ShoppingCart, Users, Clock } from 'lu
 
 import { useCurrentStore } from '@/lib/current-store';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
@@ -28,6 +29,7 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
+  const t = useTranslations('merchantAnalytics');
   const { storeId } = useCurrentStore();
 
   // Les montants sont déjà en euros : aucune division par 100.

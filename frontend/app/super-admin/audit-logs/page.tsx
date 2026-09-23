@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Search, Download, Filter } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -15,6 +16,7 @@ interface AuditLog {
 }
 
 export default function AuditLogsPage() {
+  const t = useTranslations('common');
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

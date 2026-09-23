@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { useTranslations } from 'next-intl';
 /**
  * Ancien tunnel de commande, devenu une simple redirection.
  *
@@ -13,6 +14,7 @@ import { useRouter } from 'next/navigation';
  * en a plusieurs.
  */
 export default function AncienTunnel() {
+  const t = useTranslations('clientCheckout');
   const router = useRouter();
 
   useEffect(() => {

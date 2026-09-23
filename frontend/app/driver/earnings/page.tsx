@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Wallet, Package, Star, CalendarDays } from 'lucide-react';
@@ -9,6 +10,7 @@ import { MesVersements } from '@/components/MesVersements';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+  const t = useTranslations('driverEarnings');
 interface CourseRemuneree {
   id: string;
   orderId: string;

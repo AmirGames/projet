@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Ban, Undo2, Search, AlertCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface User {
   id: string;
@@ -14,6 +15,7 @@ interface User {
 }
 
 export default function UserManagementPage() {
+  const t = useTranslations('common');
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

@@ -8,6 +8,7 @@ import { ArrowLeft, MapPin, Phone, CheckCircle, AlertCircle, Loader, X } from 'l
 import { euro } from '@/lib/format';
 import { AnnulerCourse } from '@/components/AnnulerCourse';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Delivery {
@@ -30,6 +31,7 @@ interface Delivery {
 }
 
 export default function DeliveryTrackingPage() {
+  const t = useTranslations('driverDeliveryDetail');
   const params = useParams();
   const router = useRouter();
   const deliveryId = params.id as string;

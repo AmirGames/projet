@@ -19,6 +19,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { TunnelCommande } from '@/components/TunnelCommande';
+import { useTranslations } from 'next-intl';
 import {
   autresPaniers,
   cleDeLigne,
@@ -32,6 +33,7 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function CheckoutPage() {
+  const t = useTranslations('common');
   const router = useRouter();
 
   const [boutique, setBoutique] = useState<{ id: string; name: string } | null>(null);

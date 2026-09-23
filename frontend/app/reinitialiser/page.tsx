@@ -4,11 +4,13 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** Choix d'un nouveau mot de passe, depuis le lien reçu par courriel. */
 function Formulaire() {
+  const t = useTranslations('common');
   const router = useRouter();
   const jeton = useSearchParams().get('jeton') || '';
 

@@ -30,6 +30,7 @@ import {
 
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Piece {
@@ -92,6 +93,7 @@ const CHAMP =
   'w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-500';
 
 export default function ProfilCommercantPage() {
+  const t = useTranslations('merchantProfile');
   const [profil, setProfil] = useState<Profil | null>(null);
   const [orgId, setOrgId] = useState('');
   const [chargement, setChargement] = useState(true);
