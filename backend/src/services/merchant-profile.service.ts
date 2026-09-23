@@ -50,6 +50,51 @@ export const libelleDuDocumentCommercant = (type: string) =>
   LIBELLES_DOCUMENT[type] || type;
 
 /**
+ * Les pièces exigées avant d'ouvrir.
+ *
+ * La TVA n'en fait pas partie : une petite structure en franchise n'en a pas,
+ * et l'exiger l'empêcherait de s'inscrire.
+ */
+export const PIECES_EXIGEES = ["registration", "identity", "bank"] as const;
+
+/**
+ * Où en est la validation du commerce : ce qui est validé, ce qui manque.
+ *
+ * Un seul calcul pour l'écran du commerçant, celui de la plateforme et le
+ * contrôle au moment de valider : trois copies auraient divergé.
+ */
+export function etatDeValidation(
+  approvedAt: Date | null,
+  documents: { type: string; status: string }[]
+) {
+  const validees = new Set(
+    documents.filter((piece) => piece.status === "APPROVED").map((piece) => piece.type)
+  );
+  const enExamen = new Set(
+    documents.filter((piece) => piece.status === "PENDING").map((piece) => piece.type)
+  );
+  const manquantes = PIECES_EXIGEES.filter((type) => !validees.has(type));
+  const decrire = (type: string) => ({ type, libelle: libelleDuDocumentCommercant(type) });
+
+  return {
+    valide: !!approvedAt,
+    approvedAt,
+    piecesExigees: PIECES_EXIGEES.map(decrire),
+    /** Pas encore validées, quelle qu'en soit la raison : ce qui bloque la validation. */
+    piecesManquantes: manquantes.map(decrire),
+    /**
+     * Ce que le commerçant doit encore fournir : jamais déposé, refusé ou
+     * expiré. Une pièce déposée n'y figure plus — sinon il ne distingue pas ce
+     * qu'il lui reste à faire de ce qui attend la plateforme.
+     */
+    piecesAFournir: manquantes.filter((type) => !enExamen.has(type)).map(decrire),
+    /** Déposées, en attente de l'examen de la plateforme. */
+    piecesEnExamen: manquantes.filter((type) => enExamen.has(type)).map(decrire),
+    dossierComplet: manquantes.length === 0,
+  };
+}
+
+/**
  * Un IBAN réduit à ce qu'il faut pour le reconnaître.
  *
  * Le rendre en entier exposerait une coordonnée bancaire à chaque ouverture de
@@ -111,6 +156,7 @@ export class MerchantProfileService {
         ...piece,
         libelle: libelleDuDocumentCommercant(piece.type),
       })),
+      validation: etatDeValidation(org.approvedAt, org.documents),
       paysConnus: PAYS_CONNUS,
       typesDocument: TYPES_DOCUMENT_COMMERCANT.map((type) => ({
         type,
@@ -287,6 +333,8 @@ export class MerchantProfileService {
       status: "PENDING",
       reviewNote: null,
       reviewedAt: null,
+      // Une nouvelle pièce a sa propre échéance : l'ancien rappel ne la couvre pas.
+      expiryReminderAt: null,
     };
 
     return existante
@@ -327,6 +375,8 @@ export class MerchantProfileService {
       status: "PENDING",
       reviewNote: null,
       reviewedAt: null,
+      // Une nouvelle pièce a sa propre échéance : l'ancien rappel ne la couvre pas.
+      expiryReminderAt: null,
     };
 
     const deposee = existante

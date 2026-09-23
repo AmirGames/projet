@@ -397,6 +397,8 @@ router.post("/me/become-merchant", authMiddleware, async (req: Request, res: Res
     }
 
     // Create organization
+    // Le commerce attend la validation de la plateforme (`approvedAt` vide) :
+    // il prépare sa boutique, il ne l'ouvre pas encore.
     const organization = await db.organization.create({
       data: {
         name: body.businessName,
@@ -405,6 +407,8 @@ router.post("/me/become-merchant", authMiddleware, async (req: Request, res: Res
         tier: "FREE",
         plan: "STARTER",
         status: "ACTIVE",
+        // La plateforme elle-même n'a personne pour la valider.
+        approvedAt: user.isSuperOwner ? new Date() : null,
       },
     });
 
@@ -430,6 +434,9 @@ router.post("/me/become-merchant", authMiddleware, async (req: Request, res: Res
         phone: body.phone,
         email: user.email,
         description: body.description,
+        // Fermée tant que le commerce n'est pas validé : l'écran ne doit pas
+        // afficher « ouverte » une boutique qui ne peut rien vendre.
+        isOpen: !!organization.approvedAt,
         settings: {
           businessType: body.businessType,
           createdAt: new Date().toISOString(),
@@ -604,6 +611,8 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
     }
 
     // Create organization
+    // Le commerce attend la validation de la plateforme (`approvedAt` vide) :
+    // il prépare sa boutique, il ne l'ouvre pas encore.
     const organization = await db.organization.create({
       data: {
         name: body.businessName,
@@ -612,6 +621,8 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
         tier: "FREE",
         plan: "STARTER",
         status: "ACTIVE",
+        // La plateforme elle-même n'a personne pour la valider.
+        approvedAt: isFirstUser ? new Date() : null,
       },
     });
 
@@ -637,6 +648,9 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
         phone: body.phone,
         email: body.email,
         description: body.description,
+        // Fermée tant que le commerce n'est pas validé : l'écran ne doit pas
+        // afficher « ouverte » une boutique qui ne peut rien vendre.
+        isOpen: !!organization.approvedAt,
         settings: {
           businessType: body.businessType,
           website: body.website || null,

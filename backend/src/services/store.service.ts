@@ -48,10 +48,17 @@ export class StoreService {
       }
     }
 
+    // Une nouvelle boutique d'un commerce pas encore validé naît fermée.
+    const org = await db.organization.findUnique({
+      where: { id: data.orgId },
+      select: { approvedAt: true },
+    });
+
     try {
       const store = await db.store.create({
         data: {
           orgId: data.orgId,
+          isOpen: !!org?.approvedAt,
           name: data.name,
           slug: data.slug,
           address: data.address,
@@ -119,7 +126,10 @@ export class StoreService {
         products: { where: { status: "ACTIVE", deletedAt: null } },
         categories: true,
         theme: true,
-        org: true,
+        // Route publique : seulement ce qui décrit le commerce aux clients.
+        // L'organisation entière partait avec la vitrine — IBAN, date de
+        // naissance et coordonnées du propriétaire compris.
+        org: { select: { id: true, name: true, slug: true, status: true, approvedAt: true } },
       },
     });
 

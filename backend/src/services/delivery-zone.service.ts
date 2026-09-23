@@ -2,6 +2,8 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint, pointDansPolygone, airePolygone, Point } from "../utils/geo";
 import { AddressService } from "./address.service";
+import { modeDeLivraison, ModeDeLivraison } from "./delivery-mode.service";
+import { DispatchService } from "./dispatch.service";
 
 /**
  * Les zones de livraison d'une boutique.
@@ -65,6 +67,8 @@ export interface Verdict {
   raison: string;
   /** Vrai quand aucune zone n'est définie : on retombe sur le forfait boutique. */
   forfaitBoutique: boolean;
+  /** Qui livre : le commerçant (OWN) ou un livreur de la plateforme (PLATFORM). */
+  mode: ModeDeLivraison;
 }
 
 /** Une couleur par défaut différente pour chaque nouvelle zone, sans que le
@@ -299,12 +303,33 @@ export class DeliveryZoneService {
         acceptsDelivery: true,
         deliveryCost: true,
         minDeliveryAmount: true,
+        settings: true,
       },
     });
 
     if (!boutique) {
       throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
     }
+
+    const verdict = await this.verdictSansMode(boutique, storeId, adresse);
+    return { ...verdict, mode: modeDeLivraison(boutique.settings) };
+  }
+
+  private static async verdictSansMode(
+    boutique: {
+      latitude: number | null;
+      longitude: number | null;
+      address: string | null;
+      city: string | null;
+      postalCode: string | null;
+      acceptsDelivery: boolean;
+      deliveryCost: unknown;
+      minDeliveryAmount: unknown;
+      settings: unknown;
+    },
+    storeId: string,
+    adresse: { latitude?: number | null; longitude?: number | null; texte?: string | null }
+  ): Promise<Omit<Verdict, "mode">> {
 
     /**
      * La boutique se situe elle-même, une fois.
@@ -348,6 +373,17 @@ export class DeliveryZoneService {
         raison: "Cette boutique ne fait pas de livraison.",
         forfaitBoutique: true,
       };
+    }
+
+    /**
+     * Les livreurs de la plateforme : ni zones ni forfait du commerçant.
+     *
+     * Le rayon est celui de la plateforme (Configuration système), et les
+     * frais se calculent sur la distance entre la boutique et le client, avec
+     * le barème des livreurs : c'est exactement ce que le livreur touchera.
+     */
+    if (modeDeLivraison(boutique.settings) === "PLATFORM") {
+      return this.verdictLivreursPlateforme(boutique, adresse, forfait.minimum);
     }
 
     const zones = (await this.getByStoreId(storeId)).filter((zone) => zone.isActive);
@@ -474,6 +510,85 @@ export class DeliveryZoneService {
       distanceKm: zone.type === "RADIUS" ? Number(distance.toFixed(2)) : null,
       frais: zone.baseFee,
       minimum: zone.minOrder,
+      raison: "",
+      forfaitBoutique: false,
+    };
+  }
+
+  /**
+   * Le verdict quand un livreur de la plateforme fait la course.
+   *
+   * La distance est à vol d'oiseau, comme pour la rémunération du livreur : le
+   * client paie ce que le livreur touchera, au centime près.
+   */
+  private static async verdictLivreursPlateforme(
+    boutique: { latitude: number | null; longitude: number | null },
+    adresse: { latitude?: number | null; longitude?: number | null; texte?: string | null },
+    minimum: number
+  ): Promise<Omit<Verdict, "mode">> {
+    const refus = (raison: string, distance: number | null = null) => ({
+      livrable: false,
+      zone: null,
+      distanceKm: distance,
+      frais: 0,
+      minimum,
+      raison,
+      forfaitBoutique: false,
+    });
+
+    const depart = { latitude: boutique.latitude, longitude: boutique.longitude };
+
+    if (!estUnPoint(depart)) {
+      return refus(
+        "Cette boutique n'a pas encore situé son adresse : la livraison ne peut pas être calculée."
+      );
+    }
+
+    let point = adresse;
+
+    if (!estUnPoint(point) && (adresse.texte || "").trim().length >= 3) {
+      const situee = await AddressService.situer(adresse.texte as string);
+
+      if (situee.point) {
+        point = situee.point;
+      } else if (!situee.disponible) {
+        // Sans position, pas de distance, donc pas de prix : on ne peut pas
+        // inventer ce que le livreur touchera.
+        return refus(
+          "Le calcul des frais de livraison est momentanément indisponible. Choisissez votre adresse dans les suggestions."
+        );
+      } else {
+        return refus(
+          "Nous n'avons pas trouvé cette adresse. Vérifiez-la, ou choisissez-la dans les suggestions."
+        );
+      }
+    }
+
+    if (!estUnPoint(point)) {
+      return refus("Saisissez votre adresse pour connaître les frais de livraison.");
+    }
+
+    const distance = distanceKm(
+      { latitude: depart.latitude as number, longitude: depart.longitude as number },
+      { latitude: point.latitude as number, longitude: point.longitude as number }
+    );
+    const arrondie = Number(distance.toFixed(2));
+
+    const reglages = await DispatchService.reglages();
+
+    if (distance > reglages.maxRadiusKm) {
+      return refus(
+        `Cette adresse est à ${distance.toFixed(1)} km, au-delà de la zone livrée (${reglages.maxRadiusKm} km).`,
+        arrondie
+      );
+    }
+
+    return {
+      livrable: true,
+      zone: null,
+      distanceKm: arrondie,
+      frais: DispatchService.remuneration(arrondie, reglages).payout,
+      minimum,
       raison: "",
       forfaitBoutique: false,
     };

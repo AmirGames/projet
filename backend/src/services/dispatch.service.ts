@@ -118,6 +118,16 @@ export class DispatchService {
       );
     }
 
+    // Le commerçant a choisi de livrer lui-même : la commande n'a été ni
+    // tarifée ni commissionnée pour un livreur de la plateforme.
+    if (commande.deliveryMode === "OWN") {
+      throw new ApiError(
+        400,
+        "Cette commande est livrée par vos propres livreurs : elle n'est pas proposée aux livreurs de la plateforme.",
+        "OWN_DELIVERY"
+      );
+    }
+
     // Générer l'adresse obfusquée dès la création
     let deliveryLatObfusquee = null;
     let deliveryLngObfusquee = null;
@@ -211,6 +221,8 @@ export class DispatchService {
             deliveryCity: true,
             deliveryPostal: true,
             totalAmount: true,
+            feesAmount: true,
+            deliveryMode: true,
             store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
           },
         },
@@ -280,7 +292,18 @@ export class DispatchService {
     const distancePayee = Number((trajet ?? choisi.distance).toFixed(2));
     const approche = Number(choisi.distance.toFixed(2));
 
-    const { payout } = this.remuneration(distancePayee, reglages);
+    /**
+     * Les frais payés par le client sont la paie du livreur.
+     *
+     * Ils ont été calculés à la commande sur la distance boutique → client,
+     * avec le même barème ; la plateforme les encaisse et les reverse au
+     * livreur sur son relevé. Pour une commande antérieure à ce fonctionnement,
+     * on retombe sur le barème du jour.
+     */
+    const payout =
+      course.order?.deliveryMode === "PLATFORM"
+        ? Number(Number(course.order.feesAmount).toFixed(2))
+        : this.remuneration(distancePayee, reglages).payout;
     const expiresAt = new Date(maintenant + reglages.offerSeconds * 1000);
 
     // Une ligne par livreur et par course : un nouveau tour la rouvre.

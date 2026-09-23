@@ -159,12 +159,21 @@ export default function HorairesPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`${API_URL}/api/store-hours/${storeId}/status`, {
+      const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ isOpen: !data.isOpen }),
       });
 
+      // Un refus — commerce pas encore validé — doit se lire à l'écran : le
+      // bouton qui ne fait rien laisserait croire à une panne.
+      if (!reponse.ok) {
+        const lu = await reponse.json().catch(() => null);
+        setErreur(lu?.error || t('serverError'));
+        return;
+      }
+
+      setErreur('');
       await charger();
     } catch {
       setErreur(t('serverError'));

@@ -39,6 +39,14 @@ emporter ou à livrer.
   rattachent au compte qui porte la même adresse électronique
 
 ### Le commerçant
+- Inscription, puis **validation par la plateforme** : il prépare sa boutique
+  (catalogue, catégories, horaires, zones) mais ne peut ni l'ouvrir, ni
+  recevoir de commande, ni apparaître aux clients tant que ses pièces exigées
+  (Kbis ou BCE, identité du propriétaire, RIB) ne sont pas validées et que la
+  plateforme n'a pas validé le commerce
+- **Prévenu 30 jours avant l'expiration** d'une pièce, dans son espace et par
+  courriel ; le jour venu la pièce passe « expirée » et la plateforme l'apprend,
+  sans que le commerce soit fermé d'office
 - Plusieurs boutiques par compte, selon la formule souscrite
 - Catalogue : catégories et plats réordonnables au glisser-déposer, déclinaisons,
   disponibilité basculable en direct (le client la voit changer sans recharger)
@@ -173,6 +181,14 @@ npm install
 cp .env.example .env     # puis renseignez DATABASE_URL et les deux secrets JWT
 npx prisma db push
 npm run dev              # http://localhost:3001
+```
+
+Une base créée avant la validation des commerces : `db push` ajoute la colonne
+`approvedAt` vide, et tous les commerces existants se retrouveraient en attente
+de validation. Considérez-les validés une fois pour toutes :
+
+```bash
+psql "$DATABASE_URL" -c 'UPDATE "Organization" SET "approvedAt" = NOW() WHERE "approvedAt" IS NULL;'
 ```
 
 ### 3. Le site

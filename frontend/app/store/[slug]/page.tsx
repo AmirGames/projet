@@ -241,6 +241,16 @@ export default function StorefrontPage() {
         const menuResponse = await fetch(`${API_URL}/api/client/stores/${data.store.id}`);
         if (menuResponse.ok) {
           const menuData = await menuResponse.json();
+
+          // L'état d'ouverture n'est calculé que par cette route — horaires,
+          // bouton rapide et validation du commerce croisés. Sans lui, la
+          // vitrine affichait « Ouvert » et laissait commander une boutique
+          // fermée, que le serveur refusait ensuite.
+          if (typeof menuData.data?.isOpenNow === 'boolean') {
+            setStore((actuelle) =>
+              actuelle ? { ...actuelle, isOpenNow: menuData.data.isOpenNow } : actuelle
+            );
+          }
           const menu = (menuData.data?.menu || {}) as Record<string, any[]>;
 
           setCategories(

@@ -13,6 +13,14 @@ export interface StatutCompte {
   closureReason?: string | null;
   closureDate?: string | null;
   closedUntil?: string | null;
+  /** La validation du commerce par la plateforme : sans elle, pas d'ouverture. */
+  validation?: {
+    valide: boolean;
+    piecesManquantes: { type: string; libelle: string }[];
+    piecesAFournir: { type: string; libelle: string }[];
+    piecesEnExamen: { type: string; libelle: string }[];
+    dossierComplet: boolean;
+  };
 }
 
 /**

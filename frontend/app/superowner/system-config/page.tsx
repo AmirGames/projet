@@ -259,7 +259,7 @@ export default function SystemConfigPage() {
                   onChange={(e) => setFormulaire({ ...formulaire, driverMaxRadiusKm: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Distance maximale boutique ↔ livreur pour proposer une course</p>
+                <p className="text-xs text-gray-500 mt-1">Distance maximale boutique ↔ livreur pour proposer une course. C&apos;est aussi le rayon de livraison des boutiques qui passent par les livreurs de la plateforme (boutique ↔ client).</p>
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Délai d'acceptation (secondes)</label>
@@ -298,6 +298,11 @@ export default function SystemConfigPage() {
                 <p className="text-xs text-gray-500 mt-1">Ajouté pour chaque km</p>
               </div>
               </div>
+              <p className="text-xs text-gray-400">
+                Pour une boutique qui utilise les livreurs de la plateforme, le client paie à la commande
+                base + km × distance boutique → client. La plateforme encaisse ces frais puis les reverse
+                au livreur sur son relevé.
+              </p>
             </div>
 
             <div className="border-t border-gray-700 pt-4 space-y-3">

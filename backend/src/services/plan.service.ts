@@ -24,6 +24,12 @@ export interface FormuleDetail {
    * abonnement plus cher — ce qui est pourtant l'argument de vente.
    */
   commission: number;
+  /**
+   * La commission quand le commerçant livre avec les livreurs de la
+   * plateforme. Toujours au moins égale à `commission` : la plateforme fournit
+   * en plus le livreur.
+   */
+  commissionLivreursPlateforme: number;
   avantages: string[];
   ordre: number;
 }
@@ -41,6 +47,7 @@ const GRILLE_INITIALE: FormuleDetail[] = [
     maxBoutiques: 1,
     prixMensuel: 0,
     commission: 8,
+    commissionLivreursPlateforme: 15,
     avantages: ["1 boutique", "Commandes illimitées", "Support par ticket"],
     ordre: 0,
   },
@@ -48,18 +55,28 @@ const GRILLE_INITIALE: FormuleDetail[] = [
     code: "PREMIUM",
     libelle: "Premium",
     maxBoutiques: 3,
-    prixMensuel: 29,
+    // Affiché 6,99 € / semaine, facturé au mois.
+    prixMensuel: 30.29,
     commission: 5,
-    avantages: ["3 boutiques", "Statistiques détaillées", "Support prioritaire"],
+    commissionLivreursPlateforme: 12,
+    avantages: ["3 boutiques", "10 photos de repas", "Statistiques détaillées", "Support prioritaire"],
     ordre: 1,
   },
   {
     code: "PRO",
     libelle: "Pro",
     maxBoutiques: 10,
-    prixMensuel: 79,
+    // Affiché 14,99 € / semaine, facturé au mois.
+    prixMensuel: 64.96,
     commission: 3,
-    avantages: ["10 boutiques", "Accès API et webhooks", "Accompagnement dédié"],
+    commissionLivreursPlateforme: 10,
+    avantages: [
+      "10 boutiques",
+      "Ajout des catégories et produits par notre équipe",
+      "30 photos de repas",
+      "Accès API et webhooks",
+      "Accompagnement dédié",
+    ],
     ordre: 2,
   },
 ];
@@ -71,6 +88,20 @@ function listeDeTextes(valeur: unknown): string[] {
   return valeur
     .map((element) => (typeof element === "string" ? element.trim() : ""))
     .filter((element) => element.length > 0);
+}
+
+/**
+ * La promo « zéro commission » court-elle ?
+ *
+ * Elle s'arrête d'elle-même à sa date de fin : personne n'a à penser à la
+ * retirer.
+ */
+export function promoSansCommissionActive(
+  organisation: { commissionFreeActive: boolean; commissionFreeUntil: Date | null } | null | undefined,
+  maintenant = new Date()
+) {
+  if (!organisation?.commissionFreeActive) return false;
+  return !organisation.commissionFreeUntil || organisation.commissionFreeUntil > maintenant;
 }
 
 export class PlanService {
@@ -94,6 +125,7 @@ export class PlanService {
           maxStores: formule.maxBoutiques,
           monthlyPrice: formule.prixMensuel,
           commissionPercent: formule.commission,
+          platformDeliveryCommissionPercent: formule.commissionLivreursPlateforme,
           features: formule.avantages,
           displayOrder: formule.ordre,
         })),
@@ -109,6 +141,7 @@ export class PlanService {
       maxBoutiques: ligne.maxStores,
       prixMensuel: Number(ligne.monthlyPrice),
       commission: Number(ligne.commissionPercent),
+      commissionLivreursPlateforme: Number(ligne.platformDeliveryCommissionPercent),
       avantages: listeDeTextes(ligne.features),
       ordre: ligne.displayOrder,
     }));
@@ -138,12 +171,13 @@ export class PlanService {
       maxBoutiques?: number;
       prixMensuel?: number;
       commission?: number;
+      commissionLivreursPlateforme?: number;
       avantages?: string[];
       ordre?: number;
     }
   ) {
     // La grille est amorcée si besoin : on ne met pas à jour une ligne absente.
-    await this.grille();
+    const actuelle = await this.formule(code);
 
     if (valeurs.maxBoutiques !== undefined && valeurs.maxBoutiques < 1) {
       throw new ApiError(
@@ -161,6 +195,30 @@ export class PlanService {
       throw new ApiError(
         400,
         "Une commission s'exprime en pourcentage, entre 0 et 100",
+        "INVALID_COMMISSION"
+      );
+    }
+
+    if (
+      valeurs.commissionLivreursPlateforme !== undefined &&
+      (valeurs.commissionLivreursPlateforme < 0 || valeurs.commissionLivreursPlateforme > 100)
+    ) {
+      throw new ApiError(
+        400,
+        "Une commission s'exprime en pourcentage, entre 0 et 100",
+        "INVALID_COMMISSION"
+      );
+    }
+
+    // Livrer avec nos livreurs ne peut pas coûter moins cher que livrer soi-même :
+    // le commerçant n'aurait plus aucune raison de garder ses propres livreurs.
+    const commissionFinale = valeurs.commission ?? actuelle.commission;
+    const livreursFinale = valeurs.commissionLivreursPlateforme ?? actuelle.commissionLivreursPlateforme;
+
+    if (livreursFinale < commissionFinale) {
+      throw new ApiError(
+        400,
+        `La commission avec les livreurs de la plateforme (${livreursFinale} %) ne peut pas être inférieure à la commission de base (${commissionFinale} %)`,
         "INVALID_COMMISSION"
       );
     }
@@ -204,6 +262,9 @@ export class PlanService {
         ...(valeurs.maxBoutiques !== undefined ? { maxStores: valeurs.maxBoutiques } : {}),
         ...(valeurs.prixMensuel !== undefined ? { monthlyPrice: valeurs.prixMensuel } : {}),
         ...(valeurs.commission !== undefined ? { commissionPercent: valeurs.commission } : {}),
+        ...(valeurs.commissionLivreursPlateforme !== undefined
+          ? { platformDeliveryCommissionPercent: valeurs.commissionLivreursPlateforme }
+          : {}),
         ...(valeurs.avantages !== undefined ? { features: valeurs.avantages } : {}),
         ...(valeurs.ordre !== undefined ? { displayOrder: valeurs.ordre } : {}),
       },
@@ -215,6 +276,7 @@ export class PlanService {
       maxBoutiques: ligne.maxStores,
       prixMensuel: Number(ligne.monthlyPrice),
       commission: Number(ligne.commissionPercent),
+      commissionLivreursPlateforme: Number(ligne.platformDeliveryCommissionPercent),
       avantages: listeDeTextes(ligne.features),
       ordre: ligne.displayOrder,
     };
@@ -224,7 +286,7 @@ export class PlanService {
   static async quotaBoutiques(orgId: string) {
     const organisation = await db.organization.findUnique({
       where: { id: orgId },
-      select: { id: true, tier: true },
+      select: { id: true, tier: true, commissionFreeActive: true, commissionFreeUntil: true },
     });
 
     if (!organisation) {
@@ -249,7 +311,13 @@ export class PlanService {
       tierPrice: formule.prixMensuel,
       // Le commerçant a le droit de savoir ce qu'on prélève sur ses ventes.
       tierCommission: formule.commission,
+      tierPlatformDeliveryCommission: formule.commissionLivreursPlateforme,
       tierFeatures: formule.avantages,
+      // La promo offerte par la plateforme : 0 % tant qu'elle court.
+      commissionFree: promoSansCommissionActive(organisation),
+      commissionFreeUntil: promoSansCommissionActive(organisation)
+        ? organisation.commissionFreeUntil
+        : null,
       used: utilisees,
       max: maximum,
       remaining: Math.max(0, maximum - utilisees),

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Layers, Save, Plus, X, Users } from 'lucide-react';
 
-import { euro } from '@/lib/format';
+import { euro, parSemaine } from '@/lib/format';
 
 /**
  * La grille tarifaire, réglable.
@@ -20,6 +20,8 @@ interface Formule {
   prixMensuel: number;
   /** Ce que la plateforme prélève sur les ventes, en pourcentage. */
   commission: number;
+  /** Le taux quand la plateforme fournit le livreur. */
+  commissionLivreursPlateforme: number;
   avantages: string[];
   ordre: number;
   abonnes: number;
@@ -94,6 +96,7 @@ export default function FormulesPage() {
           maxBoutiques: Number(brouillon.maxBoutiques),
           prixMensuel: Number(brouillon.prixMensuel),
           commission: Number(brouillon.commission),
+          commissionLivreursPlateforme: Number(brouillon.commissionLivreursPlateforme),
           // Les lignes vides du formulaire ne sont pas des arguments de vente.
           avantages: brouillon.avantages.map((ligne) => ligne.trim()).filter(Boolean),
         }),
@@ -198,6 +201,9 @@ export default function FormulesPage() {
                       }
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {t('priceWeekly', { price: euro(parSemaine(brouillon.prixMensuel)) })}
+                    </p>
                   </div>
 
                   <div>
@@ -241,6 +247,30 @@ export default function FormulesPage() {
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
                     />
                   </div>
+                </div>
+
+                {/* Plus élevée que la précédente : la plateforme fournit le
+                    livreur, et lui reverse les frais de livraison. */}
+                <div>
+                  <label
+                    className="block text-sm text-gray-400 mb-1"
+                    htmlFor={`commission-plateforme-${formule.code}`}
+                  >
+                    {t('platformCommission')}
+                  </label>
+                  <input
+                    id={`commission-plateforme-${formule.code}`}
+                    type="number"
+                    min={brouillon.commission}
+                    max={100}
+                    step="0.1"
+                    value={brouillon.commissionLivreursPlateforme}
+                    onChange={(e) =>
+                      modifier(formule.code, { commissionLivreursPlateforme: Number(e.target.value) })
+                    }
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{t('platformCommissionHelp')}</p>
                 </div>
 
                 <div>
@@ -304,8 +334,10 @@ export default function FormulesPage() {
                 {t('merchantView', {
                   name: brouillon.libelle,
                   price: euro(brouillon.prixMensuel),
+                  weeklyPrice: euro(parSemaine(brouillon.prixMensuel)),
                   stores: brouillon.maxBoutiques,
                   commission: brouillon.commission,
+                  platformCommission: brouillon.commissionLivreursPlateforme,
                 })}
               </p>
             </section>

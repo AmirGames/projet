@@ -6,6 +6,7 @@ import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { TicketMessageService } from "../services/ticket-message.service";
 import { emitWebhook } from "../services/webhook.service";
+import { MerchantApprovalService } from "../services/merchant-approval.service";
 
 const router = Router();
 
@@ -42,6 +43,7 @@ router.get("/compte/:orgId", authMiddleware, async (req: Request, res: Response,
         closureReason: true,
         closureDate: true,
         closedUntil: true,
+        approvedAt: true,
       },
     });
 
@@ -49,7 +51,9 @@ router.get("/compte/:orgId", authMiddleware, async (req: Request, res: Response,
       throw new ApiError(404, "Commerçant introuvable", "NOT_FOUND");
     }
 
-    res.json(organisation);
+    // La validation se lit ici aussi : le bandeau « en attente » doit rester
+    // visible quel que soit l'état du compte.
+    res.json({ ...organisation, validation: await MerchantApprovalService.etat(orgId) });
   } catch (err) {
     next(err);
   }

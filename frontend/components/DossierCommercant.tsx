@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Check, Clock, FileText, Upload, X } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Check, Clock, FileText, Upload, X } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -22,8 +22,16 @@ interface Piece {
   libelle: string;
   documentUrl: string;
   fileName: string | null;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
   reviewNote: string | null;
+  expiryDate: string | null;
+}
+
+interface Validation {
+  valide: boolean;
+  approvedAt: string | null;
+  piecesManquantes: { type: string; libelle: string }[];
+  dossierComplet: boolean;
 }
 
 interface Dossier {
@@ -44,13 +52,17 @@ interface Dossier {
   piecesAExaminer: number;
   manquePourFacturer: string[];
   manquePourEtrePaye: string[];
+  validation: Validation;
 }
 
 const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
   APPROVED: { icone: Check, classe: 'text-green-400', libelle: 'Validé' },
   REJECTED: { icone: X, classe: 'text-red-400', libelle: 'Refusé' },
   PENDING: { icone: Clock, classe: 'text-gray-400', libelle: "En attente d'examen" },
+  EXPIRED: { icone: AlertTriangle, classe: 'text-amber-400', libelle: 'Expiré' },
 };
+
+const dateCourte = (iso: string) => new Date(iso).toLocaleDateString('fr-FR');
 
 function Ligne({ libelle, valeur }: { libelle: string; valeur: string | null }) {
   return (
@@ -124,6 +136,33 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     }
   };
 
+  /** Valide le commerce : il pourra ouvrir sa boutique et vendre. */
+  const validerLeCommerce = async () => {
+    setErreur('');
+    setEnCours('commerce');
+
+    try {
+      const jeton = localStorage.getItem('accessToken');
+      const reponse = await fetch(`${API_URL}/api/superowner/organizations/${orgId}/approve`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${jeton}` },
+      });
+
+      const lu = await reponse.json().catch(() => null);
+
+      if (!reponse.ok) {
+        setErreur(lu?.error || 'Validation impossible');
+        return;
+      }
+
+      await charger();
+    } catch {
+      setErreur('Le serveur ne répond pas');
+    } finally {
+      setEnCours('');
+    }
+  };
+
   const deposerDocument = async (e: React.FormEvent) => {
     e.preventDefault();
     setErreurUpload('');
@@ -185,6 +224,44 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
           </span>
         )}
       </h2>
+
+      {/* La validation d'abord : tant qu'elle manque, le commerce ne peut ni
+          ouvrir ni vendre — c'est ce que la plateforme vient trancher ici. */}
+      {dossier.validation?.valide ? (
+        <p className="flex items-center gap-2 text-sm text-green-400">
+          <BadgeCheck size={18} />
+          Commerce validé
+          {dossier.validation.approvedAt && ` le ${dateCourte(dossier.validation.approvedAt)}`}
+        </p>
+      ) : (
+        dossier.validation && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-semibold text-amber-300">En attente de validation</p>
+              <p className="text-sm text-gray-300">
+                {dossier.validation.dossierComplet
+                  ? 'Toutes les pièces exigées sont validées : le commerce peut être validé.'
+                  : `Reste à valider : ${dossier.validation.piecesManquantes
+                      .map((piece) => piece.libelle)
+                      .join(', ')}.`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={validerLeCommerce}
+              disabled={!dossier.validation.dossierComplet || enCours === 'commerce'}
+              title={
+                dossier.validation.dossierComplet
+                  ? undefined
+                  : 'Validez d’abord les pièces exigées'
+              }
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-semibold text-white transition"
+            >
+              Valider le commerce
+            </button>
+          </div>
+        )
+      )}
 
       {erreur && (
         <p role="status" className="text-sm text-red-400">
@@ -310,7 +387,10 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-white text-sm font-medium">{piece.libelle}</p>
-                      <p className={`text-xs ${marque.classe}`}>{marque.libelle}</p>
+                      <p className={`text-xs ${marque.classe}`}>
+                        {marque.libelle}
+                        {piece.expiryDate && ` · expire le ${dateCourte(piece.expiryDate)}`}
+                      </p>
                       {piece.reviewNote && (
                         <p className="text-xs text-red-300 mt-1">{piece.reviewNote}</p>
                       )}

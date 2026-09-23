@@ -9,6 +9,7 @@ import { ClosureJobs } from "./jobs/closure-jobs";
 import { DispatchJobs } from "./jobs/dispatch-jobs";
 import { DriverJobs } from "./jobs/driver-jobs";
 import { WebhookJobs } from "./jobs/webhook-jobs";
+import { MerchantJobs } from "./jobs/merchant-jobs";
 
 // Load environment variables
 const env = loadEnv();
@@ -43,6 +44,7 @@ const start = async () => {
     DispatchJobs.start();
     DriverJobs.start();
     WebhookJobs.start();
+    MerchantJobs.start();
 
     // Graceful shutdown
     const gracefulShutdown = async () => {
@@ -50,6 +52,7 @@ const start = async () => {
       ClosureJobs.stopJobs();
       DispatchJobs.stop();
       WebhookJobs.stop();
+      MerchantJobs.stop();
       httpServer.close(() => {
         logger.info("Server closed");
       });

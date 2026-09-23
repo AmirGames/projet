@@ -10,6 +10,7 @@ import {
   TYPES_DOCUMENT_COMMERCANT,
   libelleDuDocumentCommercant,
 } from "../services/merchant-profile.service";
+import { MerchantApprovalService } from "../services/merchant-approval.service";
 
 const router = Router();
 
@@ -101,10 +102,13 @@ router.post(
 
       const piece = pieceSchema.parse(req.body);
 
+      const document = await MerchantProfileService.deposerPiece(orgId, piece);
+      await MerchantApprovalService.signalerDossierPret(orgId);
+
       res.status(201).json({
         success: true,
         message: "Document déposé, il sera examiné par la plateforme",
-        document: await MerchantProfileService.deposerPiece(orgId, piece),
+        document,
       });
     } catch (err) {
       next(err);
@@ -146,6 +150,8 @@ router.post(
         filename: req.file.originalname || `document.${req.file.mimetype.split("/")[1]}`,
         expiryDate: body.expiryDate,
       });
+
+      await MerchantApprovalService.signalerDossierPret(orgId);
 
       res.status(201).json({
         success: true,
