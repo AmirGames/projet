@@ -28,6 +28,10 @@ export interface StoreSettingsData {
     reviewNotifications?: boolean;
     emailNotifications?: boolean;
   };
+  delivery?: {
+    useOwnDelivery?: boolean;
+    maxDeliveryRadius?: number;
+  };
   businessType?: string;
   cuisineType?: string | null;
   /**
@@ -128,6 +132,7 @@ export class StoreSettingsService {
         ...(data.logo && { logo: data.logo }),
         ...(data.banner && { banner: data.banner }),
         ...(data.notifications && { notifications: data.notifications }),
+        ...(data.delivery && { delivery: data.delivery }),
       };
 
     const texte = (valeur: unknown) => {
