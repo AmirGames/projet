@@ -72,6 +72,7 @@ export default function OrdersPage() {
   const [useOwnDelivery, setUseOwnDelivery] = useState(false);
   const [showDeliveryModal, setShowDeliveryModal] = useState<string | null>(null);
   const [availableDeliveryMen, setAvailableDeliveryMen] = useState<any[]>([]);
+  const [dispatchMessage, setDispatchMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [loadingDeliveryMen, setLoadingDeliveryMen] = useState(false);
 
   const itemsPerPage = 20;
@@ -189,6 +190,7 @@ export default function OrdersPage() {
     try {
       setLoadingDeliveryMen(true);
       setShowDeliveryModal(orderId);
+      setDispatchMessage(null);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;
 
@@ -230,28 +232,39 @@ export default function OrdersPage() {
     }
   };
 
-  const handleSelectDriver = async (_driverId: string, orderId: string) => {
+  const handleSelectDriver = async (driverId: string | null, orderId: string) => {
     try {
+      setDispatchMessage(null);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;
 
-      // Proposer la course au livreur sélectionné
+      // Proposer la course au livreur sélectionné (ou au plus proche si aucun
+      // n'est désigné, ou s'il n'est plus éligible).
       const response = await fetch(`${API_URL}/api/orders/${orderId}/dispatch`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(driverId ? { driverId } : {}),
       });
 
+      const data = await response.json().catch(() => null);
+
       if (!response.ok) {
-        throw new Error('Failed to dispatch order');
+        setDispatchMessage({ ok: false, text: data?.error || data?.message || "La course n'a pas pu être proposée." });
+        return;
       }
 
-      const data = await response.json();
-      if (data.success) {
-        setShowDeliveryModal(null);
-        fetchOrders();
+      if (data?.data?.propose === false && !data?.data?.driverId) {
+        // Personne n'a reçu la course : le dire au lieu de fermer la fenêtre
+        // comme si tout s'était bien passé.
+        setDispatchMessage({ ok: false, text: data.message });
+        return;
       }
+
+      setShowDeliveryModal(null);
+      fetchOrders();
     } catch (error) {
       console.error('Error selecting driver:', error);
+      setDispatchMessage({ ok: false, text: 'Serveur injoignable.' });
     }
   };
 
@@ -475,8 +488,16 @@ export default function OrdersPage() {
                     <p className="text-gray-400 text-sm">Recherche de livreurs...</p>
                   </div>
                 ) : availableDeliveryMen.length === 0 ? (
-                  <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 text-center">
-                    <p className="text-red-400 text-sm">Aucun livreur disponible à proximité</p>
+                  <div className="space-y-3">
+                    <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 text-center">
+                      <p className="text-red-400 text-sm">Aucun livreur disponible à proximité</p>
+                    </div>
+                    <button
+                      onClick={() => handleSelectDriver(null, showDeliveryModal)}
+                      className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
+                    >
+                      Relancer la recherche automatique
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -495,9 +516,17 @@ export default function OrdersPage() {
                 )}
               </div>
 
+              {dispatchMessage && (
+                <div className="px-6 pb-2">
+                  <p className={`text-sm ${dispatchMessage.ok ? 'text-green-400' : 'text-amber-400'}`}>
+                    {dispatchMessage.text}
+                  </p>
+                </div>
+              )}
+
               <div className="p-6 border-t border-gray-700 flex gap-2 justify-end">
                 <button
-                  onClick={() => setShowDeliveryModal(null)}
+                  onClick={() => { setShowDeliveryModal(null); setDispatchMessage(null); }}
                   className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
                 >
                   Annuler

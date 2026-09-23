@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MapPin, Navigation, Timer } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 import { euro } from '@/lib/format';
 
@@ -96,6 +97,27 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation }: P
     relever();
     const minuteur = setInterval(relever, INTERVALLE_RELEVE_MS);
     return () => clearInterval(minuteur);
+  }, [isAvailable, relever]);
+
+  // Temps réel : le serveur pousse « course-proposee » au livreur choisi. On
+  // relève aussitôt plutôt que d'attendre le prochain relevé périodique, qui
+  // pouvait laisser filer une bonne partie du délai d'acceptation.
+  useEffect(() => {
+    if (!isAvailable || !jeton.current) return;
+
+    const socket = io(API_URL, {
+      auth: { token: jeton.current },
+      transports: ['websocket', 'polling'],
+    });
+
+    socket.on('course-proposee', () => {
+      relever();
+    });
+
+    return () => {
+      socket.off('course-proposee');
+      socket.disconnect();
+    };
   }, [isAvailable, relever]);
 
   // Envoi de la position (tant que le livreur est en ligne, même en cours de livraison).

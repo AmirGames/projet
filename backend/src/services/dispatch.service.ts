@@ -136,7 +136,14 @@ export class DispatchService {
         isAvailable: true,
         currentOrderId: null,
       },
-      select: { id: true, name: true, latitude: true, longitude: true, email: true },
+      select: {
+        id: true,
+        name: true,
+        latitude: true,
+        longitude: true,
+        email: true,
+        user: { select: { email: true } },
+      },
     });
 
     return candidats
@@ -155,7 +162,7 @@ export class DispatchService {
    * Renvoie la proposition créée, ou null quand personne ne reste : au
    * commerçant de relancer plus tard, quand d'autres livreurs seront en ligne.
    */
-  static async proposerAuSuivant(deliveryId: string) {
+  static async proposerAuSuivant(deliveryId: string, livreurPrefere?: string) {
     const course = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
       include: {
@@ -205,7 +212,11 @@ export class DispatchService {
       return null;
     }
 
-    const choisi = candidats[0];
+    // Le commerçant peut désigner un livreur dans la liste des disponibles :
+    // il reçoit la course en premier s'il est toujours éligible, sinon elle
+    // part au plus proche.
+    const choisi =
+      (livreurPrefere && candidats.find((c) => c.id === livreurPrefere)) || candidats[0];
     const { payout } = this.remuneration(choisi.distance, reglages);
 
     const proposition = await db.deliveryOffer.create({
@@ -218,7 +229,9 @@ export class DispatchService {
       },
     });
 
-    emitDriverEvent(choisi.email, "course-proposee", {
+    // Le salon temps réel est celui du compte connecté : l'e-mail du compte
+    // peut différer de celui saisi sur la fiche livreur.
+    emitDriverEvent(choisi.user?.email || choisi.email, "course-proposee", {
       offerId: proposition.id,
       deliveryId,
       distanceKm: choisi.distance,

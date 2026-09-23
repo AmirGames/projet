@@ -248,7 +248,8 @@ router.post("/:id/dispatch", authMiddleware, async (req: Request, res: Response,
       return;
     }
 
-    const proposition = await DispatchService.proposerAuSuivant(course.id);
+    const driverId = typeof req.body?.driverId === "string" ? req.body.driverId : undefined;
+    const proposition = await DispatchService.proposerAuSuivant(course.id, driverId);
 
     res.json({
       success: true,

@@ -1019,6 +1019,9 @@ router.get("/available", authMiddleware, async (req: Request, res: Response, nex
         status: "ACTIVE",
         isOnline: true,
         isAvailable: true,
+        // Même filtre que l'attribution : un livreur déjà en course ne doit
+        // pas apparaître comme sélectionnable.
+        currentOrderId: null,
       },
       select: {
         id: true,

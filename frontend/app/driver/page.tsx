@@ -125,6 +125,16 @@ export default function DriverDashboard() {
         return;
       }
 
+      // isAvailable est recalculé par le serveur à chaque bascule. Sans le
+      // reprendre ici, un livreur qui repassait en ligne restait « indisponible »
+      // côté écran : les propositions n'étaient jamais relevées et il ne
+      // recevait aucune course avant d'avoir rechargé la page.
+      const etat = await reponse.json().catch(() => null);
+      if (etat) {
+        setIsOnline(etat.isOnline === true);
+        setIsAvailable(etat.isAvailable === true);
+      }
+
       setRefus('');
     } catch {
       setIsOnline(!nouvelEtat);
