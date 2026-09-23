@@ -54,7 +54,6 @@ const SEGMENTS: Record<EspaceHeberge, string[]> = {
   pro: [
     'merchant',
     'superowner',
-    'dashboard',
     'signup', // inscription commerçant : elle crée une organisation
   ],
   livreur: ['driver'],
@@ -82,9 +81,10 @@ const CHEMINS: Partial<Record<EspaceHeberge, string[]>> = {
 /**
  * Pages accessibles depuis tous les domaines : celles du compte lui-même.
  * Un lien de réinitialisation doit fonctionner quel que soit le domaine
- * depuis lequel la demande a été faite.
+ * depuis lequel la demande a été faite. Le dashboard est aussi commun car
+ * c'est le sélecteur de rôles pour les utilisateurs multi-rôles.
  */
-const SEGMENTS_COMMUNS = ['login', 'mot-de-passe-oublie', 'reinitialiser', 'verifier-email'];
+const SEGMENTS_COMMUNS = ['login', 'mot-de-passe-oublie', 'reinitialiser', 'verifier-email', 'dashboard'];
 
 /** Accueil propre à chaque domaine. */
 export const ACCUEIL: Record<EspaceHeberge, string> = {
