@@ -51,12 +51,19 @@ export class OrganizationService {
   }
 
   static async getBySlug(slug: string) {
+    // Route publique : ni IBAN, ni identité du propriétaire, ni e-mails des
+    // membres — rien de ce que seule la plateforme et le commerçant voient.
     const org = await db.organization.findUnique({
       where: { slug },
-      include: {
-        stores: true,
-        memberships: {
-          include: { user: { select: { id: true, email: true, name: true } } },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        approvedAt: true,
+        stores: {
+          where: { deletedAt: null },
+          select: { id: true, name: true, slug: true, city: true, isOpen: true },
         },
       },
     });

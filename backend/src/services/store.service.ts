@@ -126,7 +126,10 @@ export class StoreService {
         products: { where: { status: "ACTIVE", deletedAt: null } },
         categories: true,
         theme: true,
-        org: true,
+        // Route publique : seulement ce qui décrit le commerce aux clients.
+        // L'organisation entière partait avec la vitrine — IBAN, date de
+        // naissance et coordonnées du propriétaire compris.
+        org: { select: { id: true, name: true, slug: true, status: true, approvedAt: true } },
       },
     });
 
