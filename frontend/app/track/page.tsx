@@ -5,6 +5,7 @@ import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 
 
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
+import { SuiviLivraisonClient } from '@/components/SuiviLivraisonClient';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -40,6 +41,18 @@ interface Order {
   preuveDeLivraison?: string | null;
 }
 
+interface Delivery {
+  id: string;
+  orderId: string;
+  status: string;
+  pickupLat: number;
+  pickupLng: number;
+  deliveryLat: number;
+  deliveryLng: number;
+  driverLat?: number;
+  driverLng?: number;
+}
+
 const statusSteps = [
   { status: 'PENDING', label: 'En Attente', icon: Clock, color: 'text-yellow-400' },
   { status: 'ACCEPTED', label: 'Acceptée', icon: CheckCircle, color: 'text-blue-400' },
@@ -58,6 +71,7 @@ const statusColors: { [key: string]: string } = {
 export default function TrackOrderPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
+  const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
@@ -89,7 +103,24 @@ export default function TrackOrderPage() {
       }
 
       const data = await response.json();
-      setOrder(data || data.order);
+      const foundOrder = data || data.order;
+      setOrder(foundOrder);
+
+      // Charger les données de livraison si c'est une livraison
+      if (foundOrder?.deliveryType === 'DELIVERY' && foundOrder?.id) {
+        try {
+          const deliveryResponse = await fetch(
+            `${API_URL}/api/orders/${foundOrder.id}/delivery`
+          );
+          if (deliveryResponse.ok) {
+            const deliveryData = await deliveryResponse.json();
+            setDelivery(deliveryData?.data || deliveryData);
+          }
+        } catch (err) {
+          console.error('Error loading delivery:', err);
+          // Pas critique, on continue sans données de livraison
+        }
+      }
     } catch (err) {
       console.error('Search error:', err);
       setError('Erreur de connexion. Veuillez réessayer.');
@@ -255,6 +286,19 @@ export default function TrackOrderPage() {
                     </p>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Real-Time Delivery Tracking */}
+            {order.deliveryType === 'DELIVERY' &&
+             ['READY', 'COMPLETED'].includes(order.status) &&
+             delivery && (
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                <h2 className="text-lg font-bold mb-4">Suivi en Temps Réel</h2>
+                <SuiviLivraisonClient
+                  orderId={order.id}
+                  delivery={delivery}
+                />
               </div>
             )}
 

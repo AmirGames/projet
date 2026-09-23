@@ -782,7 +782,7 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
                 deliveryCity: true,
                 deliveryPostal: true,
                 totalAmount: true,
-                store: { select: { name: true, address: true, city: true } },
+                store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
               },
             },
           },
@@ -799,6 +799,16 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
         distanceKm: proposition.distanceKm,
         payout: Number(proposition.payout || 0),
         expiresAt: proposition.expiresAt,
+        // Nouvelles données
+        pickupStore: proposition.delivery.order?.store?.name,
+        pickupAddress: proposition.delivery.order?.store?.address,
+        pickupCity: proposition.delivery.order?.store?.city,
+        pickupLat: proposition.delivery.order?.store?.latitude,
+        pickupLng: proposition.delivery.order?.store?.longitude,
+        deliveryAddress: proposition.delivery.order?.deliveryAddress,
+        deliveryCity: proposition.delivery.order?.deliveryCity,
+        deliveryPostal: proposition.delivery.order?.deliveryPostal,
+        // Anciennes données (rétrocompatibilité)
         boutique: proposition.delivery.order?.store,
         adresse: proposition.delivery.order?.deliveryAddress,
         ville: proposition.delivery.order?.deliveryCity,
@@ -840,6 +850,91 @@ router.post(
         message: "Course refusée",
         // Dit au commerçant si quelqu'un d'autre a été sollicité.
         reproposee: Boolean(suivante),
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PATCH /drivers/deliveries/:id/cancel - Annuler une course acceptée
+router.patch(
+  "/deliveries/:id/cancel",
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { reason } = req.body;
+      const deliveryId = req.params.id as string;
+
+      if (!reason || typeof reason !== "string" || reason.trim().length === 0) {
+        throw new ApiError(400, "La raison d'annulation est requise", "MISSING_REASON");
+      }
+
+      const { livreur, course } = await courseDuLivreur(req, deliveryId);
+
+      if (course.status !== "ACCEPTED") {
+        throw new ApiError(
+          409,
+          "Seule une course acceptée peut être annulée",
+          "INVALID_STATUS"
+        );
+      }
+
+      // Annuler la course
+      await db.orderDelivery.update({
+        where: { id: deliveryId },
+        data: {
+          status: "FAILED",
+          driverId: null,
+          assignedAt: null,
+          cancelledBy: "DRIVER",
+          cancellationReason: reason.trim(),
+        },
+      });
+
+      // Libérer le livreur
+      await db.driver.update({
+        where: { id: livreur.id },
+        data: {
+          currentOrderId: null,
+          isAvailable: true,
+        },
+      });
+
+      // Remettre la commande en READY pour permettre au restaurant de proposer à un autre livreur
+      const order = await db.order.update({
+        where: { id: course.orderId },
+        data: { status: "READY" },
+        select: { customerEmail: true },
+      });
+
+      // Notifier le client et le restaurant
+      if (order.customerEmail) {
+        await db.notification.create({
+          data: {
+            type: "DELIVERY_CANCELLED",
+            title: "Livraison annulée",
+            message: `Votre livraison a été annulée. Un autre livreur sera assigné sous peu.`,
+            recipientEmail: order.customerEmail,
+            link: `/client/orders/${course.orderId}`,
+            relatedOrderId: course.orderId,
+          },
+        });
+
+        const { emitNotification } = await import("../config/socket");
+        emitNotification(order.customerEmail, {
+          type: "delivery_cancelled",
+          orderId: course.orderId,
+          reason,
+          title: "Livraison annulée",
+          message: "Un autre livreur sera assigné.",
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Course annulée. Un autre livreur sera proposé au restaurant.",
+        data: { deliveryId, orderId: course.orderId },
       });
     } catch (err) {
       next(err);

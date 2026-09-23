@@ -20,6 +20,17 @@ interface Proposition {
   distanceKm: number | null;
   payout: number;
   expiresAt: string;
+  // Lieu de prise en charge
+  pickupStore?: string | null;
+  pickupAddress?: string | null;
+  pickupCity?: string | null;
+  pickupLat?: number | null;
+  pickupLng?: number | null;
+  // Lieu de livraison
+  deliveryAddress?: string | null;
+  deliveryCity?: string | null;
+  deliveryPostal?: string | null;
+  // Anciennes données (rétrocompatibilité)
   boutique?: { name?: string; address?: string; city?: string } | null;
   adresse?: string | null;
   ville?: string | null;
@@ -190,70 +201,111 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
           Math.ceil((new Date(proposition.expiresAt).getTime() - maintenant) / 1000)
         );
 
+        const pickupName = proposition.pickupStore || proposition.boutique?.name || 'Restaurant';
+        const pickupAddr = proposition.pickupAddress || proposition.boutique?.address || '';
+        const pickupCity = proposition.pickupCity || proposition.boutique?.city || '';
+        const deliveryAddr = proposition.deliveryAddress || proposition.adresse || '';
+        const deliveryCity = proposition.deliveryCity || proposition.ville || '';
+        const deliveryPostal = proposition.deliveryPostal || proposition.codePostal || '';
+
+        // Temps estimé basé sur distance (moyenne ~30 km/h en ville)
+        const tempsEstime = Math.max(5, Math.round((proposition.distanceKm || 0) * 2));
+
         return (
           <div
             key={proposition.id}
-            className="bg-gray-800 border-2 border-orange-600 rounded-lg p-4 space-y-3 animate-pulse-none"
+            className="bg-gradient-to-b from-gray-800 to-gray-900 border-2 border-green-600 rounded-xl p-6 space-y-4 shadow-lg overflow-hidden relative"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-lg font-bold text-white truncate">
-                  {proposition.boutique?.name || 'Course à prendre'}
-                </p>
-                <p className="text-sm text-gray-400 truncate">
-                  {proposition.boutique?.address}
-                  {proposition.boutique?.city ? `, ${proposition.boutique.city}` : ''}
-                </p>
-              </div>
-
+            {/* Timer indicator */}
+            <div className="absolute top-3 right-3">
               <span
-                title="Temps restant pour répondre"
-                className={`flex items-center gap-1 px-2 py-1 rounded font-mono text-sm flex-shrink-0 ${
-                  restant <= 10 ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-200'
+                className={`flex items-center gap-1 px-3 py-1 rounded-full font-mono text-xs font-bold flex-shrink-0 ${
+                  restant <= 10
+                    ? 'bg-red-600 text-white animate-pulse'
+                    : restant <= 20
+                    ? 'bg-orange-600 text-white'
+                    : 'bg-green-600 text-white'
                 }`}
               >
-                <Timer size={14} />
+                <Timer size={12} />
                 {restant}s
               </span>
             </div>
 
-            <div className="flex items-center gap-4 text-sm">
-              <span className="flex items-center gap-1 text-gray-300">
-                <MapPin size={14} className="text-orange-500" />
-                {proposition.distanceKm != null ? `${proposition.distanceKm} km` : 'distance inconnue'}
-              </span>
-              <span className="flex items-center gap-1 font-semibold text-green-400">
-                <Wallet size={14} />
-                {euro(proposition.payout)}
-              </span>
+            {/* Montant principal */}
+            <div className="pt-2">
+              <p className="text-gray-400 text-sm mb-1">Vous gagnerez</p>
+              <p className="text-4xl font-bold text-white">{euro(proposition.payout)}</p>
             </div>
 
-            <div className="text-sm text-gray-400 border-t border-gray-700 pt-2">
-              <p className="text-xs uppercase tracking-wide text-gray-500">Livraison</p>
-              <p className="text-gray-300">
-                {proposition.adresse}
-                {proposition.codePostal || proposition.ville
-                  ? `, ${[proposition.codePostal, proposition.ville].filter(Boolean).join(' ')}`
-                  : ''}
-              </p>
+            {/* Distance et temps */}
+            <div className="bg-gray-800/50 rounded-lg p-3 flex gap-6">
+              <div>
+                <p className="text-gray-400 text-xs mb-1">Distance</p>
+                <div className="flex items-center gap-1 text-white font-semibold">
+                  <MapPin size={16} className="text-orange-500" />
+                  {proposition.distanceKm != null ? `${(proposition.distanceKm).toFixed(1)} km` : '?'}
+                </div>
+              </div>
+              <div className="border-l border-gray-700"></div>
+              <div>
+                <p className="text-gray-400 text-xs mb-1">Durée estimée</p>
+                <div className="flex items-center gap-1 text-white font-semibold">
+                  <Timer size={16} className="text-blue-500" />
+                  {tempsEstime} min
+                </div>
+              </div>
             </div>
 
-            <div className="flex gap-2">
+            {/* Lieu de prise en charge */}
+            <div>
+              <p className="text-gray-400 text-xs uppercase tracking-wider mb-2 font-semibold">À récupérer</p>
+              <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-3">
+                <p className="text-white font-semibold text-sm">{pickupName}</p>
+                <p className="text-gray-300 text-xs mt-1">
+                  {pickupAddr}
+                  {pickupCity ? `, ${pickupCity}` : ''}
+                </p>
+              </div>
+            </div>
+
+            {/* Lieu de livraison */}
+            <div>
+              <p className="text-gray-400 text-xs uppercase tracking-wider mb-2 font-semibold">À livrer</p>
+              <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-3">
+                <p className="text-white font-semibold text-sm flex items-center gap-2">
+                  <MapPin size={14} className="text-green-500" />
+                  Adresse de livraison
+                </p>
+                <p className="text-gray-300 text-xs mt-1">
+                  {deliveryAddr}
+                  {deliveryPostal || deliveryCity
+                    ? `, ${[deliveryPostal, deliveryCity].filter(Boolean).join(' ')}`
+                    : ''}
+                </p>
+                <p className="text-gray-500 text-xs mt-2 italic">
+                  ℹ️ À ±50m de l&apos;adresse exacte pour votre confidentialité
+                </p>
+              </div>
+            </div>
+
+            {/* Boutons d'action */}
+            <div className="flex gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => repondre(proposition.id, 'accept')}
                 disabled={enCours === proposition.id}
-                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition"
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg transition transform hover:scale-105 active:scale-95"
               >
-                {enCours === proposition.id ? '...' : 'Accepter'}
+                {enCours === proposition.id ? '⏳ ...' : '✓ Accepter'}
               </button>
               <button
                 type="button"
                 onClick={() => repondre(proposition.id, 'decline')}
                 disabled={enCours === proposition.id}
-                className="px-5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-200 py-3 rounded-lg transition"
+                className="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-gray-200 font-semibold py-3 rounded-lg transition"
               >
-                Refuser
+                {enCours === proposition.id ? '...' : 'Refuser'}
               </button>
             </div>
           </div>

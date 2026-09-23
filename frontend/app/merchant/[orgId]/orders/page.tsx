@@ -193,18 +193,30 @@ export default function OrdersPage() {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch(`${API_URL}/api/drivers/available?storeId=${storeId}&radius=${deliveryRadius}`, {
+      // Utiliser le dispatch service du backend : proposer la course au livreur
+      // le plus proche automatiquement, au lieu d'afficher juste une liste.
+      const response = await fetch(`${API_URL}/api/orders/${orderId}/dispatch`, {
+        method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch available delivery men');
+        throw new Error('Failed to dispatch order');
       }
 
       const data = await response.json();
-      setAvailableDeliveryMen(data.deliveryMen || []);
+
+      // Si une course a été proposée, fermer le modal et rafraîchir les commandes.
+      // Sinon, afficher le message "Aucun livreur disponible".
+      if (data.success && data.data.propose) {
+        setShowDeliveryModal(null);
+        fetchOrders();
+      } else {
+        // Aucun livreur disponible : garder le modal ouvert avec le message
+        setAvailableDeliveryMen([]);
+      }
     } catch (error) {
-      console.error('Error fetching delivery men:', error);
+      console.error('Error dispatching order:', error);
       setAvailableDeliveryMen([]);
     } finally {
       setLoadingDeliveryMen(false);

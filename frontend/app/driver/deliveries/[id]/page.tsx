@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Phone, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, CheckCircle, AlertCircle, Loader, X } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { AnnulerCourse } from '@/components/AnnulerCourse';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -39,6 +40,7 @@ export default function DeliveryTrackingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [updating, setUpdating] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // La preuve de la remise : le code du client, ou la photo du dépôt quand il
   // est absent. Sans l'une des deux, la course ne se clôt pas.
@@ -487,23 +489,36 @@ export default function DeliveryTrackingPage() {
 
               {/* Action Button */}
               {currentStep < 3 && (
-                <button
-                  onClick={handleNextStep}
-                  disabled={updating}
-                  className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
-                >
-                  {updating ? (
-                    <>
-                      <Loader size={18} className="animate-spin" />
-                      Mise à jour...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={18} />
-                      Étape suivante
-                    </>
+                <div className="space-y-3">
+                  <button
+                    onClick={handleNextStep}
+                    disabled={updating}
+                    className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
+                  >
+                    {updating ? (
+                      <>
+                        <Loader size={18} className="animate-spin" />
+                        Mise à jour...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle size={18} />
+                        Étape suivante
+                      </>
+                    )}
+                  </button>
+
+                  {/* Cancel Delivery Button */}
+                  {currentStep < 2 && (
+                    <button
+                      onClick={() => setShowCancelModal(true)}
+                      className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 border border-red-600/50"
+                    >
+                      <X size={18} />
+                      Annuler la course
+                    </button>
                   )}
-                </button>
+                </div>
               )}
 
               {currentStep === 3 && (
@@ -516,6 +531,18 @@ export default function DeliveryTrackingPage() {
           </div>
         </div>
       </div>
+
+      {/* Cancel Delivery Modal */}
+      {showCancelModal && delivery && (
+        <AnnulerCourse
+          deliveryId={delivery.id}
+          onSuccess={() => {
+            setShowCancelModal(false);
+            router.push('/driver');
+          }}
+          onCancel={() => setShowCancelModal(false)}
+        />
+      )}
     </div>
   );
 }

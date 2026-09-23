@@ -37,6 +37,7 @@ interface Driver {
   avis?: number;
   totalEarnings: number;
   completedDeliveries: number;
+  isOnline: boolean;
   isAvailable: boolean;
   currentLocation?: { latitude: number; longitude: number };
 }
@@ -72,9 +73,8 @@ export default function DriverDashboard() {
         const driverData = await driverResponse.json();
         setDriver(driverData.data);
         setEarnings(Number(driverData.data.totalEarnings || 0));
-        // L'état affiché est celui du serveur. Supposer « disponible » quand
-        // il ne répond rien faisait croire au livreur qu'il prenait des
-        // courses alors qu'il était hors ligne — et aucune ne lui arrivait.
+        // isOnline est ce que le livreur a choisi ; isAvailable ce que
+        // l'attribution en a fait (pas de course en cours). On affiche isOnline.
         setIsAvailable(driverData.data.isOnline === true);
       } else {
         throw new Error('Failed to load driver info');
