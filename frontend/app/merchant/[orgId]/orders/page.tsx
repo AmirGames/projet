@@ -193,12 +193,23 @@ export default function OrdersPage() {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;
 
-      // Récupérer la liste des livreurs disponibles
-      const storeId = orders.find(o => o.id === orderId)?.storeId;
-      if (!storeId) {
-        throw new Error('Store ID not found');
+      // Récupérer la commande pour obtenir le storeId
+      const orderResponse = await fetch(`${API_URL}/api/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!orderResponse.ok) {
+        throw new Error('Failed to fetch order');
       }
 
+      const orderData = await orderResponse.json();
+      const storeId = orderData.data?.storeId || orderData.storeId;
+
+      if (!storeId) {
+        throw new Error('Store ID not found in order');
+      }
+
+      // Récupérer la liste des livreurs disponibles
       const response = await fetch(
         `${API_URL}/api/drivers/available?storeId=${storeId}&radius=8`,
         {
