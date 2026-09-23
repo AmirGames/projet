@@ -247,18 +247,10 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 42 | **1380** |
+| **API** (`backend/scripts/verification/`) | 42 | **1382** |
 | **Navigateur** (`frontend/scripts/`) | 27 | **701** |
 
-Au dernier passage complet, deux défauts restent rouges, et c'est voulu :
-ils sont réels.
-
-- **API — l'avis sur le restaurant** (`verif-client`, 3 contrôles) : la
-  route enregistre l'identifiant de la boutique dans `Review.productId`, que
-  la base exige lié à un plat. Violation de clé étrangère, réponse 500.
-- **Navigateur — l'explication des zones** (`verif-zones-livraison`,
-  1 contrôle, en attente d'une décision) : retirée du formulaire quand les
-  zones sont devenues anneaux ou polygones.
+Tout est vert au dernier passage complet (26 septembre).
 
 `verif-domaines` n'a pas tourné : il demande un site construit avec les
 trois domaines.
