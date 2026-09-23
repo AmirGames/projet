@@ -10,6 +10,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -47,14 +48,14 @@ const MDP = 'Password123!';
 
 // ===== Deux commerces, deux menus =====
 
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` },
 });
 
 /** Un commerçant par boutique : la formule gratuite n'en autorise qu'une. */
 const ouvrirBoutique = async (suffixe, nomDuPlat, prix) => {
-  const compte = await appeler('/api/auth/signup', {
+  const compte = await inscriptionVia(appeler, {
     method: 'POST',
     corps: { email: `m${suffixe}-${uniq}@t.fr`, password: MDP, name: `M${suffixe} ${uniq}` },
   });

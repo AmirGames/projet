@@ -20,6 +20,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -63,12 +64,12 @@ const BOUTIQUE = { latitude: 45.764, longitude: 4.8357 };
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` },
 });
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` },
 });

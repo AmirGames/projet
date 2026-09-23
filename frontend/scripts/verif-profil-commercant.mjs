@@ -17,6 +17,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -58,7 +59,7 @@ const appeler = async (chemin, options = {}) => {
 const emailPlateforme = `p-${uniq}@t.fr`;
 const emailCommercant = `m-${uniq}@t.fr`;
 
-const plateforme = await appeler('/api/auth/signup', {
+const plateforme = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: emailPlateforme, password: MDP, name: `Plateforme ${uniq}` },
 });
@@ -70,7 +71,7 @@ if (!TP) {
   process.exit(1);
 }
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: emailCommercant, password: MDP, name: `Commerce ${uniq}` },
 });

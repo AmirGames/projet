@@ -12,6 +12,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -51,14 +52,14 @@ const appeler = async (chemin, options = {}) => {
 
 // Le premier compte inscrit devient la plateforme : celui qu'on suit doit être
 // un commerçant ordinaire.
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `Plateforme ${uniq}` },
 });
 
 const email = `s-${uniq}@t.fr`;
 
-const compte = await appeler('/api/auth/signup', {
+const compte = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email, password: MDP, name: `Session ${uniq}` },
 });
