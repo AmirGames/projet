@@ -1007,6 +1007,17 @@
     "statusDelivered": "Delivered",
     "statusCancelled": "Cancelled"
   },
+  "clientOrderDetail": {
+    "statusPending": "Pending",
+    "statusPreparing": "Preparing"
+  },
+  "maintenanceGate": {
+    "title": "Maintenance in progress",
+    "message": "The platform is under maintenance. Please try again in a few minutes."
+  },
+  "rootLayoutContent": {
+    "themeError": "Error loading theme"
+  },
   "clientCheckout": {
     "title": "Cart",
     "items": "Items",

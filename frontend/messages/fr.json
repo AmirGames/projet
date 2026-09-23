@@ -1007,6 +1007,17 @@
     "statusDelivered": "Livrée",
     "statusCancelled": "Annulée"
   },
+  "clientOrderDetail": {
+    "statusPending": "En attente",
+    "statusPreparing": "En préparation"
+  },
+  "maintenanceGate": {
+    "title": "Maintenance en cours",
+    "message": "La plateforme est en maintenance. Veuillez réessayer dans quelques minutes."
+  },
+  "rootLayoutContent": {
+    "themeError": "Erreur lors du chargement du thème"
+  },
   "clientCheckout": {
     "title": "Panier",
     "items": "Articles",

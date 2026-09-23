@@ -95,9 +95,9 @@ export default function OrderTrackingPage() {
 
   const getStatusInfo = (status: string) => {
     const statuses: Record<string, { label: string; color: string; icon: string }> = {
-      PENDING: { label: {t('statusPending')}, color: 'yellow', icon: '⏳' },
+      PENDING: { label: t('statusPending'), color: 'yellow', icon: '⏳' },
       ACCEPTED: { label: 'Acceptée', color: 'blue', icon: '✓' },
-      PREPARING: { label: {t('statusPreparing')}, color: 'orange', icon: '👨‍🍳' },
+      PREPARING: { label: t('statusPreparing'), color: 'orange', icon: '👨‍🍳' },
       READY: { label: 'Prête', color: 'yellow-green', icon: '📦' },
       COMPLETED: { label: 'Complétée', color: 'green', icon: '✓✓' },
       REJECTED: { label: 'Refusée', color: 'red', icon: '✗' },
