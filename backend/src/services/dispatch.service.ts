@@ -143,7 +143,15 @@ export class DispatchService {
       where: { id: deliveryId },
       include: {
         offers: { select: { driverId: true } },
-        order: { select: { deliveryAddress: true, deliveryCity: true, totalAmount: true } },
+        order: {
+          select: {
+            deliveryAddress: true,
+            deliveryCity: true,
+            deliveryPostal: true,
+            totalAmount: true,
+            store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
+          },
+        },
       },
     });
 
@@ -199,8 +207,16 @@ export class DispatchService {
       distanceKm: choisi.distance,
       payout,
       expiresAt: proposition.expiresAt,
-      adresse: course.order?.deliveryAddress,
-      ville: course.order?.deliveryCity,
+      // Lieu de prise en charge
+      pickupStore: course.order?.store?.name,
+      pickupAddress: course.order?.store?.address,
+      pickupCity: course.order?.store?.city,
+      pickupLat: course.order?.store?.latitude,
+      pickupLng: course.order?.store?.longitude,
+      // Lieu de livraison
+      deliveryAddress: course.order?.deliveryAddress,
+      deliveryCity: course.order?.deliveryCity,
+      deliveryPostal: course.order?.deliveryPostal,
     });
 
     logger.info("Course proposée", { deliveryId, driverId: choisi.id, distance: choisi.distance });
