@@ -193,8 +193,39 @@ export default function OrdersPage() {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;
 
-      // Utiliser le dispatch service du backend : proposer la course au livreur
-      // le plus proche automatiquement, au lieu d'afficher juste une liste.
+      // Récupérer la liste des livreurs disponibles
+      const storeId = orders.find(o => o.id === orderId)?.storeId;
+      if (!storeId) {
+        throw new Error('Store ID not found');
+      }
+
+      const response = await fetch(
+        `${API_URL}/api/drivers/available?storeId=${storeId}&radius=8`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch available drivers');
+      }
+
+      const data = await response.json();
+      setAvailableDeliveryMen(data.deliveryMen || []);
+    } catch (error) {
+      console.error('Error fetching available drivers:', error);
+      setAvailableDeliveryMen([]);
+    } finally {
+      setLoadingDeliveryMen(false);
+    }
+  };
+
+  const handleSelectDriver = async (driverId: string, orderId: string) => {
+    try {
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      if (!token) return;
+
+      // Proposer la course au livreur sélectionné
       const response = await fetch(`${API_URL}/api/orders/${orderId}/dispatch`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -205,21 +236,12 @@ export default function OrdersPage() {
       }
 
       const data = await response.json();
-
-      // Si une course a été proposée, fermer le modal et rafraîchir les commandes.
-      // Sinon, afficher le message "Aucun livreur disponible".
-      if (data.success && data.data.propose) {
+      if (data.success) {
         setShowDeliveryModal(null);
         fetchOrders();
-      } else {
-        // Aucun livreur disponible : garder le modal ouvert avec le message
-        setAvailableDeliveryMen([]);
       }
     } catch (error) {
-      console.error('Error dispatching order:', error);
-      setAvailableDeliveryMen([]);
-    } finally {
-      setLoadingDeliveryMen(false);
+      console.error('Error selecting driver:', error);
     }
   };
 
@@ -451,10 +473,7 @@ export default function OrdersPage() {
                     {availableDeliveryMen.map((delivery) => (
                       <button
                         key={delivery.id}
-                        onClick={() => {
-                          console.log('Liveur sélectionné:', delivery);
-                          setShowDeliveryModal(null);
-                        }}
+                        onClick={() => handleSelectDriver(delivery.id, showDeliveryModal)}
                         className="w-full p-3 text-left bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg transition-colors"
                       >
                         <p className="font-medium text-gray-100">{delivery.name}</p>
