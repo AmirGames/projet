@@ -13,7 +13,7 @@
  * vierge. Remettre à zéro avec scripts/verification/reinitialiser.mjs.
  */
 
-import { j, post, patch, sqlExec, API, validerLivreur, codeDeRemise } from "./verification/outils.mjs";
+import { j, post, patch, sqlExec, API, validerLivreur, codeDeRemise, inscription } from "./verification/outils.mjs";
 
 const attendu = (reponse, quoi) => {
   if (!reponse) throw new Error(`${quoi} : aucune réponse de ${API}`);
@@ -24,7 +24,7 @@ const attendu = (reponse, quoi) => {
 
 const plateforme = attendu(
   await j(
-    await post("/api/auth/signup", {
+    await inscription({
       email: "super@demo.fr",
       password: "Password123!",
       name: "Super Demo",
@@ -41,7 +41,7 @@ if (!plateforme.accessToken) {
 }
 
 const commercant = await j(
-  await post("/api/auth/signup", {
+  await inscription({
     email: "marchand@demo.fr",
     password: "Password123!",
     name: "Boulangerie Demo",
