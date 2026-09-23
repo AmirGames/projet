@@ -19,6 +19,8 @@ interface DeliveryUpdate {
     longitude: number;
   };
   eta?: number;
+  /** Le livreur n'envoie plus sa position (true), ou elle est revenue (false). */
+  gpsLost?: boolean;
   timestamp: string;
 }
 
@@ -34,6 +36,7 @@ export function useOrderTracking(orderId: string) {
   const [orderStatus, setOrderStatus] = useState<string>('');
   const [deliveryLocation, setDeliveryLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [eta, setEta] = useState<number | null>(null);
+  const [gpsPerdu, setGpsPerdu] = useState<boolean | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [notification, setNotification] = useState<StatusNotification | null>(null);
 
@@ -88,6 +91,10 @@ export function useOrderTracking(orderId: string) {
       if (data.orderId === orderId) {
         if (data.location) {
           setDeliveryLocation(data.location);
+          setGpsPerdu(false);
+        }
+        if (typeof data.gpsLost === 'boolean') {
+          setGpsPerdu(data.gpsLost);
         }
         if (data.eta !== undefined) {
           setEta(data.eta);
@@ -126,6 +133,8 @@ export function useOrderTracking(orderId: string) {
     orderStatus,
     deliveryLocation,
     eta,
+    /** null tant qu'aucun événement n'a tranché : s'en remettre au chargement initial. */
+    gpsPerdu,
     isConnected,
     notification,
     updateOrderStatus,

@@ -36,7 +36,7 @@ export default function OrderTrackingPage() {
   const router = useRouter();
   const orderId = params.id as string;
 
-  const { orderStatus, deliveryLocation, eta, isConnected, notification } = useOrderTracking(orderId);
+  const { orderStatus, deliveryLocation, eta, gpsPerdu, isConnected, notification } = useOrderTracking(orderId);
 
   const [order, setOrder] = useState<Order | null>(null);
   const [delivery, setDelivery] = useState<OrderDelivery | null>(null);
@@ -261,6 +261,7 @@ export default function OrderTrackingPage() {
                 course={delivery}
                 orderId={orderId}
                 positionDirecte={deliveryLocation}
+                gpsPerduDirect={gpsPerdu}
               />
             )}
 

@@ -6,6 +6,7 @@ import { io } from 'socket.io-client';
 import { useRouter } from 'next/navigation';
 
 import { euro } from '@/lib/format';
+import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -46,6 +47,8 @@ interface Props {
   isAvailable: boolean;
   /** Appelé après une acceptation, pour rafraîchir la page appelante. */
   surAcceptation?: () => void;
+  /** Le serveur a mis le livreur hors ligne (plus de signal depuis longtemps). */
+  surHorsLigne?: (raison: string) => void;
 }
 
 /**
@@ -58,15 +61,21 @@ interface Props {
  * La position est envoyée tant que le livreur est en ligne, course ou non :
  * c'est elle qui décide à qui la prochaine course sera proposée.
  */
-export function PropositionsCourses({ isOnline, isAvailable, surAcceptation }: Props) {
+export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, surHorsLigne }: Props) {
   const [propositions, setPropositions] = useState<Proposition[]>([]);
   const [maintenant, setMaintenant] = useState(() => Date.now());
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState('');
-  const [positionRefusee, setPositionRefusee] = useState(false);
+  const [perduCoteServeur, setPerduCoteServeur] = useState(false);
 
   const jeton = useRef<string | null>(null);
   const router = useRouter();
+
+  // L'envoi de position, appelable au retour du réseau sans attendre le
+  // prochain tour du minuteur.
+  const envoyerPosition = useRef<() => void>(() => {});
+  const surRetourReseau = useCallback(() => envoyerPosition.current(), []);
+  const { enLigne, gps, positionRecue, erreurPosition } = useSignalGps(surRetourReseau);
 
   useEffect(() => {
     jeton.current = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');
@@ -105,7 +114,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation }: P
   // relève aussitôt plutôt que d'attendre le prochain relevé périodique, qui
   // pouvait laisser filer une bonne partie du délai d'acceptation.
   useEffect(() => {
-    if (!isAvailable || !jeton.current) return;
+    if (!isOnline || !jeton.current) return;
 
     const socket = io(API_URL, {
       auth: { token: jeton.current },
@@ -115,12 +124,22 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation }: P
     socket.on('course-proposee', () => {
       relever();
     });
+    // Le serveur voit ce que le téléphone ne voit pas : ses positions
+    // n'arrivent plus.
+    socket.on('gps-perdu', () => setPerduCoteServeur(true));
+    socket.on('gps-retabli', () => setPerduCoteServeur(false));
+    socket.on('mis-hors-ligne', (donnees: { raison?: string }) => {
+      surHorsLigne?.(donnees?.raison || 'Vous avez été mis hors ligne.');
+    });
 
     return () => {
       socket.off('course-proposee');
+      socket.off('gps-perdu');
+      socket.off('gps-retabli');
+      socket.off('mis-hors-ligne');
       socket.disconnect();
     };
-  }, [isAvailable, relever]);
+  }, [isOnline, relever, surHorsLigne]);
 
   // Envoi de la position (tant que le livreur est en ligne, même en cours de livraison).
   useEffect(() => {
@@ -129,7 +148,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation }: P
     const envoyer = () => {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
-          setPositionRefusee(false);
+          positionRecue();
 
           try {
             await fetch(`${API_URL}/api/drivers/location`, {
@@ -147,15 +166,19 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation }: P
             // Hors réseau : la position repartira au prochain envoi.
           }
         },
-        () => setPositionRefusee(true),
+        erreurPosition,
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
       );
     };
 
+    envoyerPosition.current = envoyer;
     envoyer();
     const minuteur = setInterval(envoyer, INTERVALLE_POSITION_MS);
-    return () => clearInterval(minuteur);
-  }, [isOnline]);
+    return () => {
+      clearInterval(minuteur);
+      envoyerPosition.current = () => {};
+    };
+  }, [isOnline, positionRecue, erreurPosition]);
 
   // Le compte à rebours a besoin d'un battement de seconde.
   useEffect(() => {
@@ -198,17 +221,19 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation }: P
     }
   };
 
-  if (!isAvailable) return null;
+  if (!isOnline) return null;
+
+  const alerte = <AlerteSignal enLigne={enLigne} gps={gps} perduCoteServeur={perduCoteServeur} />;
+
+  // En course ou en pause : pas de proposition, mais l'état du signal compte
+  // toujours, puisque le client suit la position.
+  if (!isAvailable) return alerte;
 
   const visibles = propositions.filter((p) => new Date(p.expiresAt).getTime() > maintenant);
 
   return (
     <div className="space-y-3">
-      {positionRefusee && (
-        <div className="bg-amber-900/30 border border-amber-700/50 text-amber-200 rounded-lg p-3 text-sm">
-          Localisation refusée. Sans votre position, aucune course ne peut vous être proposée.
-        </div>
-      )}
+      {alerte}
 
       {erreur && (
         <div className="bg-red-900/30 border border-red-700/50 text-red-200 rounded-lg p-3 text-sm">

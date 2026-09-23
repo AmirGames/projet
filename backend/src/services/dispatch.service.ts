@@ -135,6 +135,11 @@ export class DispatchService {
         isOnline: true,
         isAvailable: true,
         currentOrderId: null,
+        // Filet de sécurité : une pause écarte le livreur même si un autre
+        // chemin l'avait remis disponible.
+        OR: [{ pausedUntil: null }, { pausedUntil: { lte: new Date() } }],
+        // Une position figée depuis des minutes ne dit plus où est le livreur.
+        gpsLostAt: null,
       },
       select: {
         id: true,
@@ -389,8 +394,14 @@ export class DispatchService {
         longitude: position.longitude,
         lastLocationUpdate: maintenant,
       },
-      select: { currentOrderId: true },
+      select: { currentOrderId: true, gpsLostAt: true },
     });
+
+    // Import tardif : le service de disponibilité dépend déjà de celui-ci.
+    if (livreur.gpsLostAt) {
+      const { DriverAvailabilityService } = await import("./driver-availability.service");
+      await DriverAvailabilityService.signalRetabli(driverId, livreur.gpsLostAt, livreur.currentOrderId);
+    }
 
     if (!livreur.currentOrderId) return { suivie: false };
 

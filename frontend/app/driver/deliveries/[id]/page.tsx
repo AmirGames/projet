@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -8,6 +8,7 @@ import { ArrowLeft, MapPin, Phone, CheckCircle, AlertCircle, Loader, X, Navigati
 
 import { euro } from '@/lib/format';
 import { AnnulerCourse } from '@/components/AnnulerCourse';
+import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -82,10 +83,54 @@ export default function DeliveryTrackingPage() {
     }
   }, [router]);
 
+  // Dernière position connue, renvoyée dès le retour du réseau : sans cela le
+  // client gardait une pastille figée jusqu'au prochain mouvement.
+  const dernierePosition = useRef<{ latitude: number; longitude: number } | null>(null);
+
+  const envoyerPosition = useCallback(
+    (latitude: number, longitude: number) => {
+      const token = localStorage.getItem('driverToken');
+      if (!token || !deliveryId) return;
+
+      fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}/location`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ latitude, longitude }),
+      }).catch((err) => console.error('Failed to update location:', err));
+    },
+    [deliveryId]
+  );
+
+  const surRetourReseau = useCallback(() => {
+    if (dernierePosition.current) {
+      envoyerPosition(dernierePosition.current.latitude, dernierePosition.current.longitude);
+    }
+  }, [envoyerPosition]);
+
+  const { enLigne, gps, positionRecue, erreurPosition } = useSignalGps(surRetourReseau);
+
   useEffect(() => {
     loadDeliveryData();
-    startLocationTracking();
   }, [deliveryId]);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+
+    const suivi = navigator.geolocation.watchPosition(
+      (position) => {
+        positionRecue();
+        const { latitude, longitude } = position.coords;
+        dernierePosition.current = { latitude, longitude };
+        setLocation({ lat: latitude, lng: longitude });
+        envoyerPosition(latitude, longitude);
+      },
+      erreurPosition,
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
+    );
+
+    // Le suivi s'arrêtait jamais : chaque visite de la page en ajoutait un.
+    return () => navigator.geolocation.clearWatch(suivi);
+  }, [envoyerPosition, positionRecue, erreurPosition]);
 
   const loadDeliveryData = async () => {
     const token = localStorage.getItem('driverToken');
@@ -122,36 +167,6 @@ export default function DeliveryTrackingPage() {
       DELIVERED: 3,
     };
     setCurrentStep(stepMap[status] || 0);
-  };
-
-  const startLocationTracking = () => {
-    if (!navigator.geolocation) return;
-
-    navigator.geolocation.watchPosition(
-      (position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-
-        // Update server with location every 30 seconds
-        const token = localStorage.getItem('driverToken');
-        if (token && deliveryId) {
-          fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}/location`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            }),
-          }).catch(err => console.error('Failed to update location:', err));
-        }
-      },
-      (error) => console.error('Geolocation error:', error)
-    );
   };
 
   const handleNextStep = async () => {
@@ -288,6 +303,12 @@ export default function DeliveryTrackingPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {delivery.status !== 'DELIVERED' && (
+          <div className="mb-6">
+            <AlerteSignal enLigne={enLigne} gps={gps} />
+          </div>
+        )}
+
         {/* Progress */}
         <div className="bg-gray-800 rounded-lg p-6 mb-8">
           <h2 className="text-xl font-bold text-white mb-6">Étapes de la livraison</h2>
