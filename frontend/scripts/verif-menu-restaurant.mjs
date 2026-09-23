@@ -219,7 +219,7 @@ await page.waitForTimeout(800);
 await appeler(`/api/products/${margherita}/availability`, {
   method: 'PATCH',
   jeton: T,
-  corps: { isAvailable: false },
+  corps: { isAvailable: false, storeId },
 });
 
 // Aucun rechargement : seul le direct peut mettre la page à jour.
@@ -241,7 +241,7 @@ titre('Retour en disponible, en direct');
 await appeler(`/api/products/${margherita}/availability`, {
   method: 'PATCH',
   jeton: T,
-  corps: { isAvailable: true },
+  corps: { isAvailable: true, storeId },
 });
 await page.waitForTimeout(3000);
 
@@ -255,7 +255,7 @@ titre('Un plat passé en épuisé');
 await appeler(`/api/products/${margherita}/availability`, {
   method: 'PATCH',
   jeton: T,
-  corps: { isAvailable: false },
+  corps: { isAvailable: false, storeId },
 });
 
 await page.reload();
