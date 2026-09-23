@@ -447,14 +447,14 @@ export default function PromotionsPage() {
                     <button
                       onClick={() => handleEdit(promo)}
                       className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-                      title="Modifier"
+                      title={t('edit')}
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(promo.id)}
                       className="p-2 bg-red-600 hover:bg-red-700 rounded transition-colors"
-                      title="Supprimer"
+                      title={t('delete')}
                     >
                       <Trash2 size={16} />
                     </button>

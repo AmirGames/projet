@@ -318,14 +318,14 @@ export default function TaxSettingsPage() {
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => ouvrirModale(taxe)}
-                          title="Modifier"
+                          title={t('edit')}
                           className="p-1 hover:bg-gray-600 rounded transition"
                         >
                           <Edit2 size={16} className="text-blue-400" />
                         </button>
                         <button
                           onClick={() => supprimer(taxe.id)}
-                          title="Supprimer"
+                          title={t('delete')}
                           className="p-1 hover:bg-gray-600 rounded transition"
                         >
                           <Trash2 size={16} className="text-red-400" />
@@ -505,7 +505,7 @@ export default function TaxSettingsPage() {
                 type="submit" disabled={envoi}
                 className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
               >
-                {envoi ? 'Enregistrement…' : 'Enregistrer'}
+                {envoi ? 'Enregistrement…' : {t('save')}}
               </button>
               <button
                 type="button" onClick={() => setModaleOuverte(false)}

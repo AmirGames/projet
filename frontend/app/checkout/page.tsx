@@ -105,8 +105,8 @@ export default function CheckoutPage() {
           <button
             type="button"
             onClick={() => router.back()}
-            title="Retour"
-            aria-label="Retour"
+            title={t('back')}
+            aria-label={t('back')}
             className="p-2 hover:bg-gray-700 rounded-lg transition"
           >
             <ArrowLeft size={20} />

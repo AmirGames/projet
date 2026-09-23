@@ -302,14 +302,14 @@ export default function ProductTagPage({
                   <button
                     onClick={() => openModal(tag)}
                     className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
-                    title="Modifier"
+                    title={t('edit')}
                   >
                     <Edit2 className="w-4 h-4 text-blue-600" />
                   </button>
                   <button
                     onClick={() => deleteTag(tag.id)}
                     className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
-                    title="Supprimer"
+                    title={t('delete')}
                   >
                     <Trash2 className="w-4 h-4 text-red-600" />
                   </button>

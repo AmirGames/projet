@@ -628,7 +628,7 @@ export default function ProfilCommercantPage() {
           disabled={envoi}
           className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-2 px-6 rounded-lg transition"
         >
-          {envoi ? 'Enregistrement…' : 'Enregistrer'}
+          {envoi ? 'Enregistrement…' : {t('save')}}
         </button>
       </form>
 

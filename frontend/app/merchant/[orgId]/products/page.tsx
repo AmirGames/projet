@@ -173,14 +173,14 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
           <button
             onClick={() => onEdit(product)}
             className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-            title="Modifier"
+            title={t('edit')}
           >
             <Edit2 size={16} />
           </button>
           <button
             onClick={() => onDelete(product.id)}
             className="p-2 bg-red-600 hover:bg-red-700 rounded transition-colors"
-            title="Supprimer"
+            title={t('delete')}
           >
             <Trash2 size={16} />
           </button>

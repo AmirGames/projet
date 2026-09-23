@@ -301,7 +301,7 @@ export default function DriverProfilePage() {
                       : 'bg-orange-600 text-white hover:bg-orange-700'
                   }`}
                 >
-                  {isEditing ? 'Annuler' : 'Modifier'}
+                  {isEditing ? {t('cancel')} : {t('edit')}}
                 </button>
               </div>
 

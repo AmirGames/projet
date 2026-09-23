@@ -3,14 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import { User, Mail, ShoppingBag, Wallet, Save } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-  const t = useTranslations('clientProfile');
 interface Profil {
   name: string;
   email: string;

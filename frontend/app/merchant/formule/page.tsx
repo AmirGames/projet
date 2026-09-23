@@ -135,8 +135,8 @@ export default function MaFormulePage() {
         <div className="flex items-center gap-4">
           <Link
             href="/merchant"
-            aria-label="Retour"
-            title="Retour"
+            aria-label={t('back')}
+            title={t('back')}
             className="p-2 hover:bg-gray-800 rounded-lg transition"
           >
             <ArrowLeft size={20} />

@@ -405,7 +405,7 @@ export default function PaymentMethodsPage() {
                   disabled={envoi}
                   className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
                 >
-                  {envoi ? 'Enregistrement...' : 'Enregistrer'}
+                  {envoi ? 'Enregistrement...' : {t('save')}}
                 </button>
                 <button
                   type="button"
