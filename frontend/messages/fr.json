@@ -16,7 +16,8 @@
     "required": "Obligatoire",
     "optional": "Facultatif",
     "error": "Une erreur est survenue",
-    "success": "Enregistré"
+    "success": "Enregistré",
+    "inactive": "Inactif"
   },
   "nav": {
     "restaurants": "Restaurants",
@@ -648,7 +649,19 @@
     "commission_amount": "Commission",
     "order_count": "Commandes",
     "team": "Équipe",
-    "recent_tickets": "Tickets récents"
+    "recent_tickets": "Tickets récents",
+    "actionFailed": "Action impossible",
+    "closeAccountModal": "Fermer le compte",
+    "closureFailed": "Fermeture impossible",
+    "confirm": "Confirmer",
+    "reactivationFailed": "Réactivation impossible",
+    "restoreAccount": "Restaurer le compte",
+    "restoreFailed": "Restauration impossible",
+    "restoreFromBackup": "Restaurer depuis la sauvegarde",
+    "saving": "Sauvegarde…",
+    "suspendAccount": "Suspendre le compte",
+    "suspensionFailed": "Suspension impossible",
+    "updateFailed": "Mise à jour impossible"
   },
   "superownerWebhooks": {
     "title": "Webhooks",
@@ -690,7 +703,29 @@
     "history_attempts": "Tentatives",
     "history_when": "Quand",
     "error_loading": "Chargement impossible",
-    "connection_error": "Erreur de connexion au serveur"
+    "connection_error": "Erreur de connexion au serveur",
+    "abandoned": "abandonné",
+    "abandonedAttempts": "{count, plural, one {# envoi abandonné} other {# envois abandonnés}} d'affilée",
+    "changeStateError": "❌ Changement impossible",
+    "createError": "❌ Création impossible",
+    "deleteError": "❌ Suppression impossible",
+    "deleteSuccess": "✅ Abonnement supprimé",
+    "delete_label": "Supprimer {url}",
+    "failedWarning": "Cinq envois ont été abandonnés d'affilée : plus rien n'est envoyé vers cette adresse. Corrigez votre serveur, puis réactivez l'abonnement — le secret ne change pas.",
+    "historyUnavailable": "❌ Historique indisponible",
+    "history_label": "Historique de {url}",
+    "lastSent": "Dernier envoi le {date}",
+    "noDeliveries": "Aucun envoi enregistré.",
+    "noSent": "Aucun envoi pour l'instant",
+    "pause_label": "Mettre en pause {url}",
+    "resume_label": "Réactiver {url}",
+    "retryAt": "relance à {time}",
+    "secret_copied": "C'est copié",
+    "secret_explanation": "Il sert à vérifier l'en-tête X-Webhook-Signature de chaque envoi vers {url}. Sans lui, votre serveur ne peut pas s'assurer que l'envoi vient bien de la plateforme.",
+    "secret_warning": "Copiez ce secret maintenant : il ne sera plus jamais affiché.",
+    "testError": "❌ Essai impossible",
+    "testSending": "Envoi d'essai en cours…",
+    "test_send_label": "Envoi d'essai vers {url}"
   },
   "superownerStoreDetail": {
     "title": "Détail de la boutique",
@@ -828,7 +863,8 @@
     "createKeyFailed": "Création impossible",
     "saveFailed": "La configuration n'a pas pu être enregistrée",
     "saveSuccess": "Configuration enregistrée avec succès",
-    "keyNameRequired": "Le nom de la clé est requis"
+    "keyNameRequired": "Le nom de la clé est requis",
+    "keyCreated": "✅ Clé créée — copiez-la maintenant, elle ne sera plus affichée"
   },
   "merchantDashboard": {
     "title": "Tableau de Bord",
@@ -838,7 +874,35 @@
     "revenue": "Revenu Total",
     "myStores": "Mes Boutiques",
     "loading": "Chargement…",
-    "error": "Erreur de chargement"
+    "error": "Erreur de chargement",
+    "loadError": "Impossible de charger les données du tableau de bord",
+    "storeOverviewCurrentStore": "Vue d'ensemble de {name}",
+    "storeOverviewDefault": "Vue d'ensemble de votre commerce",
+    "changeSwitcher": "— changez de boutique en haut à droite",
+    "metricsOrders": "Commandes",
+    "metricsSince": "depuis le début",
+    "metricsRevenue": "Chiffre d'affaires",
+    "metricsAverageOrder": "Panier moyen : {value} €",
+    "metricsCustomers": "Clients",
+    "metricsCustomersUnique": "clients uniques",
+    "metricsProducts": "Produits",
+    "metricsCatalog": "au catalogue",
+    "alertsPending": "Commandes en attente",
+    "alertsToProcess": "à traiter",
+    "alertsAverage": "Panier moyen",
+    "alertsPerOrder": "par commande",
+    "storesMyStores": "Mes boutiques ({count})",
+    "storeCurrent": "boutique affichée",
+    "storeNoCity": "Ville non renseignée",
+    "storeOpen": "Ouverte",
+    "storeClosed": "Fermée",
+    "storeLink": "Voir",
+    "storeEmpty": "Aucune boutique pour le moment",
+    "quickActions": "Actions rapides",
+    "quickOrders": "Voir les commandes",
+    "quickProducts": "Gérer le catalogue",
+    "quickAnalytics": "Voir les statistiques",
+    "quickSettings": "Paramètres"
   },
   "merchantOrders": {
     "title": "Commandes",
@@ -855,7 +919,32 @@
     "date": "Date",
     "actions": "Actions",
     "view": "Voir",
-    "details": "Détails"
+    "details": "Détails",
+    "backToDashboard": "← Retour au tableau de bord",
+    "statsTotal": "Total",
+    "statsPending": "En Attente",
+    "statsAccepted": "Acceptées",
+    "statsReady": "Prêtes",
+    "statsCompleted": "Terminées",
+    "statsRevenue": "Revenu",
+    "filterAll": "Toutes les commandes",
+    "orderNumber": "Commande #{id}",
+    "orderItems_singular": "article",
+    "orderItems_plural": "articles",
+    "orderAmount": "Montant: ",
+    "orderDetails": "Détails",
+    "statusChange": "Changer le statut",
+    "paginationPage": "Page {page} sur {totalPages}",
+    "paginationPrev": "Précédent",
+    "paginationNext": "Suivant",
+    "statusLabel": {
+      "PENDING": "En attente",
+      "ACCEPTED": "Acceptée",
+      "PREPARING": "En préparation",
+      "READY": "Prête",
+      "COMPLETED": "Terminée",
+      "REJECTED": "Refusée"
+    }
   },
   "merchantProducts": {
     "title": "Produits",
@@ -873,7 +962,68 @@
     "available": "Disponible",
     "outOfStock": "Épuisé",
     "success": "Produit créé",
-    "error": "Erreur"
+    "error": "Erreur",
+    "addButton": "Ajouter Produit",
+    "successReordered": "✅ Produits réorganisés",
+    "errorReordered": "❌ Erreur lors de la réorganisation",
+    "errorSortChange": "❌ Le tri de la catégorie n'a pas pu être changé",
+    "successSortChange": "✅ Tri de la catégorie mis à jour",
+    "errorConnection": "❌ Erreur de connexion au serveur",
+    "errorNameRequired": "❌ Le nom du produit est requis",
+    "errorPriceInvalid": "❌ Le prix doit être supérieur à 0",
+    "successProductUpdate": "✅ Produit mis à jour",
+    "errorProductUpdate": "❌ Erreur lors de la mise à jour",
+    "successProductCreate": "✅ Produit créé",
+    "errorProductCreate": "❌ Erreur lors de la création",
+    "errorNoStore": "❌ Aucune boutique sélectionnée",
+    "errorProductSave": "❌ Erreur lors de la sauvegarde",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce produit?",
+    "successProductDelete": "✅ Produit supprimé",
+    "errorProductDelete": "❌ Erreur lors de la suppression",
+    "outOfStockProducts": "{count} produit{plural}épuisé{plural} — invisible{plural} à la commande",
+    "restockButton": "Remettre en vente",
+    "dragToReorder": "Glissez pour réorganiser",
+    "autoSortDisabled": "Tri automatique actif — passez en \"Ordre manuel\" pour réorganiser à la main",
+    "statusLabel": "Status",
+    "statusDraft": "Brouillon",
+    "statusActive": "Actif",
+    "statusArchived": "Archivé",
+    "sku": "SKU",
+    "availableYes": "Disponible",
+    "availableNo": "Épuisé",
+    "stats_total": "Total de produits",
+    "stats_active": "Produits actifs",
+    "stats_exhausted": "Épuisés",
+    "searchPlaceholder": "Rechercher par nom ou SKU...",
+    "formTitle_add": "Ajouter Produit",
+    "formTitle_edit": "Modifier Produit",
+    "formLabel_name": "Nom du produit *",
+    "formPlaceholder_name": "Ex: Pizza Margherita",
+    "formLabel_sku": "SKU (optionnel)",
+    "formPlaceholder_sku": "Ex: PIZZA-001 (auto-généré si vide)",
+    "formLabel_category": "Catégorie",
+    "formSelect_category": "Sélectionner une catégorie",
+    "formLabel_description": "Description",
+    "formPlaceholder_description": "Détails du produit...",
+    "formLabel_price": "Prix ($) *",
+    "formLabel_availability": "Disponibilité",
+    "formButton_available": "✓ Disponible",
+    "formButton_exhausted": "✕ Épuisé",
+    "formLabel_status": "Statut",
+    "formButton_cancel": "Annuler",
+    "formButton_create": "Créer",
+    "formButton_update": "Mettre à jour",
+    "sortMode_manual": "Ordre manuel",
+    "sortMode_alpha_asc": "Alphabétique (A→Z)",
+    "sortMode_alpha_desc": "Alphabétique (Z→A)",
+    "sortMode_price_asc": "Prix croissant",
+    "sortMode_price_desc": "Prix décroissant",
+    "sortTitle": "Ordre d'affichage des produits, au tableau de bord et sur la vitrine",
+    "actionEdit": "Modifier",
+    "actionDelete": "Supprimer",
+    "noCategory": "Sans catégorie",
+    "commandable": "Commandable par vos clients",
+    "notCommandable": "Affiché mais non commandable"
   },
   "merchantCustomers": {
     "loading": "Chargement des clients...",
@@ -899,7 +1049,12 @@
     "actionDelete": "Supprimer",
     "paginationPage": "Page {page} sur {totalPages}",
     "paginationPrev": "Précédent",
-    "paginationNext": "Suivant"
+    "paginationNext": "Suivant",
+    "backDashboard": "Retour au tableau de bord",
+    "cancel": "Annuler",
+    "confirmDelete": "Confirmer la suppression",
+    "deleteWarning": "Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible.",
+    "deleting": "Suppression..."
   },
   "superownerMembers": {
     "loading": "Chargement...",
@@ -951,7 +1106,29 @@
     "period": "Période",
     "revenue": "Revenu",
     "orders": "Commandes",
-    "customers": "Clients"
+    "customers": "Clients",
+    "currentMonth": "Mois en cours",
+    "dailyRevenue": "Revenu Quotidien",
+    "delivered": "Livrées/Retirées",
+    "description": "Consultez vos statistiques de vente",
+    "empty": "Aucune donnée disponible",
+    "kpiAverageOrder": "Ticket Moyen",
+    "kpiCompleted": "Commandes Complétées",
+    "kpiOrdersThisMonth": "Commandes Ce Mois",
+    "kpiPending": "En Attente",
+    "kpiTotalOrders": "Total Commandes",
+    "kpiTotalRevenue": "Revenu Total",
+    "loading": "Chargement des analyses...",
+    "perOrder": "Par commande",
+    "since": "Depuis le début",
+    "statusBreakdown": "Répartition par Statut",
+    "tableDate": "Date",
+    "tableRevenue": "Revenu",
+    "timeRange30": "Derniers 30 jours",
+    "timeRange7": "Derniers 7 jours",
+    "timeRange90": "Derniers 90 jours",
+    "timeRangeYear": "Cette année",
+    "toProcess": "À traiter"
   },
   "merchantSettings": {
     "title": "Paramètres",
@@ -960,7 +1137,10 @@
     "payment": "Paiement",
     "notifications": "Notifications",
     "save": "Enregistrer",
-    "success": "Paramètres sauvegardés"
+    "success": "Paramètres sauvegardés",
+    "city": "Ville",
+    "loadError": "Erreur lors du chargement des paramètres",
+    "saving": "Enregistrement..."
   },
   "clientHome": {
     "title": "Commandes en Ligne",
@@ -1010,7 +1190,36 @@
     "statusReadyForDelivery": "Prête à être livrée",
     "statusDriverInTransit": "Livreur en route",
     "statusDelivered": "Livrée",
-    "statusCancelled": "Annulée"
+    "statusCancelled": "Annulée",
+    "backToOrder": "Retour",
+    "commentOptional": "Commentaire (optionnel)",
+    "deliveryPlaceholder": "Rapidité, politesse du livreur, état du colis...",
+    "deliveryQuestion": "Comment s'est passée la livraison ?",
+    "deliveryTab": "🚗 Livreur",
+    "detailedMessage": "Vos avis nous aident à améliorer notre service",
+    "detailedMode": "Mode Détaillé",
+    "errorLoading": "Erreur lors du chargement de la commande",
+    "errorPartial": "Erreur lors de la soumission de certains avis",
+    "errorSubmitting": "Erreur lors de la soumission de l'avis",
+    "expressMessage": "⚡ Mode rapide : 30 secondes pour noter",
+    "expressMode": "Mode Rapide",
+    "loading": "Chargement des commandes...",
+    "noProducts": "Aucun produit à évaluer",
+    "orderNotFound": "Commande non trouvée",
+    "productPlaceholder": "Goût, fraîcheur, portion...",
+    "productsTab": "📦 Produits",
+    "redirecting": "Vous allez être redirigé...",
+    "restaurantPlaceholder": "Qualité du repas, présentation, température...",
+    "restaurantQuestion": "Comment avez-vous trouvé le restaurant ?",
+    "restaurantTab": "🍽️ Restaurant",
+    "reviewSubtitle": "Notez le restaurant, le livreur et les produits",
+    "reviewTitle": "Évaluer votre commande",
+    "submitExpress": "⚡ Soumettre rapidement",
+    "submitReview": "Soumettre tous les avis",
+    "submitting": "Envoi en cours...",
+    "thankYou": "Merci pour votre avis !",
+    "address": "Adresse",
+    "startSearching": "Commencer à chercher des restaurants →"
   },
   "clientOrderDetail": {
     "statusPending": "En attente",
@@ -1048,7 +1257,18 @@
     "connectionError": "Erreur de connexion au serveur",
     "savingError": "❌ Enregistrement impossible",
     "savingSuccess": "✅ Profil mis à jour",
-    "connectionErrorFinal": "❌ Erreur de connexion"
+    "connectionErrorFinal": "❌ Erreur de connexion",
+    "city": "Ville",
+    "deliveryAddress": "Adresse de livraison",
+    "emailInfo": "L'adresse e-mail relie votre compte à vos commandes et ne peut pas être modifiée ici.",
+    "fullName": "Nom complet",
+    "myInfo": "Mes coordonnées",
+    "ordersPlaced": "Commandes passées",
+    "postalCode": "Code postal",
+    "saveError": "Enregistrement impossible",
+    "savedSuccess": "✅ Profil mis à jour",
+    "totalSpent": "Total dépensé",
+    "profileNotCreated": "Votre profil sera créé lors de votre première commande."
   },
   "driverDeliveries": {
     "title": "Mes Livraisons",
@@ -1079,7 +1299,17 @@
     "deliveriesCompleted": "Courses livrées",
     "averageRating": "Note moyenne",
     "loadingError": "Impossible de charger vos revenus",
-    "connectionError": "Erreur de connexion au serveur"
+    "connectionError": "Erreur de connexion au serveur",
+    "allTime": "Depuis le début",
+    "deliveredOn": "Livrée le",
+    "deliveryDetails": "Détail des courses",
+    "noDeliveries": "Aucune course terminée pour le moment. Vos gains apparaîtront ici.",
+    "notRated": "Pas encore noté",
+    "order": "Course",
+    "orderAmount": "Montant commande",
+    "reviews": "avis",
+    "subtitle": "La rémunération annoncée à l'attribution de chaque course terminée",
+    "yourEarning": "Votre gain"
   },
   "driverProfile": {
     "title": "Mon Profil",
@@ -1088,7 +1318,8 @@
     "phone": "Téléphone",
     "vehicle": "Véhicule",
     "edit": "Modifier",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "cancel": "Annuler"
   },
   "driverAuth": {
     "login": "Connexion",
@@ -1131,7 +1362,8 @@
     "myProfile": "Mon profil",
     "myDeliveries": "Mes livraisons",
     "seeEarnings": "Voir les revenus",
-    "earningsAccountValidation": "Revenus (compte à valider)"
+    "earningsAccountValidation": "Revenus (compte à valider)",
+    "connectionError": "Erreur de connexion"
   },
   "merchantReviews": {
     "title": "Avis et Évaluations",
@@ -1246,7 +1478,8 @@
     "success": "Mot de passe réinitialisé avec succès",
     "error": "Erreur lors de la réinitialisation",
     "passwordsMismatch": "Les mots de passe ne correspondent pas",
-    "backToLogin": "Retour à la connexion"
+    "backToLogin": "Retour à la connexion",
+    "save": "Enregistrer"
   },
   "emailVerification": {
     "title": "Vérifiez votre email",
@@ -1397,5 +1630,249 @@
     "quickConfig": "Configuration",
     "quickSecurityAudit": "Audit Sécurité",
     "loggedInAs": "🔐 Vous êtes connecté en tant que Superowner. Vous avez accès complet à tous les systèmes."
+  },
+  "clientFavorites": {
+    "back": "Retour",
+    "deliveryCost": "Frais :",
+    "discoverRestaurants": "Découvrir des restaurants →",
+    "loading": "Chargement des favoris...",
+    "loadingError": "Erreur lors du chargement des favoris",
+    "noFavorites": "Aucun restaurant favori",
+    "title": "Mes restaurants favoris",
+    "viewMenu": "Voir le menu →"
+  },
+  "merchantcustomers": {
+    "active": "Actif",
+    "connectionErrorFinal": "❌ Erreur de connexion"
+  },
+  "merchantdeliveryzones": {
+    "create": "Créer",
+    "saveError": "Enregistrement refusé",
+    "serverError": "Le serveur ne répond pas"
+  },
+  "merchantInvoices": {
+    "actionDownload": "Télécharger",
+    "actionView": "Voir facture",
+    "backDashboard": "← Retour au tableau de bord",
+    "colActions": "Actions",
+    "colAmount": "Montant",
+    "colCustomer": "Client",
+    "colDate": "Date",
+    "colItems": "Articles",
+    "colNumber": "Numéro",
+    "colPaymentStatus": "Statut Paiement",
+    "description": "Consultez et téléchargez vos factures",
+    "empty": "Aucune facture trouvée",
+    "filterAll": "Toutes",
+    "loading": "Chargement des factures...",
+    "next": "Suivant",
+    "pagination": "Page {page} sur {totalPages}",
+    "previous": "Précédent",
+    "statsAverageInvoice": "Moyenne/Facture",
+    "statsInvoiceCount": "Nombre Factures",
+    "statsNetRevenue": "Revenu Net",
+    "statsTotalRevenue": "Revenu Total",
+    "statusFailed": "Échouée",
+    "statusPending": "En Attente",
+    "statusSucceeded": "Payée",
+    "title": "Factures"
+  },
+  "merchantmarketing": {
+    "all": "Toutes",
+    "createKeyFailed": "Création impossible",
+    "creating": "Création..."
+  },
+  "merchantnotifications": {
+    "delete": "Supprimer",
+    "filterByRead": "Tous",
+    "filterByReadRead": "Lus",
+    "mark_as_read": "Marquer comme lu"
+  },
+  "merchantOrderDetail": {
+    "cityUnknown": "Ville non renseignée",
+    "connectionErrorFinal": "❌ Erreur de connexion",
+    "delivery": "Livraison"
+  },
+  "merchantpaymentmethods": {
+    "active": "Actif",
+    "save": "Enregistrer",
+    "saving": "Enregistrement..."
+  },
+  "merchantproductmedia": {
+    "deleteError": "Erreur lors de la suppression",
+    "genericError": "Une erreur s'est produite"
+  },
+  "merchantproductseo": {
+    "genericError": "Une erreur s'est produite",
+    "updateError": "Erreur lors de la mise à jour"
+  },
+  "merchantproducttags": {
+    "delete": "Supprimer",
+    "deleteError": "Erreur lors de la suppression",
+    "edit": "Modifier",
+    "genericError": "Une erreur s'est produite",
+    "saveError": "Erreur lors de la sauvegarde"
+  },
+  "merchantpromotions": {
+    "active": "Actif",
+    "create": "Créer",
+    "createError": "Erreur lors de la création",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "update": "Mettre à jour"
+  },
+  "merchantreports": {
+    "customers": "Clients"
+  },
+  "merchantstaff": {
+    "create": "Créer",
+    "empty": "Aucun membre trouvé",
+    "statusActive": "✓ Actif",
+    "statusSuspended": "Suspendu"
+  },
+  "merchantstorehours": {
+    "closed": "Fermée",
+    "open": "Ouverte",
+    "serverError": "Le serveur ne répond pas"
+  },
+  "merchanttaxsettings": {
+    "active": "Active",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…"
+  },
+  "merchantSubscription": {
+    "back": "Retour",
+    "serverError": "Le serveur ne répond pas"
+  },
+  "merchantOnboard": {
+    "connectionError": "Erreur de connexion au serveur",
+    "error": "Une erreur est survenue"
+  },
+  "merchantMainDashboard": {
+    "createFirstStore": "Créer votre première boutique",
+    "createStore": "+ Créer une boutique",
+    "limitReached": "Vous avez atteint la limite de votre formule.",
+    "loadError": "Erreur lors du chargement du dashboard :",
+    "manage": "Gérer →",
+    "myStores": "Mes Boutiques",
+    "noOrders": "Aucune commande pour le moment",
+    "noStores": "Aucune boutique pour le moment",
+    "orderNumber": "Commande #{id}",
+    "orders": "Commandes",
+    "plan": "Formule",
+    "recentOrders": "Commandes Récentes",
+    "requestStore": "Demander une boutique supplémentaire",
+    "seePlans": "Voir les formules",
+    "storeCount": "{used, plural, one {# boutique} other {# boutiques}} sur {max}",
+    "subtitle": "Bienvenue sur votre tableau de bord commerçant",
+    "title": "Tableau de Bord",
+    "totalRevenue": "Revenu Total",
+    "totalStores": "Total de Boutiques"
+  },
+  "merchantProfile": {
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "serverError": "Le serveur ne répond pas"
+  },
+  "merchantAuth": {
+    "myStores": "Ma Boutique"
+  },
+  "superadminDashboard": {
+    "accessDenied": "Erreur d'accès",
+    "activeMerchants": "Commerçants Actifs",
+    "commission": "Commission :",
+    "investigate": "À investiguer",
+    "loading": "Chargement...",
+    "maintenanceEnabled": "Mode maintenance activé",
+    "manageMerchants": "Gérer les commerçants",
+    "of": "dont",
+    "open": "ouvertes",
+    "openTickets": "Tickets ouverts",
+    "orders": "Commandes",
+    "outOf": "sur",
+    "quickActions": "Actions rapides",
+    "revenue": "Revenu",
+    "stores": "Boutiques",
+    "subtitle": "Vue d'ensemble du système",
+    "supportPending": "Support en attente",
+    "suspendedMerchants": "Commerçants suspendus",
+    "systemSettings": "Paramètres système",
+    "title": "Tableau de bord",
+    "total": "total",
+    "viewSupport": "Voir le support"
+  },
+  "addressAutocomplete": {
+    "placeholder": "Saisissez une adresse",
+    "suggestionsUnavailable": "Suggestions indisponibles — saisissez l'adresse manuellement."
+  },
+  "carteTrajet": {
+    "commerce": "Le commerce",
+    "driver": "Le livreur",
+    "yourAddress": "Votre adresse"
+  },
+  "carteZones": {
+    "dragRadius": "Tirez pour régler le rayon",
+    "yourStore": "Votre boutique — déplacez-la pour la situer"
+  },
+  "declinaisonsProduit": {
+    "actionRefused": "Action refusée",
+    "addButton": "Ajouter",
+    "addLabel": "Ajouter la déclinaison",
+    "depleted": "Épuiser",
+    "newVariantLabel": "Nouvelle déclinaison",
+    "newVariantPlaceholder": "Penne",
+    "priceLabel": "Prix",
+    "questionLabel": "Question posée au client",
+    "questionPlaceholder": "Type de pâtes, Taille…",
+    "restore": "Remettre",
+    "serverError": "Le serveur ne répond pas",
+    "title": "Déclinaisons"
+  },
+  "mesVersements": {
+    "alreadyPaid": "Déjà versé",
+    "amount": "Montant",
+    "course": "{count, plural, one {course livrée} other {courses livrées}}",
+    "deliveries": "Courses",
+    "noReportsYet": "Aucun relevé pour le moment. Vos courses livrées y seront regroupées par période.",
+    "notYetStopped": "Pas encore arrêté",
+    "onYourAccount": "Sur votre compte",
+    "paidOn": "Versé le",
+    "pendingPayout": "En attente de versement",
+    "pendingStop": "en attente d'arrêté",
+    "period": "Période",
+    "reportStoppedTransferComing": "Relevé arrêté, virement à venir",
+    "status": "État",
+    "yourReports": "Vos relevés"
+  },
+  "notificationBell": {
+    "markAllAsRead": "Marquer tout comme lu",
+    "noNotifications": "Aucune notification",
+    "notifications": "Notifications",
+    "unread": "{count, plural, one {non lue} other {non lues}}"
+  },
+  "storeSwitcher": {
+    "managedStore": "Boutique gérée"
+  },
+  "ticketConversation": {
+    "loadError": "Impossible de charger la conversation",
+    "loadingConversation": "Chargement de la conversation...",
+    "noMessages": "Aucun message pour l'instant.",
+    "readOnlyMessage": "Ce ticket est archivé : la conversation est en lecture seule.",
+    "replyPlaceholder": "Écrivez votre réponse...",
+    "roleMerchant": "Commerçant",
+    "roleSupport": "Support",
+    "sendButton": "Envoyer",
+    "sendError": "Échec de l'envoi"
+  },
+  "stripePayment": {
+    "cardNotFound": "Champ carte introuvable",
+    "error": "Erreur de paiement",
+    "intentFailed": "Impossible de créer le paiement",
+    "loading": "Traitement...",
+    "payButton": "Payer {amount}",
+    "paymentFailed": "Le paiement a échoué",
+    "stripeNotLoaded": "Stripe n'est pas chargé"
   }
 }

@@ -338,7 +338,7 @@ export default function OrdersPage() {
                   : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-300 border border-gray-700'
               }`}
             >
-              {status === 'ALL' ? t('filterAll') : status}
+              {status === 'ALL' ? t('filterAll') : t(`statusLabel.${status}`)}
             </button>
           ))}
         </div>
@@ -365,7 +365,7 @@ export default function OrdersPage() {
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${statusColors[order.status]}`}>
                           <StatusIcon size={14} />
-                          {order.status}
+                          {t(`statusLabel.${order.status}`)}
                         </span>
                       </div>
 
@@ -422,7 +422,7 @@ export default function OrdersPage() {
                                 : `${statusColors[status]} border hover:opacity-80`
                             }`}
                           >
-                            {updating === order.id ? '...' : status}
+                            {updating === order.id ? '...' : t(`statusLabel.${status}`)}
                           </button>
                         ))}
                       </div>

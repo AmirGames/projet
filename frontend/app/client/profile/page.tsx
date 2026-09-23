@@ -54,7 +54,7 @@ export default function ProfilClientPage() {
 
       if (!reponse.ok) {
         // Un compte qui n'a jamais commandé n'a pas encore de fiche client.
-        setErreur(donnees.error || t('loading'));
+        setErreur(donnees.error || t('profileNotCreated'));
         return;
       }
 
