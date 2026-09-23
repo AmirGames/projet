@@ -21,6 +21,7 @@ import { DriverAvailabilityService } from "../services/driver-availability.servi
 import { Notifier, enArrierePlan } from "../services/notifier.service";
 import { DriverSupportService, LONGUEUR_MAX } from "../services/driver-support.service";
 import { z } from "zod";
+import { distanceKm, estUnPoint } from "../utils/geo";
 import { Prisma } from "@prisma/client";
 import fs from "fs";
 import { join } from "path";
@@ -1039,7 +1040,17 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
       data: propositions.map((proposition) => ({
         id: proposition.id,
         deliveryId: proposition.deliveryId,
+        // Trajet payé, du commerce au client.
         distanceKm: proposition.distanceKm,
+        // Chemin du livreur jusqu'au commerce, depuis sa dernière position.
+        approcheKm: (() => {
+          const store = proposition.delivery.order?.store;
+          const depart = { latitude: livreur.latitude, longitude: livreur.longitude };
+          const arrivee = { latitude: store?.latitude, longitude: store?.longitude };
+          return estUnPoint(depart) && estUnPoint(arrivee)
+            ? Number(distanceKm(depart, arrivee).toFixed(2))
+            : null;
+        })(),
         payout: Number(proposition.payout || 0),
         expiresAt: proposition.expiresAt,
         // Nouvelles données

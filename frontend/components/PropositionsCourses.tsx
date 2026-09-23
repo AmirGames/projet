@@ -21,7 +21,10 @@ const INTERVALLE_RELEVE_MS = 10000;
 interface Proposition {
   id: string;
   deliveryId: string;
+  /** Trajet de livraison payé, du commerce au client. */
   distanceKm: number | null;
+  /** Distance du livreur jusqu'au commerce. */
+  approcheKm?: number | null;
   payout: number;
   expiresAt: string;
   // Lieu de prise en charge
@@ -122,12 +125,12 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
       transports: ['websocket', 'polling'],
     });
 
-    socket.on('course-proposee', (donnees: { payout?: number; distanceKm?: number; pickupStore?: string }) => {
+    socket.on('course-proposee', (donnees: { payout?: number; approcheKm?: number; pickupStore?: string }) => {
       relever();
       notifierSiCache(
         donnees?.payout != null ? `Nouvelle course : ${euro(donnees.payout)}` : 'Nouvelle course',
         `${donnees?.pickupStore || 'Commerce'}${
-          donnees?.distanceKm != null ? ` · à ${donnees.distanceKm.toFixed(1)} km` : ''
+          donnees?.approcheKm != null ? ` · à ${donnees.approcheKm.toFixed(1)} km` : ''
         }. Répondez vite !`,
         'course-proposee'
       );
@@ -272,8 +275,12 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
         const deliveryCity = proposition.deliveryCity || proposition.ville || '';
         const deliveryPostal = proposition.deliveryPostal || proposition.codePostal || '';
 
-        // Temps estimé basé sur distance (moyenne ~30 km/h en ville)
-        const tempsEstime = Math.max(5, Math.round((proposition.distanceKm || 0) * 2));
+        // Temps estimé : aller au commerce puis livrer (~30 km/h en ville).
+        const tempsEstime = Math.max(
+          5,
+          Math.round(((proposition.approcheKm || 0) + (proposition.distanceKm || 0)) * 2)
+        );
+        const km = (n: number) => n.toLocaleString('fr-FR', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 
         return (
           <div
@@ -304,13 +311,27 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
 
             {/* Distance et temps */}
             <div className="bg-gray-800/50 rounded-lg p-3 flex gap-6">
+              {/* Le trajet de livraison est ce qui est payé ; l'approche
+                  aide seulement à décider. */}
               <div>
-                <p className="text-gray-400 text-xs mb-1">Distance</p>
+                <p className="text-gray-400 text-xs mb-1">Livraison (payée)</p>
                 <div className="flex items-center gap-1 text-white font-semibold">
                   <MapPin size={16} className="text-orange-500" />
-                  {proposition.distanceKm != null ? `${(proposition.distanceKm).toFixed(1)} km` : '?'}
+                  {proposition.distanceKm != null ? `${km(proposition.distanceKm)} km` : '?'}
                 </div>
               </div>
+              {proposition.approcheKm != null && (
+                <>
+                  <div className="border-l border-gray-700"></div>
+                  <div>
+                    <p className="text-gray-400 text-xs mb-1">Jusqu&apos;au commerce</p>
+                    <div className="flex items-center gap-1 text-white font-semibold">
+                      <Navigation size={16} className="text-gray-400" />
+                      {km(proposition.approcheKm)} km
+                    </div>
+                  </div>
+                </>
+              )}
               <div className="border-l border-gray-700"></div>
               <div>
                 <p className="text-gray-400 text-xs mb-1">Durée estimée</p>

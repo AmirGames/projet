@@ -77,6 +77,10 @@ export class DispatchService {
   /**
    * Ce que touche le livreur pour une course, et ce qui reste à la plateforme.
    *
+   * `distance` est le trajet de livraison, du commerce à l'adresse du client —
+   * pas le chemin du livreur jusqu'au commerce : deux livreurs qui prennent la
+   * même course sont payés pareil, qu'ils soient à 200 m ou à 5 km du retrait.
+   *
    * Le calcul ne dépend pas des frais payés par le client : une course longue
    * doit être payée comme telle même si le commerçant offre la livraison.
    */
@@ -265,7 +269,18 @@ export class DispatchService {
       return null;
     }
 
-    const { payout } = this.remuneration(choisi.distance, reglages);
+    // Le paiement se calcule sur le trajet commerce → client. Sans
+    // coordonnées de livraison (adresse non géolocalisée), on retombe sur la
+    // distance d'approche plutôt que de ne payer que la base.
+    const destination = { latitude: course.deliveryLat, longitude: course.deliveryLng };
+    const trajet = estUnPoint(destination) ? distanceKm(retrait, destination) : null;
+    if (trajet == null) {
+      logger.warn("Course sans coordonnées de livraison : paiement sur la distance d'approche", { deliveryId });
+    }
+    const distancePayee = Number((trajet ?? choisi.distance).toFixed(2));
+    const approche = Number(choisi.distance.toFixed(2));
+
+    const { payout } = this.remuneration(distancePayee, reglages);
     const expiresAt = new Date(maintenant + reglages.offerSeconds * 1000);
 
     // Une ligne par livreur et par course : un nouveau tour la rouvre.
@@ -274,13 +289,14 @@ export class DispatchService {
       create: {
         deliveryId,
         driverId: choisi.id,
-        distanceKm: choisi.distance,
+        // La distance de la proposition est celle qui est payée : le trajet.
+        distanceKm: distancePayee,
         payout,
         expiresAt,
       },
       update: {
         status: "PENDING",
-        distanceKm: choisi.distance,
+        distanceKm: distancePayee,
         payout,
         offeredAt: new Date(maintenant),
         expiresAt,
@@ -294,7 +310,9 @@ export class DispatchService {
     emitDriverEvent(choisi.user?.email || choisi.email, "course-proposee", {
       offerId: proposition.id,
       deliveryId,
-      distanceKm: choisi.distance,
+      // Trajet payé (commerce → client) et chemin jusqu'au commerce.
+      distanceKm: distancePayee,
+      approcheKm: approche,
       payout,
       expiresAt: proposition.expiresAt,
       // Lieu de prise en charge
@@ -319,13 +337,13 @@ export class DispatchService {
     enArrierePlan(
       Notifier.pushLivreur(choisi.id, {
         title: `Nouvelle course : ${payout.toFixed(2).replace(".", ",")} €`,
-        body: `${course.order?.store?.name || "Commerce"} · à ${choisi.distance.toFixed(1).replace(".", ",")} km. Répondez vite !`,
+        body: `${course.order?.store?.name || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, livraison de ${distancePayee.toFixed(1).replace(".", ",")} km. Répondez vite !`,
         url: "/driver",
         tag: "course-proposee",
       })
     );
 
-    logger.info("Course proposée", { deliveryId, driverId: choisi.id, distance: choisi.distance });
+    logger.info("Course proposée", { deliveryId, driverId: choisi.id, approche, trajet: distancePayee });
 
     return proposition;
   }
