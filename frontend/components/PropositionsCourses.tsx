@@ -38,8 +38,10 @@ interface Proposition {
 }
 
 interface Props {
-  /** Le livreur accepte des courses seulement s'il est en ligne. */
-  enLigne: boolean;
+  /** Le livreur a choisi de se mettre en ligne (envoyer la position). */
+  isOnline: boolean;
+  /** Le livreur peut accepter une course (pas de course en cours). */
+  isAvailable: boolean;
   /** Appelé après une acceptation, pour rafraîchir la page appelante. */
   surAcceptation?: () => void;
 }
@@ -54,7 +56,7 @@ interface Props {
  * La position est envoyée tant que le livreur est en ligne, course ou non :
  * c'est elle qui décide à qui la prochaine course sera proposée.
  */
-export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
+export function PropositionsCourses({ isOnline, isAvailable, surAcceptation }: Props) {
   const [propositions, setPropositions] = useState<Proposition[]>([]);
   const [maintenant, setMaintenant] = useState(() => Date.now());
   const [enCours, setEnCours] = useState<string | null>(null);
@@ -84,9 +86,9 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
     }
   }, []);
 
-  // Relevé périodique des propositions.
+  // Relevé périodique des propositions (seulement si disponible).
   useEffect(() => {
-    if (!enLigne) {
+    if (!isAvailable) {
       setPropositions([]);
       return;
     }
@@ -94,11 +96,11 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
     relever();
     const minuteur = setInterval(relever, INTERVALLE_RELEVE_MS);
     return () => clearInterval(minuteur);
-  }, [enLigne, relever]);
+  }, [isAvailable, relever]);
 
-  // Envoi de la position.
+  // Envoi de la position (tant que le livreur est en ligne, même en cours de livraison).
   useEffect(() => {
-    if (!enLigne || typeof navigator === 'undefined' || !navigator.geolocation) return;
+    if (!isOnline || typeof navigator === 'undefined' || !navigator.geolocation) return;
 
     const envoyer = () => {
       navigator.geolocation.getCurrentPosition(
@@ -129,7 +131,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
     envoyer();
     const minuteur = setInterval(envoyer, INTERVALLE_POSITION_MS);
     return () => clearInterval(minuteur);
-  }, [enLigne]);
+  }, [isOnline]);
 
   // Le compte à rebours a besoin d'un battement de seconde.
   useEffect(() => {
@@ -167,7 +169,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
     }
   };
 
-  if (!enLigne) return null;
+  if (!isAvailable) return null;
 
   const visibles = propositions.filter((p) => new Date(p.expiresAt).getTime() > maintenant);
 
