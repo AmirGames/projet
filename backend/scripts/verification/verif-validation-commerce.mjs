@@ -100,6 +100,12 @@ check(
   (compte?.validation?.piecesManquantes || []).map((p) => p.type).join(',') === 'registration,identity,bank',
   JSON.stringify(compte?.validation?.piecesManquantes)
 );
+check(
+  'tout est à fournir, rien en examen',
+  (compte?.validation?.piecesAFournir || []).length === 3 &&
+    (compte?.validation?.piecesEnExamen || []).length === 0,
+  JSON.stringify(compte?.validation)
+);
 
 titre('Il prépare sa boutique');
 const categorie = await j(await post('/api/categories', { storeId, name: 'Pizzas' }, T));
@@ -198,6 +204,40 @@ const emailPlateforme = `plateforme-${uniq}@t.fr`;
 check(
   'la plateforme apprend qu’un dossier l’attend',
   Number(await notifications(emailPlateforme, 'Dossier à examiner%')) >= 1
+);
+
+titre('Une pièce déposée n’est plus « à fournir »');
+const apresDepot = (await j(await get(`/api/support/compte/${orgId}`, T)))?.validation;
+check(
+  'plus rien à fournir',
+  (apresDepot?.piecesAFournir || []).length === 0,
+  JSON.stringify(apresDepot?.piecesAFournir)
+);
+check(
+  'les trois sont en examen',
+  (apresDepot?.piecesEnExamen || []).map((p) => p.type).join(',') === 'registration,identity,bank',
+  JSON.stringify(apresDepot?.piecesEnExamen)
+);
+
+const aRefuser = (await j(await get(`/api/superowner/organizations/${orgId}/profile`, TP)))?.data?.documents?.find(
+  (piece) => piece.type === 'bank'
+);
+await patch(
+  `/api/superowner/organizations/${orgId}/documents/${aRefuser?.id}`,
+  { approuve: false, note: 'RIB illisible' },
+  TP
+);
+const apresRefus = (await j(await get(`/api/support/compte/${orgId}`, T)))?.validation;
+check(
+  'une pièce refusée redevient « à fournir »',
+  (apresRefus?.piecesAFournir || []).map((p) => p.type).join(',') === 'bank' &&
+    (apresRefus?.piecesEnExamen || []).length === 2,
+  JSON.stringify(apresRefus)
+);
+await post(
+  `/api/merchant-profile/${orgId}/documents`,
+  { type: 'bank', documentUrl: 'https://exemple.fr/rib-2.pdf' },
+  T
 );
 
 titre('La plateforme examine et valide');

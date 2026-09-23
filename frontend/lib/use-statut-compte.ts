@@ -17,6 +17,8 @@ export interface StatutCompte {
   validation?: {
     valide: boolean;
     piecesManquantes: { type: string; libelle: string }[];
+    piecesAFournir: { type: string; libelle: string }[];
+    piecesEnExamen: { type: string; libelle: string }[];
     dossierComplet: boolean;
   };
 }

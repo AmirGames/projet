@@ -70,6 +70,9 @@ export function etatDeValidation(
   const validees = new Set(
     documents.filter((piece) => piece.status === "APPROVED").map((piece) => piece.type)
   );
+  const enExamen = new Set(
+    documents.filter((piece) => piece.status === "PENDING").map((piece) => piece.type)
+  );
   const manquantes = PIECES_EXIGEES.filter((type) => !validees.has(type));
   const decrire = (type: string) => ({ type, libelle: libelleDuDocumentCommercant(type) });
 
@@ -77,7 +80,16 @@ export function etatDeValidation(
     valide: !!approvedAt,
     approvedAt,
     piecesExigees: PIECES_EXIGEES.map(decrire),
+    /** Pas encore validées, quelle qu'en soit la raison : ce qui bloque la validation. */
     piecesManquantes: manquantes.map(decrire),
+    /**
+     * Ce que le commerçant doit encore fournir : jamais déposé, refusé ou
+     * expiré. Une pièce déposée n'y figure plus — sinon il ne distingue pas ce
+     * qu'il lui reste à faire de ce qui attend la plateforme.
+     */
+    piecesAFournir: manquantes.filter((type) => !enExamen.has(type)).map(decrire),
+    /** Déposées, en attente de l'examen de la plateforme. */
+    piecesEnExamen: manquantes.filter((type) => enExamen.has(type)).map(decrire),
     dossierComplet: manquantes.length === 0,
   };
 }

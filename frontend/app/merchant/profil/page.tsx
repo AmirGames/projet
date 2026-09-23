@@ -77,6 +77,8 @@ interface Profil {
     valide: boolean;
     piecesExigees: { type: string; libelle: string }[];
     piecesManquantes: { type: string; libelle: string }[];
+    piecesAFournir: { type: string; libelle: string }[];
+    piecesEnExamen: { type: string; libelle: string }[];
   };
 }
 
@@ -370,12 +372,21 @@ export default function ProfilCommercantPage() {
             Vous pouvez préparer votre boutique — produits, catégories, horaires — mais vous
             pourrez l&apos;ouvrir une fois vos documents validés par la plateforme.
           </p>
-          {profil.validation.piecesManquantes.length > 0 ? (
+          {/* Ce qu'il reste à déposer d'un côté, ce qui attend la plateforme de
+              l'autre : une pièce déposée ne doit plus apparaître « à fournir ». */}
+          {profil.validation.piecesAFournir?.length > 0 && (
             <p>
-              Pièces à fournir ou en cours d&apos;examen :{' '}
-              {profil.validation.piecesManquantes.map((piece) => piece.libelle).join(', ')}.
+              <strong>À fournir :</strong>{' '}
+              {profil.validation.piecesAFournir.map((piece) => piece.libelle).join(', ')}.
             </p>
-          ) : (
+          )}
+          {profil.validation.piecesEnExamen?.length > 0 && (
+            <p className="text-blue-200/80">
+              En cours d&apos;examen :{' '}
+              {profil.validation.piecesEnExamen.map((piece) => piece.libelle).join(', ')}.
+            </p>
+          )}
+          {profil.validation.piecesManquantes.length === 0 && (
             <p>Vos pièces sont validées : la plateforme va valider votre commerce.</p>
           )}
         </div>

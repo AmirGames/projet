@@ -257,11 +257,19 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
                 <p className="text-gray-300 mt-1">
                   Préparez votre boutique : produits, catégories, horaires. Vous pourrez l&apos;ouvrir
                   dès que la plateforme aura validé vos documents.
-                  {orgStatus.validation.piecesManquantes.length > 0 &&
-                    ` Reste à valider : ${orgStatus.validation.piecesManquantes
-                      .map((piece) => piece.libelle)
-                      .join(', ')}.`}
                 </p>
+                {orgStatus.validation.piecesAFournir?.length > 0 && (
+                  <p className="text-gray-300 mt-1">
+                    <strong className="text-blue-200">À fournir :</strong>{' '}
+                    {orgStatus.validation.piecesAFournir.map((piece) => piece.libelle).join(', ')}.
+                  </p>
+                )}
+                {orgStatus.validation.piecesEnExamen?.length > 0 && (
+                  <p className="text-gray-400 mt-1">
+                    En cours d&apos;examen :{' '}
+                    {orgStatus.validation.piecesEnExamen.map((piece) => piece.libelle).join(', ')}.
+                  </p>
+                )}
                 <Link
                   href="/merchant/profil"
                   className="inline-block mt-2 text-blue-300 underline hover:text-blue-200"
