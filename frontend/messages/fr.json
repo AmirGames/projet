@@ -1170,5 +1170,112 @@
     "registering": "Inscription en cours...",
     "cancelButton": "Annuler",
     "redirecting": "Redirection en cours..."
+  },
+  "auth": {
+    "login": {
+      "title": "Se connecter",
+      "email": "Email",
+      "password": "Mot de passe",
+      "submit": "Se connecter",
+      "connecting": "Connexion en cours...",
+      "forgotPassword": "Mot de passe oublié?",
+      "noAccount": "Pas encore de compte?",
+      "signup": "S'inscrire",
+      "resendConfirmation": "Renvoyer l'email de confirmation",
+      "resending": "Envoi...",
+      "errorConnection": "Erreur de connexion"
+    },
+    "signup": {
+      "title": "S'inscrire",
+      "name": "Nom complet",
+      "email": "Email",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "passwordsMismatch": "Les mots de passe ne correspondent pas",
+      "submit": "S'inscrire",
+      "registering": "Inscription en cours...",
+      "haveAccount": "Vous avez déjà un compte?",
+      "login": "Se connecter",
+      "error": "Une erreur est survenue"
+    }
+  },
+  "restaurants": {
+    "title": "Découvrez les restaurants",
+    "search": "Rechercher des restaurants...",
+    "noResults": "Aucun restaurant trouvé",
+    "deliveryFee": "Frais de livraison",
+    "deliveryTime": "Temps de livraison",
+    "min": "min",
+    "closed": "Fermé",
+    "open": "Ouvert",
+    "rating": "Évaluation",
+    "viewMenu": "Voir le menu"
+  },
+  "forgotPassword": {
+    "title": "Mot de passe oublié?",
+    "subtitle": "Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe",
+    "email": "Email",
+    "send": "Envoyer le lien",
+    "sending": "Envoi...",
+    "success": "Vérifiez votre email pour le lien de réinitialisation",
+    "error": "Erreur lors de l'envoi du lien",
+    "backToLogin": "Retour à la connexion"
+  },
+  "resetPassword": {
+    "title": "Réinitialiser votre mot de passe",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "submit": "Réinitialiser",
+    "resetting": "Réinitialisation en cours...",
+    "success": "Mot de passe réinitialisé avec succès",
+    "error": "Erreur lors de la réinitialisation",
+    "passwordsMismatch": "Les mots de passe ne correspondent pas",
+    "backToLogin": "Retour à la connexion"
+  },
+  "emailVerification": {
+    "title": "Vérifiez votre email",
+    "subtitle": "Nous avons envoyé un lien de vérification à votre adresse email",
+    "checking": "Vérification...",
+    "success": "Email vérifié avec succès!",
+    "error": "Échec de la vérification",
+    "resendLink": "Renvoyer le lien",
+    "resending": "Envoi..."
+  },
+  "orderConfirmation": {
+    "title": "Commande confirmée",
+    "subtitle": "Merci pour votre commande!",
+    "orderNumber": "Numéro de commande",
+    "estimatedDelivery": "Livraison estimée",
+    "trackOrder": "Suivre votre commande",
+    "continueShoping": "Continuer vos achats"
+  },
+  "payment": {
+    "title": "Paiement",
+    "subtitle": "Complétez votre paiement",
+    "cardNumber": "Numéro de carte",
+    "expiryDate": "Date d'expiration",
+    "cvc": "CVC",
+    "cardholderName": "Titulaire de la carte",
+    "totalAmount": "Montant total",
+    "pay": "Payer",
+    "paying": "Traitement...",
+    "error": "Paiement échoué",
+    "success": "Paiement réussi"
+  },
+  "trackOrder": {
+    "title": "Suivre votre commande",
+    "status": "Statut",
+    "pending": "En attente",
+    "confirmed": "Confirmée",
+    "preparing": "En préparation",
+    "onTheWay": "En route",
+    "delivered": "Livrée",
+    "cancelled": "Annulée",
+    "orderNumber": "Commande #",
+    "estimatedTime": "Temps estimé",
+    "driver": "Livreur",
+    "call": "Appeler",
+    "location": "Localisation",
+    "notFound": "Commande non trouvée"
   }
 }

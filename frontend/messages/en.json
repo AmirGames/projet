@@ -1170,5 +1170,112 @@
     "registering": "Registering...",
     "cancelButton": "Cancel",
     "redirecting": "Redirecting..."
+  },
+  "auth": {
+    "login": {
+      "title": "Log in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Log in",
+      "connecting": "Connecting...",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "signup": "Sign up",
+      "resendConfirmation": "Resend confirmation email",
+      "resending": "Sending...",
+      "errorConnection": "Connection error"
+    },
+    "signup": {
+      "title": "Sign up",
+      "name": "Full name",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "passwordsMismatch": "Passwords do not match",
+      "submit": "Sign up",
+      "registering": "Registering...",
+      "haveAccount": "Already have an account?",
+      "login": "Log in",
+      "error": "An error occurred"
+    }
+  },
+  "restaurants": {
+    "title": "Discover restaurants",
+    "search": "Search restaurants...",
+    "noResults": "No restaurants found",
+    "deliveryFee": "Delivery fee",
+    "deliveryTime": "Delivery time",
+    "min": "min",
+    "closed": "Closed",
+    "open": "Open",
+    "rating": "Rating",
+    "viewMenu": "View menu"
+  },
+  "forgotPassword": {
+    "title": "Forgot your password?",
+    "subtitle": "Enter your email address and we'll send you a link to reset your password",
+    "email": "Email",
+    "send": "Send reset link",
+    "sending": "Sending...",
+    "success": "Check your email for the reset link",
+    "error": "Error sending reset link",
+    "backToLogin": "Back to login"
+  },
+  "resetPassword": {
+    "title": "Reset your password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "submit": "Reset password",
+    "resetting": "Resetting...",
+    "success": "Password reset successful",
+    "error": "Error resetting password",
+    "passwordsMismatch": "Passwords do not match",
+    "backToLogin": "Back to login"
+  },
+  "emailVerification": {
+    "title": "Verify your email",
+    "subtitle": "We've sent a verification link to your email address",
+    "checking": "Checking...",
+    "success": "Email verified successfully!",
+    "error": "Email verification failed",
+    "resendLink": "Resend verification link",
+    "resending": "Sending..."
+  },
+  "orderConfirmation": {
+    "title": "Order confirmed",
+    "subtitle": "Thank you for your order!",
+    "orderNumber": "Order number",
+    "estimatedDelivery": "Estimated delivery",
+    "trackOrder": "Track your order",
+    "continueShoping": "Continue shopping"
+  },
+  "payment": {
+    "title": "Payment",
+    "subtitle": "Complete your payment",
+    "cardNumber": "Card number",
+    "expiryDate": "Expiry date",
+    "cvc": "CVC",
+    "cardholderName": "Cardholder name",
+    "totalAmount": "Total amount",
+    "pay": "Pay",
+    "paying": "Processing...",
+    "error": "Payment failed",
+    "success": "Payment successful"
+  },
+  "trackOrder": {
+    "title": "Track your order",
+    "status": "Status",
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "preparing": "Preparing",
+    "onTheWay": "On the way",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "orderNumber": "Order #",
+    "estimatedTime": "Estimated time",
+    "driver": "Driver",
+    "call": "Call",
+    "location": "Location",
+    "notFound": "Order not found"
   }
 }

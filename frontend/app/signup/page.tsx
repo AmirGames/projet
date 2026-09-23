@@ -8,9 +8,8 @@ import Link from "next/link";
 import { useTranslations } from 'next-intl';
 
 export default function SignupPage() {
-  const t = useTranslations('common');
-  const router = useRouter();
   const t = useTranslations('auth.signup');
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

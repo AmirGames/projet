@@ -70,7 +70,7 @@ const statusColors: { [key: string]: string } = {
 };
 
 export default function TrackOrderPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('trackOrder');
   const [searchQuery, setSearchQuery] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
   const [delivery, setDelivery] = useState<Delivery | null>(null);

@@ -11,10 +11,9 @@ import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function LoginPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('auth.login');
   const router = useRouter();
   const { refreshAuth } = useAuth();
-  const t = useTranslations('auth.login');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

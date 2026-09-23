@@ -12,7 +12,7 @@ type Etat = 'en-cours' | 'confirme' | 'echec';
 
 /** Confirmation d'adresse : le lien reçu suffit, rien à saisir. */
 function Confirmation() {
-  const t = useTranslations('common');
+  const t = useTranslations('emailVerification');
   const jeton = useSearchParams().get('jeton') || '';
 
   const [etat, setEtat] = useState<Etat>('en-cours');

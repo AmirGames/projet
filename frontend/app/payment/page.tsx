@@ -11,7 +11,7 @@ interface OrderInfo {
 }
 
 export default function PaymentPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('payment');
   const router = useRouter();
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
   const [loading, setLoading] = useState(false);

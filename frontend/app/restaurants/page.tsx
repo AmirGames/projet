@@ -23,7 +23,7 @@ interface Restaurant {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function RestaurantsPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('restaurants');
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
