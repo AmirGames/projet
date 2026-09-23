@@ -5,6 +5,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { emitOrderUpdate } from "../config/socket";
+import { db } from "../services/db";
 
 import { DispatchService } from "../services/dispatch.service";
 
