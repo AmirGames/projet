@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Map as CarteLeaflet, CircleMarker } from 'leaflet';
 import { MapPin, Clock, Truck, AlertCircle } from 'lucide-react';
 import L from 'leaflet';
+import { io, type Socket } from 'socket.io-client';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -62,7 +63,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
   const lineRef = useRef<L.Polyline | null>(null);
   const [currentDelivery, setCurrentDelivery] = useState<DeliveryTracking>(delivery);
   const [error, setError] = useState('');
-  const socketRef = useRef<WebSocket | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   // Initialiser la carte
   useEffect(() => {
@@ -152,18 +153,19 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
-    const ws = new WebSocket(
-      `${process.env.NEXT_PUBLIC_API_URL?.replace('http', 'ws') || 'ws://localhost:3001'}`
-    );
+    // Le serveur parle Socket.IO : un WebSocket brut n'y obtenait jamais de
+    // poignée de main, et la position du livreur ne bougeait pas.
+    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001', {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+    });
 
-    ws.onopen = () => {
-      console.log('WebSocket connecté');
-      ws.send(JSON.stringify({ event: 'join-order', orderId }));
-    };
+    socket.on('connect', () => {
+      socket.emit('join-order', orderId);
+    });
 
-    ws.onmessage = (event) => {
+    socket.on('delivery-update', (data: any) => {
       try {
-        const data = JSON.parse(event.data);
 
         if (data.orderId === orderId) {
           if (data.location) {
@@ -225,16 +227,17 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
       } catch (err) {
         console.error('Erreur WebSocket:', err);
       }
-    };
+    });
 
-    ws.onerror = () => {
+    socket.on('connect_error', () => {
       setError('Erreur de connexion au suivi');
-    };
+    });
 
-    socketRef.current = ws;
+    socketRef.current = socket;
 
     return () => {
-      ws.close();
+      socket.emit('leave-order', orderId);
+      socket.disconnect();
     };
   }, [orderId]);
 
