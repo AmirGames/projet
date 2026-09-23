@@ -1,7 +1,7 @@
 // Attribution automatique des courses : position du livreur, proposition au
 // plus proche, refus, expiration, rémunération.
 
-import {
+import { inscription,
   titre,
   check,
   j,
@@ -23,12 +23,12 @@ const LOIN = { latitude: 45.79, longitude: 4.87 };     // ~4 km
 const TRES_LOIN = { latitude: 45.95, longitude: 5.3 };  // ~40 km, hors rayon
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` })
 );
 const S = plateforme.accessToken;
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 const orgId = commercant.organization.id;

@@ -21,7 +21,7 @@ export default function PaymentPage() {
     if (order) {
       setOrderInfo(JSON.parse(order));
     } else {
-      router.push("/store");
+      router.push("/restaurants");
     }
   }, [router]);
 

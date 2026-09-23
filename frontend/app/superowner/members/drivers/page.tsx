@@ -38,7 +38,11 @@ export default function DriversPage() {
 
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      setDrivers(data.drivers || []);
+      // L'API renvoie les statuts de la base, en majuscules (ACTIVE) ; l'écran
+      // — couleurs, filtre, libellés — les attend en minuscules.
+      setDrivers(
+        (data.drivers || []).map((ligne: any) => ({ ...ligne, status: String(ligne.status || '').toLowerCase() }))
+      );
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -136,7 +140,7 @@ export default function DriversPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('name')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('email')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('vehicleType')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('status')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('statusColumn')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('actions')}</th>
                 </tr>
               </thead>
@@ -149,7 +153,7 @@ export default function DriversPage() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(driver.status)}`}>
                         {getStatusIcon(driver.status)}
-                        {t(`status.${driver.status}`)}
+                        {t.has(`status.${driver.status}`) ? t(`status.${driver.status}`) : driver.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">

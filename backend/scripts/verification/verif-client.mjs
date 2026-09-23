@@ -1,12 +1,12 @@
 // Vérifie l'espace client : historique, suivi de livraison, avis, favoris.
 // Plateforme
 
-import { check, j, uniq, post, get, patch, del, sqlExec, terminer, validerLivreur } from './outils.mjs';
+import { inscription, check, j, uniq, post, get, patch, del, sqlExec, terminer, validerLivreur } from './outils.mjs';
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` })
+  await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` })
 );
-const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
+const m = await j(await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const b = await j(await post('/api/stores', {
   orgId: m.organization.id, name: `Bou ${uniq}`, slug: `bou-${uniq}`,
   address: '1 rue', city: 'Lyon', postalCode: '69001', phone: '0400000000',
@@ -17,7 +17,7 @@ const productId = prod.product.id;
 
 // Le client a un compte utilisateur ET une fiche client créée par sa commande.
 const emailClient = `client-${uniq}@t.fr`;
-const compteClient = await j(await post('/api/auth/signup', { email: emailClient, password: 'Password123!', name: 'Client Test' }));
+const compteClient = await j(await inscription({ email: emailClient, password: 'Password123!', name: 'Client Test' }));
 const cToken = compteClient.accessToken;
 
 const commande = await j(await post('/api/orders', {
@@ -42,9 +42,16 @@ check('boutique rappelée', !!ligne?.store?.name, JSON.stringify(ligne?.store));
 check('articles listés', (ligne?.items || []).length === 1, `n=${ligne?.items?.length}`);
 
 // Un autre client ne doit rien voir.
-const autre = await j(await post('/api/auth/signup', { email: `autre-${uniq}@t.fr`, password: 'Password123!', name: 'Autre' }));
+const autre = await j(await inscription({ email: `autre-${uniq}@t.fr`, password: 'Password123!', name: 'Autre' }));
+// Depuis que l'espace client est ouvert à tout compte, sa fiche naît à la
+// première visite : l'historique répond, vide, plutôt qu'un 404.
 const historiqueAutre = await get('/api/client/me/orders', autre.accessToken);
-check('un compte sans commande obtient 404 explicite', historiqueAutre.status === 404, `status=${historiqueAutre.status}`);
+const historiqueAutreData = await j(historiqueAutre);
+check(
+  'un compte sans commande obtient un historique vide',
+  historiqueAutre.status === 200 && (historiqueAutreData?.data || []).length === 0,
+  `status=${historiqueAutre.status} n=${historiqueAutreData?.data?.length}`
+);
 
 console.log('\n[Suivi de livraison]');
 const sansCourse = await j(await get(`/api/client/deliveries/${orderId}`, cToken));
@@ -92,24 +99,44 @@ const suiviIntrus = await get(`/api/client/deliveries/${orderId}`, autre.accessT
 check('un autre client ne peut pas suivre cette commande', suiviIntrus.status === 404, `status=${suiviIntrus.status}`);
 
 console.log('\n[Dépôt d\'un avis]');
-const avisTropTot = await post('/api/reviews', { orderId, rating: 5, comment: 'Excellent' }, cToken);
+const avisTropTot = await post('/api/reviews', { orderId, productId, rating: 5, comment: 'Excellent' }, cToken);
 check('avis refusé tant que la commande n\'est pas terminée', avisTropTot.status === 400, `status=${avisTropTot.status}`);
 
 await sqlExec(`UPDATE "Order" SET status = 'COMPLETED' WHERE id = '${orderId}'`);
-const avis = await post('/api/reviews', { orderId, rating: 5, comment: 'Excellent, je recommande' }, cToken);
+
+// Un avis porte sur un plat précis de la commande, ou sur le restaurant.
+const sansProduit = await post('/api/reviews', { orderId, rating: 5 }, cToken);
+check('un avis de plat sans plat désigné est refusé', sansProduit.status === 400, `status=${sansProduit.status}`);
+
+const horsCommande = await post('/api/reviews', { orderId, productId: storeId, rating: 5 }, cToken);
+check('un plat absent de la commande ne se note pas', horsCommande.status === 400, `status=${horsCommande.status}`);
+
+const avis = await post('/api/reviews', { orderId, productId, rating: 5, comment: 'Excellent, je recommande' }, cToken);
 const avisData = await j(avis);
-check('avis déposé (404 auparavant)', avis.status === 201, `status=${avis.status} ${JSON.stringify(avisData)}`);
-check('un avis par produit commandé', avisData?.count === 1, `=${avisData?.count}`);
+check('avis sur le plat déposé', avis.status === 201, `status=${avis.status} ${JSON.stringify(avisData)}`);
 
-const doublon = await post('/api/reviews', { orderId, rating: 3 }, cToken);
-check('second avis refusé (409)', doublon.status === 409, `status=${doublon.status}`);
+const doublon = await post('/api/reviews', { orderId, productId, rating: 3 }, cToken);
+check('second avis sur le même plat refusé (409)', doublon.status === 409, `status=${doublon.status}`);
 
-const noteInvalide = await post('/api/reviews', { orderId, rating: 9 }, cToken);
+const avisRestaurant = await post('/api/reviews', { orderId, type: 'STORE', rating: 4, comment: 'Accueil parfait' }, cToken);
+check('avis sur le restaurant déposé', avisRestaurant.status === 201, `status=${avisRestaurant.status}`);
+
+const doublonRestaurant = await post('/api/reviews', { orderId, type: 'STORE', rating: 2 }, cToken);
+check('second avis sur le restaurant refusé (409)', doublonRestaurant.status === 409, `status=${doublonRestaurant.status}`);
+
+// L'avis sur le restaurant ne porte sur aucun plat : ce sont ceux-là que
+// comptent les statistiques du commerce, pas les avis de plats.
+const statsCommerce = await j(await get(`/api/reviews/${storeId}/store/stats`, m.accessToken));
+const statsData = statsCommerce?.data || statsCommerce;
+check('les statistiques du commerce le comptent', statsData?.totalReviews === 1, JSON.stringify(statsCommerce));
+check('avec sa note', statsData?.averageRating === 4, JSON.stringify(statsCommerce));
+
+const noteInvalide = await post('/api/reviews', { orderId, productId, rating: 9 }, cToken);
 check('note hors barème refusée', noteInvalide.status === 400, `status=${noteInvalide.status}`);
 
 const avisCommercant = await j(await get(`/api/reviews/${storeId}`, m.accessToken));
 const listeAvis = avisCommercant?.data || avisCommercant?.reviews || avisCommercant;
-check('le commerçant voit l\'avis', Array.isArray(listeAvis) ? listeAvis.length === 1 : (listeAvis?.length ?? 0) === 1, JSON.stringify(avisCommercant)?.slice(0, 200));
+check('le commerçant voit les deux avis', Array.isArray(listeAvis) && listeAvis.length === 2, JSON.stringify(avisCommercant)?.slice(0, 200));
 
 console.log('\n[Favoris]');
 const ajout = await post('/api/client/me/favorites', { storeId }, cToken);

@@ -1,6 +1,6 @@
 // La plateforme ouvre une fiche boutique, et ne corrige que ce qui la regarde.
 
-import {
+import { inscription,
   titre,
   check,
   j,
@@ -17,12 +17,12 @@ import { ouvrirApiGeocodante } from './api-geocodante.mjs';
 const MDP = 'Password123!';
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
 );
 const TP = plateforme.accessToken;
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 
@@ -56,7 +56,7 @@ await post('/api/products', { storeId, name: `Plat ${uniq}`, price: 15, status: 
  * par organisation.
  */
 const voisin = await j(
-  await post('/api/auth/signup', { email: `v-${uniq}@t.fr`, password: MDP, name: `V ${uniq}` })
+  await inscription({ email: `v-${uniq}@t.fr`, password: MDP, name: `V ${uniq}` })
 );
 
 const autre = await j(
@@ -255,7 +255,7 @@ check('il lit toujours sa fiche', parLui?.store?.id === storeId || parLui?.id ==
 
 titre('Et il ne touche pas à celle d’un autre');
 const etranger = await j(
-  await post('/api/auth/signup', { email: `x-${uniq}@t.fr`, password: MDP, name: `X ${uniq}` })
+  await inscription({ email: `x-${uniq}@t.fr`, password: MDP, name: `X ${uniq}` })
 );
 const intrusion = await patch(`/api/superowner/stores/${autreId}`, { phone: '0600000000' }, etranger.accessToken);
 check('la correction lui est refusée', intrusion.status === 403, `statut ${intrusion.status}`);

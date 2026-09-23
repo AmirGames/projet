@@ -1,17 +1,17 @@
 // Ce que porte une commande : catégorie, déclinaison, code promo, moyen de
 // paiement — et qui les calcule.
 
-import { titre, check, j, uniq, post, get, patch, terminer, sqlScalaire } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, patch, terminer, sqlScalaire } from './outils.mjs';
 
 const MDP = 'Password123!';
 
 // Le service met les codes promo en majuscules : autant le faire ici.
 const CODE = `REMISE${uniq}`.toUpperCase();
 
-await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` });
+await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` });
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 
@@ -152,7 +152,7 @@ check('le compteur d’utilisations avance', usages === '1', usages);
 
 titre('Un code ou un moyen de paiement qui n’est pas le sien est refusé');
 const autre = await j(
-  await post('/api/auth/signup', { email: `m2-${uniq}@t.fr`, password: MDP, name: `M2 ${uniq}` })
+  await inscription({ email: `m2-${uniq}@t.fr`, password: MDP, name: `M2 ${uniq}` })
 );
 const boutique2 = await j(
   await post(

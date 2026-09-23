@@ -1378,7 +1378,8 @@ model DriverRating {
 model Review {
   id          String  @id @default(cuid())
   storeId     String
-  productId   String
+  // Absent pour un avis sur le commerce lui-même, qui ne porte sur aucun plat.
+  productId   String?
   customerId  String?
 
   rating      Int     @default(5) // 1-5 stars
@@ -1389,7 +1390,7 @@ model Review {
 
   // Relations
   store       Store   @relation("ReviewToStore", fields: [storeId], references: [id], onDelete: Cascade)
-  product     Product @relation("ReviewToProduct", fields: [productId], references: [id], onDelete: Cascade)
+  product     Product? @relation("ReviewToProduct", fields: [productId], references: [id], onDelete: Cascade)
   customer    Customer? @relation("ReviewToCustomer", fields: [customerId], references: [id], onDelete: SetNull)
 
   createdAt   DateTime @default(now())

@@ -262,10 +262,20 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 39 | **1281** |
-| **Navigateur** (`frontend/scripts/`) | 24 | **607** |
+| **API** (`backend/scripts/verification/`) | 42 | **1382** |
+| **Navigateur** (`frontend/scripts/`) | 27 | **701** |
 
-Tout est vert au dernier passage complet.
+Tout est vert au dernier passage complet (23 septembre).
+
+`verif-domaines` n'a pas tourné : il demande un site construit avec les
+trois domaines.
+
+Depuis la refonte d'identité, `/auth/signup` ne crée plus d'organisation.
+Les suites s'inscrivent par `inscription()` (API, `outils.mjs`) et
+`inscriptionVia()` (navigateur, `scripts/inscription.mjs`), qui ajoutent
+l'organisation par `POST /api/organizations` ; après la connexion, un
+commerçant passe par l'écran de choix d'espace
+(`entrerEspaceCommercant()`, `scripts/connexion.mjs`).
 
 ### Lancer
 

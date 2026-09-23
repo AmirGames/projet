@@ -12,6 +12,8 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
+import { entrerEspaceCommercant } from './connexion.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -51,14 +53,14 @@ const appeler = async (chemin, options = {}) => {
 
 // Le premier compte inscrit devient la plateforme : celui qu'on suit doit être
 // un commerçant ordinaire.
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `Plateforme ${uniq}` },
 });
 
 const email = `s-${uniq}@t.fr`;
 
-const compte = await appeler('/api/auth/signup', {
+const compte = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email, password: MDP, name: `Session ${uniq}` },
 });
@@ -87,7 +89,7 @@ await page.goto(`${SITE}/login`);
 await page.fill('input[type="email"]', email);
 await page.fill('input[type="password"]', MDP);
 await page.click('button[type="submit"]');
-await page.waitForURL('**/merchant', { timeout: 15000 });
+await entrerEspaceCommercant(page);
 await page.waitForTimeout(1500);
 
 const jeton = await page.evaluate(() => localStorage.getItem('accessToken'));
@@ -142,7 +144,7 @@ titre('Il peut se reconnecter');
 await page.fill('input[type="email"]', email);
 await page.fill('input[type="password"]', MDP);
 await page.click('button[type="submit"]');
-await page.waitForURL('**/merchant**', { timeout: 15000 });
+await entrerEspaceCommercant(page);
 check('la reconnexion aboutit', page.url().includes('/merchant'), page.url());
 
 titre('Rien n’a cassé en chemin');

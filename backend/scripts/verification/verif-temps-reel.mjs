@@ -1,10 +1,10 @@
 // Vérifie la poussée des notifications en direct et la création sans SKU.
 
 import { io } from 'socket.io-client';
-import { titre, check, j, uniq, post, terminer, API } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, terminer, API } from './outils.mjs';
 
-const sup = await j(await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
-const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
+const sup = await j(await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
+const m = await j(await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const b = await j(await post('/api/stores', {
   orgId: m.organization.id, name: `Bou ${uniq}`, slug: `bou-${uniq}`,
   address: '1 rue', city: 'Lyon', postalCode: '69001', phone: '0400000000',

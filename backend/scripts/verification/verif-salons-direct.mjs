@@ -3,7 +3,7 @@
 
 import { io } from 'socket.io-client';
 
-import { titre, check, j, uniq, post, get, patch, terminer, API } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, patch, terminer, API } from './outils.mjs';
 
 /** Ouvre une connexion, avec ou sans compte. */
 function connecter(jeton) {
@@ -33,10 +33,10 @@ function attendre(socket, evenement, delaiMs = 5000) {
 
 // ===== Le décor =====
 
-await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
+await inscription({ email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 
@@ -65,7 +65,7 @@ const produit = await j(
 const productId = produit.product?.id || produit.id;
 
 const client = await j(
-  await post('/api/auth/signup', { email: `c-${uniq}@t.fr`, password: 'Password123!', name: `C ${uniq}` })
+  await inscription({ email: `c-${uniq}@t.fr`, password: 'Password123!', name: `C ${uniq}` })
 );
 
 const commande = await j(
@@ -111,7 +111,7 @@ anonyme.emit('join-store', storeId);
 await new Promise((r) => setTimeout(r, 300));
 
 const attenteEpuise = attendre(anonyme, 'produit-disponibilite');
-await patch(`/api/products/${productId}/availability`, { isAvailable: false }, T);
+await patch(`/api/products/${productId}/availability`, { isAvailable: false, storeId }, T);
 const epuise = await attenteEpuise;
 
 check('le visiteur est prévenu sans recharger', !!epuise, 'aucun événement reçu');
@@ -120,7 +120,7 @@ check('le nom est transmis', epuise?.name === 'Margherita', epuise?.name);
 check('l’indisponibilité est annoncée', epuise?.isAvailable === false, `${epuise?.isAvailable}`);
 
 const attenteRetour = attendre(anonyme, 'produit-disponibilite');
-await patch(`/api/products/${productId}/availability`, { isAvailable: true }, T);
+await patch(`/api/products/${productId}/availability`, { isAvailable: true, storeId }, T);
 const retour = await attenteRetour;
 
 check('le retour en disponible est poussé aussi', retour?.isAvailable === true, JSON.stringify(retour));
@@ -147,7 +147,7 @@ autreSocket.emit('join-store', autre.store?.id || autre.id);
 await new Promise((r) => setTimeout(r, 300));
 
 const silence = attendre(autreSocket, 'produit-disponibilite', 2500);
-await patch(`/api/products/${productId}/availability`, { isAvailable: false }, T);
+await patch(`/api/products/${productId}/availability`, { isAvailable: false, storeId }, T);
 check('le salon d’une autre boutique reste muet', (await silence) === null, 'événement reçu à tort');
 autreSocket.disconnect();
 
@@ -165,7 +165,7 @@ check(
 );
 
 const intrus = await j(
-  await post('/api/auth/signup', { email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
+  await inscription({ email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
 );
 const socketIntrus = await connecter(intrus.accessToken);
 const refusIntrus = attendre(socketIntrus, 'acces-refuse', 2500);

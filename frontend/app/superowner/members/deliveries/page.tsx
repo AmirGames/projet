@@ -38,7 +38,11 @@ export default function DeliveriesPage() {
 
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      setDeliveries(data.deliveries || []);
+      // L'API renvoie les statuts de la base, en majuscules (ACTIVE) ; l'écran
+      // — couleurs, filtre, libellés — les attend en minuscules.
+      setDeliveries(
+        (data.deliveries || []).map((ligne: any) => ({ ...ligne, status: String(ligne.status || '').toLowerCase() }))
+      );
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -136,7 +140,7 @@ export default function DeliveriesPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('name')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('email')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('companyName')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('status')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('statusColumn')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('actions')}</th>
                 </tr>
               </thead>
@@ -149,7 +153,7 @@ export default function DeliveriesPage() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(delivery.status)}`}>
                         {getStatusIcon(delivery.status)}
-                        {t(`status.${delivery.status}`)}
+                        {t.has(`status.${delivery.status}`) ? t(`status.${delivery.status}`) : delivery.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">

@@ -183,7 +183,8 @@ export class ReviewService {
       const reviews = await db.review.findMany({
         where: {
           storeId,
-          productId: storeId,
+          // Les avis sur le commerce lui-même, sans plat.
+          productId: null,
           status: "APPROVED",
         },
       });

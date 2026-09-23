@@ -2,11 +2,11 @@
 // Passer par un fichier évite que les guillemets soient mangés par les
 // couches de shell imbriquées (su -c).
 
-import { check, j, uniq, post, get, sqlScalaire, sqlExec, terminer } from './outils.mjs';
+import { inscription, check, j, uniq, post, get, sqlScalaire, sqlExec, terminer } from './outils.mjs';
 
-const sup = await j(await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
+const sup = await j(await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const token = sup?.accessToken;
-const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
+const m = await j(await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const orgId = m?.organization?.id;
 const mToken = m?.accessToken;
 

@@ -4,17 +4,17 @@
 // adressée à l'administrateur qui l'écrivait. Le public visé était enregistré à
 // côté, et personne ne le lisait. L'écran, lui, annonçait « Annonce diffusée ».
 
-import { titre, check, j, uniq, post, get, terminer, sqlScalaire } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, terminer, sqlScalaire } from './outils.mjs';
 
 const MDP = 'Password123!';
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
 );
 const TP = plateforme.accessToken;
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 

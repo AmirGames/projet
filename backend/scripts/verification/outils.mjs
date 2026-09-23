@@ -118,10 +118,57 @@ export async function fermerBase() {
 
 // ===== Raccourcis métier =====
 
+let numeroOrganisation = 0;
+
+/**
+ * Inscription telle que les vérifications ont été écrites : un compte, et une
+ * organisation sans boutique dont il est administrateur.
+ *
+ * Avant la refonte d'identité, /auth/signup créait lui-même cette
+ * organisation ; il ne crée plus que le compte et sa fiche client, et le
+ * produit passe ensuite par /auth/me/become-merchant — qui ouvre aussi une
+ * boutique. Les suites créent leurs boutiques elles-mêmes, avec les
+ * coordonnées, horaires et formules qu'elles vérifient : une boutique
+ * imposée fausserait leurs comptes et mangerait le quota de la formule.
+ *
+ * Les deux passent par la vraie API : /auth/signup, puis /organizations, qui
+ * crée l'organisation au nom de l'appelant exactement comme le faisait
+ * l'ancienne inscription. La réponse garde le statut et le corps de
+ * l'inscription, augmentés de `organization` : `.status` et `j()` s'en
+ * servent comme avant.
+ */
+export async function inscription(corps) {
+  const reponse = await post("/api/auth/signup", corps);
+  const donnees = await j(reponse);
+
+  if (!reponse.ok || !donnees?.accessToken) {
+    return new Response(JSON.stringify(donnees), { status: reponse.status });
+  }
+
+  const nom = corps.name?.length >= 2 ? corps.name : `Organisation ${uniq}`;
+  const creation = await post(
+    "/api/organizations",
+    { name: nom, slug: `org-${uniq}-${++numeroOrganisation}` },
+    donnees.accessToken
+  );
+  const org = (await j(creation))?.org;
+
+  if (!org?.id) {
+    throw new Error(`Organisation non créée pour ${corps.email} : statut ${creation.status}`);
+  }
+
+  const corpsAugmente = {
+    ...donnees,
+    organization: { id: org.id, name: org.name, slug: org.slug },
+  };
+
+  return new Response(JSON.stringify(corpsAugmente), { status: reponse.status });
+}
+
 /** Crée un compte et renvoie sa réponse d'inscription complète. */
 export async function inscrire(prefixe) {
   return j(
-    await post("/api/auth/signup", {
+    await inscription({
       email: `${prefixe}-${uniq}@test.fr`,
       password: "Password123!",
       name: `${prefixe} ${uniq}`,

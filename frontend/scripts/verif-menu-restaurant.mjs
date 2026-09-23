@@ -11,6 +11,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -49,12 +50,12 @@ const slug = `pizzeria-${uniq}`;
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` },
 });
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` },
 });
@@ -218,7 +219,7 @@ await page.waitForTimeout(800);
 await appeler(`/api/products/${margherita}/availability`, {
   method: 'PATCH',
   jeton: T,
-  corps: { isAvailable: false },
+  corps: { isAvailable: false, storeId },
 });
 
 // Aucun rechargement : seul le direct peut mettre la page à jour.
@@ -240,7 +241,7 @@ titre('Retour en disponible, en direct');
 await appeler(`/api/products/${margherita}/availability`, {
   method: 'PATCH',
   jeton: T,
-  corps: { isAvailable: true },
+  corps: { isAvailable: true, storeId },
 });
 await page.waitForTimeout(3000);
 
@@ -254,7 +255,7 @@ titre('Un plat passé en épuisé');
 await appeler(`/api/products/${margherita}/availability`, {
   method: 'PATCH',
   jeton: T,
-  corps: { isAvailable: false },
+  corps: { isAvailable: false, storeId },
 });
 
 await page.reload();

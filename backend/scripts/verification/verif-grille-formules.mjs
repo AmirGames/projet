@@ -1,7 +1,7 @@
 // La grille tarifaire : réglable par la plateforme, visible du commerçant,
 // et réellement appliquée au quota de boutiques.
 
-import {
+import { inscription,
   titre,
   check,
   j,
@@ -16,7 +16,7 @@ import {
 // ===== Le décor =====
 
 const plateforme = await j(
-  await post('/api/auth/signup', {
+  await inscription({
     email: `p-${uniq}@t.fr`,
     password: 'Password123!',
     name: `P ${uniq}`,
@@ -25,7 +25,7 @@ const plateforme = await j(
 const TP = plateforme.accessToken;
 
 const commercant = await j(
-  await post('/api/auth/signup', {
+  await inscription({
     email: `m-${uniq}@t.fr`,
     password: 'Password123!',
     name: `M ${uniq}`,
@@ -189,7 +189,7 @@ check('aucune demande en cours', vue?.data?.demandeEnCours === null, JSON.string
 
 titre('Un autre commerçant ne voit pas la sienne');
 const intrus = await j(
-  await post('/api/auth/signup', {
+  await inscription({
     email: `x-${uniq}@t.fr`,
     password: 'Password123!',
     name: `X ${uniq}`,

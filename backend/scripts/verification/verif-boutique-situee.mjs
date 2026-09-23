@@ -4,7 +4,7 @@
 // fournisseur réel est sur Internet, et la vérification porte sur ce que fait
 // la plateforme d'une adresse, pas sur la disponibilité d'un tiers.
 
-import { titre, check, uniq, terminer, sqlScalaire } from './outils.mjs';
+import { inscription, titre, check, uniq, terminer, sqlScalaire } from './outils.mjs';
 import { ouvrirApiGeocodante } from './api-geocodante.mjs';
 
 const MDP = 'Password123!';
@@ -21,12 +21,12 @@ const j = async (reponse) => {
 };
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
 );
 const TP = plateforme.accessToken;
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 
@@ -106,7 +106,7 @@ check(
 
 titre('Des coordonnées fournies sont respectées');
 const voisin = await j(
-  await post('/api/auth/signup', { email: `v-${uniq}@t.fr`, password: MDP, name: `V ${uniq}` })
+  await inscription({ email: `v-${uniq}@t.fr`, password: MDP, name: `V ${uniq}` })
 );
 
 const precise = await j(
@@ -139,7 +139,7 @@ titre('Une adresse qu’on ne sait pas situer n’empêche pas d’ouvrir');
 api.adresses.tomberEnPanne();
 
 const tiers = await j(
-  await post('/api/auth/signup', { email: `t-${uniq}@t.fr`, password: MDP, name: `T ${uniq}` })
+  await inscription({ email: `t-${uniq}@t.fr`, password: MDP, name: `T ${uniq}` })
 );
 
 const enPanne = await post(

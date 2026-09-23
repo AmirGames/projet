@@ -607,10 +607,10 @@
     "open": "Ouvrir",
     "preview": "Aperçu",
     "downloadDocument": "Télécharger",
-    "approveDocument": "Approuver {name}",
+    "approveDocument": "Valider {name}",
     "rejectDocument": "Refuser {name}",
     "expiresOn": "Expire le",
-    "piecesLabel": "pièce",
+    "piecesLabel": "{count, plural, one {pièce validée} other {pièces validées}}",
     "deliveries_plural": "courses",
     "delivery": "course",
     "earned": "gagnés",
@@ -688,7 +688,7 @@
   },
   "superownerWebhooks": {
     "title": "Webhooks",
-    "subtitle": "Prévenir un système extérieur de ce qui se passe ici",
+    "subtitle": "Chaque événement est envoyé en POST, signé avec le secret de l’abonnement. Un envoi raté est relancé trois fois — après une minute, cinq, puis trente.",
     "create": "Créer un webhook",
     "edit": "Modifier",
     "delete": "Supprimer",
@@ -712,11 +712,11 @@
     "new_webhook": "Nouvel abonnement",
     "url": "URL",
     "events": "Événements ({count} choisi{plural})",
-    "create_button": "Créer l'abonnement",
+    "create_button": "Créer l’abonnement",
     "creating": "Création…",
     "no_events": "Choisissez au moins un événement",
     "failed": "Coupé",
-    "test_send": "Envoi d'essai",
+    "test_send": "Envoi d’essai",
     "history": "Derniers envois",
     "pause": "Mettre en pause",
     "resume": "Réactiver",
@@ -747,8 +747,8 @@
     "secret_explanation": "Il sert à vérifier l'en-tête X-Webhook-Signature de chaque envoi vers {url}. Sans lui, votre serveur ne peut pas s'assurer que l'envoi vient bien de la plateforme.",
     "secret_warning": "Copiez ce secret maintenant : il ne sera plus jamais affiché.",
     "testError": "❌ Essai impossible",
-    "testSending": "Envoi d'essai en cours…",
-    "test_send_label": "Envoi d'essai vers {url}"
+    "testSending": "Envoi d’essai en cours…",
+    "test_send_label": "Envoi d’essai vers {url}"
   },
   "superownerStoreDetail": {
     "title": "Détail de la boutique",
@@ -768,7 +768,7 @@
     "orderCount": "{count} commande(s)",
     "revenue": "Chiffre d'affaires",
     "settings": "Paramètres",
-    "edit": "Modifier",
+    "edit": "Corriger",
     "delete": "Supprimer",
     "loading": "Chargement…",
     "error": "Erreur de chargement",
@@ -794,8 +794,8 @@
     "closeStoreTitle": "Fermer la boutique « {name} »",
     "closeStoreExplanation": "Une boutique fermée n'accepte plus de commande. Elle peut être rouverte ultérieurement.",
     "reopenStore": "Rouvrir la boutique",
-    "closed": "Fermée",
-    "active": "Active",
+    "closed": "fermée",
+    "active": "ouverte",
     "closureReason": "Raison de la fermeture",
     "closureReasonLabel": "Pourquoi cette boutique est-elle fermée ?",
     "confirmClose": "Confirmer la fermeture",
@@ -805,7 +805,7 @@
     "updateFailed": "Impossible de mettre à jour la boutique",
     "unknownError": "Une erreur inconnue s'est produite",
     "noChanges": "Aucune modification à enregistrer",
-    "plan": "Plan"
+    "plan": "formule"
   },
   "superownerNotifications": {
     "title": "Notifications & Alertes",
@@ -1098,6 +1098,7 @@
       "closed": "Fermé",
       "inactive": "Inactif"
     },
+    "statusColumn": "Statut",
     "actions": "Actions",
     "view": "Voir détails",
     "edit": "Modifier",
@@ -1410,7 +1411,8 @@
     "previous": "Précédent",
     "next": "Suivant",
     "backToDashboard": "← Retour au tableau de bord",
-    "description": "Gérez et modérez les avis clients"
+    "description": "Gérez et modérez les avis clients",
+    "storeReview": "Avis sur le commerce"
   },
   "clientRestaurant": {
     "notFound": "Ce commerce est introuvable",
@@ -1671,7 +1673,8 @@
   "merchantdeliveryzones": {
     "create": "Créer",
     "saveError": "Enregistrement refusé",
-    "serverError": "Le serveur ne répond pas"
+    "serverError": "Le serveur ne répond pas",
+    "zonesExplanation": "Vos zones peuvent être des anneaux autour de la boutique ou des formes dessinées sur la carte. Quand plusieurs zones couvrent l’adresse d’un client, c’est la plus petite qui s’applique, avec ses frais et son minimum de commande. En dehors de toutes vos zones, la livraison est refusée."
   },
   "merchantInvoices": {
     "actionDownload": "Télécharger",

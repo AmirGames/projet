@@ -12,6 +12,7 @@
 
 import { chromium } from 'playwright';
 import { validerLivreur } from './outils-livreur.mjs';
+import { inscriptionVia } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -51,12 +52,12 @@ const uniq = Date.now().toString(36);
 
 // ===== Le décor, monté par l'API =====
 
-const plateforme = await appeler('/api/auth/signup', {
+const plateforme = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` },
 });
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` },
 });
@@ -199,7 +200,7 @@ check('l\'adresse de livraison est affichée', avecCourse.includes('20 rue de la
 check('une rémunération est affichée', /\d+[,.]\d{2}\s*€/.test(avecCourse), avecCourse.slice(0, 400));
 check('un compte à rebours tourne', /\d+s/.test(avecCourse), avecCourse.slice(0, 400));
 
-const accepter = page.getByRole('button', { name: 'Accepter', exact: true });
+const accepter = page.getByRole('button', { name: /^(✓ )?Accepter$/ });
 const refuser = page.getByRole('button', { name: 'Refuser', exact: true });
 check(
   'les deux réponses sont proposées',
@@ -217,7 +218,7 @@ check('la course est attribuée au livreur', !!acceptee, JSON.stringify(course.d
 
 check(
   'la proposition disparaît de l\'écran',
-  (await page.getByRole('button', { name: 'Accepter', exact: true }).count()) === 0
+  (await page.getByRole('button', { name: /^(✓ )?Accepter$/ }).count()) === 0
 );
 
 // La course acceptée ne doit plus traîner dans la liste des courses libres.

@@ -10,6 +10,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -54,12 +55,12 @@ const aKm = (km) => ({
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` },
 });
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` },
 });
@@ -123,7 +124,7 @@ await page.waitForTimeout(800);
 const formulaire = await texte();
 check(
   'le fonctionnement des anneaux est expliqué',
-  /anneaux autour de votre boutique/.test(formulaire),
+  /anneaux autour de la boutique/.test(formulaire) && /la plus petite qui s’applique/.test(formulaire),
   formulaire.slice(0, 900)
 );
 

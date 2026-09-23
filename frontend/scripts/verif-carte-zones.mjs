@@ -24,6 +24,8 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
+import { entrerEspaceCommercant } from './connexion.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -68,7 +70,7 @@ const boutiqueVue = async (storeId, jeton) => {
 
 const emailCommercant = `m-${uniq}@t.fr`;
 
-const plateforme = await appeler('/api/auth/signup', {
+const plateforme = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `Plateforme ${uniq}` },
 });
@@ -79,7 +81,7 @@ if (!plateforme.donnees?.accessToken) {
   process.exit(1);
 }
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: emailCommercant, password: MDP, name: `Commerce ${uniq}` },
 });
@@ -125,7 +127,7 @@ await page.goto(`${SITE}/login`);
 await page.fill('input[type="email"]', emailCommercant);
 await page.fill('input[type="password"]', MDP);
 await page.click('button[type="submit"]');
-await page.waitForURL('**/merchant', { timeout: 15000 });
+await entrerEspaceCommercant(page);
 await page.waitForTimeout(2000);
 
 await page.goto(`${SITE}/merchant/${orgId}/delivery-zones`);
@@ -234,9 +236,22 @@ await page.waitForTimeout(3000);
 const deuxAnneaux = await page.locator('.leaflet-overlay-pane path').count();
 check('les deux anneaux sont dessinés', deuxAnneaux >= 2, `n=${deuxAnneaux}`);
 
-titre('Il déplace sa boutique, et les anneaux la suivent');
+titre('Une fois située, la boutique ne bouge plus');
+// Le point se pose une fois, quand l'adresse n'a pas pu être située ; ensuite
+// il suit l'adresse du commerce. Le déplacer changerait en silence la portée
+// de toutes les zones : cela passe par l'adresse, dans les réglages.
 const point = page.locator('.leaflet-marker-icon[title*="boutique"]');
-check('le point de la boutique est déplaçable', (await point.count()) === 1, `n=${await point.count()}`);
+check('le point de la boutique est affiché', (await point.count()) === 1, `n=${await point.count()}`);
+check(
+  'il n’est plus déplaçable',
+  !(await point.evaluate((el) => el.classList.contains('leaflet-marker-draggable'))),
+  'encore déplaçable'
+);
+check(
+  'la page dit que la position suit l’adresse',
+  /Position fixée d'après l'adresse|Position fixée d’après l’adresse/.test(await page.locator('body').innerText()),
+  'message absent'
+);
 
 const avantDeplacement = await boutiqueVue(storeId, T);
 
@@ -245,6 +260,18 @@ const avantDeplacement = await boutiqueVue(storeId, T);
 await carte.scrollIntoViewIfNeeded();
 await page.waitForTimeout(500);
 const positionPoint = await point.boundingBox();
+
+// Un point fixe qu'on tire fait défiler la carte entière : il bouge à l'écran
+// avec elle. Ce qui compte, c'est sa place sur la carte — mesurée par
+// rapport au calque des tuiles, qui défile avec lui.
+const placeSurLaCarte = () =>
+  point.evaluate((el) => {
+    const calque = el.closest('.leaflet-map-pane').querySelector('.leaflet-tile-pane, .leaflet-overlay-pane');
+    const a = el.getBoundingClientRect();
+    const b = calque.getBoundingClientRect();
+    return { x: Math.round(a.left - b.left), y: Math.round(a.top - b.top) };
+  });
+const placeAvant = await placeSurLaCarte();
 
 await page.mouse.move(
   positionPoint.x + positionPoint.width / 2,
@@ -256,17 +283,24 @@ await page.mouse.move(positionPoint.x + 80, positionPoint.y - 80, { steps: 10 })
 await page.mouse.up();
 await page.waitForTimeout(2500);
 
+const placeApres = await placeSurLaCarte();
+check(
+  'le glisser ne le déplace pas sur la carte',
+  Math.abs(placeApres.x - placeAvant.x) < 2 && Math.abs(placeApres.y - placeAvant.y) < 2,
+  `${placeAvant.x},${placeAvant.y} → ${placeApres.x},${placeApres.y}`
+);
+
 const apresDeplacement = await boutiqueVue(storeId, T);
 check(
-  'la nouvelle position part au serveur',
-  Number(apresDeplacement?.latitude) !== Number(avantDeplacement?.latitude) ||
-    Number(apresDeplacement?.longitude) !== Number(avantDeplacement?.longitude),
+  'ni en base',
+  Number(apresDeplacement?.latitude) === Number(avantDeplacement?.latitude) &&
+    Number(apresDeplacement?.longitude) === Number(avantDeplacement?.longitude),
   `${avantDeplacement?.latitude},${avantDeplacement?.longitude} → ${apresDeplacement?.latitude},${apresDeplacement?.longitude}`
 );
 
 titre('La boutique du voisin reste hors de portée');
 // La carte écrit dans la boutique : le cloisonnement doit tenir là aussi.
-const voisin = await appeler('/api/auth/signup', {
+const voisin = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `v-${uniq}@t.fr`, password: MDP, name: `Voisin ${uniq}` },
 });

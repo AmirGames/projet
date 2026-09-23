@@ -610,7 +610,7 @@
     "approveDocument": "Approve {name}",
     "rejectDocument": "Reject {name}",
     "expiresOn": "Expires",
-    "piecesLabel": "document",
+    "piecesLabel": "{count, plural, one {document validated} other {documents validated}}",
     "deliveries_plural": "deliveries",
     "delivery": "delivery",
     "earned": "earned",
@@ -688,7 +688,7 @@
   },
   "superownerWebhooks": {
     "title": "Webhooks",
-    "subtitle": "Notify an external system of what happens here",
+    "subtitle": "Each event is sent as a POST, signed with the subscription secret. A failed delivery is retried three times — after one minute, five, then thirty.",
     "create": "Create Webhook",
     "edit": "Edit",
     "delete": "Delete",
@@ -768,7 +768,7 @@
     "orderCount": "{count} order(s)",
     "revenue": "Revenue",
     "settings": "Settings",
-    "edit": "Edit",
+    "edit": "Correct",
     "delete": "Delete",
     "loading": "Loading…",
     "error": "Loading error",
@@ -794,8 +794,8 @@
     "closeStoreTitle": "Close store « {name} »",
     "closeStoreExplanation": "A closed store no longer accepts orders. It can be reopened later.",
     "reopenStore": "Reopen store",
-    "closed": "Closed",
-    "active": "Active",
+    "closed": "closed",
+    "active": "open",
     "closureReason": "Reason for closure",
     "closureReasonLabel": "Why is this store closed?",
     "confirmClose": "Confirm closure",
@@ -805,7 +805,7 @@
     "updateFailed": "Unable to update store",
     "unknownError": "An unknown error occurred",
     "noChanges": "No changes to save",
-    "plan": "Plan"
+    "plan": "plan"
   },
   "superownerNotifications": {
     "title": "Notifications & Alerts",
@@ -1098,6 +1098,7 @@
       "closed": "Closed",
       "inactive": "Inactive"
     },
+    "statusColumn": "Status",
     "actions": "Actions",
     "view": "View details",
     "edit": "Edit",
@@ -1410,7 +1411,8 @@
     "previous": "Previous",
     "next": "Next",
     "backToDashboard": "← Back to dashboard",
-    "description": "Manage and moderate customer reviews"
+    "description": "Manage and moderate customer reviews",
+    "storeReview": "Review of the shop"
   },
   "clientRestaurant": {
     "notFound": "This restaurant could not be found",
@@ -1671,7 +1673,8 @@
   "merchantdeliveryzones": {
     "create": "Create",
     "saveError": "Save rejected",
-    "serverError": "The server is not responding"
+    "serverError": "The server is not responding",
+    "zonesExplanation": "Your zones can be rings around the shop or shapes drawn on the map. When several zones cover a customer’s address, the smallest one applies, with its fees and minimum order. Outside all your zones, delivery is refused."
   },
   "merchantInvoices": {
     "actionDownload": "Download",

@@ -280,7 +280,8 @@ export default function LivreursPage() {
                         {livreur.vehiclePlate ? ` · ${livreur.vehiclePlate}` : ''}
                       </span>
                       <span>
-                        {livreur.piecesValidees}/{livreur.piecesAttendues} {t('piecesLabel')}
+                        {/* « 0/4 pièces validées » : l'accord suit le nombre attendu. */}
+                        {livreur.piecesValidees}/{livreur.piecesAttendues} {t('piecesLabel', { count: livreur.piecesAttendues })}
                         {livreur.piecesAttendues > 1 ? 's' : ''}
                       </span>
                       <span>

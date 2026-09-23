@@ -13,6 +13,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -53,7 +54,7 @@ const appeler = async (chemin, options = {}) => {
 const emailPlateforme = `p-${uniq}@t.fr`;
 const emailLivreur = `livreur-${uniq}@t.fr`;
 
-const plateforme = await appeler('/api/auth/signup', {
+const plateforme = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: emailPlateforme, password: MDP, name: `Plateforme ${uniq}` },
 });
@@ -115,6 +116,8 @@ check('aucune n’est encore déposée', /Pas encore déposée/.test(espace), es
 
 titre('Il dépose une pièce depuis son espace');
 await page.selectOption('#piece-type', 'license');
+// Le dépôt s'ouvre sur l'envoi d'un fichier ; le lien est l'autre mode.
+await page.click('button:has-text("Lien URL")');
 await page.fill('#piece-lien', 'https://exemple.fr/permis.pdf');
 await page.click('button:has-text("Déposer la pièce")');
 await page.waitForTimeout(2500);
@@ -130,11 +133,12 @@ check(
 );
 
 titre('Il ne peut pas se mettre en ligne');
-// Le bouton existe : c'est le serveur qui refuse, et l'écran doit le dire
-// plutôt que de faire semblant de basculer.
+// Le bouton existe. Tant que le dossier n'est pas validé, l'écran le grise ;
+// s'il est actif, c'est le serveur qui refuse. Dans les deux cas l'écran
+// doit le dire plutôt que de faire semblant de basculer.
 const bascule = page.locator('button', { hasText: 'Hors ligne' }).first();
 
-if (await bascule.count()) {
+if ((await bascule.count()) && (await bascule.isEnabled())) {
   await bascule.click();
   await page.waitForTimeout(2000);
 }
@@ -146,7 +150,8 @@ check('et en attente', profil.donnees?.data?.status === 'PENDING', profil.donnee
 // Le bouton revenait en arrière sans un mot : le livreur cliquait et croyait
 // à un bug.
 const refus = await page.locator('body').innerText();
-check('le refus lui est expliqué', /dossier est en cours de validation/i.test(refus), refus.slice(0, 600));
+// Refus du serveur si le bouton était actif, bandeau du dossier s'il est grisé.
+check('le refus lui est expliqué', /dossier (est )?en cours de validation/i.test(refus), refus.slice(0, 600));
 
 // Les trois pièces restantes passent par l'API : les redéposer une à une dans
 // le navigateur ne vérifierait rien de plus que le dépôt déjà contrôlé.
@@ -189,7 +194,7 @@ await pagePlateforme.waitForTimeout(2500);
 
 const liste = await pagePlateforme.locator('main').innerText();
 check('le livreur en attente est listé', liste.includes(`Karim ${uniq}`), liste.slice(0, 600));
-check('son état est affiché', liste.includes('En attente'), liste.slice(0, 600));
+check('son état est affiché', /En attente|À valider/.test(liste), liste.slice(0, 600));
 check('le compte de pièces validées aussi', /0\/4 pièces validées/.test(liste), liste.slice(0, 600));
 
 titre('Elle ouvre le dossier');
@@ -200,7 +205,7 @@ const ouvert = await pagePlateforme.locator('main').innerText();
 check('les pièces sont listées', ouvert.includes('Pièces du dossier'), ouvert.slice(0, 800));
 check('chacune porte son libellé', ouvert.includes('Attestation d’assurance') || ouvert.includes("Attestation d'assurance"), ouvert.slice(0, 800));
 check('et son état', /à examiner/.test(ouvert), ouvert.slice(0, 800));
-check('ce qui reste à valider est rappelé', /Reste à valider/.test(ouvert), ouvert.slice(0, 900));
+check('ce qui reste à valider est rappelé', /Reste à valider|Documents à valider/.test(ouvert), ouvert.slice(0, 900));
 
 titre('Valider est impossible tant que le dossier est incomplet');
 const boutonValider = pagePlateforme.locator('button:has-text("Valider le livreur")').first();

@@ -491,6 +491,9 @@ export default function DeliveryZonesPage() {
                 {formError}
               </div>
             )}
+            {/* L'explication accompagne le formulaire : c'est en réglant une
+                zone qu'on se demande laquelle s'appliquera. */}
+            <p className="text-xs text-slate-400 mb-4">{t('zonesExplanation')}</p>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div>
                 <label htmlFor="zone-nom" className="text-slate-300 text-sm block mb-2">

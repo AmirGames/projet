@@ -60,13 +60,15 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
       throw new ApiError(400, "Vous pourrez donner votre avis une fois la commande terminée", "ORDER_NOT_COMPLETED");
     }
 
-    // Si type = STORE, noter le restaurant (avec productId = storeId pour la compatibilité)
+    // Si type = STORE, noter le restaurant : l'avis ne porte sur aucun plat.
+    // Il rangeait l'identifiant de la boutique dans productId, que la base
+    // exige lié à un plat — chaque avis sur le restaurant finissait en 500.
     if (body.type === "STORE") {
       const dejaDepose = await db.review.findFirst({
         where: {
           customerId: client.id,
           storeId: commande.storeId,
-          productId: commande.storeId,
+          productId: null,
         },
       });
 
@@ -77,7 +79,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
       await db.review.create({
         data: {
           storeId: commande.storeId,
-          productId: commande.storeId,
+          productId: null,
           customerId: client.id,
           rating: body.rating,
           comment: body.comment,
@@ -216,6 +218,21 @@ router.delete("/:storeId/:reviewId", authMiddleware, async (req: Request, res: R
   }
 });
 
+// Déclarée avant /:storeId/:productId/stats : sinon « store » y était pris
+// pour un identifiant de plat, et ces statistiques n'étaient jamais servies.
+router.get("/:storeId/store/stats", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const storeId = req.params.storeId as string;
+
+    logger.info("Fetching store review stats", { storeId });
+
+    const stats = await ReviewService.getStoreReviewStats(storeId);
+    res.json(stats);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/:storeId/:productId/stats", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
@@ -230,17 +247,5 @@ router.get("/:storeId/:productId/stats", authMiddleware, async (req: Request, re
   }
 });
 
-router.get("/:storeId/store/stats", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const storeId = req.params.storeId as string;
-
-    logger.info("Fetching store review stats", { storeId });
-
-    const stats = await ReviewService.getStoreReviewStats(storeId);
-    res.json(stats);
-  } catch (err) {
-    next(err);
-  }
-});
 
 export default router;

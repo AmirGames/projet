@@ -13,6 +13,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -50,12 +51,12 @@ const appeler = async (chemin, options = {}) => {
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `Plateforme ${uniq}` },
 });
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` },
 });
@@ -96,7 +97,9 @@ const erreurs = [];
 page.on('console', (m) => {
   // Le script demande exprès un identifiant inconnu et l'ancienne maquette :
   // les 404 qui en résultent sont ce qu'on vérifie, pas un défaut de la page.
-  if (m.type() === 'error' && !/404/.test(m.text())) {
+  // « RSC payload » : un préchargement de Next interrompu par le changement
+  // de page — le navigateur retombe sur une navigation normale.
+  if (m.type() === 'error' && !/404|RSC payload/.test(m.text())) {
     erreurs.push(`${new URL(page.url()).pathname} : ${m.text()}`);
   }
 });

@@ -19,6 +19,7 @@
 
 import http from 'http';
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -75,7 +76,7 @@ const URL_RECEPTEUR = `http://127.0.0.1:${serveur.address().port}/zupone`;
 
 const emailPlateforme = `p-${uniq}@t.fr`;
 
-const plateforme = await appeler('/api/auth/signup', {
+const plateforme = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: emailPlateforme, password: MDP, name: `Plateforme ${uniq}` },
 });

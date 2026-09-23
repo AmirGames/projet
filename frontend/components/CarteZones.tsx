@@ -195,6 +195,17 @@ export function CarteZones({
     carte.current.setView([latitude, longitude], Math.max(carte.current.getZoom(), 12));
   }, [prete, latitude, longitude]);
 
+  // Le point n'est déplaçable que tant que la page le permet (onPosition) :
+  // une boutique posée d'un clic devient fixe aussitôt. Sans cela, le point
+  // créé déplaçable le restait, bougeait sous la souris, et rien n'était
+  // enregistré — le commerçant croyait l'avoir déplacé.
+  useEffect(() => {
+    const deplacement = boutique.current?.dragging;
+    if (!deplacement) return;
+    if (onPosition) deplacement.enable();
+    else deplacement.disable();
+  }, [prete, latitude, longitude, onPosition]);
+
   // ===== Les anneaux (type RADIUS) =====
   useEffect(() => {
     const L = leaflet.current;

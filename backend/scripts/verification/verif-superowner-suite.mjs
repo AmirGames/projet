@@ -1,19 +1,19 @@
 // Tickets archivés et réouverture, détail d'une facturation, bornes de commande
 // appliquées, journal des accès chronométré.
 
-import { titre, check, j, uniq, post, get, put, patch, terminer, sqlScalaire } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, put, patch, terminer, sqlScalaire } from './outils.mjs';
 
 const MDP = 'Password123!';
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
 );
 const TP = plateforme.accessToken;
 
 await post('/api/auth/login', { email: `p-${uniq}@t.fr`, password: MDP });
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 const ORG = commercant.organization.id;
