@@ -585,7 +585,7 @@
     "open": "Ouvrir",
     "preview": "Aperçu",
     "downloadDocument": "Télécharger",
-    "approveDocument": "Approuver {name}",
+    "approveDocument": "Valider {name}",
     "rejectDocument": "Refuser {name}",
     "expiresOn": "Expire le",
     "piecesLabel": "pièce",
