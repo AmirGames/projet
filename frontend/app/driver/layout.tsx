@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, Menu, X, Home, DollarSign, FileText } from 'lucide-react';
+import { LogOut, Menu, X, Home, DollarSign, FileText, BarChart3, MessageCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
@@ -26,7 +26,9 @@ export default function DriverLayout({
   const navItems = [
     { href: '/driver', label: 'Tableau de bord', icon: Home },
     { href: '/driver/earnings', label: 'Revenus', icon: DollarSign },
-    { href: '/driver/deliveries', label: 'Livraisons', icon: FileText },
+    { href: '/driver/analytics', label: 'Statistiques', icon: BarChart3 },
+    { href: '/driver/deliveries', label: 'Historique', icon: FileText },
+    { href: '/driver/support', label: 'Support', icon: MessageCircle },
   ];
 
   const isActive = (href: string) => pathname === href || pathname?.startsWith(href + '/');

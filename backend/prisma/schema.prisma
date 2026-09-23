@@ -817,6 +817,20 @@ model Driver {
   isAvailable     Boolean   @default(true)
   currentOrderId  String?   // Current delivery
 
+  /// Pause temporaire : le livreur reste connecté mais ne reçoit plus de
+  /// course jusqu'à cette heure. La reprise est automatique.
+  pausedUntil     DateTime?
+  pauseReason     String?
+
+  /// Signal GPS perdu : posé quand aucune position n'arrive plus depuis un
+  /// moment alors que le livreur est en ligne, effacé à la position suivante.
+  /// Sert aussi à ne prévenir qu'une fois.
+  gpsLostAt       DateTime?
+
+  /// Abonnement Web Push du navigateur du livreur (endpoint + clés), pour le
+  /// prévenir d'une course même quand l'onglet est en arrière-plan.
+  pushSubscription Json?
+
   // Ratings
   rating          Decimal   @default(5.0) @db.Decimal(3, 2)
   totalRatings    Int       @default(0)
@@ -832,6 +846,7 @@ model Driver {
   documents       DriverDocument[]
   payouts         DriverPayout[]
   ratings         DriverRating[]
+  supportMessages DriverSupportMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -839,6 +854,30 @@ model Driver {
   @@index([status])
   @@index([isOnline])
   @@index([userId])
+}
+
+/// Chat en direct entre un livreur et le support de la plateforme.
+///
+/// Un fil par livreur : le livreur écrit en pleine course, le support répond
+/// depuis l'espace superowner, et chaque message est poussé en temps réel.
+model DriverSupportMessage {
+  id          String    @id @default(cuid())
+  driverId    String
+  /// DRIVER ou SUPPORT : qui a écrit.
+  sender      String
+  /// Le compte support qui a répondu, pour la traçabilité.
+  authorId    String?
+  body        String
+  /// La course concernée, quand le livreur écrit depuis une livraison.
+  deliveryId  String?
+  readAt      DateTime?
+
+  driver      Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+
+  @@index([driverId, createdAt])
+  @@index([sender, readAt])
 }
 
 /// Une pièce du dossier d'un livreur : permis, assurance, carte grise.

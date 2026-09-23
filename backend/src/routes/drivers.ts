@@ -16,6 +16,7 @@ import {
 import { DriverPayoutService } from "../services/driver-payout.service";
 import { DeliveryProofService } from "../services/delivery-proof.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
+import { DriverActivityService, FiltreHistorique } from "../services/driver-activity.service";
 import { z } from "zod";
 import fs from "fs";
 import { join } from "path";
@@ -444,7 +445,11 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
     // Sans ce filtre, le tableau de bord ne relevait que les courses en
     // attente : une fois acceptée, la course disparaissait de l'écran.
     const filtreStatut =
-      status === "ACTIVE" ? { in: ["ACCEPTED", "PICKED_UP"] } : status;
+      status === "ACTIVE"
+        ? { in: ["ACCEPTED", "PICKED_UP"] }
+        : status.includes(",")
+          ? { in: status.split(",").map((s) => s.trim()).filter(Boolean) }
+          : status;
 
     const deliveries = await db.orderDelivery.findMany({
       where: {
@@ -490,6 +495,33 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
     res.json({
       success: true,
       data: formatted
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /drivers/history - Historique paginé des courses du livreur
+router.get("/history", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+
+    const query = z
+      .object({
+        filtre: z.enum(["ALL", "ACTIVE", "DELIVERED", "CANCELLED"]).optional(),
+        depuis: z.coerce.date().optional(),
+        jusqua: z.coerce.date().optional(),
+        page: z.coerce.number().int().min(1).optional(),
+        parPage: z.coerce.number().int().min(1).max(100).optional(),
+      })
+      .parse(req.query);
+
+    res.json({
+      success: true,
+      ...(await DriverActivityService.historique(livreur.id, {
+        ...query,
+        filtre: query.filtre as FiltreHistorique | undefined,
+      })),
     });
   } catch (err) {
     next(err);
@@ -643,7 +675,9 @@ router.patch(
         where: { id: deliveryId },
         data: {
           status: status as any,
-          ...(status === "DELIVERED" && { deliveryTime: new Date() })
+          ...(status === "DELIVERED" && { deliveryTime: new Date() }),
+          // L'heure de récupération sert à l'historique et aux statistiques.
+          ...(status === "PICKED_UP" && course.status !== "PICKED_UP" && { pickupTime: new Date() })
         },
         include: { order: { select: { feesAmount: true } } }
       });
