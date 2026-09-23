@@ -14,7 +14,6 @@ import {
   DUREE_CONFIRMATION_MS,
   DUREE_REINITIALISATION_MS,
 } from "../services/account-token.service";
-import { generateSlug } from "../utils/validation";
 import { db } from "../services/db";
 
 const router = Router();
@@ -53,21 +52,17 @@ router.post("/signup", async (req: Request, res: Response, next: NextFunction) =
       await envoyerConfirmation(user);
     }
 
-    // Create default organization for user
-    const slug = generateSlug(body.name || body.email.split("@")[0]);
-    const org = await UserService.createOrganization(
-      body.name || body.email.split("@")[0],
-      slug,
-      user.id
-    );
+    // Create customer profile linked to user (unified identity)
+    const customer = await db.customer.create({
+      data: {
+        userId: user.id,
+        name: body.name || user.email.split("@")[0],
+        email: user.email,
+      },
+    });
 
     // Generate tokens
-    const accessToken = AuthService.generateAccessToken({
-      userId: user.id,
-      orgId: org.id,
-      storeIds: [],
-      role: "ADMIN",
-    });
+    const accessToken = AuthService.generateAccessToken(user.id);
 
     const refreshToken = AuthService.generateRefreshToken(user.id);
 
@@ -82,10 +77,10 @@ router.post("/signup", async (req: Request, res: Response, next: NextFunction) =
         isSuperOwner: user.isSuperOwner,
         isSystemAdmin: user.isSystemAdmin,
       },
-      organization: {
-        id: org.id,
-        name: org.name,
-        slug: org.slug,
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
       },
     });
   } catch (err) {
@@ -164,23 +159,22 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
     // Tous les comptes n'appartiennent pas à une organisation : un livreur,
     // par exemple, n'en a aucune. Le refuser ici l'empêchait de se connecter.
     const primaryMembership = memberships[0];
-    const storeIds = primaryMembership ? primaryMembership.org.stores.map((s) => s.id) : [];
 
     const livreur = primaryMembership
       ? null
       : await db.driver.findUnique({ where: { userId: user.id }, select: { id: true } });
 
-    if (!primaryMembership && !livreur && !user.isSuperOwner && !user.isSystemAdmin) {
+    // Check if user has a customer profile (all users get one at signup)
+    const customer = !primaryMembership && !livreur
+      ? await db.customer.findUnique({ where: { userId: user.id }, select: { id: true } })
+      : null;
+
+    if (!primaryMembership && !livreur && !customer && !user.isSuperOwner && !user.isSystemAdmin) {
       throw new ApiError(403, "Ce compte n'est rattaché à aucun espace", "NO_WORKSPACE");
     }
 
     // Generate tokens
-    const accessToken = AuthService.generateAccessToken({
-      userId: user.id,
-      orgId: primaryMembership?.org.id || "",
-      storeIds,
-      role: (primaryMembership?.role || (livreur ? "DRIVER" : "ADMIN")) as any,
-    });
+    const accessToken = AuthService.generateAccessToken(user.id);
 
     const refreshToken = AuthService.generateRefreshToken(user.id);
 
@@ -235,22 +229,21 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
     // Tous les comptes n'appartiennent pas à une organisation : un livreur,
     // par exemple, n'en a aucune. Le refuser ici l'empêchait de se connecter.
     const primaryMembership = memberships[0];
-    const storeIds = primaryMembership ? primaryMembership.org.stores.map((s) => s.id) : [];
 
     const livreur = primaryMembership
       ? null
       : await db.driver.findUnique({ where: { userId: user.id }, select: { id: true } });
 
-    if (!primaryMembership && !livreur && !user.isSuperOwner && !user.isSystemAdmin) {
+    // Check if user has a customer profile (all users get one at signup)
+    const customer = !primaryMembership && !livreur
+      ? await db.customer.findUnique({ where: { userId: user.id }, select: { id: true } })
+      : null;
+
+    if (!primaryMembership && !livreur && !customer && !user.isSuperOwner && !user.isSystemAdmin) {
       throw new ApiError(403, "Ce compte n'est rattaché à aucun espace", "NO_WORKSPACE");
     }
 
-    const accessToken = AuthService.generateAccessToken({
-      userId: user.id,
-      orgId: primaryMembership?.org.id || "",
-      storeIds,
-      role: (primaryMembership?.role || (livreur ? "DRIVER" : "ADMIN")) as any,
-    });
+    const accessToken = AuthService.generateAccessToken(user.id);
 
     /**
      * Le compte accompagne le jeton.
@@ -308,6 +301,233 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         suspensionReason: m.org.suspensionReason,
         closureReason: m.org.closureReason,
       })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /me/roles - Get user's current and available roles
+router.get("/me/roles", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).userId;
+
+    if (!userId) {
+      throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
+    }
+
+    const user = await UserService.getUserById(userId);
+    const memberships = await UserService.getUserOrganizations(userId);
+    const driver = await db.driver.findUnique({
+      where: { userId },
+      select: { id: true, status: true },
+    });
+    const customer = await db.customer.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        isSuperOwner: user.isSuperOwner,
+        isSystemAdmin: user.isSystemAdmin,
+      },
+      roles: {
+        customer: {
+          active: !!customer,
+          customerId: customer?.id || null,
+        },
+        driver: {
+          active: !!driver,
+          driverId: driver?.id || null,
+          status: driver?.status || null,
+        },
+        merchant: {
+          active: memberships.length > 0,
+          organizations: memberships.map((m) => ({
+            id: m.org.id,
+            name: m.org.name,
+            role: m.role,
+          })),
+        },
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /me/become-merchant - Existing user becomes merchant
+router.post("/me/become-merchant", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).userId;
+
+    if (!userId) {
+      throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
+    }
+
+    const body = z.object({
+      businessName: z.string().min(1).max(200),
+      storeName: z.string().min(1).max(200),
+      storeSlug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+      businessType: z.string().min(1).max(50),
+      phone: z.string().min(1).max(20),
+      address: z.string().min(1).max(500),
+      city: z.string().min(1).max(100),
+      postalCode: z.string().min(1).max(20),
+      description: z.string().min(1).max(1000),
+    }).parse(req.body);
+
+    const user = await UserService.getUserById(userId);
+
+    // Check if slug already exists
+    const existingOrg = await db.organization.findUnique({
+      where: { slug: body.storeSlug },
+    });
+
+    if (existingOrg) {
+      throw new ApiError(400, "Cette URL est déjà utilisée", "SLUG_EXISTS");
+    }
+
+    // Create organization
+    const organization = await db.organization.create({
+      data: {
+        name: body.businessName,
+        email: user.email,
+        slug: body.storeSlug,
+        tier: "FREE",
+        plan: "STARTER",
+        status: "ACTIVE",
+      },
+    });
+
+    // Create membership
+    await db.membership.create({
+      data: {
+        userId,
+        orgId: organization.id,
+        role: "ADMIN",
+        storeIds: [],
+      },
+    });
+
+    // Create store
+    const store = await db.store.create({
+      data: {
+        orgId: organization.id,
+        name: body.storeName,
+        slug: body.storeSlug,
+        address: body.address,
+        city: body.city,
+        postalCode: body.postalCode,
+        phone: body.phone,
+        email: user.email,
+        description: body.description,
+        settings: {
+          businessType: body.businessType,
+          createdAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    // Update membership with store ID
+    await db.membership.update({
+      where: {
+        userId_orgId: {
+          userId,
+          orgId: organization.id,
+        },
+      },
+      data: {
+        storeIds: [store.id],
+      },
+    });
+
+    logger.info("User became merchant", {
+      userId,
+      organizationId: organization.id,
+      storeId: store.id,
+    });
+
+    res.status(201).json({
+      message: "Rôle de commerçant activé avec succès",
+      organization: {
+        id: organization.id,
+        name: organization.name,
+        slug: organization.slug,
+      },
+      store: {
+        id: store.id,
+        name: store.name,
+        slug: store.slug,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /me/become-driver - Existing user becomes driver
+router.post("/me/become-driver", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).userId;
+
+    if (!userId) {
+      throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
+    }
+
+    const body = z.object({
+      phone: z.string().min(1).max(20),
+      vehicleType: z.enum(["car", "scooter", "bike"]),
+      vehiclePlate: z.string().optional(),
+    }).parse(req.body);
+
+    // Get current user
+    const user = await UserService.getUserById(userId);
+
+    // Check if driver already exists
+    const existingDriver = await db.driver.findUnique({
+      where: { userId },
+    });
+
+    if (existingDriver) {
+      throw new ApiError(400, "Vous avez déjà un profil livreur", "DRIVER_EXISTS");
+    }
+
+    // Create driver using user's existing email and name
+    const driver = await db.driver.create({
+      data: {
+        userId,
+        name: user.name || user.email.split("@")[0],
+        email: user.email,
+        phone: body.phone,
+        vehicleType: body.vehicleType,
+        vehiclePlate: body.vehiclePlate || null,
+        licensePlate: body.vehiclePlate || null,
+        status: "PENDING",
+      },
+    });
+
+    logger.info("User became driver", {
+      userId,
+      driverId: driver.id,
+    });
+
+    // Generate new tokens to reflect driver status
+    const accessToken = AuthService.generateAccessToken(userId);
+    const refreshToken = AuthService.generateRefreshToken(userId);
+
+    res.status(201).json({
+      message: "Candidature de livreur soumise avec succès",
+      accessToken,
+      refreshToken,
+      driver: {
+        id: driver.id,
+        name: driver.name,
+        status: driver.status,
+      },
     });
   } catch (err) {
     next(err);
@@ -434,12 +654,7 @@ router.post("/merchant-register", async (req: Request, res: Response, next: Next
     });
 
     // Generate tokens
-    const accessToken = AuthService.generateAccessToken({
-      userId: user.id,
-      orgId: organization.id,
-      storeIds: [store.id],
-      role: "ADMIN",
-    });
+    const accessToken = AuthService.generateAccessToken(user.id);
 
     const refreshToken = AuthService.generateRefreshToken(user.id);
 

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 interface Category {
   id: string;
@@ -13,7 +13,7 @@ interface Category {
 }
 
 export default function AdminCategories() {
-  const t = useTranslations('adminCategories');
+  const t = useTranslations('common');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
@@ -29,7 +29,7 @@ export default function AdminCategories() {
       const data = await apiClient.getCategories(storeId);
       setCategories(Array.isArray(data) ? data : data.categories || []);
     } catch (error) {
-      console.error(t('loadError'), error);
+      console.error('Erreur chargement catégories:', error);
     } finally {
       setLoading(false);
     }
@@ -45,37 +45,37 @@ export default function AdminCategories() {
       setShowForm(false);
       fetchCategories();
     } catch (error) {
-      console.error(t('createError'), error);
+      console.error('Erreur création:', error);
     }
   };
 
   const handleDelete = async (categoryId: string) => {
-    if (confirm(t('deleteConfirm'))) {
+    if (confirm('Supprimer cette catégorie?')) {
       try {
         await apiClient.deleteCategory(categoryId);
         setCategories(categories.filter(c => c.id !== categoryId));
       } catch (error) {
-        console.error(t('deleteError'), error);
+        console.error('Erreur suppression:', error);
       }
     }
   };
 
-  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
+  if (loading) return <div className="text-center py-8">Chargement...</div>;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{t('title')}</h1>
-          <p className="text-gray-400 mt-1">{categories.length} {t('totalCategories')}</p>
+          <h1 className="text-3xl font-bold">Catégories</h1>
+          <p className="text-gray-400 mt-1">{categories.length} catégories</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={20} />
-          {t('newCategory')}
+          Nouvelle catégorie
         </button>
       </div>
 
@@ -84,22 +84,22 @@ export default function AdminCategories() {
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">{t('name')}</label>
+              <label className="block text-sm font-medium mb-2">Nom</label>
               <input
                 type="text"
                 value={newCategory.name}
                 onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                placeholder={t('placeholder')}
+                placeholder="Ex: Électronique"
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">{t('description')}</label>
+              <label className="block text-sm font-medium mb-2">Description</label>
               <textarea
                 value={newCategory.description}
                 onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
-                placeholder={t('descPlaceholder')}
+                placeholder="Description de la catégorie"
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                 rows={3}
               />
@@ -109,14 +109,14 @@ export default function AdminCategories() {
                 type="submit"
                 className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg transition-colors"
               >
-                {t('create')}
+                Créer
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
                 className="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-lg transition-colors"
               >
-                {t('cancel')}
+                Annuler
               </button>
             </div>
           </form>
@@ -133,21 +133,21 @@ export default function AdminCategories() {
               <div className="flex gap-2">
                 <button className="flex-1 flex items-center justify-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 px-3 py-2 rounded-lg transition-colors">
                   <Edit size={16} />
-                  {t('edit')}
+                  Éditer
                 </button>
                 <button
                   onClick={() => handleDelete(category.id)}
                   className="flex-1 flex items-center justify-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-2 rounded-lg transition-colors"
                 >
                   <Trash2 size={16} />
-                  {t('delete')}
+                  Supprimer
                 </button>
               </div>
             </div>
           ))
         ) : (
           <div className="col-span-full text-center py-8 text-gray-400">
-            {t('empty')}
+            Aucune catégorie
           </div>
         )}
       </div>

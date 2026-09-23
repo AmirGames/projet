@@ -12,8 +12,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Check, Clock, FileText, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Check, Clock, FileText, Upload, X } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -63,11 +62,15 @@ function Ligne({ libelle, valeur }: { libelle: string; valeur: string | null }) 
 }
 
 export function DossierCommercant({ orgId }: { orgId: string }) {
-  const t = useTranslations('dossierCommercant');
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState('');
   const [motif, setMotif] = useState<Record<string, string>>({});
+  const [afficherFormulaire, setAfficherFormulaire] = useState(false);
+  const [typePiece, setTypePiece] = useState('');
+  const [fichier, setFichier] = useState<File | null>(null);
+  const [envoi, setEnvoi] = useState(false);
+  const [erreurUpload, setErreurUpload] = useState('');
 
   const charger = useCallback(async () => {
     try {
@@ -121,6 +124,50 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     }
   };
 
+  const deposerDocument = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErreurUpload('');
+
+    if (!typePiece || !fichier) {
+      setErreurUpload('Choisissez une pièce et un fichier');
+      return;
+    }
+
+    setEnvoi(true);
+
+    try {
+      const jeton = localStorage.getItem('accessToken');
+      const formData = new FormData();
+      formData.append('type', typePiece);
+      formData.append('file', fichier);
+
+      const reponse = await fetch(
+        `${API_URL}/api/merchant-profile/${orgId}/documents/upload`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${jeton}` },
+          body: formData,
+        }
+      );
+
+      const lu = await reponse.json().catch(() => null);
+
+      if (!reponse.ok) {
+        setErreurUpload(lu?.error || 'Dépôt impossible');
+        return;
+      }
+
+      setTypePiece('');
+      setFichier(null);
+      setAfficherFormulaire(false);
+      await charger();
+    } catch {
+      setErreurUpload('Erreur de connexion');
+    } finally {
+      setEnvoi(false);
+    }
+  };
+
   if (!dossier) return null;
 
   const adresse = [dossier.billingAddress, dossier.billingPostalCode, dossier.billingCity]
@@ -153,28 +200,105 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Ligne libelle={t('legalName')} valeur={dossier.legalName} />
-        <Ligne libelle={t('registration')} valeur={dossier.registrationNumber} />
-        <Ligne libelle={t('vat')} valeur={dossier.vatNumber} />
-        <Ligne libelle={t('billingAddress')} valeur={adresse || null} />
-        <Ligne libelle={t('country')} valeur={dossier.billingCountry} />
+        <Ligne libelle="Raison sociale" valeur={dossier.legalName} />
+        <Ligne libelle="Immatriculation" valeur={dossier.registrationNumber} />
+        <Ligne libelle="Numéro de TVA" valeur={dossier.vatNumber} />
+        <Ligne libelle="Adresse de facturation" valeur={adresse || null} />
+        <Ligne libelle="Pays" valeur={dossier.billingCountry} />
         <Ligne
-          libelle={t('owner')}
+          libelle="Propriétaire"
           valeur={[dossier.ownerFirstName, dossier.ownerLastName].filter(Boolean).join(' ') || null}
         />
-        <Ligne libelle={t('ownerEmail')} valeur={dossier.ownerEmail} />
-        <Ligne libelle={t('ownerPhone')} valeur={dossier.ownerPhone} />
-        <Ligne libelle={t('accountHolder')} valeur={dossier.accountHolder} />
+        <Ligne libelle="E-mail du propriétaire" valeur={dossier.ownerEmail} />
+        <Ligne libelle="Téléphone du propriétaire" valeur={dossier.ownerPhone} />
+        <Ligne libelle="Titulaire du compte" valeur={dossier.accountHolder} />
         {/* Quatre caractères : de quoi rapprocher un virement d'un compte, pas
             de quoi s'en servir. */}
-        <Ligne libelle={t('iban')} valeur={dossier.ibanMasque} />
+        <Ligne libelle="IBAN" valeur={dossier.ibanMasque} />
       </div>
 
       <div className="border-t border-gray-700 pt-4 space-y-3">
-        <h3 className="text-sm font-semibold text-gray-300">{t('documents')}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-300">Justificatifs</h3>
+          <button
+            type="button"
+            onClick={() => setAfficherFormulaire(!afficherFormulaire)}
+            className="flex items-center gap-1 text-xs bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded transition"
+          >
+            <Upload size={14} />
+            Ajouter
+          </button>
+        </div>
+
+        {afficherFormulaire && (
+          <form onSubmit={deposerDocument} className="bg-gray-700/50 border border-gray-600 rounded p-4 space-y-3">
+            {erreurUpload && (
+              <p className="text-sm text-red-400">{erreurUpload}</p>
+            )}
+
+            <div>
+              <label htmlFor="type-piece" className="block text-sm text-gray-400 mb-1">
+                Type de pièce
+              </label>
+              <select
+                id="type-piece"
+                value={typePiece}
+                onChange={(e) => setTypePiece(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              >
+                <option value="">Choisir…</option>
+                <option value="registration">Extrait d'immatriculation (Kbis, BCE)</option>
+                <option value="identity">Pièce d'identité du propriétaire</option>
+                <option value="vat">Attestation de TVA</option>
+                <option value="bank">Relevé d'identité bancaire</option>
+                <option value="other">Autre document</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="fichier-piece" className="block text-sm text-gray-400 mb-1">
+                Fichier (JPG, PNG, PDF max 10MB)
+              </label>
+              <input
+                id="fichier-piece"
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                onChange={(e) => setFichier(e.target.files?.[0] || null)}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm file:bg-gray-600 file:border-0 file:px-2 file:py-1 file:text-white file:cursor-pointer"
+              />
+              {fichier && (
+                <p className="text-xs text-gray-400 mt-1">
+                  {fichier.name} ({Math.round(fichier.size / 1024)} KB)
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={envoi}
+                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-medium py-2 rounded transition"
+              >
+                {envoi ? 'Envoi…' : 'Déposer'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAfficherFormulaire(false);
+                  setTypePiece('');
+                  setFichier(null);
+                  setErreurUpload('');
+                }}
+                className="px-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded transition"
+              >
+                Annuler
+              </button>
+            </div>
+          </form>
+        )}
 
         {dossier.documents.length === 0 ? (
-          <p className="text-sm text-gray-500">{t('noDocuments')}</p>
+          <p className="text-sm text-gray-500">Aucune pièce déposée.</p>
         ) : (
           <ul className="space-y-2">
             {dossier.documents.map((piece) => {
@@ -206,7 +330,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                     <input
                       value={motif[piece.id] || ''}
                       onChange={(e) => setMotif({ ...motif, [piece.id]: e.target.value })}
-                      placeholder={t('reasonPlaceholder')}
+                      placeholder="Motif (obligatoire pour refuser)"
                       aria-label={`Motif pour ${piece.libelle}`}
                       className="flex-1 min-w-[12rem] bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-white placeholder-gray-500"
                     />
@@ -216,7 +340,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                       disabled={enCours === piece.id}
                       className="px-3 py-1 bg-green-600/80 hover:bg-green-600 disabled:opacity-40 rounded text-sm text-white transition"
                     >
-                      {t('approve')}
+                      Valider
                     </button>
                     <button
                       type="button"
@@ -224,7 +348,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                       disabled={enCours === piece.id}
                       className="px-3 py-1 bg-red-600/80 hover:bg-red-600 disabled:opacity-40 rounded text-sm text-white transition"
                     >
-                      {t('reject')}
+                      Refuser
                     </button>
                   </div>
                 </li>
@@ -236,4 +360,3 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     </div>
   );
 }
-

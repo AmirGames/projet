@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 interface Order {
   id: string;
@@ -19,7 +19,7 @@ interface Order {
 }
 
 export default function OrderDetailPage() {
-  const t = useTranslations('adminOrderDetail');
+  const t = useTranslations('common');
   const params = useParams();
   const orderId = params.id as string;
 
@@ -37,7 +37,7 @@ export default function OrderDetailPage() {
       // In production, implement GET /api/orders/:id
       setLoading(false);
     } catch (error) {
-      console.error(t('loadError'), error);
+      console.error('Erreur chargement commande:', error);
       setLoading(false);
     }
   };
@@ -53,11 +53,11 @@ export default function OrderDetailPage() {
         setNewStatus('');
       }
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('Erreur mise à jour statut:', error);
     }
   };
 
-  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
+  if (loading) return <div className="text-center py-8">Chargement...</div>;
 
   const statusColors: Record<string, string> = {
     'PENDING': 'bg-yellow-500/20 text-yellow-400',
@@ -75,30 +75,30 @@ export default function OrderDetailPage() {
           <ArrowLeft size={20} />
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">{t('title')}</h1>
-          <p className="text-gray-400 mt-1">{t('orderId')}{orderId.slice(0, 8)}</p>
+          <h1 className="text-3xl font-bold">Détails de la commande</h1>
+          <p className="text-gray-400 mt-1">Commande #{orderId.slice(0, 8)}</p>
         </div>
       </div>
 
       {/* Order Info */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
-        <h2 className="text-lg font-bold">{t('orderInfo')}</h2>
+        <h2 className="text-lg font-bold">Informations de la commande</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-gray-400">{t('customerEmail')}</p>
+            <p className="text-sm text-gray-400">Email client</p>
             <p className="font-medium">{order?.customerEmail || '-'}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-400">{t('phone')}</p>
+            <p className="text-sm text-gray-400">Téléphone</p>
             <p className="font-medium">{order?.customerPhone || '-'}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-400">{t('totalAmount')}</p>
+            <p className="text-sm text-gray-400">Montant total</p>
             <p className="font-bold text-green-400">{order?.totalAmount.toFixed(2)} €</p>
           </div>
           <div>
-            <p className="text-sm text-gray-400">{t('date')}</p>
+            <p className="text-sm text-gray-400">Date</p>
             <p className="font-medium">{order?.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-FR') : '-'}</p>
           </div>
         </div>
@@ -106,36 +106,36 @@ export default function OrderDetailPage() {
 
       {/* Status Management */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
-        <h2 className="text-lg font-bold">{t('statusManagement')}</h2>
+        <h2 className="text-lg font-bold">Gestion du statut</h2>
 
         <div>
-          <p className="text-sm text-gray-400 mb-2">{t('currentStatus')}</p>
+          <p className="text-sm text-gray-400 mb-2">Statut actuel</p>
           <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusColors[order?.status || 'PENDING'] || statusColors['PENDING']}`}>
             {order?.status || 'N/A'}
           </span>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">{t('changeStatus')}</label>
+          <label className="block text-sm font-medium mb-2">Changer le statut</label>
           <div className="flex gap-2">
             <select
               value={newStatus}
               onChange={(e) => setNewStatus(e.target.value)}
               className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
             >
-              <option value="">{t('selectStatus')}</option>
-              <option value="PENDING">{t('statusPending')}</option>
-              <option value="ACCEPTED">{t('statusAccepted')}</option>
-              <option value="READY">{t('statusReady')}</option>
-              <option value="COMPLETED">{t('statusCompleted')}</option>
-              <option value="REJECTED">{t('statusRejected')}</option>
+              <option value="">Sélectionner un statut</option>
+              <option value="PENDING">En attente</option>
+              <option value="ACCEPTED">Acceptée</option>
+              <option value="READY">Prête</option>
+              <option value="COMPLETED">Complétée</option>
+              <option value="REJECTED">Rejetée</option>
             </select>
             <button
               onClick={handleStatusUpdate}
               disabled={!newStatus}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors font-medium"
             >
-              {t('update')}
+              Mettre à jour
             </button>
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function OrderDetailPage() {
           href="/admin/orders"
           className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors inline-block"
         >
-          {t('backToOrders')}
+          Retour aux commandes
         </Link>
       </div>
     </div>

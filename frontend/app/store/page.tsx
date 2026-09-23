@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { enregistrerPanier } from "@/lib/paniers";
+import { useTranslations } from 'next-intl';
 
 interface Product {
   id: string;
@@ -21,7 +21,7 @@ interface Category {
 }
 
 export default function StorefrontPage() {
-  const t = useTranslations('store');
+  const t = useTranslations('common');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<Product[]>([]);
@@ -148,7 +148,7 @@ export default function StorefrontPage() {
                       €{product.price}
                     </span>
                     <span className="text-sm text-gray-400">
-                      {product.isAvailable ? t('available') : t('outOfStock')}
+                      {product.isAvailable ? 'Disponible' : 'Épuisé'}
                     </span>
                   </div>
 
@@ -157,7 +157,7 @@ export default function StorefrontPage() {
                     disabled={!product.isAvailable}
                     className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-2 px-4 rounded-lg"
                   >
-                    {!product.isAvailable ? t('outOfStock') : t('addToCart')}
+                    {!product.isAvailable ? "Épuisé" : "Ajouter au panier"}
                   </button>
                 </div>
               ))}

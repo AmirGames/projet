@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
+import { uploadMiddleware } from "../middleware/file-upload";
+import { logger } from "../config/logger";
 import { emitDeliveryUpdate } from "../config/socket";
 import { DispatchService } from "../services/dispatch.service";
 import { AuthService } from "../services/auth.service";
@@ -15,6 +17,8 @@ import { DriverPayoutService } from "../services/driver-payout.service";
 import { DeliveryProofService } from "../services/delivery-proof.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
 import { z } from "zod";
+import fs from "fs";
+import { join } from "path";
 
 const router = Router();
 
@@ -91,12 +95,7 @@ router.post("/register", async (req: Request, res: Response, next: NextFunction)
 
     // Un livreur n'appartient à aucune organisation : le jeton ne porte donc
     // ni orgId ni boutique.
-    const accessToken = AuthService.generateAccessToken({
-      userId: utilisateur.id,
-      orgId: "",
-      storeIds: [],
-      role: "DRIVER" as any,
-    });
+    const accessToken = AuthService.generateAccessToken(utilisateur.id);
     const refreshToken = AuthService.generateRefreshToken(utilisateur.id);
 
     res.status(201).json({
@@ -317,7 +316,7 @@ const pieceSchema = z.object({
   expiryDate: z.string().optional().nullable(),
 });
 
-// POST /drivers/documents - Déposer une pièce du dossier
+// POST /drivers/documents - Déposer une pièce du dossier par URL
 router.post("/documents", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const livreur = await livreurConnecte(req);
@@ -333,6 +332,51 @@ router.post("/documents", authMiddleware, async (req: Request, res: Response, ne
     next(err);
   }
 });
+
+// POST /drivers/documents/upload - Déposer une pièce du dossier par upload de fichier
+router.post(
+  "/documents/upload",
+  authMiddleware,
+  uploadMiddleware.single("file"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const livreur = await livreurConnecte(req);
+
+      if (!req.file) {
+        throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
+      }
+
+      const schema = z.object({
+        type: z.enum(TYPES_DOCUMENT),
+        expiryDate: z.string().optional().nullable(),
+      });
+
+      const body = schema.parse(req.body);
+
+      logger.info("Driver file upload", {
+        driverId: livreur.id,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      });
+
+      const piece = await DriverApprovalService.deposerFichier(livreur.id, {
+        type: body.type,
+        file: req.file.buffer,
+        filename: req.file.originalname || `document.${req.file.mimetype.split("/")[1]}`,
+        mimeType: req.file.mimetype,
+        expiryDate: body.expiryDate,
+      });
+
+      res.status(201).json({
+        message: `${libelleDuDocument(piece.type)} déposée, en attente de validation`,
+        data: piece,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 /**
  * GET /drivers/payouts - Ce qui est dû au livreur, et ce qui lui a été versé
@@ -573,6 +617,12 @@ router.patch(
       if (status === "DELIVERED" && course.status !== "DELIVERED") {
         const remuneration = Number(delivery.driverPayout ?? delivery.order?.feesAmount ?? 0);
 
+        // Mettre à jour le statut de la commande à COMPLETED quand la livraison est DELIVERED
+        await db.order.update({
+          where: { id: delivery.orderId },
+          data: { status: "COMPLETED" },
+        });
+
         await db.driver.update({
           where: { id: livreur.id },
           data: {
@@ -583,6 +633,41 @@ router.patch(
             isAvailable: true,
           },
         });
+
+        // Notifier le client que la commande est livrée avec succès
+        const order = await db.order.findUnique({
+          where: { id: delivery.orderId },
+          select: { customerEmail: true },
+        });
+
+        if (order?.customerEmail) {
+          // Créer une notification pour le client
+          await db.notification.create({
+            data: {
+              type: "ORDER_DELIVERED",
+              title: "Commande livrée avec succès",
+              message: "Votre commande a été livrée. Merci pour votre achat !",
+              recipientEmail: order.customerEmail,
+              link: `/client/orders/${delivery.orderId}`,
+              relatedOrderId: delivery.orderId,
+            },
+          });
+
+          // Notifier en temps réel via Socket.IO
+          const { emitNotification, emitOrderUpdate } = await import("../config/socket");
+          emitOrderUpdate(delivery.orderId, "COMPLETED", {
+            message: "Votre commande a été livrée. Merci pour votre achat !",
+            title: "Commande livrée avec succès",
+          });
+          emitNotification(order.customerEmail, {
+            type: "order_delivered",
+            orderId: delivery.orderId,
+            status: "COMPLETED",
+            title: "Commande livrée avec succès",
+            message: "Votre commande a été livrée. Merci pour votre achat !",
+            timestamp: new Date().toISOString(),
+          });
+        }
       }
 
       // Une course abandonnée doit libérer le livreur, sans quoi il ne reçoit
@@ -697,7 +782,7 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
                 deliveryCity: true,
                 deliveryPostal: true,
                 totalAmount: true,
-                store: { select: { name: true, address: true, city: true } },
+                store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
               },
             },
           },
@@ -714,6 +799,16 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
         distanceKm: proposition.distanceKm,
         payout: Number(proposition.payout || 0),
         expiresAt: proposition.expiresAt,
+        // Nouvelles données
+        pickupStore: proposition.delivery.order?.store?.name,
+        pickupAddress: proposition.delivery.order?.store?.address,
+        pickupCity: proposition.delivery.order?.store?.city,
+        pickupLat: proposition.delivery.order?.store?.latitude,
+        pickupLng: proposition.delivery.order?.store?.longitude,
+        deliveryAddress: proposition.delivery.order?.deliveryAddress,
+        deliveryCity: proposition.delivery.order?.deliveryCity,
+        deliveryPostal: proposition.delivery.order?.deliveryPostal,
+        // Anciennes données (rétrocompatibilité)
         boutique: proposition.delivery.order?.store,
         adresse: proposition.delivery.order?.deliveryAddress,
         ville: proposition.delivery.order?.deliveryCity,
@@ -761,5 +856,216 @@ router.post(
     }
   }
 );
+
+// PATCH /drivers/deliveries/:id/cancel - Annuler une course acceptée
+router.patch(
+  "/deliveries/:id/cancel",
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { reason } = req.body;
+      const deliveryId = req.params.id as string;
+
+      if (!reason || typeof reason !== "string" || reason.trim().length === 0) {
+        throw new ApiError(400, "La raison d'annulation est requise", "MISSING_REASON");
+      }
+
+      const { livreur, course } = await courseDuLivreur(req, deliveryId);
+
+      if (course.status !== "ACCEPTED") {
+        throw new ApiError(
+          409,
+          "Seule une course acceptée peut être annulée",
+          "INVALID_STATUS"
+        );
+      }
+
+      // Annuler la course
+      await db.orderDelivery.update({
+        where: { id: deliveryId },
+        data: {
+          status: "FAILED",
+          driverId: null,
+          assignedAt: null,
+          cancelledBy: "DRIVER",
+          cancellationReason: reason.trim(),
+        },
+      });
+
+      // Libérer le livreur
+      await db.driver.update({
+        where: { id: livreur.id },
+        data: {
+          currentOrderId: null,
+          isAvailable: true,
+        },
+      });
+
+      // Remettre la commande en READY pour permettre au restaurant de proposer à un autre livreur
+      const order = await db.order.update({
+        where: { id: course.orderId },
+        data: { status: "READY" },
+        select: { customerEmail: true },
+      });
+
+      // Notifier le client et le restaurant
+      if (order.customerEmail) {
+        await db.notification.create({
+          data: {
+            type: "DELIVERY_CANCELLED",
+            title: "Livraison annulée",
+            message: `Votre livraison a été annulée. Un autre livreur sera assigné sous peu.`,
+            recipientEmail: order.customerEmail,
+            link: `/client/orders/${course.orderId}`,
+            relatedOrderId: course.orderId,
+          },
+        });
+
+        const { emitNotification } = await import("../config/socket");
+        emitNotification(order.customerEmail, {
+          type: "delivery_cancelled",
+          orderId: course.orderId,
+          reason,
+          title: "Livraison annulée",
+          message: "Un autre livreur sera assigné.",
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Course annulée. Un autre livreur sera proposé au restaurant.",
+        data: { deliveryId, orderId: course.orderId },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// Serve document files with proper CORS headers for preview modal
+router.options(/^\/documents\/file\/(.+)$/, (_req: Request, res: Response) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.sendStatus(200);
+});
+
+router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const filePath = (req.params as any)[0];
+    const fullPath = join(process.cwd(), "uploads", filePath);
+
+    // Security: prevent directory traversal
+    if (!fullPath.startsWith(join(process.cwd(), "uploads"))) {
+      return res.status(403).send("Access denied");
+    }
+
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).send("File not found");
+    }
+
+    // Set CORS headers explicitly
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    // Determine content type
+    const ext = fullPath.split(".").pop()?.toLowerCase();
+    let contentType = "application/octet-stream";
+    if (ext === "jpg" || ext === "jpeg") contentType = "image/jpeg";
+    else if (ext === "png") contentType = "image/png";
+    else if (ext === "webp") contentType = "image/webp";
+    else if (ext === "pdf") contentType = "application/pdf";
+
+    res.setHeader("Content-Type", contentType);
+    return res.sendFile(fullPath);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// GET /drivers/available - Get available delivery drivers within radius
+router.get("/available", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Désactiver le cache pour cette route (elle retourne des données dynamiques)
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    const storeId = req.query.storeId as string;
+    const radius = Math.min(parseInt(req.query.radius as string) || 8, 50);
+
+    if (!storeId) {
+      throw new ApiError(400, "storeId est requis", "STORE_ID_REQUIRED");
+    }
+
+    const store = await db.store.findUnique({
+      where: { id: storeId },
+      select: {
+        id: true,
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    if (!store || store.latitude == null || store.longitude == null) {
+      throw new ApiError(404, "Boutique ou coordonnées introuvables", "STORE_NOT_FOUND");
+    }
+
+    const drivers = await db.driver.findMany({
+      where: {
+        latitude: { not: null },
+        longitude: { not: null },
+        status: "ACTIVE",
+        isOnline: true,
+        isAvailable: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+      const R = 6371;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    const availableDrivers = drivers
+      .map((driver) => ({
+        id: driver.id,
+        name: driver.name,
+        phone: driver.phone,
+        distance: calculateDistance(
+          store.latitude as number,
+          store.longitude as number,
+          driver.latitude as number,
+          driver.longitude as number
+        ),
+      }))
+      .filter((driver) => driver.distance <= radius)
+      .sort((a, b) => a.distance - b.distance);
+
+    res.json({
+      success: true,
+      deliveryMen: availableDrivers,
+      total: availableDrivers.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default router;

@@ -8,7 +8,6 @@ import { LogOut, Menu } from 'lucide-react';
 import { useState } from 'react';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { espaceDAccueil } from '@/lib/espace-utilisateur';
 
 export default function Navbar() {
   const router = useRouter();
@@ -16,61 +15,52 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const t = useTranslations('nav');
 
-  // Un seul lien « Dashboard », qui mène à l'espace correspondant au compte :
-  // /dashboard renvoyait vers l'ancienne interface commerçant.
-  const lienEspace = espaceDAccueil({
-    isSuperOwner: user?.isSuperOwner,
-    orgId: (user as any)?.organizationId || (typeof window !== 'undefined' ? localStorage.getItem('currentOrgId') : null),
-  });
-
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
 
   return (
-    <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <nav className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center font-bold text-sm text-white">
-              Z
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-sm">
+              ST
             </div>
-            <span className="font-bold text-lg hidden sm:inline text-slate-900">Zupone</span>
+            <span className="font-bold text-lg hidden sm:inline">SaaS</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6 flex-1">
-            <Link href="/" className="text-slate-700 hover:text-primary font-medium transition">
-              Accueil
-            </Link>
+          <div className="hidden md:flex items-center gap-6">
+            <LanguageSwitcher />
             {!user ? (
               <>
-                <Link href="/restaurants" className="text-slate-700 hover:text-primary font-medium transition">
+                <Link href="/restaurants" className="text-gray-300 hover:text-white transition">
                   {t('restaurants')}
                 </Link>
-                <Link href="/login" className="px-4 py-2 bg-white border border-slate-200 text-slate-900 hover:border-slate-300 rounded-full transition font-medium">
+                <Link href="/login" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">
                   {t('login')}
                 </Link>
-                <Link href="/signup" className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-full transition font-medium">
+                <Link href="/signup" className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition font-medium">
                   {t('signup')}
                 </Link>
               </>
             ) : (
               <>
-                <Link href={lienEspace} className="text-slate-700 hover:text-primary font-medium transition">
+                <Link href="/dashboard" className="text-gray-300 hover:text-white transition">
                   {t('dashboard')}
                 </Link>
                 {user.isSuperOwner && (
-                  <Link href="/superowner" className="px-3 py-1 bg-primary hover:bg-primary-hover text-white rounded-lg transition font-medium text-sm">
+                  <Link href="/superowner" className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition font-medium text-sm">
                     👑 {t('superOwner')}
                   </Link>
                 )}
                 <NotificationBell />
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-lg transition font-medium"
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition text-white"
                 >
                   <LogOut size={18} />
                   {t('logout')}
@@ -79,44 +69,38 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Right Side: Language Switcher + Mobile Menu Button */}
-          <div className="flex items-center gap-4 ml-auto">
-            <LanguageSwitcher />
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 hover:bg-slate-100 text-slate-900 rounded-lg"
-            >
-              <Menu size={24} />
-            </button>
-          </div>
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 hover:bg-gray-700 rounded-lg"
+          >
+            <Menu size={24} />
+          </button>
         </div>
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="md:hidden pb-4 space-y-2">
-            <Link
-              href="/"
-              className="block px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-lg font-medium"
-            >
-              Accueil
-            </Link>
+            <div className="px-4 py-2">
+              <LanguageSwitcher />
+            </div>
             {!user ? (
               <>
                 <Link
                   href="/restaurants"
-                  className="block px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-lg font-medium"
+                  className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
                 >
                   {t('restaurants')}
                 </Link>
                 <Link
                   href="/login"
-                  className="block px-4 py-2 bg-white border border-slate-200 text-slate-900 hover:border-slate-300 rounded-lg font-medium"
+                  className="block px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium"
                 >
                   {t('login')}
                 </Link>
                 <Link
                   href="/signup"
-                  className="block px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg font-medium"
+                  className="block px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium"
                 >
                   {t('signup')}
                 </Link>
@@ -124,22 +108,22 @@ export default function Navbar() {
             ) : (
               <>
                 <Link
-                  href={lienEspace}
-                  className="block px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-lg font-medium"
+                  href="/dashboard"
+                  className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
                 >
                   {t('dashboard')}
                 </Link>
                 {user.isSuperOwner && (
                   <Link
                     href="/superowner"
-                    className="block px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg font-medium"
+                    className="block px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-white"
                   >
                     👑 {t('superOwner')}
                   </Link>
                 )}
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-lg font-medium"
+                  className="w-full flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
                 >
                   <LogOut size={18} />
                   {t('logout')}

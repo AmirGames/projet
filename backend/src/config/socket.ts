@@ -83,8 +83,7 @@ export function initializeSocket(httpServer: HTTPServer) {
     try {
       const decoded = verifyToken(token);
       socket.userId = decoded.userId;
-      socket.userRole = decoded.role;
-      socket.organizationId = decoded.orgId;
+      // userRole and organizationId are no longer in JWT; load from DB if needed
       next();
     } catch (err) {
       // Un jeton présent mais invalide est une anomalie, pas un visiteur.

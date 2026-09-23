@@ -5,9 +5,6 @@ import { ApiError } from "../middleware/errorHandler";
 
 export interface JwtPayload {
   userId: string;
-  orgId: string;
-  storeIds: string[];
-  role: "ADMIN" | "STORE_MANAGER" | "STORE_STAFF";
   iat?: number;
   exp?: number;
 }
@@ -31,9 +28,9 @@ export class AuthService {
   /**
    * Generate access token (JWT)
    */
-  static generateAccessToken(payload: Omit<JwtPayload, "iat" | "exp">): string {
+  static generateAccessToken(userId: string): string {
     const env = getEnv();
-    const token = (jwt.sign as any)(payload, env.JWT_SECRET, {
+    const token = (jwt.sign as any)({ userId }, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN,
       algorithm: "HS256",
     });

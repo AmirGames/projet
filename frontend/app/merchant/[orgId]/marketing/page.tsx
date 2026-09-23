@@ -7,6 +7,7 @@ import { Trash2, Send, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 
 import { useCurrentStore } from '@/lib/current-store';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,6 +25,7 @@ interface Campaign {
 }
 
 export default function MarketingPage() {
+  const t = useTranslations('merchantmarketing');
   const { storeId } = useCurrentStore();
   const params = useParams();
   const router = useRouter();

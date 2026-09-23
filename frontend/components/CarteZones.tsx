@@ -352,9 +352,9 @@ export function CarteZones({
 
       <p className="text-xs text-slate-400 mt-2">
         {latitude == null
-          ? 'Votre boutique n’est pas encore située : renseignez son adresse ou posez-la sur la carte.'
+          ? "Votre boutique n'est pas encore située : renseignez son adresse ou posez-la sur la carte."
           : dessin != null
-            ? 'Cliquez sur la carte pour poser les sommets de la zone, dans l’ordre.'
+            ? "Cliquez sur la carte pour poser les sommets de la zone, dans l'ordre."
             : zoneActive
               ? 'Tirez la poignée orange pour régler le rayon.'
               : onPosition

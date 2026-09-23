@@ -31,6 +31,7 @@ import {
 
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Piece {
@@ -76,7 +77,7 @@ interface Profil {
 const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
   APPROVED: { icone: Check, classe: 'text-green-400', libelle: 'Validé' },
   REJECTED: { icone: X, classe: 'text-red-400', libelle: 'Refusé' },
-  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: 'En attente d’examen' },
+  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: "En attente d'examen" },
 };
 
 /** Une date ISO ramenée à ce qu'un champ `date` attend, sans décalage d'heure. */
@@ -93,6 +94,7 @@ const CHAMP =
   'w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-500';
 
 export default function ProfilCommercantPage() {
+  const t = useTranslations('merchantProfile');
   const [profil, setProfil] = useState<Profil | null>(null);
   const [orgId, setOrgId] = useState('');
   const [chargement, setChargement] = useState(true);
@@ -118,7 +120,7 @@ export default function ProfilCommercantPage() {
     accountHolder: '',
   });
 
-  const [piece, setPiece] = useState({ type: '', documentUrl: '', fileName: '', expiryDate: '' });
+  const [piece, setPiece] = useState({ type: '', documentUrl: '', fileName: '', expiryDate: '', file: null as File | null });
   const [erreurPiece, setErreurPiece] = useState('');
   const [envoiPiece, setEnvoiPiece] = useState(false);
 
@@ -218,8 +220,13 @@ export default function ProfilCommercantPage() {
     e.preventDefault();
     setErreurPiece('');
 
-    if (!piece.type || !piece.documentUrl) {
-      setErreurPiece('Choisissez une pièce et donnez son lien');
+    if (!piece.type) {
+      setErreurPiece('Choisissez une pièce');
+      return;
+    }
+
+    if (!piece.file && !piece.documentUrl) {
+      setErreurPiece('Uploader un fichier ou fournir un lien');
       return;
     }
 
@@ -227,24 +234,46 @@ export default function ProfilCommercantPage() {
 
     try {
       const jeton = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/api/merchant-profile/${orgId}/documents`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },
-        body: JSON.stringify({
-          type: piece.type,
-          documentUrl: piece.documentUrl,
-          fileName: piece.fileName || undefined,
-          expiryDate: piece.expiryDate ? new Date(piece.expiryDate).toISOString() : undefined,
-        }),
-      });
-      const lu = await reponse.json().catch(() => null);
 
-      if (!reponse.ok) {
-        setErreurPiece(lu?.error || 'Dépôt impossible');
-        return;
+      if (piece.file) {
+        const formData = new FormData();
+        formData.append('file', piece.file);
+        formData.append('type', piece.type);
+        if (piece.expiryDate) {
+          formData.append('expiryDate', piece.expiryDate);
+        }
+
+        const reponse = await fetch(`${API_URL}/api/merchant-profile/${orgId}/documents/upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${jeton}` },
+          body: formData,
+        });
+        const lu = await reponse.json().catch(() => null);
+
+        if (!reponse.ok) {
+          setErreurPiece(lu?.error || 'Upload impossible');
+          return;
+        }
+      } else {
+        const reponse = await fetch(`${API_URL}/api/merchant-profile/${orgId}/documents`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },
+          body: JSON.stringify({
+            type: piece.type,
+            documentUrl: piece.documentUrl,
+            fileName: piece.fileName || undefined,
+            expiryDate: piece.expiryDate ? new Date(piece.expiryDate).toISOString() : undefined,
+          }),
+        });
+        const lu = await reponse.json().catch(() => null);
+
+        if (!reponse.ok) {
+          setErreurPiece(lu?.error || 'Dépôt impossible');
+          return;
+        }
       }
 
-      setPiece({ type: '', documentUrl: '', fileName: '', expiryDate: '' });
+      setPiece({ type: '', documentUrl: '', fileName: '', expiryDate: '', file: null });
       await charger();
     } catch {
       setErreurPiece('Le serveur ne répond pas');
@@ -696,6 +725,26 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div className="sm:col-span-2">
+              <label htmlFor="piece-fichier" className="block text-sm text-gray-400 mb-1">
+                Fichier (PDF, image ou document)
+              </label>
+              <input
+                id="piece-fichier"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setPiece({ ...piece, file, fileName: file?.name || '', documentUrl: '' });
+                }}
+                className={CHAMP}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Fichiers acceptés : PDF, images (JPG, PNG, WebP), documents Word. Max 10 MB.
+              </p>
+            </div>
+
+            <div className="sm:col-span-2">
+              <p className="text-xs text-gray-500 mb-2">OU</p>
               <label htmlFor="piece-lien" className="block text-sm text-gray-400 mb-1">
                 Lien vers le document
               </label>
@@ -703,15 +752,12 @@ export default function ProfilCommercantPage() {
                 id="piece-lien"
                 type="url"
                 value={piece.documentUrl}
-                onChange={(e) => setPiece({ ...piece, documentUrl: e.target.value })}
+                onChange={(e) => setPiece({ ...piece, documentUrl: e.target.value, file: null })}
                 placeholder="https://…"
                 className={CHAMP}
               />
-              {/* L'hébergement de fichiers n'est pas branché : le dire plutôt
-                  que de laisser croire à un envoi. */}
               <p className="text-xs text-gray-500 mt-1">
-                L&apos;envoi de fichiers n&apos;est pas encore disponible : déposez un lien vers
-                votre document.
+                Vous pouvez aussi fournir un lien externe vers votre document.
               </p>
             </div>
           </div>

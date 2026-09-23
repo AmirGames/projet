@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { Search, MapPin, Star, Clock, TrendingUp, Heart } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+  const t = useTranslations('clientHome');
 interface Store {
   id: string;
   name: string;
@@ -30,10 +31,16 @@ interface Store {
   products?: any[];
 }
 
+interface StoreStats {
+  totalReviews: number;
+  averageRating: number;
+  satisfactionPercentage: number;
+}
+
 export default function ClientHomePage() {
-  const t = useTranslations('clientDashboard');
   const [stores, setStores] = useState<Store[]>([]);
   const [filteredStores, setFilteredStores] = useState<Store[]>([]);
+  const [storeStats, setStoreStats] = useState<Record<string, StoreStats>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState({ lat: null as number | null, lng: null as number | null });
@@ -56,11 +63,37 @@ export default function ClientHomePage() {
       if (!response.ok) throw new Error('Failed to load stores');
 
       const data = await response.json();
-      setStores(data.data || []);
+      const storeList = data.data || [];
+      setStores(storeList);
+
+      // Charger les stats pour chaque restaurant
+      await loadStoresStats(storeList);
     } catch (err) {
       console.error('Error loading stores:', err);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const loadStoresStats = useCallback(async (storeList: Store[]) => {
+    try {
+      const stats: Record<string, StoreStats> = {};
+
+      for (const store of storeList) {
+        try {
+          const response = await fetch(`${API_URL}/api/reviews/${store.id}/store/stats`);
+          if (response.ok) {
+            const data = await response.json();
+            stats[store.id] = data;
+          }
+        } catch (error) {
+          console.error(`Error fetching stats for store ${store.id}:`, error);
+        }
+      }
+
+      setStoreStats(stats);
+    } catch (error) {
+      console.error('Error fetching stores stats:', error);
     }
   }, []);
 
@@ -71,17 +104,21 @@ export default function ClientHomePage() {
       if (!response.ok) throw new Error('Failed to load nearby stores');
 
       const data = await response.json();
-      setStores(data.data || []);
+      const storeList = data.data || [];
+      setStores(storeList);
+
+      // Charger les stats pour chaque restaurant
+      await loadStoresStats(storeList);
     } catch (err) {
       console.error('Error loading nearby stores:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadStoresStats]);
 
   const getLocationByGPS = useCallback(() => {
     if (!navigator.geolocation) {
-      alert(t('geoLocationNotSupported'));
+      alert('Géolocalisation non supportée');
       return;
     }
 
@@ -94,10 +131,10 @@ export default function ClientHomePage() {
       },
       (error) => {
         console.error('GPS error:', error);
-        alert(t('geoLocationError'));
+        alert("Impossible d\'accéder à votre localisation");
       }
     );
-  }, [loadNearbyStores, t]);
+  }, [loadNearbyStores]);
 
   const filterAndSortStores = () => {
     let filtered = stores;
@@ -126,8 +163,8 @@ export default function ClientHomePage() {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl font-bold mb-4">{t('title')}</h1>
-          <p className="text-xl mb-8 text-orange-100">{t('subtitle')}</p>
+          <h1 className="text-4xl font-bold mb-4">Commandes en Ligne</h1>
+          <p className="text-xl mb-8 text-orange-100">Découvrez les meilleurs restaurants près de vous</p>
 
           {/* Search & Location */}
           <div className="space-y-4 mb-6">
@@ -136,7 +173,7 @@ export default function ClientHomePage() {
               <Search className="absolute left-4 top-3 text-gray-400" size={20} />
               <input
                 type="text"
-                placeholder={t('searchPlaceholder')}
+                placeholder="Chercher un restaurant, un plat..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none"
@@ -149,7 +186,7 @@ export default function ClientHomePage() {
                 <MapPin className="absolute left-4 top-3 text-gray-400" size={20} />
                 <input
                   type="text"
-                  placeholder={t('addressPlaceholder')}
+                  placeholder="Adresse ou ville..."
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none"
@@ -160,23 +197,23 @@ export default function ClientHomePage() {
                 className="bg-white text-red-600 font-semibold py-3 px-6 rounded-lg hover:bg-orange-50 flex items-center justify-center gap-2"
               >
                 <MapPin size={18} />
-                {t('myLocation')}
+                Ma Localisation
               </button>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-4 py-3 rounded-lg text-gray-900 bg-white focus:outline-none"
               >
-                <option value="rating">{t('bestRating')}</option>
-                <option value="distance">{t('closest')}</option>
-                <option value="delivery">{t('cheapestDelivery')}</option>
+                <option value="rating">Meilleure note</option>
+                <option value="distance">Plus proche</option>
+                <option value="delivery">Frais réduits</option>
               </select>
             </div>
 
             {/* GPS Status */}
             {useGPS && location.lat && (
               <p className="text-sm text-orange-100">
-                {t('locationStatus', { lat: location.lat.toFixed(4), lng: location.lng?.toFixed(4) })}
+                ✓ Localisation: {location.lat.toFixed(4)}, {location.lng?.toFixed(4)}
               </p>
             )}
           </div>
@@ -187,19 +224,19 @@ export default function ClientHomePage() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <p className="text-white text-lg">{t('loading')}</p>
+            <p className="text-white text-lg">Chargement des restaurants...</p>
           </div>
         ) : filteredStores.length === 0 ? (
           <div className="text-center py-20">
             <TrendingUp size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-white text-lg">{t('noRestaurants')}</p>
-            <p className="text-gray-400">{t('tryAnotherSearch')}</p>
+            <p className="text-white text-lg">Aucun restaurant trouvé</p>
+            <p className="text-gray-400">Essayez une autre recherche</p>
           </div>
         ) : (
           <>
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-white mb-4">
-                {searchQuery ? t('searchResults') : t('nearbyRestaurants')} {t('count', { count: filteredStores.length })}
+                {searchQuery ? 'Résultats de recherche' : 'Restaurants à proximité'} ({filteredStores.length})
               </h2>
 
               {/* Restaurants Grid */}
@@ -218,7 +255,7 @@ export default function ClientHomePage() {
                             client croyait le commerce parti. */}
                         {store.isOpenNow === false && (
                           <span className="absolute inset-x-0 bottom-0 bg-gray-900/80 py-1.5 text-center text-xs font-semibold text-amber-300">
-                            {store.isOpen === false ? t('temporarilyUnavailable') : t('closedNow')}
+                            {store.isOpen === false ? 'Momentanément indisponible' : 'Fermé pour le moment'}
                           </span>
                         )}
                       </div>
@@ -234,12 +271,17 @@ export default function ClientHomePage() {
                         <p className="text-sm text-gray-400 mb-3 line-clamp-2">{store.description}</p>
 
                         {/* Rating & Reviews */}
-                        <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center gap-2 mb-3 flex-wrap">
                           <div className="flex items-center gap-1">
                             <Star size={16} className="text-yellow-500 fill-yellow-500" />
                             <span className="text-white font-semibold">{store.rating || 4.5}</span>
                           </div>
                           <span className="text-gray-500 text-sm">({store.totalRatings || 0} avis)</span>
+                          {storeStats[store.id] && storeStats[store.id].totalReviews > 0 && (
+                            <span className="text-green-400 text-sm font-semibold">
+                              👍 {storeStats[store.id].satisfactionPercentage}%
+                            </span>
+                          )}
                         </div>
 
                         {/* Location & Delivery */}
@@ -276,7 +318,7 @@ export default function ClientHomePage() {
 
                         {/* CTA Button */}
                         <button className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition">
-                          {t('viewMenu')}
+                          Voir le menu →
                         </button>
                       </div>
                     </div>

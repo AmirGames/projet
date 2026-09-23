@@ -6,10 +6,12 @@ import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { RAISON_DECONNEXION, useAuth } from "@/lib/auth-context";
 import Link from "next/link";
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function LoginPage() {
+  const t = useTranslations('common');
   const router = useRouter();
   const { refreshAuth } = useAuth();
   const t = useTranslations('auth.login');
@@ -88,24 +90,23 @@ export default function LoginPage() {
       });
 
       // Redirect based on role
-      const orgId = result.organization?.id;
-      if (orgId) {
-        localStorage.setItem("currentOrgId", orgId);
-      }
+      const isSuperOwner = result.user?.isSuperOwner;
 
-      // Le commerçant choisit son commerce depuis /merchant plutôt que
-      // d'être envoyé d'office sur une boutique.
-      const redirectPath = result.user?.isSuperOwner
-        ? "/superowner"
-        : orgId
-          ? "/merchant"
-          : "/login";
+      // If user has an organization from login, save it
+      if (result.organization?.id) {
+        localStorage.setItem("currentOrgId", result.organization.id);
+      }
 
       // Sans cela le contexte reste sur l'état déconnecté et les pages
       // protégées renvoient aussitôt vers /login.
       await refreshAuth();
 
-      router.push(redirectPath);
+      // Redirect based on role
+      if (isSuperOwner) {
+        router.push("/superowner");
+      } else {
+        router.push("/auth/role-selection");
+      }
     } catch (err) {
       setError(t("errorConnection"));
       console.error(err);

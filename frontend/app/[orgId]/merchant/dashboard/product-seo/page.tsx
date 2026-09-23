@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -21,6 +22,7 @@ export default function ProductSeoPage({
 }: {
   params: { orgId: string };
 }) {
+  const t = useTranslations('common');
   const [productId, setProductId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

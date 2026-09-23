@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
@@ -15,6 +16,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * refuse. Tout passe désormais par `/store/<slug>`.
  */
 export default function AncienneVitrineClient() {
+  const t = useTranslations('clientRestaurant');
   const params = useParams();
   const router = useRouter();
   const [introuvable, setIntrouvable] = useState(false);

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
 import { Store } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -31,7 +31,7 @@ interface MerchantResponse {
 }
 
 export default function MerchantsPage() {
-  const t = useTranslations('adminMerchants');
+  const t = useTranslations('common');
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -59,13 +59,13 @@ export default function MerchantsPage() {
         },
       });
 
-      if (!res.ok) throw new Error(t('loadError'));
+      if (!res.ok) throw new Error("Erreur lors du chargement des commerçants");
       const data: MerchantResponse = await res.json();
       setMerchants(data.merchants);
       setTotal(data.pagination.total);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('error'));
+      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
     } finally {
       setLoading(false);
     }
@@ -94,10 +94,10 @@ export default function MerchantsPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <Store className="w-8 h-8" />
-          {t('title')}
+          Gestion des Commerçants
         </h1>
         <p className="text-gray-400 mt-2">
-          Manage merchants on the platform
+          Gérez les commerçants de la plateforme
         </p>
       </div>
 
@@ -119,7 +119,7 @@ export default function MerchantsPage() {
               : "bg-gray-700 text-gray-300 hover:bg-gray-600"
           }`}
         >
-          All
+          Tous
         </button>
         {["ACTIVE", "SUSPENDED", "CLOSED"].map((status) => (
           <button
@@ -134,9 +134,9 @@ export default function MerchantsPage() {
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
             }`}
           >
-            {status === "ACTIVE" && "✅ " + t('statusActive')}
-            {status === "SUSPENDED" && "⛔ " + t('statusSuspended')}
-            {status === "CLOSED" && "❌ " + t('statusClosed')}
+            {status === "ACTIVE" && "✅ Actifs"}
+            {status === "SUSPENDED" && "⛔ Suspendus"}
+            {status === "CLOSED" && "❌ Fermés"}
           </button>
         ))}
       </div>
@@ -148,7 +148,7 @@ export default function MerchantsPage() {
       ) : merchants.length === 0 ? (
         <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700/50">
           <Store className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">{t('empty')}</p>
+          <p className="text-gray-400">Aucun commerçant trouvé</p>
         </div>
       ) : (
         <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 overflow-hidden">
@@ -157,19 +157,19 @@ export default function MerchantsPage() {
               <thead className="bg-gray-900/50 border-b border-gray-700/50">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
-                    {t('colName')}
+                    Nom
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
-                    {t('colEmail')}
+                    Email
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
-                    {t('colPlan')}
+                    Plan
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
-                    {t('colStatus')}
+                    Status
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
-                    Stores
+                    Magasins
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
                     Date
@@ -225,7 +225,8 @@ export default function MerchantsPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          {t('pagination', { from: offset + 1, to: Math.min(offset + limit, total), total })}
+          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur{" "}
+          {total}
         </p>
         <div className="flex gap-2">
           <button
@@ -233,14 +234,14 @@ export default function MerchantsPage() {
             disabled={offset === 0}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            {t('previous')}
+            Précédent
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            {t('next')}
+            Suivant
           </button>
         </div>
       </div>

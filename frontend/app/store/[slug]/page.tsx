@@ -7,6 +7,7 @@ import { ShoppingCart, MapPin, Phone, Clock, Star, Check } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { TunnelCommande } from '@/components/TunnelCommande';
 import { useStoreLive } from '@/lib/use-store-live';
+import { useTranslations } from 'next-intl';
 import {
   autresPaniers,
   enregistrerPanier,
@@ -68,6 +69,7 @@ interface OrderConfirmation {
 }
 
 export default function StorefrontPage() {
+  const t = useTranslations('common');
   const params = useParams();
   const slug = params?.slug as string;
 

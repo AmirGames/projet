@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import Link from "next/link";
-import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
+import { useTranslations } from 'next-intl';
 
 export default function SignupPage() {
+  const t = useTranslations('common');
   const router = useRouter();
   const t = useTranslations('auth.signup');
   const [name, setName] = useState("");
@@ -41,15 +42,10 @@ export default function SignupPage() {
       localStorage.setItem("refreshToken", result.refreshToken);
       localStorage.setItem("isSuperOwner", result.user?.isSuperOwner ? "true" : "false");
 
-      // Show success message briefly
       setError("");
 
-      // Redirect based on role
-      if (result.user?.isSuperOwner) {
-        router.push("/superowner");
-      } else {
-        router.push(espaceDAccueilLocal());
-      }
+      // Redirect to role selection to choose customer/merchant/driver roles
+      router.push("/auth/role-selection");
     } catch (err) {
       setError(t("error"));
       console.error(err);

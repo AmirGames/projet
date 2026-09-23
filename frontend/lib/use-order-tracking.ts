@@ -7,6 +7,8 @@ interface OrderUpdate {
   orderId: string;
   status: string;
   timestamp: string;
+  message?: string;
+  title?: string;
   [key: string]: any;
 }
 
@@ -20,12 +22,20 @@ interface DeliveryUpdate {
   timestamp: string;
 }
 
+export interface StatusNotification {
+  status: string;
+  title: string;
+  message: string;
+  timestamp: string;
+}
+
 export function useOrderTracking(orderId: string) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [orderStatus, setOrderStatus] = useState<string>('');
   const [deliveryLocation, setDeliveryLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [eta, setEta] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [notification, setNotification] = useState<StatusNotification | null>(null);
 
   useEffect(() => {
     if (!orderId) return;
@@ -54,6 +64,22 @@ export function useOrderTracking(orderId: string) {
     socketInstance.on('order-update', (data: OrderUpdate) => {
       if (data.orderId === orderId) {
         setOrderStatus(data.status);
+
+        // Afficher la notification si elle existe
+        if (data.title && data.message) {
+          setNotification({
+            status: data.status,
+            title: data.title,
+            message: data.message,
+            timestamp: data.timestamp || new Date().toISOString(),
+          });
+
+          // Masquer la notification après 5 secondes
+          setTimeout(() => {
+            setNotification(null);
+          }, 5000);
+        }
+
         console.log('Order status updated:', data.status);
       }
     });
@@ -101,6 +127,7 @@ export function useOrderTracking(orderId: string) {
     deliveryLocation,
     eta,
     isConnected,
+    notification,
     updateOrderStatus,
     updateDeliveryLocation,
   };

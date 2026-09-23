@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
 import { DollarSign } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -28,7 +28,7 @@ interface CommissionsResponse {
 }
 
 export default function CommissionsPage() {
-  const t = useTranslations('adminCommissions');
+  const t = useTranslations('common');
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [summary, setSummary] = useState({ totalAmount: 0, count: 0 });
   const [loading, setLoading] = useState(true);
@@ -55,14 +55,14 @@ export default function CommissionsPage() {
         },
       });
 
-      if (!res.ok) throw new Error(t('loadError'));
+      if (!res.ok) throw new Error("Erreur lors du chargement des commissions");
       const data: CommissionsResponse = await res.json();
       setCommissions(data.commissions);
       setSummary(data.summary);
       setTotal(data.pagination.total);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('error'));
+      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
     } finally {
       setLoading(false);
     }
@@ -79,10 +79,10 @@ export default function CommissionsPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <DollarSign className="w-8 h-8" />
-          {t('title')}
+          Commissions & Facturation
         </h1>
         <p className="text-gray-400 mt-2">
-          {t('subtitle')}
+          Suivi des commissions de la plateforme
         </p>
       </div>
 
@@ -94,17 +94,17 @@ export default function CommissionsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-6">
-          <p className="text-sm text-green-400 mb-2">{t('totalAmount')}</p>
+          <p className="text-sm text-green-400 mb-2">Montant Total</p>
           <p className="text-3xl font-bold text-green-400">
             €{summary.totalAmount.toFixed(2)}
           </p>
           <p className="text-xs text-green-400/60 mt-2">
-            {summary.count} {t('entries')}
+            {summary.count} entrée(s)
           </p>
         </div>
 
         <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
-          <p className="text-sm text-blue-400 mb-2">{t('averagePerMerchant')}</p>
+          <p className="text-sm text-blue-400 mb-2">Moyenne par Commerçant</p>
           <p className="text-3xl font-bold text-blue-400">
             €
             {summary.count > 0
@@ -112,7 +112,7 @@ export default function CommissionsPage() {
               : "0.00"}
           </p>
           <p className="text-xs text-blue-400/60 mt-2">
-            Sur {summary.count} {t('merchants')}
+            Sur {summary.count} commerçant(s)
           </p>
         </div>
       </div>
@@ -124,7 +124,7 @@ export default function CommissionsPage() {
       ) : commissions.length === 0 ? (
         <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700/50">
           <DollarSign className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">{t('empty')}</p>
+          <p className="text-gray-400">Aucune commission trouvée</p>
         </div>
       ) : (
         <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 overflow-hidden">
@@ -133,16 +133,16 @@ export default function CommissionsPage() {
               <thead className="bg-gray-900/50 border-b border-gray-700/50">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
-                    {t('colPeriod')}
+                    Période
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
-                    {t('colMerchant')}
+                    Commerçant
                   </th>
                   <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
-                    {t('colAmount')}
+                    Montant
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
-                    {t('colDate')}
+                    Date
                   </th>
                 </tr>
               </thead>
@@ -192,7 +192,8 @@ export default function CommissionsPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          {t('pagination', { from: offset + 1, to: Math.min(offset + limit, total), total })}
+          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur{" "}
+          {total}
         </p>
         <div className="flex gap-2">
           <button
@@ -200,14 +201,14 @@ export default function CommissionsPage() {
             disabled={offset === 0}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            {t('previous')}
+            Précédent
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            {t('next')}
+            Suivant
           </button>
         </div>
       </div>

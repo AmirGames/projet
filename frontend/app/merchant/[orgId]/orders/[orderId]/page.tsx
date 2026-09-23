@@ -18,6 +18,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface LigneCommande {
@@ -60,6 +61,7 @@ interface Commande {
 const STATUTS: { valeur: string; libelle: string }[] = [
   { valeur: 'PENDING', libelle: 'En attente' },
   { valeur: 'ACCEPTED', libelle: 'Acceptée' },
+  { valeur: 'PREPARING', libelle: 'En préparation' },
   { valeur: 'READY', libelle: 'Prête' },
   { valeur: 'COMPLETED', libelle: 'Terminée' },
   { valeur: 'REJECTED', libelle: 'Refusée' },
@@ -68,12 +70,14 @@ const STATUTS: { valeur: string; libelle: string }[] = [
 const COULEURS: Record<string, string> = {
   PENDING: 'bg-orange-500/20 text-orange-400',
   ACCEPTED: 'bg-blue-500/20 text-blue-400',
+  PREPARING: 'bg-amber-500/20 text-amber-400',
   READY: 'bg-purple-500/20 text-purple-400',
   COMPLETED: 'bg-green-500/20 text-green-400',
   REJECTED: 'bg-red-500/20 text-red-400',
 };
 
 export default function DetailCommandePage() {
+  const t = useTranslations('merchantOrderDetail');
   const params = useParams();
   const orgId = params?.orgId as string;
   const orderId = params?.orderId as string;

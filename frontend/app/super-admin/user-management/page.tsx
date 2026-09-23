@@ -1,9 +1,8 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-
 import { useEffect, useState } from 'react';
 import { Ban, Undo2, Search, AlertCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface User {
   id: string;
@@ -16,7 +15,7 @@ interface User {
 }
 
 export default function UserManagementPage() {
-  const t = useTranslations('superadminUserManagement');
+  const t = useTranslations('common');
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -80,7 +79,7 @@ export default function UserManagementPage() {
     }
   };
 
-  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
+  if (loading) return <div className="text-center py-8">Chargement...</div>;
 
   return (
     <div className="space-y-6">

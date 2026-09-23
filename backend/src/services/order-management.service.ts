@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { emitWebhook } from "./webhook.service";
+import { emitOrderUpdate, emitNotification } from "../config/socket";
 
 export interface OrderFilterOptions {
   skip?: number;
@@ -130,9 +131,20 @@ export class OrderManagementService {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
 
-      const validStatuses = ["PENDING", "ACCEPTED", "REJECTED", "READY", "COMPLETED"];
+      const validStatuses = ["PENDING", "ACCEPTED", "PREPARING", "REJECTED", "READY", "COMPLETED"];
       if (!validStatuses.includes(status)) {
         throw new ApiError(400, "Invalid order status", "INVALID_STATUS");
+      }
+
+      // Vérification supplémentaire : si paiement en liquide (CASH), doit être PICKUP uniquement
+      // Ceci ne devrait jamais arriver car la validation est faite à la création,
+      // mais c'est une couche supplémentaire de sécurité
+      if (order.paymentMethodName === "CASH" && order.deliveryType === "DELIVERY" && status === "COMPLETED") {
+        throw new ApiError(
+          400,
+          "Impossible de compléter une commande avec paiement en liquide en livraison",
+          "CASH_DELIVERY_COMPLETION_NOT_ALLOWED"
+        );
       }
 
       const updated = await db.order.update({
@@ -158,10 +170,63 @@ export class OrderManagementService {
         totalAmount: Number(updated.totalAmount),
       });
 
+      // Notifier le client des changements de statut via Socket.IO (temps réel)
+      emitOrderUpdate(updated.id, status, {
+        message: this.getMessageForStatus(status),
+        title: this.getTitleForStatus(status),
+      });
+
+      // Notifier le client des changements de statut via notification
+      if (updated.customer?.email) {
+        await db.notification.create({
+          data: {
+            storeId: updated.storeId,
+            type: "ORDER_PLACED",
+            title: this.getTitleForStatus(status),
+            message: this.getMessageForStatus(status),
+            recipientEmail: updated.customer.email,
+            link: `/client/orders/${updated.id}`,
+            relatedOrderId: updated.id,
+          },
+        });
+
+        // Notifier le client via Socket.IO aussi
+        emitNotification(updated.customer.email, {
+          type: "order_status_update",
+          orderId: updated.id,
+          status: status,
+          title: this.getTitleForStatus(status),
+          message: this.getMessageForStatus(status),
+          timestamp: new Date().toISOString(),
+        });
+      }
+
       return updated;
     } catch (error) {
       throw error;
     }
+  }
+
+  private static getTitleForStatus(status: string): string {
+    const titles: Record<string, string> = {
+      ACCEPTED: "Commande acceptée",
+      PREPARING: "En préparation",
+      READY: "Commande prête",
+      COMPLETED: "Commande complétée",
+      REJECTED: "Commande refusée",
+    };
+    return titles[status] || "Mise à jour de commande";
+  }
+
+  private static getMessageForStatus(status: string): string {
+    const messages: Record<string, string> = {
+      ACCEPTED: "Votre commande a été acceptée. Elle est en cours de préparation.",
+      PREPARING: "Votre commande est en cours de préparation à la cuisine.",
+      READY: "Votre commande est prête ! Elle est en attente de retrait ou de livraison.",
+      COMPLETED: "Votre commande est complétée. Merci pour votre achat !",
+      REJECTED: "Malheureusement, votre commande a été refusée. Veuillez nous contacter.",
+    };
+    return messages[status] || "Votre commande a été mise à jour.";
   }
 
   static async addOrderNote(storeId: string, orderId: string, notes: string) {
@@ -218,6 +283,7 @@ export class OrderManagementService {
         averageOrderValue: orders.length > 0 ? orders.reduce((sum, o) => sum + parseFloat(o.totalAmount.toString()), 0) / orders.length : 0,
         pending: orders.filter(o => o.status === "PENDING").length,
         accepted: orders.filter(o => o.status === "ACCEPTED").length,
+        preparing: orders.filter(o => o.status === "PREPARING").length,
         ready: orders.filter(o => o.status === "READY").length,
         completed: orders.filter(o => o.status === "COMPLETED").length,
         rejected: orders.filter(o => o.status === "REJECTED").length,

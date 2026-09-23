@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react';
 import {
   DndContext,
@@ -22,6 +21,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useCurrentStore } from '@/lib/current-store';
 
+import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Category {
@@ -33,7 +33,8 @@ interface Category {
   createdAt: string;
 }
 
-function SortableCategory({ category, onEdit, onDelete, t }: any) {
+function SortableCategory({ category, onEdit, onDelete }: any) {
+  const t = useTranslations('merchantCategories');
   const {
     attributes,
     listeners,
@@ -63,7 +64,7 @@ function SortableCategory({ category, onEdit, onDelete, t }: any) {
             {...attributes}
             {...listeners}
             className="cursor-grab active:cursor-grabbing text-gray-600 hover:text-gray-400"
-            title={t('dragToReorder')}
+            title="Glissez pour réorganiser"
           >
             <GripVertical size={18} />
           </button>
@@ -79,14 +80,14 @@ function SortableCategory({ category, onEdit, onDelete, t }: any) {
           <button
             onClick={() => onEdit(category)}
             className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-            title={t('buttonEdit')}
+            title="Modifier"
           >
             <Edit2 size={16} />
           </button>
           <button
             onClick={() => onDelete(category.id)}
             className="p-2 bg-red-600 hover:bg-red-700 rounded transition-colors"
-            title={t('buttonDelete')}
+            title="Supprimer"
           >
             <Trash2 size={16} />
           </button>
@@ -95,7 +96,7 @@ function SortableCategory({ category, onEdit, onDelete, t }: any) {
 
       {category.products && category.products.length > 0 && (
         <div className="mt-3 pt-3 border-t border-gray-700">
-          <p className="text-xs text-gray-400 mb-2">{t('products')}</p>
+          <p className="text-xs text-gray-400 mb-2">Produits:</p>
           <div className="flex flex-wrap gap-2">
             {category.products.map((product: any) => (
               <span
@@ -113,7 +114,6 @@ function SortableCategory({ category, onEdit, onDelete, t }: any) {
 }
 
 export default function CategoriesPage() {
-  const t = useTranslations('merchantCategories');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -187,11 +187,11 @@ export default function CategoriesPage() {
           body: JSON.stringify({ storeId, ordering }),
         });
 
-        setMessage(t('reorderedSuccess'));
+        setMessage('✅ Catégories réorganisées');
         setTimeout(() => setMessage(''), 3000);
       } catch (error) {
         console.error('Error reordering:', error);
-        setMessage(t('reorderedError'));
+        setMessage('❌ Erreur lors de la réorganisation');
         fetchStoreAndCategories();
       } finally {
         setIsReordering(false);
@@ -203,7 +203,7 @@ export default function CategoriesPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      setMessage(t('errorNameRequired'));
+      setMessage('❌ Le nom de la catégorie est requis');
       return;
     }
 
@@ -221,18 +221,18 @@ export default function CategoriesPage() {
         });
 
         if (response.ok) {
-          setMessage(t('successUpdated'));
+          setMessage('✅ Catégorie mise à jour avec succès');
           resetForm();
           await fetchStoreAndCategories();
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.error || errorData.message || t('errorUpdate');
+          const errorMsg = errorData.error || errorData.message || 'Erreur lors de la mise à jour';
           setMessage(`❌ ${errorMsg}`);
         }
       } else {
         if (!storeId) {
-          setMessage(t('errorStoreNotFound'));
+          setMessage('❌ Erreur: store non trouvé');
           return;
         }
 
@@ -250,24 +250,24 @@ export default function CategoriesPage() {
         });
 
         if (response.ok) {
-          setMessage(t('successCreated'));
+          setMessage('✅ Catégorie créée avec succès');
           resetForm();
           await fetchStoreAndCategories();
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.error || errorData.message || t('errorCreate');
+          const errorMsg = errorData.error || errorData.message || 'Erreur lors de la création';
           setMessage(`❌ ${errorMsg}`);
         }
       }
     } catch (error) {
       console.error('Error saving category:', error);
-      setMessage(t('errorSave'));
+      setMessage('❌ Erreur lors de la sauvegarde');
     }
   };
 
   const handleDelete = async (categoryId: string) => {
-    if (!confirm(t('confirmDelete'))) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie?')) {
       return;
     }
 
@@ -279,17 +279,17 @@ export default function CategoriesPage() {
       });
 
       if (response.ok) {
-        setMessage(t('successDeleted'));
+        setMessage('✅ Catégorie supprimée');
         await fetchStoreAndCategories();
         setTimeout(() => setMessage(''), 3000);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.error || errorData.message || t('errorDelete');
+        const errorMsg = errorData.error || errorData.message || 'Erreur lors de la suppression';
         setMessage(`❌ ${errorMsg}`);
       }
     } catch (error) {
       console.error('Error deleting category:', error);
-      setMessage(`❌ ${t('errorDelete')}`);
+      setMessage('❌ Erreur lors de la suppression');
     }
   };
 
@@ -311,7 +311,7 @@ export default function CategoriesPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">{t('loading')}</p>
+            <p className="text-gray-400">Chargement des catégories...</p>
           </div>
         </div>
       </div>
@@ -323,15 +323,15 @@ export default function CategoriesPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">{t('title')}</h1>
-            <p className="text-gray-400 mt-1">{t('description')}</p>
+            <h1 className="text-3xl font-bold">📂 Gestion des Catégories</h1>
+            <p className="text-gray-400 mt-1">Organisez vos produits par catégories (glissez pour réorganiser)</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
             className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors disabled:opacity-50"
             disabled={isReordering}
           >
-            <Plus size={20} /> {t('buttonAdd')}
+            <Plus size={20} /> Ajouter Catégorie
           </button>
         </div>
 
@@ -346,14 +346,14 @@ export default function CategoriesPage() {
         )}
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-gray-400 text-sm">{t('statsTotalCategories')}</p>
+          <p className="text-gray-400 text-sm">Total de catégories</p>
           <p className="text-3xl font-bold">{categories.length}</p>
         </div>
 
         <div className="space-y-3">
           {categories.length === 0 ? (
             <div className="text-center py-12 bg-gray-800 border border-gray-700 rounded-lg">
-              <p className="text-gray-400">{t('empty')}</p>
+              <p className="text-gray-400">Aucune catégorie créée. Commencez à en créer une!</p>
             </div>
           ) : (
             <DndContext
@@ -372,7 +372,6 @@ export default function CategoriesPage() {
                     category={category}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
-                    t={t}
                   />
                 ))}
               </SortableContext>
@@ -382,7 +381,7 @@ export default function CategoriesPage() {
 
         <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
           <p className="text-blue-400 text-sm">
-            {t('hint')}
+            💡 Les catégories aident à organiser votre catalogue. Glissez les catégories pour les réorganiser.
           </p>
         </div>
       </div>
@@ -392,7 +391,7 @@ export default function CategoriesPage() {
           <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full">
             <div className="border-b border-gray-700 p-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold">
-                {editingCategory ? t('modalEditTitle') : t('modalAddTitle')}
+                {editingCategory ? 'Modifier Catégorie' : 'Ajouter Catégorie'}
               </h2>
               <button
                 onClick={resetForm}
@@ -404,13 +403,13 @@ export default function CategoriesPage() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="text-sm text-gray-400 block mb-2">{t('labelName')}</label>
+                <label className="text-sm text-gray-400 block mb-2">Nom de la catégorie</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                  placeholder={t('placeholderName')}
+                  placeholder="Ex: Pizzas, Desserts, Boissons..."
                   autoFocus
                   required
                 />
@@ -422,13 +421,13 @@ export default function CategoriesPage() {
                   onClick={resetForm}
                   className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors"
                 >
-                  {t('buttonCancel')}
+                  Annuler
                 </button>
                 <button
                   type="submit"
                   className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors"
                 >
-                  {editingCategory ? t('buttonUpdate') : t('buttonCreate')}
+                  {editingCategory ? 'Mettre à jour' : 'Créer'}
                 </button>
               </div>
             </form>

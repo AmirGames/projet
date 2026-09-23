@@ -83,9 +83,7 @@ export async function authMiddleware(req: Request, _res: Response, next: NextFun
     }
 
     req.userId = payload.userId;
-    req.orgId = payload.orgId;
-    req.storeIds = payload.storeIds;
-    req.role = payload.role;
+    // orgId, storeIds, and role are no longer in JWT; routes must load them from DB
     req.user = payload;
     req.compte = compte;
 
@@ -120,7 +118,23 @@ export function verifyToken(token: string) {
 
 export async function checkOrgStatus(req: Request, _res: Response, next: NextFunction) {
   try {
-    const orgId = req.orgId;
+    // Load orgId from request body or query if not in JWT
+    let orgId = req.orgId || (req.body?.orgId as string) || (req.query?.orgId as string);
+
+    // If still no orgId, try to load it from storeId
+    if (!orgId) {
+      const storeId = (req.body?.storeId || req.query?.storeId) as string;
+      if (storeId) {
+        const store = await db.store.findUnique({
+          where: { id: storeId },
+          select: { orgId: true },
+        });
+        if (store) {
+          orgId = store.orgId;
+        }
+      }
+    }
+
     if (!orgId) {
       return next(new ApiError(401, "Organisation non identifiée", "MISSING_ORG"));
     }

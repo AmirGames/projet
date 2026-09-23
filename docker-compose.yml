@@ -31,6 +31,16 @@ services:
       timeout: 5s
       retries: 5
 
+  # Mailpit - Email testing
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: saas-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+
 volumes:
   postgres_data:
 
@@ -38,3 +48,4 @@ volumes:
 # docker-compose up -d          # Start services
 # docker-compose down            # Stop services
 # docker-compose logs -f         # View logs
+# Visit http://localhost:8025 for Mailpit UI

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
 import { AlertCircle, CheckCircle } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -27,7 +27,7 @@ interface TicketsResponse {
 }
 
 export default function TicketsPage() {
-  const t = useTranslations('adminTickets');
+  const t = useTranslations('common');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -57,13 +57,13 @@ export default function TicketsPage() {
         },
       });
 
-      if (!res.ok) throw new Error(t('loadError'));
+      if (!res.ok) throw new Error("Erreur lors du chargement des tickets");
       const data: TicketsResponse = await res.json();
       setTickets(data.tickets);
       setTotal(data.pagination.total);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('error'));
+      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
     } finally {
       setLoading(false);
     }
@@ -83,10 +83,10 @@ export default function TicketsPage() {
         body: JSON.stringify(updates),
       });
 
-      if (!res.ok) throw new Error(t('updateError'));
+      if (!res.ok) throw new Error("Erreur lors de la mise à jour");
       fetchTickets();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('error'));
+      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
     }
   };
 
@@ -125,10 +125,10 @@ export default function TicketsPage() {
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
           <AlertCircle className="w-8 h-8" />
-          {t('title')}
+          Gestion des Tickets
         </h1>
         <p className="text-gray-400 mt-2">
-          {t('subtitle')}
+          Gérez les demandes de support des commerçants
         </p>
       </div>
 
@@ -140,7 +140,7 @@ export default function TicketsPage() {
 
       <div className="space-y-4">
         <div>
-          <label className="text-sm text-gray-400 mb-2 block">{t('statusLabel')}</label>
+          <label className="text-sm text-gray-400 mb-2 block">Status</label>
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => {
@@ -153,7 +153,7 @@ export default function TicketsPage() {
                   : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
             >
-              {t('statusAll')}
+              Tous
             </button>
             {["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"].map((status) => (
               <button
@@ -168,17 +168,17 @@ export default function TicketsPage() {
                     : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                 }`}
               >
-                {status === "OPEN" && `🟠 ${t('statusOpen')}`}
-                {status === "IN_PROGRESS" && `🔵 ${t('statusInProgress')}`}
-                {status === "RESOLVED" && `✅ ${t('statusResolved')}`}
-                {status === "CLOSED" && `⚪ ${t('statusClosed')}`}
+                {status === "OPEN" && "🟠 Ouvert"}
+                {status === "IN_PROGRESS" && "🔵 En cours"}
+                {status === "RESOLVED" && "✅ Résolu"}
+                {status === "CLOSED" && "⚪ Fermé"}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="text-sm text-gray-400 mb-2 block">{t('priorityLabel')}</label>
+          <label className="text-sm text-gray-400 mb-2 block">Priorité</label>
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => {
@@ -191,7 +191,7 @@ export default function TicketsPage() {
                   : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
             >
-              {t('priorityAll')}
+              Toutes
             </button>
             {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((priority) => (
               <button
@@ -220,7 +220,7 @@ export default function TicketsPage() {
       ) : tickets.length === 0 ? (
         <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700/50">
           <CheckCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">{t('empty')}</p>
+          <p className="text-gray-400">Aucun ticket trouvé</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -250,7 +250,7 @@ export default function TicketsPage() {
                     {ticket.description}
                   </p>
                   <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-                    <span>{t('merchant')}: {ticket.org.name}</span>
+                    <span>Commerçant: {ticket.org.name}</span>
                     <span>
                       {new Date(ticket.createdAt).toLocaleDateString("fr-FR")}
                     </span>
@@ -291,7 +291,8 @@ export default function TicketsPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          {t('pagination', { from: offset + 1, to: Math.min(offset + limit, total), total })}
+          Affichage {offset + 1} à {Math.min(offset + limit, total)} sur{" "}
+          {total}
         </p>
         <div className="flex gap-2">
           <button
@@ -299,14 +300,14 @@ export default function TicketsPage() {
             disabled={offset === 0}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            {t('previous')}
+            Précédent
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
             className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
           >
-            {t('next')}
+            Suivant
           </button>
         </div>
       </div>

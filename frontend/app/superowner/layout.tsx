@@ -35,15 +35,32 @@ import {
   Download,
   Megaphone,
   LogIn,
+  ChevronDown,
+  Users2,
+  UserCheck,
+  ShoppingCart,
+  Briefcase,
+  Car,
 } from 'lucide-react';
 
 export default function SuperOwnerLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['categories', 'members']));
   const router = useRouter();
   const pathname = usePathname();
   const { logout } = useAuth();
   const { isReady } = useProtectedRoute(true);
   const t = useTranslations('superowner');
+
+  const toggleSection = (sectionId: string) => {
+    const newExpanded = new Set(expandedSections);
+    if (newExpanded.has(sectionId)) {
+      newExpanded.delete(sectionId);
+    } else {
+      newExpanded.add(sectionId);
+    }
+    setExpandedSections(newExpanded);
+  };
 
   const handleLogout = () => {
     logout();
@@ -78,6 +95,17 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
         { label: t('nav.formules'), icon: Layers, href: '/superowner/formules' },
         { label: t('nav.financialReports'), icon: BarChart3, href: '/superowner/financial-reports' },
         { label: t('nav.exports'), icon: Download, href: '/superowner/exports' },
+      ],
+    },
+    {
+      id: 'members',
+      title: t('nav.members'),
+      icon: Users2,
+      items: [
+        { label: t('nav.clients'), icon: UserCheck, href: '/superowner/members/clients' },
+        { label: t('nav.merchants'), icon: ShoppingCart, href: '/superowner/members/merchants' },
+        { label: t('nav.deliveries'), icon: Briefcase, href: '/superowner/members/deliveries' },
+        { label: t('nav.drivers'), icon: Car, href: '/superowner/members/drivers' },
       ],
     },
     {
@@ -129,33 +157,54 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-4 overflow-y-auto no-scrollbar">
-          {navSections.map((section, index) => (
-            <div key={section.title ?? `section-${index}`} className="space-y-1">
-              {sidebarOpen && section.title && (
-                <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  {section.title}
-                </p>
-              )}
-              {section.items.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    title={sidebarOpen ? undefined : item.label}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-red-600/20 text-red-400 font-medium'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                    }`}
-                  >
-                    <item.icon size={20} className="flex-shrink-0" />
-                    {sidebarOpen && <span className="truncate">{item.label}</span>}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+          {navSections.map((section, index) => {
+            const isCollapsible = section.id;
+            const isExpanded = isCollapsible ? expandedSections.has(section.id) : true;
+
+            return (
+              <div key={section.title ?? `section-${index}`} className="space-y-1">
+                {sidebarOpen && section.title && (
+                  isCollapsible ? (
+                    <button
+                      onClick={() => isCollapsible && toggleSection(section.id)}
+                      className="w-full flex items-center justify-between px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-400 transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        {section.icon && <section.icon size={16} />}
+                        {section.title}
+                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={`transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+                      />
+                    </button>
+                  ) : (
+                    <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      {section.title}
+                    </p>
+                  )
+                )}
+                {isExpanded && section.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      title={sidebarOpen ? undefined : item.label}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-red-600/20 text-red-400 font-medium'
+                          : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                      }`}
+                    >
+                      <item.icon size={20} className="flex-shrink-0" />
+                      {sidebarOpen && <span className="truncate">{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })}
 
         </nav>
 

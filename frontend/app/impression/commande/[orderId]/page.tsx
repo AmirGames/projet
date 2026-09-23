@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 
 import { euro } from '@/lib/format';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -29,6 +30,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * `useCurrentStore`, qui n'existe que dans l'espace commerçant.
  */
 function DocumentImprimable() {
+  const t = useTranslations('common');
   const params = useParams();
   const recherche = useSearchParams();
 

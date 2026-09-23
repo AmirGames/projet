@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -10,6 +11,7 @@ import { MesVersements } from '@/components/MesVersements';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+  const t = useTranslations('driverEarnings');
 interface CourseRemuneree {
   id: string;
   orderId: string;
@@ -37,6 +39,14 @@ export default function RevenusLivreurPage() {
   const [revenus, setRevenus] = useState<Revenus | null>(null);
   const [loading, setLoading] = useState(true);
   const [erreur, setErreur] = useState('');
+
+  useEffect(() => {
+    // Vérifier l'authentification avant de charger les données
+    const token = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');
+    if (!token) {
+      router.push('/driver/login');
+    }
+  }, [router]);
 
   const charger = useCallback(async () => {
     const token = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Archive, ArchiveRestore, MessageCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import { TicketConversation } from '@/components/TicketConversation';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,7 +24,7 @@ const STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
 export default function TicketsPage() {
-  const t = useTranslations('superadminTickets');
+  const t = useTranslations('common');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('OPEN');
@@ -116,14 +116,14 @@ export default function TicketsPage() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        throw new Error(data?.error || t('archiveError'));
+        throw new Error(data?.error || "Échec de l'archivage");
       }
 
       setError('');
       setSelectedTicket(null);
       await fetchTickets();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('archiveError'));
+      setError(err instanceof Error ? err.message : "Échec de l'archivage");
     } finally {
       setSaving(false);
     }

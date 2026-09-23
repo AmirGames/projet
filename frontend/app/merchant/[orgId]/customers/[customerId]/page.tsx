@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -49,6 +50,7 @@ const COULEURS: Record<string, string> = {
 };
 
 export default function FicheClientPage() {
+  const t = useTranslations('merchantcustomers');
   const params = useParams();
   const orgId = params?.orgId as string;
   const customerId = params?.customerId as string;

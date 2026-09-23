@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { MapPin, Navigation, Timer, Wallet } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -21,6 +20,17 @@ interface Proposition {
   distanceKm: number | null;
   payout: number;
   expiresAt: string;
+  // Lieu de prise en charge
+  pickupStore?: string | null;
+  pickupAddress?: string | null;
+  pickupCity?: string | null;
+  pickupLat?: number | null;
+  pickupLng?: number | null;
+  // Lieu de livraison
+  deliveryAddress?: string | null;
+  deliveryCity?: string | null;
+  deliveryPostal?: string | null;
+  // Anciennes données (rétrocompatibilité)
   boutique?: { name?: string; address?: string; city?: string } | null;
   adresse?: string | null;
   ville?: string | null;
@@ -28,8 +38,10 @@ interface Proposition {
 }
 
 interface Props {
-  /** Le livreur accepte des courses seulement s'il est en ligne. */
-  enLigne: boolean;
+  /** Le livreur a choisi de se mettre en ligne (envoyer la position). */
+  isOnline: boolean;
+  /** Le livreur peut accepter une course (pas de course en cours). */
+  isAvailable: boolean;
   /** Appelé après une acceptation, pour rafraîchir la page appelante. */
   surAcceptation?: () => void;
 }
@@ -44,8 +56,7 @@ interface Props {
  * La position est envoyée tant que le livreur est en ligne, course ou non :
  * c'est elle qui décide à qui la prochaine course sera proposée.
  */
-export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
-  const t = useTranslations('propositionsCourses');
+export function PropositionsCourses({ isOnline, isAvailable, surAcceptation }: Props) {
   const [propositions, setPropositions] = useState<Proposition[]>([]);
   const [maintenant, setMaintenant] = useState(() => Date.now());
   const [enCours, setEnCours] = useState<string | null>(null);
@@ -75,9 +86,9 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
     }
   }, []);
 
-  // Relevé périodique des propositions.
+  // Relevé périodique des propositions (seulement si disponible).
   useEffect(() => {
-    if (!enLigne) {
+    if (!isAvailable) {
       setPropositions([]);
       return;
     }
@@ -85,11 +96,11 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
     relever();
     const minuteur = setInterval(relever, INTERVALLE_RELEVE_MS);
     return () => clearInterval(minuteur);
-  }, [enLigne, relever]);
+  }, [isAvailable, relever]);
 
-  // Envoi de la position.
+  // Envoi de la position (tant que le livreur est en ligne, même en cours de livraison).
   useEffect(() => {
-    if (!enLigne || typeof navigator === 'undefined' || !navigator.geolocation) return;
+    if (!isOnline || typeof navigator === 'undefined' || !navigator.geolocation) return;
 
     const envoyer = () => {
       navigator.geolocation.getCurrentPosition(
@@ -120,7 +131,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
     envoyer();
     const minuteur = setInterval(envoyer, INTERVALLE_POSITION_MS);
     return () => clearInterval(minuteur);
-  }, [enLigne]);
+  }, [isOnline]);
 
   // Le compte à rebours a besoin d'un battement de seconde.
   useEffect(() => {
@@ -143,7 +154,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
       const donnees = await resultat.json();
 
       if (!resultat.ok) {
-        setErreur(donnees.error || t('saveError'));
+        setErreur(donnees.error || "La réponse n'a pas été enregistrée.");
         await relever();
         return;
       }
@@ -152,13 +163,13 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
 
       if (reponse === 'accept') surAcceptation?.();
     } catch {
-      setErreur(t('networkError'));
+      setErreur('Serveur injoignable. Vérifiez votre connexion.');
     } finally {
       setEnCours(null);
     }
   };
 
-  if (!enLigne) return null;
+  if (!isAvailable) return null;
 
   const visibles = propositions.filter((p) => new Date(p.expiresAt).getTime() > maintenant);
 
@@ -166,7 +177,7 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
     <div className="space-y-3">
       {positionRefusee && (
         <div className="bg-amber-900/30 border border-amber-700/50 text-amber-200 rounded-lg p-3 text-sm">
-          {t('locationDenied')}
+          Localisation refusée. Sans votre position, aucune course ne peut vous être proposée.
         </div>
       )}
 
@@ -179,9 +190,9 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
       {visibles.length === 0 && (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center text-gray-400">
           <Navigation size={28} className="mx-auto mb-2 text-gray-600" />
-          <p>{t('waitingForDelivery')}</p>
+          <p>En attente d&apos;une course...</p>
           <p className="text-xs text-gray-500 mt-1">
-            {t('youWillBeNotified')}
+            Vous serez prévenu dès qu&apos;une commande est prête près de vous.
           </p>
         </div>
       )}
@@ -192,70 +203,111 @@ export function PropositionsCourses({ enLigne, surAcceptation }: Props) {
           Math.ceil((new Date(proposition.expiresAt).getTime() - maintenant) / 1000)
         );
 
+        const pickupName = proposition.pickupStore || proposition.boutique?.name || 'Restaurant';
+        const pickupAddr = proposition.pickupAddress || proposition.boutique?.address || '';
+        const pickupCity = proposition.pickupCity || proposition.boutique?.city || '';
+        const deliveryAddr = proposition.deliveryAddress || proposition.adresse || '';
+        const deliveryCity = proposition.deliveryCity || proposition.ville || '';
+        const deliveryPostal = proposition.deliveryPostal || proposition.codePostal || '';
+
+        // Temps estimé basé sur distance (moyenne ~30 km/h en ville)
+        const tempsEstime = Math.max(5, Math.round((proposition.distanceKm || 0) * 2));
+
         return (
           <div
             key={proposition.id}
-            className="bg-gray-800 border-2 border-orange-600 rounded-lg p-4 space-y-3 animate-pulse-none"
+            className="bg-gradient-to-b from-gray-800 to-gray-900 border-2 border-green-600 rounded-xl p-6 space-y-4 shadow-lg overflow-hidden relative"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-lg font-bold text-white truncate">
-                  {proposition.boutique?.name || 'Course à prendre'}
-                </p>
-                <p className="text-sm text-gray-400 truncate">
-                  {proposition.boutique?.address}
-                  {proposition.boutique?.city ? `, ${proposition.boutique.city}` : ''}
-                </p>
-              </div>
-
+            {/* Timer indicator */}
+            <div className="absolute top-3 right-3">
               <span
-                title={t('timeRemaining')}
-                className={`flex items-center gap-1 px-2 py-1 rounded font-mono text-sm flex-shrink-0 ${
-                  restant <= 10 ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-200'
+                className={`flex items-center gap-1 px-3 py-1 rounded-full font-mono text-xs font-bold flex-shrink-0 ${
+                  restant <= 10
+                    ? 'bg-red-600 text-white animate-pulse'
+                    : restant <= 20
+                    ? 'bg-orange-600 text-white'
+                    : 'bg-green-600 text-white'
                 }`}
               >
-                <Timer size={14} />
+                <Timer size={12} />
                 {restant}s
               </span>
             </div>
 
-            <div className="flex items-center gap-4 text-sm">
-              <span className="flex items-center gap-1 text-gray-300">
-                <MapPin size={14} className="text-orange-500" />
-                {proposition.distanceKm != null ? `${proposition.distanceKm} km` : t('defaultName')}
-              </span>
-              <span className="flex items-center gap-1 font-semibold text-green-400">
-                <Wallet size={14} />
-                {euro(proposition.payout)}
-              </span>
+            {/* Montant principal */}
+            <div className="pt-2">
+              <p className="text-gray-400 text-sm mb-1">Vous gagnerez</p>
+              <p className="text-4xl font-bold text-white">{euro(proposition.payout)}</p>
             </div>
 
-            <div className="text-sm text-gray-400 border-t border-gray-700 pt-2">
-              <p className="text-xs uppercase tracking-wide text-gray-500">{t('delivery')}</p>
-              <p className="text-gray-300">
-                {proposition.adresse}
-                {proposition.codePostal || proposition.ville
-                  ? `, ${[proposition.codePostal, proposition.ville].filter(Boolean).join(' ')}`
-                  : ''}
-              </p>
+            {/* Distance et temps */}
+            <div className="bg-gray-800/50 rounded-lg p-3 flex gap-6">
+              <div>
+                <p className="text-gray-400 text-xs mb-1">Distance</p>
+                <div className="flex items-center gap-1 text-white font-semibold">
+                  <MapPin size={16} className="text-orange-500" />
+                  {proposition.distanceKm != null ? `${(proposition.distanceKm).toFixed(1)} km` : '?'}
+                </div>
+              </div>
+              <div className="border-l border-gray-700"></div>
+              <div>
+                <p className="text-gray-400 text-xs mb-1">Durée estimée</p>
+                <div className="flex items-center gap-1 text-white font-semibold">
+                  <Timer size={16} className="text-blue-500" />
+                  {tempsEstime} min
+                </div>
+              </div>
             </div>
 
-            <div className="flex gap-2">
+            {/* Lieu de prise en charge */}
+            <div>
+              <p className="text-gray-400 text-xs uppercase tracking-wider mb-2 font-semibold">À récupérer</p>
+              <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-3">
+                <p className="text-white font-semibold text-sm">{pickupName}</p>
+                <p className="text-gray-300 text-xs mt-1">
+                  {pickupAddr}
+                  {pickupCity ? `, ${pickupCity}` : ''}
+                </p>
+              </div>
+            </div>
+
+            {/* Lieu de livraison */}
+            <div>
+              <p className="text-gray-400 text-xs uppercase tracking-wider mb-2 font-semibold">À livrer</p>
+              <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-3">
+                <p className="text-white font-semibold text-sm flex items-center gap-2">
+                  <MapPin size={14} className="text-green-500" />
+                  Adresse de livraison
+                </p>
+                <p className="text-gray-300 text-xs mt-1">
+                  {deliveryAddr}
+                  {deliveryPostal || deliveryCity
+                    ? `, ${[deliveryPostal, deliveryCity].filter(Boolean).join(' ')}`
+                    : ''}
+                </p>
+                <p className="text-gray-500 text-xs mt-2 italic">
+                  ℹ️ À ±50m de l&apos;adresse exacte pour votre confidentialité
+                </p>
+              </div>
+            </div>
+
+            {/* Boutons d'action */}
+            <div className="flex gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => repondre(proposition.id, 'accept')}
                 disabled={enCours === proposition.id}
-                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition"
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg transition transform hover:scale-105 active:scale-95"
               >
-                {enCours === proposition.id ? '...' : t('accept')}
+                {enCours === proposition.id ? '⏳ ...' : '✓ Accepter'}
               </button>
               <button
                 type="button"
                 onClick={() => repondre(proposition.id, 'decline')}
                 disabled={enCours === proposition.id}
-                className="px-5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-200 py-3 rounded-lg transition"
+                className="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-gray-200 font-semibold py-3 rounded-lg transition"
               >
-                {t('decline')}
+                {enCours === proposition.id ? '...' : 'Refuser'}
               </button>
             </div>
           </div>

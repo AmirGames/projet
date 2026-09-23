@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, MapPin, Star, Clock } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface Restaurant {
   id: string;
@@ -22,6 +23,7 @@ interface Restaurant {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function RestaurantsPage() {
+  const t = useTranslations('common');
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);

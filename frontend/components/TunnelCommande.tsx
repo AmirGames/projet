@@ -16,11 +16,11 @@
 
 import { useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { totalDuPanier, type LignePanier } from '@/lib/paniers';
+import { useAuth } from '@/lib/auth-context';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -65,7 +65,7 @@ export function TunnelCommande({
   surAnnulation,
   disposition = 'modale',
 }: Props) {
-  const t = useTranslations('tunnelCommande');
+  const { user } = useAuth();
   const [livraison, setLivraison] = useState<Livraison | null>(null);
   // Créneaux réellement proposables, déduits des horaires de la boutique.
   const [creneaux, setCreneaux] = useState<
@@ -103,6 +103,40 @@ export function TunnelCommande({
     pickupTime: '',
     notes: '',
   });
+
+  // Charger les informations du profil utilisateur si connecté.
+  useEffect(() => {
+    if (!user) return;
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    let annule = false;
+
+    fetch(`${API_URL}/api/client/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) => {
+        if (annule || !donnees?.data) return;
+
+        const profil = donnees.data;
+        setCheckoutForm((formulaire) => ({
+          ...formulaire,
+          customerName: profil.name || formulaire.customerName,
+          customerEmail: profil.email || formulaire.customerEmail,
+          customerPhone: profil.phone || formulaire.customerPhone,
+          deliveryAddress: profil.address || formulaire.deliveryAddress,
+          deliveryCity: profil.city || formulaire.deliveryCity,
+          deliveryPostal: profil.postalCode || formulaire.deliveryPostal,
+        }));
+      })
+      .catch(() => undefined);
+
+    return () => {
+      annule = true;
+    };
+  }, [user]);
 
   // Les conditions de livraison se lisent dès que l'adresse est retenue.
   useEffect(() => {
@@ -244,7 +278,7 @@ export function TunnelCommande({
 
       if (!reponse.ok) {
         setRemise(null);
-        setCodeRefuse(lu?.error || t('invalidCode'));
+        setCodeRefuse(lu?.error || "Ce code promo n'est pas valable");
         return;
       }
 
@@ -258,7 +292,7 @@ export function TunnelCommande({
 
       setRemise({ code: saisi, montant });
     } catch {
-      setCodeRefuse("Vérification impossible pour le moment");
+      setCodeRefuse('Vérification impossible pour le moment');
     } finally {
       setCodeEnCours(false);
     }
@@ -435,7 +469,7 @@ export function TunnelCommande({
                 className="w-4 h-4"
               />
               <div className="flex-1">
-                <p className="font-semibold">{t('homeDelivery')}</p>
+                <p className="font-semibold">Livraison à domicile</p>
                 <p className="text-xs text-gray-400">Livraison à votre adresse</p>
               </div>
             </label>
@@ -452,7 +486,7 @@ export function TunnelCommande({
                 className="w-4 h-4"
               />
               <div className="flex-1">
-                <p className="font-semibold">{t('storePickup')}</p>
+                <p className="font-semibold">Retrait sur place</p>
                 <p className="text-xs text-gray-400">Récupérez votre commande à la boutique</p>
               </div>
             </label>
@@ -701,7 +735,7 @@ export function TunnelCommande({
               {livraison?.zone ? ` — ${livraison.zone.name}` : ''}
             </span>
             <span>
-              {checkoutForm.deliveryType === 'PICKUP' ? t('storePickup') : euro(fraisDeLivraison)}
+              {checkoutForm.deliveryType === 'PICKUP' ? 'Retrait sur place' : euro(fraisDeLivraison)}
             </span>
           </div>
           {remise && (
@@ -755,4 +789,3 @@ export function TunnelCommande({
     </div>
   );
 }
-

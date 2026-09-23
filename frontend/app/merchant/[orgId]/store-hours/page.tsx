@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Trash2, Clock, Power } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -61,6 +62,7 @@ const NOM_DU_JOUR: Record<string, string> = {
 const franchitMinuit = (plage: Plage) => plage.close <= plage.open;
 
 export default function HorairesPage() {
+  const t = useTranslations('merchantstorehours');
   const { storeId } = useCurrentStore();
 
   const [data, setData] = useState<Horaires | null>(null);

@@ -1,9 +1,8 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-
 import { useEffect, useState } from 'react';
 import { Search, Download, Filter } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -17,7 +16,7 @@ interface AuditLog {
 }
 
 export default function AuditLogsPage() {
-  const t = useTranslations('superadminAuditLogs');
+  const t = useTranslations('common');
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -74,7 +73,7 @@ export default function AuditLogsPage() {
 
   const actions = Array.from(new Set(logs.map(l => l.action)));
 
-  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
+  if (loading) return <div className="text-center py-8">Chargement...</div>;
 
   return (
     <div className="space-y-6">

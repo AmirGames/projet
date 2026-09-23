@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
 import { ArrowLeft, Check, CreditCard, Clock, Store } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 
+import { useTranslations } from 'next-intl';
 /**
  * La formule du commerçant, et le moyen d'en changer.
  *
@@ -45,7 +45,7 @@ interface Demande {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function MaFormulePage() {
-  const t = useTranslations('merchantFormule');
+  const t = useTranslations('merchantSubscription');
   const [grille, setGrille] = useState<Formule[]>([]);
   const [quota, setQuota] = useState<Quota | null>(null);
   const [demande, setDemande] = useState<Demande | null>(null);
@@ -60,7 +60,7 @@ export default function MaFormulePage() {
     const org = localStorage.getItem('currentOrgId');
 
     if (!jeton || !org) {
-      setErreur(t('error_notAuth'));
+      setErreur('Reconnectez-vous pour voir votre formule');
       setChargement(false);
       return;
     }
@@ -74,7 +74,7 @@ export default function MaFormulePage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || t('error_loadFailed'));
+        setErreur(donnees.error || 'Impossible de charger votre formule');
         return;
       }
 
@@ -83,7 +83,7 @@ export default function MaFormulePage() {
       setDemande(donnees.data.demandeEnCours || null);
       setErreur('');
     } catch {
-      setErreur(t('error_serverError'));
+      setErreur('Le serveur ne répond pas');
     } finally {
       setChargement(false);
     }
@@ -112,21 +112,21 @@ export default function MaFormulePage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || t('error_requestFailed'));
+        setErreur(donnees.error || 'Demande refusée');
         return;
       }
 
-      setMessage(donnees.message || t('success_requested'));
+      setMessage(donnees.message || 'Demande envoyée');
       await charger();
     } catch {
-      setErreur(t('error_serverError'));
+      setErreur('Le serveur ne répond pas');
     } finally {
       setEnvoi('');
     }
   };
 
   if (chargement) {
-    return <div className="p-8 text-gray-400">{t('loading')}</div>;
+    return <div className="p-8 text-gray-400">Chargement de votre formule…</div>;
   }
 
   return (
@@ -135,16 +135,16 @@ export default function MaFormulePage() {
         <div className="flex items-center gap-4">
           <Link
             href="/merchant"
-            aria-label={t('back')}
-            title={t('back')}
+            aria-label="Retour"
+            title="Retour"
             className="p-2 hover:bg-gray-800 rounded-lg transition"
           >
             <ArrowLeft size={20} />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">{t('title')}</h1>
+            <h1 className="text-3xl font-bold">Ma formule</h1>
             <p className="text-gray-400 text-sm">
-              {t('subtitle')}
+              Ce à quoi vous avez souscrit, et ce que proposent les autres formules.
             </p>
           </div>
         </div>
@@ -162,21 +162,21 @@ export default function MaFormulePage() {
 
         {quota && (
           <section className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-sm text-gray-400 mb-1">{t('currentPlan')}</p>
+            <p className="text-sm text-gray-400 mb-1">Formule en cours</p>
             <div className="flex items-baseline gap-3 flex-wrap">
               <h2 className="text-2xl font-bold">{quota.tierLabel}</h2>
               <span className="flex items-center gap-1 text-gray-400">
                 <Store size={16} />
-                {t('stores', { count: quota.used })} {t('planOnOf')} {quota.max}
+                {quota.used} boutique{quota.used > 1 ? 's' : ''} sur {quota.max}
               </span>
             </div>
 
             {!quota.canCreate && (
               <p className="mt-3 text-sm text-amber-300">
-                {t('limitMessage')}
+                Vous avez atteint la limite de votre formule.
                 {quota.upgradeAvailable
-                  ? ` ${t('upgradeMessage', { nextTier: quota.nextTierLabel })}`
-                  : ` ${t('contactSupport')}`}
+                  ? ` La formule ${quota.nextTierLabel} en autorise davantage.`
+                  : ' Pour aller au-delà, adressez une demande au support.'}
               </p>
             )}
           </section>
@@ -188,9 +188,14 @@ export default function MaFormulePage() {
             <div>
               <p className="font-semibold text-blue-200">{demande.title}</p>
               <p className="text-sm text-blue-300/80">
-                {t('requestCreated', { date: new Date(demande.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) })}{' '}
+                Demande déposée le{' '}
+                {new Date(demande.createdAt).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                })}
+                , en attente du support.{' '}
                 <Link href={`/merchant/${orgId}/support`} className="underline">
-                  {t('followRequest')}
+                  Suivre la discussion
                 </Link>
               </p>
             </div>
@@ -214,19 +219,19 @@ export default function MaFormulePage() {
                   <h3 className="text-xl font-bold">{formule.libelle}</h3>
                   {actuelle && (
                     <span className="px-2 py-0.5 rounded border border-orange-500/50 bg-orange-500/15 text-orange-300 text-xs font-semibold uppercase tracking-wide">
-                      {t('current')}
+                      En cours
                     </span>
                   )}
                 </div>
 
                 <p className="text-3xl font-bold mb-1">
-                  {formule.prixMensuel === 0 ? t('free') : euro(formule.prixMensuel)}
+                  {formule.prixMensuel === 0 ? 'Gratuit' : euro(formule.prixMensuel)}
                   {formule.prixMensuel > 0 && (
-                    <span className="text-sm font-normal text-gray-400">{t('perMonth')}</span>
+                    <span className="text-sm font-normal text-gray-400"> / mois</span>
                   )}
                 </p>
                 <p className="text-sm text-gray-400 mb-4">
-                  {t('stores', { count: formule.maxBoutiques })}
+                  {formule.maxBoutiques} boutique{formule.maxBoutiques > 1 ? 's' : ''}
                 </p>
 
                 <ul className="space-y-2 mb-6 flex-1">
@@ -239,7 +244,7 @@ export default function MaFormulePage() {
                 </ul>
 
                 {actuelle ? (
-                  <p className="text-center text-sm text-gray-500 py-2">{t('yourPlan')}</p>
+                  <p className="text-center text-sm text-gray-500 py-2">Votre formule</p>
                 ) : (
                   <button
                     type="button"
@@ -247,8 +252,8 @@ export default function MaFormulePage() {
                     disabled={Boolean(demande) || envoi === formule.code}
                     title={
                       demande
-                        ? t('requestDisabledMessage')
-                        : t('requestButton', { name: formule.libelle })
+                        ? 'Une demande est déjà en cours de traitement'
+                        : `Demander la formule ${formule.libelle}`
                     }
                     className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg font-semibold transition ${
                       demande
@@ -257,7 +262,7 @@ export default function MaFormulePage() {
                     }`}
                   >
                     <CreditCard size={18} />
-                    {envoi === formule.code ? t('requesting') : t('requestButtonText')}
+                    {envoi === formule.code ? 'Envoi…' : 'Demander cette formule'}
                   </button>
                 )}
               </section>
@@ -267,7 +272,8 @@ export default function MaFormulePage() {
 
         {/* Dire ce qui se passe vaut mieux qu'un bouton qui prétend encaisser. */}
         <p className="text-sm text-gray-500">
-          {t('paymentNote')}
+          Le paiement en ligne n'est pas encore ouvert : votre demande part au support, qui
+          applique la formule et vous répond dans votre espace.
         </p>
       </div>
     </div>

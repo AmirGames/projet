@@ -13,7 +13,6 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { Star } from 'lucide-react';
 
 import { Etoiles } from '@/components/NoterLivreur';
@@ -28,7 +27,6 @@ interface Note {
 }
 
 export function NotesRecues() {
-  const t = useTranslations('notesRecues');
   const [moyenne, setMoyenne] = useState<number | null>(null);
   const [avis, setAvis] = useState(0);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -60,20 +58,20 @@ export function NotesRecues() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-white flex items-center gap-2">
           <Star size={18} className="text-orange-500" />
-          {t('whatCustomersSay')}
+          Ce que disent les clients
         </h2>
 
         {moyenne != null && (
           <span className="flex items-center gap-2 text-sm text-gray-300">
             <Etoiles valeur={moyenne} taille={14} />
-            {moyenne.toFixed(1).replace('.', ',')} · {avis} {t('reviews')}
+            {moyenne.toFixed(1).replace('.', ',')} · {avis} avis
           </span>
         )}
       </div>
 
       {avis === 0 ? (
         <p className="text-sm text-gray-500">
-          {t('noRatingsYet')}
+          Aucune note pour l'instant. Vos clients pourront vous noter une fois leur commande remise.
         </p>
       ) : (
         <ul className="space-y-3">

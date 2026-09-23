@@ -46,7 +46,7 @@ function oublierLaSession() {
      */
     sessionStorage.setItem(
       RAISON_DECONNEXION,
-      'Votre session n’est plus valable. Reconnectez-vous.'
+      "Votre session n'est plus valable. Reconnectez-vous."
     );
   } catch {
     // Stockage refusé : il n'y avait rien à effacer.
@@ -145,6 +145,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (data.refreshToken) {
       localStorage.setItem('refreshToken', data.refreshToken);
     }
+
+    // Store organization and driver info
+    if (data.organization?.id) {
+      localStorage.setItem('currentOrgId', data.organization.id);
+    }
+    if (data.driver?.id) {
+      localStorage.setItem('currentDriverId', data.driver.id);
+    }
+
     setUser(data.user);
   };
 

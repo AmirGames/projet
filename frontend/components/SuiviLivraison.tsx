@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Bike, Clock, MapPin, Navigation, Store } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import { Etoiles, NoterLivreur, type MaNote } from '@/components/NoterLivreur';
 
 // Leaflet touche `window` dès son chargement : il ne peut pas être rendu côté
@@ -65,8 +64,13 @@ interface Props {
  * page.
  */
 
-// LIBELLES removed - now using translations via getStatusLabel function
-// This constant was previously used but is now handled with i18n
+const LIBELLES: Record<string, string> = {
+  PENDING: "En attente d'un livreur",
+  ACCEPTED: 'Livreur en route vers le commerce',
+  PICKED_UP: 'Commande récupérée, en route vers vous',
+  DELIVERED: 'Livrée',
+  FAILED: 'Livraison interrompue',
+};
 
 /** Vitesse moyenne d'un deux-roues en ville, embouteillages compris. */
 const KM_PAR_MINUTE = 0.25;
@@ -87,19 +91,6 @@ function ilYA(horodatage?: string | null) {
 }
 
 export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
-  const t = useTranslations('suiviLivraison');
-
-  const getStatusLabel = (status: string): string => {
-    const labels: Record<string, string> = {
-      'PENDING': t('pending'),
-      'ACCEPTED': t('accepted'),
-      'PICKED_UP': t('pickedUp'),
-      'DELIVERED': t('delivered'),
-      'FAILED': t('failed'),
-    };
-    return labels[status] || status;
-  };
-
   // La note donnée reste à l'écran sans recharger la page : sans cela le client
   // ne saurait pas si son geste a été pris.
   const [maNote, setMaNote] = useState<MaNote | null>(course.maNote ?? null);
@@ -149,8 +140,8 @@ export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
     <div className="bg-gray-800 rounded-lg p-6 space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-lg font-semibold text-white">{t('title')}</h3>
-          <p className="text-sm text-gray-400">{getStatusLabel(course.status)}</p>
+          <h3 className="text-lg font-semibold text-white">Suivi de la livraison</h3>
+          <p className="text-sm text-gray-400">{LIBELLES[course.status] || course.status}</p>
         </div>
 
         {minutes != null && !livree && (
@@ -165,10 +156,10 @@ export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
           mains. Sans lui, une course se cloturait sur un simple clic. */}
       {!livree && course.codeRemise && (
         <div className="rounded-lg border border-orange-700/50 bg-orange-900/20 px-4 py-3">
-          <p className="text-sm text-orange-200">{t('yourCode')}</p>
+          <p className="text-sm text-orange-200">Votre code de remise</p>
           <p className="text-3xl font-bold tracking-[0.3em] text-white">{course.codeRemise}</p>
           <p className="text-xs text-orange-200/80 mt-1">
-            {t('codeInstructions')}
+            Donnez-le au livreur à la remise, et à personne d&apos;autre.
           </p>
         </div>
       )}
@@ -176,8 +167,8 @@ export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
       {livree && course.preuve && (
         <p className="text-sm text-green-300">
           {course.preuve === 'CODE'
-            ? t('confirmed')
-            : t('confirmedByPhoto')}
+            ? 'Remise confirmée par votre code.'
+            : 'Dépôt confirmé par photo, en votre absence.'}
         </p>
       )}
 
@@ -235,21 +226,21 @@ export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div className="bg-gray-900/50 rounded-lg p-3">
           <p className="text-gray-500 text-xs flex items-center gap-1">
-            <Navigation size={12} /> {t('remainingDistance')}
+            <Navigation size={12} /> Distance restante
           </p>
           <p className="text-white font-semibold mt-1">
-            {livree ? t('arrived') : restante != null ? distanceLisible(restante) : t('waiting')}
+            {livree ? 'Arrivée' : restante != null ? distanceLisible(restante) : 'En attente'}
           </p>
         </div>
 
         <div className="bg-gray-900/50 rounded-lg p-3">
           <p className="text-gray-500 text-xs flex items-center gap-1">
-            <Clock size={12} /> {t('positionReceived')}
+            <Clock size={12} /> Position reçue
           </p>
           <p className="text-white font-semibold mt-1">
             {positionDirecte
-              ? t('now')
-              : ilYA(course.position?.misAJourLe) || t('notYet')}
+              ? "à l'instant"
+              : ilYA(course.position?.misAJourLe) || 'Pas encore'}
           </p>
         </div>
       </div>
@@ -282,7 +273,7 @@ export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
               href={`tel:${course.driver.phone}`}
               className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm text-white transition flex-shrink-0"
             >
-              {t('call')}
+              Appeler
             </a>
           )}
         </div>
@@ -301,10 +292,9 @@ export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
 
       {!position && !livree && (
         <p className="text-xs text-gray-500">
-          {t('waitingForPosition')}
+          La position du livreur s&apos;affichera dès qu&apos;il aura pris la route.
         </p>
       )}
     </div>
   );
 }
-

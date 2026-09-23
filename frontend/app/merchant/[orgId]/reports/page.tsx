@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { Download, TrendingUp, DollarSign, ShoppingCart, Users } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -47,6 +48,7 @@ interface RevenueData {
 type TabType = 'sales' | 'revenue' | 'products' | 'customers';
 
 export default function ReportsPage() {
+  const t = useTranslations('merchantreports');
 
   const { storeId } = useCurrentStore();
   const [activeTab, setActiveTab] = useState<TabType>('sales');

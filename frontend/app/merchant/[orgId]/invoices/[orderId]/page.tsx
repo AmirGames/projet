@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -58,6 +59,7 @@ interface Facture {
 }
 
 export default function FacturePage() {
+  const t = useTranslations('merchantinvoices');
   const params = useParams();
   const orgId = params?.orgId as string;
   const orderId = params?.orderId as string;

@@ -1,14 +1,13 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-
 import { useState } from 'react';
 import { FileJson, FileText } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function ExportsPage() {
-  const t = useTranslations('superadminExports');
+  const t = useTranslations('common');
   const [loading, setLoading] = useState('');
   const [message, setMessage] = useState('');
 
@@ -37,11 +36,11 @@ export default function ExportsPage() {
         downloadFile([data], `stats-${new Date().toISOString().split('T')[0]}`, format);
       }
 
-      setMessage(t('success'));
+      setMessage('✅ Fichier exporté avec succès!');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Erreur:', error);
-      setMessage(t('error'));
+      setMessage("❌ Erreur lors de l\'export");
       setTimeout(() => setMessage(''), 3000);
     } finally {
       setLoading('');
@@ -88,8 +87,8 @@ export default function ExportsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
+        <h1 className="text-3xl font-bold">Export de données</h1>
+        <p className="text-gray-400 mt-1">Télécharger les données du système</p>
       </div>
 
       {/* Message */}

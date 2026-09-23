@@ -34,6 +34,7 @@ model User {
   memberships   Membership[]
   auditLogs     SystemAuditLog[]
   driver        Driver?
+  customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
   ticketMessages TicketMessage[]
 
   createdAt DateTime @default(now())
@@ -593,6 +594,7 @@ model ProductVariant {
 enum OrderStatus {
   PENDING
   ACCEPTED
+  PREPARING
   REJECTED
   READY
   COMPLETED
@@ -885,6 +887,12 @@ model OrderDelivery {
   deliveryLat     Float?
   deliveryLng     Float?
 
+  // Adresse de livraison obfusquée pour protéger la confidentialité du client.
+  // Le livreur reçoit ces coordonnées au lieu des vraies jusqu'à ce qu'il soit
+  // assez proche (±200m) pour voir l'adresse exacte.
+  deliveryLatObfusquee Float?
+  deliveryLngObfusquee Float?
+
   // Position du livreur en chemin. Distincte des deux précédentes : elle était
   // écrite dans deliveryLat/Lng, ce qui effaçait l'adresse du client à chaque
   // envoi de position.
@@ -924,6 +932,10 @@ model OrderDelivery {
   /// garantit qu'une course n'est payée qu'une fois : un relevé ne prend que
   /// les courses qui n'en ont pas.
   payoutId        String?
+
+  // Annulation de course
+  cancelledBy     String?   // DRIVER, RESTAURANT, CLIENT, SYSTEM
+  cancellationReason String?
 
   // Relations
   order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -1200,7 +1212,13 @@ model FavoriteStore {
 
 model Customer {
   id              String    @id @default(cuid())
+
+  // REFONTE IDENTITÉ UNIFIÉE: Lien avec User (nullable pour transition)
+  userId          String?   @unique
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   // GLOBAL CLIENT - peut commander chez tous les restaurants
+  // Déprécié : utiliser user.name, user.email, user.phone
   name            String
   email           String    @unique
   phone           String?
@@ -1233,6 +1251,7 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
   @@index([status])
   @@index([createdAt])
   @@index([deletedAt])
@@ -1452,6 +1471,7 @@ model PaymentMethod {
 enum NotificationType {
   ORDER_PLACED
   ORDER_DELIVERED
+  DELIVERY_CANCELLED
   PROMOTION_AVAILABLE
   STOCK_LOW
   REVIEW_RECEIVED

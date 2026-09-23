@@ -1,10 +1,9 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Edit2, Lock, Unlock, Clock } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -21,7 +20,7 @@ interface Merchant {
 }
 
 export default function MerchantsPage() {
-  const t = useTranslations('superadminMerchants');
+  const t = useTranslations('common');
   const router = useRouter();
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +93,7 @@ export default function MerchantsPage() {
     m.slug.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
+  if (loading) return <div className="text-center py-8">Chargement...</div>;
 
   const getDaysUntilDelete = (closedUntil?: string) => {
     if (!closedUntil) return null;

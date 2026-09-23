@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { ArrowLeft, BarChart3, Store, ShoppingCart, Users, TrendingUp, AlertCircle, Package } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,7 +24,7 @@ interface StatsData {
 }
 
 export default function SuperOwnerDashboard() {
-  const t = useTranslations('adminSuperOwner');
+  const t = useTranslations('common');
   const router = useRouter();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,7 +65,7 @@ export default function SuperOwnerDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900">
-        <p className="text-white">{t('loading')}</p>
+        <p className="text-white">Chargement des statistiques...</p>
       </div>
     );
   }
@@ -73,7 +73,7 @@ export default function SuperOwnerDashboard() {
   if (!stats) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900">
-        <p className="text-white">{t('accessDenied')}</p>
+        <p className="text-white">Accès refusé</p>
       </div>
     );
   }
@@ -87,11 +87,11 @@ export default function SuperOwnerDashboard() {
       <header className="bg-gray-800 border-b border-gray-700 p-6">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-2 text-blue-400 hover:text-blue-300">
-            <ArrowLeft size={20} /> {t('back')}
+            <ArrowLeft size={20} /> Retour
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">{t('title')}</h1>
-            <p className="text-gray-400 text-sm">{t('subtitle')}</p>
+            <h1 className="text-3xl font-bold">Tableau de Bord Super Owner</h1>
+            <p className="text-gray-400 text-sm">Vue d'ensemble de la plateforme</p>
           </div>
         </div>
       </header>
@@ -101,7 +101,7 @@ export default function SuperOwnerDashboard() {
         {stats.config.maintenanceMode && (
           <div className="bg-yellow-900 border border-yellow-700 rounded-lg p-4 mb-6 flex items-center gap-3">
             <AlertCircle size={20} className="text-yellow-300" />
-            <span className="text-yellow-300">{t('maintenanceAlert')}</span>
+            <span className="text-yellow-300">Mode maintenance activé</span>
           </div>
         )}
 
@@ -111,9 +111,9 @@ export default function SuperOwnerDashboard() {
           <div className="bg-gradient-to-br from-blue-900 to-blue-800 border border-blue-700 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-300 text-sm">{t('merchantsLabel')}</p>
+                <p className="text-blue-300 text-sm">Commerçants</p>
                 <p className="text-4xl font-bold mt-2">{stats.merchants.total}</p>
-                <p className="text-blue-300 text-xs mt-2">🟢 {stats.merchants.active} {t('merchantsActive')}</p>
+                <p className="text-blue-300 text-xs mt-2">🟢 {stats.merchants.active} actifs</p>
               </div>
               <Store size={40} className="text-blue-400 opacity-50" />
             </div>
@@ -123,9 +123,9 @@ export default function SuperOwnerDashboard() {
           <div className="bg-gradient-to-br from-green-900 to-green-800 border border-green-700 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-300 text-sm">{t('storesLabel')}</p>
+                <p className="text-green-300 text-sm">Boutiques</p>
                 <p className="text-4xl font-bold mt-2">{stats.stores.total}</p>
-                <p className="text-green-300 text-xs mt-2">🟢 {stats.stores.active} {t('storesOpen')}</p>
+                <p className="text-green-300 text-xs mt-2">🟢 {stats.stores.active} ouvertes</p>
               </div>
               <ShoppingCart size={40} className="text-green-400 opacity-50" />
             </div>
@@ -135,9 +135,9 @@ export default function SuperOwnerDashboard() {
           <div className="bg-gradient-to-br from-purple-900 to-purple-800 border border-purple-700 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-300 text-sm">{t('customersLabel')}</p>
+                <p className="text-purple-300 text-sm">Clients</p>
                 <p className="text-4xl font-bold mt-2">{stats.customers.total}</p>
-                <p className="text-purple-300 text-xs mt-2">{t('customersDesc')}</p>
+                <p className="text-purple-300 text-xs mt-2">Inscrits au total</p>
               </div>
               <Users size={40} className="text-purple-400 opacity-50" />
             </div>
@@ -147,9 +147,9 @@ export default function SuperOwnerDashboard() {
           <div className="bg-gradient-to-br from-yellow-900 to-yellow-800 border border-yellow-700 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-yellow-300 text-sm">{t('revenueLabel')}</p>
+                <p className="text-yellow-300 text-sm">Chiffre d'Affaires</p>
                 <p className="text-4xl font-bold mt-2">{euro(stats.revenue.total)}</p>
-                <p className="text-yellow-300 text-xs mt-2">{t('revenueDesc')}</p>
+                <p className="text-yellow-300 text-xs mt-2">Total brut</p>
               </div>
               <TrendingUp size={40} className="text-yellow-400 opacity-50" />
             </div>
@@ -161,19 +161,19 @@ export default function SuperOwnerDashboard() {
           {/* Orders */}
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <BarChart3 size={20} /> {t('ordersTitle')}
+              <BarChart3 size={20} /> Commandes
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-400">{t('ordersTotal')}</span>
+                <span className="text-gray-400">Total</span>
                 <span className="font-bold">{stats.orders.total}</span>
               </div>
               <div className="flex justify-between text-yellow-400">
-                <span className="text-gray-400">{t('ordersPending')}</span>
+                <span className="text-gray-400">En attente</span>
                 <span className="font-bold">{stats.orders.pending}</span>
               </div>
               <div className="flex justify-between text-green-400">
-                <span className="text-gray-400">{t('ordersCompleted')}</span>
+                <span className="text-gray-400">Complétées</span>
                 <span className="font-bold">{stats.orders.completed}</span>
               </div>
             </div>
@@ -182,19 +182,19 @@ export default function SuperOwnerDashboard() {
           {/* Revenue Breakdown */}
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <TrendingUp size={20} /> {t('revenueTitle')}
+              <TrendingUp size={20} /> Revenus
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-400">{t('revenueBrut')}</span>
+                <span className="text-gray-400">Chiffre brut</span>
                 <span className="font-bold">{euro(stats.revenue.total)}</span>
               </div>
               <div className="flex justify-between text-green-400">
-                <span className="text-gray-400">{t('revenueCompleted')}</span>
+                <span className="text-gray-400">Complétées</span>
                 <span className="font-bold">{euro(stats.revenue.completed)}</span>
               </div>
               <div className="flex justify-between text-orange-400">
-                <span className="text-gray-400">{t('commission', { platformFeePercent })}</span>
+                <span className="text-gray-400">Commission ({platformFeePercent}%)</span>
                 <span className="font-bold">{euro(platformCommission)}</span>
               </div>
             </div>
@@ -203,19 +203,19 @@ export default function SuperOwnerDashboard() {
           {/* Products */}
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <Package size={20} /> {t('productsTitle')}
+              <Package size={20} /> Produits
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-400">{t('ordersTotal')}</span>
+                <span className="text-gray-400">Total</span>
                 <span className="font-bold">{stats.products.total}</span>
               </div>
               <div className="flex justify-between text-yellow-400">
-                <span className="text-gray-400">{t('productsDraft')}</span>
+                <span className="text-gray-400">Brouillons</span>
                 <span className="font-bold">{stats.products.draft}</span>
               </div>
               <div className="flex justify-between text-green-400">
-                <span className="text-gray-400">{t('productsActive')}</span>
+                <span className="text-gray-400">Actifs</span>
                 <span className="font-bold">{stats.products.total - stats.products.draft}</span>
               </div>
             </div>
@@ -223,14 +223,14 @@ export default function SuperOwnerDashboard() {
 
           {/* Payments */}
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <h3 className="font-bold text-lg mb-4">{t('paymentsTitle')}</h3>
+            <h3 className="font-bold text-lg mb-4">Paiements</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-green-400">
-                <span className="text-gray-400">{t('paymentsSuccess')}</span>
+                <span className="text-gray-400">Succès</span>
                 <span className="font-bold">{stats.payments.successful}</span>
               </div>
               <div className="flex justify-between text-yellow-400">
-                <span className="text-gray-400">{t('paymentsPending')}</span>
+                <span className="text-gray-400">En attente</span>
                 <span className="font-bold">{stats.payments.pending}</span>
               </div>
             </div>
@@ -238,14 +238,14 @@ export default function SuperOwnerDashboard() {
 
           {/* Users */}
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <h3 className="font-bold text-lg mb-4">{t('usersTitle')}</h3>
+            <h3 className="font-bold text-lg mb-4">Utilisateurs</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-400">{t('usersTotal')}</span>
+                <span className="text-gray-400">Total</span>
                 <span className="font-bold">{stats.users.total}</span>
               </div>
               <div className="flex justify-between text-gray-500 text-sm">
-                <span>{t('usersDesc')}</span>
+                <span>Marchands + Clients</span>
               </div>
             </div>
           </div>
@@ -253,15 +253,15 @@ export default function SuperOwnerDashboard() {
           {/* Support Tickets */}
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <AlertCircle size={20} /> {t('ticketsTitle')}
+              <AlertCircle size={20} /> Tickets Support
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between text-yellow-400">
-                <span className="text-gray-400">{t('ticketsOpen')}</span>
+                <span className="text-gray-400">Ouverts</span>
                 <span className="font-bold">{stats.tickets.open}</span>
               </div>
               <div className="flex justify-between text-red-400">
-                <span className="text-gray-400">{t('ticketsCritical')}</span>
+                <span className="text-gray-400">Critiques</span>
                 <span className="font-bold">{stats.tickets.critical}</span>
               </div>
             </div>
@@ -270,19 +270,19 @@ export default function SuperOwnerDashboard() {
 
         {/* Quick Actions */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <h3 className="font-bold text-lg mb-4">{t('quickActionsTitle')}</h3>
+          <h3 className="font-bold text-lg mb-4">Actions Rapides</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Link href="/admin/merchants" className="bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg text-center font-medium transition">
-              {t('manageMerchants')}
+              Gérer Commerçants
             </Link>
             <Link href="/admin/stores" className="bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg text-center font-medium transition">
-              {t('manageStores')}
+              Gérer Boutiques
             </Link>
             <Link href="/admin/orders" className="bg-purple-600 hover:bg-purple-700 px-4 py-3 rounded-lg text-center font-medium transition">
-              {t('viewOrders')}
+              Voir Commandes
             </Link>
             <Link href="/admin/tickets" className="bg-yellow-600 hover:bg-yellow-700 px-4 py-3 rounded-lg text-center font-medium transition">
-              {t('supportTickets')}
+              Tickets Support
             </Link>
           </div>
         </div>

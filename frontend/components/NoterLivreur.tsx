@@ -14,7 +14,6 @@
  */
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
 import { Star } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -22,15 +21,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 export const NOTES = [1, 2, 3, 4, 5] as const;
 
 /** Ce que chaque étoile veut dire, pour que le client ne devine pas. */
-function getLibelles(t: any): Record<number, string> {
-  return {
-    1: t("veryBad"),
-    2: t("bad"),
-    3: t("ok"),
-    4: t("good"),
-    5: t("excellent"),
-  };
-}
+const LIBELLES: Record<number, string> = {
+  1: 'Très mauvaise',
+  2: 'Mauvaise',
+  3: 'Correcte',
+  4: 'Bonne',
+  5: 'Excellente',
+};
 
 export interface MaNote {
   note: number;
@@ -46,7 +43,6 @@ interface Props {
 }
 
 export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) {
-  const t = useTranslations('noterLivreur');
   const [choisie, setChoisie] = useState(0);
   const [survolee, setSurvolee] = useState(0);
   const [commentaire, setCommentaire] = useState('');
@@ -56,7 +52,7 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
   if (maNote) {
     return (
       <div className="border-t border-gray-700 pt-4">
-        <p className="text-sm text-gray-400 mb-2">{t("yourRating")}</p>
+        <p className="text-sm text-gray-400 mb-2">Votre note</p>
         <Etoiles valeur={maNote.note} />
         {maNote.commentaire && (
           <p className="text-sm text-gray-300 mt-2 italic">« {maNote.commentaire} »</p>
@@ -89,25 +85,24 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
       if (!reponse.ok) {
         // Le message du serveur dit ce qui ne va pas — déjà notée, course non
         // remise. Le remplacer par « une erreur est survenue » le perdrait.
-        setErreur(donnees?.message || donnees?.error || t("saveError"));
+        setErreur(donnees?.message || donnees?.error || "La note n'a pas pu être enregistrée");
         return;
       }
 
       onNote?.({ note: choisie, commentaire: commentaire.trim() || null });
     } catch {
-      setErreur(t("networkError"));
+      setErreur("La note n'a pas pu être envoyée : vérifiez votre connexion.");
     } finally {
       setEnvoi(false);
     }
   };
 
-  const libelles = getLibelles(t);
   const affichee = survolee || choisie;
 
   return (
     <div className="border-t border-gray-700 pt-4">
       <p className="text-sm text-white font-semibold">
-        {t("question", { prenom: prenomLivreur ? ` avec ${prenomLivreur}` : "" })}
+        Comment s'est passée votre livraison{prenomLivreur ? ` avec ${prenomLivreur}` : ''} ?
       </p>
 
       <div
@@ -122,8 +117,8 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
             type="button"
             role="radio"
             aria-checked={choisie === valeur}
-            aria-label={`${valeur} étoile${valeur > 1 ? 's' : ''} — ${libelles[valeur]}`}
-            title={libelles[valeur]}
+            aria-label={`${valeur} étoile${valeur > 1 ? 's' : ''} — ${LIBELLES[valeur]}`}
+            title={LIBELLES[valeur]}
             onMouseEnter={() => setSurvolee(valeur)}
             onFocus={() => setSurvolee(valeur)}
             onClick={() => setChoisie(valeur)}
@@ -137,7 +132,7 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
           </button>
         ))}
 
-        {affichee > 0 && <span className="text-sm text-gray-400 ml-1">{libelles[affichee]}</span>}
+        {affichee > 0 && <span className="text-sm text-gray-400 ml-1">{LIBELLES[affichee]}</span>}
       </div>
 
       {/* Le commentaire n'apparaît qu'une fois la note choisie : demandé avant,
@@ -149,7 +144,7 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
             onChange={(e) => setCommentaire(e.target.value)}
             maxLength={500}
             rows={2}
-            placeholder={t("commentPlaceholder")}
+            placeholder="Un mot sur la livraison (facultatif)"
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
           />
 
@@ -159,7 +154,7 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
             disabled={envoi}
             className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 rounded-lg text-sm text-white transition"
           >
-            {envoi ? t("sending") : t("submitRating")}
+            {envoi ? 'Envoi…' : 'Envoyer ma note'}
           </button>
         </div>
       )}

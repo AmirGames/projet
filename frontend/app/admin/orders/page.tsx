@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
 import { Eye } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 interface Order {
   id: string;
@@ -16,7 +16,7 @@ interface Order {
 }
 
 export default function AdminOrders() {
-  const t = useTranslations('adminOrders');
+  const t = useTranslations('common');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('ALL');
@@ -32,7 +32,7 @@ export default function AdminOrders() {
       const data = await apiClient.getOrders(storeId, token);
       setOrders(Array.isArray(data) ? data : data.orders || []);
     } catch (error) {
-      console.error(t('loadError'), error);
+      console.error('Erreur chargement commandes:', error);
     } finally {
       setLoading(false);
     }
@@ -52,14 +52,14 @@ export default function AdminOrders() {
     'REJECTED': 'bg-red-500/20 text-red-400',
   };
 
-  if (loading) return <div className="text-center py-8">{t('loading')}</div>;
+  if (loading) return <div className="text-center py-8">Chargement...</div>;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-gray-400 mt-1">{orders.length} {t('totalOrders')}</p>
+        <h1 className="text-3xl font-bold">Commandes</h1>
+        <p className="text-gray-400 mt-1">{orders.length} commandes</p>
       </div>
 
       {/* Filters */}
@@ -84,12 +84,12 @@ export default function AdminOrders() {
         <table className="w-full">
           <thead className="bg-gray-700/50 border-b border-gray-700">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold">{t('colOrderId')}</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">{t('colCustomer')}</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">{t('colAmount')}</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">{t('colStatus')}</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">{t('colDate')}</th>
-              <th className="px-6 py-3 text-right text-sm font-semibold">{t('colActions')}</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Commande ID</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Client</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Montant</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Statut</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold">Date</th>
+              <th className="px-6 py-3 text-right text-sm font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-700">
@@ -125,7 +125,7 @@ export default function AdminOrders() {
             ) : (
               <tr>
                 <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
-                  {t('empty')}
+                  Aucune commande trouvée
                 </td>
               </tr>
             )}
