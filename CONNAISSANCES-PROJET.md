@@ -248,19 +248,17 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 | | Suites | Contrôles |
 |---|---|---|
 | **API** (`backend/scripts/verification/`) | 42 | **1380** |
-| **Navigateur** (`frontend/scripts/`) | 27 | **698** |
+| **Navigateur** (`frontend/scripts/`) | 27 | **701** |
 
-Au dernier passage complet, deux ensembles de défauts restent rouges, et
-c'est voulu : ils sont réels.
+Au dernier passage complet, deux défauts restent rouges, et c'est voulu :
+ils sont réels.
 
 - **API — l'avis sur le restaurant** (`verif-client`, 3 contrôles) : la
   route enregistre l'identifiant de la boutique dans `Review.productId`, que
   la base exige lié à un plat. Violation de clé étrangère, réponse 500.
-- **Navigateur** (4 contrôles, en attente d'une décision) : la maquette
-  `/store` revenue le 18/09 (`verif-vitrine-unique`, 2) ; le point de la
-  boutique déplaçable mais plus enregistré une fois placé
-  (`verif-carte-zones`) ; l'explication des anneaux retirée du formulaire
-  des zones (`verif-zones-livraison`).
+- **Navigateur — l'explication des zones** (`verif-zones-livraison`,
+  1 contrôle, en attente d'une décision) : retirée du formulaire quand les
+  zones sont devenues anneaux ou polygones.
 
 `verif-domaines` n'a pas tourné : il demande un site construit avec les
 trois domaines.
