@@ -107,6 +107,26 @@ export default function StoreSettings() {
   const [etablissements, setEtablissements] = useState<Genre[]>([]);
   const [cuisines, setCuisines] = useState<Genre[]>([]);
   const [facturation, setFacturation] = useState<StoreSettings['facturation'] | null>(null);
+  // Les deux taux de la formule : livrer soi-même, ou avec nos livreurs.
+  const [commissions, setCommissions] = useState<{ propre: number; plateforme: number } | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    if (!orgId || !token) return;
+
+    fetch(`${API_URL}/api/plans/${orgId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((lu) => {
+        const quota = lu?.data?.quota;
+        if (quota && typeof quota.tierCommission === 'number') {
+          setCommissions({
+            propre: quota.tierCommission,
+            plateforme: quota.tierPlatformDeliveryCommission ?? quota.tierCommission,
+          });
+        }
+      })
+      .catch(() => undefined);
+  }, [orgId]);
 
   useEffect(() => {
     fetch(`${API_URL}/api/stores/types`)
@@ -683,19 +703,39 @@ export default function StoreSettings() {
                     />
                   </div>
 
-                  {formData.delivery.useOwnDelivery && (
+                  {formData.delivery.useOwnDelivery ? (
                     <div className="space-y-4">
-                      <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-4">
+                      <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-4 space-y-1">
                         <p className="text-sm text-blue-300">
-                          ✓ Lorsqu&apos;une commande est prête, vous verrez un bouton pour appeler un livreur disponible dans votre rayon de livraison.
+                          ✓ Vous livrez vous-même : les frais de livraison de vos zones vous reviennent.
+                        </p>
+                        <p className="text-sm text-blue-300">
+                          Commission de la plateforme :{' '}
+                          <strong>{commissions ? `${commissions.propre} %` : 'celle de votre formule'}</strong>{' '}
+                          sur vos ventes.
                         </p>
                       </div>
 
                       <div className="bg-amber-600/10 border border-amber-600/30 rounded-lg p-4">
                         <p className="text-sm text-amber-300">
-                          📍 Gérez votre rayon de livraison dans l&apos;onglet <Link href={`/merchant/${orgId}/delivery-zones`} className="underline hover:text-amber-200">Zones de livraison</Link>
+                          📍 Gérez votre rayon et vos frais de livraison dans l&apos;onglet <Link href={`/merchant/${orgId}/delivery-zones`} className="underline hover:text-amber-200">Zones de livraison</Link>
                         </p>
                       </div>
+                    </div>
+                  ) : (
+                    <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-4 space-y-1">
+                      <p className="text-sm text-blue-300">
+                        ✓ Vos commandes sont livrées par les livreurs de la plateforme. Lorsqu&apos;une commande est prête, un bouton vous permet d&apos;appeler un livreur.
+                      </p>
+                      <p className="text-sm text-blue-300">
+                        Le rayon de livraison est fixé par la plateforme, et les frais sont calculés selon la distance entre votre boutique et l&apos;adresse du client. Le client les paie à la plateforme, qui les reverse au livreur.
+                      </p>
+                      <p className="text-sm text-blue-300">
+                        Commission de la plateforme :{' '}
+                        <strong>{commissions ? `${commissions.plateforme} %` : 'majorée'}</strong>{' '}
+                        sur vos ventes (hors frais de livraison)
+                        {commissions ? `, au lieu de ${commissions.propre} % si vous livrez vous-même` : ''}.
+                      </p>
                     </div>
                   )}
                 </section>

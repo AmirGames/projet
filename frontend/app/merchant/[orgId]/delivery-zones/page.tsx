@@ -112,6 +112,24 @@ export default function DeliveryZonesPage() {
     }
   }, [storeId, chargerBoutique]);
 
+  /**
+   * Qui livre. Avec les livreurs de la plateforme, ces zones ne servent pas :
+   * le rayon et les frais sont ceux de la plateforme.
+   */
+  const [livreursPlateforme, setLivreursPlateforme] = useState(false);
+
+  useEffect(() => {
+    const jeton = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    if (!storeId || !jeton) return;
+
+    fetch(`${API_URL}/api/store-settings/${storeId}`, { headers: { Authorization: `Bearer ${jeton}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((lu) => {
+        if (lu) setLivreursPlateforme(lu.settings?.delivery?.useOwnDelivery !== true);
+      })
+      .catch(() => undefined);
+  }, [storeId]);
+
   /** Enregistre la position de la boutique : c'est le centre de toutes les zones. */
   const enregistrerPosition = async (latitude: number, longitude: number) => {
     setErreurCarte('');
@@ -372,6 +390,13 @@ export default function DeliveryZonesPage() {
               Zones de Livraison
             </h1>
             <p className="text-slate-400 mt-2">Gérez vos zones de livraison et frais</p>
+            {livreursPlateforme && (
+              <p className="mt-3 text-sm text-amber-300 bg-amber-600/10 border border-amber-600/30 rounded-lg px-3 py-2">
+                Vous utilisez les livreurs de la plateforme : ces zones ne s&apos;appliquent pas. Le rayon
+                et les frais de livraison sont fixés par la plateforme selon la distance. Pour utiliser vos
+                zones, cochez « J&apos;utilise ma propre livraison » dans les réglages de la boutique.
+              </p>
+            )}
           </div>
           <button
             onClick={handleAddZone}

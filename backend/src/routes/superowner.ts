@@ -443,6 +443,9 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
             status: true,
             paymentStatus: true,
             customerName: true,
+            commissionPercent: true,
+            commissionAmount: true,
+            deliveryMode: true,
           },
           orderBy: { createdAt: "desc" },
         })
@@ -450,6 +453,10 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
 
     const lignes = commandes.map((commande) => {
       const montant = Number(commande.totalAmount);
+      // La commission figée à la commande fait foi — son taux dépend de la
+      // formule d'alors et de qui livrait. Les commandes antérieures au figeage
+      // retombent sur le taux du jour.
+      const figee = Number(commande.commissionAmount) > 0;
 
       return {
         id: commande.id,
@@ -462,8 +469,13 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
         total: montant,
         remise: Number(commande.discountAmount),
         livraison: Number(commande.feesAmount),
+        // OWN : frais gardés par le commerçant. PLATFORM : reversés au livreur.
+        modeLivraison: commande.deliveryMode,
+        tauxCommission: figee ? Number(commande.commissionPercent) : taux,
         // Ce que la plateforme prélève sur cette commande.
-        commission: Number(((montant * taux) / 100).toFixed(2)),
+        commission: figee
+          ? Number(commande.commissionAmount)
+          : Number(((montant * taux) / 100).toFixed(2)),
       };
     });
 
@@ -959,6 +971,11 @@ router.patch("/plans/:code", authMiddleware, isSuperOwner, async (req: Request, 
       maxBoutiques: z.number().int().min(1, "Au moins une boutique").optional(),
       prixMensuel: z.number().min(0, "Tarif négatif impossible").optional(),
       commission: z
+        .number()
+        .min(0, "Commission négative impossible")
+        .max(100, "Une commission ne dépasse pas 100 %")
+        .optional(),
+      commissionLivreursPlateforme: z
         .number()
         .min(0, "Commission négative impossible")
         .max(100, "Une commission ne dépasse pas 100 %")

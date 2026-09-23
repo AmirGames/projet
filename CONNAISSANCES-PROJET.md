@@ -131,7 +131,14 @@ scripts de vérification (voir §6).
 ### La plateforme (superowner)
 - Commerçants : formule, suspension, fermeture, restauration depuis sauvegarde
 - Formules réglables : nom, prix, quota de boutiques, **commission sur les
-  ventes**, arguments de vente
+  ventes** — deux taux par formule : propre livraison, et livreurs de la
+  plateforme (plus élevé) —, arguments de vente
+- **Qui livre** (réglage boutique « J'utilise ma propre livraison ») :
+  coché, zones et frais du commerçant, taux de base, pas de livreur plateforme ;
+  non coché, rayon et barème de Configuration système (base + km × distance
+  boutique → client), frais encaissés par la plateforme et reversés tels quels
+  au livreur, taux majoré calculé hors frais. Le mode est figé sur la commande
+  (`Order.deliveryMode`)
 - Facturation : commission du mois par commerçant, avec le détail par commande
 - **Boutiques** : une fiche par commerce, avec la correction des seuls champs
   dont la plateforme répond (voir la règle ci-dessous)

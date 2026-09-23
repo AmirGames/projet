@@ -393,13 +393,15 @@
     "displayName": "Display name",
     "priceMonthly": "€ / month",
     "stores": "Stores",
-    "commission": "Commission %",
+    "commission": "Commission % (own delivery)",
+    "platformCommission": "Commission % (platform drivers)",
+    "platformCommissionHelp": "Applies when the merchant has not ticked “I use my own delivery”. Delivery fees, computed from the store → customer distance, go through the platform and then to the driver. This rate can't be lower than the previous one.",
     "sellingPoints": "Selling points",
     "removeArgument": "Remove point {index}",
     "addLine": "Add a line",
     "saving": "Saving…",
     "save": "Save",
-    "merchantView": "Merchant view: {name} — {price} / month, {stores, plural, one {# store} other {# stores}}, {commission}% commission on sales.",
+    "merchantView": "Merchant view: {name} — {price} / month, {stores, plural, one {# store} other {# stores}}, {commission}% commission on sales with own delivery, {platformCommission}% with platform drivers.",
     "footerNote": "A plan's code never changes: it links already-subscribed merchants. A quota can't drop below what merchants already use — migrate them first."
   },
   "superownerAdvancedSettings": {

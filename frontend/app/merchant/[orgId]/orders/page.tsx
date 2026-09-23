@@ -31,6 +31,8 @@ interface Order {
   status: string;
   paymentStatus: string;
   deliveryType: string;
+  /** Qui livre, figé à la commande : OWN (le commerçant) ou PLATFORM. */
+  deliveryMode?: 'OWN' | 'PLATFORM' | null;
   items: OrderItem[];
   createdAt: string;
 }
@@ -430,7 +432,11 @@ export default function OrdersPage() {
                           <Eye size={14} className="inline mr-1" />
                           {t('orderDetails')}
                         </Link>
-                        {useOwnDelivery && order.status === 'READY' && (
+                        {/* Un livreur de la plateforme ne s'appelle que pour une commande
+                            qui lui est destinée : celui qui livre lui-même n'en a pas. */}
+                        {order.deliveryType === 'DELIVERY' &&
+                          (order.deliveryMode ? order.deliveryMode === 'PLATFORM' : !useOwnDelivery) &&
+                          order.status === 'READY' && (
                           <button
                             onClick={() => handleCallDelivery(order.id)}
                             className="px-3 py-1 bg-amber-600/20 text-amber-400 rounded text-xs font-medium hover:bg-amber-600/30 transition-colors"

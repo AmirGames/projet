@@ -7,6 +7,7 @@ import { DeliveryZoneService } from "./delivery-zone.service";
 import { PromotionService } from "./promotion.service";
 import { emitWebhook } from "./webhook.service";
 import { TaxService } from "./tax.service";
+import { ModeDeLivraison } from "./delivery-mode.service";
 
 export interface OrderData {
   storeId: string;
@@ -56,7 +57,11 @@ export class OrderService {
    *
    * Le taux est donc lu ici, une fois, et gardé sur la commande.
    */
-  private static async commissionDeLaBoutique(storeId: string, montant: number) {
+  private static async commissionDeLaBoutique(
+    storeId: string,
+    montant: number,
+    mode: ModeDeLivraison | null
+  ) {
     const boutique = await db.store.findUnique({
       where: { id: storeId },
       select: { org: { select: { tier: true } } },
@@ -65,13 +70,27 @@ export class OrderService {
     const tier = boutique?.org?.tier ?? null;
 
     const formule = tier
-      ? await db.planTier.findUnique({ where: { code: tier }, select: { commissionPercent: true } })
+      ? await db.planTier.findUnique({
+          where: { code: tier },
+          select: { commissionPercent: true, platformDeliveryCommissionPercent: true },
+        })
       : null;
 
     // Le réglage global ne sert que de repli, pour une formule sans taux propre.
     const config = await db.systemConfig.findFirst({ select: { platformFeePercent: true } });
 
-    const taux = Number(formule?.commissionPercent ?? config?.platformFeePercent ?? 5);
+    const base = Number(formule?.commissionPercent ?? config?.platformFeePercent ?? 5);
+
+    /**
+     * Une livraison faite par un livreur de la plateforme coûte plus cher au
+     * commerçant : la plateforme trouve le livreur, le suit et le paie. Le
+     * retrait sur place et la livraison par ses propres livreurs restent au
+     * taux de la formule.
+     */
+    const taux =
+      mode === "PLATFORM"
+        ? Math.max(base, Number(formule?.platformDeliveryCommissionPercent ?? base))
+        : base;
 
     return {
       tier,
@@ -209,6 +228,7 @@ export class OrderService {
        * quel montant, où que soit le client.
        */
       let fraisDeLivraison = Number(data.feesAmount || 0);
+      let modeLivraison: ModeDeLivraison | null = null;
 
       if (data.deliveryType === "DELIVERY" && lignesTarifees.length > 0) {
         const verdict = await DeliveryZoneService.controlerLaLivraison(
@@ -227,6 +247,7 @@ export class OrderService {
         );
 
         fraisDeLivraison = verdict.frais;
+        modeLivraison = verdict.mode;
       }
 
       /**
@@ -314,7 +335,21 @@ export class OrderService {
        * son historique au nouveau taux. Une commande passée sous une formule
        * doit rester facturée au taux de cette formule.
        */
-      const commission = await this.commissionDeLaBoutique(data.storeId, totalCalcule);
+      /*
+       * Avec un livreur de la plateforme, les frais de livraison ne sont pas au
+       * commerçant : ils transitent par la plateforme et vont au livreur. Ils
+       * sortent donc de l'assiette de la commission.
+       */
+      const assietteCommission =
+        modeLivraison === "PLATFORM"
+          ? Number((totalCalcule - fraisDeLivraison).toFixed(2))
+          : totalCalcule;
+
+      const commission = await this.commissionDeLaBoutique(
+        data.storeId,
+        assietteCommission,
+        modeLivraison
+      );
 
       /**
        * Les bornes de la plateforme.
@@ -373,6 +408,7 @@ export class OrderService {
           commissionPercent: commission.taux,
           commissionAmount: commission.montant,
           tierAtOrder: commission.tier,
+          deliveryMode: modeLivraison,
           status: "PENDING" as any,
           paymentStatus: "PENDING" as any,
           items: {

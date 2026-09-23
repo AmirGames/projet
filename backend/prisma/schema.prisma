@@ -67,6 +67,10 @@ model PlanTier {
   /// qu'en réglage global : toutes les formules payaient le même taux, et rien
   /// ne permettait de faire payer moins cher un abonnement plus élevé.
   commissionPercent Decimal      @default(5) @db.Decimal(5, 2)
+  /// La commission quand le commerçant confie ses livraisons aux livreurs de
+  /// la plateforme. Plus élevée : la plateforme trouve, suit et paie le
+  /// livreur. `commissionPercent` ne s'applique qu'à celui qui livre lui-même.
+  platformDeliveryCommissionPercent Decimal @default(15) @db.Decimal(5, 2)
   // Arguments de vente, une phrase par ligne.
   features     Json             @default("[]")
   // L'ordre de la grille, et donc la formule proposée à la suivante.
@@ -678,6 +682,12 @@ model Order {
   commissionAmount  Decimal    @default(0) @db.Decimal(10, 2)
   /// La formule du commerçant à cet instant, pour expliquer le taux retenu.
   tierAtOrder       String?
+  /// Qui livre cette commande, figé à la commande : OWN (le commerçant, avec
+  /// ses livreurs) ou PLATFORM (un livreur de la plateforme). Il décide du taux
+  /// de commission, et de ce que deviennent les frais de livraison : gardés par
+  /// le commerçant, ou encaissés par la plateforme puis versés au livreur.
+  /// Nul pour une commande à emporter.
+  deliveryMode      String?
 
   // Le code promo appliqué, et la remise qu'il a réellement accordée. Aucun des
   // deux n'était conservé : la remise disparaissait de la commande, et le

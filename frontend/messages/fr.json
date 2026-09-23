@@ -393,13 +393,15 @@
     "displayName": "Nom affiché",
     "priceMonthly": "€ / mois",
     "stores": "Boutiques",
-    "commission": "Commission %",
+    "commission": "Commission % (propre livraison)",
+    "platformCommission": "Commission % (livreurs plateforme)",
+    "platformCommissionHelp": "S'applique quand le commerçant n'a pas coché « J'utilise ma propre livraison ». Les frais de livraison, calculés sur la distance boutique → client, passent par la plateforme puis vont au livreur. Ce taux ne peut pas être inférieur au précédent.",
     "sellingPoints": "Arguments de vente",
     "removeArgument": "Retirer l'argument {index}",
     "addLine": "Ajouter une ligne",
     "saving": "Enregistrement…",
     "save": "Enregistrer",
-    "merchantView": "Vue commerçant : {name} — {price} / mois, {stores, plural, one {# boutique} other {# boutiques}}, {commission}% de commission sur les ventes.",
+    "merchantView": "Vue commerçant : {name} — {price} / mois, {stores, plural, one {# boutique} other {# boutiques}}, {commission}% de commission sur les ventes avec sa propre livraison, {platformCommission}% avec les livreurs de la plateforme.",
     "footerNote": "Le code d'une formule ne change pas : il rattache les commerçants déjà abonnés. Un quota ne peut pas passer sous ce que des commerçants exploitent déjà — faites-les migrer d'abord."
   },
   "superownerAdvancedSettings": {

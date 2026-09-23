@@ -20,6 +20,8 @@ interface Formule {
   prixMensuel: number;
   /** Ce que la plateforme prélève sur les ventes, en pourcentage. */
   commission: number;
+  /** Le taux quand la plateforme fournit le livreur. */
+  commissionLivreursPlateforme: number;
   avantages: string[];
   ordre: number;
   abonnes: number;
@@ -94,6 +96,7 @@ export default function FormulesPage() {
           maxBoutiques: Number(brouillon.maxBoutiques),
           prixMensuel: Number(brouillon.prixMensuel),
           commission: Number(brouillon.commission),
+          commissionLivreursPlateforme: Number(brouillon.commissionLivreursPlateforme),
           // Les lignes vides du formulaire ne sont pas des arguments de vente.
           avantages: brouillon.avantages.map((ligne) => ligne.trim()).filter(Boolean),
         }),
@@ -243,6 +246,30 @@ export default function FormulesPage() {
                   </div>
                 </div>
 
+                {/* Plus élevée que la précédente : la plateforme fournit le
+                    livreur, et lui reverse les frais de livraison. */}
+                <div>
+                  <label
+                    className="block text-sm text-gray-400 mb-1"
+                    htmlFor={`commission-plateforme-${formule.code}`}
+                  >
+                    {t('platformCommission')}
+                  </label>
+                  <input
+                    id={`commission-plateforme-${formule.code}`}
+                    type="number"
+                    min={brouillon.commission}
+                    max={100}
+                    step="0.1"
+                    value={brouillon.commissionLivreursPlateforme}
+                    onChange={(e) =>
+                      modifier(formule.code, { commissionLivreursPlateforme: Number(e.target.value) })
+                    }
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{t('platformCommissionHelp')}</p>
+                </div>
+
                 <div>
                   <span className="block text-sm text-gray-400 mb-1">{t('sellingPoints')}</span>
                   <div className="space-y-2">
@@ -306,6 +333,7 @@ export default function FormulesPage() {
                   price: euro(brouillon.prixMensuel),
                   stores: brouillon.maxBoutiques,
                   commission: brouillon.commission,
+                  platformCommission: brouillon.commissionLivreursPlateforme,
                 })}
               </p>
             </section>
