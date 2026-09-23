@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
 import { Store, ShoppingCart, TrendingUp } from 'lucide-react';
 
 import { memoriserBoutique } from '@/lib/current-store';
