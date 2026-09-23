@@ -118,11 +118,32 @@ Mailpit:     http://localhost:8025
 
 ### Environment Variables
 
-Backend `.env`:
+Backend requires a `.env` file configured with JWT secrets. This file is **not committed** to git for security reasons.
+
+**Setup .env automatically:**
+```bash
+cd backend
+./setup-env.sh
+```
+
+This script will:
+- Generate secure random JWT secrets (32+ characters)
+- Create `.env` from `.env.example`
+- Configure all required environment variables
+
+**Manual setup:**
+Copy `.env.example` to `.env` and configure:
 ```
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/saas_dev"
+JWT_SECRET=<generate-32-char-secret>
+JWT_REFRESH_SECRET=<generate-32-char-secret>
 SMTP_HOST=127.0.0.1
 SMTP_PORT=1025
+```
+
+**Generate secure secrets:**
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 ---
@@ -257,6 +278,28 @@ npx prisma migrate reset
 lsof -i :5432
 kill -9 <PID>
 ```
+
+### "Invalid token" Error (401)
+This error occurs when `.env` file is missing or JWT_SECRET is not configured.
+
+**Solution:**
+```bash
+cd backend
+
+# Option 1: Automatic setup
+./setup-env.sh
+
+# Option 2: Manual setup  
+cp .env.example .env
+# Edit .env and set JWT_SECRET and JWT_REFRESH_SECRET to 32+ character secrets
+```
+
+Then restart the backend server for changes to take effect.
+
+**Root Cause:**
+- The `.env` file contains sensitive JWT secrets and is git-ignored
+- Without it, the backend cannot verify authentication tokens
+- All API requests requiring authentication fail with 401
 
 ---
 
