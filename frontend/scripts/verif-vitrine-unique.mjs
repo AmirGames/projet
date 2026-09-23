@@ -97,7 +97,9 @@ const erreurs = [];
 page.on('console', (m) => {
   // Le script demande exprès un identifiant inconnu et l'ancienne maquette :
   // les 404 qui en résultent sont ce qu'on vérifie, pas un défaut de la page.
-  if (m.type() === 'error' && !/404/.test(m.text())) {
+  // « RSC payload » : un préchargement de Next interrompu par le changement
+  // de page — le navigateur retombe sur une navigation normale.
+  if (m.type() === 'error' && !/404|RSC payload/.test(m.text())) {
     erreurs.push(`${new URL(page.url()).pathname} : ${m.text()}`);
   }
 });
