@@ -150,4 +150,144 @@ export class DriverActivityService {
       },
     };
   }
+
+  /**
+   * Tableau de bord chiffré d'un livreur sur une période glissante.
+   *
+   * Les jours et les heures sont comptés à l'heure de Paris : un livreur qui
+   * travaille le soir ne doit pas voir sa soirée coupée en deux à minuit UTC.
+   */
+  static async analytics(driverId: string, jours: number, fuseau = "Europe/Paris") {
+    const maintenant = new Date();
+    const depuis = new Date(maintenant.getTime() - jours * 86400000);
+    const avant = new Date(depuis.getTime() - jours * 86400000);
+
+    const [livrees, precedentes, offres, notes, livreur] = await Promise.all([
+      db.orderDelivery.findMany({
+        where: { driverId, status: "DELIVERED", deliveryTime: { gte: depuis } },
+        select: {
+          deliveryTime: true,
+          assignedAt: true,
+          pickupTime: true,
+          distanceKm: true,
+          driverPayout: true,
+          order: { select: { feesAmount: true } },
+        },
+      }),
+      db.orderDelivery.aggregate({
+        where: { driverId, status: "DELIVERED", deliveryTime: { gte: avant, lt: depuis } },
+        _count: true,
+        _sum: { driverPayout: true },
+      }),
+      db.deliveryOffer.findMany({
+        where: { driverId, offeredAt: { gte: depuis } },
+        select: {
+          status: true,
+          delivery: { select: { driverId: true, status: true } },
+        },
+      }),
+      db.driverRating.aggregate({
+        where: { driverId, createdAt: { gte: depuis } },
+        _avg: { note: true },
+        _count: true,
+      }),
+      db.driver.findUnique({ where: { id: driverId }, select: { rating: true, totalRatings: true } }),
+    ]);
+
+    const gain = (c: (typeof livrees)[number]) => Number(c.driverPayout ?? c.order?.feesAmount ?? 0);
+
+    // Clés de jour et d'heure dans le fuseau du livreur.
+    const jourDe = new Intl.DateTimeFormat("fr-CA", { timeZone: fuseau, year: "numeric", month: "2-digit", day: "2-digit" });
+    const heureDe = new Intl.DateTimeFormat("fr-FR", { timeZone: fuseau, hour: "2-digit", hourCycle: "h23" });
+
+    const parJour = new Map<string, { date: string; livrees: number; gains: number; distanceKm: number }>();
+    for (let i = jours - 1; i >= 0; i--) {
+      const cle = jourDe.format(new Date(maintenant.getTime() - i * 86400000));
+      parJour.set(cle, { date: cle, livrees: 0, gains: 0, distanceKm: 0 });
+    }
+
+    const parHeure = Array.from({ length: 24 }, (_, heure) => ({ heure, livrees: 0, gains: 0 }));
+
+    let gains = 0;
+    let distance = 0;
+    const durees: number[] = [];
+    const retraits: number[] = [];
+
+    for (const c of livrees) {
+      const montant = gain(c);
+      gains += montant;
+      distance += c.distanceKm ?? 0;
+
+      if (c.deliveryTime) {
+        const jour = parJour.get(jourDe.format(c.deliveryTime));
+        if (jour) {
+          jour.livrees += 1;
+          jour.gains += montant;
+          jour.distanceKm += c.distanceKm ?? 0;
+        }
+        // formatToParts : le format français donne « 20 h », pas « 20 ».
+        const valeurHeure = heureDe.formatToParts(c.deliveryTime).find((p) => p.type === "hour")?.value;
+        const heure = parHeure[Number(valeurHeure) % 24];
+        heure.livrees += 1;
+        heure.gains += montant;
+      }
+
+      const duree = minutesEntre(c.assignedAt, c.deliveryTime);
+      if (duree != null) durees.push(duree);
+      const retrait = minutesEntre(c.assignedAt, c.pickupTime);
+      if (retrait != null) retraits.push(retrait);
+    }
+
+    const moyenne = (valeurs: number[]) =>
+      valeurs.length ? Math.round(valeurs.reduce((a, b) => a + b, 0) / valeurs.length) : null;
+
+    // Les propositions sans réponse de sa part (annulées par le système) ne
+    // comptent pas dans le taux : le livreur n'y est pour rien.
+    const compte = { ACCEPTED: 0, DECLINED: 0, EXPIRED: 0 };
+    let annuleesParLui = 0;
+    for (const o of offres) {
+      if (o.status in compte) compte[o.status as keyof typeof compte] += 1;
+      if (o.status === "ACCEPTED" && (o.delivery.driverId !== driverId || o.delivery.status === "FAILED")) {
+        annuleesParLui += 1;
+      }
+    }
+    const repondues = compte.ACCEPTED + compte.DECLINED + compte.EXPIRED;
+
+    const minutesEnCourse = durees.reduce((a, b) => a + b, 0);
+    const arrondi = (n: number) => Math.round(n * 100) / 100;
+
+    return {
+      periode: { jours, depuis, jusqua: maintenant, fuseau },
+      resume: {
+        livrees: livrees.length,
+        gains: arrondi(gains),
+        gainMoyen: livrees.length ? arrondi(gains / livrees.length) : null,
+        distanceKm: arrondi(distance),
+        dureeMoyenneMin: moyenne(durees),
+        retraitMoyenMin: moyenne(retraits),
+        // Gains rapportés au temps passé en course, pas au temps connecté.
+        gainsParHeure: minutesEnCourse > 0 ? arrondi(gains / (minutesEnCourse / 60)) : null,
+        annulees: annuleesParLui,
+      },
+      precedente: {
+        livrees: precedentes._count,
+        gains: arrondi(Number(precedentes._sum.driverPayout ?? 0)),
+      },
+      offres: {
+        recues: repondues,
+        acceptees: compte.ACCEPTED,
+        refusees: compte.DECLINED,
+        expirees: compte.EXPIRED,
+        tauxAcceptation: repondues ? Math.round((compte.ACCEPTED / repondues) * 100) : null,
+      },
+      notes: {
+        moyennePeriode: notes._avg.note != null ? arrondi(notes._avg.note) : null,
+        avisPeriode: notes._count,
+        moyenneGlobale: livreur && livreur.totalRatings > 0 ? Number(livreur.rating) : null,
+        avisTotal: livreur?.totalRatings ?? 0,
+      },
+      parJour: [...parJour.values()].map((j) => ({ ...j, gains: arrondi(j.gains), distanceKm: arrondi(j.distanceKm) })),
+      parHeure: parHeure.map((h) => ({ ...h, gains: arrondi(h.gains) })),
+    };
+  }
 }

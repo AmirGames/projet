@@ -77,6 +77,8 @@ function Badge({ status }: { status: string }) {
   );
 }
 
+const km = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 const date = (iso?: string | null) =>
   iso
     ? new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -173,7 +175,7 @@ export default function HistoriqueCoursesPage() {
             </div>
             <div className="bg-gray-800 rounded-lg p-4">
               <p className="text-gray-400 text-xs">Distance</p>
-              <p className="text-white text-2xl font-bold">{reponse.resume.distanceKm.toFixed(1)} km</p>
+              <p className="text-white text-2xl font-bold">{km(reponse.resume.distanceKm)} km</p>
             </div>
           </div>
         )}
@@ -257,7 +259,7 @@ export default function HistoriqueCoursesPage() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-400">
-                    {c.distanceKm != null && <span>{c.distanceKm.toFixed(1)} km</span>}
+                    {c.distanceKm != null && <span>{km(c.distanceKm)} km</span>}
                     {c.durationMin != null && <span>{c.durationMin} min de course</span>}
                     {c.deliveredAt && <span>Livrée {date(c.deliveredAt)}</span>}
                     {c.proofType && <span>Preuve : {c.proofType === 'CODE' ? 'code client' : 'photo'}</span>}

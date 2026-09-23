@@ -31,7 +31,9 @@ export default function DriverLayout({
     { href: '/driver/support', label: 'Support', icon: MessageCircle },
   ];
 
-  const isActive = (href: string) => pathname === href || pathname?.startsWith(href + '/');
+  // L'accueil /driver préfixe toutes les pages : il ne s'allume que sur lui-même.
+  const isActive = (href: string) =>
+    href === '/driver' ? pathname === href : pathname === href || pathname?.startsWith(href + '/');
 
   const handleLogout = () => {
     localStorage.removeItem('driverToken');

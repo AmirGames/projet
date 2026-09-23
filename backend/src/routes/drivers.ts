@@ -680,6 +680,20 @@ router.get("/history", authMiddleware, async (req: Request, res: Response, next:
   }
 });
 
+// GET /drivers/analytics?jours=7|30|90 - Statistiques du livreur
+router.get("/analytics", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const { jours } = z
+      .object({ jours: z.coerce.number().refine((j) => [7, 30, 90].includes(j)).default(7) })
+      .parse(req.query);
+
+    res.json({ success: true, data: await DriverActivityService.analytics(livreur.id, jours) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /drivers/deliveries/:id - Get specific delivery (protected)
 router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
