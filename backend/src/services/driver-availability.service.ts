@@ -3,6 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitDeliveryUpdate, emitDriverEvent, emitNotification } from "../config/socket";
 import { DispatchService } from "./dispatch.service";
+import { Notifier, enArrierePlan } from "./notifier.service";
 
 /**
  * Pause temporaire d'un livreur.
@@ -126,6 +127,14 @@ export class DriverAvailabilityService {
           isOnline: livreur.isOnline,
         });
       }
+      enArrierePlan(
+        Notifier.pushLivreur(id, {
+          title: "Fin de la pause",
+          body: "Vous pouvez de nouveau recevoir des courses.",
+          url: "/driver",
+          tag: "pause",
+        })
+      );
     }
 
     return echues.length;
@@ -166,6 +175,14 @@ export class DriverAvailabilityService {
 
       const email = livreur.user?.email || livreur.email;
       emitDriverEvent(email, "gps-perdu", { depuis: livreur.lastLocationUpdate });
+      enArrierePlan(
+        Notifier.pushLivreur(livreur.id, {
+          title: "Signal GPS perdu",
+          body: "Votre position n'est plus transmise. Vérifiez la localisation et le réseau.",
+          url: livreur.currentOrderId ? `/driver/deliveries/${livreur.currentOrderId}` : "/driver",
+          tag: "gps",
+        })
+      );
 
       if (livreur.currentOrderId) {
         await this.prevenirGpsPerduPendantCourse(livreur.currentOrderId, livreur.name, livreur.lastLocationUpdate);

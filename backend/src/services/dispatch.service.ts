@@ -5,6 +5,7 @@ import { distanceKm, estUnPoint, Point } from "../utils/geo";
 import { emitDeliveryUpdate, emitDriverEvent } from "../config/socket";
 import { genererCode } from "./delivery-proof.service";
 import { obfusquerAdresse } from "../utils/address-obfuscation";
+import { Notifier, enArrierePlan } from "./notifier.service";
 
 /**
  * Attribution des courses aux livreurs.
@@ -259,6 +260,17 @@ export class DispatchService {
       obfuscationNote: "À ±50-100m pour votre confidentialité",
     });
 
+    // L'onglet du livreur peut dormir en arrière-plan : la connexion temps
+    // réel ne suffit pas à le réveiller, une notification du système si.
+    enArrierePlan(
+      Notifier.pushLivreur(choisi.id, {
+        title: `Nouvelle course : ${payout.toFixed(2).replace(".", ",")} €`,
+        body: `${course.order?.store?.name || "Commerce"} · à ${choisi.distance.toFixed(1).replace(".", ",")} km. Répondez vite !`,
+        url: "/driver",
+        tag: "course-proposee",
+      })
+    );
+
     logger.info("Course proposée", { deliveryId, driverId: choisi.id, distance: choisi.distance });
 
     return proposition;
@@ -321,6 +333,7 @@ export class DispatchService {
     ]);
 
     emitDeliveryUpdate(course.orderId, { driverId, status: "ACCEPTED" });
+    enArrierePlan(Notifier.etapeLivraisonClient(course.orderId, "ACCEPTED"));
 
     return course;
   }

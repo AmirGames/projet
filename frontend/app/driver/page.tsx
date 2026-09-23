@@ -11,6 +11,7 @@ import { PropositionsCourses } from '@/components/PropositionsCourses';
 import { DossierLivreur } from '@/components/DossierLivreur';
 import { NotesRecues } from '@/components/NotesRecues';
 import { PauseLivreur } from '@/components/PauseLivreur';
+import { ActiverNotifications } from '@/components/ActiverNotifications';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Delivery {
@@ -466,6 +467,8 @@ export default function DriverDashboard() {
                   pauseReason={pauseReason}
                   surChangement={surChangementPause}
                 />
+
+                <ActiverNotifications />
 
                 <Link href="/driver/profile" className="block">
                   <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">

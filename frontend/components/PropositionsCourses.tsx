@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 
 import { euro } from '@/lib/format';
 import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
+import { notifierSiCache } from '@/components/ActiverNotifications';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -121,8 +122,15 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
       transports: ['websocket', 'polling'],
     });
 
-    socket.on('course-proposee', () => {
+    socket.on('course-proposee', (donnees: { payout?: number; distanceKm?: number; pickupStore?: string }) => {
       relever();
+      notifierSiCache(
+        donnees?.payout != null ? `Nouvelle course : ${euro(donnees.payout)}` : 'Nouvelle course',
+        `${donnees?.pickupStore || 'Commerce'}${
+          donnees?.distanceKm != null ? ` · à ${donnees.distanceKm.toFixed(1)} km` : ''
+        }. Répondez vite !`,
+        'course-proposee'
+      );
     });
     // Le serveur voit ce que le téléphone ne voit pas : ses positions
     // n'arrivent plus.

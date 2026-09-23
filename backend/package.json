@@ -32,6 +32,7 @@
     "redis": "latest",
     "socket.io": "^4.7.2",
     "stripe": "^22.6.2",
+    "web-push": "^3.6.7",
     "winston": "latest",
     "zod": "latest"
   },
@@ -51,6 +52,7 @@
     "@types/nodemailer": "^8.0.1",
     "@types/stripe": "^8.0.416",
     "@types/supertest": "latest",
+    "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",

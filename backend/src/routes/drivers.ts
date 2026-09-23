@@ -18,7 +18,9 @@ import { DeliveryProofService } from "../services/delivery-proof.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
 import { DriverActivityService, FiltreHistorique } from "../services/driver-activity.service";
 import { DriverAvailabilityService } from "../services/driver-availability.service";
+import { Notifier, enArrierePlan } from "../services/notifier.service";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import fs from "fs";
 import { join } from "path";
 
@@ -274,6 +276,57 @@ router.delete("/pause", authMiddleware, async (req: Request, res: Response, next
       isOnline: misAJour.isOnline,
       pausedUntil: null,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /drivers/push/config - Clé publique VAPID pour s'abonner aux notifications
+router.get("/push/config", authMiddleware, async (_req: Request, res: Response) => {
+  res.json({ success: true, data: { enabled: Notifier.canaux.push, publicKey: Notifier.canaux.vapidPublicKey } });
+});
+
+// POST /drivers/push/subscribe - Enregistre l'abonnement push du navigateur
+router.post("/push/subscribe", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const abonnement = z
+      .object({
+        endpoint: z.string().url(),
+        keys: z.object({ p256dh: z.string(), auth: z.string() }),
+      })
+      .passthrough()
+      .parse(req.body);
+
+    await db.driver.update({ where: { id: livreur.id }, data: { pushSubscription: abonnement as any } });
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /drivers/push/subscribe - Désactive les notifications push
+router.delete("/push/subscribe", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    await db.driver.update({ where: { id: livreur.id }, data: { pushSubscription: Prisma.DbNull } });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /drivers/push/test - Envoie une notification d'essai
+router.post("/push/test", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const envoye = await Notifier.pushLivreur(livreur.id, {
+      title: "Notifications activées",
+      body: "Vous serez prévenu de chaque nouvelle course, même l'application en arrière-plan.",
+      url: "/driver",
+    });
+    res.json({ success: true, envoye });
   } catch (err) {
     next(err);
   }
@@ -807,6 +860,11 @@ router.patch(
         driverId: delivery.driverId,
         status
       });
+
+      // Le client est prévenu hors de l'application des étapes qui comptent.
+      if ((status === "PICKED_UP" || status === "DELIVERED") && course.status !== status) {
+        enArrierePlan(Notifier.etapeLivraisonClient(delivery.orderId, status));
+      }
 
       res.json({
         success: true,
