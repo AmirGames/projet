@@ -252,7 +252,7 @@ export class OrderService {
       if (data.paymentMethodId) {
         const propose = await db.paymentMethod.findFirst({
           where: { id: data.paymentMethodId, storeId: data.storeId, isActive: true },
-          select: { id: true, name: true },
+          select: { id: true, name: true, type: true },
         });
 
         if (!propose) {
@@ -263,7 +263,16 @@ export class OrderService {
           );
         }
 
-        moyenDePaiement = propose;
+        // Impossible de payer en liquide (CASH) si la livraison est en DELIVERY
+        if (data.deliveryType === "DELIVERY" && propose.type === "CASH") {
+          throw new ApiError(
+            400,
+            "Le paiement en liquide n'est pas disponible pour la livraison. Veuillez choisir un autre moyen de paiement.",
+            "CASH_PAYMENT_NOT_ALLOWED_FOR_DELIVERY"
+          );
+        }
+
+        moyenDePaiement = { id: propose.id, name: propose.name };
       }
 
       /**
