@@ -63,14 +63,15 @@ check('son organisation aussi', typeof renouvele?.organization?.id === 'string',
  * immédiat — inutile d'attendre dans une vérification.
  */
 titre('Quand le compte disparaît');
+// L'inscription seule, sans l'organisation d'inscription() : la créer
+// passerait par l'API avec ce jeton, et le serveur se souviendrait du compte.
 const condamne = await j(
-  await inscription({ email: `d-${uniq}@t.fr`, password: MDP, name: `D ${uniq}` })
+  await post('/api/auth/signup', { email: `d-${uniq}@t.fr`, password: MDP, name: `D ${uniq}` })
 );
 const TD = condamne.accessToken;
 const RD = condamne.refreshToken;
 
-await sqlExec(`DELETE FROM "Membership" WHERE "userId" = '${condamne.user.id}'`);
-await sqlExec(`DELETE FROM "Organization" WHERE id = '${condamne.organization.id}'`);
+await sqlExec(`DELETE FROM "Customer" WHERE "userId" = '${condamne.user.id}'`);
 await sqlExec(`DELETE FROM "User" WHERE id = '${condamne.user.id}'`);
 
 const profil = await get('/api/auth/me', TD);

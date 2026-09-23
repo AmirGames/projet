@@ -72,6 +72,7 @@ async function installer(suffixe) {
 
   return {
     jeton,
+    userId: compte.user.id,
     orgId: compte.organization.id,
     storeId,
     productId: produit.product?.id || produit.id,
@@ -372,6 +373,25 @@ check(
   'elle lit les produits d’un commerçant',
   (await get(`/api/products?storeId=${alice.storeId}`, TP)).status === 200,
   'bloquée à tort'
+);
+
+// ===== Une organisation au nom d'un autre =====
+
+titre('Une organisation ne se crée qu’au nom de l’appelant');
+// La route prenait le compte dans le corps : Bob pouvait faire d'Alice
+// l'administratrice d'une organisation qu'elle n'avait jamais demandée.
+const imposee = await j(
+  await post('/api/organizations', { name: `Imposée ${uniq}`, slug: `imposee-${uniq}`, userId: alice.userId }, bob.jeton)
+);
+const idImposee = imposee?.org?.id;
+check('la création aboutit', !!idImposee, JSON.stringify(imposee));
+check(
+  'Alice n’en est pas membre',
+  (await sqlScalaire(`SELECT count(*) FROM "Membership" WHERE "orgId" = '${idImposee}' AND "userId" = '${alice.userId}'`)) === '0'
+);
+check(
+  'elle revient à Bob, qui l’a créée',
+  (await sqlScalaire(`SELECT count(*) FROM "Membership" WHERE "orgId" = '${idImposee}' AND "userId" = '${bob.userId}'`)) === '1'
 );
 
 // ===== Le message du refus =====
