@@ -127,7 +127,7 @@ export default function CreateStorePage() {
       });
 
       if (!meRes.ok) {
-        setError('Erreur d\'authentification');
+        setError("Erreur d\'authentification");
         return;
       }
 

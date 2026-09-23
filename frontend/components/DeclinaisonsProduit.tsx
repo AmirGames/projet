@@ -200,7 +200,7 @@ export function DeclinaisonsProduit({
               />
               <button
                 type="button"
-                aria-label="Enregistrer l’intitulé"
+                aria-label="Enregistrer l'intitulé"
                 onClick={enregistrerLibelle}
                 disabled={chargement || libelleDuChoix === libelleEnregistre}
                 className={`px-3 rounded transition ${
@@ -208,13 +208,13 @@ export function DeclinaisonsProduit({
                     ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                     : 'bg-orange-600 hover:bg-orange-700'
                 }`}
-                title="Enregistrer l’intitulé"
+                title="Enregistrer l'intitulé"
               >
                 <Save size={16} />
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Sans elle, le client voit des choix sans savoir ce qu’il choisit.
+              Sans elle, le client voit des choix sans savoir ce qu'il choisit.
             </p>
           </div>
 
@@ -350,7 +350,7 @@ export function DeclinaisonsProduit({
           </div>
 
           <p className="text-xs text-gray-500">
-            Un prix laissé vide reprend celui du plat ({euro(prixDuPlat)}). Dès qu’une
+            Un prix laissé vide reprend celui du plat ({euro(prixDuPlat)}). Dès qu'une
             déclinaison existe, le client doit en choisir une pour commander.
           </p>
 

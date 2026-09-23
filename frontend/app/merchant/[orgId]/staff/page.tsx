@@ -95,7 +95,7 @@ export default function StaffPage() {
     }
 
     if (!formData.email.trim()) {
-      setFormError('L\'email est requis');
+      setFormError("L\'email est requis");
       return;
     }
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Clock, CheckCircle, AlertCircle, Package, Eye } from 'lucide-react';
+import { Clock, CheckCircle, AlertCircle, Package, Eye, Truck } from 'lucide-react';
 import Link from 'next/link';
 
 import { useCurrentStore } from '@/lib/current-store';
@@ -35,11 +35,12 @@ interface Order {
   createdAt: string;
 }
 
-type OrderStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'READY' | 'COMPLETED';
+type OrderStatus = 'PENDING' | 'ACCEPTED' | 'PREPARING' | 'REJECTED' | 'READY' | 'COMPLETED';
 
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50',
   ACCEPTED: 'bg-blue-600/20 text-blue-400 border-blue-600/50',
+  PREPARING: 'bg-orange-600/20 text-orange-400 border-orange-600/50',
   READY: 'bg-green-600/20 text-green-400 border-green-600/50',
   COMPLETED: 'bg-purple-600/20 text-purple-400 border-purple-600/50',
   REJECTED: 'bg-red-600/20 text-red-400 border-red-600/50',
@@ -48,6 +49,7 @@ const statusColors: Record<string, string> = {
 const statusIcons: Record<string, any> = {
   PENDING: Clock,
   ACCEPTED: CheckCircle,
+  PREPARING: Clock,
   READY: Package,
   COMPLETED: CheckCircle,
   REJECTED: AlertCircle,
@@ -67,6 +69,11 @@ export default function OrdersPage() {
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<any>(null);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [useOwnDelivery, setUseOwnDelivery] = useState(false);
+  const [showDeliveryModal, setShowDeliveryModal] = useState<string | null>(null);
+  const [availableDeliveryMen, setAvailableDeliveryMen] = useState<any[]>([]);
+  const [loadingDeliveryMen, setLoadingDeliveryMen] = useState(false);
+  const [deliveryRadius] = useState(8);
 
   const itemsPerPage = 20;
 
@@ -74,6 +81,7 @@ export default function OrdersPage() {
     if (storeId) {
       fetchOrders();
       fetchStats();
+      fetchDeliverySettings();
     }
   }, [storeId, filter, page]);
 
@@ -158,6 +166,51 @@ export default function OrdersPage() {
     }
   };
 
+  const fetchDeliverySettings = async () => {
+    try {
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/api/store-settings/${storeId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const settings = data.settings || {};
+      const delivery = settings.delivery || {};
+      setUseOwnDelivery(delivery.useOwnDelivery || false);
+    } catch (error) {
+      console.error('Error fetching delivery settings:', error);
+    }
+  };
+
+  const handleCallDelivery = async (orderId: string) => {
+    try {
+      setLoadingDeliveryMen(true);
+      setShowDeliveryModal(orderId);
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/api/drivers/available?storeId=${storeId}&radius=${deliveryRadius}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch available delivery men');
+      }
+
+      const data = await response.json();
+      setAvailableDeliveryMen(data.deliveryMen || []);
+    } catch (error) {
+      console.error('Error fetching delivery men:', error);
+      setAvailableDeliveryMen([]);
+    } finally {
+      setLoadingDeliveryMen(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / itemsPerPage);
 
   if (loading && orders.length === 0) {
@@ -207,6 +260,10 @@ export default function OrdersPage() {
               <p className="text-blue-400 text-xs mb-1">{t('statsAccepted')}</p>
               <p className="text-2xl font-bold text-blue-400">{stats.accepted}</p>
             </div>
+            <div className="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4">
+              <p className="text-orange-400 text-xs mb-1">En préparation</p>
+              <p className="text-2xl font-bold text-orange-400">{stats.preparing || 0}</p>
+            </div>
             <div className="bg-green-600/20 border border-green-600/50 rounded-lg p-4">
               <p className="text-green-400 text-xs mb-1">{t('statsReady')}</p>
               <p className="text-2xl font-bold text-green-400">{stats.ready}</p>
@@ -224,7 +281,7 @@ export default function OrdersPage() {
 
         {/* Filter Buttons */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {(['ALL', 'PENDING', 'ACCEPTED', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
+          {(['ALL', 'PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
             <button
               key={status}
               onClick={() => {
@@ -294,6 +351,15 @@ export default function OrdersPage() {
                           <Eye size={14} className="inline mr-1" />
                           {t('orderDetails')}
                         </Link>
+                        {useOwnDelivery && order.status === 'READY' && (
+                          <button
+                            onClick={() => handleCallDelivery(order.id)}
+                            className="px-3 py-1 bg-amber-600/20 text-amber-400 rounded text-xs font-medium hover:bg-amber-600/30 transition-colors"
+                          >
+                            <Truck size={14} className="inline mr-1" />
+                            Appeler un livreur
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -301,7 +367,7 @@ export default function OrdersPage() {
                     <div>
                       <p className="text-sm font-semibold text-gray-300 mb-3">{t('statusChange')}</p>
                       <div className="grid grid-cols-2 gap-2">
-                        {(['PENDING', 'ACCEPTED', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
+                        {(['ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
                           <button
                             key={status}
                             onClick={() => handleStatusChange(order.id, status)}
@@ -345,6 +411,57 @@ export default function OrdersPage() {
               >
                 {t('paginationNext')}
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Delivery Modal */}
+        {showDeliveryModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full">
+              <div className="p-6 border-b border-gray-700">
+                <h2 className="text-xl font-bold text-gray-100">Livreurs disponibles</h2>
+                <p className="text-sm text-gray-400 mt-1">Sélectionnez un livreur à proximité</p>
+              </div>
+
+              <div className="p-6">
+                {loadingDeliveryMen ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-2"></div>
+                    <p className="text-gray-400 text-sm">Recherche de livreurs...</p>
+                  </div>
+                ) : availableDeliveryMen.length === 0 ? (
+                  <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 text-center">
+                    <p className="text-red-400 text-sm">Aucun livreur disponible à proximité</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {availableDeliveryMen.map((delivery) => (
+                      <button
+                        key={delivery.id}
+                        onClick={() => {
+                          console.log('Liveur sélectionné:', delivery);
+                          setShowDeliveryModal(null);
+                        }}
+                        className="w-full p-3 text-left bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg transition-colors"
+                      >
+                        <p className="font-medium text-gray-100">{delivery.name}</p>
+                        <p className="text-xs text-gray-400">{delivery.phone}</p>
+                        <p className="text-xs text-green-400 mt-1">Distance: {delivery.distance?.toFixed(1)} km</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 border-t border-gray-700 flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowDeliveryModal(null)}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
             </div>
           </div>
         )}

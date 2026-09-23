@@ -71,7 +71,7 @@ export function NotesRecues() {
 
       {avis === 0 ? (
         <p className="text-sm text-gray-500">
-          Aucune note pour l’instant. Vos clients pourront vous noter une fois leur commande remise.
+          Aucune note pour l'instant. Vos clients pourront vous noter une fois leur commande remise.
         </p>
       ) : (
         <ul className="space-y-3">

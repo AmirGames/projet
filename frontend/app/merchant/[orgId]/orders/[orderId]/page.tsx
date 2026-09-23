@@ -59,6 +59,7 @@ interface Commande {
 const STATUTS: { valeur: string; libelle: string }[] = [
   { valeur: 'PENDING', libelle: 'En attente' },
   { valeur: 'ACCEPTED', libelle: 'Acceptée' },
+  { valeur: 'PREPARING', libelle: 'En préparation' },
   { valeur: 'READY', libelle: 'Prête' },
   { valeur: 'COMPLETED', libelle: 'Terminée' },
   { valeur: 'REJECTED', libelle: 'Refusée' },
@@ -67,6 +68,7 @@ const STATUTS: { valeur: string; libelle: string }[] = [
 const COULEURS: Record<string, string> = {
   PENDING: 'bg-orange-500/20 text-orange-400',
   ACCEPTED: 'bg-blue-500/20 text-blue-400',
+  PREPARING: 'bg-amber-500/20 text-amber-400',
   READY: 'bg-purple-500/20 text-purple-400',
   COMPLETED: 'bg-green-500/20 text-green-400',
   REJECTED: 'bg-red-500/20 text-red-400',

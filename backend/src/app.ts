@@ -1,6 +1,7 @@
 import express, { Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import { join } from "path";
 import { getEnv } from "./config/env";
 import { requestLogger } from "./config/logger";
 import { middlewareOrigine } from "./config/origine";
@@ -106,6 +107,19 @@ export function createApp(): Express {
   // toutes les routes, et non route par route : deux routeurs sur vingt-cinq
   // faisaient le contrôle.
   app.use(cloisonnement);
+
+  // ===== Static files (uploads) =====
+  const uploadsDir = join(process.cwd(), "uploads");
+  app.use("/uploads", (req, res, next) => {
+    res.header("Access-Control-Allow-Origin", originesAutorisees.includes(req.get("origin") || "") ? req.get("origin") : originesAutorisees[0]);
+    res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Credentials", "true");
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
+    return next();
+  }, express.static(uploadsDir));
 
   // ===== API Routes =====
   app.use("/api/auth", authRouter);

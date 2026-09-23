@@ -31,6 +31,10 @@ interface StoreSettings {
       reviewNotifications?: boolean;
       emailNotifications?: boolean;
     };
+    delivery?: {
+      useOwnDelivery?: boolean;
+      maxDeliveryRadius?: number;
+    };
   };
   businessType?: string | null;
   cuisineType?: string | null;
@@ -55,7 +59,7 @@ interface Genre {
   libelle: string;
 }
 
-type TabType = 'general' | 'contact' | 'notifications' | 'facturation';
+type TabType = 'general' | 'contact' | 'notifications' | 'facturation' | 'livraison';
 
 export default function StoreSettings() {
   const params = useParams();
@@ -85,6 +89,9 @@ export default function StoreSettings() {
       lowStockAlerts: false,
       reviewNotifications: false,
       emailNotifications: false,
+    },
+    delivery: {
+      useOwnDelivery: false,
     },
     businessType: '',
     cuisineType: '',
@@ -150,6 +157,9 @@ export default function StoreSettings() {
           lowStockAlerts: false,
           reviewNotifications: false,
           emailNotifications: false,
+        },
+        delivery: settings_obj.delivery || {
+          useOwnDelivery: false,
         },
         businessType: data.businessType || '',
         cuisineType: data.cuisineType || '',
@@ -256,12 +266,12 @@ export default function StoreSettings() {
 
         {/* Tabs */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg mb-6">
-          <div className="flex border-b border-gray-700">
-            {(['general', 'contact', 'notifications', 'facturation'] as TabType[]).map(tab => (
+          <div className="flex border-b border-gray-700 overflow-x-auto">
+            {(['general', 'contact', 'notifications', 'facturation', 'livraison'] as TabType[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 px-4 py-4 font-medium transition-colors text-center ${
+                className={`flex-1 px-4 py-4 font-medium transition-colors text-center whitespace-nowrap ${
                   activeTab === tab
                     ? 'border-b-2 border-red-600 text-red-400'
                     : 'text-gray-400 hover:text-gray-300'
@@ -271,6 +281,7 @@ export default function StoreSettings() {
                 {tab === 'contact' && '📍 Contact'}
                 {tab === 'notifications' && '🔔 Notifications'}
                 {tab === 'facturation' && '🧾 Facturation'}
+                {tab === 'livraison' && '🚚 Livraison'}
               </button>
             ))}
           </div>
@@ -643,6 +654,49 @@ export default function StoreSettings() {
                   Les horaires d&apos;ouverture se règlent dans l&apos;onglet{' '}
                   <strong>Horaires</strong> de la barre latérale, service par service.
                 </p>
+              </div>
+            )}
+
+            {/* Delivery Tab */}
+            {activeTab === 'livraison' && (
+              <div className="space-y-6">
+                <section className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-100">Gestion de la livraison</h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Configurez comment vous gérez les livraisons de vos commandes.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                    <div>
+                      <p className="font-medium">J&apos;utilise ma propre livraison</p>
+                      <p className="text-sm text-gray-400">Activez cette option si vous livrez uniquement avec vos propres livreurs</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={formData.delivery.useOwnDelivery}
+                      onChange={(e) => handleNestedChange('delivery', 'useOwnDelivery', e.target.checked)}
+                      className="w-5 h-5 rounded"
+                    />
+                  </div>
+
+                  {formData.delivery.useOwnDelivery && (
+                    <div className="space-y-4">
+                      <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-4">
+                        <p className="text-sm text-blue-300">
+                          ✓ Lorsqu&apos;une commande est prête, vous verrez un bouton pour appeler un livreur disponible dans votre rayon de livraison.
+                        </p>
+                      </div>
+
+                      <div className="bg-amber-600/10 border border-amber-600/30 rounded-lg p-4">
+                        <p className="text-sm text-amber-300">
+                          📍 Gérez votre rayon de livraison dans l&apos;onglet <Link href={`/merchant/${orgId}/delivery-zones`} className="underline hover:text-amber-200">Zones de livraison</Link>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </section>
               </div>
             )}
           </div>

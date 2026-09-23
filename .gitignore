@@ -32,6 +32,7 @@ npm-debug.log*
 # Data
 backend/data/
 data/
+backend/uploads/
 
 # Docker
 docker-compose.override.yml

@@ -88,9 +88,9 @@ export default function LoginPage() {
       // Redirect based on role
       const isSuperOwner = result.user?.isSuperOwner;
 
-      // If user has organizations from login, save the first one
-      if (result.organizations && result.organizations.length > 0) {
-        localStorage.setItem("currentOrgId", result.organizations[0].id);
+      // If user has an organization from login, save it
+      if (result.organization?.id) {
+        localStorage.setItem("currentOrgId", result.organization.id);
       }
 
       // Sans cela le contexte reste sur l'état déconnecté et les pages

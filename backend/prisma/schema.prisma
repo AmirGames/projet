@@ -594,6 +594,7 @@ model ProductVariant {
 enum OrderStatus {
   PENDING
   ACCEPTED
+  PREPARING
   REJECTED
   READY
   COMPLETED

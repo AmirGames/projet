@@ -7,7 +7,7 @@ import { logger } from "../config/logger";
 const router = Router();
 
 const updateStatusSchema = z.object({
-  status: z.enum(["PENDING", "ACCEPTED", "REJECTED", "READY", "COMPLETED"]),
+  status: z.enum(["PENDING", "ACCEPTED", "PREPARING", "REJECTED", "READY", "COMPLETED"]),
 });
 
 const addNoteSchema = z.object({

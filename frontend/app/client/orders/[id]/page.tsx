@@ -34,7 +34,7 @@ export default function OrderTrackingPage() {
   const router = useRouter();
   const orderId = params.id as string;
 
-  const { orderStatus, deliveryLocation, eta, isConnected } = useOrderTracking(orderId);
+  const { orderStatus, deliveryLocation, eta, isConnected, notification } = useOrderTracking(orderId);
 
   const [order, setOrder] = useState<Order | null>(null);
   const [delivery, setDelivery] = useState<OrderDelivery | null>(null);
@@ -94,19 +94,18 @@ export default function OrderTrackingPage() {
   const getStatusInfo = (status: string) => {
     const statuses: Record<string, { label: string; color: string; icon: string }> = {
       PENDING: { label: 'En attente', color: 'yellow', icon: '⏳' },
-      CONFIRMED: { label: 'Confirmée', color: 'blue', icon: '✓' },
+      ACCEPTED: { label: 'Acceptée', color: 'blue', icon: '✓' },
       PREPARING: { label: 'En préparation', color: 'orange', icon: '👨‍🍳' },
-      READY: { label: 'Prête', color: 'green', icon: '📦' },
-      PICKED_UP: { label: 'En route', color: 'purple', icon: '🚗' },
-      DELIVERED: { label: 'Livrée', color: 'green', icon: '✓✓' },
-      CANCELLED: { label: 'Annulée', color: 'red', icon: '✗' },
+      READY: { label: 'Prête', color: 'yellow-green', icon: '📦' },
+      COMPLETED: { label: 'Complétée', color: 'green', icon: '✓✓' },
+      REJECTED: { label: 'Refusée', color: 'red', icon: '✗' },
     };
     return statuses[status] || { label: status, color: 'gray', icon: '?' };
   };
 
   const getProgressPercentage = () => {
     if (!order) return 0;
-    const statuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'DELIVERED'];
+    const statuses = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED'];
     const currentIndex = statuses.indexOf(order.status);
     return currentIndex >= 0 ? ((currentIndex + 1) / statuses.length) * 100 : 0;
   };
@@ -153,6 +152,24 @@ export default function OrderTrackingPage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-0 left-0 right-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 pt-4">
+            <div className="animate-in fade-in slide-in-from-top-2 duration-300 bg-green-900 border border-green-700 rounded-lg p-4 flex items-center gap-4 shadow-lg">
+              <div className="text-2xl">✨</div>
+              <div className="flex-1">
+                <p className="font-bold text-green-200">{notification.title}</p>
+                <p className="text-green-100 text-sm">{notification.message}</p>
+              </div>
+              <div className="text-green-400 text-sm">
+                À l'instant
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -215,8 +232,8 @@ export default function OrderTrackingPage() {
 
               {/* Timeline */}
               <div className="space-y-4">
-                {['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'DELIVERED'].map((status, index) => {
-                  const completed = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'DELIVERED'].indexOf(order.status) >= index;
+                {['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED'].map((status, index) => {
+                  const completed = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED'].indexOf(order.status) >= index;
                   return (
                     <div key={status} className="flex items-center gap-4">
                       <div

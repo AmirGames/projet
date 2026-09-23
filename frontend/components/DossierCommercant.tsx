@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Check, Clock, FileText, X } from 'lucide-react';
+import { Check, Clock, FileText, Upload, X } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -49,7 +49,7 @@ interface Dossier {
 const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
   APPROVED: { icone: Check, classe: 'text-green-400', libelle: 'Validé' },
   REJECTED: { icone: X, classe: 'text-red-400', libelle: 'Refusé' },
-  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: 'En attente d’examen' },
+  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: "En attente d'examen" },
 };
 
 function Ligne({ libelle, valeur }: { libelle: string; valeur: string | null }) {
@@ -66,6 +66,11 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState('');
   const [motif, setMotif] = useState<Record<string, string>>({});
+  const [afficherFormulaire, setAfficherFormulaire] = useState(false);
+  const [typePiece, setTypePiece] = useState('');
+  const [fichier, setFichier] = useState<File | null>(null);
+  const [envoi, setEnvoi] = useState(false);
+  const [erreurUpload, setErreurUpload] = useState('');
 
   const charger = useCallback(async () => {
     try {
@@ -119,6 +124,50 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     }
   };
 
+  const deposerDocument = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErreurUpload('');
+
+    if (!typePiece || !fichier) {
+      setErreurUpload('Choisissez une pièce et un fichier');
+      return;
+    }
+
+    setEnvoi(true);
+
+    try {
+      const jeton = localStorage.getItem('accessToken');
+      const formData = new FormData();
+      formData.append('type', typePiece);
+      formData.append('file', fichier);
+
+      const reponse = await fetch(
+        `${API_URL}/api/merchant-profile/${orgId}/documents/upload`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${jeton}` },
+          body: formData,
+        }
+      );
+
+      const lu = await reponse.json().catch(() => null);
+
+      if (!reponse.ok) {
+        setErreurUpload(lu?.error || 'Dépôt impossible');
+        return;
+      }
+
+      setTypePiece('');
+      setFichier(null);
+      setAfficherFormulaire(false);
+      await charger();
+    } catch {
+      setErreurUpload('Erreur de connexion');
+    } finally {
+      setEnvoi(false);
+    }
+  };
+
   if (!dossier) return null;
 
   const adresse = [dossier.billingAddress, dossier.billingPostalCode, dossier.billingCity]
@@ -169,7 +218,84 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       </div>
 
       <div className="border-t border-gray-700 pt-4 space-y-3">
-        <h3 className="text-sm font-semibold text-gray-300">Justificatifs</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-300">Justificatifs</h3>
+          <button
+            type="button"
+            onClick={() => setAfficherFormulaire(!afficherFormulaire)}
+            className="flex items-center gap-1 text-xs bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded transition"
+          >
+            <Upload size={14} />
+            Ajouter
+          </button>
+        </div>
+
+        {afficherFormulaire && (
+          <form onSubmit={deposerDocument} className="bg-gray-700/50 border border-gray-600 rounded p-4 space-y-3">
+            {erreurUpload && (
+              <p className="text-sm text-red-400">{erreurUpload}</p>
+            )}
+
+            <div>
+              <label htmlFor="type-piece" className="block text-sm text-gray-400 mb-1">
+                Type de pièce
+              </label>
+              <select
+                id="type-piece"
+                value={typePiece}
+                onChange={(e) => setTypePiece(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              >
+                <option value="">Choisir…</option>
+                <option value="registration">Extrait d'immatriculation (Kbis, BCE)</option>
+                <option value="identity">Pièce d'identité du propriétaire</option>
+                <option value="vat">Attestation de TVA</option>
+                <option value="bank">Relevé d'identité bancaire</option>
+                <option value="other">Autre document</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="fichier-piece" className="block text-sm text-gray-400 mb-1">
+                Fichier (JPG, PNG, PDF max 10MB)
+              </label>
+              <input
+                id="fichier-piece"
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                onChange={(e) => setFichier(e.target.files?.[0] || null)}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm file:bg-gray-600 file:border-0 file:px-2 file:py-1 file:text-white file:cursor-pointer"
+              />
+              {fichier && (
+                <p className="text-xs text-gray-400 mt-1">
+                  {fichier.name} ({Math.round(fichier.size / 1024)} KB)
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={envoi}
+                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-medium py-2 rounded transition"
+              >
+                {envoi ? 'Envoi…' : 'Déposer'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAfficherFormulaire(false);
+                  setTypePiece('');
+                  setFichier(null);
+                  setErreurUpload('');
+                }}
+                className="px-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded transition"
+              >
+                Annuler
+              </button>
+            </div>
+          </form>
+        )}
 
         {dossier.documents.length === 0 ? (
           <p className="text-sm text-gray-500">Aucune pièce déposée.</p>

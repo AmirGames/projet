@@ -52,7 +52,7 @@ export function PromoCode({ storeId, orderAmount, onApply }: PromoCodeProps) {
         const remise = Number(data?.discountAmount ?? data?.data?.discount ?? 0);
 
         if (!(remise > 0)) {
-          setError('Ce code n’accorde aucune remise sur ce panier');
+          setError('Ce code n'accorde aucune remise sur ce panier');
           return;
         }
 

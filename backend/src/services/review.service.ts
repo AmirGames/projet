@@ -177,4 +177,46 @@ export class ReviewService {
       throw error;
     }
   }
+
+  static async getStoreReviewStats(storeId: string) {
+    try {
+      const reviews = await db.review.findMany({
+        where: {
+          storeId,
+          productId: storeId,
+          status: "APPROVED",
+        },
+      });
+
+      const totalReviews = reviews.length;
+      const averageRating = totalReviews > 0
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+        : 0;
+
+      const ratingBreakdown = {
+        "5": 0,
+        "4": 0,
+        "3": 0,
+        "2": 0,
+        "1": 0,
+      };
+
+      reviews.forEach((review) => {
+        ratingBreakdown[String(review.rating) as keyof typeof ratingBreakdown]++;
+      });
+
+      const satisfactionPercentage = totalReviews > 0
+        ? Math.round((ratingBreakdown["5"] / totalReviews) * 100)
+        : 0;
+
+      return {
+        totalReviews,
+        averageRating: parseFloat(averageRating.toFixed(2)),
+        ratingBreakdown,
+        satisfactionPercentage,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 }

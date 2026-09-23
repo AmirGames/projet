@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
+import { uploadMiddleware } from "../middleware/file-upload";
+import { logger } from "../config/logger";
 import { emitDeliveryUpdate } from "../config/socket";
 import { DispatchService } from "../services/dispatch.service";
 import { AuthService } from "../services/auth.service";
@@ -15,6 +17,8 @@ import { DriverPayoutService } from "../services/driver-payout.service";
 import { DeliveryProofService } from "../services/delivery-proof.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
 import { z } from "zod";
+import fs from "fs";
+import { join } from "path";
 
 const router = Router();
 
@@ -312,7 +316,7 @@ const pieceSchema = z.object({
   expiryDate: z.string().optional().nullable(),
 });
 
-// POST /drivers/documents - Déposer une pièce du dossier
+// POST /drivers/documents - Déposer une pièce du dossier par URL
 router.post("/documents", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const livreur = await livreurConnecte(req);
@@ -328,6 +332,51 @@ router.post("/documents", authMiddleware, async (req: Request, res: Response, ne
     next(err);
   }
 });
+
+// POST /drivers/documents/upload - Déposer une pièce du dossier par upload de fichier
+router.post(
+  "/documents/upload",
+  authMiddleware,
+  uploadMiddleware.single("file"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const livreur = await livreurConnecte(req);
+
+      if (!req.file) {
+        throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
+      }
+
+      const schema = z.object({
+        type: z.enum(TYPES_DOCUMENT),
+        expiryDate: z.string().optional().nullable(),
+      });
+
+      const body = schema.parse(req.body);
+
+      logger.info("Driver file upload", {
+        driverId: livreur.id,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      });
+
+      const piece = await DriverApprovalService.deposerFichier(livreur.id, {
+        type: body.type,
+        file: req.file.buffer,
+        filename: req.file.originalname || `document.${req.file.mimetype.split("/")[1]}`,
+        mimeType: req.file.mimetype,
+        expiryDate: body.expiryDate,
+      });
+
+      res.status(201).json({
+        message: `${libelleDuDocument(piece.type)} déposée, en attente de validation`,
+        data: piece,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 /**
  * GET /drivers/payouts - Ce qui est dû au livreur, et ce qui lui a été versé
@@ -568,6 +617,12 @@ router.patch(
       if (status === "DELIVERED" && course.status !== "DELIVERED") {
         const remuneration = Number(delivery.driverPayout ?? delivery.order?.feesAmount ?? 0);
 
+        // Mettre à jour le statut de la commande à COMPLETED quand la livraison est DELIVERED
+        await db.order.update({
+          where: { id: delivery.orderId },
+          data: { status: "COMPLETED" },
+        });
+
         await db.driver.update({
           where: { id: livreur.id },
           data: {
@@ -578,6 +633,41 @@ router.patch(
             isAvailable: true,
           },
         });
+
+        // Notifier le client que la commande est livrée avec succès
+        const order = await db.order.findUnique({
+          where: { id: delivery.orderId },
+          select: { customerEmail: true },
+        });
+
+        if (order?.customerEmail) {
+          // Créer une notification pour le client
+          await db.notification.create({
+            data: {
+              type: "ORDER_DELIVERED",
+              title: "Commande livrée avec succès",
+              message: "Votre commande a été livrée. Merci pour votre achat !",
+              recipientEmail: order.customerEmail,
+              link: `/client/orders/${delivery.orderId}`,
+              relatedOrderId: delivery.orderId,
+            },
+          });
+
+          // Notifier en temps réel via Socket.IO
+          const { emitNotification, emitOrderUpdate } = await import("../config/socket");
+          emitOrderUpdate(delivery.orderId, "COMPLETED", {
+            message: "Votre commande a été livrée. Merci pour votre achat !",
+            title: "Commande livrée avec succès",
+          });
+          emitNotification(order.customerEmail, {
+            type: "order_delivered",
+            orderId: delivery.orderId,
+            status: "COMPLETED",
+            title: "Commande livrée avec succès",
+            message: "Votre commande a été livrée. Merci pour votre achat !",
+            timestamp: new Date().toISOString(),
+          });
+        }
       }
 
       // Une course abandonnée doit libérer le livreur, sans quoi il ne reçoit
@@ -756,5 +846,124 @@ router.post(
     }
   }
 );
+
+// Serve document files with proper CORS headers for preview modal
+router.options(/^\/documents\/file\/(.+)$/, (_req: Request, res: Response) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.sendStatus(200);
+});
+
+router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const filePath = (req.params as any)[0];
+    const fullPath = join(process.cwd(), "uploads", filePath);
+
+    // Security: prevent directory traversal
+    if (!fullPath.startsWith(join(process.cwd(), "uploads"))) {
+      return res.status(403).send("Access denied");
+    }
+
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).send("File not found");
+    }
+
+    // Set CORS headers explicitly
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    // Determine content type
+    const ext = fullPath.split(".").pop()?.toLowerCase();
+    let contentType = "application/octet-stream";
+    if (ext === "jpg" || ext === "jpeg") contentType = "image/jpeg";
+    else if (ext === "png") contentType = "image/png";
+    else if (ext === "webp") contentType = "image/webp";
+    else if (ext === "pdf") contentType = "application/pdf";
+
+    res.setHeader("Content-Type", contentType);
+    return res.sendFile(fullPath);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// GET /drivers/available - Get available delivery drivers within radius
+router.get("/available", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const storeId = req.query.storeId as string;
+    const radius = Math.min(parseInt(req.query.radius as string) || 8, 50);
+
+    if (!storeId) {
+      throw new ApiError(400, "storeId est requis", "STORE_ID_REQUIRED");
+    }
+
+    const store = await db.store.findUnique({
+      where: { id: storeId },
+      select: {
+        id: true,
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    if (!store || store.latitude == null || store.longitude == null) {
+      throw new ApiError(404, "Boutique ou coordonnées introuvables", "STORE_NOT_FOUND");
+    }
+
+    const drivers = await db.driver.findMany({
+      where: {
+        latitude: { not: null },
+        longitude: { not: null },
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+      const R = 6371;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    const availableDrivers = drivers
+      .map((driver) => ({
+        id: driver.id,
+        name: driver.name,
+        phone: driver.phone,
+        distance: calculateDistance(
+          store.latitude as number,
+          store.longitude as number,
+          driver.latitude as number,
+          driver.longitude as number
+        ),
+      }))
+      .filter((driver) => driver.distance <= radius)
+      .sort((a, b) => a.distance - b.distance);
+
+    res.json({
+      success: true,
+      deliveryMen: availableDrivers,
+      total: availableDrivers.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default router;

@@ -1,6 +1,45 @@
+'use client';
+
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const { user, isLoading } = useAuth();
+  const [roles, setRoles] = useState<any>(null);
+  const [rolesLoading, setRolesLoading] = useState(true);
+
+  useEffect(() => {
+    if (user && !isLoading) {
+      fetchRoles();
+    } else if (!user) {
+      setRolesLoading(false);
+    }
+  }, [user, isLoading]);
+
+  const fetchRoles = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/me/roles`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRoles(data.roles);
+      }
+    } catch (error) {
+      console.error('Failed to fetch roles:', error);
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
+  const isMerchant = roles?.merchant?.active ?? false;
+  const isDriver = roles?.driver?.active ?? false;
+
   return (
     <div className="min-h-screen bg-white text-slate-900">
       {/* HEADER */}
@@ -13,23 +52,41 @@ export default function Home() {
           <Link href="/restaurants" className="font-semibold text-slate-900 transition hover:text-primary">
             Commerces
           </Link>
-          <Link href="/merchant/register" className="font-semibold text-slate-900 transition hover:text-primary">
-            Devenir commerçant
-          </Link>
-          <Link href="/driver/signup" className="font-semibold text-slate-900 transition hover:text-primary">
-            Devenir livreur
-          </Link>
-          <Link href="/login" className="font-semibold text-slate-900 transition hover:text-primary">
-            Connexion
-          </Link>
+
+          {!user || (!isMerchant && !rolesLoading) ? (
+            <Link href="/merchant/register" className="font-semibold text-slate-900 transition hover:text-primary">
+              Devenir commerçant
+            </Link>
+          ) : null}
+
+          {!user || (!isDriver && !rolesLoading) ? (
+            <Link href="/driver/signup" className="font-semibold text-slate-900 transition hover:text-primary">
+              Devenir livreur
+            </Link>
+          ) : null}
+
+          {!user ? (
+            <Link href="/login" className="font-semibold text-slate-900 transition hover:text-primary">
+              Connexion
+            </Link>
+          ) : null}
         </nav>
 
-        <Link
-          href="/signup"
-          className="rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white transition hover:bg-accent-hover md:px-6 md:py-3 md:text-base"
-        >
-          Créer ma boutique
-        </Link>
+        {!user ? (
+          <Link
+            href="/signup"
+            className="rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white transition hover:bg-accent-hover md:px-6 md:py-3 md:text-base"
+          >
+            Créer ma boutique
+          </Link>
+        ) : (
+          <Link
+            href="/dashboard"
+            className="rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-white transition hover:bg-accent-hover md:px-6 md:py-3 md:text-base"
+          >
+            Mon espace
+          </Link>
+        )}
       </header>
 
       {/* HERO */}
@@ -184,21 +241,33 @@ export default function Home() {
             <Link href="/restaurants" className="mb-2 block text-slate-300 hover:text-white">
               Commerces
             </Link>
-            <Link href="/merchant/register" className="mb-2 block text-slate-300 hover:text-white">
-              Devenir commerçant
-            </Link>
-            <Link href="/driver/signup" className="mb-2 block text-slate-300 hover:text-white">
-              Devenir livreur
-            </Link>
+            {!user || (!isMerchant && !rolesLoading) ? (
+              <Link href="/merchant/register" className="mb-2 block text-slate-300 hover:text-white">
+                Devenir commerçant
+              </Link>
+            ) : null}
+            {!user || (!isDriver && !rolesLoading) ? (
+              <Link href="/driver/signup" className="mb-2 block text-slate-300 hover:text-white">
+                Devenir livreur
+              </Link>
+            ) : null}
           </div>
           <div>
             <h4 className="mb-3 text-lg font-bold">Compte</h4>
-            <Link href="/login" className="mb-2 block text-slate-300 hover:text-white">
-              Connexion
-            </Link>
-            <Link href="/signup" className="mb-2 block text-slate-300 hover:text-white">
-              Inscription
-            </Link>
+            {!user ? (
+              <>
+                <Link href="/login" className="mb-2 block text-slate-300 hover:text-white">
+                  Connexion
+                </Link>
+                <Link href="/signup" className="mb-2 block text-slate-300 hover:text-white">
+                  Inscription
+                </Link>
+              </>
+            ) : (
+              <Link href="/dashboard" className="mb-2 block text-slate-300 hover:text-white">
+                Mon espace
+              </Link>
+            )}
           </div>
         </div>
       </footer>

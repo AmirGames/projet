@@ -21,8 +21,10 @@ const updateReviewStatusSchema = z.object({
 
 const avisCommandeSchema = z.object({
   orderId: z.string().min(1, "orderId requis"),
+  productId: z.string().optional(),
   rating: z.number().int().min(1).max(5),
   comment: z.string().max(2000).optional(),
+  type: z.enum(["STORE", "PRODUCT"]).optional().default("PRODUCT"),
 });
 
 // POST /reviews - Déposer un avis depuis une commande (client connecté)
@@ -58,34 +60,74 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
       throw new ApiError(400, "Vous pourrez donner votre avis une fois la commande terminée", "ORDER_NOT_COMPLETED");
     }
 
-    const produits = [...new Set(commande.items.map((i) => i.productId))];
+    // Si type = STORE, noter le restaurant (avec productId = storeId pour la compatibilité)
+    if (body.type === "STORE") {
+      const dejaDepose = await db.review.findFirst({
+        where: {
+          customerId: client.id,
+          storeId: commande.storeId,
+          productId: commande.storeId,
+        },
+      });
 
-    if (produits.length === 0) {
-      throw new ApiError(400, "Cette commande ne contient aucun produit à évaluer", "NO_ITEMS");
+      if (dejaDepose) {
+        throw new ApiError(409, "Vous avez déjà noté ce restaurant", "REVIEW_EXISTS");
+      }
+
+      await db.review.create({
+        data: {
+          storeId: commande.storeId,
+          productId: commande.storeId,
+          customerId: client.id,
+          rating: body.rating,
+          comment: body.comment,
+          status: "APPROVED",
+        },
+      });
+
+      res.status(201).json({
+        message: "Merci pour votre avis sur le restaurant",
+        type: "STORE",
+      });
+      return;
+    }
+
+    // Type = PRODUCT : noter un produit spécifique
+    if (!body.productId) {
+      throw new ApiError(400, "productId requis pour noter un produit", "PRODUCT_ID_REQUIRED");
+    }
+
+    const produitDansCommande = commande.items.some((i) => i.productId === body.productId);
+    if (!produitDansCommande) {
+      throw new ApiError(400, "Ce produit n'est pas dans cette commande", "PRODUCT_NOT_IN_ORDER");
     }
 
     const dejaDepose = await db.review.findFirst({
-      where: { customerId: client.id, productId: { in: produits }, storeId: commande.storeId },
+      where: {
+        customerId: client.id,
+        productId: body.productId,
+        storeId: commande.storeId,
+      },
     });
 
     if (dejaDepose) {
-      throw new ApiError(409, "Vous avez déjà donné votre avis sur cette commande", "REVIEW_EXISTS");
+      throw new ApiError(409, "Vous avez déjà noté ce produit", "REVIEW_EXISTS");
     }
 
-    await db.review.createMany({
-      data: produits.map((productId) => ({
+    await db.review.create({
+      data: {
         storeId: commande.storeId,
-        productId,
+        productId: body.productId,
         customerId: client.id,
         rating: body.rating,
         comment: body.comment,
-        status: "PENDING",
-      })),
+        status: "APPROVED",
+      },
     });
 
     res.status(201).json({
-      message: "Merci pour votre avis, il sera publié après validation",
-      count: produits.length,
+      message: "Merci pour votre avis sur ce produit",
+      type: "PRODUCT",
     });
   } catch (err) {
     next(err);
@@ -182,6 +224,19 @@ router.get("/:storeId/:productId/stats", authMiddleware, async (req: Request, re
     logger.info("Fetching review stats", { storeId, productId });
 
     const stats = await ReviewService.getProductReviewStats(storeId, productId);
+    res.json(stats);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/:storeId/store/stats", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const storeId = req.params.storeId as string;
+
+    logger.info("Fetching store review stats", { storeId });
+
+    const stats = await ReviewService.getStoreReviewStats(storeId);
     res.json(stats);
   } catch (err) {
     next(err);
