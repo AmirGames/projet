@@ -133,11 +133,12 @@ check(
 );
 
 titre('Il ne peut pas se mettre en ligne');
-// Le bouton existe : c'est le serveur qui refuse, et l'écran doit le dire
-// plutôt que de faire semblant de basculer.
+// Le bouton existe. Tant que le dossier n'est pas validé, l'écran le grise ;
+// s'il est actif, c'est le serveur qui refuse. Dans les deux cas l'écran
+// doit le dire plutôt que de faire semblant de basculer.
 const bascule = page.locator('button', { hasText: 'Hors ligne' }).first();
 
-if (await bascule.count()) {
+if ((await bascule.count()) && (await bascule.isEnabled())) {
   await bascule.click();
   await page.waitForTimeout(2000);
 }
