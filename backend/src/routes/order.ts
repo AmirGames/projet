@@ -265,4 +265,46 @@ router.post("/:id/dispatch", authMiddleware, async (req: Request, res: Response,
   }
 });
 
+// GET /orders/:id/delivery - Get delivery tracking info
+router.get("/:id/delivery", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orderId = req.params.id as string;
+
+    const delivery = await db.orderDelivery.findUnique({
+      where: { orderId },
+      select: {
+        id: true,
+        orderId: true,
+        status: true,
+        pickupLat: true,
+        pickupLng: true,
+        deliveryLat: true,
+        deliveryLng: true,
+        // Coordonnées obfusquées pour le client
+        deliveryLatObfusquee: true,
+        deliveryLngObfusquee: true,
+        driverLat: true,
+        driverLng: true,
+        driver: { select: { name: true } },
+      },
+    });
+
+    if (!delivery) {
+      res.json({ data: null });
+      return;
+    }
+
+    res.json({
+      data: {
+        ...delivery,
+        // Utiliser coordonnées obfusquées pour le client
+        deliveryLat: delivery.deliveryLatObfusquee || delivery.deliveryLat,
+        deliveryLng: delivery.deliveryLngObfusquee || delivery.deliveryLng,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
