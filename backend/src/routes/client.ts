@@ -420,7 +420,7 @@ async function clientConnecte(req: Request) {
   const userId = req.userId || (req as any).user?.userId;
 
   const utilisateur = userId
-    ? await db.user.findUnique({ where: { id: userId }, select: { email: true } })
+    ? await db.user.findUnique({ where: { id: userId }, select: { id: true, email: true, name: true } })
     : null;
 
   if (!utilisateur) {
@@ -429,8 +429,32 @@ async function clientConnecte(req: Request) {
 
   const client = await db.customer.findUnique({ where: { email: utilisateur.email } });
 
-  if (!client || client.deletedAt) {
+  /**
+   * Tout compte peut commander : seule l'inscription « client » créait la
+   * fiche, et un livreur ou un commerçant qui ouvrait l'espace client tombait
+   * sur « aucune fiche ». Elle est créée à la première visite.
+   */
+  if (!client) {
+    return db.customer.create({
+      data: {
+        userId: utilisateur.id,
+        name: utilisateur.name || utilisateur.email.split("@")[0],
+        email: utilisateur.email,
+      },
+    });
+  }
+
+  if (client.deletedAt) {
     throw new ApiError(404, "Aucune fiche client pour ce compte", "CUSTOMER_NOT_FOUND");
+  }
+
+  // Fiche née d'une commande passée sans compte : on la rattache au compte,
+  // pour que /auth/me/roles la voie aussi.
+  if (!client.userId) {
+    const dejaLiee = await db.customer.findUnique({ where: { userId: utilisateur.id }, select: { id: true } });
+    if (!dejaLiee) {
+      return db.customer.update({ where: { id: client.id }, data: { userId: utilisateur.id } });
+    }
   }
 
   return client;

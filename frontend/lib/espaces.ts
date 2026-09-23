@@ -65,7 +65,9 @@ function lireJeton(): string | null {
 
 function espacesDuCompte(donnees: RolesCompte): EspaceAccessible[] {
   const ouverts: Record<Espace, boolean> = {
-    client: !!donnees.roles?.customer?.active,
+    // Tout compte peut commander : la fiche client est créée à la première
+    // visite de l'espace client (voir clientConnecte côté serveur).
+    client: true,
     driver: !!donnees.roles?.driver?.active,
     merchant: !!donnees.roles?.merchant?.active,
     admin: !!donnees.user?.isSystemAdmin,
