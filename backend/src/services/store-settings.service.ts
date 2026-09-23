@@ -30,7 +30,6 @@ export interface StoreSettingsData {
   };
   delivery?: {
     useOwnDelivery?: boolean;
-    maxDeliveryRadius?: number;
   };
   businessType?: string;
   cuisineType?: string | null;

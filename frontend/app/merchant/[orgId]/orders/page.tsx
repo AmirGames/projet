@@ -70,10 +70,10 @@ export default function OrdersPage() {
   const [stats, setStats] = useState<any>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [useOwnDelivery, setUseOwnDelivery] = useState(false);
-  const [maxDeliveryRadius, setMaxDeliveryRadius] = useState(8);
   const [showDeliveryModal, setShowDeliveryModal] = useState<string | null>(null);
   const [availableDeliveryMen, setAvailableDeliveryMen] = useState<any[]>([]);
   const [loadingDeliveryMen, setLoadingDeliveryMen] = useState(false);
+  const [deliveryRadius] = useState(8);
 
   const itemsPerPage = 20;
 
@@ -181,7 +181,6 @@ export default function OrdersPage() {
       const settings = data.settings || {};
       const delivery = settings.delivery || {};
       setUseOwnDelivery(delivery.useOwnDelivery || false);
-      setMaxDeliveryRadius(delivery.maxDeliveryRadius || 8);
     } catch (error) {
       console.error('Error fetching delivery settings:', error);
     }
@@ -194,7 +193,7 @@ export default function OrdersPage() {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch(`${API_URL}/api/drivers/available?storeId=${storeId}&radius=${maxDeliveryRadius}`, {
+      const response = await fetch(`${API_URL}/api/drivers/available?storeId=${storeId}&radius=${deliveryRadius}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -422,7 +421,7 @@ export default function OrdersPage() {
             <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full">
               <div className="p-6 border-b border-gray-700">
                 <h2 className="text-xl font-bold text-gray-100">Livreurs disponibles</h2>
-                <p className="text-sm text-gray-400 mt-1">Sélectionnez un livreur dans un rayon de {maxDeliveryRadius} km</p>
+                <p className="text-sm text-gray-400 mt-1">Sélectionnez un livreur à proximité</p>
               </div>
 
               <div className="p-6">
@@ -433,7 +432,7 @@ export default function OrdersPage() {
                   </div>
                 ) : availableDeliveryMen.length === 0 ? (
                   <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 text-center">
-                    <p className="text-red-400 text-sm">Aucun livreur disponible dans le rayon de {maxDeliveryRadius} km</p>
+                    <p className="text-red-400 text-sm">Aucun livreur disponible à proximité</p>
                   </div>
                 ) : (
                   <div className="space-y-2">

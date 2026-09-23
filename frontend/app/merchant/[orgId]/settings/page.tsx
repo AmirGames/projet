@@ -92,7 +92,6 @@ export default function StoreSettings() {
     },
     delivery: {
       useOwnDelivery: false,
-      maxDeliveryRadius: 8,
     },
     businessType: '',
     cuisineType: '',
@@ -161,7 +160,6 @@ export default function StoreSettings() {
         },
         delivery: settings_obj.delivery || {
           useOwnDelivery: false,
-          maxDeliveryRadius: 8,
         },
         businessType: data.businessType || '',
         cuisineType: data.cuisineType || '',
@@ -687,22 +685,14 @@ export default function StoreSettings() {
                     <div className="space-y-4">
                       <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-4">
                         <p className="text-sm text-blue-300">
-                          ✓ Lorsqu&apos;une commande est passée, vous verrez un bouton pour appeler un livreur dans le rayon de livraison.
+                          ✓ Lorsqu&apos;une commande est prête, vous verrez un bouton pour appeler un livreur disponible dans votre rayon de livraison.
                         </p>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Rayon de livraison (km)</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="50"
-                          value={formData.delivery.maxDeliveryRadius}
-                          onChange={(e) => handleNestedChange('delivery', 'maxDeliveryRadius', parseInt(e.target.value, 10))}
-                          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
-                          placeholder="8"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Par défaut : 8 km. Les livreurs disponibles dans ce rayon pourront être appelés.</p>
+                      <div className="bg-amber-600/10 border border-amber-600/30 rounded-lg p-4">
+                        <p className="text-sm text-amber-300">
+                          📍 Gérez votre rayon de livraison dans l&apos;onglet <Link href={`/merchant/${orgId}/delivery-zones`} className="underline hover:text-amber-200">Zones de livraison</Link>
+                        </p>
                       </div>
                     </div>
                   )}
