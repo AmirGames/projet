@@ -76,10 +76,12 @@ export default function DashboardPage() {
   const isDriver = roles?.driver?.active ?? false;
   const isCustomer = roles?.customer?.active ?? false;
   const isSuperOwner = user?.isSuperOwner ?? false;
-  const hasMultipleRoles = (isMerchant && isDriver) || isSuperOwner ||
-                          (isSuperOwner && isMerchant) ||
-                          (isSuperOwner && isDriver) ||
-                          isCustomer;
+
+  // Vérifier si au moins un rôle est actif
+  const hasAnyRole = isMerchant || isDriver || isCustomer || isSuperOwner;
+
+  // Compter les rôles actifs (pour déterminer si on doit afficher le dashboard)
+  const activeRolesCount = [isMerchant, isDriver, isCustomer, isSuperOwner].filter(Boolean).length;
 
   if (isLoading || rolesLoading) {
     return (
@@ -92,12 +94,12 @@ export default function DashboardPage() {
     );
   }
 
-  if (!isMerchant && !isDriver) {
+  if (!hasAnyRole) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white mb-4">Aucun rôle trouvé</h1>
-          <p className="text-slate-400 mb-8">Vous devez être commerçant ou livreur pour accéder à cet espace.</p>
+          <p className="text-slate-400 mb-8">Aucun rôle n'est actif pour votre compte.</p>
           <Link href="/" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition">
             Retour à l'accueil
           </Link>
@@ -106,8 +108,8 @@ export default function DashboardPage() {
     );
   }
 
-  // Afficher le choix seulement si on a plusieurs rôles
-  if (!hasMultipleRoles) {
+  // Redirection automatique si un seul rôle actif (sauf si superowner)
+  if (!isSuperOwner && activeRolesCount === 1 && !isCustomer) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
         <div className="text-center">
@@ -126,7 +128,7 @@ export default function DashboardPage() {
           <p className="text-slate-400">Sélectionnez l'espace que vous souhaitez gérer</p>
         </div>
 
-        <div className={`grid gap-8 ${(isSuperOwner && (isMerchant || isDriver || isCustomer)) || (isMerchant && isDriver) || (isMerchant && isCustomer) || (isDriver && isCustomer) ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+        <div className={`grid gap-8 ${activeRolesCount >= 3 ? 'grid-cols-1 md:grid-cols-3' : activeRolesCount === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
           {isMerchant && (
             <Link
               href="/merchant"
