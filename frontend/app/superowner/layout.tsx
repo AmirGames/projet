@@ -41,6 +41,7 @@ import {
   ShoppingCart,
   Briefcase,
   Car,
+  MessageCircle,
 } from 'lucide-react';
 
 export default function SuperOwnerLayout({ children }: { children: React.ReactNode }) {
@@ -112,6 +113,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       title: t('nav.sectionSupport'),
       items: [
         { label: t('nav.supportTickets'), icon: LifeBuoy, href: '/superowner/support-tickets' },
+        { label: t('nav.driverSupport'), icon: MessageCircle, href: '/superowner/driver-support' },
         { label: t('nav.notifications'), icon: Megaphone, href: '/superowner/notifications' },
         { label: t('nav.userManagement'), icon: Users, href: '/superowner/user-management' },
       ],

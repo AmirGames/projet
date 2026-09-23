@@ -63,7 +63,8 @@
       "dataManagement": "Data",
       "securityAudit": "Security",
       "auditLogs": "Audit Log",
-      "accessLogs": "Access Log"
+      "accessLogs": "Access Log",
+      "driverSupport": "Driver chat"
     }
   },
   "superownerDashboard": {
@@ -1874,5 +1875,18 @@
     "payButton": "Pay {amount}",
     "paymentFailed": "Payment failed",
     "stripeNotLoaded": "Stripe not loaded"
+  },
+  "superownerDriverSupport": {
+    "title": "Driver chat",
+    "description": "Driver messages arrive here in real time.",
+    "empty": "No conversations yet.",
+    "selectConversation": "Pick a conversation to reply.",
+    "you": "You",
+    "online": "Online",
+    "offline": "Offline",
+    "onDelivery": "On a delivery",
+    "gpsLost": "GPS lost",
+    "loadError": "Could not load.",
+    "sendError": "The message was not sent."
   }
 }

@@ -19,6 +19,7 @@ import { notesDuLivreur } from "../services/driver-rating.service";
 import { DriverActivityService, FiltreHistorique } from "../services/driver-activity.service";
 import { DriverAvailabilityService } from "../services/driver-availability.service";
 import { Notifier, enArrierePlan } from "../services/notifier.service";
+import { DriverSupportService, LONGUEUR_MAX } from "../services/driver-support.service";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import fs from "fs";
@@ -327,6 +328,52 @@ router.post("/push/test", authMiddleware, async (req: Request, res: Response, ne
       url: "/driver",
     });
     res.json({ success: true, envoye });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /drivers/support/messages - Le fil du livreur avec le support
+router.get("/support/messages", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const messages = await DriverSupportService.fil(livreur.id);
+    // Ouvrir le fil vaut lecture des réponses du support.
+    await DriverSupportService.marquerLu(livreur.id, "DRIVER");
+    res.json({ success: true, data: messages });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /drivers/support/messages - Écrire au support
+router.post("/support/messages", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const body = z.object({ body: z.string().min(1).max(LONGUEUR_MAX) }).parse(req.body);
+    const message = await DriverSupportService.envoyer(livreur.id, "DRIVER", body.body);
+    res.status(201).json({ success: true, data: message });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /drivers/support/read - Marquer les réponses du support comme lues
+router.post("/support/read", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    await DriverSupportService.marquerLu(livreur.id, "DRIVER");
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /drivers/support/unread - Nombre de réponses non lues (pastille du menu)
+router.get("/support/unread", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    res.json({ success: true, data: { unread: await DriverSupportService.nonLusPourLivreur(livreur.id) } });
   } catch (err) {
     next(err);
   }

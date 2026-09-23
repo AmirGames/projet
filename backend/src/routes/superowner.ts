@@ -39,6 +39,7 @@ const LIBELLES_PRIORITE: Record<string, string> = {
 };
 import { TicketMessageService } from "../services/ticket-message.service";
 import { logger } from "../config/logger";
+import { DriverSupportService, LONGUEUR_MAX } from "../services/driver-support.service";
 
 const router = Router();
 
@@ -2582,6 +2583,64 @@ router.get("/members/drivers", authMiddleware, isSuperOwner, async (req: Request
       })),
       pagination: { total, limit, offset }
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ============================================================================
+// CHAT SUPPORT LIVREURS
+// ============================================================================
+
+// GET /superowner/driver-support - Conversations avec les livreurs
+router.get("/driver-support", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await DriverSupportService.conversations() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/driver-support/:driverId - Le fil d'un livreur
+router.get("/driver-support/:driverId", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const driverId = req.params.driverId as string;
+    const [messages, livreur] = await Promise.all([
+      DriverSupportService.fil(driverId),
+      db.driver.findUnique({
+        where: { id: driverId },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true,
+          isOnline: true,
+          currentOrderId: true,
+          latitude: true,
+          longitude: true,
+          lastLocationUpdate: true,
+          gpsLostAt: true,
+        },
+      }),
+    ]);
+
+    if (!livreur) throw new ApiError(404, "Livreur introuvable", "DRIVER_NOT_FOUND");
+
+    await DriverSupportService.marquerLu(driverId, "SUPPORT");
+    res.json({ success: true, data: { driver: livreur, messages } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/driver-support/:driverId - Répondre à un livreur
+router.post("/driver-support/:driverId", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = z.object({ body: z.string().min(1).max(LONGUEUR_MAX) }).parse(req.body);
+    const message = await DriverSupportService.envoyer(req.params.driverId as string, "SUPPORT", body.body, {
+      authorId: (req as any).userId,
+    });
+    res.status(201).json({ success: true, data: message });
   } catch (err) {
     next(err);
   }

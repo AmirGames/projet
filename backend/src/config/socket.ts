@@ -9,6 +9,9 @@ import { db } from '../services/db';
 // un salon nominatif, ce qui permet de la pousser au bon destinataire.
 const salonUtilisateur = (email: string) => `user-${email.toLowerCase()}`;
 
+/** Salon de l'équipe support de la plateforme (chat livreurs). */
+const SALON_SUPPORT = 'support-livreurs';
+
 /** Salon public d'une boutique : disponibilité des produits, horaires. */
 const salonBoutique = (storeId: string) => `store-${storeId}`;
 
@@ -148,12 +151,18 @@ export function initializeSocket(httpServer: HTTPServer) {
       try {
         const utilisateur = await db.user.findUnique({
           where: { id: socket.userId },
-          select: { email: true },
+          select: { email: true, isSuperOwner: true, isSystemAdmin: true },
         });
 
         if (utilisateur) {
           socket.data.email = utilisateur.email;
           socket.join(salonUtilisateur(utilisateur.email));
+
+          // L'équipe de la plateforme reçoit les messages des livreurs en
+          // direct, sur n'importe quel écran.
+          if (utilisateur.isSuperOwner || utilisateur.isSystemAdmin) {
+            socket.join(SALON_SUPPORT);
+          }
         }
       } catch (err) {
         logger.error('Impossible de rattacher la connexion à un utilisateur', {
@@ -255,4 +264,11 @@ export function emitDriverEvent(email: string, evenement: string, donnees: unkno
   if (!io || !email) return;
 
   io.to(salonUtilisateur(email)).emit(evenement, donnees);
+}
+
+/** Pousse un événement à l'équipe support (superowners et admins système). */
+export function emitSupportEvent(evenement: string, donnees: unknown) {
+  if (!io) return;
+
+  io.to(SALON_SUPPORT).emit(evenement, donnees);
 }

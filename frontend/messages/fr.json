@@ -63,7 +63,8 @@
       "dataManagement": "Données",
       "securityAudit": "Sécurité",
       "auditLogs": "Journal",
-      "accessLogs": "Connexions"
+      "accessLogs": "Connexions",
+      "driverSupport": "Chat livreurs"
     }
   },
   "superownerDashboard": {
@@ -1874,5 +1875,18 @@
     "payButton": "Payer {amount}",
     "paymentFailed": "Le paiement a échoué",
     "stripeNotLoaded": "Stripe n'est pas chargé"
+  },
+  "superownerDriverSupport": {
+    "title": "Chat livreurs",
+    "description": "Les messages des livreurs arrivent ici en direct.",
+    "empty": "Aucune conversation pour le moment.",
+    "selectConversation": "Choisissez une conversation pour répondre.",
+    "you": "Vous",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "onDelivery": "En course",
+    "gpsLost": "GPS perdu",
+    "loadError": "Chargement impossible.",
+    "sendError": "Le message n'est pas parti."
   }
 }
