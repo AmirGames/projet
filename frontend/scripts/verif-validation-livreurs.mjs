@@ -116,6 +116,8 @@ check('aucune n’est encore déposée', /Pas encore déposée/.test(espace), es
 
 titre('Il dépose une pièce depuis son espace');
 await page.selectOption('#piece-type', 'license');
+// Le dépôt s'ouvre sur l'envoi d'un fichier ; le lien est l'autre mode.
+await page.click('button:has-text("Lien URL")');
 await page.fill('#piece-lien', 'https://exemple.fr/permis.pdf');
 await page.click('button:has-text("Déposer la pièce")');
 await page.waitForTimeout(2500);
