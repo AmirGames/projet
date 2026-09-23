@@ -187,7 +187,7 @@ export default function ReviewPage() {
   if (!order) {
     return (
       <div className="min-h-screen bg-gray-900">
-        <header className="bg-gray-800 border-b border-gray-700">
+        <header className="pt-4">
           <div className="max-w-2xl mx-auto px-4 py-4">
             <Link href="/client/orders" className="flex items-center gap-2 text-orange-500 hover:text-orange-400">
               <ArrowLeft size={20} />
@@ -232,7 +232,7 @@ export default function ReviewPage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <header className="bg-gray-800 border-b border-gray-700">
+      <header className="pt-4">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <Link href={`/client/orders/${orderId}`} className="flex items-center gap-2 text-orange-500 hover:text-orange-400">
             <ArrowLeft size={20} />

@@ -83,7 +83,7 @@ export default function FavoritesPage() {
   return (
     <div className="min-h-screen bg-gray-900">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700">
+      <header className="pt-4">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <Link href="/client" className="flex items-center gap-2 text-orange-500 hover:text-orange-400 mb-4">
             <ArrowLeft size={20} />

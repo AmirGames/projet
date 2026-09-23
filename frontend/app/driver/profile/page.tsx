@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, Mail, Phone, MapPin, FileText, Star, LogOut } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, MapPin, FileText, Star } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -119,10 +119,6 @@ export default function DriverProfilePage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('driverToken');
-    router.push('/driver/login');
-  };
 
   if (loading) {
     return (
@@ -154,7 +150,7 @@ export default function DriverProfilePage() {
   return (
     <div className="min-h-screen bg-gray-900">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700">
+      <header className="pt-4">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -168,13 +164,6 @@ export default function DriverProfilePage() {
                 <p className="text-gray-400 text-sm">Gérez vos informations personnelles</p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition"
-            >
-              <LogOut size={18} />
-              Déconnexion
-            </button>
           </div>
         </div>
       </header>

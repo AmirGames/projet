@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 
@@ -68,10 +67,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    router.push('/login');
-  };
 
   if (loading) {
     return (
@@ -85,17 +80,10 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <header className="bg-gray-800 border-b border-gray-700">
+      <header className="pt-4">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-white">Tableau de bord administrateur</h1>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-red-600 text-white font-semibold py-2 px-4 rounded-lg"
-            >
-              <LogOut size={18} />
-              Déconnexion
-            </button>
           </div>
         </div>
       </header>

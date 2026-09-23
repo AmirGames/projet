@@ -147,7 +147,7 @@ export default function HistoriqueCoursesPage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <header className="bg-gray-800 border-b border-gray-700">
+      <header className="pt-4">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-4">
           <Link href="/driver" className="p-2 hover:bg-gray-700 rounded-lg transition" aria-label="Retour">
             <ArrowLeft size={20} className="text-gray-400" />

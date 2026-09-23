@@ -82,7 +82,7 @@ export default function SuperOwnerDashboard() {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 p-6">
+      <header className="pt-4 px-6">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-2 text-blue-400 hover:text-blue-300">
             <ArrowLeft size={20} /> Retour
