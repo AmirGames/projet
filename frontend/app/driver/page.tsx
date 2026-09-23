@@ -74,8 +74,8 @@ export default function DriverDashboard() {
         setDriver(driverData.data);
         setEarnings(Number(driverData.data.totalEarnings || 0));
         // isOnline est ce que le livreur a choisi ; isAvailable ce que
-        // l'attribution en a fait (pas de course en cours). On affiche isOnline.
-        setIsAvailable(driverData.data.isOnline === true);
+        // l'attribution en a fait (pas de course en cours). On affiche isAvailable.
+        setIsAvailable(driverData.data.isAvailable === true);
       } else {
         throw new Error('Failed to load driver info');
       }
