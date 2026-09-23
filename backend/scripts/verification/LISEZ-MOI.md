@@ -86,6 +86,7 @@ continue.
 | `verif-creneaux-tickets.mjs` | Créneaux de retrait tenus aux horaires, alerte d'ouverture de ticket |
 | `verif-compte-restreint.mjs` | Suspension et fermeture : tout bloqué, sauf le support |
 | `verif-compte-email.mjs` | Mot de passe oublié et confirmation d'adresse, courriel compris |
+| `verif-limites-connexion.mjs` | Connexion limitée à dix essais par quart d'heure et par compte ; inscriptions non limitées hors production |
 | `verif-declinaisons.mjs` | Déclinaisons d'un plat, et le prix d'une ligne calculé par le serveur |
 | `verif-disponibilite.mjs` | Bouton disponible / épuisé |
 | `verif-formules.mjs` | Formules, quotas de boutiques, service d'adresses |
