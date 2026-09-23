@@ -19,6 +19,7 @@
 
 import { chromium } from 'playwright';
 import { inscriptionVia } from './inscription.mjs';
+import { entrerEspaceCommercant } from './connexion.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -93,7 +94,7 @@ await page.goto(`${SITE}/login`);
 await page.fill('input[type="email"]', emailCommercant);
 await page.fill('input[type="password"]', MDP);
 await page.click('button[type="submit"]');
-await page.waitForURL('**/merchant', { timeout: 15000 });
+await entrerEspaceCommercant(page);
 await page.waitForTimeout(1500);
 
 await page.goto(`${SITE}/store/new`);
