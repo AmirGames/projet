@@ -392,6 +392,7 @@
     "subscribers": "{count, plural, one {# subscriber} other {# subscribers}}",
     "displayName": "Display name",
     "priceMonthly": "€ / month",
+    "priceWeekly": "≈ {price} / week",
     "stores": "Stores",
     "commission": "Commission % (own delivery)",
     "platformCommission": "Commission % (platform drivers)",
@@ -401,7 +402,7 @@
     "addLine": "Add a line",
     "saving": "Saving…",
     "save": "Save",
-    "merchantView": "Merchant view: {name} — {price} / month, {stores, plural, one {# store} other {# stores}}, {commission}% commission on sales with own delivery, {platformCommission}% with platform drivers.",
+    "merchantView": "Merchant view: {name} — {weeklyPrice} / week (billed {price} / month), {stores, plural, one {# store} other {# stores}}, {commission}% commission on sales with own delivery, {platformCommission}% with platform drivers.",
     "footerNote": "A plan's code never changes: it links already-subscribed merchants. A quota can't drop below what merchants already use — migrate them first."
   },
   "superownerAdvancedSettings": {

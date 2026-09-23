@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, CreditCard, Clock, Store } from 'lucide-react';
 
-import { euro } from '@/lib/format';
+import { euro, parSemaine } from '@/lib/format';
 
 import { useTranslations } from 'next-intl';
 /**
@@ -224,12 +224,19 @@ export default function MaFormulePage() {
                   )}
                 </div>
 
+                {/* Affiché à la semaine, facturé au mois : le montant réellement
+                    prélevé reste écrit juste en dessous. */}
                 <p className="text-3xl font-bold mb-1">
-                  {formule.prixMensuel === 0 ? 'Gratuit' : euro(formule.prixMensuel)}
+                  {formule.prixMensuel === 0 ? 'Gratuit' : euro(parSemaine(formule.prixMensuel))}
                   {formule.prixMensuel > 0 && (
-                    <span className="text-sm font-normal text-gray-400"> / mois</span>
+                    <span className="text-sm font-normal text-gray-400"> / semaine</span>
                   )}
                 </p>
+                {formule.prixMensuel > 0 && (
+                  <p className="text-xs text-gray-500 mb-1">
+                    Soit {euro(formule.prixMensuel)} facturés par mois
+                  </p>
+                )}
                 <p className="text-sm text-gray-400 mb-4">
                   {formule.maxBoutiques} boutique{formule.maxBoutiques > 1 ? 's' : ''}
                 </p>

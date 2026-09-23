@@ -55,20 +55,28 @@ const GRILLE_INITIALE: FormuleDetail[] = [
     code: "PREMIUM",
     libelle: "Premium",
     maxBoutiques: 3,
-    prixMensuel: 29,
+    // Affiché 6,99 € / semaine, facturé au mois.
+    prixMensuel: 30.29,
     commission: 5,
     commissionLivreursPlateforme: 12,
-    avantages: ["3 boutiques", "Statistiques détaillées", "Support prioritaire"],
+    avantages: ["3 boutiques", "10 photos de repas", "Statistiques détaillées", "Support prioritaire"],
     ordre: 1,
   },
   {
     code: "PRO",
     libelle: "Pro",
     maxBoutiques: 10,
-    prixMensuel: 79,
+    // Affiché 14,99 € / semaine, facturé au mois.
+    prixMensuel: 64.96,
     commission: 3,
     commissionLivreursPlateforme: 10,
-    avantages: ["10 boutiques", "Accès API et webhooks", "Accompagnement dédié"],
+    avantages: [
+      "10 boutiques",
+      "Ajout des catégories et produits par notre équipe",
+      "30 photos de repas",
+      "Accès API et webhooks",
+      "Accompagnement dédié",
+    ],
     ordre: 2,
   },
 ];
