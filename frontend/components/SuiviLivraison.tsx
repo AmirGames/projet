@@ -28,6 +28,8 @@ export interface Course {
   retrait?: Point | null;
   destination?: Point | null;
   position?: (Point & { misAJourLe?: string | null }) | null;
+  /** Le livreur n'envoie plus sa position : la pastille est figée. */
+  gpsPerdu?: boolean;
   distanceRestanteKm?: number | null;
   distanceTotaleKm?: number | null;
   /** `rating` est nul tant que personne ne l'a noté : `avis` compte les notes. */
@@ -52,6 +54,8 @@ interface Props {
   orderId?: string;
   /** Position poussée en direct, qui prend le pas sur celle de la course. */
   positionDirecte?: Point | null;
+  /** Signal GPS du livreur perdu, poussé en direct ; prend le pas sur la course. */
+  gpsPerduDirect?: boolean | null;
 }
 
 /**
@@ -90,7 +94,7 @@ function ilYA(horodatage?: string | null) {
   return `il y a ${Math.floor(secondes / 3600)} h`;
 }
 
-export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
+export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirect }: Props) {
   // La note donnée reste à l'écran sans recharger la page : sans cela le client
   // ne saurait pas si son geste a été pris.
   const [maNote, setMaNote] = useState<MaNote | null>(course.maNote ?? null);
@@ -131,6 +135,7 @@ export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
   }, [restante, course.distanceTotaleKm, course.status]);
 
   const livree = course.status === 'DELIVERED';
+  const gpsPerdu = !livree && (gpsPerduDirect ?? course.gpsPerdu ?? false);
 
   // Sans le commerce et l'adresse, une carte ne montrerait qu'un fond vide :
   // le plan dessiné en dit alors davantage.
@@ -138,6 +143,15 @@ export function SuiviLivraison({ course, orderId, positionDirecte }: Props) {
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 space-y-5">
+      {/* La pastille immobile ne veut pas dire que le livreur est arrêté :
+          le dire, plutôt que de laisser le client s'inquiéter. */}
+      {gpsPerdu && (
+        <div role="status" className="bg-amber-900/30 border border-amber-700/50 text-amber-200 rounded-lg p-3 text-sm">
+          Le livreur a momentanément perdu le signal GPS. Sa position s&apos;actualisera dès le retour
+          du réseau{course.position?.misAJourLe ? ` (dernière position ${ilYA(course.position.misAJourLe)})` : ''}.
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-lg font-semibold text-white">Suivi de la livraison</h3>

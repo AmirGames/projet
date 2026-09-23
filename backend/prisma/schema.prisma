@@ -1519,6 +1519,10 @@ enum NotificationType {
   TICKET_MESSAGE
   // Annonce diffusée par l'administration de la plateforme
   PLATFORM_ANNOUNCEMENT
+  // Le livreur d'une course en cours n'envoie plus sa position
+  DRIVER_GPS_LOST
+  // Message du support au livreur, ou du livreur au support
+  SUPPORT_MESSAGE
 }
 
 model Notification {

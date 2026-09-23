@@ -25,6 +25,9 @@ export class DriverJobs {
       try {
         const pauses = await DriverAvailabilityService.leverPausesEchues();
         if (pauses > 0) logger.info("Pauses de livreurs terminées", { nombre: pauses });
+
+        const gps = await DriverAvailabilityService.surveillerGps();
+        if (gps.perdus > 0 || gps.misHorsLigne > 0) logger.info("Signaux GPS surveillés", gps);
       } catch (err) {
         logger.error("Surveillance des livreurs impossible", {
           error: err instanceof Error ? err.message : err,

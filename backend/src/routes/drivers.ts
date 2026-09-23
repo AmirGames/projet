@@ -1157,6 +1157,7 @@ router.get("/available", authMiddleware, async (req: Request, res: Response, nex
         currentOrderId: true,
         latitude: true,
         longitude: true,
+        gpsLostAt: true,
       },
     });
 
@@ -1177,7 +1178,11 @@ router.get("/available", authMiddleware, async (req: Request, res: Response, nex
     const actifs = tous.filter((d) => d.status === "ACTIVE");
     const enLigne = actifs.filter((d) => d.isOnline);
     const libres = enLigne.filter((d) => d.isAvailable && d.currentOrderId === null);
-    const localises = libres.filter((d) => d.latitude != null && d.longitude != null);
+    // Une position figée (signal GPS perdu) ne dit plus où est le livreur :
+    // l'attribution l'écarte, la liste aussi.
+    const localises = libres.filter(
+      (d) => d.latitude != null && d.longitude != null && d.gpsLostAt == null
+    );
 
     const avecDistance = localises
       .map((driver) => ({

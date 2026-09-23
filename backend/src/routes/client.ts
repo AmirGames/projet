@@ -566,7 +566,7 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
       where: { orderId },
       include: {
         driver: {
-          select: { name: true, phone: true, vehicleType: true, rating: true, totalRatings: true },
+          select: { name: true, phone: true, vehicleType: true, rating: true, totalRatings: true, gpsLostAt: true },
         },
         order: { select: { deliveryAddress: true, store: { select: { name: true } } } },
         // La note déjà donnée : sans elle l'écran reproposerait les étoiles à
@@ -609,6 +609,8 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         position: estUnPoint(livreur)
           ? { ...livreur, misAJourLe: course.driverLocationAt }
           : null,
+        // Le livreur n'envoie plus sa position : la pastille est figée.
+        gpsPerdu: Boolean(course.driver?.gpsLostAt),
         distanceRestanteKm: restante,
         distanceTotaleKm: totale,
         driver: course.driver

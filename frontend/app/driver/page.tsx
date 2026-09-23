@@ -169,6 +169,14 @@ export default function DriverDashboard() {
     []
   );
 
+  // Le serveur met hors ligne un livreur dont aucune position n'arrive plus.
+  const surHorsLigne = useCallback((raison: string) => {
+    setIsOnline(false);
+    setIsAvailable(false);
+    setPausedUntil(null);
+    setRefus(raison);
+  }, []);
+
   const handleAcceptDelivery = async (delivery: Delivery) => {
     const token = localStorage.getItem('driverToken');
     if (!token) return;
@@ -300,7 +308,12 @@ export default function DriverDashboard() {
             vie, elles passent donc avant tout le reste. */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-white mb-3">{t('proposedDeliveries')}</h2>
-          <PropositionsCourses isOnline={isOnline} isAvailable={isAvailable} surAcceptation={loadDriverData} />
+          <PropositionsCourses
+            isOnline={isOnline}
+            isAvailable={isAvailable}
+            surAcceptation={loadDriverData}
+            surHorsLigne={surHorsLigne}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -65,7 +65,7 @@ function expliquerAbsence(
   if (d.actifs === 0) return `${d.total} livreur(s) inscrit(s), mais aucun dossier validé (statut ACTIVE) par la plateforme.`;
   if (d.enLigne === 0) return `${d.actifs} livreur(s) validé(s), mais aucun n'est en ligne. Le livreur doit activer « En ligne » dans son espace.`;
   if (d.libres === 0) return `${d.enLigne} livreur(s) en ligne, mais tous sont déjà en course.`;
-  if (d.localises === 0) return `${d.libres} livreur(s) en ligne, mais aucun n'a partagé sa position. Le livreur doit autoriser la localisation dans son navigateur.`;
+  if (d.localises === 0) return `${d.libres} livreur(s) en ligne, mais aucun n'envoie sa position (localisation refusée ou signal GPS perdu). Le livreur doit garder l'application ouverte avec la localisation autorisée.`;
   if (d.plusProcheKm != null) return `Le livreur le plus proche est à ${d.plusProcheKm.toFixed(1)} km, au-delà du rayon de ${rayon ?? '?'} km.`;
   return null;
 }

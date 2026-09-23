@@ -1,3 +1,7 @@
+-- Nouveaux types de notification
+ALTER TYPE "NotificationType" ADD VALUE 'DRIVER_GPS_LOST';
+ALTER TYPE "NotificationType" ADD VALUE 'SUPPORT_MESSAGE';
+
 -- Livreur : pause temporaire, perte du signal GPS, abonnement Web Push
 ALTER TABLE "Driver" ADD COLUMN "pausedUntil" TIMESTAMP(3);
 ALTER TABLE "Driver" ADD COLUMN "pauseReason" TEXT;
