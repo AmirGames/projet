@@ -617,6 +617,12 @@ router.patch(
       if (status === "DELIVERED" && course.status !== "DELIVERED") {
         const remuneration = Number(delivery.driverPayout ?? delivery.order?.feesAmount ?? 0);
 
+        // Mettre à jour le statut de la commande à COMPLETED quand la livraison est DELIVERED
+        await db.order.update({
+          where: { id: delivery.orderId },
+          data: { status: "COMPLETED" },
+        });
+
         await db.driver.update({
           where: { id: livreur.id },
           data: {
@@ -627,6 +633,41 @@ router.patch(
             isAvailable: true,
           },
         });
+
+        // Notifier le client que la commande est livrée avec succès
+        const order = await db.order.findUnique({
+          where: { id: delivery.orderId },
+          select: { customerEmail: true },
+        });
+
+        if (order?.customerEmail) {
+          // Créer une notification pour le client
+          await db.notification.create({
+            data: {
+              type: "ORDER_DELIVERED",
+              title: "Commande livrée avec succès",
+              message: "Votre commande a été livrée. Merci pour votre achat !",
+              recipientEmail: order.customerEmail,
+              link: `/client/orders/${delivery.orderId}`,
+              relatedOrderId: delivery.orderId,
+            },
+          });
+
+          // Notifier en temps réel via Socket.IO
+          const { emitNotification, emitOrderUpdate } = await import("../config/socket");
+          emitOrderUpdate(delivery.orderId, "COMPLETED", {
+            message: "Votre commande a été livrée. Merci pour votre achat !",
+            title: "Commande livrée avec succès",
+          });
+          emitNotification(order.customerEmail, {
+            type: "order_delivered",
+            orderId: delivery.orderId,
+            status: "COMPLETED",
+            title: "Commande livrée avec succès",
+            message: "Votre commande a été livrée. Merci pour votre achat !",
+            timestamp: new Date().toISOString(),
+          });
+        }
       }
 
       // Une course abandonnée doit libérer le livreur, sans quoi il ne reçoit
