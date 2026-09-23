@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MapPin, Navigation, Timer } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { useRouter } from 'next/navigation';
 
 import { euro } from '@/lib/format';
 
@@ -65,6 +66,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation }: P
   const [positionRefusee, setPositionRefusee] = useState(false);
 
   const jeton = useRef<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     jeton.current = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');
@@ -183,7 +185,12 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation }: P
 
       setPropositions((liste) => liste.filter((p) => p.id !== propositionId));
 
-      if (reponse === 'accept') surAcceptation?.();
+      if (reponse === 'accept') {
+        surAcceptation?.();
+        // Direction la course : adresse de retrait, carte et itinéraire.
+        const deliveryId = donnees.data?.id;
+        if (deliveryId) router.push(`/driver/deliveries/${deliveryId}`);
+      }
     } catch {
       setErreur('Serveur injoignable. Vérifiez votre connexion.');
     } finally {

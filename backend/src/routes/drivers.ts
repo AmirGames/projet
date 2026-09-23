@@ -52,6 +52,19 @@ async function courseDuLivreur(req: Request, deliveryId: string) {
   return { livreur, course };
 }
 
+// L'adresse du commerce où l'on retire la commande. Le retrait affichait
+// l'adresse du client : le livreur partait au mauvais endroit.
+function adresseRetrait(store?: { name?: string | null; address?: string | null; city?: string | null } | null) {
+  if (!store) return "";
+  return [store.address, store.city].filter(Boolean).join(", ") || store.name || "";
+}
+
+function adresseLivraison(order?: { deliveryAddress?: string | null; deliveryPostal?: string | null; deliveryCity?: string | null } | null) {
+  if (!order) return "";
+  const ville = [order.deliveryPostal, order.deliveryCity].filter(Boolean).join(" ");
+  return [order.deliveryAddress, ville].filter(Boolean).join(", ");
+}
+
 const inscriptionSchema = z.object({
   name: z.string().min(2, "Nom minimum 2 caractères"),
   email: z.string().email("Email invalide"),
@@ -427,9 +440,15 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
     // son sens.
     const enAttente = status === "PENDING";
 
+    // « ACTIVE » : la course en cours du livreur, acceptée ou déjà récupérée.
+    // Sans ce filtre, le tableau de bord ne relevait que les courses en
+    // attente : une fois acceptée, la course disparaissait de l'écran.
+    const filtreStatut =
+      status === "ACTIVE" ? { in: ["ACCEPTED", "PICKED_UP"] } : status;
+
     const deliveries = await db.orderDelivery.findMany({
       where: {
-        status: status as any,
+        status: filtreStatut as any,
         ...(enAttente
           ? {
               driverId: null,
@@ -444,7 +463,8 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
           include: {
             items: {
               include: { product: true }
-            }
+            },
+            store: { select: { name: true, address: true, city: true } },
           }
         }
       },
@@ -456,11 +476,13 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
       id: d.id,
       orderId: d.orderId,
       status: d.status,
-      pickupAddress: d.order?.deliveryAddress || "",
-      deliveryAddress: d.order?.deliveryAddress || "",
+      pickupAddress: adresseRetrait(d.order?.store),
+      pickupStore: d.order?.store?.name || "",
+      deliveryAddress: adresseLivraison(d.order),
       customerName: d.order?.customerName || "",
       customerPhone: d.order?.customerPhone || "",
       totalAmount: d.order?.totalAmount || 0,
+      distance: d.distanceKm ?? undefined,
       estimatedTime: d.estimatedTime,
       items: d.order?.items || []
     }));
@@ -479,12 +501,17 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
   try {
     const deliveryId = req.params.id as string;
 
+    // Seul le livreur de la course (ou celui à qui elle est proposée) la lit :
+    // elle porte le nom, le téléphone et l'adresse du client.
+    await courseDuLivreur(req, deliveryId);
+
     const delivery = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
       include: {
         order: {
           include: {
-            items: { include: { product: true } }
+            items: { include: { product: true } },
+            store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
           }
         }
       }
@@ -494,20 +521,31 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
       throw new ApiError(404, "Delivery not found", "DELIVERY_NOT_FOUND");
     }
 
+    // Tant que la course n'est pas attribuée, seules les coordonnées
+    // obfusquées sortent. Une fois acceptée, le livreur a besoin du point
+    // exact pour s'y rendre.
+    const attribuee = Boolean(delivery.driverId);
+    const destLat = attribuee ? delivery.deliveryLat : delivery.deliveryLatObfusquee;
+    const destLng = attribuee ? delivery.deliveryLng : delivery.deliveryLngObfusquee;
+
     res.json({
       success: true,
       data: {
         id: delivery.id,
         orderId: delivery.orderId,
         status: delivery.status,
-        pickupAddress: delivery.order?.deliveryAddress,
-        deliveryAddress: delivery.order?.deliveryAddress,
+        pickupStore: delivery.order?.store?.name || "",
+        pickupAddress: adresseRetrait(delivery.order?.store),
+        deliveryAddress: adresseLivraison(delivery.order),
         customerName: delivery.order?.customerName,
         customerPhone: delivery.order?.customerPhone,
         totalAmount: delivery.order?.totalAmount,
+        distance: delivery.distanceKm ?? undefined,
         estimatedTime: delivery.estimatedTime,
-        latitude: delivery.deliveryLat,
-        longitude: delivery.deliveryLng,
+        pickupLat: delivery.pickupLat ?? delivery.order?.store?.latitude ?? null,
+        pickupLng: delivery.pickupLng ?? delivery.order?.store?.longitude ?? null,
+        latitude: destLat,
+        longitude: destLng,
         items: delivery.order?.items || [],
         // Le livreur doit savoir qu'un code lui sera demandé, sans jamais le
         // lire : c'est le client qui le détient.

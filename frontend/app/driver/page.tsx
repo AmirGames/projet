@@ -83,6 +83,18 @@ export default function DriverDashboard() {
         throw new Error('Failed to load driver info');
       }
 
+      // La course en cours (acceptée ou récupérée). Sans ce relevé, une course
+      // acceptée depuis une proposition disparaissait du tableau de bord.
+      const activeResponse = await fetch(
+        `${API_URL}/api/drivers/deliveries?status=ACTIVE`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (activeResponse.ok) {
+        const activeData = await activeResponse.json();
+        setActiveDelivery(activeData.data?.[0] || null);
+      }
+
       // Load available deliveries
       const deliveriesResponse = await fetch(
         `${API_URL}/api/drivers/deliveries?status=PENDING`,

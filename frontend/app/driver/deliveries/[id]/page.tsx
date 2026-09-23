@@ -1,20 +1,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Phone, CheckCircle, AlertCircle, Loader, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, CheckCircle, AlertCircle, Loader, X, Navigation } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { AnnulerCourse } from '@/components/AnnulerCourse';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// Leaflet touche `window` dès son chargement : pas de rendu côté serveur.
+const CarteTrajet = dynamic(() => import('@/components/CarteTrajet'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[320px] w-full rounded-lg border border-gray-700 bg-gray-900 flex items-center justify-center text-sm text-gray-500">
+      Chargement de la carte…
+    </div>
+  ),
+});
+
+/** Itinéraire GPS dans l'application de navigation du téléphone. */
+function lienItineraire(lat?: number | null, lng?: number | null, adresse?: string) {
+  const destination =
+    lat != null && lng != null ? `${lat},${lng}` : encodeURIComponent(adresse || '');
+  if (!destination) return null;
+  return `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`;
+}
+
 interface Delivery {
   id: string;
   orderId: string;
   status: string;
   pickupAddress: string;
+  pickupStore?: string;
+  pickupLat?: number | null;
+  pickupLng?: number | null;
   deliveryAddress: string;
   customerName: string;
   customerPhone: string;
@@ -300,6 +322,50 @@ export default function DeliveryTrackingPage() {
           </div>
         </div>
 
+        {/* Carte du trajet et itinéraire GPS : vers le commerce tant que la
+            commande n'est pas récupérée, puis vers le client. */}
+        {(() => {
+          const versClient = currentStep >= 2;
+          const lien = versClient
+            ? lienItineraire(delivery.latitude, delivery.longitude, delivery.deliveryAddress)
+            : lienItineraire(delivery.pickupLat, delivery.pickupLng, delivery.pickupAddress);
+          const retrait =
+            delivery.pickupLat != null && delivery.pickupLng != null
+              ? { latitude: delivery.pickupLat, longitude: delivery.pickupLng }
+              : null;
+          const destination =
+            delivery.latitude != null && delivery.longitude != null
+              ? { latitude: delivery.latitude, longitude: delivery.longitude }
+              : null;
+
+          return (
+            <div className="bg-gray-800 rounded-lg p-6 mb-8 space-y-4">
+              <h2 className="text-xl font-bold text-white">
+                {versClient ? 'Itinéraire vers le client' : 'Itinéraire vers le commerce'}
+              </h2>
+              {(retrait || destination) && (
+                <CarteTrajet
+                  retrait={retrait}
+                  destination={destination}
+                  livreur={location ? { latitude: location.lat, longitude: location.lng } : null}
+                  hauteur={320}
+                />
+              )}
+              {lien && (
+                <a
+                  href={lien}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
+                >
+                  <Navigation size={20} />
+                  Lancer le GPS {versClient ? 'vers le client' : 'vers le commerce'}
+                </a>
+              )}
+            </div>
+          );
+        })()}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
@@ -318,7 +384,7 @@ export default function DeliveryTrackingPage() {
                   <div className="bg-gray-700 rounded-lg p-4 flex gap-3">
                     <MapPin size={24} className="text-orange-500 flex-shrink-0" />
                     <div>
-                      <p className="text-white font-semibold">Restaurant</p>
+                      <p className="text-white font-semibold">{delivery.pickupStore || 'Restaurant'}</p>
                       <p className="text-gray-400">{delivery.pickupAddress}</p>
                     </div>
                   </div>
