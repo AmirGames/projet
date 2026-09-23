@@ -938,7 +938,12 @@
     "empty": "No categories",
     "add": "Add",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "updateError": "Error while updating",
+    "createError": "Error while creating",
+    "deleteError": "Error while deleting",
+    "update": "Update",
+    "create": "Create"
   },
   "merchantAnalytics": {
     "title": "Analytics",

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
 import { apiClient } from '@/lib/api';
-import { useTranslations } from 'next-intl';
 
 interface Order {
   id: string;
@@ -16,7 +15,6 @@ interface Order {
 }
 
 export default function AdminOrders() {
-  const t = useTranslations('adminOrders');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('ALL');

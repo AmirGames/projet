@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Image as ImageIcon, Trash2, GripVertical } from "lucide-react";
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -23,7 +22,6 @@ export default function ProductMediaPage({
 }: {
   params: { orgId: string };
 }) {
-  const t = useTranslations('common');
   const [productId, setProductId] = useState("");
   const [media, setMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(false);

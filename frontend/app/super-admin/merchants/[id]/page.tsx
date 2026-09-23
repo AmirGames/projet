@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -33,7 +32,6 @@ interface MerchantDetail {
 }
 
 export default function MerchantDetailPage() {
-  const t = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   const merchantId = params.id as string;

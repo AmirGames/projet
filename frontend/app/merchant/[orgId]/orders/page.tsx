@@ -73,7 +73,6 @@ export default function OrdersPage() {
   const [showDeliveryModal, setShowDeliveryModal] = useState<string | null>(null);
   const [availableDeliveryMen, setAvailableDeliveryMen] = useState<any[]>([]);
   const [loadingDeliveryMen, setLoadingDeliveryMen] = useState(false);
-  const [deliveryRadius] = useState(8);
 
   const itemsPerPage = 20;
 
@@ -231,7 +230,7 @@ export default function OrdersPage() {
     }
   };
 
-  const handleSelectDriver = async (driverId: string, orderId: string) => {
+  const handleSelectDriver = async (_driverId: string, orderId: string) => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;

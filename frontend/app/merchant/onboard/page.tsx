@@ -123,7 +123,7 @@ export default function MerchantOnboardPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setApiError(data.message || {t('error')});
+        setApiError(data.message || t('error'));
         return;
       }
 
@@ -138,7 +138,7 @@ export default function MerchantOnboardPage() {
         router.push(`/merchant/${data.organization?.id || ''}`);
       }, 1500);
     } catch (error) {
-      setApiError({t('connectionError')});
+      setApiError(t('connectionError'));
       console.error('Error:', error);
     } finally {
       setLoading(false);

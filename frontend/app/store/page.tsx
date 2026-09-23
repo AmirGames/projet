@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { enregistrerPanier } from "@/lib/paniers";
-import { useTranslations } from 'next-intl';
 
 interface Product {
   id: string;
@@ -21,7 +20,6 @@ interface Category {
 }
 
 export default function StorefrontPage() {
-  const t = useTranslations('common');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<Product[]>([]);

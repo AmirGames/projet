@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { Archive, ArchiveRestore, MessageCircle } from 'lucide-react';
 import { TicketConversation } from '@/components/TicketConversation';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,7 +23,6 @@ const STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
 export default function TicketsPage() {
-  const t = useTranslations('superownerSupportTickets');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('OPEN');

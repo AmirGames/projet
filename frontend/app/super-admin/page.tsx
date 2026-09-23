@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl';
 import { Users, ShoppingCart, TrendingUp, AlertCircle } from 'lucide-react';
 
 import { euro } from '@/lib/format';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -22,7 +21,6 @@ interface Stats {
 export default function SuperAdminDashboard() {
   const t = useTranslations('superownerDashboard');
   const router = useRouter();
-  const t = useTranslations('superadminDashboard');
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 

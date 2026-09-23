@@ -17,10 +17,6 @@ export default function DriverLayout({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Pages publiques qui ne nécessitent pas d'authentification
-  const publicPages = ['/driver/login', '/driver/signup'];
-  const isPublicPage = publicPages.some(page => pathname === page);
-
   useEffect(() => {
     const token = localStorage.getItem('driverToken');
     setIsAuthenticated(!!token);

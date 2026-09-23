@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { DollarSign } from "lucide-react";
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -28,7 +27,6 @@ interface CommissionsResponse {
 }
 
 export default function CommissionsPage() {
-  const t = useTranslations('adminCommissions');
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [summary, setSummary] = useState({ totalAmount: 0, count: 0 });
   const [loading, setLoading] = useState(true);

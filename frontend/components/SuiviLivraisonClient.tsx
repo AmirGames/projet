@@ -12,8 +12,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import type { Map as CarteLeaflet, Marker } from 'leaflet';
+import type { Map as CarteLeaflet, CircleMarker } from 'leaflet';
 import { MapPin, Clock, Truck, AlertCircle } from 'lucide-react';
 import L from 'leaflet';
 
@@ -59,7 +58,7 @@ const estimatedTimeFromDistance = (km: number): number => {
 
 export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
   const mapRef = useRef<CarteLeaflet | null>(null);
-  const markersRef = useRef<{ [key: string]: Marker }>({});
+  const markersRef = useRef<{ [key: string]: CircleMarker }>({});
   const lineRef = useRef<L.Polyline | null>(null);
   const [currentDelivery, setCurrentDelivery] = useState<DeliveryTracking>(delivery);
   const [error, setError] = useState('');

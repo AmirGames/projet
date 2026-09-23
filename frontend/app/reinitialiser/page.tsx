@@ -132,7 +132,7 @@ function Formulaire() {
           disabled={enCours}
           className="w-full bg-accent hover:bg-accent-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 transition"
         >
-          {enCours ? 'Enregistrement...' : {t('save')}}
+          {enCours ? 'Enregistrement...' : t('save')}
         </button>
       </form>
     </>

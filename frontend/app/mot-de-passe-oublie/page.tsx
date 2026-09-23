@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { MailCheck } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -14,7 +13,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * pas devenir un moyen de savoir qui est inscrit.
  */
 export default function MotDePasseOublie() {
-  const t = useTranslations('forgotPassword');
   const [email, setEmail] = useState('');
   const [envoye, setEnvoye] = useState(false);
   const [erreur, setErreur] = useState('');

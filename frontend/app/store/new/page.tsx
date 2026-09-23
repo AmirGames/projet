@@ -5,12 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function CreateStorePage() {
-  const t = useTranslations('common');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

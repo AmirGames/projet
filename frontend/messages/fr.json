@@ -938,7 +938,12 @@
     "empty": "Aucune catégorie",
     "add": "Ajouter",
     "edit": "Modifier",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "updateError": "Erreur lors de la mise à jour",
+    "createError": "Erreur lors de la création",
+    "deleteError": "Erreur lors de la suppression",
+    "update": "Mettre à jour",
+    "create": "Créer"
   },
   "merchantAnalytics": {
     "title": "Analytics",

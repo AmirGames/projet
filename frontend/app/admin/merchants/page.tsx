@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Store } from "lucide-react";
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -31,7 +30,6 @@ interface MerchantResponse {
 }
 
 export default function MerchantsPage() {
-  const t = useTranslations('adminMerchants');
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

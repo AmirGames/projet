@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -15,7 +14,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * on mémorise la boutique choisie afin que le sélecteur se positionne dessus.
  */
 export default function AncienneGestionBoutique() {
-  const t = useTranslations('common');
   const router = useRouter();
   const params = useParams();
   const storeId = params?.id as string;

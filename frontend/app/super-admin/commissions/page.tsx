@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Search, Download, Filter } from 'lucide-react';
 
 import { euro } from '@/lib/format';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -21,7 +20,6 @@ interface Commission {
 }
 
 export default function CommissionsPage() {
-  const t = useTranslations('superownerDashboard');
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

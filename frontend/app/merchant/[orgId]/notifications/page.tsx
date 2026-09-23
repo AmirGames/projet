@@ -203,8 +203,8 @@ export default function NotificationsPage() {
                 : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
             }`}
           >
-            {filter === "all" && {t('filterByRead')}}
-            {filter === "read" && {t('filterByReadRead')}}
+            {filter === "all" && t('filterByRead')}
+            {filter === "read" && t('filterByReadRead')}
             {filter === "unread" && "Non-lus"}
           </button>
         ))}

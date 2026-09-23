@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MapPin, Navigation, Timer, Wallet } from 'lucide-react';
+import { MapPin, Navigation, Timer } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 

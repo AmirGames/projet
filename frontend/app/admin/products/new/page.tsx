@@ -5,10 +5,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
-import { useTranslations } from 'next-intl';
 
 export default function NewProductPage() {
-  const t = useTranslations('common');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({

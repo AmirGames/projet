@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { Search, Download, Filter, Clock } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -19,7 +18,6 @@ interface AccessLog {
 }
 
 export default function AccessLogsPage() {
-  const t = useTranslations('superownerAccessLogs');
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

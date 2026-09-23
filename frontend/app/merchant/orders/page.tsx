@@ -4,7 +4,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { useTranslations } from 'next-intl';
 /**
  * Ancienne page des commandes, devenue une simple redirection.
  *
@@ -14,7 +13,6 @@ import { useTranslations } from 'next-intl';
  * connue.
  */
 export default function AnciennesCommandes() {
-  const t = useTranslations('merchantOrders');
   const router = useRouter();
 
   useEffect(() => {

@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
-import { useTranslations } from 'next-intl';
 
 interface Order {
   id: string;
@@ -19,7 +18,6 @@ interface Order {
 }
 
 export default function OrderDetailPage() {
-  const t = useTranslations('common');
   const params = useParams();
   const orderId = params.id as string;
 

@@ -32,7 +32,7 @@ const ROLE_LABELS: { [key in StaffRole]: string } = {
   MANAGER: 'Gérant',
   CASHIER: 'Caissier',
   KITCHEN: 'Cuisine',
-  DELIVERY: {t('delivery')},
+  DELIVERY: 'Livraison',
   SUPPORT: 'Support',
 };
 
@@ -315,7 +315,7 @@ export default function StaffPage() {
                 disabled={saving}
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
               >
-                {editingStaff ? 'Mettre à Jour' : {t('create')}}
+                {editingStaff ? 'Mettre à Jour' : t('create')}
               </button>
               <button
                 onClick={() => {
@@ -373,7 +373,7 @@ export default function StaffPage() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`font-medium ${STATUS_COLORS[s.status]}`}>
-                          {s.status === 'ACTIVE' ? {t('statusActive')} : s.status === 'INACTIVE' ? 'Inactif' : {t('statusSuspended')}}
+                          {s.status === 'ACTIVE' ? t('statusActive') : s.status === 'INACTIVE' ? 'Inactif' : t('statusSuspended')}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-right flex gap-2 justify-end">
@@ -412,7 +412,7 @@ export default function StaffPage() {
           <div className="text-center py-16">
             <Users className="mx-auto text-slate-600 mb-4" size={48} />
             <p className="text-slate-400 text-lg">
-              {staff.length === 0 ? 'Aucun membre' : {t('empty')}}
+              {staff.length === 0 ? 'Aucun membre' : t('empty')}
             </p>
             {staff.length === 0 && (
               <button

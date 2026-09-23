@@ -2,12 +2,10 @@
 
 import { useState } from 'react';
 import { FileJson, FileText } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function ExportsPage() {
-  const t = useTranslations('superownerExports');
   const [loading, setLoading] = useState('');
   const [message, setMessage] = useState('');
 

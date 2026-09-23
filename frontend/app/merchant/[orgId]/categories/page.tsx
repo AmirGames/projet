@@ -114,6 +114,7 @@ function SortableCategory({ category, onEdit, onDelete }: any) {
 }
 
 export default function CategoriesPage() {
+  const t = useTranslations('merchantCategories');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -227,7 +228,7 @@ export default function CategoriesPage() {
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.error || errorData.message || {t('updateError')};
+          const errorMsg = errorData.error || errorData.message || t('updateError');
           setMessage(`❌ ${errorMsg}`);
         }
       } else {
@@ -256,7 +257,7 @@ export default function CategoriesPage() {
           setTimeout(() => setMessage(''), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.error || errorData.message || {t('createError')};
+          const errorMsg = errorData.error || errorData.message || t('createError');
           setMessage(`❌ ${errorMsg}`);
         }
       }
@@ -284,7 +285,7 @@ export default function CategoriesPage() {
         setTimeout(() => setMessage(''), 3000);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.error || errorData.message || {t('deleteError')};
+        const errorMsg = errorData.error || errorData.message || t('deleteError');
         setMessage(`❌ ${errorMsg}`);
       }
     } catch (error) {
@@ -427,7 +428,7 @@ export default function CategoriesPage() {
                   type="submit"
                   className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors"
                 >
-                  {editingCategory ? {t('update')} : {t('create')}}
+                  {editingCategory ? t('update') : t('create')}
                 </button>
               </div>
             </form>

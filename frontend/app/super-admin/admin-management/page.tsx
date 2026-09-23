@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { Trash2, Plus } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -15,7 +14,6 @@ interface Admin {
 }
 
 export default function AdminManagementPage() {
-  const t = useTranslations('superownerUserManagement');
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import Link from "next/link";
-import { useTranslations } from 'next-intl';
 
 export default function SignupPage() {
   const t = useTranslations('auth.signup');

@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
-import { useTranslations } from 'next-intl';
 
 export default function Home() {
-  const t = useTranslations('common');
   const { user, isLoading } = useAuth();
   const [roles, setRoles] = useState<any>(null);
   const [rolesLoading, setRolesLoading] = useState(true);

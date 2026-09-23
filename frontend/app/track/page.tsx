@@ -1,12 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
-import { SuiviLivraisonClient } from '@/components/SuiviLivraisonClient';
-import { useTranslations } from 'next-intl';
+
+// Leaflet touche `window` dès l'import : la carte ne se charge que côté navigateur.
+const SuiviLivraisonClient = dynamic(
+  () => import('@/components/SuiviLivraisonClient').then((m) => m.SuiviLivraisonClient),
+  { ssr: false }
+);
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -70,7 +75,6 @@ const statusColors: { [key: string]: string } = {
 };
 
 export default function TrackOrderPage() {
-  const t = useTranslations('trackOrder');
   const [searchQuery, setSearchQuery] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
   const [delivery, setDelivery] = useState<Delivery | null>(null);

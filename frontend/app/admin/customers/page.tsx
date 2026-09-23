@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { Search, Eye, Mail } from 'lucide-react';
 import { apiClient } from '@/lib/api';
-import { useTranslations } from 'next-intl';
 
 interface Customer {
   id: string;
@@ -15,7 +14,6 @@ interface Customer {
 }
 
 export default function AdminCustomers() {
-  const t = useTranslations('adminCustomers');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

@@ -117,7 +117,7 @@ export default function InscriptionLivreurPage() {
             <input
               type={t('email')}
               required
-              {...champ({t('email')})}
+              {...champ('email')}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
             />
           </div>

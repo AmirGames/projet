@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { Store, Bike, Crown, ShoppingCart } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -17,7 +16,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * - Si multiple rôles OU superowner → affiche un sélecteur visuel
  */
 export default function DashboardPage() {
-  const t = useTranslations('common');
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const [roles, setRoles] = useState<any>(null);

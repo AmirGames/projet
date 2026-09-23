@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
-import { useTranslations } from 'next-intl';
 
 interface Category {
   id: string;
@@ -13,7 +12,6 @@ interface Category {
 }
 
 export default function AdminCategories() {
-  const t = useTranslations('adminCategories');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });

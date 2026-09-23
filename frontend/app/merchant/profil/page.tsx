@@ -172,7 +172,7 @@ export default function ProfilCommercantPage() {
       remplir(lu.data);
       setErreur('');
     } catch {
-      setErreur({t('serverError')});
+      setErreur(t('serverError'));
     } finally {
       setChargement(false);
     }
@@ -210,7 +210,7 @@ export default function ProfilCommercantPage() {
       remplir(lu.data);
       setMessage('Profil enregistré');
     } catch {
-      setErreur({t('serverError')});
+      setErreur(t('serverError'));
     } finally {
       setEnvoi(false);
     }
@@ -276,7 +276,7 @@ export default function ProfilCommercantPage() {
       setPiece({ type: '', documentUrl: '', fileName: '', expiryDate: '', file: null });
       await charger();
     } catch {
-      setErreurPiece({t('serverError')});
+      setErreurPiece(t('serverError'));
     } finally {
       setEnvoiPiece(false);
     }
@@ -291,7 +291,7 @@ export default function ProfilCommercantPage() {
       });
       await charger();
     } catch {
-      setErreurPiece({t('serverError')});
+      setErreurPiece(t('serverError'));
     }
   };
 
@@ -628,7 +628,7 @@ export default function ProfilCommercantPage() {
           disabled={envoi}
           className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-2 px-6 rounded-lg transition"
         >
-          {envoi ? {t('saving')} : {t('save')}}
+          {envoi ? t('saving') : t('save')}
         </button>
       </form>
 

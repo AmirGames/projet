@@ -98,7 +98,7 @@ export default function HorairesPage() {
       setData(await reponse.json());
       setErreur('');
     } catch {
-      setErreur({t('serverError')});
+      setErreur(t('serverError'));
     } finally {
       setChargement(false);
     }
@@ -147,7 +147,7 @@ export default function HorairesPage() {
       setBrouillon(null);
       setMessage(`${NOM_DU_JOUR[jour]} enregistré`);
     } catch {
-      setErreur({t('serverError')});
+      setErreur(t('serverError'));
     } finally {
       setEnvoi(false);
     }
@@ -167,7 +167,7 @@ export default function HorairesPage() {
 
       await charger();
     } catch {
-      setErreur({t('serverError')});
+      setErreur(t('serverError'));
     } finally {
       setEnvoi(false);
     }
@@ -196,7 +196,7 @@ export default function HorairesPage() {
       setNouveauCreneau({ start: '11:00', end: '13:00', maxOrders: 10 });
       setFormulaireCreneau(false);
     } catch {
-      setErreur({t('serverError')});
+      setErreur(t('serverError'));
     } finally {
       setEnvoi(false);
     }
@@ -215,7 +215,7 @@ export default function HorairesPage() {
 
       await charger();
     } catch {
-      setErreur({t('serverError')});
+      setErreur(t('serverError'));
     } finally {
       setEnvoi(false);
     }
@@ -268,7 +268,7 @@ export default function HorairesPage() {
             } disabled:opacity-50`}
           >
             <Power size={20} />
-            {data.isOpen ? {t('open')} : {t('closed')}}
+            {data.isOpen ? t('open') : t('closed')}
           </button>
         </div>
 

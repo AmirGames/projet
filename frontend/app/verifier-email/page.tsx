@@ -4,7 +4,6 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, XCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -12,7 +11,6 @@ type Etat = 'en-cours' | 'confirme' | 'echec';
 
 /** Confirmation d'adresse : le lien reçu suffit, rien à saisir. */
 function Confirmation() {
-  const t = useTranslations('emailVerification');
   const jeton = useSearchParams().get('jeton') || '';
 
   const [etat, setEtat] = useState<Etat>('en-cours');

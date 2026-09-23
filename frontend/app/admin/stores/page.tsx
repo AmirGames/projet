@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Store as StoreIcon, Search, Package, ShoppingCart, ExternalLink } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
@@ -28,7 +27,6 @@ const COULEURS_ORG: Record<string, string> = {
 };
 
 export default function BoutiquesAdminPage() {
-  const t = useTranslations('adminStores');
   const [boutiques, setBoutiques] = useState<Boutique[]>([]);
   const [total, setTotal] = useState(0);
   const [recherche, setRecherche] = useState('');

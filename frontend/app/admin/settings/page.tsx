@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { Save, AlertCircle } from 'lucide-react';
 import { apiClient } from '@/lib/api';
-import { useTranslations } from 'next-intl';
 
 interface StoreSettings {
   name: string;
@@ -19,7 +18,6 @@ interface StoreSettings {
 }
 
 export default function AdminSettings() {
-  const t = useTranslations('adminSettings');
   const [settings, setSettings] = useState<StoreSettings>({
     name: '',
     description: '',

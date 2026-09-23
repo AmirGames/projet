@@ -236,7 +236,7 @@ export default function PaymentMethodsPage() {
                           ? 'bg-green-600/20 text-green-400'
                           : 'bg-gray-600/20 text-gray-400'
                       }`}>
-                        {method.isActive ? {t('active')} : 'Inactif'}
+                        {method.isActive ? t('active') : 'Inactif'}
                       </span>
                     </div>
                     <p className="text-sm text-gray-400 mb-3">{method.type}</p>
@@ -405,7 +405,7 @@ export default function PaymentMethodsPage() {
                   disabled={envoi}
                   className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
                 >
-                  {envoi ? {t('saving')} : {t('save')}}
+                  {envoi ? t('saving') : t('save')}
                 </button>
                 <button
                   type="button"

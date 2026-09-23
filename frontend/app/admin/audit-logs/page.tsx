@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { History } from "lucide-react";
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -25,7 +24,6 @@ interface AuditLogsResponse {
 }
 
 export default function AuditLogsPage() {
-  const t = useTranslations('adminAuditLogs');
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

@@ -8,7 +8,6 @@ import { ArrowLeft, User, Mail, Phone, MapPin, FileText, Star, LogOut } from 'lu
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-  const t = useTranslations('driverProfile');
 interface Driver {
   id: string;
   name: string;
@@ -30,6 +29,7 @@ interface Driver {
 }
 
 export default function DriverProfilePage() {
+  const t = useTranslations('driverProfile');
   const router = useRouter();
   const [driver, setDriver] = useState<Driver | null>(null);
   const [loading, setLoading] = useState(true);
@@ -301,7 +301,7 @@ export default function DriverProfilePage() {
                       : 'bg-orange-600 text-white hover:bg-orange-700'
                   }`}
                 >
-                  {isEditing ? {t('cancel')} : {t('edit')}}
+                  {isEditing ? t('cancel') : t('edit')}
                 </button>
               </div>
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -25,7 +24,6 @@ interface CommissionData {
 }
 
 export default function AnalyticsPage() {
-  const t = useTranslations('superownerAnalytics');
   const [data, setData] = useState<CommissionData | null>(null);
   const [loading, setLoading] = useState(true);
 

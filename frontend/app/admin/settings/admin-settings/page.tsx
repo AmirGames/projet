@@ -243,7 +243,7 @@ export default function AdminSettingsPage() {
           disabled={saving}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition font-medium"
         >
-          {saving ? "Enregistrement..." : {t('save')}}
+          {saving ? "Enregistrement..." : t('save')}
         </button>
         <button
           onClick={fetchConfig}

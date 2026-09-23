@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -21,7 +20,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * continuent de fonctionner, le temps d'un aller-retour.
  */
 export default function AncienneVitrine() {
-  const t = useTranslations('common');
   const params = useParams();
   const router = useRouter();
   const [introuvable, setIntrouvable] = useState(false);
