@@ -1,7 +1,7 @@
 // Chacun chez soi : aucune route de l'espace commerçant ne doit accepter le
 // storeId d'un autre.
 
-import {
+import { inscription,
   titre,
   check,
   j,
@@ -15,12 +15,12 @@ import {
   sqlScalaire,
 } from './outils.mjs';
 
-await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
+await inscription({ email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
 
 /** Un commerçant avec sa boutique et son catalogue. */
 async function installer(suffixe) {
   const compte = await j(
-    await post('/api/auth/signup', {
+    await inscription({
       email: `m${suffixe}-${uniq}@t.fr`,
       password: 'Password123!',
       name: `M${suffixe} ${uniq}`,
@@ -133,7 +133,7 @@ const TENTATIVES = [
   // La ressource désignée par son propre identifiant
   ['modifier un produit de l’autre', () => put(`/api/products/${alice.productId}`, { name: 'Volé' }, bob.jeton)],
   ['supprimer un produit de l’autre', () => del(`/api/products/${alice.productId}`, null, bob.jeton)],
-  ['épuiser un produit de l’autre', () => patch(`/api/products/${alice.productId}/availability`, { isAvailable: false }, bob.jeton)],
+  ['épuiser un produit de l’autre', () => patch(`/api/products/${alice.productId}/availability`, { isAvailable: false, storeId: bob.storeId }, bob.jeton)],
   ['modifier une catégorie de l’autre', () => put(`/api/categories/${alice.categoryId}`, { name: 'Volée' }, bob.jeton)],
   ['modifier une zone de l’autre', () => put(`/api/delivery-zones/${alice.zoneId}`, { baseFee: 0 }, bob.jeton)],
   ['supprimer une zone de l’autre', () => del(`/api/delivery-zones/${alice.zoneId}`, null, bob.jeton)],
@@ -206,7 +206,7 @@ const CHEZ_SOI = [
   ['lire ses réglages', () => get(`/api/store-settings/${bob.storeId}`, bob.jeton)],
   ['lire ses rapports', () => get(`/api/reports/sales?storeId=${bob.storeId}`, bob.jeton)],
   ['modifier son produit', () => put(`/api/products/${bob.productId}`, { name: `Renommé ${uniq}` }, bob.jeton)],
-  ['épuiser son produit', () => patch(`/api/products/${bob.productId}/availability`, { isAvailable: false }, bob.jeton)],
+  ['épuiser son produit', () => patch(`/api/products/${bob.productId}/availability`, { isAvailable: false, storeId: bob.storeId }, bob.jeton)],
   ['modifier sa catégorie', () => put(`/api/categories/${bob.categoryId}`, { name: `Renommée ${uniq}` }, bob.jeton)],
   ['modifier sa zone', () => put(`/api/delivery-zones/${bob.zoneId}`, { baseFee: 4 }, bob.jeton)],
   ['modifier sa boutique', () => put(`/api/stores/${bob.storeId}`, { name: `Boutique B ${uniq} bis` }, bob.jeton)],
@@ -283,7 +283,7 @@ check('la commande passe', commandeClient.status < 400, `statut ${commandeClient
 // commerçant compris, alors que le même geste passait sans compte.
 titre('Un client connecté commande et suit sa commande');
 const clientConnecte = await j(
-  await post('/api/auth/signup', {
+  await inscription({
     email: `cl-${uniq}@t.fr`,
     password: 'Password123!',
     name: `Client ${uniq}`,

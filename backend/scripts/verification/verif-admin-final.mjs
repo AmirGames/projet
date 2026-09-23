@@ -1,10 +1,10 @@
 // Journal d'accès, annonces plateforme, détail de ticket et notifications.
 
-import { titre, check, j, uniq, post, get, patch, del, terminer } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, patch, del, terminer } from './outils.mjs';
 
-const sup = await j(await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
+const sup = await j(await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const superToken = sup.accessToken;
-const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
+const m = await j(await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const orgId = m.organization.id;
 const b = await j(await post('/api/stores', {
   orgId, name: `Bou ${uniq}`, slug: `bou-${uniq}`, address: '1 rue', city: 'Lyon', postalCode: '69001', phone: '0400000000',

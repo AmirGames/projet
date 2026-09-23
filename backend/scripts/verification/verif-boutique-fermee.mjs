@@ -1,14 +1,14 @@
 // Une boutique fermée reste visible mais n'accepte plus de commande, et elle
 // situe son adresse toute seule.
 
-import { titre, check, j, uniq, post, get, patch, terminer, sqlScalaire, sqlExec } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, patch, terminer, sqlScalaire, sqlExec } from './outils.mjs';
 
 const MDP = 'Password123!';
 
-await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` });
+await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` });
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 

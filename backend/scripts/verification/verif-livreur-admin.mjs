@@ -2,11 +2,11 @@
 // et la nouvelle liste des boutiques côté administration.
 // --- Plateforme : superowner + commerçant + boutique + commande livrable ---
 
-import { check, j, uniq, post, get, patch, sqlExec, terminer, API, validerLivreur, codeDeRemise } from './outils.mjs';
+import { inscription, check, j, uniq, post, get, patch, sqlExec, terminer, API, validerLivreur, codeDeRemise } from './outils.mjs';
 
-const sup = await j(await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
+const sup = await j(await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const superToken = sup.accessToken;
-const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
+const m = await j(await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const b = await j(await post('/api/stores', {
   orgId: m.organization.id, name: `Bou ${uniq}`, slug: `bou-${uniq}`,
   address: '1 rue', city: 'Lyon', postalCode: '69001', phone: '0400000000',
@@ -21,12 +21,12 @@ const orderId = commande?.order?.id;
 check('commande livrable créée', !!orderId, JSON.stringify(commande)?.slice(0, 150));
 
 console.log('\n[Inscription livreur]');
-const inscription = await post('/api/drivers/register', {
+const inscriptionLivreur = await post('/api/drivers/register', {
   name: `Livreur ${uniq}`, email: `d-${uniq}@t.fr`, password: 'Password123!',
   phone: '0611111111', vehicleType: 'scooter', vehiclePlate: 'AB-123-CD',
 });
-const livreur = await j(inscription);
-check('inscription 201', inscription.status === 201, `status=${inscription.status} ${JSON.stringify(livreur)}`);
+const livreur = await j(inscriptionLivreur);
+check('inscription 201', inscriptionLivreur.status === 201, `status=${inscriptionLivreur.status} ${JSON.stringify(livreur)}`);
 check('jeton renvoyé', !!livreur?.accessToken);
 const dToken = livreur?.accessToken;
 

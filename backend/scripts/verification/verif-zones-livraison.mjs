@@ -1,7 +1,7 @@
 // Les zones de livraison : des anneaux avec leurs frais et leur montant
 // minimum, réellement appliqués à la commande.
 
-import {
+import { inscription,
   titre,
   check,
   j,
@@ -14,10 +14,10 @@ import {
   sqlScalaire,
 } from './outils.mjs';
 
-await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
+await inscription({ email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 
@@ -296,7 +296,7 @@ check(
 
 titre('Un autre commerçant ne touche à rien');
 const intrus = await j(
-  await post('/api/auth/signup', { email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
+  await inscription({ email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
 );
 const TX = intrus.accessToken;
 

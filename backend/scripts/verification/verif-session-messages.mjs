@@ -1,15 +1,15 @@
 // Une session dont le compte a disparu, et les messages de refus lisibles.
 
-import { titre, check, j, uniq, post, get, terminer, sqlExec } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, terminer, sqlExec } from './outils.mjs';
 
 const MDP = 'Password123!';
 
-await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` });
+await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` });
 
 // ===== Le refus dit pourquoi =====
 
 titre('Un refus de validation dit ce qui ne va pas');
-const bancal = await post('/api/auth/signup', { email: 'pas-une-adresse', password: '123' });
+const bancal = await inscription({ email: 'pas-une-adresse', password: '123' });
 const refus = await j(bancal);
 
 check('le refus est un 400', bancal.status === 400, `statut ${bancal.status}`);
@@ -27,7 +27,7 @@ check(
 check('le détail par champ reste disponible', refus?.details?.fieldErrors !== undefined, JSON.stringify(refus?.details));
 
 titre('Un seul reproche ne fait qu’une phrase');
-const sansNom = await j(await post('/api/auth/signup', { email: `x-${uniq}@t.fr`, password: MDP, name: 'a' }));
+const sansNom = await j(await inscription({ email: `x-${uniq}@t.fr`, password: MDP, name: 'a' }));
 check(
   'le champ fautif est nommé',
   /Nom\s*:\s*Minimum 2 caractères/.test(sansNom?.error || ''),
@@ -38,7 +38,7 @@ check('sans tiret de séparation', !/ — /.test(sansNom?.error || ''), sansNom?
 // ===== Une session dont le compte n'existe plus =====
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 const R = commercant.refreshToken;
@@ -64,7 +64,7 @@ check('son organisation aussi', typeof renouvele?.organization?.id === 'string',
  */
 titre('Quand le compte disparaît');
 const condamne = await j(
-  await post('/api/auth/signup', { email: `d-${uniq}@t.fr`, password: MDP, name: `D ${uniq}` })
+  await inscription({ email: `d-${uniq}@t.fr`, password: MDP, name: `D ${uniq}` })
 );
 const TD = condamne.accessToken;
 const RD = condamne.refreshToken;

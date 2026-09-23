@@ -118,10 +118,51 @@ export async function fermerBase() {
 
 // ===== Raccourcis métier =====
 
+let numeroOrganisation = 0;
+
+/**
+ * Inscription telle que les vérifications ont été écrites : un compte, et une
+ * organisation sans boutique dont il est administrateur.
+ *
+ * Avant la refonte d'identité, /auth/signup créait lui-même cette
+ * organisation ; il ne crée plus que le compte et sa fiche client, et le
+ * produit passe ensuite par /auth/me/become-merchant — qui ouvre aussi une
+ * boutique. Les suites créent leurs boutiques elles-mêmes, avec les
+ * coordonnées, horaires et formules qu'elles vérifient : une boutique
+ * imposée fausserait leurs comptes et mangerait le quota de la formule.
+ *
+ * L'inscription passe par la vraie API ; seule l'organisation est posée en
+ * base. La réponse garde le statut et le corps de l'API, augmentés de
+ * `organization` : `.status` et `j()` s'en servent comme avant.
+ */
+export async function inscription(corps) {
+  const reponse = await post("/api/auth/signup", corps);
+  const donnees = await j(reponse);
+
+  if (!reponse.ok || !donnees?.user?.id) {
+    return new Response(JSON.stringify(donnees), { status: reponse.status });
+  }
+
+  const org = await base().organization.create({
+    data: {
+      name: corps.name || corps.email.split("@")[0],
+      slug: `org-${uniq}-${++numeroOrganisation}`,
+      memberships: { create: { userId: donnees.user.id, role: "ADMIN" } },
+    },
+  });
+
+  const corpsAugmente = {
+    ...donnees,
+    organization: { id: org.id, name: org.name, slug: org.slug },
+  };
+
+  return new Response(JSON.stringify(corpsAugmente), { status: reponse.status });
+}
+
 /** Crée un compte et renvoie sa réponse d'inscription complète. */
 export async function inscrire(prefixe) {
   return j(
-    await post("/api/auth/signup", {
+    await inscription({
       email: `${prefixe}-${uniq}@test.fr`,
       password: "Password123!",
       name: `${prefixe} ${uniq}`,

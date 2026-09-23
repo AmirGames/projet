@@ -1,9 +1,9 @@
 // Vérifie le remplacement du stock chiffré par une disponibilité simple.
 
-import { check, j, uniq, post, get, put, patch, terminer } from './outils.mjs';
+import { inscription, check, j, uniq, post, get, put, patch, terminer } from './outils.mjs';
 
-await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` });
-const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
+await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` });
+const m = await j(await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const T = m.accessToken;
 const b = await j(await post('/api/stores', {
   orgId: m.organization.id, name: `Bou ${uniq}`, slug: `bou-${uniq}`, address: '1 rue', city: 'Lyon', postalCode: '69001', phone: '0400000000',
@@ -18,7 +18,7 @@ check('produit créé sans champ stock', creation.status === 201, `status=${crea
 check('disponible par défaut', prod?.product?.isAvailable === true, JSON.stringify(prod?.product?.isAvailable));
 
 console.log('\n[Bascule épuisé / disponible]');
-const epuise = await patch(`/api/products/${prodId}/availability`, { isAvailable: false }, T);
+const epuise = await patch(`/api/products/${prodId}/availability`, { isAvailable: false, storeId }, T);
 const epuiseData = await j(epuise);
 check('passage en épuisé', epuise.status === 200, `status=${epuise.status} ${JSON.stringify(epuiseData)?.slice(0, 150)}`);
 check('message explicite', epuiseData?.message?.includes('épuisé'), JSON.stringify(epuiseData?.message));
@@ -38,7 +38,7 @@ check('commande refusée', refus.status === 400, `status=${refus.status} ${JSON.
 check('message nommant le produit', (refusData?.error || '').includes('Pizza Reine'), JSON.stringify(refusData?.error));
 
 console.log('\n[Remise en vente]');
-const dispo = await patch(`/api/products/${prodId}/availability`, { isAvailable: true }, T);
+const dispo = await patch(`/api/products/${prodId}/availability`, { isAvailable: true, storeId }, T);
 check('retour en disponible', dispo.status === 200, `status=${dispo.status}`);
 const acceptee = await post('/api/orders', panier(2));
 const accepteeData = await j(acceptee);

@@ -1,17 +1,17 @@
 // Vérifie les six points signalés par l'utilisateur.
 
-import { check, j, uniq, post, get, put, del, terminer, API } from './outils.mjs';
+import { inscription, check, j, uniq, post, get, put, del, terminer, API } from './outils.mjs';
 
 // ---------- Comptes ----------
 // Le premier inscrit devient superowner.
-const superRes = await post('/api/auth/signup', {
+const superRes = await inscription({
   email: `super-${uniq}@test.fr`, password: 'Password123!', name: `Super ${uniq}`,
 });
 const superData = await j(superRes);
 check('inscription superowner', superRes.status === 201, `status=${superRes.status} ${JSON.stringify(superData)}`);
 const superToken = superData?.accessToken || superData?.tokens?.accessToken;
 
-const marchandRes = await post('/api/auth/signup', {
+const marchandRes = await inscription({
   email: `marchand-${uniq}@test.fr`, password: 'Password123!', name: `Boulangerie ${uniq}`,
 });
 const marchandData = await j(marchandRes);

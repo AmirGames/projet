@@ -1,8 +1,8 @@
 // Vérifie la création d'admin et la réparation des mots de passe en clair.
 
-import { check, j, uniq, post, sqlScalaire, sqlExec, terminer } from './outils.mjs';
+import { inscription, check, j, uniq, post, sqlScalaire, sqlExec, terminer } from './outils.mjs';
 
-const sup = await j(await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
+const sup = await j(await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const S = sup.accessToken;
 
 console.log('[Création d\'un administrateur]');

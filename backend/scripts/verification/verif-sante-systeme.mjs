@@ -1,10 +1,10 @@
 // La santé système : un chiffre qui mesure vraiment quelque chose, et qui
 // bouge quand la plateforme se dégrade.
 
-import { titre, check, j, uniq, post, get, put, terminer } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, put, terminer } from './outils.mjs';
 
 const plateforme = await j(
-  await post('/api/auth/signup', {
+  await inscription({
     email: `p-${uniq}@t.fr`,
     password: 'Password123!',
     name: `P ${uniq}`,
@@ -134,7 +134,7 @@ titre('Une course sans livreur');
 const avantCourse = apres.sante.score;
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
 );
 const boutique = await j(
   await post(
@@ -205,7 +205,7 @@ check(
 
 titre('Réservé à la plateforme');
 const intrus = await j(
-  await post('/api/auth/signup', { email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
+  await inscription({ email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
 );
 check(
   'un commerçant ne voit pas le tableau de bord',

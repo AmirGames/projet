@@ -1,7 +1,7 @@
 // Commission par formule, origine des actions dans les journaux, ordre de
 // l'évolution journalière, compteurs du commerçant, ticket clos archivé.
 
-import {
+import { inscription,
   titre,
   check,
   j,
@@ -16,7 +16,7 @@ import {
 const MDP = 'Password123!';
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
 );
 const TP = plateforme.accessToken;
 
@@ -25,7 +25,7 @@ const TP = plateforme.accessToken;
 await post('/api/auth/login', { email: `p-${uniq}@t.fr`, password: MDP });
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 const ORG = commercant.organization.id;

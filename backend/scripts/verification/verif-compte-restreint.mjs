@@ -1,15 +1,15 @@
 // Suspension et fermeture d'un compte : appliquées partout, immédiatement, et
 // ne laissant qu'une porte — le support.
 
-import { titre, check, j, uniq, post, get, put, patch, del, terminer, sqlScalaire } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, put, patch, del, terminer, sqlScalaire } from './outils.mjs';
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` })
 );
 const TP = plateforme.accessToken;
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 const ORG = commercant.organization.id;
@@ -45,7 +45,7 @@ const productId = produit.product?.id || produit.id;
 const TRAVAIL_COURANT = [
   ['modifier un produit', () => put(`/api/products/${productId}`, { name: 'Margherita bis' }, T)],
   ['créer un produit', () => post('/api/products', { storeId, name: `Reine ${uniq}`, price: 13 }, T)],
-  ['passer un plat en épuisé', () => patch(`/api/products/${productId}/availability`, { isAvailable: false }, T)],
+  ['passer un plat en épuisé', () => patch(`/api/products/${productId}/availability`, { isAvailable: false, storeId }, T)],
   ['créer une catégorie', () => post('/api/categories', { storeId, name: `Pizzas ${uniq}` }, T)],
   ['lire ses commandes', () => get(`/api/orders?storeId=${storeId}`, T)],
   ['lire ses statistiques', () => get(`/api/reports/sales?storeId=${storeId}`, T)],
@@ -317,7 +317,7 @@ check('la date limite est rendue', Boolean(etat?.closedUntil), `${etat?.closedUn
 
 titre('Un étranger ne lit pas cet état');
 const intrus = await j(
-  await post('/api/auth/signup', { email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
+  await inscription({ email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
 );
 check(
   'l’accès est refusé',

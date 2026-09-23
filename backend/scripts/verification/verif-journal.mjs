@@ -164,6 +164,7 @@ const pannier = spawn(
     join(RACINE, 'node_modules', '.bin', 'tsx'),
     '-e',
     `
+    import "dotenv/config";
     import { errorHandler } from "./src/middleware/errorHandler";
 
     const reponse = { status: () => reponse, json: () => reponse };

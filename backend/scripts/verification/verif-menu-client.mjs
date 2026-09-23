@@ -1,12 +1,12 @@
 // Ce que le client voit du menu : l'ordre voulu par le commerçant, et les
 // plats épuisés signalés plutôt que masqués.
 
-import { titre, check, j, uniq, post, get, patch, put, terminer } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, patch, put, terminer } from './outils.mjs';
 
-await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
+await inscription({ email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 
@@ -97,7 +97,7 @@ check(
 titre('Un plat épuisé');
 const epuisement = await patch(
   `/api/products/${idProduit(margherita)}/availability`,
-  { isAvailable: false },
+  { isAvailable: false, storeId },
   T
 );
 check('le commerçant peut le marquer épuisé', epuisement.status === 200, `statut=${epuisement.status}`);
@@ -145,7 +145,7 @@ check('le motif nomme le plat', /Margherita/.test(refus?.error || ''), refus?.er
 check('le code est exploitable', refus?.code === 'PRODUCT_UNAVAILABLE', refus?.code);
 
 titre('Retour en disponible');
-await patch(`/api/products/${idProduit(margherita)}/availability`, { isAvailable: true }, T);
+await patch(`/api/products/${idProduit(margherita)}/availability`, { isAvailable: true, storeId }, T);
 
 const denouveau = await post('/api/orders', {
   storeId,
