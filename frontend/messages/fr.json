@@ -1277,5 +1277,109 @@
     "call": "Appeler",
     "location": "Localisation",
     "notFound": "Commande non trouvée"
+  },
+  "adminDashboard": {
+    "title": "Tableau de bord Admin",
+    "loading": "Chargement...",
+    "stats": "Statistiques"
+  },
+  "adminAnalytics": {
+    "title": "Analyse",
+    "revenue": "Chiffre d'affaires",
+    "orders": "Commandes",
+    "users": "Utilisateurs"
+  },
+  "adminAuditLogs": {
+    "title": "Journaux d'audit",
+    "date": "Date",
+    "action": "Action",
+    "user": "Utilisateur",
+    "status": "Statut"
+  },
+  "adminCategories": {
+    "title": "Catégories",
+    "add": "Ajouter",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "name": "Nom"
+  },
+  "adminCommissions": {
+    "title": "Commissions",
+    "rate": "Taux",
+    "amount": "Montant",
+    "period": "Période"
+  },
+  "adminCustomers": {
+    "title": "Clients",
+    "email": "Email",
+    "name": "Nom",
+    "orders": "Commandes",
+    "status": "Statut"
+  },
+  "adminMerchants": {
+    "title": "Commerçants",
+    "name": "Nom",
+    "email": "Email",
+    "status": "Statut",
+    "revenue": "Chiffre d'affaires"
+  },
+  "adminOrders": {
+    "title": "Commandes",
+    "number": "Commande #",
+    "customer": "Client",
+    "amount": "Montant",
+    "status": "Statut",
+    "date": "Date"
+  },
+  "adminProducts": {
+    "title": "Produits",
+    "name": "Nom",
+    "sku": "SKU",
+    "price": "Prix",
+    "category": "Catégorie",
+    "status": "Statut",
+    "add": "Ajouter un produit"
+  },
+  "adminSettings": {
+    "title": "Paramètres",
+    "general": "Général",
+    "security": "Sécurité",
+    "save": "Enregistrer"
+  },
+  "adminStores": {
+    "title": "Magasins",
+    "name": "Nom",
+    "city": "Ville",
+    "status": "Statut",
+    "address": "Adresse"
+  },
+  "adminTickets": {
+    "title": "Tickets de support",
+    "subject": "Sujet",
+    "status": "Statut",
+    "priority": "Priorité",
+    "created": "Créé"
+  },
+  "superAdminDashboard": {
+    "loading": "Chargement...",
+    "title": "Dashboard Superowner",
+    "subtitle": "Vue d'ensemble complète de la plateforme",
+    "criticalAlerts": "{count} Alerte(s) Critique(s)",
+    "criticalAlertsSubtitle": "Attention requise immédiate",
+    "totalRevenue": "Revenu Total",
+    "platformFee": "Frais Plateforme",
+    "organizations": "Organisations",
+    "systemHealth": "Santé Système",
+    "systemHealthTitle": "Voir le détail de la santé système",
+    "totalUsers": "Utilisateurs Totaux",
+    "totalUsersSubtitle": "Clients actifs sur la plateforme",
+    "mrr": "Revenu Récurrent (MRR)",
+    "mrrSubtitle": "Revenu mensuel récurrent",
+    "quickActions": "Actions Rapides",
+    "quickOrganizations": "Organisations",
+    "quickBilling": "Facturation",
+    "quickConfig": "Configuration",
+    "quickSecurityAudit": "Audit Sécurité",
+    "loggedInAs": "🔐 Vous êtes connecté en tant que Superowner. Vous avez accès complet à tous les systèmes."
   }
 }

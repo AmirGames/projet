@@ -25,7 +25,7 @@ interface AuditLogsResponse {
 }
 
 export default function AuditLogsPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('adminAuditLogs');
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

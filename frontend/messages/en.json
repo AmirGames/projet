@@ -1277,5 +1277,109 @@
     "call": "Call",
     "location": "Location",
     "notFound": "Order not found"
+  },
+  "adminDashboard": {
+    "title": "Admin Dashboard",
+    "loading": "Loading...",
+    "stats": "Statistics"
+  },
+  "adminAnalytics": {
+    "title": "Analytics",
+    "revenue": "Revenue",
+    "orders": "Orders",
+    "users": "Users"
+  },
+  "adminAuditLogs": {
+    "title": "Audit Logs",
+    "date": "Date",
+    "action": "Action",
+    "user": "User",
+    "status": "Status"
+  },
+  "adminCategories": {
+    "title": "Categories",
+    "add": "Add Category",
+    "edit": "Edit",
+    "delete": "Delete",
+    "name": "Name"
+  },
+  "adminCommissions": {
+    "title": "Commissions",
+    "rate": "Rate",
+    "amount": "Amount",
+    "period": "Period"
+  },
+  "adminCustomers": {
+    "title": "Customers",
+    "email": "Email",
+    "name": "Name",
+    "orders": "Orders",
+    "status": "Status"
+  },
+  "adminMerchants": {
+    "title": "Merchants",
+    "name": "Name",
+    "email": "Email",
+    "status": "Status",
+    "revenue": "Revenue"
+  },
+  "adminOrders": {
+    "title": "Orders",
+    "number": "Order #",
+    "customer": "Customer",
+    "amount": "Amount",
+    "status": "Status",
+    "date": "Date"
+  },
+  "adminProducts": {
+    "title": "Products",
+    "name": "Name",
+    "sku": "SKU",
+    "price": "Price",
+    "category": "Category",
+    "status": "Status",
+    "add": "Add Product"
+  },
+  "adminSettings": {
+    "title": "Settings",
+    "general": "General",
+    "security": "Security",
+    "save": "Save Settings"
+  },
+  "adminStores": {
+    "title": "Stores",
+    "name": "Name",
+    "city": "City",
+    "status": "Status",
+    "address": "Address"
+  },
+  "adminTickets": {
+    "title": "Support Tickets",
+    "subject": "Subject",
+    "status": "Status",
+    "priority": "Priority",
+    "created": "Created"
+  },
+  "superAdminDashboard": {
+    "loading": "Loading...",
+    "title": "Superowner Dashboard",
+    "subtitle": "Full overview of the platform",
+    "criticalAlerts": "{count} Critical Alert(s)",
+    "criticalAlertsSubtitle": "Immediate attention required",
+    "totalRevenue": "Total Revenue",
+    "platformFee": "Platform Fees",
+    "organizations": "Organizations",
+    "systemHealth": "System Health",
+    "systemHealthTitle": "View system health details",
+    "totalUsers": "Total Users",
+    "totalUsersSubtitle": "Active customers on the platform",
+    "mrr": "Recurring Revenue (MRR)",
+    "mrrSubtitle": "Monthly recurring revenue",
+    "quickActions": "Quick Actions",
+    "quickOrganizations": "Organizations",
+    "quickBilling": "Billing",
+    "quickConfig": "Configuration",
+    "quickSecurityAudit": "Security Audit",
+    "loggedInAs": "🔐 You are logged in as Superowner. You have full access to all systems."
   }
 }

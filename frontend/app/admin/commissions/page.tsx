@@ -28,7 +28,7 @@ interface CommissionsResponse {
 }
 
 export default function CommissionsPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('adminCommissions');
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [summary, setSummary] = useState({ totalAmount: 0, count: 0 });
   const [loading, setLoading] = useState(true);

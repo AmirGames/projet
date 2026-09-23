@@ -16,7 +16,7 @@ interface Order {
 }
 
 export default function AdminOrders() {
-  const t = useTranslations('common');
+  const t = useTranslations('adminOrders');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('ALL');

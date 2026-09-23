@@ -21,7 +21,7 @@ interface AdminStats {
 }
 
 export default function AdminDashboard() {
-  const t = useTranslations('common');
+  const t = useTranslations('adminDashboard');
   const router = useRouter();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);

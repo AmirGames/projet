@@ -14,7 +14,7 @@ interface Analytics {
 }
 
 export default function AdminAnalytics() {
-  const t = useTranslations('common');
+  const t = useTranslations('adminAnalytics');
   const [analytics, setAnalytics] = useState<Analytics>({
     totalRevenue: 0,
     totalOrders: 0,

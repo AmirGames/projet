@@ -31,7 +31,7 @@ interface MerchantResponse {
 }
 
 export default function MerchantsPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('adminMerchants');
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

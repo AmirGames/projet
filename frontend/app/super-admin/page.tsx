@@ -20,7 +20,7 @@ interface Stats {
 }
 
 export default function SuperAdminDashboard() {
-  const t = useTranslations('common');
+  const t = useTranslations('superownerDashboard');
   const router = useRouter();
   const t = useTranslations('superadminDashboard');
   const [stats, setStats] = useState<Stats | null>(null);

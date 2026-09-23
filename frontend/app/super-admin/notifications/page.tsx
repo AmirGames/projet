@@ -19,7 +19,7 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('superownerNotifications');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

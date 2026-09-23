@@ -28,7 +28,7 @@ const COULEURS_ORG: Record<string, string> = {
 };
 
 export default function BoutiquesAdminPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('adminStores');
   const [boutiques, setBoutiques] = useState<Boutique[]>([]);
   const [total, setTotal] = useState(0);
   const [recherche, setRecherche] = useState('');

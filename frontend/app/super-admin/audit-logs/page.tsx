@@ -16,7 +16,7 @@ interface AuditLog {
 }
 
 export default function AuditLogsPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('superownerAuditLogs');
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

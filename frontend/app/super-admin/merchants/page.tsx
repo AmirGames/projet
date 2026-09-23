@@ -20,7 +20,7 @@ interface Merchant {
 }
 
 export default function MerchantsPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('superownerOrganizations');
   const router = useRouter();
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);

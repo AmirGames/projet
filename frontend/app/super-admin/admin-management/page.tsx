@@ -15,7 +15,7 @@ interface Admin {
 }
 
 export default function AdminManagementPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('superownerUserManagement');
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

@@ -16,7 +16,7 @@ interface Product {
 }
 
 export default function AdminProducts() {
-  const t = useTranslations('common');
+  const t = useTranslations('adminProducts');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

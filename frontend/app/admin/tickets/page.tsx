@@ -27,7 +27,7 @@ interface TicketsResponse {
 }
 
 export default function TicketsPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('adminTickets');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

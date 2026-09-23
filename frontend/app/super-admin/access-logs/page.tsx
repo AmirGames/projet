@@ -19,7 +19,7 @@ interface AccessLog {
 }
 
 export default function AccessLogsPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('superownerAccessLogs');
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

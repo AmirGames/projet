@@ -15,7 +15,7 @@ interface Customer {
 }
 
 export default function AdminCustomers() {
-  const t = useTranslations('common');
+  const t = useTranslations('adminCustomers');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

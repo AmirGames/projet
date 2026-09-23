@@ -19,7 +19,7 @@ interface StoreSettings {
 }
 
 export default function AdminSettings() {
-  const t = useTranslations('common');
+  const t = useTranslations('adminSettings');
   const [settings, setSettings] = useState<StoreSettings>({
     name: '',
     description: '',

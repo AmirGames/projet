@@ -25,7 +25,7 @@ interface CommissionData {
 }
 
 export default function AnalyticsPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('superownerAnalytics');
   const [data, setData] = useState<CommissionData | null>(null);
   const [loading, setLoading] = useState(true);
 

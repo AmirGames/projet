@@ -21,7 +21,7 @@ interface Commission {
 }
 
 export default function CommissionsPage() {
-  const t = useTranslations('common');
+  const t = useTranslations('superownerDashboard');
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
