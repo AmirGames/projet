@@ -59,6 +59,8 @@ export default function DashboardPage() {
             router.push('/merchant');
           } else if (isDriver) {
             router.push('/driver');
+          } else if (isCustomer) {
+            router.push('/client/orders');
           }
         }
         // Sinon, on affiche le choix
@@ -90,12 +92,12 @@ export default function DashboardPage() {
     );
   }
 
-  if (!isMerchant && !isDriver) {
+  if (!isMerchant && !isDriver && !isCustomer && !isSuperOwner) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white mb-4">Aucun rôle trouvé</h1>
-          <p className="text-slate-400 mb-8">Vous devez être commerçant ou livreur pour accéder à cet espace.</p>
+          <p className="text-slate-400 mb-8">Vous n'avez accès à aucun espace. Contactez l'administrateur.</p>
           <Link href="/" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition">
             Retour à l'accueil
           </Link>
