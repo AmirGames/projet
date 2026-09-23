@@ -250,7 +250,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 | **API** (`backend/scripts/verification/`) | 42 | **1382** |
 | **Navigateur** (`frontend/scripts/`) | 27 | **701** |
 
-Tout est vert au dernier passage complet (26 septembre).
+Tout est vert au dernier passage complet (23 septembre).
 
 `verif-domaines` n'a pas tourné : il demande un site construit avec les
 trois domaines.
