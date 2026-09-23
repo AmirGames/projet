@@ -120,11 +120,7 @@ export default function RoleSelectionPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Chargement...</div>
-      </div>
-    );
+    return <div className="min-h-screen bg-gray-900 flex items-center justify-center"><div className="text-white">Chargement...</div></div>;
   }
 
   return (
