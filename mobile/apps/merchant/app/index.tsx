@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, FlatList, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = 'http://192.168.0.80:3001';
 
@@ -35,32 +34,6 @@ export default function MerchantApp() {
   const [accessToken, setAccessToken] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [storeId, setStoreId] = useState('');
-  const [checkingSession, setCheckingSession] = useState(true);
-
-  useEffect(() => {
-    checkSession();
-  }, []);
-
-  const checkSession = async () => {
-    try {
-      const savedEmail = await AsyncStorage.getItem('userEmail');
-      const savedToken = await AsyncStorage.getItem('accessToken');
-      const savedOrgId = await AsyncStorage.getItem('orgId');
-
-      if (savedEmail && savedToken && savedOrgId) {
-        setEmail(savedEmail);
-        setAccessToken(savedToken);
-        setIsLoggedIn(true);
-        setScreen('orders');
-        setTab('account');
-        await fetchOrders(savedToken, savedOrgId);
-      }
-    } catch (error) {
-      console.error('Session check failed:', error);
-    } finally {
-      setCheckingSession(false);
-    }
-  };
 
   const fetchOrders = async (token, orgId) => {
     try {
@@ -124,9 +97,6 @@ export default function MerchantApp() {
         setTab('account');
 
         if (data.organization) {
-          await AsyncStorage.setItem('userEmail', email);
-          await AsyncStorage.setItem('accessToken', data.accessToken);
-          await AsyncStorage.setItem('orgId', data.organization.id);
           await fetchOrders(data.accessToken, data.organization.id);
         }
       } else {
@@ -140,14 +110,7 @@ export default function MerchantApp() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem('userEmail');
-      await AsyncStorage.removeItem('accessToken');
-      await AsyncStorage.removeItem('orgId');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const handleLogout = () => {
     setIsLoggedIn(false);
     setEmail('');
     setPassword('');
@@ -194,19 +157,6 @@ export default function MerchantApp() {
       console.error(error);
     }
   };
-
-  // Checking session screen
-  if (checkingSession) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <StatusBar style="light" />
-        <View style={[styles.container, styles.centerContent]}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Vérification de la session...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   // Login Screen
   if (screen === 'login') {
@@ -497,16 +447,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#007AFF',
-  },
-  centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#fff',
-    fontSize: 16,
-    marginTop: 20,
-    fontWeight: '500',
   },
   loginContainer: {
     flex: 1,
