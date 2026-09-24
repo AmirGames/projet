@@ -8,6 +8,7 @@ import { StoreSwitcher } from '@/components/StoreSwitcher';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { CurrentStoreProvider } from '@/lib/current-store';
+import { AlerteCommandes } from '@/components/AlerteCommandes';
 import { useStatutCompte } from '@/lib/use-statut-compte';
 import {
   Package,
@@ -244,6 +245,9 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
             <LanguageSwitcher />
           </div>
         </header>
+
+        {/* Une commande attend d'être acceptée : ça sonne, sur toutes les pages. */}
+        {!restreint && <AlerteCommandes orgId={orgId} />}
 
         {/* Un commerce pas encore validé prépare sa boutique mais ne peut pas
             l'ouvrir : le bandeau le dit sur chaque page, pas seulement au

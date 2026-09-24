@@ -7,6 +7,8 @@ import { Clock, CheckCircle, AlertCircle, Package, Eye, Truck } from 'lucide-rea
 import Link from 'next/link';
 
 import { useCurrentStore } from '@/lib/current-store';
+import { ReponseCommande } from '@/components/ReponseCommande';
+import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
 
 import { euro } from '@/lib/format';
 
@@ -35,6 +37,14 @@ interface Order {
   deliveryMode?: 'OWN' | 'PLATFORM' | null;
   items: OrderItem[];
   createdAt: string;
+  customerPhone?: string | null;
+  pickupTime?: string | null;
+  /** L'heure limite pour répondre, tant que la commande est en attente. */
+  echeance?: string | null;
+  estimatedReadyAt?: string | null;
+  preparationMinutes?: number | null;
+  rejectionReason?: string | null;
+  rejectionNote?: string | null;
 }
 
 type OrderStatus = 'PENDING' | 'ACCEPTED' | 'PREPARING' | 'REJECTED' | 'READY' | 'COMPLETED';
@@ -85,7 +95,6 @@ export default function OrdersPage() {
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<any>(null);
-  const [updating, setUpdating] = useState<string | null>(null);
   const [useOwnDelivery, setUseOwnDelivery] = useState(false);
   const [showDeliveryModal, setShowDeliveryModal] = useState<string | null>(null);
   const [availableDeliveryMen, setAvailableDeliveryMen] = useState<any[]>([]);
@@ -101,6 +110,27 @@ export default function OrdersPage() {
       fetchStats();
       fetchDeliverySettings();
     }
+  }, [storeId, filter, page]);
+
+  // Le bandeau des nouvelles commandes mène ici, filtré sur celles à accepter.
+  // Lu après le premier affichage : le rendu serveur ne connaît pas l'adresse.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('filtre') === 'PENDING') {
+      setFilter('PENDING');
+    }
+  }, []);
+
+  // Une commande arrive, ou quelqu'un y répond : la liste se relit seule.
+  useEffect(() => {
+    if (!storeId) return;
+
+    const relire = () => {
+      fetchOrders();
+      fetchStats();
+    };
+
+    window.addEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
+    return () => window.removeEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
   }, [storeId, filter, page]);
 
   const fetchOrders = async () => {
@@ -153,34 +183,6 @@ export default function OrdersPage() {
       setStats(data);
     } catch (error) {
       console.error('Error fetching stats:', error);
-    }
-  };
-
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    try {
-      setUpdating(orderId);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-
-      const response = await fetch(`${API_URL}/api/order-management/${storeId}/${orderId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update order status');
-      }
-
-      const data = await response.json();
-      setOrders(orders.map(o => o.id === orderId ? data.order : o));
-      fetchStats();
-    } catch (error) {
-      console.error('Error updating order status:', error);
-    } finally {
-      setUpdating(null);
     }
   };
 
@@ -390,7 +392,12 @@ export default function OrdersPage() {
             orders.map((order) => {
               const StatusIcon = statusIcons[order.status];
               return (
-                <div key={order.id} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                <div
+                  key={order.id}
+                  className={`bg-gray-800 border rounded-lg p-6 ${
+                    order.status === 'PENDING' ? 'border-yellow-500/70' : 'border-gray-700'
+                  }`}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Order Info */}
                     <div>
@@ -448,25 +455,21 @@ export default function OrdersPage() {
                       </div>
                     </div>
 
-                    {/* Status Change */}
+                    {/* Répondre à la commande, puis la faire avancer. */}
                     <div>
-                      <p className="text-sm font-semibold text-gray-300 mb-3">{t('statusChange')}</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(['ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
-                          <button
-                            key={status}
-                            onClick={() => handleStatusChange(order.id, status)}
-                            disabled={updating === order.id || order.status === status}
-                            className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
-                              order.status === status
-                                ? 'bg-gray-600/50 text-gray-400 border border-gray-600 cursor-default'
-                                : `${statusColors[status]} border hover:opacity-80`
-                            }`}
-                          >
-                            {updating === order.id ? '...' : t(`statusLabel.${status}`)}
-                          </button>
-                        ))}
-                      </div>
+                      <p className="text-sm font-semibold text-gray-300 mb-3">
+                        {order.status === 'PENDING' ? 'Nouvelle commande' : t('statusChange')}
+                      </p>
+                      {storeId && (
+                        <ReponseCommande
+                          storeId={storeId}
+                          commande={order}
+                          surChangement={() => {
+                            fetchOrders();
+                            fetchStats();
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

@@ -17,6 +17,8 @@ import {
 import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
+import { ReponseCommande } from '@/components/ReponseCommande';
+import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
 
 import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -56,6 +58,11 @@ interface Commande {
   notes?: string | null;
   createdAt: string;
   items?: LigneCommande[];
+  echeance?: string | null;
+  estimatedReadyAt?: string | null;
+  preparationMinutes?: number | null;
+  rejectionReason?: string | null;
+  rejectionNote?: string | null;
 }
 
 const STATUTS: { valeur: string; libelle: string }[] = [
@@ -93,7 +100,8 @@ export default function DetailCommandePage() {
   const charger = useCallback(async () => {
     if (!storeId || !orderId) return;
 
-    setLoading(true);
+    // Pas de « Chargement… » à la relecture : la page ne doit pas clignoter à
+    // chaque commande qui arrive.
     setErreur('');
 
     try {
@@ -124,33 +132,11 @@ export default function DetailCommandePage() {
     if (!boutiqueEnCours) charger();
   }, [boutiqueEnCours, charger]);
 
-  const changerStatut = async (statut: string) => {
-    setEnregistrement(true);
-    setMessage('');
-
-    try {
-      const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/api/order-management/${storeId}/${orderId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: statut }),
-      });
-
-      const donnees = await reponse.json();
-
-      if (!reponse.ok) {
-        setMessage(`❌ ${donnees.error || 'Changement de statut impossible'}`);
-        return;
-      }
-
-      setMessage('✅ Statut mis à jour');
-      await charger();
-    } catch {
-      setMessage(t('connectionErrorFinal'));
-    } finally {
-      setEnregistrement(false);
-    }
-  };
+  // Un collègue a répondu, ou le délai de réponse a expiré : on relit.
+  useEffect(() => {
+    window.addEventListener(EVENEMENT_COMMANDES_CHANGEES, charger);
+    return () => window.removeEventListener(EVENEMENT_COMMANDES_CHANGEES, charger);
+  }, [charger]);
 
   const ajouterNote = async () => {
     if (!note.trim()) return;
@@ -378,23 +364,12 @@ export default function DetailCommandePage() {
           </div>
 
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <h2 className="text-lg font-bold mb-4">Changer le statut</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {STATUTS.map((statut) => (
-                <button
-                  key={statut.valeur}
-                  onClick={() => changerStatut(statut.valeur)}
-                  disabled={enregistrement || commande.status === statut.valeur}
-                  className={`px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-40 ${
-                    commande.status === statut.valeur
-                      ? 'bg-gray-600 text-white'
-                      : 'bg-gray-700 hover:bg-gray-600'
-                  }`}
-                >
-                  {statut.libelle}
-                </button>
-              ))}
-            </div>
+            <h2 className="text-lg font-bold mb-4">
+              {commande.status === 'PENDING' ? 'Accepter ou refuser' : 'Suivi de la commande'}
+            </h2>
+            {storeId && (
+              <ReponseCommande storeId={storeId} commande={commande} surChangement={charger} />
+            )}
           </div>
 
           <Link
