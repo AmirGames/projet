@@ -157,7 +157,7 @@ export default function MerchantApp() {
   // Login Screen
   if (screen === 'login') {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <StatusBar style="light" />
         <View style={styles.loginContainer}>
           <Text style={styles.title}>Zupone</Text>
@@ -196,14 +196,14 @@ export default function MerchantApp() {
             )}
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   // Orders List Screen
   if (screen === 'orders') {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <StatusBar style="light" />
         <View style={styles.dashboardContainer}>
           <View style={styles.header}>
@@ -248,7 +248,7 @@ export default function MerchantApp() {
             }
           />
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
