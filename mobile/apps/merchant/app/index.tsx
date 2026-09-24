@@ -6,8 +6,7 @@ import { API_URL, apiFetch, formatEuros, setUnauthorizedHandler } from '../lib/a
 import { clearSession, DEFAULT_PREFS, loadPrefs, loadSession, Prefs, savePrefs, saveSession, Session } from '../lib/session';
 import { isPending, isToday, Order, statusColor, statusLabel } from '../lib/orders';
 import { NewOrderEvent, useOrderAlerts } from '../lib/useOrderAlerts';
-import * as Notifications from 'expo-notifications';
-import { orderFromResponse, PushOrderData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
+import { onOrderNotificationTap, PushOrderData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
 import StatsScreen from '../components/screens/StatsScreen';
 import MenuScreen from '../components/screens/MenuScreen';
 import StoreScreen from '../components/screens/StoreScreen';
@@ -48,7 +47,6 @@ export default function MerchantApp() {
   const [banner, setBanner] = useState<NewOrderEvent | null>(null);
   const [pushSetup, setPushSetup] = useState<PushSetup | null>(null);
   const [pendingOpen, setPendingOpen] = useState<PushOrderData | null>(null);
-  const lastResponse = Notifications.useLastNotificationResponse();
 
   const token = session?.accessToken || '';
   const currentStore = stores.find((s) => s.id === storeId);
@@ -173,13 +171,7 @@ export default function MerchantApp() {
   }, [token]);
 
   // Toucher une notification ouvre la commande, dans la bonne boutique.
-  useEffect(() => {
-    const target = orderFromResponse(lastResponse ?? null);
-    if (target) {
-      setPendingOpen(target);
-      Notifications.clearLastNotificationResponse();
-    }
-  }, [lastResponse]);
+  useEffect(() => onOrderNotificationTap(setPendingOpen), []);
 
   const pendingCount = orders.filter(isPending).length;
 
