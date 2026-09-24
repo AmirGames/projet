@@ -76,6 +76,15 @@ export class OrderManagementService {
               select: { name: true, email: true },
             },
             payments: true,
+            // La recherche du livreur part dès « En préparation » : la liste
+            // dit où elle en est.
+            delivery: {
+              select: {
+                status: true,
+                driverId: true,
+                driver: { select: { name: true, phone: true } },
+              },
+            },
           },
           orderBy: { createdAt: "desc" },
         }),
@@ -197,6 +206,10 @@ export class OrderManagementService {
         this.getMessageForStatus(status, updated.deliveryType),
         { email: status === "READY" && updated.deliveryType === "PICKUP" }
       );
+
+      // En préparation : le livreur le plus proche est appelé tout de suite,
+      // pour arriver quand la commande sort de la cuisine.
+      await OrderAcceptanceService.surAvancement(updated);
 
       return updated;
     } catch (error) {

@@ -500,6 +500,8 @@ export class DispatchService {
 
     emitDeliveryUpdate(course.orderId, { driverId, status: "ACCEPTED" });
     enArrierePlan(Notifier.etapeLivraisonClient(course.orderId, "ACCEPTED"));
+    // Le commerçant est prévenu qu'un livreur arrive, écran ouvert ou non.
+    enArrierePlan(Notifier.livreurTrouveBoutique(course.orderId));
 
     return course;
   }

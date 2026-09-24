@@ -735,6 +735,9 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
         id: delivery.id,
         orderId: delivery.orderId,
         status: delivery.status,
+        // Le livreur arrive pendant la préparation : il ne prend la commande
+        // qu'une fois que le commerçant l'a déclarée prête.
+        orderStatus: delivery.order?.status,
         pickupStore: delivery.order?.store?.name || "",
         pickupAddress: adresseRetrait(delivery.order?.store),
         deliveryAddress: adresseLivraison(delivery.order),
@@ -823,6 +826,26 @@ router.patch(
 
       if (course.driverId !== livreur.id) {
         throw new ApiError(403, "Acceptez d'abord cette course", "NOT_ASSIGNED");
+      }
+
+      /**
+       * La commande ne quitte le commerce qu'une fois prête.
+       *
+       * Le livreur est appelé dès « En préparation » pour avoir le temps
+       * d'arriver : il attend alors que le commerçant la déclare prête.
+       */
+      if (status === "PICKED_UP" && course.status !== "PICKED_UP") {
+        const commande = await db.order.findUnique({
+          where: { id: course.orderId },
+          select: { status: true },
+        });
+        if (commande && commande.status !== "READY") {
+          throw new ApiError(
+            409,
+            "La commande est encore en préparation : attendez que le commerçant la déclare prête.",
+            "ORDER_NOT_READY"
+          );
+        }
       }
 
       /**

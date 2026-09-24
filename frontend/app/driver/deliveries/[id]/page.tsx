@@ -73,6 +73,8 @@ interface Delivery {
   id: string;
   orderId: string;
   status: string;
+  /** L'état de la commande côté commerce : elle ne se prend qu'une fois prête. */
+  orderStatus?: string;
   pickupAddress: string;
   pickupStore?: string;
   pickupLat?: number | null;
@@ -235,6 +237,9 @@ export default function DeliveryTrackingPage() {
   // Le GPS ne le trouve pas, ou trop mal pour trancher : il peut se déclarer
   // arrivé plutôt que de rester bloqué devant la porte.
   const gpsIncertain = !location || (precision != null && precision > PRECISION_SUFFISANTE_M);
+
+  // Sans l'information (ancien serveur), on ne bloque pas le livreur.
+  const commandePrete = !delivery?.orderStatus || delivery.orderStatus === 'READY';
 
   const currentStep = !delivery
     ? 0
@@ -577,8 +582,9 @@ export default function DeliveryTrackingPage() {
                       Vous êtes arrivé chez {delivery.pickupStore || 'le commerce'}
                     </p>
                     <p className="text-green-300/80 text-sm">
-                      Vérifiez la commande, puis glissez pour la prendre en charge. Le GPS partira
-                      aussitôt vers le client.
+                      {commandePrete
+                        ? 'Vérifiez la commande, puis glissez pour la prendre en charge. Le GPS partira aussitôt vers le client.'
+                        : 'La commande est encore en préparation. Vous pourrez la prendre en charge dès que le commerçant la déclarera prête.'}
                     </p>
                   </div>
 
@@ -600,11 +606,18 @@ export default function DeliveryTrackingPage() {
                   )}
 
                   <div ref={priseEnChargeRef} />
-                  <GlisserPourValider
-                    libelle="Glisser pour prendre en charge"
-                    onValide={prendreEnCharge}
-                    enCours={updating}
-                  />
+                  {commandePrete ? (
+                    <GlisserPourValider
+                      libelle="Glisser pour prendre en charge"
+                      onValide={prendreEnCharge}
+                      enCours={updating}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 rounded-lg border border-amber-700 bg-amber-900/30 p-4 text-amber-200">
+                      <Loader size={18} className="animate-spin" />
+                      <span className="text-sm font-medium">En attente : commande en préparation…</span>
+                    </div>
+                  )}
                 </div>
               )}
 

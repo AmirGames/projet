@@ -4,6 +4,7 @@ import { logger } from "../config/logger";
 import { emitWebhook } from "./webhook.service";
 import { EmailService } from "./email.service";
 import { DispatchService } from "./dispatch.service";
+import { Notifier, enArrierePlan } from "./notifier.service";
 import { emitOrderUpdate, emitNotification, emitMerchantEvent } from "../config/socket";
 
 /**
@@ -374,6 +375,47 @@ export class OrderAcceptanceService {
   /** La commande attend-elle un livreur de la plateforme ? */
   static aUnLivreurAChercher(commande: { deliveryType: string; deliveryMode: string | null }) {
     return commande.deliveryType === "DELIVERY" && commande.deliveryMode === "PLATFORM";
+  }
+
+  /**
+   * Le commerçant fait avancer la commande : la recherche du livreur suit.
+   *
+   * « En préparation » lance la recherche tout de suite, pour que le livreur
+   * ait le temps de rejoindre la boutique pendant que la cuisine travaille.
+   * « Prête » la lance aussi si elle ne l'a pas encore été — une commande
+   * passée directement de « Acceptée » à « Prête » ne doit pas rester sans
+   * livreur. Une course déjà créée n'est pas recréée.
+   */
+  static async surAvancement(commande: {
+    id: string;
+    status: string;
+    deliveryType: string;
+    deliveryMode: string | null;
+  }) {
+    if (commande.status !== "PREPARING" && commande.status !== "READY") return;
+    if (!this.aUnLivreurAChercher(commande)) return;
+
+    const course = await db.orderDelivery.findUnique({
+      where: { orderId: commande.id },
+      select: { id: true, driverId: true, status: true },
+    });
+
+    if (!course) {
+      await this.chercherUnLivreur(commande.id);
+      return;
+    }
+
+    // Prête, et un livreur est déjà en route : il peut venir la prendre.
+    if (commande.status === "READY" && course.driverId && course.status === "ACCEPTED") {
+      enArrierePlan(
+        Notifier.pushLivreur(course.driverId, {
+          title: "Commande prête",
+          body: "Le commerce a terminé la commande : vous pouvez la prendre en charge.",
+          url: `/driver/deliveries/${course.id}`,
+          tag: `commande-prete-${course.id}`,
+        })
+      );
+    }
   }
 
   /** Crée la course et la propose, sans faire échouer l'appelant. */

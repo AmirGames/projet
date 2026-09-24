@@ -224,6 +224,16 @@ export default function MerchantApp() {
     }
   });
 
+  // Un livreur a accepté une commande en préparation : il arrive au commerce.
+  useRealtimeEvent('livreur-trouve', (e: { orderId: string; storeId?: string; livreur?: string; numero?: string }) => {
+    if (e.storeId && e.storeId !== storeIdRef.current) return;
+    scheduleReload();
+    Alert.alert(
+      '🛵 Livreur trouvé',
+      `${e.livreur || 'Un livreur'} a accepté la commande #${e.numero || e.orderId.slice(-6).toUpperCase()} et arrive au commerce.`
+    );
+  });
+
   const { connected, ring } = useOrderAlerts({
     token,
     storeId,

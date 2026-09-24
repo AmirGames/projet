@@ -69,9 +69,13 @@ export function deliveryStep(order: Order): { icon: string; text: string; done?:
   if (order.deliveryType !== 'DELIVERY') return null;
   const d = order.delivery;
   const who = d?.driver?.name?.split(' ')[0] || 'Le livreur';
+  // Le livreur n'est cherché qu'à partir de « En préparation ».
+  if (!d && ['PENDING', 'ACCEPTED'].includes((order.status || '').toUpperCase())) {
+    return { icon: '⏳', text: 'Un livreur sera appelé dès que la commande passe en préparation' };
+  }
   switch (d?.status) {
     case 'ACCEPTED':
-      return { icon: '🛵', text: `${who} vient récupérer la commande` };
+      return { icon: '🛵', text: `Livreur trouvé : ${who} arrive au commerce` };
     case 'PICKED_UP':
       return { icon: '📦', text: `Récupérée par ${who}${d.pickupTime ? ` à ${hhmm(d.pickupTime)}` : ''} · en route vers le client` };
     case 'DELIVERED':
