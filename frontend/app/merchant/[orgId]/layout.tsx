@@ -77,7 +77,11 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
   const navSections = [
     {
       title: null,
-      items: [{ label: 'Dashboard', icon: Home, href: `/merchant/${orgId}/dashboard` }],
+      items: [
+        { label: 'Dashboard', icon: Home, href: `/merchant/${orgId}/dashboard` },
+        // Retour au choix du commerce, d'où l'on peut aussi en créer un.
+        { label: 'Mes commerces', icon: LayoutGrid, href: '/merchant' },
+      ],
     },
     {
       title: 'Ventes',
@@ -132,7 +136,10 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
   const sectionsRestreintes = [
     {
       title: null,
-      items: [{ label: 'Support', icon: MessageCircle, href: `/merchant/${orgId}/support` }],
+      items: [
+        { label: 'Mes commerces', icon: LayoutGrid, href: '/merchant' },
+        { label: 'Support', icon: MessageCircle, href: `/merchant/${orgId}/support` },
+      ],
     },
   ];
 
@@ -203,18 +210,6 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
               })}
             </div>
           ))}
-
-          {/* Retour au choix du commerce, d'où l'on peut aussi en créer un. */}
-          <div className="pt-3 mt-3 border-t border-gray-700">
-            <Link
-              href="/merchant"
-              title={sidebarOpen ? undefined : 'Mes commerces'}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-700 hover:text-white"
-            >
-              <LayoutGrid size={20} className="flex-shrink-0" />
-              {sidebarOpen && <span className="truncate">Mes commerces</span>}
-            </Link>
-          </div>
         </nav>
 
         {/* Logout */}
