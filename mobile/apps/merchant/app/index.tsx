@@ -13,6 +13,7 @@ import StoreScreen from '../components/screens/StoreScreen';
 import SettingsScreen from '../components/screens/SettingsScreen';
 import AccountScreen from '../components/screens/AccountScreen';
 import OrderDetailScreen from '../components/screens/OrderDetailScreen';
+import DashboardScreen from '../components/screens/DashboardScreen';
 import ReviewsScreen from '../components/screens/ReviewsScreen';
 import NotificationsScreen from '../components/screens/NotificationsScreen';
 import SupportScreen from '../components/screens/SupportScreen';
@@ -75,7 +76,7 @@ export default function MerchantApp() {
   const loadOrders = useCallback(async (accessToken: string, stId: string) => {
     if (!accessToken || !stId) return;
     try {
-      const data = await apiFetch<any>(`/api/orders?storeId=${stId}`, accessToken);
+      const data = await apiFetch<any>(`/api/orders?storeId=${stId}&limit=300`, accessToken);
       // Une réponse d'une boutique qu'on a quittée entre-temps est ignorée.
       if (stId === storeIdRef.current) setOrders(data.orders || data.data || data || []);
     } catch (error) {
@@ -492,34 +493,22 @@ export default function MerchantApp() {
       );
     }
     return (
-      <>
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Tableau de Bord</Text>
-            {headerSubtitle}
-          </View>
-          {bell}
-        </View>
-        <ScrollView
-          style={styles.dashboardContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-        >
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{todayOrders.length}</Text>
-              <Text style={styles.statLabel}>Aujourd'hui</Text>
+      <DashboardScreen
+        header={
+          <View style={styles.header}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Tableau de Bord</Text>
+              {headerSubtitle}
             </View>
-            <TouchableOpacity style={[styles.statCard, pendingCount > 0 && styles.statCardAlert]} onPress={() => setTab('commandes-jour')}>
-              <Text style={[styles.statValue, pendingCount > 0 && { color: '#fff' }]}>{pendingCount}</Text>
-              <Text style={[styles.statLabel, pendingCount > 0 && { color: '#fff' }]}>En attente</Text>
-            </TouchableOpacity>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{orders.filter((o) => (o.status || '').toUpperCase() === 'PREPARING').length}</Text>
-              <Text style={styles.statLabel}>En préparation</Text>
-            </View>
+            {bell}
           </View>
-        </ScrollView>
-      </>
+        }
+        orders={orders}
+        refreshing={refreshing}
+        onRefresh={refresh}
+        onOpenOrder={setSelectedOrder}
+        onSeeOrders={() => setTab('commandes-jour')}
+      />
     );
   };
 
@@ -668,9 +657,6 @@ const styles = StyleSheet.create({
   orderCardPending: {
     borderLeftWidth: 4,
     borderLeftColor: '#FFA500',
-  },
-  statCardAlert: {
-    backgroundColor: '#FFA500',
   },
   tabBadge: {
     position: 'absolute',
@@ -1028,37 +1014,5 @@ const styles = StyleSheet.create({
   tabLabelActive: {
     color: '#007AFF',
     fontWeight: '600',
-  },
-  dashboardContent: {
-    flex: 1,
-    paddingHorizontal: 12,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingVertical: 20,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
   },
 });

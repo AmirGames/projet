@@ -37,5 +37,6 @@ export async function apiFetch<T = any>(
   return data as T;
 }
 
-export const formatEuros = (value: unknown) =>
-  `${(parseFloat(String(value ?? 0)) || 0).toFixed(2)} €`;
+const euros = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+export const formatEuros = (value: unknown) => `${euros.format(parseFloat(String(value ?? 0)) || 0)} €`;
