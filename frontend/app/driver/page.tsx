@@ -12,6 +12,7 @@ import { DossierLivreur } from '@/components/DossierLivreur';
 import { NotesRecues } from '@/components/NotesRecues';
 import { PauseLivreur } from '@/components/PauseLivreur';
 import { ActiverNotifications } from '@/components/ActiverNotifications';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Delivery {
@@ -62,7 +63,13 @@ export default function DriverDashboard() {
     loadDriverData();
   }, []);
 
-  const loadDriverData = async () => {
+  // Sa course en cours, son statut, ses gains : l'accueil suit ce que font le
+  // commerçant, le client et la plateforme.
+  useDonneesModifiees(['orders', 'drivers'], () => loadDriverData(true));
+
+  // silencieux : une relecture en direct qui échoue (réseau coupé un instant)
+  // ne renvoie pas le livreur à la connexion ; la suivante corrigera.
+  const loadDriverData = async (silencieux = false) => {
     const token = localStorage.getItem('driverToken');
     if (!token) {
       router.push('/driver/login');
@@ -115,6 +122,7 @@ export default function DriverDashboard() {
       setLoading(false);
     } catch (err) {
       console.error('Error loading driver data:', err);
+      if (silencieux) return;
       router.push('/driver/login');
     }
   };

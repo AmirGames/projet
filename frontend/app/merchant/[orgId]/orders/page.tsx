@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
 import { ReponseCommande } from '@/components/ReponseCommande';
 import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { euro } from '@/lib/format';
 
@@ -132,6 +133,17 @@ export default function OrdersPage() {
     window.addEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
     return () => window.removeEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
   }, [storeId, filter, page]);
+
+  // Ailleurs aussi : un collègue, le livreur, le client, une annulation
+  // automatique. La liste suit sans qu'on recharge.
+  useDonneesModifiees(
+    'orders',
+    () => {
+      fetchOrders();
+      fetchStats();
+    },
+    { storeId, actif: Boolean(storeId) }
+  );
 
   const fetchOrders = async () => {
     try {

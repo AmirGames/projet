@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowLeft, Clock, MapPin, ChevronRight } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Order {
@@ -52,7 +53,12 @@ export default function OrdersPage() {
     loadOrders();
   }, []);
 
-  const loadOrders = async () => {
+  // Acceptée, en route, livrée : chaque étape apparaît sans recharger.
+  useDonneesModifiees('orders', () => loadOrders(true));
+
+  // silencieux : une relecture en direct ne vide pas la liste le temps de la
+  // réponse.
+  const loadOrders = async (silencieux = false) => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -60,7 +66,7 @@ export default function OrdersPage() {
     }
 
     try {
-      setLoading(true);
+      if (!silencieux) setLoading(true);
       const response = await fetch(`${API_URL}/api/client/me/orders`, {
         headers: { Authorization: `Bearer ${token}` }
       });

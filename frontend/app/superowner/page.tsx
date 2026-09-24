@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useTranslations } from 'next-intl';
 import { Users, DollarSign, AlertCircle, Server, Lock, ChevronRight } from 'lucide-react';
 
@@ -39,6 +40,11 @@ export default function SuperOwnerDashboard() {
   useEffect(() => {
     fetchDashboardStats();
   }, []);
+
+  // Les chiffres portent sur toute la plateforme : n'importe quelle écriture
+  // peut les changer. Deux secondes suffisent pour qu'une rafale n'en
+  // provoque qu'une relecture.
+  useDonneesModifiees('*', () => fetchDashboardStats(), { delaiMs: 2000 });
 
   const fetchDashboardStats = async () => {
     try {

@@ -19,6 +19,7 @@ import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
 import { ReponseCommande } from '@/components/ReponseCommande';
 import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -141,6 +142,10 @@ export default function DetailCommandePage() {
     window.addEventListener(EVENEMENT_COMMANDES_CHANGEES, charger);
     return () => window.removeEventListener(EVENEMENT_COMMANDES_CHANGEES, charger);
   }, [charger]);
+
+  // Le livreur la récupère, le client l'annule, un collègue ajoute une note :
+  // la fiche suit.
+  useDonneesModifiees('orders', charger, { id: orderId, actif: Boolean(storeId && orderId) });
 
   const ajouterNote = async () => {
     if (!note.trim()) return;

@@ -14,6 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -138,8 +139,9 @@ export default function FicheBoutiquePage() {
 
   const jeton = () => localStorage.getItem('accessToken');
 
-  const charger = useCallback(async () => {
-    setChargement(true);
+  // silencieux : une relecture en direct ne remplace pas la fiche par la roue.
+  const charger = useCallback(async (silencieux = false) => {
+    if (!silencieux) setChargement(true);
     setErreur('');
 
     try {
@@ -165,6 +167,9 @@ export default function FicheBoutiquePage() {
   useEffect(() => {
     charger();
   }, [charger]);
+
+  // Ses commandes, son catalogue, ses horaires : la fiche suit la boutique.
+  useDonneesModifiees('*', () => charger(true), { storeId, delaiMs: 1000 });
 
   const ouvrirEdition = () => {
     if (!fiche) return;

@@ -4,6 +4,7 @@ import { loadEnv } from "./config/env";
 import { logger } from "./config/logger";
 import { createApp } from "./app";
 import { initializeSocket, brancherRedis } from "./config/socket";
+import { brancherAnnoncesCommandes } from "./middleware/diffusion";
 import { db } from "./services/db";
 import { ClosureJobs } from "./jobs/closure-jobs";
 import { DispatchJobs } from "./jobs/dispatch-jobs";
@@ -23,6 +24,10 @@ const httpServer = http.createServer(app);
 
 // Initialize Socket.IO
 initializeSocket(httpServer);
+
+// Toute écriture sur une commande, même hors requête (tâches de fond), est
+// annoncée aux écrans qui la montrent.
+brancherAnnoncesCommandes();
 
 // Start server
 const start = async () => {

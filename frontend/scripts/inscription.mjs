@@ -37,6 +37,9 @@ function base() {
   }
   return prisma;
 }
+/** Pour les suites qui doivent agir derrière l'API (vieillir une commande). */
+export const baseDeDonnees = base;
+
 const suffixe = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 export async function inscriptionVia(appeler, options) {

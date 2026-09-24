@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, MapPin, Clock, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { SuiviLivraison, type Course } from '@/components/SuiviLivraison';
 import { useOrderTracking } from '@/lib/use-order-tracking';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
@@ -69,6 +70,10 @@ export default function OrderTrackingPage() {
       loadOrderData();
     }
   }, [orderStatus]);
+
+  // Ce que le statut ne dit pas : un livreur attribué, une heure revue, un
+  // remboursement. La commande est relue à chaque écriture qui la touche.
+  useDonneesModifiees('orders', () => loadOrderData(), { id: orderId });
 
   // Chargé à l'arrivée, et quand la commande passe « terminée » en direct.
   useEffect(() => {

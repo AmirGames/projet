@@ -10,6 +10,7 @@ import { euro } from '@/lib/format';
 import { AnnulerCourse } from '@/components/AnnulerCourse';
 import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
 import { GlisserPourValider } from '@/components/GlisserPourValider';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -156,6 +157,10 @@ export default function DeliveryTrackingPage() {
     loadDeliveryData();
   }, [deliveryId]);
 
+  // La commande est annulée, le commerçant la déclare prête : la course suit.
+  // Le livreur ne reçoit que les annonces de ses propres courses.
+  useDonneesModifiees('orders', () => loadDeliveryData(true));
+
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
 
@@ -176,7 +181,8 @@ export default function DeliveryTrackingPage() {
     return () => navigator.geolocation.clearWatch(suivi);
   }, [envoyerPosition, positionRecue, erreurPosition]);
 
-  const loadDeliveryData = async () => {
+  // silencieux : une relecture en direct qui échoue garde la course affichée.
+  const loadDeliveryData = async (silencieux = false) => {
     const token = localStorage.getItem('driverToken');
     if (!token) {
       router.push('/driver/login');
@@ -198,6 +204,7 @@ export default function DeliveryTrackingPage() {
       setLoading(false);
     } catch (err) {
       console.error('Error loading delivery:', err);
+      if (silencieux) return;
       setError('Erreur lors du chargement de la livraison');
       setLoading(false);
     }

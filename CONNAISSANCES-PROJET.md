@@ -405,8 +405,22 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
   l'API. Une route qui écrit sans que ce soit utile à relayer (la position du
   livreur, un calcul) va dans `IGNOREES`.
 - Pour qu'un écran suive : `useDonneesModifiees('orders', charger, { storeId })`.
-- Un changement fait par une tâche de fond (hors requête HTTP) n'est pas vu par
-  le relais : l'annoncer avec `signalerModification()`.
+- **Les commandes sont annoncées depuis la base** (`services/db.ts`, middleware
+  Prisma) : toute écriture sur `Order` ou `OrderDelivery`, même d'une tâche de
+  fond ou de l'espace livreur, part en `ressource: 'orders'` vers le
+  commerçant, la plateforme, le client, le livreur et les suiveurs de la
+  commande. Les écritures d'une même commande sont regroupées (150 ms). La
+  position GPS seule (`driverLat`, `driverLng`…) n'est pas annoncée.
+- Pour toute autre donnée écrite par une tâche de fond (hors requête HTTP),
+  le relais ne voit rien : l'annoncer avec `signalerModification()`.
+- Une page qui se relit en direct ne doit pas se remplacer par
+  « Chargement… » : lui passer un chargement `silencieux`.
+- Pages branchées : commandes du commerçant (liste, fiche, tableau de bord),
+  commandes du client (liste, fiche), accueil, historique et course du
+  livreur, tableau de bord et fiche boutique de la plateforme. Vérifié par
+  `frontend/scripts/verif-commandes-direct.mjs`.
+- `/admin/orders` et `/admin/orders/[id]` ne sont pas branchées : ce sont des
+  brouillons (boutique codée en dur, fiche qui ne charge rien).
 
 **La vitrine (`/store/<slug>`)**
 - Son panier est un **panneau replié** : un script qui veut lire ses lignes doit

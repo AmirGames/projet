@@ -26,7 +26,9 @@ let relance: ReturnType<typeof setTimeout> | undefined;
 
 function jeton(): string | null {
   try {
-    return localStorage.getItem('accessToken');
+    // L'espace livreur a longtemps rangé sa session sous sa propre clé : une
+    // inscription de livreur ne remplit parfois que celle-là.
+    return localStorage.getItem('accessToken') || localStorage.getItem('driverToken');
   } catch {
     return null;
   }
@@ -215,7 +217,9 @@ interface OptionsModifications {
   storeId?: string | null;
   /** Ne retenir que les modifications de cette organisation. */
   orgId?: string | null;
-  /** Plusieurs écritures rapprochées ne déclenchent qu'une relecture. */
+  /** Ne retenir que les modifications de cette donnée (une page de détail). */
+  id?: string | null;
+  /** Les écritures arrivées pendant ce délai ne déclenchent qu'une relecture. */
   delaiMs?: number;
   actif?: boolean;
 }
@@ -236,7 +240,7 @@ export function useDonneesModifiees(
   relire: (modification?: Modification) => void,
   options: OptionsModifications = {}
 ) {
-  const { storeId, orgId, delaiMs = 300, actif = true } = options;
+  const { storeId, orgId, id, delaiMs = 300, actif = true } = options;
   const relireRef = useRef(relire);
   relireRef.current = relire;
 
@@ -252,16 +256,23 @@ export function useDonneesModifiees(
     let derniere: Modification | undefined;
     let dejaConnecte = connexion.connected;
 
+    // Au plus une relecture par intervalle : les écritures qui arrivent
+    // pendant l'attente la rejoignent. Repousser l'attente à chacune ferait
+    // attendre indéfiniment un écran qui voit passer une activité continue.
     const planifier = (modification?: Modification) => {
       derniere = modification;
-      clearTimeout(minuteur);
-      minuteur = setTimeout(() => relireRef.current(derniere), delaiMs);
+      if (minuteur) return;
+      minuteur = setTimeout(() => {
+        minuteur = undefined;
+        relireRef.current(derniere);
+      }, delaiMs);
     };
 
     const surModification = (modification: Modification) => {
       if (!familles.has('*') && !familles.has(modification.ressource)) return;
       if (storeId && modification.storeId && modification.storeId !== storeId) return;
       if (orgId && modification.orgId && modification.orgId !== orgId) return;
+      if (id && modification.id && modification.id !== id) return;
       planifier(modification);
     };
 
@@ -279,7 +290,7 @@ export function useDonneesModifiees(
       connexion.off('donnees-modifiees', surModification);
       connexion.off('connect', surConnexion);
     };
-  }, [cle, storeId, orgId, delaiMs, actif]);
+  }, [cle, storeId, orgId, id, delaiMs, actif]);
 }
 
 /**
@@ -300,7 +311,9 @@ export function TempsReelProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const surStockage = (evenement: StorageEvent) => {
-      if (evenement.key === 'accessToken' || evenement.key === null) connexionTempsReel();
+      if (evenement.key === 'accessToken' || evenement.key === 'driverToken' || evenement.key === null) {
+        connexionTempsReel();
+      }
     };
     window.addEventListener('storage', surStockage);
     return () => window.removeEventListener('storage', surStockage);

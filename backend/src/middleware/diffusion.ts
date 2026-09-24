@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
-import { db } from "../services/db";
+import { db, surEcritureCommande, EcritureCommande } from "../services/db";
 import { logger } from "../config/logger";
 import { signalerModification, Destinataires, Modification } from "../config/socket";
 import { verifyToken } from "./auth";
@@ -216,4 +216,83 @@ export function diffusionModifications(req: Request, res: Response, next: NextFu
   });
 
   return next();
+}
+
+// ===== Les commandes, vues depuis la base =====
+
+/** Les écritures d'une même commande, regroupées avant d'être annoncées. */
+const REGROUPEMENT_MS = 150;
+const enAttente = new Map<string, { ecriture: EcritureCommande; minuteur: NodeJS.Timeout }>();
+
+/** Qui suit cette commande : son commerçant, son client, son livreur. */
+async function annoncerCommande(ecriture: EcritureCommande) {
+  const selection = {
+    id: true,
+    storeId: true,
+    customerEmail: true,
+    store: { select: { orgId: true } },
+    delivery: { select: { driver: { select: { user: { select: { email: true } } } } } },
+  } as const;
+
+  const commande = ecriture.orderId
+    ? await db.order.findUnique({ where: { id: ecriture.orderId }, select: selection })
+    : ecriture.deliveryId
+      ? (await db.orderDelivery.findUnique({ where: { id: ecriture.deliveryId }, select: { order: { select: selection } } }))?.order
+      : null;
+
+  // Une commande supprimée, ou une écriture groupée sur toute une boutique :
+  // on sait au moins de quelle boutique il s'agit.
+  const storeId = commande?.storeId ?? ecriture.storeId;
+  const orgId =
+    commande?.store.orgId ??
+    (storeId ? (await db.store.findUnique({ where: { id: storeId }, select: { orgId: true } }))?.orgId : undefined);
+
+  const orderId = commande?.id ?? ecriture.orderId;
+
+  await signalerModification(
+    { ressource: "orders", action: ecriture.action, id: orderId, storeId, orgId },
+    {
+      plateforme: true,
+      orgIds: orgId ? [orgId] : [],
+      commandes: orderId ? [orderId] : [],
+      emails: [commande?.customerEmail, commande?.delivery?.driver?.user?.email].filter(
+        (email): email is string => !!email
+      ),
+    }
+  );
+}
+
+/**
+ * Annonce toute écriture sur une commande, d'où qu'elle vienne.
+ *
+ * Une même action écrit souvent la commande, puis sa livraison, puis la
+ * commande encore : on attend un court instant pour n'en faire qu'une
+ * annonce — et pour que la transaction qui les porte soit validée avant que
+ * les écrans ne relisent.
+ */
+export function brancherAnnoncesCommandes() {
+  surEcritureCommande((ecriture) => {
+    const cle = ecriture.orderId || ecriture.deliveryId || `store:${ecriture.storeId}`;
+    const precedente = enAttente.get(cle);
+    if (precedente) clearTimeout(precedente.minuteur);
+
+    const retenue: EcritureCommande = {
+      ...precedente?.ecriture,
+      ...Object.fromEntries(Object.entries(ecriture).filter(([, valeur]) => valeur !== undefined)),
+      // La création l'emporte : c'est ce que les écrans veulent savoir.
+      action: precedente?.ecriture.action === "creation" ? "creation" : ecriture.action,
+    };
+
+    const minuteur = setTimeout(() => {
+      enAttente.delete(cle);
+      annoncerCommande(retenue).catch((err) =>
+        logger.warn("Temps réel : commande non annoncée", {
+          cle,
+          error: err instanceof Error ? err.message : err,
+        })
+      );
+    }, REGROUPEMENT_MS);
+
+    enAttente.set(cle, { ecriture: retenue, minuteur });
+  });
 }
