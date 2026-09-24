@@ -91,6 +91,14 @@ const boutique = await appeler('/api/stores', {
 });
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
 
+// Les zones sont celles d'un commerçant qui livre lui-même : avec les livreurs
+// de la plateforme, les frais suivent la distance et aucune zone n'est dite.
+await appeler(`/api/store-settings/${storeId}`, {
+  method: 'PUT',
+  jeton: T,
+  corps: { delivery: { useOwnDelivery: true } },
+});
+
 const plat = `Lasagnes ${uniq}`;
 await appeler('/api/products', {
   method: 'POST',
