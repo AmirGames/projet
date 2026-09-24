@@ -85,6 +85,14 @@ const boutique = await appeler('/api/stores', {
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
 await ouvrirToutLeJour(appeler, storeId, T);
 
+// Les zones sont celles d'un commerçant qui livre lui-même : avec les livreurs
+// de la plateforme, les frais suivent la distance et les zones ne jouent pas.
+await appeler(`/api/store-settings/${storeId}`, {
+  method: 'PUT',
+  jeton: T,
+  corps: { delivery: { useOwnDelivery: true } },
+});
+
 await appeler('/api/products', {
   method: 'POST',
   jeton: T,
