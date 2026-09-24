@@ -276,7 +276,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 48 | **1565** |
+| **API** (`backend/scripts/verification/`) | 48 | **1566** |
 | **Navigateur** (`frontend/scripts/`) | 27 | **716** |
 
 Tout est vert au dernier passage complet (24 septembre).
