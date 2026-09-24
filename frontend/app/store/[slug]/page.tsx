@@ -57,6 +57,8 @@ interface Product {
   /** La question posée : « Type de pâtes », « Taille ». */
   variantLabel?: string | null;
   variants?: Declinaison[];
+  /** La note des clients, calculée sur les avis publiés. Nulle sans avis. */
+  note?: { moyenne: number; nombre: number } | null;
 }
 
 interface Category {
@@ -275,6 +277,10 @@ export default function StorefrontPage() {
                 price: Number(produit.price || 0),
                 isAvailable: produit.isAvailable !== false,
                 variantLabel: produit.variantLabel || null,
+                note:
+                  produit.note && produit.note.nombre > 0
+                    ? { moyenne: Number(produit.note.moyenne), nombre: Number(produit.note.nombre) }
+                    : null,
                 variants: (produit.variants || []).map((variante: any) => ({
                   id: variante.id,
                   label: variante.label,
@@ -480,17 +486,30 @@ export default function StorefrontPage() {
                           <h3 className="font-bold text-lg">{product.name}</h3>
                           <p className="text-gray-400 text-sm">{product.description}</p>
 
-                          {/* Rating */}
-                          <div className="flex items-center gap-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                size={16}
-                                className={i < 4 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-600'}
-                              />
-                            ))}
-                            <span className="text-xs text-gray-500 ml-2">(24 avis)</span>
-                          </div>
+                          {/* La note des clients, et seulement elle : quatre
+                              étoiles et « 24 avis » s'affichaient en dur sous
+                              chaque plat, même créé à l'instant. Sans avis, rien. */}
+                          {product.note && (
+                            <div
+                              className="flex items-center gap-1"
+                              aria-label={`Noté ${product.note.moyenne.toLocaleString('fr-FR')} sur 5 par ${product.note.nombre} client${product.note.nombre > 1 ? 's' : ''}`}
+                            >
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  size={16}
+                                  className={
+                                    i < Math.round(product.note!.moyenne)
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'text-gray-600'
+                                  }
+                                />
+                              ))}
+                              <span className="text-xs text-gray-500 ml-2">
+                                {product.note.moyenne.toLocaleString('fr-FR')} ({product.note.nombre} avis)
+                              </span>
+                            </div>
+                          )}
 
                           {/* Price & Stock */}
                           <div className="flex items-center justify-between">

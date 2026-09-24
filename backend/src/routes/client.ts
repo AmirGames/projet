@@ -264,7 +264,10 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
           // départager deux produits laissés au même rang.
           orderBy: [{ displayOrder: "asc" }, { name: "asc" }]
         },
+        // Seuls les avis publiés : un avis retiré par la plateforme ne se
+        // montre plus.
         reviews: {
+          where: { status: "APPROVED" },
           take: 10,
           orderBy: { createdAt: "desc" },
           include: {
@@ -284,7 +287,39 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
       throw new ApiError(423, "Boutique temporairement fermée", "STORE_TEMPORARILY_CLOSED");
     }
 
-    const categorizedProducts = regrouperParCategorie(store.products);
+    /**
+     * Les vraies notes, calculées sur tous les avis publiés.
+     *
+     * La vitrine affichait en dur quatre étoiles et « 24 avis » sous chaque
+     * plat, même créé à l'instant : une note inventée, trompeuse pour le
+     * client et contraire aux règles sur les avis en ligne. Un plat sans avis
+     * n'affiche plus rien. La moyenne du commerce se calculait, elle, sur les
+     * dix derniers avis, plats et avis retirés compris.
+     */
+    const [notesParPlat, noteDuCommerce] = await Promise.all([
+      db.review.groupBy({
+        by: ["productId"],
+        where: { storeId: store.id, status: "APPROVED", productId: { not: null } },
+        _avg: { rating: true },
+        _count: { _all: true },
+      }),
+      db.review.aggregate({
+        where: { storeId: store.id, status: "APPROVED", productId: null },
+        _avg: { rating: true },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const noteDe = new Map(
+      notesParPlat.map((n) => [
+        n.productId,
+        { moyenne: Math.round((n._avg.rating ?? 0) * 10) / 10, nombre: n._count._all },
+      ])
+    );
+
+    const categorizedProducts = regrouperParCategorie(
+      store.products.map((produit: any) => ({ ...produit, note: noteDe.get(produit.id) ?? null }))
+    );
 
     res.json({
       success: true,
@@ -296,13 +331,8 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
         isOpenNow: !!store.org?.approvedAt && StoreHoursService.isOpenNow(store),
         enAttenteDeValidation: !store.org?.approvedAt,
         averageRating:
-          store.reviews.length > 0
-            ? (
-                store.reviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) /
-                store.reviews.length
-              ).toFixed(1)
-            : 0,
-        reviewCount: store.reviews.length
+          noteDuCommerce._count._all > 0 ? (noteDuCommerce._avg.rating ?? 0).toFixed(1) : 0,
+        reviewCount: noteDuCommerce._count._all
       }
     });
   } catch (err) {
