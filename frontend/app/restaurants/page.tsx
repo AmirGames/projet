@@ -11,7 +11,9 @@ interface Restaurant {
   slug: string;
   description: string;
   cuisine: string;
-  rating: number;
+  /** null tant que personne n'a noté la boutique. */
+  rating: number | null;
+  totalRatings: number;
   deliveryTime: number;
   deliveryFee: number;
   imageUrl?: string;
@@ -55,7 +57,8 @@ export default function RestaurantsPage() {
           slug: boutique.slug,
           description: boutique.description || '',
           cuisine: boutique.city || '',
-          rating: Number(boutique.rating || 0),
+          rating: boutique.totalRatings ? Number(boutique.rating) : null,
+          totalRatings: boutique.totalRatings ?? 0,
           deliveryTime: 30,
           deliveryFee: Number(boutique.deliveryCost || 0),
           address: [boutique.address, boutique.city].filter(Boolean).join(', '),
@@ -197,7 +200,11 @@ export default function RestaurantsPage() {
                   <div className="space-y-2 mb-3">
                     <div className="flex items-center gap-2 text-sm text-gray-400">
                       <Star size={16} className="text-yellow-500" />
-                      <span>{restaurant.rating.toFixed(1)} / 5</span>
+                      <span>
+                        {restaurant.rating != null
+                          ? `${restaurant.rating.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} / 5 (${restaurant.totalRatings} avis)`
+                          : "Pas encore d'avis"}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm text-gray-400">

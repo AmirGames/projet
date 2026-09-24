@@ -21,7 +21,8 @@ interface FavoriteStore {
     description?: string;
     address?: string;
     city?: string;
-    rating?: number;
+    /** Moyenne des avis publiés, null tant que personne n'a noté. */
+    rating?: number | null;
     totalRatings?: number;
     deliveryCost?: number;
     distance?: number;
@@ -146,11 +147,19 @@ export default function FavoritesPage() {
 
                     {/* Rating & Reviews */}
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="flex items-center gap-1">
-                        <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                        <span className="text-white font-semibold">{store.rating || 4.5}</span>
-                      </div>
-                      <span className="text-gray-500 text-sm">({store.totalRatings || 0} avis)</span>
+                      {store.totalRatings && store.rating != null ? (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                            <span className="text-white font-semibold">
+                              {Number(store.rating).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 text-sm">({store.totalRatings} avis)</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-500 text-sm">Pas encore d&apos;avis</span>
+                      )}
                     </div>
 
                     {/* Location & Delivery */}

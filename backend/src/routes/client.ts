@@ -9,6 +9,7 @@ import { trierProduitsSelonCategorie } from "../services/category.service";
 import { DeliveryZoneService } from "../services/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";
 import { avisARedemander, avisRestaurantParCommerce } from "../services/avis-client.service";
+import { avecLaVraieNote } from "../services/review.service";
 import {
   COMMENTAIRE_MAX,
   NOTE_MAX,
@@ -47,7 +48,7 @@ router.get("/stores", async (_req: Request, res: Response, next: NextFunction) =
     res.json({
       success: true,
       count: stores.length,
-      data: stores.map((store) => ({
+      data: (await avecLaVraieNote(stores)).map((store) => ({
         ...store,
         // Ce que disent à la fois le planning hebdomadaire et le bouton
         // rapide, croisés — pas juste le bouton, sinon un jour fermé dans les
@@ -121,7 +122,7 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
     res.json({
       success: true,
       count: storesWithDistance.length,
-      data: storesWithDistance
+      data: await avecLaVraieNote(storesWithDistance)
     });
   } catch (err) {
     next(err);
@@ -164,7 +165,7 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
     res.json({
       success: true,
       count: stores.length,
-      data: stores.map((store) => ({
+      data: (await avecLaVraieNote(stores)).map((store) => ({
         ...store,
         isOpenNow: StoreHoursService.isOpenNow(store),
       })),
@@ -795,9 +796,11 @@ router.get("/me/favorites", authMiddleware, async (req: Request, res: Response, 
       }
     });
 
+    const favoris = customer?.favorites || [];
+    const notes = await avecLaVraieNote(favoris.map((f) => f.store));
     res.json({
       success: true,
-      data: customer?.favorites || []
+      data: favoris.map((f, i) => ({ ...f, store: notes[i] }))
     });
   } catch (err) {
     next(err);

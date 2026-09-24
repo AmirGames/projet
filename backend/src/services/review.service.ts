@@ -3,6 +3,62 @@ import { ApiError } from "../middleware/errorHandler";
 
 import { etatModeration } from "./etat-moderation";
 
+export interface NoteDuCommerce {
+  /** Moyenne des avis publiés, ou null tant que personne n'a noté. */
+  rating: number | null;
+  totalRatings: number;
+  /** Part des avis à 4 ou 5 étoiles, ou null sans avis. */
+  satisfactionPercentage: number | null;
+}
+
+/**
+ * La vraie note de chaque commerce, en une requête pour toute une liste.
+ *
+ * Les listes de boutiques renvoyaient les colonnes `Store.rating` et
+ * `Store.totalRatings`, que rien ne met à jour : 5,00 et 0 pour tout le monde,
+ * d'où « ★ 5 (0 avis) » sur une boutique qui avait pourtant des avis. On
+ * calcule ici sur les avis publiés du commerce lui-même, sans ceux des plats.
+ */
+export async function notesDesCommerces(storeIds: string[]): Promise<Map<string, NoteDuCommerce>> {
+  const notes = new Map<string, NoteDuCommerce>();
+  if (storeIds.length === 0) return notes;
+
+  const [moyennes, satisfaits] = await Promise.all([
+    db.review.groupBy({
+      by: ["storeId"],
+      where: { storeId: { in: storeIds }, productId: null, status: "APPROVED" },
+      _avg: { rating: true },
+      _count: { _all: true },
+    }),
+    db.review.groupBy({
+      by: ["storeId"],
+      where: { storeId: { in: storeIds }, productId: null, status: "APPROVED", rating: { gte: 4 } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const satisfaitsPar = new Map(satisfaits.map((s) => [s.storeId, s._count._all]));
+
+  for (const id of storeIds) notes.set(id, { rating: null, totalRatings: 0, satisfactionPercentage: null });
+  for (const m of moyennes) {
+    const total = m._count._all;
+    if (total === 0) continue;
+    notes.set(m.storeId, {
+      rating: Math.round((m._avg.rating ?? 0) * 10) / 10,
+      totalRatings: total,
+      satisfactionPercentage: Math.round(((satisfaitsPar.get(m.storeId) ?? 0) / total) * 100),
+    });
+  }
+
+  return notes;
+}
+
+/** Remplace, sur chaque boutique, la note figée en base par la vraie. */
+export async function avecLaVraieNote<T extends { id: string }>(stores: T[]): Promise<(T & NoteDuCommerce)[]> {
+  const notes = await notesDesCommerces(stores.map((s) => s.id));
+  return stores.map((s) => ({ ...s, ...notes.get(s.id)! }));
+}
+
 export class ReviewService {
   /**
    * Les avis d'une boutique, vus du commerçant, avec leur état de modération.
@@ -133,8 +189,10 @@ export class ReviewService {
         ratingBreakdown[String(review.rating) as keyof typeof ratingBreakdown]++;
       });
 
+      // Un client satisfait met 4 ou 5 étoiles : ne compter que les 5 affichait
+      // « 👍 0 % » à une boutique notée 4/5 par tout le monde.
       const satisfactionPercentage = totalReviews > 0
-        ? Math.round((ratingBreakdown["5"] / totalReviews) * 100)
+        ? Math.round(((ratingBreakdown["5"] + ratingBreakdown["4"]) / totalReviews) * 100)
         : 0;
 
       return {
