@@ -42,6 +42,12 @@ const boutique = await j(
 );
 const storeId = boutique.store?.id || boutique.id;
 
+// Les zones sont celles du commerçant qui livre lui-même : avec les livreurs
+// de la plateforme, les frais suivent la distance et les zones ne jouent pas.
+// Le commerçant coche « J'utilise ma propre livraison » dans ses réglages.
+const propreLivraison = await put(`/api/store-settings/${storeId}`, { delivery: { useOwnDelivery: true } }, T);
+check('le commerçant livre lui-même', propreLivraison.status < 400, `statut ${propreLivraison.status}`);
+
 const produit = await j(
   await post('/api/products', { storeId, name: 'Margherita', price: 10, status: 'ACTIVE' }, T)
 );

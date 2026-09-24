@@ -157,6 +157,12 @@ export async function inscription(corps) {
     throw new Error(`Organisation non créée pour ${corps.email} : statut ${creation.status}`);
   }
 
+  // Un commerce attend désormais la validation de la plateforme avant de
+  // vendre. Les suites ont été écrites pour un commerce qui vend : il est
+  // validé d'office, comme la migration l'a fait pour les commerces existants.
+  // La validation elle-même se vérifie dans verif-validation-commerce.
+  await base().organization.update({ where: { id: org.id }, data: { approvedAt: new Date() } });
+
   const corpsAugmente = {
     ...donnees,
     organization: { id: org.id, name: org.name, slug: org.slug },

@@ -17,7 +17,26 @@
  * Même outil côté API : backend/scripts/verification/outils.mjs.
  */
 
+import { createRequire } from 'node:module';
+
 let numero = 0;
+let prisma = null;
+
+/**
+ * Le client Prisma du backend : valider un commerce passe par la base, les
+ * suites navigateur n'ont pas d'autre accès. Demande DATABASE_URL.
+ */
+function base() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL manque : les suites valident leurs commerces en base.');
+  }
+  if (!prisma) {
+    const exiger = createRequire(new URL('../../backend/package.json', import.meta.url));
+    const { PrismaClient } = exiger('@prisma/client');
+    prisma = new PrismaClient();
+  }
+  return prisma;
+}
 const suffixe = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 export async function inscriptionVia(appeler, options) {
@@ -37,6 +56,11 @@ export async function inscriptionVia(appeler, options) {
   if (!org?.id) {
     throw new Error(`Organisation non créée : statut ${creation.statut} ${JSON.stringify(creation.donnees)}`);
   }
+
+  // Un commerce attend désormais la validation de la plateforme avant de
+  // vendre ; les suites ont été écrites pour un commerce qui vend. Il est
+  // validé d'office, comme la migration l'a fait pour les commerces existants.
+  await base().organization.update({ where: { id: org.id }, data: { approvedAt: new Date() } });
 
   return {
     ...inscription,

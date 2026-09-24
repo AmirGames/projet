@@ -124,6 +124,10 @@ const commande = await j(
     deliveryAddress: '20 rue de la Ré',
     deliveryCity: 'Lyon',
     deliveryPostal: '69002',
+    // Adresse choisie dans les suggestions : le site envoie son point, qui
+    // fixe la distance et donc les frais d'une course de la plateforme.
+    deliveryLat: 45.7665,
+    deliveryLng: 4.8365,
     totalAmount: 12,
     feesAmount: 0,
     items: [{ productId, quantity: 1, price: 12 }],
@@ -174,10 +178,18 @@ check('celui qui a refusé n\'est pas resollicité', (apresRefusPres?.data || []
 check('le suivant reçoit la course', (apresRefusLoin?.data || []).length === 1, `n=${apresRefusLoin?.data?.length}`);
 
 const propositionLoin = apresRefusLoin.data[0];
+// Un livreur est payé sur la course elle-même, du commerce au client : deux
+// livreurs qui prennent la même course touchent la même chose. Son trajet
+// jusqu'au commerce lui est dit à part.
 check(
-  'sa rémunération tient compte de sa distance',
-  propositionLoin.payout > proposition.payout,
+  'sa rémunération est celle de la course, pas de sa distance',
+  propositionLoin.payout === proposition.payout,
   `loin=${propositionLoin.payout} pres=${proposition.payout}`
+);
+check(
+  'son trajet jusqu’au commerce est annoncé, plus long',
+  propositionLoin.approcheKm > proposition.approcheKm,
+  `loin=${propositionLoin.approcheKm} pres=${proposition.approcheKm}`
 );
 
 titre('Acceptation');
@@ -225,12 +237,12 @@ check('elle est enregistrée sur la course', positionCourse.startsWith('45.77'),
 
 // Le défaut corrigé : la position écrasait l'adresse du client.
 const adresseClient = await sqlScalaire(
-  `SELECT "deliveryLat" IS NULL FROM "OrderDelivery" WHERE id = '${deliveryId}'`
+  `SELECT "deliveryLat" FROM "OrderDelivery" WHERE id = '${deliveryId}'`
 );
 check(
   'elle n\'écrase pas l\'adresse de livraison du client',
-  adresseClient === 'true',
-  `deliveryLat vaut ${adresseClient === 'true' ? 'NULL' : 'la position du livreur'}`
+  adresseClient.startsWith('45.7665'),
+  `deliveryLat vaut ${adresseClient}`
 );
 
 titre('Livraison et rémunération');
@@ -271,6 +283,10 @@ const commande2 = await j(
     deliveryAddress: '5 rue Victor Hugo',
     deliveryCity: 'Lyon',
     deliveryPostal: '69002',
+    // Adresse choisie dans les suggestions : le site envoie son point, qui
+    // fixe la distance et donc les frais d'une course de la plateforme.
+    deliveryLat: 45.7665,
+    deliveryLng: 4.8365,
     totalAmount: 20,
     items: [{ productId, quantity: 1, price: 20 }],
   })
