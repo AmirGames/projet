@@ -46,6 +46,12 @@ interface Order {
   preparationMinutes?: number | null;
   rejectionReason?: string | null;
   rejectionNote?: string | null;
+  /** La course, créée dès que la commande passe « En préparation ». */
+  delivery?: {
+    status: string;
+    driverId?: string | null;
+    driver?: { name?: string | null; phone?: string | null } | null;
+  } | null;
 }
 
 type OrderStatus = 'PENDING' | 'ACCEPTED' | 'PREPARING' | 'REJECTED' | 'READY' | 'COMPLETED';
@@ -463,18 +469,32 @@ export default function OrdersPage() {
                           <Eye size={14} className="inline mr-1" />
                           {t('orderDetails')}
                         </Link>
-                        {/* Un livreur de la plateforme ne s'appelle que pour une commande
-                            qui lui est destinée : celui qui livre lui-même n'en a pas. */}
+                        {/* Le livreur de la plateforme est cherché dès « En préparation ».
+                            Le bouton ne reste que pour choisir un livreur précis tant
+                            que personne n'a accepté. */}
                         {order.deliveryType === 'DELIVERY' &&
                           (order.deliveryMode ? order.deliveryMode === 'PLATFORM' : !useOwnDelivery) &&
-                          order.status === 'READY' && (
-                          <button
-                            onClick={() => handleCallDelivery(order.id)}
-                            className="px-3 py-1 bg-amber-600/20 text-amber-400 rounded text-xs font-medium hover:bg-amber-600/30 transition-colors"
-                          >
-                            <Truck size={14} className="inline mr-1" />
-                            Appeler un livreur
-                          </button>
+                          (order.status === 'PREPARING' || order.status === 'READY') && (
+                          order.delivery?.driverId ? (
+                            <span className="px-3 py-1 bg-green-600/20 text-green-400 rounded text-xs font-medium">
+                              <Truck size={14} className="inline mr-1" />
+                              {order.delivery.status === 'PICKED_UP'
+                                ? `En route avec ${order.delivery.driver?.name?.split(' ')[0] || 'le livreur'}`
+                                : `Livreur trouvé : ${order.delivery.driver?.name?.split(' ')[0] || 'en route'}`}
+                            </span>
+                          ) : (
+                            <>
+                              <span className="px-3 py-1 bg-amber-600/20 text-amber-400 rounded text-xs font-medium">
+                                🔎 Recherche d&apos;un livreur…
+                              </span>
+                              <button
+                                onClick={() => handleCallDelivery(order.id)}
+                                className="px-3 py-1 bg-gray-700 text-gray-300 rounded text-xs font-medium hover:bg-gray-600 transition-colors"
+                              >
+                                Choisir un livreur
+                              </button>
+                            </>
+                          )
                         )}
                       </div>
                     </div>

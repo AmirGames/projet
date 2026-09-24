@@ -8,7 +8,7 @@ const db: any = {
     updateMany: jest.fn(),
   },
   deliveryOffer: { updateMany: jest.fn() },
-  orderDelivery: { update: jest.fn() },
+  orderDelivery: { update: jest.fn(), findUnique: jest.fn() },
   notification: { create: jest.fn() },
 };
 
@@ -25,6 +25,10 @@ jest.mock("../webhook.service", () => ({ emitWebhook: jest.fn() }));
 jest.mock("../email.service", () => ({
   EmailService: { sendOrderStatusUpdate: jest.fn() },
 }));
+jest.mock("../notifier.service", () => ({
+  Notifier: { pushLivreur: jest.fn(async () => true) },
+  enArrierePlan: (envoi: Promise<unknown>) => envoi,
+}));
 jest.mock("../dispatch.service", () => ({
   DispatchService: {
     creerCourse: jest.fn(async () => ({ id: "course-1", driverId: null })),
@@ -39,6 +43,7 @@ import {
 } from "../order-acceptance.service";
 import { EmailService } from "../email.service";
 import { DispatchService } from "../dispatch.service";
+import { Notifier } from "../notifier.service";
 
 const MINUTE = 60 * 1000;
 
@@ -216,5 +221,51 @@ describe("OrderAcceptanceService", () => {
 
     expect(refusees).toBe(1);
     expect(db.order.updateMany.mock.calls[0][0].data.rejectionReason).toBe("NO_RESPONSE");
+  });
+});
+
+describe("OrderAcceptanceService.surAvancement", () => {
+  const livraison = { id: "cmd-1", deliveryType: "DELIVERY", deliveryMode: "PLATFORM" };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    db.orderDelivery.findUnique.mockResolvedValue(null);
+  });
+
+  it("cherche le livreur le plus proche dès « En préparation »", async () => {
+    await OrderAcceptanceService.surAvancement({ ...livraison, status: "PREPARING" });
+
+    expect(DispatchService.creerCourse).toHaveBeenCalledWith("cmd-1");
+    expect(DispatchService.proposerAuSuivant).toHaveBeenCalledWith("course-1");
+  });
+
+  it("cherche aussi à « Prête » si personne ne l'a encore fait", async () => {
+    await OrderAcceptanceService.surAvancement({ ...livraison, status: "READY" });
+
+    expect(DispatchService.creerCourse).toHaveBeenCalledWith("cmd-1");
+  });
+
+  it("ne relance pas une recherche déjà partie", async () => {
+    db.orderDelivery.findUnique.mockResolvedValue({ id: "course-1", driverId: null, status: "PENDING" });
+
+    await OrderAcceptanceService.surAvancement({ ...livraison, status: "PREPARING" });
+
+    expect(DispatchService.creerCourse).not.toHaveBeenCalled();
+  });
+
+  it("prévient le livreur déjà en route quand la commande est prête", async () => {
+    db.orderDelivery.findUnique.mockResolvedValue({ id: "course-1", driverId: "livreur-1", status: "ACCEPTED" });
+
+    await OrderAcceptanceService.surAvancement({ ...livraison, status: "READY" });
+
+    expect(DispatchService.creerCourse).not.toHaveBeenCalled();
+    expect(Notifier.pushLivreur).toHaveBeenCalledWith("livreur-1", expect.objectContaining({ title: "Commande prête" }));
+  });
+
+  it("ne cherche personne pour un retrait ou une livraison du commerçant", async () => {
+    await OrderAcceptanceService.surAvancement({ ...livraison, deliveryType: "PICKUP", status: "PREPARING" });
+    await OrderAcceptanceService.surAvancement({ ...livraison, deliveryMode: "OWN", status: "PREPARING" });
+
+    expect(DispatchService.creerCourse).not.toHaveBeenCalled();
   });
 });

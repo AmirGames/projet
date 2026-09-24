@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { logger } from "../config/logger";
 import { EmailService } from "./email.service";
+import { emitMerchantEvent } from "../config/socket";
 
 /**
  * Notifications multicanales : e-mail, SMS, push navigateur.
@@ -312,6 +313,40 @@ export class Notifier {
       this.email(commande.customerEmail, messages.sujet, messages.texte, lien),
       messages.sms ? this.sms(commande.customerPhone, messages.sms) : Promise.resolve(false),
     ]);
+  }
+
+  /**
+   * Un livreur a accepté la course : la boutique sait qu'il arrive.
+   *
+   * La recherche part dès « En préparation » ; le commerçant n'a plus à
+   * surveiller l'écran pour savoir si quelqu'un viendra chercher la commande.
+   */
+  static async livreurTrouveBoutique(orderId: string) {
+    const commande = await db.order.findUnique({
+      where: { id: orderId },
+      select: {
+        storeId: true,
+        delivery: { select: { driver: { select: { name: true, vehicleType: true } } } },
+      },
+    });
+    if (!commande) return;
+
+    const livreur = commande.delivery?.driver?.name?.split(" ")[0] || "Un livreur";
+    const numero = orderId.slice(-6).toUpperCase();
+
+    // Les écrans ouverts l'affichent aussitôt ; le téléphone, même fermé.
+    await emitMerchantEvent(commande.storeId, "livreur-trouve", {
+      orderId,
+      storeId: commande.storeId,
+      livreur,
+      numero,
+    });
+
+    await this.pushEquipeBoutique(commande.storeId, {
+      title: "🛵 Livreur trouvé",
+      body: `${livreur} a accepté la commande #${numero} et arrive au commerce.`,
+      data: { type: "livreur-trouve", orderId, storeId: commande.storeId },
+    });
   }
 
   /**

@@ -12,7 +12,7 @@ import { promoSansCommissionActive } from "./plan.service";
 import { StoreHoursService } from "./store-hours.service";
 import { emitMerchantEvent } from "../config/socket";
 import { Notifier, enArrierePlan } from "./notifier.service";
-import { echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
+import { OrderAcceptanceService, echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
 
 export interface OrderData {
   storeId: string;
@@ -606,6 +606,8 @@ export class OrderService {
         status: commande.status,
         totalAmount: Number(commande.totalAmount),
       });
+
+      await OrderAcceptanceService.surAvancement(commande);
 
       return commande;
     } catch (error: any) {
