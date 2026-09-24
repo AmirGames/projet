@@ -10,16 +10,16 @@
     "web": "expo web"
   },
   "dependencies": {
-    "expo": "~51.0.28",
-    "expo-status-bar": "~1.12.1",
+    "expo": "^51.0.0",
+    "expo-status-bar": "^1.12.0",
     "react": "18.2.0",
-    "react-native": "0.74.5",
-    "@react-navigation/native": "~6.1.17",
-    "@react-navigation/bottom-tabs": "~6.5.20",
-    "@react-navigation/stack": "~6.3.29",
-    "react-native-screens": "~3.31.1",
-    "react-native-safe-area-context": "~4.10.5",
-    "react-native-gesture-handler": "~2.14.2",
+    "react-native": "0.74.1",
+    "@react-navigation/native": "^6.1.9",
+    "@react-navigation/bottom-tabs": "^6.5.11",
+    "@react-navigation/stack": "^6.3.20",
+    "react-native-screens": "^3.29.0",
+    "react-native-safe-area-context": "^4.8.2",
+    "react-native-gesture-handler": "^2.14.0",
     "@zupone/shared": "*",
     "axios": "^1.6.0",
     "socket.io-client": "^4.7.0",
@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
-    "@types/react": "~18.2.0",
-    "typescript": "~5.3.3"
+    "@types/react": "^18.2.0",
+    "typescript": "^5.3.0"
   }
 }

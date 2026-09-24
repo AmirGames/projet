@@ -4,9 +4,9 @@
   "description": "Zupone Mobile Apps - Merchant, Customer, Delivery",
   "main": "index.js",
   "scripts": {
-    "start:merchant": "cd apps/merchant && expo start",
-    "start:customer": "cd apps/customer && expo start",
-    "start:delivery": "cd apps/delivery && expo start"
+    "start:merchant": "cd apps/merchant && npm start",
+    "start:customer": "cd apps/customer && npm start",
+    "start:delivery": "cd apps/delivery && npm start"
   },
   "keywords": [],
   "author": "",
