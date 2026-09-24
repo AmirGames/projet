@@ -98,6 +98,7 @@ export default function TrackOrderPage() {
   const rechercher = useCallback(async (valeur: string) => {
     setError('');
     setOrder(null);
+    setDelivery(null);
     setHasSearched(true);
     setLoading(true);
 
@@ -133,7 +134,10 @@ export default function TrackOrderPage() {
           );
           if (deliveryResponse.ok) {
             const deliveryData = await deliveryResponse.json();
-            setDelivery(deliveryData?.data || deliveryData);
+            // L'API répond `{ data: null }` tant qu'aucune course n'existe :
+            // retomber sur l'enveloppe donnait un objet sans coordonnées, et la
+            // carte plantait sur « Invalid LatLng (NaN, NaN) ».
+            setDelivery(deliveryData && 'data' in deliveryData ? deliveryData.data : deliveryData);
           }
         } catch (err) {
           console.error('Error loading delivery:', err);
