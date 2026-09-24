@@ -30,6 +30,7 @@ interface Configuration {
   driverOfferSeconds: number;
   driverBaseFee: number;
   driverPerKmFee: number;
+  serviceFee: number;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -55,6 +56,7 @@ export default function SystemConfigPage() {
     driverOfferSeconds: '',
     driverBaseFee: '',
     driverPerKmFee: '',
+    serviceFee: '',
   });
 
   const fetchConfig = useCallback(async () => {
@@ -86,6 +88,7 @@ export default function SystemConfigPage() {
         driverOfferSeconds: String(c.driverOfferSeconds ?? ''),
         driverBaseFee: String(c.driverBaseFee ?? ''),
         driverPerKmFee: String(c.driverPerKmFee ?? ''),
+        serviceFee: String(c.serviceFee ?? ''),
       });
       setError('');
     } catch {
@@ -118,6 +121,7 @@ export default function SystemConfigPage() {
           driverOfferSeconds: Math.round(Number(formulaire.driverOfferSeconds)),
           driverBaseFee: Number(formulaire.driverBaseFee),
           driverPerKmFee: Number(formulaire.driverPerKmFee),
+          serviceFee: Number(formulaire.serviceFee),
         }),
       });
 
@@ -296,6 +300,23 @@ export default function SystemConfigPage() {
                   className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">Ajouté pour chaque km</p>
+              </div>
+              <div>
+                <label htmlFor="frais-service" className="block text-sm text-gray-400 mb-2">
+                  Frais de service par commande (€)
+                </label>
+                <input
+                  id="frais-service"
+                  type="number"
+                  step="0.05"
+                  min="0"
+                  value={formulaire.serviceFee}
+                  onChange={(e) => setFormulaire({ ...formulaire, serviceFee: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Ajoutés au total du client, pour la plateforme : jamais au commerçant. 0 les supprime.
+                </p>
               </div>
               </div>
               <p className="text-xs text-gray-400">

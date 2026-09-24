@@ -1,4 +1,4 @@
-import { fraisDusALaPlateforme } from "./delivery-mode.service";
+import { encaissePourLaPlateforme, fraisDeServiceDus } from "./delivery-mode.service";
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { emitWebhook } from "./webhook.service";
@@ -262,23 +262,26 @@ export class OrderManagementService {
           status: true,
           totalAmount: true,
           feesAmount: true,
+          serviceFeeAmount: true,
           deliveryMode: true,
           createdAt: true,
           paymentStatus: true,
         },
       });
 
-      // Les frais d'une course faite par un livreur de la plateforme ne sont
-      // pas au commerçant : il les encaisse pour elle, qui les lui réclame
-      // avec la commission. Son chiffre d'affaires ne les compte plus.
-      const pourLaPlateforme = (o: (typeof orders)[number]) => fraisDusALaPlateforme(o);
-      const fraisPlateforme = orders.reduce((sum, o) => sum + pourLaPlateforme(o), 0);
+      // Les frais d'une course faite par un livreur de la plateforme, et les
+      // frais de service, ne sont pas au commerçant : il les encaisse pour
+      // elle, qui les lui réclame avec la commission. Son chiffre d'affaires
+      // ne les compte plus.
+      const fraisPlateforme = orders.reduce((sum, o) => sum + encaissePourLaPlateforme(o), 0);
+      const fraisService = orders.reduce((sum, o) => sum + fraisDeServiceDus(o), 0);
 
       const stats = {
         totalOrders: orders.length,
         totalRevenue:
           orders.reduce((sum, o) => sum + parseFloat(o.totalAmount.toString()), 0) - fraisPlateforme,
-        platformDeliveryFees: Number(fraisPlateforme.toFixed(2)),
+        platformDeliveryFees: Number((fraisPlateforme - fraisService).toFixed(2)),
+        platformServiceFees: Number(fraisService.toFixed(2)),
         averageOrderValue: orders.length > 0 ? orders.reduce((sum, o) => sum + parseFloat(o.totalAmount.toString()), 0) / orders.length : 0,
         pending: orders.filter(o => o.status === "PENDING").length,
         accepted: orders.filter(o => o.status === "ACCEPTED").length,

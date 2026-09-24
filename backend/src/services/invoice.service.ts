@@ -117,7 +117,11 @@ export class InvoiceService {
     const taxTotal  = parseFloat(recapTva.reduce((s, r) => s + r.taxe, 0).toFixed(2));
     const fees      = parseFloat(order.feesAmount.toString());
     const discount  = parseFloat(order.discountAmount.toString());
-    const total     = parseFloat(order.totalAmount.toString());
+    // Les frais de service sont à la plateforme, pas au commerçant : sa
+    // facture ne porte que ce qu'il a vendu.
+    const total     = Number(
+      (parseFloat(order.totalAmount.toString()) - parseFloat(order.serviceFeeAmount.toString())).toFixed(2)
+    );
 
     // ── Stockage ─────────────────────────────────────────────────────────────
     const facture = await db.invoice.create({

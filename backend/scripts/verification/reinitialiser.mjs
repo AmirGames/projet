@@ -49,6 +49,14 @@ export async function reinitialiser() {
     const liste = tables.map((t) => `"public"."${t.tablename}"`).join(", ");
     await prisma.$executeRawUnsafe(`TRUNCATE ${liste} RESTART IDENTITY CASCADE`);
 
+    // Sans configuration, la plateforme applique ses frais de service par
+    // défaut (0,25 €) à chaque commande : toutes les suites qui relisent un
+    // total au centime près échoueraient sans que rien ne soit cassé. On les
+    // coupe ici ; verif-frais-service les remet et vérifie qu'ils s'appliquent.
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "SystemConfig" (id, "serviceFee", "updatedAt") VALUES ('verif', 0, now())`
+    );
+
     return tables.length;
   } finally {
     await prisma.$disconnect();

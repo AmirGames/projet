@@ -365,6 +365,11 @@ export default function OrdersPage() {
                   hors {euro(stats.platformDeliveryFees)} de livraison à reverser
                 </p>
               )}
+              {stats.platformServiceFees > 0 && (
+                <p className="text-xs text-amber-300 mt-1">
+                  hors {euro(stats.platformServiceFees)} de frais de service à reverser
+                </p>
+              )}
             </div>
           </div>
         )}

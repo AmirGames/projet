@@ -36,6 +36,8 @@ interface Order {
   taxAmount?: number | string;
   taxRate?: number | string;
   feesAmount?: number | string;
+  /** Les frais de service de la plateforme, figés à la commande. */
+  serviceFeeAmount?: number | string;
   deliveryType: 'PICKUP' | 'DELIVERY';
   deliveryAddress?: string;
   deliveryCity?: string;
@@ -499,6 +501,12 @@ export default function TrackOrderPage() {
                 <div className="flex justify-between items-center text-sm text-gray-400">
                   <span>Frais de livraison</span>
                   <span>{euro(order.feesAmount)}</span>
+                </div>
+              )}
+              {Number(order.serviceFeeAmount) > 0 && (
+                <div className="flex justify-between items-center text-sm text-gray-400">
+                  <span>Frais de service</span>
+                  <span>{euro(order.serviceFeeAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center text-lg font-bold">

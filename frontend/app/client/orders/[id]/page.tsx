@@ -18,6 +18,8 @@ interface Order {
   id: string;
   status: string;
   totalAmount: number;
+  /** Les frais de service de la plateforme, compris dans le total. */
+  serviceFeeAmount?: number | string;
   /** La taxe figée à la commande, et le taux qui valait ce jour-là. */
   taxAmount?: number | string;
   taxRate?: number | string;
@@ -417,6 +419,11 @@ export default function OrderTrackingPage() {
                 <p className="text-white text-2xl font-bold">
                   {euro(order.totalAmount)}
                 </p>
+                {Number(order.serviceFeeAmount) > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    dont {euro(order.serviceFeeAmount)} de frais de service
+                  </p>
+                )}
                 {Number(order.taxAmount) > 0 && (
                   <div className="mt-2 space-y-1 text-sm text-gray-400">
                     <div className="flex justify-between">

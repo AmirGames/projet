@@ -7,7 +7,7 @@ import { DeliveryZoneService } from "./delivery-zone.service";
 import { PromotionService } from "./promotion.service";
 import { emitWebhook } from "./webhook.service";
 import { TaxService } from "./tax.service";
-import { ModeDeLivraison } from "./delivery-mode.service";
+import { ModeDeLivraison, fraisDeServiceEnVigueur } from "./delivery-mode.service";
 import { promoSansCommissionActive } from "./plan.service";
 import { StoreHoursService } from "./store-hours.service";
 import { emitMerchantEvent } from "../config/socket";
@@ -351,9 +351,18 @@ export class OrderService {
         }))
       );
 
+      /**
+       * Les frais de service de la plateforme, réglés dans sa configuration.
+       *
+       * Ajoutés au total du client, mais jamais au commerçant : ils sortent
+       * de l'assiette de sa commission et de son chiffre d'affaires.
+       */
+      const reglage = await db.systemConfig.findFirst({ select: { serviceFee: true } });
+      const fraisDeService = lignesTarifees.length > 0 ? fraisDeServiceEnVigueur(reglage) : 0;
+
       const totalCalcule = lignesTarifees.length > 0
         ? Number(
-            (totalDesLignes + taxe.aAjouter + fraisDeLivraison - remise).toFixed(2)
+            (totalDesLignes + taxe.aAjouter + fraisDeLivraison + fraisDeService - remise).toFixed(2)
           )
         : Number(data.totalAmount);
 
@@ -370,10 +379,13 @@ export class OrderService {
        * commerçant : ils transitent par la plateforme et vont au livreur. Ils
        * sortent donc de l'assiette de la commission.
        */
-      const assietteCommission =
-        modeLivraison === "PLATFORM"
-          ? Number((totalCalcule - fraisDeLivraison).toFixed(2))
-          : totalCalcule;
+      const assietteCommission = Number(
+        (
+          totalCalcule -
+          fraisDeService -
+          (modeLivraison === "PLATFORM" ? fraisDeLivraison : 0)
+        ).toFixed(2)
+      );
 
       const commission = await this.commissionDeLaBoutique(
         data.storeId,
@@ -427,6 +439,7 @@ export class OrderService {
           deliveryLng: data.deliveryLng,
           totalAmount: totalCalcule,
           feesAmount: fraisDeLivraison,
+          serviceFeeAmount: fraisDeService,
           promoCode: codePromo,
           discountAmount: remise,
           paymentMethodId: moyenDePaiement?.id,

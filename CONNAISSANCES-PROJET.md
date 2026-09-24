@@ -3,8 +3,9 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : le parcours du livreur (arrivée au commerce, alerte à
-300 m, photo prise sur place) et les frais de livraison dus à la plateforme.
+Dernière mise à jour : les frais de service (0,25 € par commande, pour la
+plateforme), après le parcours du livreur et les frais de livraison dus à la
+plateforme.
 
 ---
 
@@ -86,6 +87,8 @@ scripts de vérification (voir §6).
 - **Commande sans compte** : coordonnées, adresse de livraison avec suggestions,
   ou créneau de retrait tenu aux horaires réels
 - Frais de livraison et minimum de commande annoncés **avant** de valider
+- **Frais de service** de la plateforme (0,25 € par défaut, réglables dans
+  Configuration système) ajoutés à chaque commande, annoncés au tunnel
 - Code promo et choix du moyen de paiement au tunnel
 - Suivi de la commande : distance restante, durée estimée, position du livreur
 - **Code de remise** à quatre chiffres, donné au livreur à la porte
@@ -273,12 +276,15 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 47 | **1542** |
+| **API** (`backend/scripts/verification/`) | 48 | **1565** |
 | **Navigateur** (`frontend/scripts/`) | 27 | **716** |
 
 Tout est vert au dernier passage complet (24 septembre).
 
-Deux réglages rendent les suites indépendantes des nouveautés du produit :
+Trois réglages rendent les suites indépendantes des nouveautés du produit :
+- la remise à zéro pose une configuration aux **frais de service nuls**
+  (`reinitialiser.mjs`) : sans cela, chaque total relu au centime prendrait
+  0,25 € de plus. `verif-frais-service` les remet ;
 - les commerces qu'elles créent sont **validés d'office** en base (la
   validation elle-même se vérifie dans `verif-validation-commerce`) ;
 - leurs boutiques sont **ouvertes toute la journée**
@@ -409,6 +415,11 @@ Deux invariants à ne jamais casser :
   que paie un client. Tout autre champ est refusé explicitement, chaque
   correction part au journal avec son avant et son après, et le commerçant est
   prévenu.
+- **Les frais de service ne sont jamais au commerçant.** Figés sur la
+  commande (`Order.serviceFeeAmount`), ils sortent de l'assiette de sa
+  commission, de son chiffre et de sa facture, et lui sont réclamés sur le
+  relevé du mois pour toute commande terminée (`serviceFeesDue`). Changer le
+  réglage ne réécrit pas les commandes passées.
 - **Les frais d'une course de la plateforme ne sont pas au commerçant.** Il
   les encaisse pour elle tant que le paiement en ligne n'existe pas : ils
   sortent de son chiffre et figurent sur son relevé du mois, avec la

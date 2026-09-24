@@ -19,6 +19,8 @@ interface BillingData {
   commissionPercent?: number;
   /** Frais de livraison encaissés par le commerçant pour la plateforme. */
   deliveryFeesDue?: number;
+  /** Frais de service payés par ses clients, à reverser à la plateforme. */
+  serviceFeesDue?: number;
   /** Commission et frais de livraison : tout ce que le commerçant doit. */
   totalDue?: number;
 }
@@ -36,6 +38,8 @@ interface LigneDetail {
   livraison: number;
   /** La part des frais de livraison qui revient à la plateforme. */
   livraisonDue?: number;
+  /** Les frais de service de la commande, dus à la plateforme. */
+  serviceDu?: number;
   commission: number;
 }
 
@@ -62,6 +66,7 @@ interface DetailFacturation {
     revenue: number;
     commission: number;
     deliveryFees?: number;
+    serviceFees?: number;
     totalDue?: number;
   };
 }
@@ -277,7 +282,17 @@ export default function BillingPage() {
                         plateforme : le client les a payés au commerçant. */}
                     {(billing.deliveryFeesDue ?? 0) > 0 && (
                       <span className="block text-xs text-amber-300">
-                        + {euro(billing.deliveryFeesDue ?? 0)} de livraison — {euro(billing.totalDue ?? 0)} dus
+                        + {euro(billing.deliveryFeesDue ?? 0)} de livraison
+                      </span>
+                    )}
+                    {(billing.serviceFeesDue ?? 0) > 0 && (
+                      <span className="block text-xs text-amber-300">
+                        + {euro(billing.serviceFeesDue ?? 0)} de frais de service
+                      </span>
+                    )}
+                    {(billing.totalDue ?? 0) > billing.amount && (
+                      <span className="block text-xs font-semibold text-white">
+                        {euro(billing.totalDue ?? 0)} dus
                       </span>
                     )}
                   </td>
@@ -338,14 +353,19 @@ export default function BillingPage() {
                 {t('commission')}: {euro(detail.summary.commission)}
               </p>
               {(detail.summary.deliveryFees ?? 0) > 0 && (
-                <>
-                  <p className="text-amber-300">
-                    Livraisons de la plateforme : {euro(detail.summary.deliveryFees ?? 0)}
-                  </p>
-                  <p className="font-bold text-white">
-                    Total dû : {euro(detail.summary.totalDue ?? 0)}
-                  </p>
-                </>
+                <p className="text-amber-300">
+                  Livraisons de la plateforme : {euro(detail.summary.deliveryFees ?? 0)}
+                </p>
+              )}
+              {(detail.summary.serviceFees ?? 0) > 0 && (
+                <p className="text-amber-300">
+                  Frais de service : {euro(detail.summary.serviceFees ?? 0)}
+                </p>
+              )}
+              {(detail.summary.totalDue ?? 0) > detail.summary.commission && (
+                <p className="font-bold text-white">
+                  Total dû : {euro(detail.summary.totalDue ?? 0)}
+                </p>
               )}
             </div>
           </div>
@@ -400,6 +420,11 @@ export default function BillingPage() {
                         {(ligne.livraisonDue ?? 0) > 0 && (
                           <span className="block text-xs text-amber-300">
                             dont {euro(ligne.livraisonDue ?? 0)} de livraison dus à la plateforme
+                          </span>
+                        )}
+                        {(ligne.serviceDu ?? 0) > 0 && (
+                          <span className="block text-xs text-amber-300">
+                            dont {euro(ligne.serviceDu ?? 0)} de frais de service
                           </span>
                         )}
                       </td>

@@ -57,6 +57,8 @@ interface Commande {
   feesAmount: number | string;
   /** Qui livre : le commerçant (OWN) ou un livreur de la plateforme (PLATFORM). */
   deliveryMode?: 'OWN' | 'PLATFORM' | null;
+  /** Les frais de service payés par le client : ils sont à la plateforme. */
+  serviceFeeAmount?: number | string;
   notes?: string | null;
   createdAt: string;
   items?: LigneCommande[];
@@ -299,6 +301,12 @@ export default function DetailCommandePage() {
                 <span>{euro(commande.feesAmount)}</span>
               </div>
             )}
+            {Number(commande.serviceFeeAmount) > 0 && (
+              <div className="flex justify-between text-gray-400">
+                <span>Frais de service (plateforme)</span>
+                <span>{euro(commande.serviceFeeAmount)}</span>
+              </div>
+            )}
             {/* Livrée par la plateforme : le client a payé la livraison au
                 commerçant, mais elle revient au livreur. Le dire ici plutôt
                 que de laisser croire que cette somme est à lui. */}
@@ -312,6 +320,14 @@ export default function DetailCommandePage() {
               <span>Total TTC</span>
               <span className="text-green-400">{euro(commande.totalAmount)}</span>
             </div>
+            {/* Payés par le client avec la commande, mais pas au commerçant :
+                la plateforme les lui réclame sur le relevé du mois. */}
+            {Number(commande.serviceFeeAmount) > 0 && (
+              <p className="text-xs text-amber-300">
+                Les frais de service reviennent à la plateforme : ils sont reportés sur votre relevé
+                du mois, avec la commission.
+              </p>
+            )}
 
             {/* La TVA est comprise dans le prix : elle s'extrait du total, elle
                 ne s'y ajoute pas. Elle valait zéro sur toute commande, faute

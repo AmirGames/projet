@@ -247,6 +247,23 @@ export function TunnelCommande({
     };
   }, [boutique.id]);
 
+  // Les frais de service de la plateforme, annoncés avant de valider : le
+  // serveur les ajoute de toute façon.
+  const [fraisDeService, setFraisDeService] = useState(0);
+
+  useEffect(() => {
+    let annule = false;
+    fetch(`${API_URL}/api/client/service-fee`)
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) => {
+        if (!annule && donnees?.data) setFraisDeService(Number(donnees.data.frais) || 0);
+      })
+      .catch(() => undefined);
+    return () => {
+      annule = true;
+    };
+  }, []);
+
   const sousTotal = totalDuPanier(lignes);
 
   /**
@@ -258,7 +275,7 @@ export function TunnelCommande({
   const fraisDeLivraison =
     checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable ? livraison.frais : 0;
   const montantRemise = remise?.montant ?? 0;
-  const total = Math.max(0, sousTotal + fraisDeLivraison - montantRemise);
+  const total = Math.max(0, sousTotal + fraisDeLivraison + fraisDeService - montantRemise);
 
   /** Le panier atteint-il le minimum de la zone. */
   const sousLeMinimum =
@@ -766,6 +783,12 @@ export function TunnelCommande({
               {checkoutForm.deliveryType === 'PICKUP' ? 'Retrait sur place' : euro(fraisDeLivraison)}
             </span>
           </div>
+          {fraisDeService > 0 && (
+            <div className="flex justify-between text-sm">
+              <span>Frais de service</span>
+              <span>{euro(fraisDeService)}</span>
+            </div>
+          )}
           {remise && (
             <div className="flex justify-between text-sm text-green-300">
               <span>Remise — {remise.code}</span>

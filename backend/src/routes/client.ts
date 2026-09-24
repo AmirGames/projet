@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { fraisDeServiceEnVigueur } from "../services/delivery-mode.service";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint } from "../utils/geo";
@@ -399,6 +400,21 @@ router.get("/stores/:id/zones", async (req: Request, res: Response, next: NextFu
  * On ne rend que l'identifiant, le type et le nom : la configuration d'un moyen
  * de paiement contient les clés d'API du commerçant.
  */
+/**
+ * GET /api/client/service-fee - Les frais de service de la plateforme
+ *
+ * Annoncés au tunnel avant de valider : le serveur les ajoute de toute façon,
+ * et un total qui change entre l'écran et le ticket ne se pardonne pas.
+ */
+router.get("/service-fee", async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const config = await db.systemConfig.findFirst({ select: { serviceFee: true } });
+    res.json({ success: true, data: { frais: fraisDeServiceEnVigueur(config) } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/stores/:id/payment-methods", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const moyens = await db.paymentMethod.findMany({
