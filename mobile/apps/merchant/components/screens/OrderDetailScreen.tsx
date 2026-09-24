@@ -16,7 +16,7 @@ import { apiFetch, formatEuros } from '../../lib/api';
 import { useRealtimeEvent } from '../../lib/realtime';
 import { Card, COLORS, Row, ScreenHeader, ui } from '../ui';
 import { PREPARATION_CHOICES } from './SettingsScreen';
-import { Order, statusColor, statusLabel } from '../../lib/orders';
+import { deliveryStep, displayStatus, itemsByCategory, Order } from '../../lib/orders';
 
 const REJECT_REASONS: { code: string; label: string }[] = [
   { code: 'TOO_BUSY', label: 'Trop de commandes en cours' },
@@ -123,6 +123,9 @@ export default function OrderDetailScreen({
   };
 
   const isPickup = order.deliveryType !== 'DELIVERY';
+  const shown = displayStatus(order);
+  const step = deliveryStep(order);
+  const categories = itemsByCategory(order.items);
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
@@ -130,8 +133,8 @@ export default function OrderDetailScreen({
 
       <ScrollView contentContainerStyle={ui.content}>
         <View style={styles.statusRow}>
-          <View style={[styles.badge, { backgroundColor: statusColor(order.status) }]}>
-            <Text style={styles.badgeText}>{statusLabel(order.status)}</Text>
+          <View style={[styles.badge, { backgroundColor: shown.color }]}>
+            <Text style={styles.badgeText}>{shown.label}</Text>
           </View>
           <Text style={styles.type}>{isPickup ? '🛍️ Retrait' : '🛵 Livraison'}</Text>
         </View>
@@ -150,18 +153,37 @@ export default function OrderDetailScreen({
         </Card>
 
         <Card title="Articles">
-          {(order.items || []).map((item, i, all) => (
-            <Row
-              key={item.id}
-              label={`${item.quantity} × ${item.product?.name || 'Produit'}`}
-              value={formatEuros(item.total)}
-              last={i === all.length - 1}
-            />
+          {categories.map((group, g) => (
+            <View key={group.name} style={g > 0 && styles.categoryGap}>
+              {(categories.length > 1 || group.name !== 'Autres') && (
+                <Text style={styles.category}>{group.name}</Text>
+              )}
+              {group.items.map((item, i) => (
+                <Row
+                  key={item.id}
+                  label={`${item.quantity} × ${item.product?.name || 'Produit'}`}
+                  value={formatEuros(item.total)}
+                  last={i === group.items.length - 1}
+                />
+              ))}
+            </View>
           ))}
         </Card>
 
         {!isPickup && (
           <Card title="Livraison">
+            {step && (
+              <View style={[styles.step, step.done && { backgroundColor: '#E8F5E9' }]}>
+                <Text style={styles.stepIcon}>{step.icon}</Text>
+                <Text style={styles.stepText}>{step.text}</Text>
+              </View>
+            )}
+            {order.delivery?.driver ? (
+              <Row
+                label="Livreur"
+                value={`${order.delivery.driver.name}${order.delivery.driver.phone ? ` · ${order.delivery.driver.phone}` : ''}`}
+              />
+            ) : null}
             <Row label="Adresse" value={order.deliveryAddress || '—'} />
             <Row label="Ville" value={[order.deliveryPostal, order.deliveryCity].filter(Boolean).join(' ') || '—'} last />
           </Card>
@@ -212,15 +234,21 @@ export default function OrderDetailScreen({
             </TouchableOpacity>
           </View>
         ) : status === 'PREPARING' ? (
-          <TouchableOpacity style={[styles.btn, { backgroundColor: '#9C27B0' }]} onPress={() => setStatus('READY', 'Commande prête')}>
-            <Text style={styles.btnText}>📦 Marquer prête</Text>
-          </TouchableOpacity>
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={[styles.btn, { backgroundColor: '#9C27B0' }]} onPress={() => setStatus('READY', 'Commande prête')}>
+              <Text style={styles.btnText}>📦 Marquer prête</Text>
+            </TouchableOpacity>
+          </View>
         ) : status === 'READY' && isPickup ? (
-          <TouchableOpacity style={[styles.btn, { backgroundColor: COLORS.success }]} onPress={() => setStatus('COMPLETED', 'Commande remise au client')}>
-            <Text style={styles.btnText}>🤝 Remise au client</Text>
-          </TouchableOpacity>
-        ) : status === 'READY' ? (
-          <Text style={styles.waiting}>En attente du livreur</Text>
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={[styles.btn, { backgroundColor: COLORS.success }]} onPress={() => setStatus('COMPLETED', 'Commande remise au client')}>
+              <Text style={styles.btnText}>🤝 Remise au client</Text>
+            </TouchableOpacity>
+          </View>
+        ) : status === 'READY' && step ? (
+          <Text style={styles.waiting}>
+            {step.icon} {step.text}
+          </Text>
         ) : null}
       </View>
 
@@ -306,6 +334,26 @@ const styles = StyleSheet.create({
   btnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   btnGhost: { backgroundColor: COLORS.bg },
   btnGhostText: { color: COLORS.text, fontSize: 15, fontWeight: '600' },
+  category: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 4,
+  },
+  categoryGap: { marginTop: 10 },
+  step: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#E0F2F1',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 4,
+  },
+  stepIcon: { fontSize: 20 },
+  stepText: { flex: 1, fontSize: 14, fontWeight: '600', color: COLORS.text },
   waiting: { textAlign: 'center', color: '#666', paddingVertical: 12, fontSize: 14 },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet: { backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20, paddingBottom: 32 },

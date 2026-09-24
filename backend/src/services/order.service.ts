@@ -549,7 +549,17 @@ export class OrderService {
     return await db.order.findMany({
       where: { storeId },
       include: {
-        items: { include: { product: true } },
+        items: { include: { product: { include: { category: { select: { name: true, displayOrder: true } } } } } },
+        delivery: {
+          select: {
+            status: true,
+            assignedAt: true,
+            pickupTime: true,
+            deliveryTime: true,
+            estimatedTime: true,
+            driver: { select: { name: true, phone: true, vehicleType: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       take: limit,

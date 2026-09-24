@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL, apiFetch, formatEuros, setUnauthorizedHandler } from '../lib/api';
 import { clearSession, DEFAULT_PREFS, loadPrefs, loadSession, Prefs, savePrefs, saveSession, Session } from '../lib/session';
-import { isPending, isToday, Order, statusColor, statusLabel } from '../lib/orders';
+import { displayStatus, isPending, isToday, Order } from '../lib/orders';
 import { NewOrderEvent, useOrderAlerts } from '../lib/useOrderAlerts';
 import { useRealtimeEvent } from '../lib/realtime';
 import { onOrderNotificationTap, PushOrderData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
@@ -497,8 +497,8 @@ export default function MerchantApp() {
                       ? `  ·  ${new Date(item.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
                       : ''}
                   </Text>
-                  <View style={[styles.statusBadge, { backgroundColor: statusColor(item.status) }]}>
-                    <Text style={styles.statusText}>{statusLabel(item.status)}</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: displayStatus(item).color }]}>
+                    <Text style={styles.statusText}>{displayStatus(item).label}</Text>
                   </View>
                 </View>
                 <Text style={styles.customerName}>

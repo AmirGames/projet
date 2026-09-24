@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { formatEuros } from '../../lib/api';
-import { isPending, Order, statusColor, statusLabel } from '../../lib/orders';
+import { displayStatus, isPending, Order, statusColor } from '../../lib/orders';
 import { COLORS } from '../ui';
 
 const EXCLUDED = ['REJECTED', 'CANCELLED'];
@@ -184,7 +184,7 @@ export default function DashboardScreen({
       avgY: yesterday.length ? revenueY / yesterday.length : 0,
       pending: allToday.filter(isPending).length,
       preparing: allToday.filter((o) => ['ACCEPTED', 'PREPARING'].includes(upper(o.status))).length,
-      ready: allToday.filter((o) => upper(o.status) === 'READY').length,
+      ready: allToday.filter((o) => upper(o.status) === 'READY' && o.delivery?.status !== 'PICKED_UP').length,
       rejected: allToday.filter((o) => EXCLUDED.includes(upper(o.status))).length,
       delivery: today.filter((o) => o.deliveryType === 'DELIVERY').length,
       queue,
@@ -268,13 +268,13 @@ export default function DashboardScreen({
                 style={[styles.queueRow, i === list.length - 1 && { borderBottomWidth: 0 }]}
                 onPress={() => onOpenOrder(o)}
               >
-                <View style={[styles.queueBar, { backgroundColor: statusColor(o.status) }]} />
+                <View style={[styles.queueBar, { backgroundColor: displayStatus(o).color }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.queueTitle} numberOfLines={1}>
                     {o.customerName || 'Client'} · {o.deliveryType === 'DELIVERY' ? '🛵' : '🛍️'}
                   </Text>
                   <Text style={styles.queueMeta}>
-                    {statusLabel(o.status)} · {sinceLabel(o.createdAt, now.getTime())}
+                    {displayStatus(o).label} · {sinceLabel(o.createdAt, now.getTime())}
                   </Text>
                 </View>
                 <Text style={styles.queueAmount}>{formatEuros(o.totalAmount)}</Text>
