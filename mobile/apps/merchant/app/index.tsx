@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, FlatList, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const API_URL = 'http://192.168.0.80:3001';
+import { API_URL } from '../lib/api';
+import StatsScreen from '../components/screens/StatsScreen';
+import MenuScreen from '../components/screens/MenuScreen';
+import StoreScreen from '../components/screens/StoreScreen';
+import SettingsScreen from '../components/screens/SettingsScreen';
+import AccountScreen from '../components/screens/AccountScreen';
 
 interface Order {
   id: string;
@@ -24,7 +28,23 @@ interface Order {
     total: number;
   }>;
   storeId?: string;
+  createdAt?: string;
 }
+
+const DRAWER_ITEMS = [
+  { tab: 'stats', label: '📊 Statistiques' },
+  { tab: 'menu', label: '🍕 Menu' },
+  { tab: 'boutique', label: '🏪 Boutique' },
+  { tab: 'settings', label: '⚙️ Paramètres' },
+  { tab: 'account', label: '👤 Mon Compte' },
+];
+
+const isToday = (iso?: string) => {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+};
 
 const STATUS_LABELS = {
   pending: 'En attente',
@@ -56,6 +76,8 @@ export default function MerchantApp() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [storeId, setStoreId] = useState<string>('');
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const [orgId, setOrgId] = useState<string>('');
+  const [preparationMinutes, setPreparationMinutes] = useState<number>(30);
 
   const fetchOrders = async (token: string, orgId: string) => {
     try {
@@ -119,6 +141,7 @@ export default function MerchantApp() {
         setTab('dashboard');
 
         if (data.organization) {
+          setOrgId(data.organization.id);
           await fetchOrders(data.accessToken, data.organization.id);
         }
       } else {
@@ -132,6 +155,11 @@ export default function MerchantApp() {
     }
   };
 
+  const openFromMenu = (target: string) => {
+    setTab(target);
+    setMenuOpen(false);
+  };
+
   const handleLogout = () => {
     setIsLoggedIn(false);
     setEmail('');
@@ -141,6 +169,8 @@ export default function MerchantApp() {
     setScreen('login');
     setTab('dashboard');
     setMenuOpen(false);
+    setOrgId('');
+    setStoreId('');
   };
 
   const handleOrderAction = async (action: string, orderId: string) => {
@@ -150,7 +180,7 @@ export default function MerchantApp() {
 
       if (action === 'accept') {
         endpoint = `/api/order-management/${storeId}/${orderId}/accept`;
-        body = { preparationMinutes: 30 };
+        body = { preparationMinutes };
       } else if (action === 'reject') {
         endpoint = `/api/order-management/${storeId}/${orderId}/reject`;
         body = { motif: 'OTHER', note: 'Refusé par le commerçant' };
@@ -170,8 +200,8 @@ export default function MerchantApp() {
 
       if (response.ok) {
         Alert.alert('Succès', `Commande ${action === 'accept' ? 'acceptée' : action === 'reject' ? 'refusée' : 'marquée prête'}`);
-        if (selectedOrder?.storeId) {
-          await fetchOrders(accessToken, selectedOrder.storeId);
+        if (orgId) {
+          await fetchOrders(accessToken, orgId);
         }
         setScreen('dashboard');
         setTab('commandes-jour');
@@ -232,7 +262,31 @@ export default function MerchantApp() {
 
   // Dashboard Screen
   if (screen === 'dashboard') {
+    const todayOrders = orders.filter((o) => isToday(o.createdAt));
+    const back = () => setTab('dashboard');
+
     const renderTabContent = () => {
+      if (!storeId && (tab === 'stats' || tab === 'menu' || tab === 'boutique')) {
+        return (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Aucune boutique associée à ce compte</Text>
+          </View>
+        );
+      }
+      if (tab === 'stats') return <StatsScreen token={accessToken} storeId={storeId} onBack={back} />;
+      if (tab === 'menu') return <MenuScreen token={accessToken} storeId={storeId} onBack={back} />;
+      if (tab === 'boutique') return <StoreScreen token={accessToken} storeId={storeId} onBack={back} />;
+      if (tab === 'settings') {
+        return (
+          <SettingsScreen
+            preparationMinutes={preparationMinutes}
+            onChangePreparation={setPreparationMinutes}
+            onLogout={handleLogout}
+            onBack={back}
+          />
+        );
+      }
+      if (tab === 'account') return <AccountScreen token={accessToken} onLogout={handleLogout} onBack={back} />;
       if (tab === 'dashboard') {
         return (
           <>
@@ -270,7 +324,7 @@ export default function MerchantApp() {
               </View>
             </View>
             <FlatList
-              data={orders}
+              data={todayOrders}
               keyExtractor={(item) => item.id}
               renderItem={({ item }: { item: Order }) => {
                 const statusKey = item.status?.toLowerCase() as keyof typeof STATUS_LABELS;
@@ -296,7 +350,7 @@ export default function MerchantApp() {
               contentContainerStyle={styles.listContent}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>Aucune commande</Text>
+                  <Text style={styles.emptyText}>Aucune commande aujourd'hui</Text>
                 </View>
               }
             />
@@ -308,48 +362,6 @@ export default function MerchantApp() {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <StatusBar style="light" />
-
-        {/* Menu Drawer */}
-        {menuOpen && (
-          <View style={styles.menuOverlay}>
-            <TouchableOpacity
-              style={styles.menuBackdrop}
-              onPress={() => setMenuOpen(false)}
-            />
-            <View style={styles.menuDrawerRight}>
-              <View style={styles.menuHeader}>
-                <Text style={styles.menuTitle}>Menu</Text>
-                <TouchableOpacity onPress={() => setMenuOpen(false)}>
-                  <Text style={styles.closeButton}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity style={styles.menuItem} onPress={() => { setTab('dashboard'); setMenuOpen(false); }}>
-                <Text style={styles.menuItemText}>📊 Statistiques</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuItem}>
-                <Text style={styles.menuItemText}>🍕 Menu</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuItem}>
-                <Text style={styles.menuItemText}>🏪 Boutique</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuItem}>
-                <Text style={styles.menuItemText}>⚙️ Paramètres</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuItem}>
-                <Text style={styles.menuItemText}>👤 Mon Compte</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
-                <Text style={styles.menuItemLogoutText}>🚪 Déconnexion</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
 
         <View style={styles.dashboardContainer}>
           {renderTabContent()}
@@ -376,10 +388,42 @@ export default function MerchantApp() {
               onPress={() => setTab('commandes-jour')}
             >
               <Text style={[styles.tabIcon, tab === 'commandes-jour' && styles.tabIconActive]}>📋</Text>
-              <Text style={[styles.tabLabel, tab === 'commandes-jour' && styles.tabLabelActive]}>Commandes</Text>
+              <Text style={[styles.tabLabel, tab === 'commandes-jour' && styles.tabLabelActive]}>Commandes du Jour</Text>
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Menu Drawer */}
+        {menuOpen && (
+          <View style={styles.menuOverlay}>
+            <TouchableOpacity
+              style={styles.menuBackdrop}
+              onPress={() => setMenuOpen(false)}
+            />
+            <View style={styles.menuDrawerRight}>
+              <View style={styles.menuHeader}>
+                <Text style={styles.menuTitle}>Menu</Text>
+                <TouchableOpacity onPress={() => setMenuOpen(false)}>
+                  <Text style={styles.closeButton}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              {DRAWER_ITEMS.map((item) => (
+                <TouchableOpacity
+                  key={item.tab}
+                  style={[styles.menuItem, tab === item.tab && styles.menuItemActive]}
+                  onPress={() => openFromMenu(item.tab)}
+                >
+                  <Text style={styles.menuItemText}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+
+              <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
+                <Text style={styles.menuItemLogoutText}>🚪 Déconnexion</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </SafeAreaView>
     );
   }
@@ -573,6 +617,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     fontWeight: '500',
+  },
+  menuItemActive: {
+    backgroundColor: '#EAF3FF',
   },
   menuItemLogout: {
     marginTop: 8,
