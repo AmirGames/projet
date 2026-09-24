@@ -34,7 +34,7 @@ export function useOrderAlerts({
   onNewOrder: (event: NewOrderEvent) => void;
   onOrdersChanged: () => void;
 }) {
-  const player = useAudioPlayer(require('../assets/sounds/new-order.wav'));
+  const player = useAudioPlayer(require('../assets/sounds/new_order.wav'));
   const [connected, setConnected] = useState(false);
 
   const callbacks = useRef({ onNewOrder, onOrdersChanged, soundEnabled });

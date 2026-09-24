@@ -11,6 +11,7 @@ import { ModeDeLivraison, fraisDeServiceEnVigueur } from "./delivery-mode.servic
 import { promoSansCommissionActive } from "./plan.service";
 import { StoreHoursService } from "./store-hours.service";
 import { emitMerchantEvent } from "../config/socket";
+import { Notifier, enArrierePlan } from "./notifier.service";
 import { echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
 
 export interface OrderData {
@@ -506,6 +507,19 @@ export class OrderService {
         totalAmount: Number(order.totalAmount),
         echeance: echeanceDeReponse(order).toISOString(),
       });
+
+      // Et le téléphone du commerçant, même application fermée.
+      enArrierePlan(
+        Notifier.pushEquipeBoutique(order.storeId, {
+          title: "🔔 Nouvelle commande",
+          body: `${order.customerName || "Un client"} · ${
+            order.deliveryType === "DELIVERY" ? "Livraison" : "Retrait"
+          } · ${Number(order.totalAmount).toFixed(2)} €`,
+          data: { type: "commande-nouvelle", orderId: order.id, storeId: order.storeId },
+          channelId: "new-orders",
+          sound: "new_order.wav",
+        })
+      );
 
       return order;
     } catch (error: any) {

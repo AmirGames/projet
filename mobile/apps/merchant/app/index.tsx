@@ -6,6 +6,8 @@ import { API_URL, apiFetch, formatEuros, setUnauthorizedHandler } from '../lib/a
 import { clearSession, DEFAULT_PREFS, loadPrefs, loadSession, Prefs, savePrefs, saveSession, Session } from '../lib/session';
 import { isPending, isToday, Order, statusColor, statusLabel } from '../lib/orders';
 import { NewOrderEvent, useOrderAlerts } from '../lib/useOrderAlerts';
+import * as Notifications from 'expo-notifications';
+import { orderFromResponse, PushOrderData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
 import StatsScreen from '../components/screens/StatsScreen';
 import MenuScreen from '../components/screens/MenuScreen';
 import StoreScreen from '../components/screens/StoreScreen';
@@ -44,11 +46,17 @@ export default function MerchantApp() {
   const [stores, setStores] = useState<StoreSummary[]>([]);
   const [storePickerOpen, setStorePickerOpen] = useState<boolean>(false);
   const [banner, setBanner] = useState<NewOrderEvent | null>(null);
+  const [pushSetup, setPushSetup] = useState<PushSetup | null>(null);
+  const [pendingOpen, setPendingOpen] = useState<PushOrderData | null>(null);
+  const lastResponse = Notifications.useLastNotificationResponse();
 
   const token = session?.accessToken || '';
   const currentStore = stores.find((s) => s.id === storeId);
   const storeIdRef = useRef(storeId);
   storeIdRef.current = storeId;
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const pushTokenRef = useRef<string | null>(null);
 
   const updatePrefs = (patch: Partial<Prefs>) => {
     setPrefs((p) => {
@@ -91,6 +99,11 @@ export default function MerchantApp() {
   };
 
   const handleLogout = useCallback(() => {
+    const current = sessionRef.current;
+    if (current && pushTokenRef.current) unregisterPush(current.accessToken, pushTokenRef.current);
+    pushTokenRef.current = null;
+    setPushSetup(null);
+    setPendingOpen(null);
     clearSession();
     setSession(null);
     setPassword('');
@@ -145,6 +158,29 @@ export default function MerchantApp() {
     return () => setUnauthorizedHandler(null);
   }, [handleLogout]);
 
+  // Ce téléphone reçoit les commandes même application fermée.
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    registerForPush(token).then((setup) => {
+      if (cancelled) return;
+      pushTokenRef.current = setup.status === 'enabled' ? setup.token : null;
+      setPushSetup(setup);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // Toucher une notification ouvre la commande, dans la bonne boutique.
+  useEffect(() => {
+    const target = orderFromResponse(lastResponse ?? null);
+    if (target) {
+      setPendingOpen(target);
+      Notifications.clearLastNotificationResponse();
+    }
+  }, [lastResponse]);
+
   const pendingCount = orders.filter(isPending).length;
 
   const { connected, ring } = useOrderAlerts({
@@ -169,6 +205,20 @@ export default function MerchantApp() {
     updatePrefs({ storeId: id });
     await loadOrders(token, id);
   };
+
+  useEffect(() => {
+    if (!pendingOpen || !session || !storeId) return;
+    if (pendingOpen.storeId && pendingOpen.storeId !== storeId && stores.some((s) => s.id === pendingOpen.storeId)) {
+      switchStore(pendingOpen.storeId);
+      return;
+    }
+    setBanner(null);
+    setTab('commandes-jour');
+    const order = orders.find((o) => o.id === pendingOpen.orderId);
+    if (order) setSelectedOrder(order);
+    if (order || orders.length > 0) setPendingOpen(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingOpen, session, storeId, stores, orders]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -346,6 +396,8 @@ export default function MerchantApp() {
           soundEnabled={prefs.soundEnabled}
           onChangeSound={(enabled) => updatePrefs({ soundEnabled: enabled })}
           onTestSound={ring}
+          pushEnabled={pushSetup?.status === 'enabled'}
+          pushInfo={pushSetup ? (pushSetup.status === 'enabled' ? undefined : pushSetup.reason) : 'Vérification…'}
           onLogout={handleLogout}
           onBack={back}
         />

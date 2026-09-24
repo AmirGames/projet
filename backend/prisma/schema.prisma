@@ -36,11 +36,29 @@ model User {
   driver        Driver?
   customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
   ticketMessages TicketMessage[]
+  pushDevices   PushDevice[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([email])
+}
+
+/// Téléphone sur lequel l'application mobile est installée et connectée.
+/// Le jeton Expo Push permet de prévenir le compte même application fermée.
+model PushDevice {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String?  // ios, android
+  app       String?  // merchant, delivery, customer
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // ============================================================================

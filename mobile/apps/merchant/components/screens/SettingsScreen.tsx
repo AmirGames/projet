@@ -12,6 +12,8 @@ export default function SettingsScreen({
   soundEnabled,
   onChangeSound,
   onTestSound,
+  pushEnabled,
+  pushInfo,
   onLogout,
   onBack,
 }: {
@@ -20,6 +22,8 @@ export default function SettingsScreen({
   soundEnabled: boolean;
   onChangeSound: (enabled: boolean) => void;
   onTestSound: () => void;
+  pushEnabled: boolean;
+  pushInfo?: string;
   onLogout: () => void;
   onBack: () => void;
 }) {
@@ -59,6 +63,13 @@ export default function SettingsScreen({
           <TouchableOpacity style={styles.test} onPress={onTestSound} disabled={!soundEnabled}>
             <Text style={[styles.testText, !soundEnabled && { color: COLORS.muted }]}>🔔 Tester la sonnerie</Text>
           </TouchableOpacity>
+          <View style={styles.pushRow}>
+            <Text style={styles.switchLabel}>Notifications app fermée</Text>
+            <Text style={[styles.pushStatus, { color: pushEnabled ? COLORS.success : COLORS.danger }]}>
+              {pushEnabled ? '✓ Activées' : '✗ Inactives'}
+            </Text>
+          </View>
+          {!pushEnabled && pushInfo ? <Text style={styles.help}>{pushInfo}</Text> : null}
         </Card>
 
         <Card title="À propos">
@@ -78,6 +89,8 @@ export default function SettingsScreen({
 const styles = StyleSheet.create({
   help: { fontSize: 13, color: '#666', marginBottom: 10 },
   switchRow: { flexDirection: 'row', alignItems: 'center' },
+  pushRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
+  pushStatus: { fontSize: 14, fontWeight: '700' },
   switchLabel: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
   test: { paddingVertical: 10, alignItems: 'center', backgroundColor: COLORS.bg, borderRadius: 8 },
   testText: { fontSize: 15, fontWeight: '600', color: COLORS.primary },
