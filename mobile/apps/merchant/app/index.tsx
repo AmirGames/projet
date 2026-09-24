@@ -396,11 +396,7 @@ export default function MerchantApp() {
         {/* Menu Drawer */}
         {menuOpen && (
           <View style={styles.menuOverlay}>
-            <TouchableOpacity
-              style={styles.menuBackdrop}
-              onPress={() => setMenuOpen(false)}
-            />
-            <View style={styles.menuDrawerRight}>
+            <View style={styles.menuDrawer}>
               <View style={styles.menuHeader}>
                 <Text style={styles.menuTitle}>Menu</Text>
                 <TouchableOpacity onPress={() => setMenuOpen(false)}>
@@ -422,6 +418,10 @@ export default function MerchantApp() {
                 <Text style={styles.menuItemLogoutText}>🚪 Déconnexion</Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity
+              style={styles.menuBackdrop}
+              onPress={() => setMenuOpen(false)}
+            />
           </View>
         )}
       </SafeAreaView>
@@ -580,13 +580,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingTop: 20,
     paddingBottom: 20,
-  },
-  menuDrawerRight: {
-    width: '70%',
-    backgroundColor: '#fff',
-    paddingTop: 20,
-    paddingBottom: 20,
-    marginLeft: 'auto',
   },
   menuHeader: {
     flexDirection: 'row',
