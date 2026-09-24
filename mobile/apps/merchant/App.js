@@ -1,11 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View } from 'react-native';
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🎉 Zupone Merchant</Text>
-      <Text style={styles.subtitle}>App is working!</Text>
+      <Text style={styles.title}>Zupone Merchant</Text>
+      <Text style={styles.subtitle}>✅ App working!</Text>
+      <StatusBar style="auto" />
     </View>
   );
 }
@@ -13,18 +14,18 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#fff',
+    marginTop: 10,
   },
 });
