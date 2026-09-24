@@ -1,0 +1,20 @@
+{
+  "name": "zupone-mobile",
+  "version": "1.0.0",
+  "description": "Zupone Mobile Apps - Merchant, Customer, Delivery",
+  "main": "index.js",
+  "scripts": {
+    "start:merchant": "cd apps/merchant && expo start",
+    "start:customer": "cd apps/customer && expo start",
+    "start:delivery": "cd apps/delivery && expo start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "workspaces": [
+    "shared",
+    "apps/merchant",
+    "apps/customer",
+    "apps/delivery"
+  ]
+}
