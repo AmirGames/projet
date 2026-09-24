@@ -80,13 +80,21 @@ const boutique = await appeler('/api/stores', {
 
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
 
-// Ouverture à 11 h, fermeture à 14 h, tous les jours : une plage étroite et
-// facile à contrôler.
+// Une plage étroite, tous les jours, qui englobe l'heure du lancement : la
+// boutique doit être ouverte pour qu'on y commande — la vitrine et le serveur
+// refusent une boutique fermée —, et la plage doit rester assez courte pour
+// que « aucune heure hors ouverture » veuille dire quelque chose. Elle
+// commence une heure avant maintenant et dure quatre heures, dans la journée.
+const heureDuLancement = new Date().getHours();
+const OUVERTURE = Math.max(0, heureDuLancement - 1) * 60;
+const FERMETURE = Math.min(OUVERTURE + 4 * 60, 23 * 60 + 59);
+const enHeure = (minutes) =>
+  `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 for (const jour of ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']) {
   await appeler(`/api/store-hours/${storeId}/day/${jour}`, {
     method: 'PUT',
     jeton: T,
-    corps: { open: '11:00', close: '14:00', closed: false },
+    corps: { open: enHeure(OUVERTURE), close: enHeure(FERMETURE), closed: false },
   });
 }
 
@@ -153,7 +161,7 @@ check('des créneaux sont listés', reels.length > 0, JSON.stringify(heures.slic
 const horsHoraires = reels.filter((h) => {
   const instant = new Date(h.valeur);
   const minutes = instant.getHours() * 60 + instant.getMinutes();
-  return minutes < 11 * 60 || minutes >= 14 * 60;
+  return minutes < OUVERTURE || minutes >= FERMETURE;
 });
 
 check(
