@@ -19,6 +19,7 @@
     "verif": "node scripts/verification/tout.mjs"
   },
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "@types/multer": "^2.2.0",
     "bcrypt": "^6.0.0",
     "bull": "^4.16.5",

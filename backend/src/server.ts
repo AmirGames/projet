@@ -3,7 +3,7 @@ import http from 'http';
 import { loadEnv } from "./config/env";
 import { logger } from "./config/logger";
 import { createApp } from "./app";
-import { initializeSocket } from "./config/socket";
+import { initializeSocket, brancherRedis } from "./config/socket";
 import { db } from "./services/db";
 import { ClosureJobs } from "./jobs/closure-jobs";
 import { DispatchJobs } from "./jobs/dispatch-jobs";
@@ -31,6 +31,10 @@ const start = async () => {
     logger.info("Testing database connection...");
     await db.$queryRaw`SELECT 1`;
     logger.info("✅ Database connected");
+
+    // Avant d'écouter : un événement émis entre-temps n'atteindrait que les
+    // connexions de cette instance.
+    await brancherRedis();
 
     // Start listening
     httpServer.listen(env.PORT, () => {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { io } from 'socket.io-client';
+import { connexionTempsReel } from '@/lib/temps-reel';
 import { MessageCircle, Phone, Circle, Package, SatelliteDish } from 'lucide-react';
 
 import { FilSupport, type MessageSupport } from '@/components/FilSupport';
@@ -89,25 +89,30 @@ export default function DriverSupportPage() {
     const token = jeton();
     if (!token) return;
 
-    const socket = io(API_URL, { auth: { token }, transports: ['websocket', 'polling'] });
+    const socket = connexionTempsReel();
 
-    socket.on('support-message', (message: MessageSupport & { driverName?: string }) => {
+    const surMessage = (message: MessageSupport & { driverName?: string }) => {
       if (message.driverId === selectionRef.current) {
         setMessages((liste) => (liste.some((m) => m.id === message.id) ? liste : [...liste, message]));
         if (message.sender === 'DRIVER') ouvrir(message.driverId);
       }
       chargerConversations();
-    });
+    };
 
-    socket.on('support-lu', ({ driverId }: { driverId: string }) => {
+    const surLu = ({ driverId }: { driverId: string }) => {
       if (driverId !== selectionRef.current) return;
       setMessages((liste) =>
         liste.map((m) => (m.sender === 'SUPPORT' && !m.readAt ? { ...m, readAt: new Date().toISOString() } : m))
       );
-    });
+    };
 
+    socket.on('support-message', surMessage);
+    socket.on('support-lu', surLu);
+
+    // La connexion est partagée : on retire nos écouteurs, on ne la ferme pas.
     return () => {
-      socket.disconnect();
+      socket.off('support-message', surMessage);
+      socket.off('support-lu', surLu);
     };
   }, [chargerConversations, ouvrir]);
 

@@ -15,7 +15,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { Map as CarteLeaflet, CircleMarker } from 'leaflet';
 import { MapPin, Clock, Truck, AlertCircle } from 'lucide-react';
 import L from 'leaflet';
-import { io, type Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
+import { connexionTempsReel, suivreSalon } from '@/lib/temps-reel';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -173,16 +174,10 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
 
     // Le serveur parle Socket.IO : un WebSocket brut n'y obtenait jamais de
     // poignée de main, et la position du livreur ne bougeait pas.
-    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001', {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-    });
+    const socket = connexionTempsReel();
+    const quitter = suivreSalon('order', orderId);
 
-    socket.on('connect', () => {
-      socket.emit('join-order', orderId);
-    });
-
-    socket.on('delivery-update', (data: any) => {
+    const surLivraison = (data: any) => {
       try {
 
         if (data.orderId === orderId) {
@@ -249,17 +244,23 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
       } catch (err) {
         console.error('Erreur WebSocket:', err);
       }
-    });
+    };
 
-    socket.on('connect_error', () => {
-      setError('Erreur de connexion au suivi');
-    });
+    const surErreur = () => setError('Erreur de connexion au suivi');
+    const surConnexion = () => setError('');
+
+    socket.on('delivery-update', surLivraison);
+    socket.on('connect_error', surErreur);
+    socket.on('connect', surConnexion);
 
     socketRef.current = socket;
 
+    // La connexion est partagée : on retire nos écouteurs, on ne la ferme pas.
     return () => {
-      socket.emit('leave-order', orderId);
-      socket.disconnect();
+      socket.off('delivery-update', surLivraison);
+      socket.off('connect_error', surErreur);
+      socket.off('connect', surConnexion);
+      quitter();
     };
   }, [orderId]);
 

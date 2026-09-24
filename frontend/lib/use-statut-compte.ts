@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useCallback, useEffect, useState } from 'react';
+import { useTempsReel } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -37,7 +37,6 @@ export interface StatutCompte {
 export function useStatutCompte(orgId?: string | null) {
   const [statut, setStatut] = useState<StatutCompte | null>(null);
   const [chargement, setChargement] = useState(true);
-  const socketRef = useRef<Socket | null>(null);
 
   const charger = useCallback(async () => {
     if (!orgId) {
@@ -68,18 +67,10 @@ export function useStatutCompte(orgId?: string | null) {
     charger();
   }, [charger]);
 
-  useEffect(() => {
-    const jeton = localStorage.getItem('accessToken');
-    if (!jeton || !orgId) return;
-
-    const socket = io(API_URL, {
-      auth: { token: jeton },
-      transports: ['websocket', 'polling'],
-    });
-    socketRef.current = socket;
-
-    socket.on('compte-statut', (evenement: { orgId: string; status: string; reason?: string | null }) => {
-      if (evenement.orgId !== orgId) return;
+  useTempsReel<{ orgId: string; status: string; reason?: string | null }>(
+    'compte-statut',
+    (evenement) => {
+      if (!orgId || evenement.orgId !== orgId) return;
 
       setStatut((precedent) => ({
         ...(precedent || { id: orgId }),
@@ -91,14 +82,9 @@ export function useStatutCompte(orgId?: string | null) {
       // La date limite de suppression et le reste viennent du serveur : on
       // relit, sans attendre, pour compléter ce que l'événement ne porte pas.
       charger();
-    });
-
-    return () => {
-      socket.off('compte-statut');
-      socket.disconnect();
-      socketRef.current = null;
-    };
-  }, [orgId, charger]);
+    },
+    Boolean(orgId)
+  );
 
   return {
     statut,

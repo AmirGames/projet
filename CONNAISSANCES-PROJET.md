@@ -60,7 +60,7 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Frontend** | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS |
 | **Backend** | Express, TypeScript, Prisma 5.22 |
 | **Base de données** | PostgreSQL |
-| **Temps réel** | Socket.IO — disponibilité des plats, notifications, suivi de livraison |
+| **Temps réel** | Socket.IO — une connexion par onglet, annonce de chaque écriture (`donnees-modifiees`), Redis pour relier plusieurs instances |
 | **Authentification** | JWT (jeton d'accès + jeton de renouvellement) |
 | **Courriel** | SMTP via nodemailer, Mailpit en développement |
 | **Adresses** | BAN pour la France + Photon pour la Belgique (`ADDRESS_PROVIDER=ban+photon`) |
@@ -388,6 +388,25 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 - **Ne jamais enregistrer un état avant de l'avoir lu.** Sur la vitrine, l'effet
   qui persiste le panier partait avant celui qui le relit, et écrasait le panier
   gardé du dernier passage. Un garde (`panierLu`) ordonne les deux.
+
+**Temps réel**
+- **Une seule connexion par onglet** : `frontend/lib/temps-reel.tsx`. Ne jamais
+  rappeler `io(...)` dans un composant — passer par `useTempsReel`,
+  `useSalon`, `useDonneesModifiees` ou `connexionTempsReel()`. Et ne jamais
+  la fermer (`disconnect`) au démontage : retirer seulement ses écouteurs,
+  **avec la fonction** (`off(evenement, ecouteur)`), sinon on retire aussi
+  ceux des autres écrans.
+- **Toute écriture réussie est annoncée** par `middleware/diffusion.ts` :
+  `donnees-modifiees { ressource, action, storeId?, orgId?, id? }`, où
+  `ressource` est le premier segment après `/api/` (`products`, `orders`,
+  `order-management`…). Aux membres de l'organisation, à la plateforme, à
+  l'auteur, aux suiveurs de la commande, et aux visiteurs de la vitrine pour
+  les ressources publiques. L'annonce ne porte aucune donnée : l'écran relit
+  l'API. Une route qui écrit sans que ce soit utile à relayer (la position du
+  livreur, un calcul) va dans `IGNOREES`.
+- Pour qu'un écran suive : `useDonneesModifiees('orders', charger, { storeId })`.
+- Un changement fait par une tâche de fond (hors requête HTTP) n'est pas vu par
+  le relais : l'annoncer avec `signalerModification()`.
 
 **La vitrine (`/store/<slug>`)**
 - Son panier est un **panneau replié** : un script qui veut lire ses lignes doit

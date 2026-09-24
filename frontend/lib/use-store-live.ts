@@ -1,12 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { useConnexionTempsReel, useSalon, useTempsReel } from '@/lib/temps-reel';
 
 export interface ChangementDisponibilite {
   productId: string;
+  storeId?: string;
   name: string;
   isAvailable: boolean;
 }
@@ -23,6 +21,7 @@ export interface DeclinaisonEnDirect {
 
 export interface ChangementDeclinaisons {
   productId: string;
+  storeId?: string;
   variantes: DeclinaisonEnDirect[];
 }
 
@@ -40,54 +39,32 @@ export function useStoreLive(
   surChangement: (changement: ChangementDisponibilite) => void,
   surDeclinaisons?: (changement: ChangementDeclinaisons) => void
 ) {
-  const [connecte, setConnecte] = useState(false);
+  const connecte = useConnexionTempsReel();
 
-  // Le rappel est relu à chaque événement plutôt que capturé à l'ouverture :
-  // sinon il garde la version d'origine et travaille sur un menu périmé.
-  const rappel = useRef(surChangement);
-  rappel.current = surChangement;
+  useSalon('store', storeId);
 
-  const rappelDeclinaisons = useRef(surDeclinaisons);
-  rappelDeclinaisons.current = surDeclinaisons;
+  // La connexion est partagée par tout l'onglet, qui peut suivre d'autres
+  // boutiques : on ne retient que celle-ci.
+  const estDIci = (donnees: { storeId?: string }) => !donnees.storeId || donnees.storeId === storeId;
 
-  useEffect(() => {
-    if (!storeId) return;
+  useTempsReel<ChangementDisponibilite>(
+    'produit-disponibilite',
+    (donnees) => {
+      if (estDIci(donnees)) surChangement(donnees);
+    },
+    Boolean(storeId)
+  );
 
-    let jeton: string | null = null;
-    try {
-      jeton = localStorage.getItem('accessToken');
-    } catch {
-      // Stockage refusé : on se connecte en anonyme, ce qui suffit ici.
-    }
-
-    const socket = io(API_URL, {
-      auth: jeton ? { token: jeton } : {},
-      transports: ['websocket', 'polling'],
-    });
-
-    socket.on('connect', () => {
-      setConnecte(true);
-      socket.emit('join-store', storeId);
-    });
-
-    socket.on('disconnect', () => setConnecte(false));
-
-    socket.on('produit-disponibilite', (donnees: ChangementDisponibilite) => {
-      rappel.current(donnees);
-    });
-
-    // Une déclinaison épuisée doit disparaître des choix comme un plat
-    // disparaît du panier : sans cela, le client la retient et la commande
-    // échoue au dernier moment.
-    socket.on('produit-declinaisons', (donnees: ChangementDeclinaisons) => {
-      rappelDeclinaisons.current?.(donnees);
-    });
-
-    return () => {
-      socket.emit('leave-store', storeId);
-      socket.disconnect();
-    };
-  }, [storeId]);
+  // Une déclinaison épuisée doit disparaître des choix comme un plat
+  // disparaît du panier : sans cela, le client la retient et la commande
+  // échoue au dernier moment.
+  useTempsReel<ChangementDeclinaisons>(
+    'produit-declinaisons',
+    (donnees) => {
+      if (estDIci(donnees)) surDeclinaisons?.(donnees);
+    },
+    Boolean(storeId)
+  );
 
   return { connecte };
 }

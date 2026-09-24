@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MapPin, Navigation, Timer } from 'lucide-react';
-import { io } from 'socket.io-client';
+import { connexionTempsReel } from '@/lib/temps-reel';
 import { useRouter } from 'next/navigation';
 
 import { euro } from '@/lib/format';
@@ -120,12 +120,9 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
   useEffect(() => {
     if (!isOnline || !jeton.current) return;
 
-    const socket = io(API_URL, {
-      auth: { token: jeton.current },
-      transports: ['websocket', 'polling'],
-    });
+    const socket = connexionTempsReel();
 
-    socket.on('course-proposee', (donnees: { payout?: number; approcheKm?: number; pickupStore?: string }) => {
+    const surCourse = (donnees: { payout?: number; approcheKm?: number; pickupStore?: string }) => {
       relever();
       notifierSiCache(
         donnees?.payout != null ? `Nouvelle course : ${euro(donnees.payout)}` : 'Nouvelle course',
@@ -134,21 +131,26 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
         }. Répondez vite !`,
         'course-proposee'
       );
-    });
+    };
     // Le serveur voit ce que le téléphone ne voit pas : ses positions
     // n'arrivent plus.
-    socket.on('gps-perdu', () => setPerduCoteServeur(true));
-    socket.on('gps-retabli', () => setPerduCoteServeur(false));
-    socket.on('mis-hors-ligne', (donnees: { raison?: string }) => {
+    const surGpsPerdu = () => setPerduCoteServeur(true);
+    const surGpsRetabli = () => setPerduCoteServeur(false);
+    const surMisHorsLigne = (donnees: { raison?: string }) => {
       surHorsLigne?.(donnees?.raison || 'Vous avez été mis hors ligne.');
-    });
+    };
 
+    socket.on('course-proposee', surCourse);
+    socket.on('gps-perdu', surGpsPerdu);
+    socket.on('gps-retabli', surGpsRetabli);
+    socket.on('mis-hors-ligne', surMisHorsLigne);
+
+    // La connexion est partagée : on retire nos écouteurs, on ne la ferme pas.
     return () => {
-      socket.off('course-proposee');
-      socket.off('gps-perdu');
-      socket.off('gps-retabli');
-      socket.off('mis-hors-ligne');
-      socket.disconnect();
+      socket.off('course-proposee', surCourse);
+      socket.off('gps-perdu', surGpsPerdu);
+      socket.off('gps-retabli', surGpsRetabli);
+      socket.off('mis-hors-ligne', surMisHorsLigne);
     };
   }, [isOnline, relever, surHorsLigne]);
 

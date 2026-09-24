@@ -42,6 +42,7 @@ DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" VERIF_A
 | `VERIF_API_URL` | Adresse de l'API visée | `http://localhost:3001` |
 | `DATABASE_URL` | Base visée — **elle sera vidée** | (obligatoire) |
 | `VERIF_AUTORISER_RESET` | `oui` pour lever le garde-fou du nom de base | (absent) |
+| `VERIF_API_URL_2` | Une seconde instance, reliée à la première par Redis : `verif-annonces-modifications` écrit sur l'une et écoute sur l'autre | (absent : une seule instance) |
 
 ### Les réglages de l'API pour la suite complète
 

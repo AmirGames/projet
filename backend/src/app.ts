@@ -9,6 +9,7 @@ import { setupErrorHandling } from "./middleware/errorHandler";
 import { maintenanceMiddleware } from "./middleware/maintenance";
 import { compteRestreint } from "./middleware/compte-restreint";
 import { cloisonnement } from "./middleware/cloisonnement";
+import { diffusionModifications } from "./middleware/diffusion";
 import authRouter from "./routes/auth";
 import organizationRouter from "./routes/organization";
 import storeRouter from "./routes/store";
@@ -107,6 +108,10 @@ export function createApp(): Express {
   // toutes les routes, et non route par route : deux routeurs sur vingt-cinq
   // faisaient le contrôle.
   app.use(cloisonnement);
+
+  // Après chaque écriture réussie, les écrans concernés sont prévenus et se
+  // relisent : le site suit en direct sans recharger.
+  app.use(diffusionModifications);
 
   // ===== Static files (uploads) =====
   const uploadsDir = join(process.cwd(), "uploads");

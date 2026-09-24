@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
+import { connexionTempsReel, suivreSalon } from '@/lib/temps-reel';
 
 interface OrderUpdate {
   orderId: string;
@@ -49,25 +50,19 @@ export function useOrderTracking(orderId: string) {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    // La connexion de l'onglet : le salon de la commande est rejoint à
+    // chaque (re)connexion, et quitté au départ de l'écran.
+    const socketInstance = connexionTempsReel();
+    const quitter = suivreSalon('order', orderId);
 
-    const socketInstance = io(API_URL, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-    });
+    const surConnexion = () => setIsConnected(true);
+    const surDeconnexion = () => setIsConnected(false);
 
-    socketInstance.on('connect', () => {
-      console.log('WebSocket connected');
-      setIsConnected(true);
-      socketInstance.emit('join-order', orderId);
-    });
+    setIsConnected(socketInstance.connected);
+    socketInstance.on('connect', surConnexion);
+    socketInstance.on('disconnect', surDeconnexion);
 
-    socketInstance.on('disconnect', () => {
-      console.log('WebSocket disconnected');
-      setIsConnected(false);
-    });
-
-    socketInstance.on('order-update', (data: OrderUpdate) => {
+    const surCommande = (data: OrderUpdate) => {
       if (data.orderId === orderId) {
         setOrderStatus(data.status);
 
@@ -88,9 +83,9 @@ export function useOrderTracking(orderId: string) {
 
         console.log('Order status updated:', data.status);
       }
-    });
+    };
 
-    socketInstance.on('delivery-update', (data: DeliveryUpdate) => {
+    const surLivraison = (data: DeliveryUpdate) => {
       if (data.orderId === orderId) {
         if (data.location) {
           setDeliveryLocation(data.location);
@@ -126,19 +121,20 @@ export function useOrderTracking(orderId: string) {
         }
         console.log('Delivery updated:', data);
       }
-    });
+    };
 
-    socketInstance.on('error', (error) => {
-      console.error('WebSocket error:', error);
-    });
+    socketInstance.on('order-update', surCommande);
+    socketInstance.on('delivery-update', surLivraison);
 
     setSocket(socketInstance);
 
+    // La connexion est partagée : on retire nos écouteurs, on ne la ferme pas.
     return () => {
-      if (socketInstance) {
-        socketInstance.emit('leave-order', orderId);
-        socketInstance.disconnect();
-      }
+      socketInstance.off('connect', surConnexion);
+      socketInstance.off('disconnect', surDeconnexion);
+      socketInstance.off('order-update', surCommande);
+      socketInstance.off('delivery-update', surLivraison);
+      quitter();
     };
   }, [orderId]);
 

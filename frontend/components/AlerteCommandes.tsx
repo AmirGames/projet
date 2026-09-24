@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { io } from 'socket.io-client';
 import { BellRing, Volume2 } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { EVENEMENT_COMMANDES_CHANGEES, delaiRestant } from '@/lib/reponse-commande';
+import { useDonneesModifiees, useTempsReel } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -89,25 +89,21 @@ export function AlerteCommandes({ orgId }: { orgId: string }) {
   }, [charger]);
 
   // En direct : une commande arrive, ou un collègue y a répondu.
-  useEffect(() => {
-    const jeton = localStorage.getItem('accessToken');
-    if (!jeton || !storeId) return;
+  const surEvenement = (donnees: { storeId?: string }) => {
+    if (donnees?.storeId && donnees.storeId !== storeId) return;
+    // Les écrans de commandes ouverts se relisent aussi.
+    window.dispatchEvent(new Event(EVENEMENT_COMMANDES_CHANGEES));
+  };
 
-    const socket = io(API_URL, { auth: { token: jeton }, transports: ['websocket', 'polling'] });
+  useTempsReel('commande-nouvelle', surEvenement, Boolean(storeId));
+  useTempsReel('commande-traitee', surEvenement, Boolean(storeId));
 
-    const surEvenement = (donnees: { storeId?: string }) => {
-      if (donnees?.storeId && donnees.storeId !== storeId) return;
-      // Les écrans de commandes ouverts se relisent aussi.
-      window.dispatchEvent(new Event(EVENEMENT_COMMANDES_CHANGEES));
-    };
-
-    socket.on('commande-nouvelle', surEvenement);
-    socket.on('commande-traitee', surEvenement);
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [storeId]);
+  // Toute autre écriture sur les commandes de la boutique (annulée, modifiée,
+  // livrée) : la liste d'attente peut avoir changé.
+  useDonneesModifiees(['orders', 'order-management'], charger, {
+    storeId,
+    actif: Boolean(storeId),
+  });
 
   // La sonnerie, tant qu'il reste une commande à accepter.
   useEffect(() => {
