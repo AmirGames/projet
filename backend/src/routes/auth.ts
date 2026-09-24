@@ -20,6 +20,8 @@ import {
   DUREE_REINITIALISATION_MS,
 } from "../services/account-token.service";
 import { db } from "../services/db";
+import { StoreService } from "../services/store.service";
+import { normaliserGenre } from "../services/store-type.service";
 
 const router = Router();
 
@@ -377,13 +379,24 @@ router.post("/me/become-merchant", authMiddleware, async (req: Request, res: Res
       businessName: z.string().min(1).max(200),
       storeName: z.string().min(1).max(200),
       storeSlug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+      // Le genre en code (« restaurant ») ; les anciennes graphies
+      // (« Restaurant », « RESTAURANT ») sont encore comprises.
       businessType: z.string().min(1).max(50),
+      cuisineType: z.string().max(50).optional().nullable(),
+      // Les coordonnées de l'adresse retenue, quand la suggestion les donne.
+      latitude: z.number().min(-90).max(90).optional(),
+      longitude: z.number().min(-180).max(180).optional(),
       phone: z.string().min(1).max(20),
       address: z.string().min(1).max(500),
       city: z.string().min(1).max(100),
       postalCode: z.string().min(1).max(20),
       description: z.string().min(1).max(1000),
     }).parse(req.body);
+
+    const genre = normaliserGenre(body.businessType, body.cuisineType);
+    if (!genre.businessType) {
+      throw new ApiError(400, "Type de commerce inconnu", "INVALID_BUSINESS_TYPE");
+    }
 
     const user = await UserService.getUserById(userId);
 
@@ -422,26 +435,27 @@ router.post("/me/become-merchant", authMiddleware, async (req: Request, res: Res
       },
     });
 
-    // Create store
-    const store = await db.store.create({
-      data: {
-        orgId: organization.id,
-        name: body.storeName,
-        slug: body.storeSlug,
-        address: body.address,
-        city: body.city,
-        postalCode: body.postalCode,
-        phone: body.phone,
-        email: user.email,
-        description: body.description,
-        // Fermée tant que le commerce n'est pas validé : l'écran ne doit pas
-        // afficher « ouverte » une boutique qui ne peut rien vendre.
-        isOpen: !!organization.approvedAt,
-        settings: {
-          businessType: body.businessType,
-          createdAt: new Date().toISOString(),
-        },
-      },
+    /**
+     * La boutique passe par la même création que POST /api/stores.
+     *
+     * Créée ici à la main, elle naissait sans coordonnées — invisible de ses
+     * zones de livraison et de l'attribution des courses — et son genre partait
+     * dans les réglages au lieu du champ `businessType` que lit la recherche.
+     */
+    const store = await StoreService.create({
+      orgId: organization.id,
+      name: body.storeName,
+      slug: body.storeSlug,
+      address: body.address,
+      city: body.city,
+      postalCode: body.postalCode,
+      phone: body.phone,
+      email: user.email,
+      description: body.description,
+      latitude: body.latitude,
+      longitude: body.longitude,
+      businessType: genre.businessType,
+      cuisineType: genre.cuisineType ?? undefined,
     });
 
     // Update membership with store ID
@@ -553,7 +567,13 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
       businessName: z.string().min(1).max(200),
       email: z.string().email(),
       password: z.string().min(8),
+      // Le genre en code (« restaurant ») ; les anciennes graphies
+      // (« Restaurant », « RESTAURANT ») sont encore comprises.
       businessType: z.string().min(1).max(50),
+      cuisineType: z.string().max(50).optional().nullable(),
+      // Les coordonnées de l'adresse retenue, quand la suggestion les donne.
+      latitude: z.number().min(-90).max(90).optional(),
+      longitude: z.number().min(-180).max(180).optional(),
       phone: z.string().min(1).max(20),
       address: z.string().min(1).max(500),
       city: z.string().min(1).max(100),
@@ -565,6 +585,11 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
     });
 
     const body = schema.parse(req.body);
+
+    const genre = normaliserGenre(body.businessType, body.cuisineType);
+    if (!genre.businessType) {
+      throw new ApiError(400, "Type de commerce inconnu", "INVALID_BUSINESS_TYPE");
+    }
 
     logger.info("Merchant registration attempt", { email: body.email, businessName: body.businessName });
 
@@ -636,27 +661,23 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
       },
     });
 
-    // Create store
-    const store = await db.store.create({
-      data: {
-        orgId: organization.id,
-        name: body.storeName,
-        slug: body.storeSlug,
-        address: body.address,
-        city: body.city,
-        postalCode: body.postalCode,
-        phone: body.phone,
-        email: body.email,
-        description: body.description,
-        // Fermée tant que le commerce n'est pas validé : l'écran ne doit pas
-        // afficher « ouverte » une boutique qui ne peut rien vendre.
-        isOpen: !!organization.approvedAt,
-        settings: {
-          businessType: body.businessType,
-          website: body.website || null,
-          createdAt: new Date().toISOString(),
-        },
-      },
+    // La même création que POST /api/stores : située, et genrée dans le
+    // champ `businessType` que lit la recherche.
+    const store = await StoreService.create({
+      orgId: organization.id,
+      name: body.storeName,
+      slug: body.storeSlug,
+      address: body.address,
+      city: body.city,
+      postalCode: body.postalCode,
+      phone: body.phone,
+      email: body.email,
+      description: body.description,
+      latitude: body.latitude,
+      longitude: body.longitude,
+      businessType: genre.businessType,
+      cuisineType: genre.cuisineType ?? undefined,
+      ...(body.website && { settings: { website: body.website } }),
     });
 
     // Update membership with store ID

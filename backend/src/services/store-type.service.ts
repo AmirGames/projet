@@ -141,3 +141,50 @@ export const libelleDeLaCuisine = (code?: string | null) =>
 
 /** Seule la restauration a une cuisine : ailleurs, le champ n'a pas de sens. */
 export const aUneCuisine = (businessType?: string | null) => businessType === "restaurant";
+
+/**
+ * Les valeurs qu'envoyaient les anciens formulaires d'inscription.
+ *
+ * « Devenir commerçant » et l'inscription commerçant avaient chacun leur liste
+ * recopiée — « Restaurant », « RESTAURANT », « FastFood », « CAFE »… — rangée
+ * dans les réglages au lieu du champ `businessType`. La boutique n'avait donc
+ * aucun genre : la recherche du client ne la trouvait pas.
+ */
+const ANCIENS_GENRES: Record<string, { businessType: string; cuisineType?: string }> = {
+  restaurant: { businessType: "restaurant" },
+  fastfood: { businessType: "restaurant" },
+  cafe: { businessType: "restaurant", cuisineType: "coffee-tea" },
+  bakery: { businessType: "restaurant", cuisineType: "bakery-pastry" },
+  grocery: { businessType: "grocery" },
+  pharmacy: { businessType: "pharmacy" },
+  shop: { businessType: "shop" },
+  other: { businessType: "shop" },
+};
+
+/**
+ * Ramène un genre de commerce à un code connu, quelle que soit sa graphie.
+ *
+ * Un code déjà valide passe tel quel ; une ancienne valeur est traduite ; le
+ * reste est écarté plutôt que stocké de travers.
+ */
+export function normaliserGenre(
+  brut?: string | null,
+  cuisine?: string | null
+): { businessType: string | null; cuisineType: string | null } {
+  const valeur = String(brut ?? "").trim();
+  const minuscule = valeur.toLowerCase().replace(/[\s_-]+/g, "");
+
+  const businessType = (CODES_ETABLISSEMENT as readonly string[]).includes(valeur)
+    ? valeur
+    : ANCIENS_GENRES[minuscule]?.businessType ?? null;
+
+  const cuisineDemandee =
+    cuisine && (CODES_CUISINE as readonly string[]).includes(cuisine) ? cuisine : null;
+
+  return {
+    businessType,
+    cuisineType: aUneCuisine(businessType)
+      ? cuisineDemandee ?? ANCIENS_GENRES[minuscule]?.cuisineType ?? null
+      : null,
+  };
+}

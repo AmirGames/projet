@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useTypesDeCommerce } from "@/lib/types-commerce";
 import Link from "next/link";
 import { useTranslations } from 'next-intl';
 
@@ -39,12 +40,14 @@ export default function RoleSelectionPage() {
     storeName: "",
     storeSlug: "",
     businessType: "",
+    cuisineType: "",
     phone: "",
     address: "",
     city: "",
     postalCode: "",
     description: "",
   });
+  const { etablissements, cuisines } = useTypesDeCommerce();
   const [driverFormData, setDriverFormData] = useState({
     name: "",
     email: "",
@@ -74,7 +77,14 @@ export default function RoleSelectionPage() {
     setError("");
 
     try {
-      await api.becomeMerchant(merchantFormData);
+      await api.becomeMerchant({
+        ...merchantFormData,
+        // Une cuisine n'a de sens qu'en restauration.
+        cuisineType:
+          merchantFormData.businessType === "restaurant" && merchantFormData.cuisineType
+            ? merchantFormData.cuisineType
+            : null,
+      });
       // Refresh roles
       const data = await api.getRoles();
       setRoles(data.roles);
@@ -84,6 +94,7 @@ export default function RoleSelectionPage() {
         storeName: "",
         storeSlug: "",
         businessType: "",
+        cuisineType: "",
         phone: "",
         address: "",
         city: "",
@@ -319,13 +330,32 @@ export default function RoleSelectionPage() {
                   required
                 >
                   <option value="">Type d'entreprise</option>
-                  <option value="Restaurant">Restaurant</option>
-                  <option value="FastFood">Fast Food</option>
-                  <option value="Grocery">Épicerie</option>
-                  <option value="Pharmacy">Pharmacie</option>
-                  <option value="Shop">Boutique</option>
-                  <option value="Other">Autre</option>
+                  {etablissements.map((genre) => (
+                    <option key={genre.code} value={genre.code}>
+                      {genre.libelle}
+                    </option>
+                  ))}
                 </select>
+                {merchantFormData.businessType === "restaurant" && (
+                  <select
+                    aria-label="Type de cuisine"
+                    value={merchantFormData.cuisineType}
+                    onChange={(e) =>
+                      setMerchantFormData({
+                        ...merchantFormData,
+                        cuisineType: e.target.value,
+                      })
+                    }
+                    className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="">Type de cuisine (facultatif)</option>
+                    {cuisines.map((cuisine) => (
+                      <option key={cuisine.code} value={cuisine.code}>
+                        {cuisine.libelle}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <input
                   type="tel"
                   placeholder="Téléphone"

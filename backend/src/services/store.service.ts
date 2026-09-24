@@ -18,6 +18,8 @@ export class StoreService {
     longitude?: number;
     businessType?: string;
     cuisineType?: string;
+    /** Réglages de départ : le site web saisi à l'inscription, par exemple. */
+    settings?: Record<string, unknown>;
   }) {
     /**
      * Une boutique naît située.
@@ -73,6 +75,7 @@ export class StoreService {
           // Une cuisine n'a de sens qu'en restauration : la retenir pour une
           // épicerie brouillerait la recherche du client.
           cuisineType: data.businessType === "restaurant" ? data.cuisineType : null,
+          ...(data.settings && { settings: data.settings as any }),
         },
         include: {
           products: true,

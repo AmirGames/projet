@@ -3,6 +3,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { useTypesDeCommerce } from '@/lib/types-commerce';
 import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
 
 import { useTranslations } from 'next-intl';
@@ -14,6 +15,7 @@ interface FormData {
   password: string;
   confirmPassword: string;
   businessType: string;
+  cuisineType: string;
   phone: string;
   address: string;
   city: string;
@@ -37,6 +39,7 @@ export default function MerchantRegisterPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [successMessage, setSuccessMessage] = useState('');
   const [apiError, setApiError] = useState('');
+  const { etablissements, cuisines } = useTypesDeCommerce();
 
   // Rediriger vers onboard si connecté
   useEffect(() => {
@@ -50,7 +53,8 @@ export default function MerchantRegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    businessType: 'RESTAURANT',
+    businessType: 'restaurant',
+    cuisineType: '',
     phone: '',
     address: '',
     city: '',
@@ -169,6 +173,11 @@ export default function MerchantRegisterPage() {
           email: formData.email,
           password: formData.password,
           businessType: formData.businessType,
+          // Une cuisine n'a de sens qu'en restauration.
+          cuisineType:
+            formData.businessType === 'restaurant' && formData.cuisineType
+              ? formData.cuisineType
+              : null,
           phone: formData.phone,
           address: formData.address,
           city: formData.city,
@@ -281,14 +290,36 @@ export default function MerchantRegisterPage() {
                     onChange={handleChange}
                     className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
                   >
-                    <option value="RESTAURANT">Restaurant</option>
-                    <option value="CAFE">Café</option>
-                    <option value="BAKERY">Boulangerie</option>
-                    <option value="SHOP">Boutique</option>
-                    <option value="GROCERY">Épicerie</option>
-                    <option value="OTHER">Autre</option>
+                    {etablissements.map((genre) => (
+                      <option key={genre.code} value={genre.code}>
+                        {genre.libelle}
+                      </option>
+                    ))}
                   </select>
                 </div>
+
+                {/* Une épicerie n'a pas de cuisine : le champ n'apparaît que
+                    là où il a un sens. */}
+                {formData.businessType === 'restaurant' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Type de cuisine
+                    </label>
+                    <select
+                      name="cuisineType"
+                      value={formData.cuisineType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    >
+                      <option value="">Non précisé</option>
+                      {cuisines.map((cuisine) => (
+                        <option key={cuisine.code} value={cuisine.code}>
+                          {cuisine.libelle}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
