@@ -79,7 +79,10 @@ await post('/api/orders', { storeId, customerName: 'Client', customerEmail: `c-$
 const cmds = await j(await get(`/api/order-management/${storeId}`, T));
 const cmdId = (cmds?.data || cmds?.orders || [])[0]?.id;
 check('Commande — visible côté commerçant', !!cmdId, JSON.stringify(cmds)?.slice(0, 150));
-check('Commande — changement de statut', (await patch(`/api/order-management/${storeId}/${cmdId}/status`, { status: 'ACCEPTED' }, T)).status < 300);
+// Accepter demande un temps de préparation : le changement de statut
+// générique ne le permet plus (0c49387).
+const acceptation = await post(`/api/order-management/${storeId}/${cmdId}/accept`, { preparationMinutes: 20 }, T);
+check('Commande — acceptation', acceptation.status < 300, `status=${acceptation.status} ${JSON.stringify(await j(acceptation))?.slice(0, 150)}`);
 check('Commande — note interne', (await post(`/api/order-management/${storeId}/${cmdId}/notes`, { notes: 'Sans sucre' }, T)).status < 300);
 check('Facture — génération', (await get(`/api/invoices/${storeId}/${cmdId}`, T)).status === 200);
 check('Clients — liste', (await get(`/api/customers/${storeId}`, T)).status === 200);

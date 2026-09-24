@@ -206,7 +206,8 @@ check("et sa boutique", corpsCommande.data?.storeId === storeId, JSON.stringify(
 
 titre("Un changement d’état aussi");
 recus.length = 0;
-await patch(`/api/order-management/${storeId}/${orderId}/status`, { status: "ACCEPTED" }, T);
+// Accepter passe par sa propre route, avec le temps de préparation.
+await post(`/api/order-management/${storeId}/${orderId}/accept`, { preparationMinutes: 20 }, T);
 
 const changements = await attendre((r) => r.evenement === "order.status_changed");
 check("l’événement part", changements.length === 1, `${changements.length} reçu(s)`);
