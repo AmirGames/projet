@@ -716,6 +716,25 @@ model Order {
 
   notes           String?
 
+  /// L'acceptation par le commerçant.
+  ///
+  /// Une commande passée n'est qu'une demande : le client n'est fixé que
+  /// quand le commerçant l'accepte, en annonçant son temps de préparation.
+  /// Sans cela, un commerçant qui fermait sur un imprévu laissait le client
+  /// venir chercher une commande que personne ne préparait.
+  acceptedAt         DateTime?
+  preparationMinutes Int?
+  /// L'heure à laquelle la commande sera prête : maintenant plus la
+  /// préparation, ou le créneau choisi pour un retrait programmé.
+  estimatedReadyAt   DateTime?
+
+  /// Le refus, et son motif : TOO_BUSY, PRODUCT_UNAVAILABLE,
+  /// EXCEPTIONAL_CLOSURE, OTHER — ou NO_RESPONSE quand le commerçant n'a pas
+  /// répondu à temps et que la commande a été refusée d'elle-même.
+  rejectedAt         DateTime?
+  rejectionReason    String?
+  rejectionNote      String?
+
   // Soft delete
   deletedAt       DateTime?
 

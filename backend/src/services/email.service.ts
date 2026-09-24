@@ -53,12 +53,12 @@ export class EmailService {
           <body>
             <div class="container">
               <div class="header">
-                <h1>✅ Commande confirmée!</h1>
+                <h1>🕒 Commande reçue</h1>
               </div>
 
               <div class="content">
                 <p>Bonjour ${order.customerName},</p>
-                <p>Merci pour votre commande! Voici les détails:</p>
+                <p>Merci pour votre commande ! Elle a été transmise au restaurant, qui doit maintenant la confirmer. Vous recevrez un e-mail dès qu'il l'aura acceptée, avec l'heure prévue.</p>
 
                 <div class="details">
                   <div class="detail-row">
@@ -104,8 +104,7 @@ export class EmailService {
                   }
                 </div>
 
-                <p>Statut: <strong>${order.status}</strong></p>
-                <p>Nous vous enverrons une notification dès que votre commande sera prête!</p>
+                <p>Statut : <strong>en attente de confirmation du restaurant</strong></p>
               </div>
 
               <div style="text-align: center;">
@@ -125,7 +124,7 @@ export class EmailService {
 
       return this.sendEmail({
         to: order.customerEmail,
-        subject: `Commande confirmée #${order.id.slice(0, 8)}`,
+        subject: `Commande reçue #${order.id.slice(0, 8)} — en attente de confirmation`,
         html,
       });
     } catch (err) {
@@ -134,16 +133,20 @@ export class EmailService {
     }
   }
 
-  // Order status update email
-  static async sendOrderStatusUpdate(order: any, newStatus: string) {
-    try {
-      const statusMessages = {
-        ACCEPTED: "Votre commande a été acceptée et est en préparation!",
-        READY: "Votre commande est prête! Vous pouvez la retirer.",
-        COMPLETED: "Merci pour votre achat! À bientôt.",
-      };
+  /**
+   * Suivi de commande : acceptée, refusée, prête.
+   *
+   * Le client invité n'a pas de compte : sans cet e-mail, il n'apprenait ni que
+   * sa commande était acceptée, ni qu'elle était annulée.
+   */
+  static async sendOrderStatusUpdate(
+    order: { id: string; customerName: string; customerEmail: string; totalAmount: unknown },
+    contenu: { titre: string; message: string }
+  ) {
+    const echappe = (texte: string) =>
+      texte.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
 
-      const html = `
+    const html = `
         <!DOCTYPE html>
         <html>
           <head>
@@ -153,28 +156,26 @@ export class EmailService {
               .container { max-width: 600px; margin: 0 auto; padding: 20px; }
               .header { background-color: #2d3748; color: white; padding: 20px; border-radius: 5px; }
               .content { padding: 20px; background-color: #f7fafc; margin: 20px 0; border-radius: 5px; }
-              .status-badge { display: inline-block; background-color: #48bb78; color: white; padding: 8px 16px; border-radius: 20px; font-weight: bold; }
+              .button { display: inline-block; background-color: #48bb78; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
               .footer { text-align: center; color: #718096; font-size: 12px; margin-top: 30px; }
             </style>
           </head>
           <body>
             <div class="container">
               <div class="header">
-                <h1>📦 Mise à jour de votre commande</h1>
+                <h1>${echappe(contenu.titre)}</h1>
               </div>
-
               <div class="content">
-                <p>Bonjour ${order.customerName},</p>
-                <p>${statusMessages[newStatus as keyof typeof statusMessages] || `Statut: ${newStatus}`}</p>
-
-                <div style="margin: 20px 0;">
-                  <p><strong>Commande:</strong> ${order.id.slice(0, 12).toUpperCase()}</p>
-                  <p><strong>Nouveau statut:</strong> <span class="status-badge">${newStatus}</span></p>
-                </div>
-
-                <p>Montant: <strong>€${order.totalAmount.toFixed(2)}</strong></p>
+                <p>Bonjour ${echappe(order.customerName)},</p>
+                <p>${echappe(contenu.message)}</p>
+                <p><strong>Commande :</strong> ${order.id.slice(0, 12).toUpperCase()}</p>
+                <p><strong>Montant :</strong> €${Number(order.totalAmount).toFixed(2)}</p>
               </div>
-
+              <div style="text-align: center;">
+                <a href="${EMAIL_CONFIG.siteUrl}/order-confirmation?orderId=${order.id}" class="button">
+                  Voir ma commande
+                </a>
+              </div>
               <div class="footer">
                 <p>Maison Tamara | ${EMAIL_CONFIG.siteUrl}</p>
               </div>
@@ -183,15 +184,11 @@ export class EmailService {
         </html>
       `;
 
-      return this.sendEmail({
-        to: order.customerEmail,
-        subject: `Commande #${order.id.slice(0, 8)} - ${newStatus}`,
-        html,
-      });
-    } catch (err) {
-      logger.error("Order status email failed", { error: err });
-      throw err;
-    }
+    return this.sendEmail({
+      to: order.customerEmail,
+      subject: `${contenu.titre} — commande #${order.id.slice(0, 8)}`,
+      html,
+    });
   }
 
   /**

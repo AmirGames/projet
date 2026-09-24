@@ -220,6 +220,37 @@ export function emitStoreEvent(storeId: string, evenement: string, donnees: unkn
 }
 
 /**
+ * Pousse un événement à l'équipe d'une boutique : ses commandes.
+ *
+ * Le salon public de la boutique ne convient pas — n'importe quel visiteur de
+ * la vitrine y est, et une commande porte un nom et un téléphone. On passe
+ * donc par le salon nominatif de chaque membre de l'organisation.
+ */
+export async function emitMerchantEvent(storeId: string, evenement: string, donnees: unknown) {
+  if (!io || !storeId) return;
+
+  try {
+    const boutique = await db.store.findUnique({ where: { id: storeId }, select: { orgId: true } });
+    if (!boutique) return;
+
+    const membres = await db.membership.findMany({
+      where: { orgId: boutique.orgId },
+      select: { user: { select: { email: true } } },
+    });
+
+    for (const membre of membres) {
+      io.to(salonUtilisateur(membre.user.email)).emit(evenement, donnees);
+    }
+  } catch (err) {
+    logger.error("Impossible de prévenir l'équipe de la boutique", {
+      storeId,
+      evenement,
+      error: err instanceof Error ? err.message : err,
+    });
+  }
+}
+
+/**
  * Prévient toute l'équipe d'un commerçant que son compte a changé d'état.
  *
  * Une suspension prise en compte au prochain rechargement laisse le commerçant

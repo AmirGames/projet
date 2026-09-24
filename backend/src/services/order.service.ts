@@ -10,6 +10,8 @@ import { TaxService } from "./tax.service";
 import { ModeDeLivraison } from "./delivery-mode.service";
 import { promoSansCommissionActive } from "./plan.service";
 import { StoreHoursService } from "./store-hours.service";
+import { emitMerchantEvent } from "../config/socket";
+import { echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
 
 export interface OrderData {
   storeId: string;
@@ -481,6 +483,17 @@ export class OrderService {
         createdAt: order.createdAt,
       });
 
+      // La boutique sonne : la commande attend d'être acceptée, et le temps
+      // pour répondre est compté.
+      emitMerchantEvent(order.storeId, "commande-nouvelle", {
+        orderId: order.id,
+        storeId: order.storeId,
+        customerName: order.customerName,
+        deliveryType: order.deliveryType,
+        totalAmount: Number(order.totalAmount),
+        echeance: echeanceDeReponse(order).toISOString(),
+      });
+
       return order;
     } catch (error: any) {
       throw error;
@@ -535,6 +548,12 @@ export class OrderService {
       // une préparation qui avance d'un renvoi du même état.
       const avant = await db.order.findUnique({ where: { id }, select: { status: true } });
 
+      if (!avant) {
+        throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
+      }
+
+      verifierTransition(avant.status, status);
+
       const commande = await db.order.update({
         where: { id },
         data: { status: status as any },
@@ -546,7 +565,7 @@ export class OrderService {
       emitWebhook("order.status_changed", {
         orderId: commande.id,
         storeId: commande.storeId,
-        previousStatus: avant?.status ?? null,
+        previousStatus: avant.status,
         status: commande.status,
         totalAmount: Number(commande.totalAmount),
       });

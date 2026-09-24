@@ -7,6 +7,7 @@ import { initializeSocket } from "./config/socket";
 import { db } from "./services/db";
 import { ClosureJobs } from "./jobs/closure-jobs";
 import { DispatchJobs } from "./jobs/dispatch-jobs";
+import { OrderJobs } from "./jobs/order-jobs";
 import { DriverJobs } from "./jobs/driver-jobs";
 import { WebhookJobs } from "./jobs/webhook-jobs";
 import { MerchantJobs } from "./jobs/merchant-jobs";
@@ -45,6 +46,7 @@ const start = async () => {
     DriverJobs.start();
     WebhookJobs.start();
     MerchantJobs.start();
+    OrderJobs.start();
 
     // Graceful shutdown
     const gracefulShutdown = async () => {
@@ -53,6 +55,7 @@ const start = async () => {
       DispatchJobs.stop();
       WebhookJobs.stop();
       MerchantJobs.stop();
+      OrderJobs.stop();
       httpServer.close(() => {
         logger.info("Server closed");
       });
