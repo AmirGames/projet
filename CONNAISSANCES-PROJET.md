@@ -262,10 +262,21 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 42 | **1382** |
+| **API** (`backend/scripts/verification/`) | 44 | **1460** |
 | **Navigateur** (`frontend/scripts/`) | 27 | **701** |
 
-Tout est vert au dernier passage complet (23 septembre).
+Tout est vert au dernier passage complet (24 septembre).
+
+Deux réglages rendent les suites indépendantes des nouveautés du produit :
+- les commerces qu'elles créent sont **validés d'office** en base (la
+  validation elle-même se vérifie dans `verif-validation-commerce`) ;
+- leurs boutiques sont **ouvertes toute la journée**
+  (`ouvrirToutLeJour()`, `scripts/inscription.mjs`) : la vitrine refuse
+  une boutique fermée, et une suite lancée à 7 h échouait. Les suites des
+  zones cochent en plus « J'utilise ma propre livraison ».
+
+Les suites navigateur ont besoin de `DATABASE_URL` (même base que l'API),
+pour valider leurs commerces.
 
 `verif-domaines` n'a pas tourné : il demande un site construit avec les
 trois domaines.
