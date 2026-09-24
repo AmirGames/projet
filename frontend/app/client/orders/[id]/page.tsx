@@ -50,6 +50,9 @@ export default function OrderTrackingPage() {
   const [delivery, setDelivery] = useState<OrderDelivery | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // null : pas encore su. Une commande terminée invite à donner son avis, ou
+  // à le revoir quand il a plus de quinze jours.
+  const [avis, setAvis] = useState<{ aRedemander: boolean; dejaDonne: boolean } | null>(null);
 
   useEffect(() => {
     loadOrderData();
@@ -63,6 +66,24 @@ export default function OrderTrackingPage() {
       loadOrderData();
     }
   }, [orderStatus]);
+
+  // Chargé à l'arrivée, et quand la commande passe « terminée » en direct.
+  useEffect(() => {
+    if (order?.status !== 'COMPLETED') return;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    fetch(`${API_URL}/api/reviews/commande/${orderId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((corps) => {
+        if (corps?.data) {
+          setAvis({ aRedemander: corps.data.aRedemander, dejaDonne: Boolean(corps.data.restaurant) });
+        }
+      })
+      .catch(() => {});
+  }, [order?.status, orderId]);
 
   const loadOrderData = async () => {
     const token = localStorage.getItem('accessToken');
@@ -217,6 +238,24 @@ export default function OrderTrackingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
+            {avis?.aRedemander && (
+              <div className="bg-orange-900/40 border border-orange-700 rounded-lg p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="text-4xl">⭐</div>
+                <div className="flex-1">
+                  <p className="text-white font-bold text-lg">{t('reviewPromptTitle')}</p>
+                  <p className="text-orange-200 text-sm">
+                    {avis.dejaDonne ? t('reviewPromptUpdateText') : t('reviewPromptText')}
+                  </p>
+                </div>
+                <Link
+                  href={`/client/orders/${orderId}/review`}
+                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-5 py-3 rounded-lg text-center transition"
+                >
+                  {t('reviewPromptButton')}
+                </Link>
+              </div>
+            )}
+
             {/* Order Status */}
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-bold text-white mb-6">Statut de la commande</h2>
@@ -256,6 +295,16 @@ export default function OrderTrackingPage() {
                   </div>
                 )}
               </div>
+
+              {/* Hors relance, l'avis reste modifiable à tout moment. */}
+              {avis && !avis.aRedemander && (
+                <Link
+                  href={`/client/orders/${orderId}/review`}
+                  className="inline-block mb-6 text-orange-400 hover:text-orange-300 text-sm font-semibold"
+                >
+                  ⭐ {avis.dejaDonne ? t('reviewEdit') : t('reviewPromptButton')}
+                </Link>
+              )}
 
               {/* Progress Bar */}
               <div className="mb-6">

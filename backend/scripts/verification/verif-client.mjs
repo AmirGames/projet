@@ -115,21 +115,39 @@ const avis = await post('/api/reviews', { orderId, productId, rating: 5, comment
 const avisData = await j(avis);
 check('avis sur le plat déposé', avis.status === 201, `status=${avis.status} ${JSON.stringify(avisData)}`);
 
-const doublon = await post('/api/reviews', { orderId, productId, rating: 3 }, cToken);
-check('second avis sur le même plat refusé (409)', doublon.status === 409, `status=${doublon.status}`);
+// Un seul avis par plat : le second envoi remplace le premier.
+const miseAJour = await post('/api/reviews', { orderId, productId, rating: 3, comment: 'Moins bon cette fois' }, cToken);
+check('second avis sur le même plat : mis à jour (200)', miseAJour.status === 200, `status=${miseAJour.status}`);
 
 const avisRestaurant = await post('/api/reviews', { orderId, type: 'STORE', rating: 4, comment: 'Accueil parfait' }, cToken);
 check('avis sur le restaurant déposé', avisRestaurant.status === 201, `status=${avisRestaurant.status}`);
 
+const avisDonnes = await j(await get(`/api/reviews/commande/${orderId}`, cToken));
+check('le formulaire retrouve la note du restaurant', avisDonnes?.data?.restaurant?.rating === 4, JSON.stringify(avisDonnes));
+check('et celle du plat, mise à jour', avisDonnes?.data?.produits?.[productId]?.rating === 3, JSON.stringify(avisDonnes?.data?.produits));
+check('avis tout juste donné : pas de relance', avisDonnes?.data?.aRedemander === false, JSON.stringify(avisDonnes?.data?.aRedemander));
+const avisIntrus = await get(`/api/reviews/commande/${orderId}`, autre.accessToken);
+check('un autre client ne lit pas ces avis', avisIntrus.status === 404, `status=${avisIntrus.status}`);
+
+const relanceAvant = (await j(await get('/api/client/me/orders', cToken)))?.data?.[0]?.avisARedemander;
+check('historique : pas de relance sur un avis récent', relanceAvant === false, JSON.stringify(relanceAvant));
+
+// L'avis date de vingt jours, la commande d'hier : on relance.
+await sqlExec(`UPDATE "Review" SET "updatedAt" = NOW() - INTERVAL '20 days' WHERE "productId" IS NULL AND "storeId" = '${storeId}'`);
+await sqlExec(`UPDATE "Order" SET "createdAt" = NOW() - INTERVAL '1 day' WHERE id = '${orderId}'`);
+const relanceApres = (await j(await get('/api/client/me/orders', cToken)))?.data?.[0]?.avisARedemander;
+check('historique : relance quand l avis a plus de quinze jours', relanceApres === true, JSON.stringify(relanceApres));
+
 const doublonRestaurant = await post('/api/reviews', { orderId, type: 'STORE', rating: 2 }, cToken);
-check('second avis sur le restaurant refusé (409)', doublonRestaurant.status === 409, `status=${doublonRestaurant.status}`);
+check('second avis sur le restaurant : mis à jour (200)', doublonRestaurant.status === 200, `status=${doublonRestaurant.status}`);
 
 // L'avis sur le restaurant ne porte sur aucun plat : ce sont ceux-là que
 // comptent les statistiques du commerce, pas les avis de plats.
 const statsCommerce = await j(await get(`/api/reviews/${storeId}/store/stats`, m.accessToken));
 const statsData = statsCommerce?.data || statsCommerce;
 check('les statistiques du commerce le comptent', statsData?.totalReviews === 1, JSON.stringify(statsCommerce));
-check('avec sa note', statsData?.averageRating === 4, JSON.stringify(statsCommerce));
+// Un client, une voix : sa note remplacée, pas ajoutée.
+check('avec sa dernière note', statsData?.averageRating === 2, JSON.stringify(statsCommerce));
 
 const noteInvalide = await post('/api/reviews', { orderId, productId, rating: 9 }, cToken);
 check('note hors barème refusée', noteInvalide.status === 400, `status=${noteInvalide.status}`);

@@ -7,6 +7,7 @@ import { StoreHoursService } from "../services/store-hours.service";
 import { trierProduitsSelonCategorie } from "../services/category.service";
 import { DeliveryZoneService } from "../services/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";
+import { avisARedemander, avisRestaurantParCommerce } from "../services/avis-client.service";
 import {
   COMMENTAIRE_MAX,
   NOTE_MAX,
@@ -552,6 +553,11 @@ router.get("/me/orders", authMiddleware, async (req: Request, res: Response, nex
       },
     });
 
+    const avisRestaurants = await avisRestaurantParCommerce(
+      client.id,
+      [...new Set(commandes.map((c) => c.storeId))]
+    );
+
     res.json({
       success: true,
       data: commandes.map((c) => ({
@@ -563,6 +569,9 @@ router.get("/me/orders", authMiddleware, async (req: Request, res: Response, nex
         createdAt: c.createdAt,
         store: c.store,
         deliveryStatus: c.delivery?.status || null,
+        // Le client est invité à donner son avis : jamais donné, ou vieux de
+        // plus de quinze jours et antérieur à cette commande.
+        avisARedemander: avisARedemander(c, avisRestaurants.get(c.storeId)),
         items: c.items.map((i) => ({
           name: i.product?.name || "Produit supprimé",
           quantity: i.quantity,

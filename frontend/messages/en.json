@@ -1243,11 +1243,18 @@
     "submitting": "Sending...",
     "thankYou": "Thank you for your review!",
     "address": "Address",
-    "startSearching": "Start looking for restaurants →"
+    "startSearching": "Start looking for restaurants →",
+    "previousReview": "You gave {note}★ in {date}. Still agree?",
+    "reviewWanted": "⭐ Your review"
   },
   "clientOrderDetail": {
     "statusPending": "Pending",
-    "statusPreparing": "Preparing"
+    "statusPreparing": "Preparing",
+    "reviewPromptTitle": "How was your order?",
+    "reviewPromptText": "Your review helps the restaurant and other customers.",
+    "reviewPromptUpdateText": "Your last review is a while back. Still feel the same?",
+    "reviewPromptButton": "Leave a review",
+    "reviewEdit": "Edit my review"
   },
   "maintenanceGate": {
     "title": "Maintenance in progress",

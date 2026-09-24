@@ -5,6 +5,7 @@ import { authMiddleware } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
 import { db } from "../services/db";
 import { logger } from "../config/logger";
+import { avisDuClientSurCommande } from "../services/avis-client.service";
 
 const router = Router();
 
@@ -27,99 +28,85 @@ const avisCommandeSchema = z.object({
   type: z.enum(["STORE", "PRODUCT"]).optional().default("PRODUCT"),
 });
 
-// POST /reviews - Déposer un avis depuis une commande (client connecté)
+/** Le client connecté et sa commande, ou le refus qui convient. */
+async function commandeDuClient(req: Request, orderId: string) {
+  const userId = req.userId || (req as any).user?.userId;
+  const utilisateur = userId
+    ? await db.user.findUnique({ where: { id: userId }, select: { email: true } })
+    : null;
+
+  if (!utilisateur) {
+    throw new ApiError(401, "Session invalide", "UNAUTHORIZED");
+  }
+
+  const client = await db.customer.findUnique({ where: { email: utilisateur.email } });
+
+  if (!client) {
+    throw new ApiError(404, "Aucune fiche client pour ce compte", "CUSTOMER_NOT_FOUND");
+  }
+
+  const commande = await db.order.findFirst({
+    where: { id: orderId, customerId: client.id, deletedAt: null },
+    include: { items: { select: { productId: true } } },
+  });
+
+  if (!commande) {
+    throw new ApiError(404, "Commande introuvable", "ORDER_NOT_FOUND");
+  }
+
+  return { client, commande };
+}
+
+// POST /reviews - Donner son avis depuis une commande (client connecté).
+// Un client a un seul avis par restaurant et par plat : s'il en a déjà un, le
+// nouvel envoi le remplace au lieu d'être refusé.
 router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = avisCommandeSchema.parse(req.body);
-
-    const userId = req.userId || (req as any).user?.userId;
-    const utilisateur = userId
-      ? await db.user.findUnique({ where: { id: userId }, select: { email: true } })
-      : null;
-
-    if (!utilisateur) {
-      throw new ApiError(401, "Session invalide", "UNAUTHORIZED");
-    }
-
-    const client = await db.customer.findUnique({ where: { email: utilisateur.email } });
-
-    if (!client) {
-      throw new ApiError(404, "Aucune fiche client pour ce compte", "CUSTOMER_NOT_FOUND");
-    }
-
-    const commande = await db.order.findFirst({
-      where: { id: body.orderId, customerId: client.id, deletedAt: null },
-      include: { items: { select: { productId: true } } },
-    });
-
-    if (!commande) {
-      throw new ApiError(404, "Commande introuvable", "ORDER_NOT_FOUND");
-    }
+    const { client, commande } = await commandeDuClient(req, body.orderId);
 
     if (commande.status !== "COMPLETED") {
       throw new ApiError(400, "Vous pourrez donner votre avis une fois la commande terminée", "ORDER_NOT_COMPLETED");
     }
 
-    // Si type = STORE, noter le restaurant : l'avis ne porte sur aucun plat.
-    // Il rangeait l'identifiant de la boutique dans productId, que la base
-    // exige lié à un plat — chaque avis sur le restaurant finissait en 500.
-    if (body.type === "STORE") {
-      const dejaDepose = await db.review.findFirst({
-        where: {
-          customerId: client.id,
-          storeId: commande.storeId,
-          productId: null,
-        },
-      });
+    // Un avis sur le restaurant ne porte sur aucun plat.
+    let productId: string | null = null;
 
-      if (dejaDepose) {
-        throw new ApiError(409, "Vous avez déjà noté ce restaurant", "REVIEW_EXISTS");
+    if (body.type === "PRODUCT") {
+      if (!body.productId) {
+        throw new ApiError(400, "productId requis pour noter un produit", "PRODUCT_ID_REQUIRED");
       }
 
-      await db.review.create({
-        data: {
-          storeId: commande.storeId,
-          productId: null,
-          customerId: client.id,
-          rating: body.rating,
-          comment: body.comment,
-          status: "APPROVED",
-        },
-      });
+      if (!commande.items.some((i) => i.productId === body.productId)) {
+        throw new ApiError(400, "Ce produit n'est pas dans cette commande", "PRODUCT_NOT_IN_ORDER");
+      }
 
-      res.status(201).json({
-        message: "Merci pour votre avis sur le restaurant",
-        type: "STORE",
-      });
-      return;
+      productId = body.productId;
     }
 
-    // Type = PRODUCT : noter un produit spécifique
-    if (!body.productId) {
-      throw new ApiError(400, "productId requis pour noter un produit", "PRODUCT_ID_REQUIRED");
-    }
-
-    const produitDansCommande = commande.items.some((i) => i.productId === body.productId);
-    if (!produitDansCommande) {
-      throw new ApiError(400, "Ce produit n'est pas dans cette commande", "PRODUCT_NOT_IN_ORDER");
-    }
-
-    const dejaDepose = await db.review.findFirst({
-      where: {
-        customerId: client.id,
-        productId: body.productId,
-        storeId: commande.storeId,
-      },
+    const existant = await db.review.findFirst({
+      where: { customerId: client.id, storeId: commande.storeId, productId },
+      select: { id: true },
     });
 
-    if (dejaDepose) {
-      throw new ApiError(409, "Vous avez déjà noté ce produit", "REVIEW_EXISTS");
+    const cible = body.type === "STORE" ? "le restaurant" : "ce produit";
+
+    if (existant) {
+      // Le statut reste celui qu'il était : un avis écarté par la modération
+      // ne redevient pas visible parce que le client l'a retouché.
+      await db.review.update({
+        where: { id: existant.id },
+        data: { rating: body.rating, comment: body.comment },
+      });
+
+      res.json({ message: `Votre avis sur ${cible} est mis à jour`, type: body.type, misAJour: true });
+      return;
     }
 
     await db.review.create({
       data: {
         storeId: commande.storeId,
-        productId: body.productId,
+        productId,
         customerId: client.id,
         rating: body.rating,
         comment: body.comment,
@@ -127,10 +114,27 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
       },
     });
 
-    res.status(201).json({
-      message: "Merci pour votre avis sur ce produit",
-      type: "PRODUCT",
+    res.status(201).json({ message: `Merci pour votre avis sur ${cible}`, type: body.type, misAJour: false });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /reviews/commande/:orderId - Ce que le client a déjà dit du restaurant et
+// des plats de cette commande, pour pré-remplir le formulaire. Déclarée avant
+// /:storeId/:reviewId, qui la prendrait sinon pour un avis de commerce.
+router.get("/commande/:orderId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { client, commande } = await commandeDuClient(req, req.params.orderId as string);
+
+    const avis = await avisDuClientSurCommande(client.id, {
+      storeId: commande.storeId,
+      status: commande.status,
+      createdAt: commande.createdAt,
+      productIds: commande.items.map((i) => i.productId),
     });
+
+    res.json({ success: true, data: avis });
   } catch (err) {
     next(err);
   }

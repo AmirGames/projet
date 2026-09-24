@@ -16,6 +16,8 @@ interface Order {
   deliveryAddress: string;
   createdAt: string;
   storeName?: string;
+  /** Avis jamais donné, ou vieux de plus de quinze jours. */
+  avisARedemander?: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -181,6 +183,11 @@ export default function OrdersPage() {
                       >
                         {statusLabel}
                       </span>
+                      {order.avisARedemander && (
+                        <span className="px-3 py-1 rounded-full text-sm font-semibold bg-orange-900 text-orange-300 border border-orange-700">
+                          {t('reviewWanted')}
+                        </span>
+                      )}
                       <span className="text-gray-500 text-xs">
                         {order.storeName && `${order.storeName}`}
                       </span>

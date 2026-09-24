@@ -7,7 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne, type LigneAffichable } from '@/lib/ligne-commande';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -55,6 +55,18 @@ function produitsANoter(items: OrderItem[]): ProduitANoter[] {
   return [...parPlat.values()];
 }
 
+/** Un avis déjà donné, qui pré-remplit le formulaire. */
+interface AvisDonne {
+  rating: number;
+  comment: string | null;
+  donneLe: string;
+}
+
+interface AvisDejaDonnes {
+  restaurant: AvisDonne | null;
+  produits: Record<string, AvisDonne>;
+}
+
 interface ReviewState {
   restaurant: { rating: number; comment: string };
   delivery: { rating: number; comment: string };
@@ -63,6 +75,7 @@ interface ReviewState {
 
 export default function ReviewPage() {
   const t = useTranslations('clientOrders');
+  const locale = useLocale();
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
@@ -73,6 +86,7 @@ export default function ReviewPage() {
   // qu'il ne l'a pas déjà été : une commande à emporter n'en a pas, et la
   // note échouait à chaque fois en 404.
   const [livreurANoter, setLivreurANoter] = useState(false);
+  const [dejaDonnes, setDejaDonnes] = useState<AvisDejaDonnes>({ restaurant: null, produits: {} });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -113,11 +127,25 @@ export default function ReviewPage() {
         const plats = produitsANoter(commande.items ?? []);
         setProduits(plats);
 
+        // Un seul avis par restaurant et par plat, que le client met à jour :
+        // le formulaire repart de ce qu'il avait dit.
+        let donnes: AvisDejaDonnes = { restaurant: null, produits: {} };
+        const avisResponse = await fetch(`${API_URL}/api/reviews/commande/${orderId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (avisResponse.ok) {
+          donnes = (await avisResponse.json()).data ?? donnes;
+          setDejaDonnes(donnes);
+        }
+
+        const depuis = (avis?: AvisDonne | null) =>
+          avis ? { rating: avis.rating, comment: avis.comment ?? '' } : { rating: 5, comment: '' };
+
         const initialProducts: Record<string, { rating: number; comment: string }> = {};
         plats.forEach((plat) => {
-          initialProducts[plat.productId] = { rating: 5, comment: '' };
+          initialProducts[plat.productId] = depuis(donnes.produits[plat.productId]);
         });
-        setReviews(prev => ({ ...prev, products: initialProducts }));
+        setReviews(prev => ({ ...prev, restaurant: depuis(donnes.restaurant), products: initialProducts }));
 
         if (commande.deliveryType !== 'PICKUP') {
           const courseResponse = await fetch(`${API_URL}/api/client/deliveries/${orderId}`, {
@@ -208,8 +236,7 @@ export default function ReviewPage() {
       });
 
       const responses = await Promise.all(requests);
-      // 409 : cet avis était déjà enregistré, il n'y a rien à reprendre.
-      const allOk = responses.every(r => r.ok || r.status === 409);
+      const allOk = responses.every(r => r.ok);
 
       if (allOk) {
         setSuccess(true);
@@ -262,6 +289,22 @@ export default function ReviewPage() {
       5: 'Excellent'
     };
     return texts[rating] || '';
+  };
+
+  // « Vous aviez mis 4★ en mars. Toujours d'accord ? » — l'année n'est
+  // précisée que si ce n'est pas l'année en cours.
+  const renderAvisPrecedent = (avis?: AvisDonne | null) => {
+    if (!avis) return null;
+    const date = new Date(avis.donneLe);
+    const dateAvis = date.toLocaleDateString(locale, {
+      month: 'long',
+      ...(date.getFullYear() !== new Date().getFullYear() && { year: 'numeric' }),
+    });
+    return (
+      <p className="text-orange-300 text-sm mb-3">
+        {t('previousReview', { note: avis.rating, date: dateAvis })}
+      </p>
+    );
   };
 
   const renderStars = (rating: number, onRate: (r: number) => void) => (
@@ -370,6 +413,7 @@ export default function ReviewPage() {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-white font-semibold mb-4">{t('restaurantQuestion')}</label>
+                    {renderAvisPrecedent(dejaDonnes.restaurant)}
                     {renderStars(reviews.restaurant.rating, (r) =>
                       setReviews(prev => ({ ...prev, restaurant: { ...prev.restaurant, rating: r } }))
                     )}
@@ -437,6 +481,7 @@ export default function ReviewPage() {
                         </div>
 
                         <div className="mb-3">
+                          {renderAvisPrecedent(dejaDonnes.produits[item.productId])}
                           {renderStars(reviews.products[item.productId]?.rating || 5, (r) =>
                             setReviews(prev => ({
                               ...prev,

@@ -1243,11 +1243,18 @@
     "submitting": "Envoi en cours...",
     "thankYou": "Merci pour votre avis !",
     "address": "Adresse",
-    "startSearching": "Commencer à chercher des restaurants →"
+    "startSearching": "Commencer à chercher des restaurants →",
+    "previousReview": "Vous aviez mis {note}★ en {date}. Toujours d'accord ?",
+    "reviewWanted": "⭐ Votre avis"
   },
   "clientOrderDetail": {
     "statusPending": "En attente",
-    "statusPreparing": "En préparation"
+    "statusPreparing": "En préparation",
+    "reviewPromptTitle": "Qu'avez-vous pensé de votre commande ?",
+    "reviewPromptText": "Votre avis aide le restaurant et les autres clients.",
+    "reviewPromptUpdateText": "Votre dernier avis date un peu. Toujours du même avis ?",
+    "reviewPromptButton": "Donner mon avis",
+    "reviewEdit": "Modifier mon avis"
   },
   "maintenanceGate": {
     "title": "Maintenance en cours",
