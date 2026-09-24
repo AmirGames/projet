@@ -56,6 +56,13 @@ interface Props {
   surAnnulation?: () => void;
   /** En fenêtre par-dessus le menu, ou à plat sur une page à elle. */
   disposition?: 'modale' | 'page';
+  /**
+   * La boutique est-elle dans ses horaires en ce moment.
+   *
+   * Fermée, elle prend encore des retraits sur un créneau à venir, mais pas de
+   * livraison : celle-ci part tout de suite, et personne ne la préparerait.
+   */
+  ouverteMaintenant?: boolean;
 }
 
 export function TunnelCommande({
@@ -64,7 +71,9 @@ export function TunnelCommande({
   surCommandePassee,
   surAnnulation,
   disposition = 'modale',
+  ouverteMaintenant,
 }: Props) {
+  const livraisonFermee = ouverteMaintenant === false;
   const { user } = useAuth();
   const [livraison, setLivraison] = useState<Livraison | null>(null);
   // Créneaux réellement proposables, déduits des horaires de la boutique.
@@ -91,7 +100,7 @@ export function TunnelCommande({
     customerName: '',
     customerEmail: '',
     customerPhone: '',
-    deliveryType: 'DELIVERY' as 'PICKUP' | 'DELIVERY',
+    deliveryType: (livraisonFermee ? 'PICKUP' : 'DELIVERY') as 'PICKUP' | 'DELIVERY',
     deliveryAddress: '',
     deliveryCity: '',
     // L'API l'accepte depuis toujours, aucun écran ne le demandait : la
@@ -103,6 +112,16 @@ export function TunnelCommande({
     pickupTime: '',
     notes: '',
   });
+
+  // L'état d'ouverture peut arriver après le premier affichage : on bascule
+  // alors sur le retrait, seul mode possible.
+  useEffect(() => {
+    if (livraisonFermee) {
+      setCheckoutForm((formulaire) =>
+        formulaire.deliveryType === 'PICKUP' ? formulaire : { ...formulaire, deliveryType: 'PICKUP' }
+      );
+    }
+  }, [livraisonFermee]);
 
   // Charger les informations du profil utilisateur si connecté.
   useEffect(() => {
@@ -457,12 +476,17 @@ export function TunnelCommande({
         <div className="space-y-4">
           <h3 className="font-bold text-lg">Mode de Livraison</h3>
           <div className="space-y-3">
-            <label className="flex items-center gap-3 p-3 bg-gray-700 rounded cursor-pointer hover:bg-gray-600 transition-colors">
+            <label
+              className={`flex items-center gap-3 p-3 bg-gray-700 rounded transition-colors ${
+                livraisonFermee ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-600'
+              }`}
+            >
               <input
                 type="radio"
                 name="deliveryType"
                 value="DELIVERY"
                 checked={checkoutForm.deliveryType === 'DELIVERY'}
+                disabled={livraisonFermee}
                 onChange={(e) =>
                   setCheckoutForm({ ...checkoutForm, deliveryType: e.target.value as any })
                 }
@@ -470,7 +494,11 @@ export function TunnelCommande({
               />
               <div className="flex-1">
                 <p className="font-semibold">Livraison à domicile</p>
-                <p className="text-xs text-gray-400">Livraison à votre adresse</p>
+                <p className="text-xs text-gray-400">
+                  {livraisonFermee
+                    ? 'Indisponible : la boutique est fermée pour le moment'
+                    : 'Livraison à votre adresse'}
+                </p>
               </div>
             </label>
 

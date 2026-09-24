@@ -32,6 +32,8 @@ interface Store {
   isOpen?: boolean;
   /** Ce que disent à la fois le planning hebdomadaire et le bouton rapide, croisés. */
   isOpenNow?: boolean;
+  /** Commerce pas encore validé : la fiche se lit, aucune commande ne passe. */
+  enAttenteDeValidation?: boolean;
   createdAt: string;
 }
 
@@ -248,7 +250,13 @@ export default function StorefrontPage() {
           // fermée, que le serveur refusait ensuite.
           if (typeof menuData.data?.isOpenNow === 'boolean') {
             setStore((actuelle) =>
-              actuelle ? { ...actuelle, isOpenNow: menuData.data.isOpenNow } : actuelle
+              actuelle
+                ? {
+                    ...actuelle,
+                    isOpenNow: menuData.data.isOpenNow,
+                    enAttenteDeValidation: !!menuData.data.enAttenteDeValidation,
+                  }
+                : actuelle
             );
           }
           const menu = (menuData.data?.menu || {}) as Record<string, any[]>;
@@ -356,6 +364,13 @@ export default function StorefrontPage() {
     isAvailable: item.product.isAvailable,
     ...(item.variante ? { variantId: item.variante.id, variantNom: item.variante.label } : {}),
   }));
+
+  /**
+   * Les seuls cas où le serveur refuse toute commande : bouton rapide sur
+   * « fermé », ou commerce pas encore validé. Hors des horaires, le retrait
+   * sur un prochain créneau reste possible — à 10 h, on réserve pour midi.
+   */
+  const commandeBloquee = store?.isOpen === false || store?.enAttenteDeValidation === true;
 
   if (loading) {
     return (
@@ -687,21 +702,23 @@ export default function StorefrontPage() {
 
                   {/* Une boutique fermée reste consultable : elle disparaissait
                       purement et simplement de la liste des commerces. Fermée par
-                      le bouton rapide ou par le planning du jour : même message. */}
+                      le bouton rapide ou en attente de validation, elle ne prend
+                      rien ; hors de ses horaires, elle prend encore des retraits
+                      sur un prochain créneau. */}
                   {store?.isOpenNow === false && (
                     <p
                       role="status"
                       className="rounded-lg border border-amber-700/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-200"
                     >
-                      {store?.isOpen === false
+                      {commandeBloquee
                         ? 'Momentanément indisponible — commande impossible pour le moment.'
-                        : 'Fermé pour le moment — hors des horaires d\u2019ouverture.'}
+                        : 'Fermé pour le moment — commandez pour un retrait sur un prochain créneau.'}
                     </p>
                   )}
 
                   <button
                     onClick={() => setShowCheckout(true)}
-                    disabled={store?.isOpenNow === false}
+                    disabled={commandeBloquee}
                     className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Passer la Commande
@@ -771,6 +788,7 @@ export default function StorefrontPage() {
             <TunnelCommande
               boutique={{ id: store.id, name: store.name }}
               lignes={lignesDuPanier}
+              ouverteMaintenant={store.isOpenNow}
               surAnnulation={() => setShowCheckout(false)}
               surCommandePassee={(commande) => {
                 setOrderConfirmation({ id: commande.id, orderNumber: commande.numero });

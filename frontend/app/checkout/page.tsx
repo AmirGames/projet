@@ -37,6 +37,8 @@ export default function CheckoutPage() {
   const router = useRouter();
 
   const [boutique, setBoutique] = useState<{ id: string; name: string } | null>(null);
+  // Hors des horaires, le tunnel ne propose que le retrait sur un créneau.
+  const [ouverteMaintenant, setOuverteMaintenant] = useState<boolean | undefined>(undefined);
   // Les autres paniers en attente : c'est au client de dire lequel il commande.
   const [aChoisir, setAChoisir] = useState<PanierBoutique[]>([]);
   const [lignes, setLignes] = useState<LignePanier[]>([]);
@@ -75,17 +77,18 @@ export default function CheckoutPage() {
     setBoutique({ id: retenu.storeId, name: retenu.storeName });
     setChargement(false);
 
-    // Le nom enregistré peut manquer (panier composé avant cette version) : la
-    // route publique le donne.
-    if (!retenu.storeName) {
-      fetch(`${API_URL}/api/client/stores/${retenu.storeId}`)
-        .then((reponse) => (reponse.ok ? reponse.json() : null))
-        .then((donnees) => {
-          const nom = donnees?.data?.store?.name || donnees?.data?.name;
-          if (nom) setBoutique({ id: retenu.storeId, name: nom });
-        })
-        .catch(() => undefined);
-    }
+    // La route publique donne l'état d'ouverture, et le nom quand celui
+    // enregistré manque (panier composé avant cette version).
+    fetch(`${API_URL}/api/client/stores/${retenu.storeId}`)
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) => {
+        if (typeof donnees?.data?.isOpenNow === 'boolean') {
+          setOuverteMaintenant(donnees.data.isOpenNow);
+        }
+        const nom = donnees?.data?.store?.name || donnees?.data?.name;
+        if (!retenu.storeName && nom) setBoutique({ id: retenu.storeId, name: nom });
+      })
+      .catch(() => undefined);
   }, []);
 
   if (chargement) {
@@ -230,6 +233,7 @@ export default function CheckoutPage() {
                 boutique={boutique}
                 lignes={lignes}
                 disposition="page"
+                ouverteMaintenant={ouverteMaintenant}
                 surCommandePassee={(commande) => {
                   setConfirmation({ id: commande.id, numero: commande.numero });
                   viderPanier(boutique.id);

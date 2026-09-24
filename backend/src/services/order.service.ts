@@ -9,6 +9,7 @@ import { emitWebhook } from "./webhook.service";
 import { TaxService } from "./tax.service";
 import { ModeDeLivraison } from "./delivery-mode.service";
 import { promoSansCommissionActive } from "./plan.service";
+import { StoreHoursService } from "./store-hours.service";
 
 export interface OrderData {
   storeId: string;
@@ -146,7 +147,13 @@ export class OrderService {
        */
       const boutique = await db.store.findUnique({
         where: { id: data.storeId },
-        select: { isOpen: true, deletedAt: true, name: true, org: { select: { approvedAt: true } } },
+        select: {
+          isOpen: true,
+          operatingHours: true,
+          deletedAt: true,
+          name: true,
+          org: { select: { approvedAt: true } },
+        },
       });
 
       if (!boutique || boutique.deletedAt) {
@@ -168,6 +175,17 @@ export class OrderService {
           400,
           `« ${boutique.name} » est momentanément indisponible et n'accepte pas de commande.`,
           "STORE_CLOSED"
+        );
+      }
+
+      // Hors des horaires, le retrait reste possible : le client choisit un
+      // créneau à venir, proposé d'après ces mêmes horaires. La livraison, elle,
+      // part tout de suite — personne ne serait là pour la préparer.
+      if (data.deliveryType === "DELIVERY" && !StoreHoursService.isOpenNow(boutique)) {
+        throw new ApiError(
+          400,
+          `« ${boutique.name} » est fermée pour le moment : la livraison reprendra à l'ouverture. Le retrait sur un prochain créneau reste possible.`,
+          "STORE_CLOSED_FOR_DELIVERY"
         );
       }
 
