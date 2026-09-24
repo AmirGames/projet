@@ -8,6 +8,8 @@ import { logger } from "../config/logger";
 import { avisDuClientSurCommande } from "../services/avis-client.service";
 import { ReviewModerationService } from "../services/review-moderation.service";
 
+import { emitMerchantEvent } from "../config/socket";
+
 const router = Router();
 
 const signalementSchema = z.object({
@@ -112,6 +114,8 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
         status: "APPROVED",
       },
     });
+
+    void emitMerchantEvent(commande.storeId, "avis-nouveau", { storeId: commande.storeId, rating: body.rating });
 
     res.status(201).json({ message: `Merci pour votre avis sur ${cible}`, type: body.type, misAJour: false });
   } catch (err) {

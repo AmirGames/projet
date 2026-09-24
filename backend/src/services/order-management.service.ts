@@ -107,13 +107,24 @@ export class OrderManagementService {
             include: {
               // La catégorie distingue « 4 fromages » pâtes de « 4 fromages »
               // pizza, sur le ticket comme sur le détail.
-              product: { include: { category: { select: { name: true } } } },
+              product: { include: { category: { select: { name: true, displayOrder: true } } } },
               variant: true,
             },
           },
           customer: true,
           payments: true,
           store: true,
+          // Le commerçant suit le livreur : arrivée, récupération, livraison.
+          delivery: {
+            select: {
+              status: true,
+              assignedAt: true,
+              pickupTime: true,
+              deliveryTime: true,
+              estimatedTime: true,
+              driver: { select: { name: true, phone: true, vehicleType: true } },
+            },
+          },
         },
       });
 

@@ -45,6 +45,20 @@ const smsPret = Boolean(
   process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM
 );
 
+const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+
+export interface MessageExpo {
+  title: string;
+  body: string;
+  /** Lu par l'application au toucher de la notification. */
+  data?: Record<string, unknown>;
+  /** Canal Android : décide du son et de l'importance. */
+  channelId?: string;
+  sound?: string | null;
+  /** Durée pendant laquelle Expo retente l'envoi, en secondes. */
+  ttl?: number;
+}
+
 export interface MessagePush {
   title: string;
   body: string;
@@ -154,9 +168,84 @@ export class Notifier {
     }
   }
 
+  /**
+   * Push vers l'application mobile, par le service Expo.
+   *
+   * Les jetons refusés (application désinstallée, compte déconnecté) sont
+   * retirés : les garder ferait échouer chaque envoi suivant.
+   */
+  static async expoPush(tokens: string[], message: MessageExpo) {
+    const valides = [...new Set(tokens)].filter((t) => /^Expo(nent)?PushToken\[.+\]$/.test(t));
+    if (valides.length === 0) return 0;
+
+    let envoyes = 0;
+    for (let i = 0; i < valides.length; i += 100) {
+      const lot = valides.slice(i, i + 100);
+      try {
+        const reponse = await fetch(EXPO_PUSH_URL, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            ...(process.env.EXPO_ACCESS_TOKEN ? { Authorization: `Bearer ${process.env.EXPO_ACCESS_TOKEN}` } : {}),
+          },
+          body: JSON.stringify(
+            lot.map((to) => ({
+              to,
+              title: message.title,
+              body: message.body,
+              data: message.data || {},
+              sound: message.sound || "default",
+              channelId: message.channelId,
+              priority: "high",
+              ttl: message.ttl ?? 600,
+            }))
+          ),
+        });
+
+        if (!reponse.ok) {
+          logger.warn("Push Expo refusé", { status: reponse.status, body: await reponse.text() });
+          continue;
+        }
+
+        const { data: tickets } = (await reponse.json()) as {
+          data?: { status: string; details?: { error?: string } }[];
+        };
+        const perimes: string[] = [];
+        (tickets || []).forEach((ticket, index) => {
+          if (ticket.status === "ok") envoyes++;
+          else if (ticket.details?.error === "DeviceNotRegistered") perimes.push(lot[index]);
+        });
+
+        if (perimes.length) {
+          await db.pushDevice.deleteMany({ where: { token: { in: perimes } } }).catch(() => {});
+        }
+      } catch (err) {
+        logger.warn("Envoi push Expo impossible", { error: err instanceof Error ? err.message : err });
+      }
+    }
+    return envoyes;
+  }
+
   // -------------------------------------------------------------------------
   // Destinataires
   // -------------------------------------------------------------------------
+
+  /** Prévient sur leur téléphone tous les membres de l'équipe d'une boutique. */
+  static async pushEquipeBoutique(storeId: string, message: MessageExpo) {
+    const boutique = await db.store.findUnique({ where: { id: storeId }, select: { orgId: true } });
+    if (!boutique) return 0;
+
+    const appareils = await db.pushDevice.findMany({
+      where: { app: "merchant", user: { memberships: { some: { orgId: boutique.orgId } } } },
+      select: { token: true },
+    });
+
+    return this.expoPush(
+      appareils.map((a) => a.token),
+      message
+    );
+  }
 
   /** Pousse une notification au navigateur du livreur, s'il s'est abonné. */
   static async pushLivreur(driverId: string, message: MessagePush) {

@@ -11,6 +11,7 @@ import { ModeDeLivraison, fraisDeServiceEnVigueur } from "./delivery-mode.servic
 import { promoSansCommissionActive } from "./plan.service";
 import { StoreHoursService } from "./store-hours.service";
 import { emitMerchantEvent } from "../config/socket";
+import { Notifier, enArrierePlan } from "./notifier.service";
 import { echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
 
 export interface OrderData {
@@ -507,6 +508,19 @@ export class OrderService {
         echeance: echeanceDeReponse(order).toISOString(),
       });
 
+      // Et le téléphone du commerçant, même application fermée.
+      enArrierePlan(
+        Notifier.pushEquipeBoutique(order.storeId, {
+          title: "🔔 Nouvelle commande",
+          body: `${order.customerName || "Un client"} · ${
+            order.deliveryType === "DELIVERY" ? "Livraison" : "Retrait"
+          } · ${Number(order.totalAmount).toFixed(2)} €`,
+          data: { type: "commande-nouvelle", orderId: order.id, storeId: order.storeId },
+          channelId: "new-orders",
+          sound: "new_order.wav",
+        })
+      );
+
       return order;
     } catch (error: any) {
       throw error;
@@ -535,7 +549,17 @@ export class OrderService {
     return await db.order.findMany({
       where: { storeId },
       include: {
-        items: { include: { product: true } },
+        items: { include: { product: { include: { category: { select: { name: true, displayOrder: true } } } } } },
+        delivery: {
+          select: {
+            status: true,
+            assignedAt: true,
+            pickupTime: true,
+            deliveryTime: true,
+            estimatedTime: true,
+            driver: { select: { name: true, phone: true, vehicleType: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       take: limit,
