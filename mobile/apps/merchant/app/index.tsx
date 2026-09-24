@@ -289,11 +289,11 @@ export default function MerchantApp() {
 
           <View style={styles.bottomTabBar}>
             <TouchableOpacity
-              style={[styles.tabButton, tab === 'orders' && styles.tabButtonActive]}
-              onPress={() => setTab('orders')}
+              style={[styles.tabButton, tab === 'account' && styles.tabButtonActive]}
+              onPress={() => setTab('account')}
             >
-              <Text style={[styles.tabIcon, tab === 'orders' && styles.tabIconActive]}>📋</Text>
-              <Text style={[styles.tabLabel, tab === 'orders' && styles.tabLabelActive]}>Commandes</Text>
+              <Text style={[styles.tabIcon, tab === 'account' && styles.tabIconActive]}>👤</Text>
+              <Text style={[styles.tabLabel, tab === 'account' && styles.tabLabelActive]}>Compte</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -305,11 +305,11 @@ export default function MerchantApp() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.tabButton, tab === 'account' && styles.tabButtonActive]}
-              onPress={() => setTab('account')}
+              style={[styles.tabButton, tab === 'orders' && styles.tabButtonActive]}
+              onPress={() => setTab('orders')}
             >
-              <Text style={[styles.tabIcon, tab === 'account' && styles.tabIconActive]}>👤</Text>
-              <Text style={[styles.tabLabel, tab === 'account' && styles.tabLabelActive]}>Compte</Text>
+              <Text style={[styles.tabIcon, tab === 'orders' && styles.tabIconActive]}>📋</Text>
+              <Text style={[styles.tabLabel, tab === 'orders' && styles.tabLabelActive]}>Commandes</Text>
             </TouchableOpacity>
           </View>
         </View>
