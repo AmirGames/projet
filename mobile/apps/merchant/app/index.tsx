@@ -31,6 +31,13 @@ interface Order {
   createdAt?: string;
 }
 
+interface StoreSummary {
+  id: string;
+  name: string;
+  city?: string | null;
+  isOpen?: boolean;
+}
+
 const DRAWER_ITEMS = [
   { tab: 'stats', label: '📊 Statistiques' },
   { tab: 'menu', label: '🍕 Menu' },
@@ -76,46 +83,60 @@ export default function MerchantApp() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [storeId, setStoreId] = useState<string>('');
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
-  const [orgId, setOrgId] = useState<string>('');
+  const [stores, setStores] = useState<StoreSummary[]>([]);
+  const [storePickerOpen, setStorePickerOpen] = useState<boolean>(false);
   const [preparationMinutes, setPreparationMinutes] = useState<number>(30);
 
-  const fetchOrders = async (token: string, orgId: string) => {
+  const currentStore = stores.find((s) => s.id === storeId);
+
+  const loadOrders = async (token: string, stId: string) => {
     try {
-      const storesResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
-        method: 'GET',
+      const response = await fetch(`${API_URL}/api/orders?storeId=${stId}`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
       });
-
-      const stores = await storesResponse.json();
-      if (!storesResponse.ok || !Array.isArray(stores) || stores.length === 0) {
-        console.error('Aucune boutique trouvée');
-        return;
-      }
-
-      const stId = stores[0].id;
-      setStoreId(stId);
-
-      const ordersResponse = await fetch(`${API_URL}/api/orders?storeId=${stId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await ordersResponse.json();
-      if (ordersResponse.ok) {
-        const ordersList = data.orders || data.data || data || [];
-        setOrders(ordersList);
+      const data = await response.json();
+      if (response.ok) {
+        setOrders(data.orders || data.data || data || []);
       } else {
         console.error('Erreur lors du chargement des commandes');
       }
     } catch (error) {
       console.error('Erreur lors du chargement des commandes:', error);
     }
+  };
+
+  const loadStores = async (token: string, organizationId: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/stores/org/${organizationId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const list = await response.json();
+      if (!response.ok || !Array.isArray(list) || list.length === 0) {
+        console.error('Aucune boutique trouvée');
+        return;
+      }
+      setStores(list);
+      setStoreId(list[0].id);
+      await loadOrders(token, list[0].id);
+    } catch (error) {
+      console.error('Erreur lors du chargement des boutiques:', error);
+    }
+  };
+
+  const switchStore = async (id: string) => {
+    setStorePickerOpen(false);
+    setMenuOpen(false);
+    if (id === storeId) return;
+    setStoreId(id);
+    setOrders([]);
+    setSelectedOrder(null);
+    await loadOrders(accessToken, id);
   };
 
   const handleLogin = async () => {
@@ -141,8 +162,7 @@ export default function MerchantApp() {
         setTab('dashboard');
 
         if (data.organization) {
-          setOrgId(data.organization.id);
-          await fetchOrders(data.accessToken, data.organization.id);
+          await loadStores(data.accessToken, data.organization.id);
         }
       } else {
         Alert.alert('Erreur', data.message || 'Connexion échouée');
@@ -153,6 +173,11 @@ export default function MerchantApp() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setStorePickerOpen(false);
   };
 
   const openFromMenu = (target: string) => {
@@ -169,8 +194,9 @@ export default function MerchantApp() {
     setScreen('login');
     setTab('dashboard');
     setMenuOpen(false);
-    setOrgId('');
     setStoreId('');
+    setStores([]);
+    setStorePickerOpen(false);
   };
 
   const handleOrderAction = async (action: string, orderId: string) => {
@@ -200,9 +226,7 @@ export default function MerchantApp() {
 
       if (response.ok) {
         Alert.alert('Succès', `Commande ${action === 'accept' ? 'acceptée' : action === 'reject' ? 'refusée' : 'marquée prête'}`);
-        if (orgId) {
-          await fetchOrders(accessToken, orgId);
-        }
+        await loadOrders(accessToken, storeId);
         setScreen('dashboard');
         setTab('commandes-jour');
       } else {
@@ -263,6 +287,18 @@ export default function MerchantApp() {
   // Dashboard Screen
   if (screen === 'dashboard') {
     const todayOrders = orders.filter((o) => isToday(o.createdAt));
+    const openStorePicker = () => {
+      setStorePickerOpen(true);
+      setMenuOpen(true);
+    };
+    const storeSubtitle = (
+      <TouchableOpacity disabled={stores.length < 2} onPress={openStorePicker}>
+        <Text style={styles.headerEmail}>
+          {currentStore?.name || email}
+          {stores.length > 1 ? '  ▾ Changer' : ''}
+        </Text>
+      </TouchableOpacity>
+    );
     const back = () => setTab('dashboard');
 
     const renderTabContent = () => {
@@ -273,9 +309,9 @@ export default function MerchantApp() {
           </View>
         );
       }
-      if (tab === 'stats') return <StatsScreen token={accessToken} storeId={storeId} onBack={back} />;
-      if (tab === 'menu') return <MenuScreen token={accessToken} storeId={storeId} onBack={back} />;
-      if (tab === 'boutique') return <StoreScreen token={accessToken} storeId={storeId} onBack={back} />;
+      if (tab === 'stats') return <StatsScreen key={storeId} token={accessToken} storeId={storeId} onBack={back} />;
+      if (tab === 'menu') return <MenuScreen key={storeId} token={accessToken} storeId={storeId} onBack={back} />;
+      if (tab === 'boutique') return <StoreScreen key={storeId} token={accessToken} storeId={storeId} onBack={back} />;
       if (tab === 'settings') {
         return (
           <SettingsScreen
@@ -293,7 +329,7 @@ export default function MerchantApp() {
             <View style={styles.header}>
               <View>
                 <Text style={styles.headerTitle}>Tableau de Bord</Text>
-                <Text style={styles.headerEmail}>{email}</Text>
+                {storeSubtitle}
               </View>
             </View>
             <ScrollView style={styles.dashboardContent}>
@@ -320,7 +356,7 @@ export default function MerchantApp() {
             <View style={styles.header}>
               <View>
                 <Text style={styles.headerTitle}>Commandes du Jour</Text>
-                <Text style={styles.headerEmail}>{email}</Text>
+                {storeSubtitle}
               </View>
             </View>
             <FlatList
@@ -399,10 +435,36 @@ export default function MerchantApp() {
             <View style={styles.menuDrawer}>
               <View style={styles.menuHeader}>
                 <Text style={styles.menuTitle}>Menu</Text>
-                <TouchableOpacity onPress={() => setMenuOpen(false)}>
+                <TouchableOpacity onPress={closeMenu}>
                   <Text style={styles.closeButton}>✕</Text>
                 </TouchableOpacity>
               </View>
+
+              {currentStore && (
+                <View style={styles.storeBlock}>
+                  <Text style={styles.storeBlockLabel}>Boutique</Text>
+                  <TouchableOpacity
+                    style={styles.storeCurrent}
+                    disabled={stores.length < 2}
+                    onPress={() => setStorePickerOpen((o) => !o)}
+                  >
+                    <Text style={styles.storeCurrentName} numberOfLines={1}>🏪 {currentStore.name}</Text>
+                    {stores.length > 1 && <Text style={styles.storeChevron}>{storePickerOpen ? '▴' : '▾'}</Text>}
+                  </TouchableOpacity>
+                  {storePickerOpen &&
+                    stores.map((s) => (
+                      <TouchableOpacity key={s.id} style={styles.storeOption} onPress={() => switchStore(s.id)}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.storeOptionName, s.id === storeId && styles.storeOptionActive]} numberOfLines={1}>
+                            {s.name}
+                          </Text>
+                          {s.city ? <Text style={styles.storeOptionCity}>{s.city}</Text> : null}
+                        </View>
+                        {s.id === storeId && <Text style={styles.storeOptionActive}>✓</Text>}
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              )}
 
               {DRAWER_ITEMS.map((item) => (
                 <TouchableOpacity
@@ -420,7 +482,7 @@ export default function MerchantApp() {
             </View>
             <TouchableOpacity
               style={styles.menuBackdrop}
-              onPress={() => setMenuOpen(false)}
+              onPress={closeMenu}
             />
           </View>
         )}
@@ -610,6 +672,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     fontWeight: '500',
+  },
+  storeBlock: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  storeBlockLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#999',
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  storeCurrent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  storeCurrentName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+  },
+  storeChevron: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+  },
+  storeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  storeOptionName: {
+    fontSize: 14,
+    color: '#333',
+  },
+  storeOptionCity: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 1,
+  },
+  storeOptionActive: {
+    color: '#007AFF',
+    fontWeight: '700',
   },
   menuItemActive: {
     backgroundColor: '#EAF3FF',
