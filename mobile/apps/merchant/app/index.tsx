@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, FlatList, ScrollView, Platform } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, FlatList, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const API_URL = 'http://192.168.0.80:3001';
 
@@ -255,7 +256,7 @@ export default function MerchantApp() {
   if (screen === 'detail' && selectedOrder) {
     const order = selectedOrder;
     return (
-      <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? 0 : 12 }]}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <StatusBar style="light" />
         <View style={styles.dashboardContainer}>
           <View style={styles.detailHeader}>
@@ -367,7 +368,7 @@ export default function MerchantApp() {
             )}
           </View>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
