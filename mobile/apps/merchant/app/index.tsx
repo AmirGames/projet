@@ -8,18 +8,18 @@ const STATUS_LABELS = {
   pending: 'En attente',
   accepted: 'Acceptée',
   preparing: 'En préparation',
+  rejected: 'Refusée',
   ready: 'Prête',
-  delivering: 'En livraison',
-  delivered: 'Livrée',
+  completed: 'Livrée',
 };
 
 const STATUS_COLORS = {
   pending: '#FFA500',
   accepted: '#4CAF50',
   preparing: '#2196F3',
+  rejected: '#F44336',
   ready: '#9C27B0',
-  delivering: '#FF9800',
-  delivered: '#4CAF50',
+  completed: '#4CAF50',
 };
 
 export default function LoginScreen() {
@@ -170,13 +170,13 @@ export default function LoginScreen() {
             renderItem={({ item }) => (
               <View style={styles.orderCard}>
                 <View style={styles.orderHeader}>
-                  <Text style={styles.orderNumber}>#{item.orderNumber}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] }]}>
-                    <Text style={styles.statusText}>{STATUS_LABELS[item.status]}</Text>
+                  <Text style={styles.orderNumber}>#{item.id.slice(-6).toUpperCase()}</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status?.toLowerCase()] || '#999' }]}>
+                    <Text style={styles.statusText}>{STATUS_LABELS[item.status?.toLowerCase()] || item.status}</Text>
                   </View>
                 </View>
-                <Text style={styles.customerName}>{item.customer?.name || 'Anonyme'}</Text>
-                <Text style={styles.orderTotal}>{item.total.toFixed(2)} €</Text>
+                <Text style={styles.customerName}>{item.customerName || 'Anonyme'}</Text>
+                <Text style={styles.orderTotal}>{parseFloat(item.totalAmount).toFixed(2)} €</Text>
               </View>
             )}
             contentContainerStyle={styles.listContent}
