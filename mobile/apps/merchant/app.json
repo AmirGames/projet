@@ -19,6 +19,9 @@
           ]
         }
       ]
-    ]
+    ],
+    "android": {
+      "package": "com.amir_games.zuponemerchant"
+    }
   }
 }
