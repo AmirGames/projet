@@ -1,11 +1,14 @@
 {
   "expo": {
-    "name": "merchant",
-    "slug": "merchant",
+    "name": "Zupone Merchant",
+    "slug": "zupone-merchant",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "updates": {
+      "enabled": false
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -19,6 +22,14 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": []
+        }
+      ]
+    ]
   }
 }
