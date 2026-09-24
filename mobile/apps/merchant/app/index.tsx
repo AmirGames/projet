@@ -399,11 +399,14 @@ const styles = StyleSheet.create({
   detailHeader: {
     backgroundColor: '#007AFF',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
+    paddingTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   backButton: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
   },
   headerTitle: {
