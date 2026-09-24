@@ -9,7 +9,17 @@
     "updates": {
       "enabled": false
     },
-    "plugins": [],
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#007AFF",
+          "sounds": [
+            "./assets/sounds/new_order.wav"
+          ]
+        }
+      ]
+    ],
     "android": {
       "package": "com.amir_games.zuponemerchant"
     }

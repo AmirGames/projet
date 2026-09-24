@@ -265,12 +265,16 @@ export function emitNotification(recipientEmail: string, notification: unknown) 
 }
 
 export function emitOrderUpdate(orderId: string, status: string, data?: any) {
+  if (!io) return;
+
   io.to(`order-${orderId}`).emit('order-update', {
     orderId,
     status,
     timestamp: new Date().toISOString(),
     ...data,
   });
+
+  void prevenirLaBoutique(orderId, { status });
 }
 
 export function emitDeliveryUpdate(orderId: string, data: any) {
@@ -281,6 +285,29 @@ export function emitDeliveryUpdate(orderId: string, data: any) {
     timestamp: new Date().toISOString(),
     ...data,
   });
+
+  void prevenirLaBoutique(orderId, { deliveryStatus: data?.status });
+}
+
+/**
+ * Toute évolution d'une commande prévient aussi l'équipe de la boutique.
+ *
+ * Sans cela, une commande livrée, annulée ou avancée depuis un autre écran
+ * restait figée sur les autres appareils du commerçant jusqu'au
+ * rafraîchissement suivant.
+ */
+async function prevenirLaBoutique(orderId: string, donnees: Record<string, unknown>) {
+  try {
+    const commande = await db.order.findUnique({ where: { id: orderId }, select: { storeId: true } });
+    if (commande) {
+      await emitMerchantEvent(commande.storeId, 'commande-maj', { orderId, storeId: commande.storeId, ...donnees });
+    }
+  } catch (err) {
+    logger.error("Impossible de prévenir la boutique d'une commande", {
+      orderId,
+      error: err instanceof Error ? err.message : err,
+    });
+  }
 }
 
 /**
@@ -320,6 +347,28 @@ export async function emitMerchantEvent(storeId: string, evenement: string, donn
   } catch (err) {
     logger.error("Impossible de prévenir l'équipe de la boutique", {
       storeId,
+      evenement,
+      error: err instanceof Error ? err.message : err,
+    });
+  }
+}
+
+/** Pousse un événement à tous les membres d'une organisation. */
+export async function emitOrgEvent(orgId: string, evenement: string, donnees: unknown) {
+  if (!io || !orgId) return;
+
+  try {
+    const membres = await db.membership.findMany({
+      where: { orgId },
+      select: { user: { select: { email: true } } },
+    });
+
+    for (const membre of membres) {
+      io.to(salonUtilisateur(membre.user.email)).emit(evenement, donnees);
+    }
+  } catch (err) {
+    logger.error("Impossible de prévenir l'organisation", {
+      orgId,
       evenement,
       error: err instanceof Error ? err.message : err,
     });
