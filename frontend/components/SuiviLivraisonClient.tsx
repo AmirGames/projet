@@ -52,6 +52,16 @@ const distanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): num
   return R * c;
 };
 
+const estUneCoordonnee = (v: unknown): v is number =>
+  typeof v === 'number' && Number.isFinite(v);
+
+const aDesCoordonnees = (d: DeliveryTracking | null | undefined): boolean =>
+  !!d &&
+  estUneCoordonnee(d.pickupLat) &&
+  estUneCoordonnee(d.pickupLng) &&
+  estUneCoordonnee(d.deliveryLat) &&
+  estUneCoordonnee(d.deliveryLng);
+
 const estimatedTimeFromDistance = (km: number): number => {
   // Moyenne 30 km/h en ville + temps de manœuvre
   return Math.max(2, Math.round(km * 2));
@@ -64,24 +74,26 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
   const [currentDelivery, setCurrentDelivery] = useState<DeliveryTracking>(delivery);
   const [error, setError] = useState('');
   const socketRef = useRef<Socket | null>(null);
+  // La destination lue par le gestionnaire WebSocket, sans valeur figée.
+  const destinationRef = useRef<[number, number]>([delivery.deliveryLat, delivery.deliveryLng]);
+  destinationRef.current = [delivery.deliveryLat, delivery.deliveryLng];
 
   // Initialiser la carte
   useEffect(() => {
     const element = document.getElementById(`map-${orderId}`);
     if (!element || mapRef.current) return;
 
-    // Centre de la carte entre pickup et delivery
-    const centerLat = (delivery.pickupLat + delivery.deliveryLat) / 2;
-    const centerLng = (delivery.pickupLng + delivery.deliveryLng) / 2;
+    // Des coordonnées absentes (commande pas encore géocodée) donnaient NaN, et
+    // Leaflet plantait après avoir déjà pris possession du conteneur.
+    if (!aDesCoordonnees(delivery)) return;
 
-    const map = L.map(element).setView([centerLat, centerLng], 14);
+    const map = L.map(element);
+    mapRef.current = map;
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 19,
     }).addTo(map);
-
-    mapRef.current = map;
 
     // Marker pour le restaurant (pickup)
     const pickupMarker = L.circleMarker([delivery.pickupLat, delivery.pickupLng], {
@@ -112,7 +124,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
     markersRef.current.delivery = deliveryMarker;
 
     // Marker pour le livreur
-    if (delivery.driverLat && delivery.driverLng) {
+    if (estUneCoordonnee(delivery.driverLat) && estUneCoordonnee(delivery.driverLng)) {
       const driverMarker = L.circleMarker([delivery.driverLat, delivery.driverLng], {
         radius: 12,
         fillColor: '#3b82f6',
@@ -141,10 +153,16 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
     if (markersRef.current.driver) {
       group.addLayer(markersRef.current.driver);
     }
-    map.fitBounds(group.getBounds().pad(0.1));
+    map.fitBounds(group.getBounds().pad(0.1), { maxZoom: 16 });
 
+    // La carte doit être détruite au démontage : sinon le montage suivant
+    // (double montage du mode strict, retour sur la page) tombait sur
+    // « Map container is already initialized ».
     return () => {
-      // Cleanup optionnel - garder la carte
+      map.remove();
+      mapRef.current = null;
+      markersRef.current = {};
+      lineRef.current = null;
     };
   }, [orderId, delivery]);
 
@@ -177,7 +195,11 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
             }));
 
             // Mettre à jour le marker du livreur
-            if (mapRef.current && data.location.latitude && data.location.longitude) {
+            if (
+              mapRef.current &&
+              estUneCoordonnee(data.location.latitude) &&
+              estUneCoordonnee(data.location.longitude)
+            ) {
               if (markersRef.current.driver) {
                 markersRef.current.driver.setLatLng([
                   data.location.latitude,
@@ -209,7 +231,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
               lineRef.current = L.polyline(
                 [
                   [data.location.latitude, data.location.longitude],
-                  [currentDelivery.deliveryLat, currentDelivery.deliveryLng],
+                  destinationRef.current,
                 ],
                 { color: '#3b82f6', weight: 2, opacity: 0.7, dashArray: '5, 5' }
               ).addTo(mapRef.current);
@@ -241,33 +263,37 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
     };
   }, [orderId]);
 
-  const timeRemaining = currentDelivery.driverLat
-    ? estimatedTimeFromDistance(
-        distanceKm(
+  const distance =
+    estUneCoordonnee(currentDelivery.driverLat) &&
+    estUneCoordonnee(currentDelivery.driverLng) &&
+    estUneCoordonnee(currentDelivery.deliveryLat) &&
+    estUneCoordonnee(currentDelivery.deliveryLng)
+      ? distanceKm(
           currentDelivery.driverLat,
-          currentDelivery.driverLng || 0,
+          currentDelivery.driverLng,
           currentDelivery.deliveryLat,
           currentDelivery.deliveryLng
         )
-      )
-    : undefined;
+      : undefined;
 
-  const distance = currentDelivery.driverLat
-    ? distanceKm(
-        currentDelivery.driverLat,
-        currentDelivery.driverLng || 0,
-        currentDelivery.deliveryLat,
-        currentDelivery.deliveryLng
-      )
-    : undefined;
+  const timeRemaining =
+    distance !== undefined ? estimatedTimeFromDistance(distance) : undefined;
+
+  const carteAffichable = aDesCoordonnees(delivery);
 
   return (
     <div className="space-y-4">
       {/* Carte */}
-      <div
-        id={`map-${orderId}`}
-        className="w-full h-96 rounded-lg border border-gray-700 shadow-lg"
-      />
+      {carteAffichable ? (
+        <div
+          id={`map-${orderId}`}
+          className="w-full h-96 rounded-lg border border-gray-700 shadow-lg"
+        />
+      ) : (
+        <div className="w-full rounded-lg border border-gray-700 bg-gray-900 p-6 text-center text-sm text-gray-400">
+          La carte s&apos;affichera dès que le trajet sera localisé.
+        </div>
+      )}
 
       {/* Infos */}
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
