@@ -55,6 +55,8 @@ interface Commande {
   /** Le taux tel qu'il valait à la commande, et non celui réglé aujourd'hui. */
   taxRate?: number | string;
   feesAmount: number | string;
+  /** Qui livre : le commerçant (OWN) ou un livreur de la plateforme (PLATFORM). */
+  deliveryMode?: 'OWN' | 'PLATFORM' | null;
   notes?: string | null;
   createdAt: string;
   items?: LigneCommande[];
@@ -296,6 +298,15 @@ export default function DetailCommandePage() {
                 <span>Frais de livraison</span>
                 <span>{euro(commande.feesAmount)}</span>
               </div>
+            )}
+            {/* Livrée par la plateforme : le client a payé la livraison au
+                commerçant, mais elle revient au livreur. Le dire ici plutôt
+                que de laisser croire que cette somme est à lui. */}
+            {commande.deliveryMode === 'PLATFORM' && Number(commande.feesAmount) > 0 && (
+              <p className="text-xs text-amber-300">
+                Livraison assurée par un livreur de la plateforme : ces frais sont encaissés pour
+                son compte et reportés sur votre relevé du mois, avec la commission.
+              </p>
             )}
             <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-700">
               <span>Total TTC</span>

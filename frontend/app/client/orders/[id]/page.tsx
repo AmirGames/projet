@@ -44,7 +44,8 @@ export default function OrderTrackingPage() {
   const router = useRouter();
   const orderId = params.id as string;
 
-  const { orderStatus, deliveryLocation, eta, gpsPerdu, isConnected, notification } = useOrderTracking(orderId);
+  const { orderStatus, deliveryLocation, eta, gpsPerdu, livreurProche, isConnected, notification } =
+    useOrderTracking(orderId);
 
   const [order, setOrder] = useState<Order | null>(null);
   const [delivery, setDelivery] = useState<OrderDelivery | null>(null);
@@ -342,7 +343,7 @@ export default function OrderTrackingPage() {
                 et un bouton « Appeler » qui n'appelait rien. */}
             {delivery && (
               <SuiviLivraison
-                course={delivery}
+                course={{ ...delivery, livreurProche: delivery.livreurProche || livreurProche }}
                 orderId={orderId}
                 positionDirecte={deliveryLocation}
                 gpsPerduDirect={gpsPerdu}

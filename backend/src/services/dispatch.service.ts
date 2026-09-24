@@ -22,6 +22,9 @@ import { Notifier, enArrierePlan } from "./notifier.service";
  * bloquée, même relancée à la main.
  */
 
+/** En deçà, le client est prévenu que le livreur arrive et peut descendre. */
+export const RAYON_APPROCHE_KM = 0.3;
+
 /** Délai avant de reproposer une course à un livreur qui a refusé ou laissé expirer. */
 export const RELANCE_APRES_MS = 3 * 60000;
 /** Au-delà, la course n'est plus proposée d'office à ce livreur. */
@@ -588,7 +591,14 @@ export class DispatchService {
         driverLng: position.longitude,
         driverLocationAt: maintenant,
       },
-      select: { orderId: true, status: true },
+      select: {
+        id: true,
+        orderId: true,
+        status: true,
+        deliveryLat: true,
+        deliveryLng: true,
+        nearCustomerNotifiedAt: true,
+      },
     });
 
     emitDeliveryUpdate(course.orderId, {
@@ -596,6 +606,48 @@ export class DispatchService {
       location: { latitude: position.latitude, longitude: position.longitude },
     });
 
+    await this.prevenirSiProche(course, position);
+
     return { suivie: true, orderId: course.orderId };
+  }
+
+  /**
+   * Prévient le client que le livreur approche, pour qu'il descende.
+   *
+   * Une seule fois par course, dès la première position reçue à moins de
+   * RAYON_APPROCHE_KM de l'adresse, et seulement une fois la commande
+   * récupérée : un livreur qui passe devant chez le client en allant au
+   * commerce ne doit pas le faire descendre pour rien.
+   */
+  static async prevenirSiProche(
+    course: {
+      id: string;
+      orderId: string;
+      status: string;
+      deliveryLat: number | null;
+      deliveryLng: number | null;
+      nearCustomerNotifiedAt: Date | null;
+    },
+    position: Point
+  ) {
+    if (course.status !== "PICKED_UP" || course.nearCustomerNotifiedAt) return false;
+
+    const destination = { latitude: course.deliveryLat, longitude: course.deliveryLng };
+    if (!estUnPoint(destination)) return false;
+    if (distanceKm(position, destination) > RAYON_APPROCHE_KM) return false;
+
+    // La marque se pose sous condition : deux positions reçues coup sur coup
+    // ne doivent pas envoyer deux messages.
+    const pose = await db.orderDelivery.updateMany({
+      where: { id: course.id, nearCustomerNotifiedAt: null },
+      data: { nearCustomerNotifiedAt: new Date() },
+    });
+    if (pose.count === 0) return false;
+
+    emitDeliveryUpdate(course.orderId, { status: course.status, livreurProche: true });
+    enArrierePlan(Notifier.livreurProcheClient(course.orderId));
+
+    logger.info("Customer warned: driver is close", { orderId: course.orderId });
+    return true;
   }
 }

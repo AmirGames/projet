@@ -115,6 +115,10 @@ export function createApp(): Express {
     res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.header("Access-Control-Allow-Credentials", "true");
+    // Helmet réserve les fichiers à la même origine : le site, servi sur un
+    // autre port ou un autre domaine, ne pouvait pas afficher une photo de
+    // dépôt dans une balise <img>.
+    res.header("Cross-Origin-Resource-Policy", "cross-origin");
     if (req.method === "OPTIONS") {
       return res.sendStatus(200);
     }

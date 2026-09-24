@@ -3,7 +3,8 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : la note du livreur, donnée par le client.
+Dernière mise à jour : le parcours du livreur (arrivée au commerce, alerte à
+300 m, photo prise sur place) et les frais de livraison dus à la plateforme.
 
 ---
 
@@ -125,7 +126,13 @@ scripts de vérification (voir §6).
 - Acceptation, refus, étapes de la course, rémunération calculée
 - **Sait s'il est payé** : ce qui reste dû, ce qui est arrêté et attend le
   virement, ce qui est arrivé, et le détail de chaque relevé
-- **Prouve la remise** : le code du client, ou la photo du dépôt en son absence
+- **La prise en charge se déverrouille au commerce** : à moins de 150 m, un
+  curseur « glisser pour prendre en charge » apparaît (repli déclaré quand le GPS
+  ne le situe pas), et le GPS part aussitôt vers le client
+- **Le client est prévenu à 300 m** qu'il peut descendre : une seule fois, et
+  seulement une fois la commande récupérée (`OrderDelivery.nearCustomerNotifiedAt`)
+- **Prouve la remise** : le code du client, vérifié seul au quatrième chiffre,
+  ou la photo du dépôt prise avec l'appareil du téléphone, que le client voit
 - **Est noté par ses clients**, et lit leurs remarques sur son tableau de bord
 
 ### La plateforme (superowner)
@@ -136,9 +143,13 @@ scripts de vérification (voir §6).
 - **Qui livre** (réglage boutique « J'utilise ma propre livraison ») :
   coché, zones et frais du commerçant, taux de base, pas de livreur plateforme ;
   non coché, rayon et barème de Configuration système (base + km × distance
-  boutique → client), frais encaissés par la plateforme et reversés tels quels
-  au livreur, taux majoré calculé hors frais. Le mode est figé sur la commande
-  (`Order.deliveryMode`)
+  boutique → client), frais reversés tels quels au livreur, taux majoré calculé
+  hors frais. Le mode est figé sur la commande (`Order.deliveryMode`).
+  **Tant que le paiement en ligne n'est pas branché, le client paie le
+  commerçant, frais compris** : le commerçant encaisse ces frais pour le compte
+  de la plateforme, ils sortent de son chiffre d'affaires et lui sont réclamés
+  avec la commission du mois (`fraisDusALaPlateforme`, commandes livrées
+  seulement)
 - Facturation : commission du mois par commerçant, avec le détail par commande
 - **Boutiques** : une fiche par commerce, avec la correction des seuls champs
   dont la plateforme répond (voir la règle ci-dessous)
@@ -262,8 +273,8 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 46 | **1518** |
-| **Navigateur** (`frontend/scripts/`) | 27 | **701** |
+| **API** (`backend/scripts/verification/`) | 47 | **1542** |
+| **Navigateur** (`frontend/scripts/`) | 27 | **716** |
 
 Tout est vert au dernier passage complet (24 septembre).
 
@@ -398,6 +409,12 @@ Deux invariants à ne jamais casser :
   que paie un client. Tout autre champ est refusé explicitement, chaque
   correction part au journal avec son avant et son après, et le commerçant est
   prévenu.
+- **Les frais d'une course de la plateforme ne sont pas au commerçant.** Il
+  les encaisse pour elle tant que le paiement en ligne n'existe pas : ils
+  sortent de son chiffre et figurent sur son relevé du mois, avec la
+  commission (`deliveryFeesDue`, `totalDue`). `amount` reste la seule
+  commission. Le jour où Stripe Connect sera branché, le partage se fera au
+  paiement et ce relevé n'aura plus de frais à réclamer.
 - **Le code de remise appartient au client, jamais au livreur.** Aucune route
   côté livreur ne le rend ; il sait seulement qu'un code est attendu et combien
   d'essais lui restent. Cinq essais ratés le bloquent, et la photo du dépôt

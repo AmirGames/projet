@@ -42,6 +42,7 @@ const LIBELLES_PRIORITE: Record<string, string> = {
 import { TicketMessageService } from "../services/ticket-message.service";
 import { logger } from "../config/logger";
 import { DriverSupportService, LONGUEUR_MAX } from "../services/driver-support.service";
+import { fraisDusALaPlateforme } from "../services/delivery-mode.service";
 
 const router = Router();
 
@@ -274,6 +275,9 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
               where: { storeId: { in: storeIds }, createdAt: { gte: debutMois } },
               select: {
                 totalAmount: true,
+                feesAmount: true,
+                status: true,
+                deliveryMode: true,
                 commissionPercent: true,
                 commissionAmount: true,
                 tierAtOrder: true,
@@ -335,6 +339,10 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
           ),
         ].sort((a: number, b: number) => a - b);
 
+        // Les frais des courses faites par les livreurs de la plateforme : le
+        // client les a payés au commerçant, ils reviennent à la plateforme.
+        const fraisLivraison = commandes.reduce((somme, c) => somme + fraisDusALaPlateforme(c), 0);
+
         const dejaFacture = org.commissionHistory.length > 0;
 
         return {
@@ -342,7 +350,11 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
           organization: org.name,
           tier: org.tier,
           amount: Number(commission.toFixed(2)),
-          status: dejaFacture ? "PAID" : commission > 0 ? "PENDING" : "PAID",
+          // Frais de livraison encaissés par le commerçant pour la plateforme.
+          deliveryFeesDue: Number(fraisLivraison.toFixed(2)),
+          // Ce que le commerçant doit au total : commission et frais.
+          totalDue: Number((commission + fraisLivraison).toFixed(2)),
+          status: dejaFacture ? "PAID" : commission + fraisLivraison > 0 ? "PENDING" : "PAID",
           period: periode,
           nextBillingDate: prochaineEcheance,
           createdAt: org.createdAt,
@@ -368,6 +380,7 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
         pendingAmount: Number(
           lignes.filter((l) => l.status === "PENDING").reduce((s, l) => s + l.amount, 0).toFixed(2)
         ),
+        deliveryFeesDue: Number(lignes.reduce((s, l) => s + l.deliveryFeesDue, 0).toFixed(2)),
         activeSubscriptions: organisations.filter((o) => o.status === "ACTIVE").length,
       },
       pagination: { total: lignes.length, limit, offset },
@@ -484,6 +497,8 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
         livraison: Number(commande.feesAmount),
         // OWN : frais gardés par le commerçant. PLATFORM : reversés au livreur.
         modeLivraison: commande.deliveryMode,
+        // La part de ces frais que le commerçant a encaissée pour la plateforme.
+        livraisonDue: fraisDusALaPlateforme(commande),
         tauxCommission: figee ? Number(commande.commissionPercent) : taux,
         // Ce que la plateforme prélève sur cette commande.
         commission: figee
@@ -538,6 +553,10 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
         // Somme des parts, et non pourcentage du total : les arrondis par
         // commande doivent correspondre à ce que la ligne affiche.
         commission: Number(lignes.reduce((somme, ligne) => somme + ligne.commission, 0).toFixed(2)),
+        deliveryFees: Number(lignes.reduce((somme, ligne) => somme + ligne.livraisonDue, 0).toFixed(2)),
+        totalDue: Number(
+          lignes.reduce((somme, ligne) => somme + ligne.commission + ligne.livraisonDue, 0).toFixed(2)
+        ),
       },
     });
   } catch (err) {

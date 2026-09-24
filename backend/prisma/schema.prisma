@@ -1021,6 +1021,12 @@ model OrderDelivery {
   proofNote       String?
   proofAt         DateTime?
 
+  /// Le client a été prévenu que le livreur approche (à moins de 300 m).
+  ///
+  /// Posé une seule fois : sans cette marque, chaque position reçue dans le
+  /// rayon renverrait le même message.
+  nearCustomerNotifiedAt DateTime?
+
   /// Le relevé de versement qui paie cette course.
   ///
   /// Tant qu'il est vide, la course est due au livreur. C'est ce lien qui
@@ -1617,6 +1623,8 @@ enum NotificationType {
   DRIVER_GPS_LOST
   // Message du support au livreur, ou du livreur au support
   SUPPORT_MESSAGE
+  // Le livreur est à moins de 300 m : le client peut descendre
+  DRIVER_NEARBY
 }
 
 model Notification {

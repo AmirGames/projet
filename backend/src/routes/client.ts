@@ -703,6 +703,12 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         codeRemise: course.status === "DELIVERED" ? null : course.deliveryCode,
         preuve: course.proofType,
         prouveeLe: course.proofAt,
+        // La photo du dépôt, quand le client était absent : c'est à lui
+        // qu'elle sert, pour retrouver son repas.
+        photoDepot: course.proofType === "PHOTO" ? course.proofPhoto : null,
+        noteDepot: course.proofType === "PHOTO" ? course.proofNote : null,
+        // Le livreur est à moins de 300 m : il peut descendre.
+        livreurProche: Boolean(course.nearCustomerNotifiedAt),
       },
     });
   } catch (err) {

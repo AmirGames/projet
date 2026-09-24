@@ -21,6 +21,8 @@ interface DeliveryUpdate {
   eta?: number;
   /** Le livreur n'envoie plus sa position (true), ou elle est revenue (false). */
   gpsLost?: boolean;
+  /** Le livreur est à moins de 300 m : le client peut descendre. */
+  livreurProche?: boolean;
   timestamp: string;
 }
 
@@ -39,6 +41,7 @@ export function useOrderTracking(orderId: string) {
   const [gpsPerdu, setGpsPerdu] = useState<boolean | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [notification, setNotification] = useState<StatusNotification | null>(null);
+  const [livreurProche, setLivreurProche] = useState(false);
 
   useEffect(() => {
     if (!orderId) return;
@@ -99,6 +102,28 @@ export function useOrderTracking(orderId: string) {
         if (data.eta !== undefined) {
           setEta(data.eta);
         }
+        // Prévenu une fois, à 300 m : le bandeau, et une notification du
+        // téléphone si le client l'a permise — la page est souvent en fond.
+        if (data.livreurProche) {
+          setLivreurProche(true);
+          const titre = 'Votre livreur est bientôt là';
+          const texte = 'Vous pouvez descendre devant la porte.';
+          setNotification({
+            status: 'PICKED_UP',
+            title: titre,
+            message: texte,
+            timestamp: data.timestamp || new Date().toISOString(),
+          });
+          setTimeout(() => setNotification(null), 10000);
+          try {
+            navigator.vibrate?.([200, 100, 200]);
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+              new Notification(titre, { body: texte });
+            }
+          } catch {
+            // Un navigateur qui refuse : le bandeau suffit.
+          }
+        }
         console.log('Delivery updated:', data);
       }
     });
@@ -135,6 +160,8 @@ export function useOrderTracking(orderId: string) {
     eta,
     /** null tant qu'aucun événement n'a tranché : s'en remettre au chargement initial. */
     gpsPerdu,
+    /** Le livreur approche : poussé en direct, en plus de ce que dit la course. */
+    livreurProche,
     isConnected,
     notification,
     updateOrderStatus,

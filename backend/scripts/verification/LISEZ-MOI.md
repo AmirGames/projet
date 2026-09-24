@@ -103,6 +103,7 @@ continue.
 | `verif-adresses.mjs` | Les deux fournisseurs d'adresses, le filtre par pays et le repli |
 | `verif-admin-motdepasse.mjs` | Création d'administrateur et réparation des mots de passe en clair |
 | `verif-attribution.mjs` | Attribution des courses : position, proposition, refus, rémunération |
+| `verif-parcours-livreur.mjs` | Alerte « bientôt là » à 300 m, photo du dépôt envoyée et vue du client, frais de livraison dus à la plateforme |
 | `verif-boutique-fermee.mjs` | Boutique fermée : visible, consultable, mais sans commande |
 | `verif-client.mjs` | Historique, suivi de livraison, avis, favoris |
 | `verif-cloisonnement.mjs` | Chacun chez soi : aucune route n'accepte la boutique d'un autre |

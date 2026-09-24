@@ -16,6 +16,7 @@ import {
 } from "../services/driver-approval.service";
 import { DriverPayoutService } from "../services/driver-payout.service";
 import { DeliveryProofService } from "../services/delivery-proof.service";
+import { FileUploadService } from "../services/file-upload.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
 import { DriverActivityService, FiltreHistorique } from "../services/driver-activity.service";
 import { DriverAvailabilityService } from "../services/driver-availability.service";
@@ -934,6 +935,50 @@ router.patch(
         message: "Delivery updated",
         data: delivery
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * POST /drivers/deliveries/:id/photo - La photo du dépôt, prise sur place
+ *
+ * Le livreur devait coller un lien vers une photo hébergée ailleurs : personne
+ * ne le faisait. La photo part maintenant de l'appareil du téléphone et reste
+ * chez nous, où le client la voit. Elle n'est retenue comme preuve qu'à la
+ * clôture de la course (PATCH /deliveries/:id avec `photoUrl`).
+ */
+router.post(
+  "/deliveries/:id/photo",
+  authMiddleware,
+  uploadMiddleware.single("photo"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const deliveryId = req.params.id as string;
+      const { livreur, course } = await courseDuLivreur(req, deliveryId);
+
+      if (course.driverId !== livreur.id) {
+        throw new ApiError(403, "Acceptez d'abord cette course", "NOT_ASSIGNED");
+      }
+      if (course.status !== "PICKED_UP") {
+        throw new ApiError(400, "La photo se prend au moment du dépôt", "NOT_PICKED_UP");
+      }
+      if (!req.file) {
+        throw new ApiError(400, "Aucune photo reçue", "NO_FILE");
+      }
+      if (!req.file.mimetype.startsWith("image/")) {
+        throw new ApiError(400, "Le dépôt se prouve par une photo", "INVALID_FILE_TYPE");
+      }
+
+      const { url } = await FileUploadService.uploadDocument(
+        req.file.buffer,
+        req.file.originalname || "depot.jpg",
+        "deliveries",
+        req.file.mimetype
+      );
+
+      res.status(201).json({ success: true, data: { photoUrl: url } });
     } catch (err) {
       next(err);
     }

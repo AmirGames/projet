@@ -224,4 +224,57 @@ export class Notifier {
       messages.sms ? this.sms(commande.customerPhone, messages.sms) : Promise.resolve(false),
     ]);
   }
+
+  /**
+   * Le livreur est à moins de 300 m : le client peut descendre.
+   *
+   * Dans l'application (cloche et suivi en direct) et hors d'elle (courriel,
+   * SMS) : c'est le seul message dont l'intérêt tient en une minute.
+   */
+  static async livreurProcheClient(orderId: string) {
+    const commande = await db.order.findUnique({
+      where: { id: orderId },
+      select: {
+        customerEmail: true,
+        customerPhone: true,
+        delivery: { select: { deliveryCode: true, driver: { select: { name: true } } } },
+      },
+    });
+    if (!commande) return;
+
+    const livreur = commande.delivery?.driver?.name?.split(" ")[0] || "Votre livreur";
+    const code = commande.delivery?.deliveryCode;
+    const lien = `${process.env.SITE_URL || process.env.FRONTEND_URL || ""}/client/orders/${orderId}`;
+    const titre = "Votre livreur est bientôt là";
+    const texte = `${livreur} arrive dans un instant : vous pouvez descendre devant la porte.${
+      code ? ` Préparez votre code de remise : ${code}.` : ""
+    }`;
+
+    if (commande.customerEmail) {
+      await db.notification.create({
+        data: {
+          type: "DRIVER_NEARBY",
+          title: titre,
+          message: texte,
+          recipientEmail: commande.customerEmail,
+          link: `/client/orders/${orderId}`,
+          relatedOrderId: orderId,
+        },
+      });
+
+      const { emitNotification } = await import("../config/socket");
+      emitNotification(commande.customerEmail, {
+        type: "driver_nearby",
+        orderId,
+        title: titre,
+        message: texte,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    await Promise.all([
+      this.email(commande.customerEmail, titre, texte, lien),
+      this.sms(commande.customerPhone, `${texte} Suivi : ${lien}`),
+    ]);
+  }
 }

@@ -358,6 +358,13 @@ export default function OrdersPage() {
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
               <p className="text-gray-400 text-xs mb-1">{t('statsRevenue')}</p>
               <p className="text-2xl font-bold">{euro(stats.totalRevenue, 0)}</p>
+              {/* Ce que le commerçant a encaissé pour les livreurs de la
+                  plateforme : hors de son chiffre, à reverser avec la commission. */}
+              {stats.platformDeliveryFees > 0 && (
+                <p className="text-xs text-amber-300 mt-1">
+                  hors {euro(stats.platformDeliveryFees)} de livraison à reverser
+                </p>
+              )}
             </div>
           </div>
         )}

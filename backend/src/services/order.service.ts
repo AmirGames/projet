@@ -644,7 +644,15 @@ export class OrderService {
         },
         payments: true,
         delivery: {
-          select: { status: true, deliveryCode: true, proofType: true, proofAt: true },
+          select: {
+            status: true,
+            deliveryCode: true,
+            proofType: true,
+            proofAt: true,
+            proofPhoto: true,
+            proofNote: true,
+            nearCustomerNotifiedAt: true,
+          },
         },
       },
     });
@@ -662,6 +670,9 @@ export class OrderService {
       codeRemise:
         delivery && delivery.status !== "DELIVERED" ? delivery.deliveryCode : null,
       preuveDeLivraison: delivery?.proofType ?? null,
+      photoDepot: delivery?.proofType === "PHOTO" ? delivery.proofPhoto : null,
+      noteDepot: delivery?.proofType === "PHOTO" ? delivery.proofNote : null,
+      livreurProche: Boolean(delivery?.nearCustomerNotifiedAt),
     };
   }
 

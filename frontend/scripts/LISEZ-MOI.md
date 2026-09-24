@@ -110,7 +110,7 @@ pour le lancer.
 | `verif-compte-restreint.mjs` | Compte suspendu ou fermé : tout bloqué sauf le support |
 | `verif-validation-livreurs.mjs` | Dossier du livreur, examen des pièces, validation, suspension |
 | `verif-versements-livreurs.mjs` | Ce qui est dû, l'arrêté d'un relevé, le versement |
-| `verif-preuve-livraison.mjs` | Code de remise côté client, saisie et photo côté livreur |
+| `verif-preuve-livraison.mjs` | Prise en charge déverrouillée au commerce et validée en glissant, GPS vers le client, alerte « bientôt là », code vérifié seul, photo prise avec l'appareil |
 | `verif-vitrine-unique.mjs` | Une seule vitrine, et les anciennes adresses qui y mènent |
 | `verif-fiche-boutique.mjs` | Fiche d'une boutique, les seuls champs que la plateforme corrige, et sa fermeture |
 | `verif-profil-commercant.mjs` | Profil du commerçant : facturation, propriétaire, compte, justificatifs |

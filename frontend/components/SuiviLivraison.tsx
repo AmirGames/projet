@@ -44,6 +44,12 @@ export interface Course {
   codeRemise?: string | null;
   /** CODE ou PHOTO, une fois la remise prouvée. */
   preuve?: string | null;
+  /** La photo du dépôt, quand la remise s'est faite en son absence. */
+  photoDepot?: string | null;
+  /** Où le livreur a déposé la commande. */
+  noteDepot?: string | null;
+  /** Le livreur est à moins de 300 m : le client peut descendre. */
+  livreurProche?: boolean;
   /** La note que ce client a déjà donnée à cette course, s'il l'a donnée. */
   maNote?: MaNote | null;
 }
@@ -178,12 +184,36 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
         </div>
       )}
 
+      {/* Prévenu à 300 m : le temps de descendre, le livreur est là. */}
+      {!livree && course.status === 'PICKED_UP' && course.livreurProche && (
+        <div role="status" className="rounded-lg border border-green-700/60 bg-green-900/30 px-4 py-3">
+          <p className="font-semibold text-green-200">Votre livreur est bientôt là</p>
+          <p className="text-sm text-green-300/90">
+            Il arrive dans un instant : vous pouvez descendre devant la porte.
+          </p>
+        </div>
+      )}
+
       {livree && course.preuve && (
         <p className="text-sm text-green-300">
           {course.preuve === 'CODE'
             ? 'Remise confirmée par votre code.'
             : 'Dépôt confirmé par photo, en votre absence.'}
         </p>
+      )}
+
+      {/* La photo du dépôt : c'est au client qu'elle sert, pour retrouver
+          son repas. */}
+      {livree && course.photoDepot && (
+        <div className="space-y-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={course.photoDepot}
+            alt="Photo du dépôt de votre commande"
+            className="w-full max-h-80 object-cover rounded-lg border border-gray-700"
+          />
+          {course.noteDepot && <p className="text-sm text-gray-400">Déposée : {course.noteDepot}</p>}
+        </div>
       )}
 
       {/* Le trajet : commerce, livreur, vous. Sur la carte quand les points

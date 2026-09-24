@@ -46,6 +46,9 @@ interface Order {
   /** Le code à donner au livreur à la porte. Nul une fois la course remise. */
   codeRemise?: string | null;
   preuveDeLivraison?: string | null;
+  photoDepot?: string | null;
+  noteDepot?: string | null;
+  livreurProche?: boolean;
   /** L'heure à laquelle la commande sera prête, annoncée à l'acceptation. */
   estimatedReadyAt?: string | null;
   rejectionReason?: string | null;
@@ -396,6 +399,16 @@ export default function TrackOrderPage() {
               {/* Le code de remise : c'est lui qui prouve que la commande a
                   changé de mains. Une commande suivie sans compte n'a pas
                   d'autre endroit pour le lire. */}
+              {/* Prévenu à 300 m : le temps de descendre, le livreur est là. */}
+              {order.codeRemise && order.livreurProche && (
+                <div role="status" className="mt-4 rounded-lg border border-green-700/60 bg-green-900/30 px-4 py-3">
+                  <p className="font-semibold text-green-200">Votre livreur est bientôt là</p>
+                  <p className="text-sm text-green-300/90">
+                    Il arrive dans un instant : vous pouvez descendre devant la porte.
+                  </p>
+                </div>
+              )}
+
               {order.codeRemise && (
                 <div className="mt-4 rounded-lg border border-orange-700/50 bg-orange-900/20 px-4 py-3">
                   <p className="text-sm text-orange-200">Votre code de remise</p>
@@ -414,6 +427,20 @@ export default function TrackOrderPage() {
                     ? 'Remise confirmée par votre code.'
                     : 'Dépôt confirmé par photo, en votre absence.'}
                 </p>
+              )}
+
+              {order.photoDepot && (
+                <div className="mt-3 space-y-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={order.photoDepot}
+                    alt="Photo du dépôt de votre commande"
+                    className="w-full max-h-80 object-cover rounded-lg border border-gray-700"
+                  />
+                  {order.noteDepot && (
+                    <p className="text-sm text-gray-400">Déposée : {order.noteDepot}</p>
+                  )}
+                </div>
               )}
             </div>
 

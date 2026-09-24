@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import { join } from "path";
+import { randomBytes } from "crypto";
 import { getEnv } from "../config/env";
 import { logger } from "../config/logger";
 
@@ -76,7 +77,7 @@ export class FileUploadService {
   static async uploadDocument(
     buffer: Buffer,
     filename: string,
-    folder: "drivers" | "merchants",
+    folder: "drivers" | "merchants" | "deliveries",
     mimeType?: string
   ): Promise<{ url: string; publicId: string }> {
     if (isCloudinaryConfigured()) {
@@ -89,7 +90,7 @@ export class FileUploadService {
   private static async uploadToCloudinary(
     buffer: Buffer,
     filename: string,
-    folder: "drivers" | "merchants"
+    folder: "drivers" | "merchants" | "deliveries"
   ): Promise<{ url: string; publicId: string }> {
     const cloud = await getCloudinary();
 
@@ -124,7 +125,7 @@ export class FileUploadService {
   private static async uploadLocal(
     buffer: Buffer,
     filename: string,
-    folder: "drivers" | "merchants",
+    folder: "drivers" | "merchants" | "deliveries",
     mimeType?: string
   ): Promise<{ url: string; publicId: string }> {
     await ensureUploadsDir();
@@ -135,7 +136,9 @@ export class FileUploadService {
     logger.info("uploadLocal - Processing file:", { filename, mimeType, extractedExt: ext });
 
     // Générer un nom de fichier sécurisé avec l'extension
-    const randomId = Math.random().toString(36).slice(2, 10);
+    // Tiré au hasard pour de bon : les fichiers se servent sans jeton, et une
+    // photo de dépôt montre la porte d'un client.
+    const randomId = randomBytes(8).toString("hex");
     const timestamp = Date.now();
     const safeFilename = `${timestamp}-${randomId}.${ext}`;
     const relativePath = join(folder, safeFilename);

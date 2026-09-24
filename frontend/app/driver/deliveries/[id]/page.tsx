@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Phone, CheckCircle, AlertCircle, Loader, X, Navigation } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, CheckCircle, AlertCircle, Loader, X, Navigation, Camera, BellRing } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { AnnulerCourse } from '@/components/AnnulerCourse';
 import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
+import { GlisserPourValider } from '@/components/GlisserPourValider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -21,6 +22,43 @@ const CarteTrajet = dynamic(() => import('@/components/CarteTrajet'), {
     </div>
   ),
 });
+
+/** En deçà, le livreur est au commerce : la prise en charge se déverrouille. */
+const RAYON_ARRIVEE_COMMERCE_M = 150;
+/** En deçà, le client a été prévenu de descendre (le serveur fait de même). */
+const RAYON_APPROCHE_CLIENT_M = 300;
+/** Au-delà, la position est trop floue pour décider de l'arrivée. */
+const PRECISION_SUFFISANTE_M = 100;
+
+/** Distance à vol d'oiseau, en mètres. */
+function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+/**
+ * Réduit la photo avant l'envoi : celle d'un téléphone pèse plusieurs
+ * mégaoctets, et le livreur l'envoie sur le réseau mobile, devant la porte.
+ */
+async function reduirePhoto(fichier: File): Promise<Blob> {
+  try {
+    const image = await createImageBitmap(fichier);
+    const echelle = Math.min(1, 1600 / Math.max(image.width, image.height));
+    const toile = document.createElement('canvas');
+    toile.width = Math.round(image.width * echelle);
+    toile.height = Math.round(image.height * echelle);
+    toile.getContext('2d')?.drawImage(image, 0, 0, toile.width, toile.height);
+    return await new Promise<Blob>((resoudre) =>
+      toile.toBlob((blob) => resoudre(blob || fichier), 'image/jpeg', 0.8)
+    );
+  } catch {
+    return fichier;
+  }
+}
 
 /** Itinéraire GPS dans l'application de navigation du téléphone. */
 function lienItineraire(lat?: number | null, lng?: number | null, adresse?: string) {
@@ -60,9 +98,11 @@ export default function DeliveryTrackingPage() {
   const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [currentStep, setCurrentStep] = useState(0);
   const [updating, setUpdating] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [precision, setPrecision] = useState<number | null>(null);
+  // Le GPS ne le situe pas au commerce alors qu'il y est : il le dit lui-même.
+  const [arriveeDeclaree, setArriveeDeclaree] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   // La preuve de la remise : le code du client, ou la photo du dépôt quand il
@@ -70,10 +110,13 @@ export default function DeliveryTrackingPage() {
   const [code, setCode] = useState('');
   const [modePhoto, setModePhoto] = useState(false);
   const [photoUrl, setPhotoUrl] = useState('');
+  const [envoiPhoto, setEnvoiPhoto] = useState(false);
   const [note, setNote] = useState('');
   const [refus, setRefus] = useState('');
+  const appareil = useRef<HTMLInputElement>(null);
+  const priseEnChargeRef = useRef<HTMLDivElement>(null);
 
-  const steps = ['Aller au restaurant', 'Récupérer la commande', 'Aller au client', 'Livrer & Confirmer'];
+  const steps = ['Aller au commerce', 'Prendre en charge la commande', 'Aller au client', 'Remettre la commande'];
 
   useEffect(() => {
     // Vérifier l'authentification avant de charger les données
@@ -119,9 +162,10 @@ export default function DeliveryTrackingPage() {
     const suivi = navigator.geolocation.watchPosition(
       (position) => {
         positionRecue();
-        const { latitude, longitude } = position.coords;
+        const { latitude, longitude, accuracy } = position.coords;
         dernierePosition.current = { latitude, longitude };
         setLocation({ lat: latitude, lng: longitude });
+        setPrecision(accuracy ?? null);
         envoyerPosition(latitude, longitude);
       },
       erreurPosition,
@@ -147,7 +191,6 @@ export default function DeliveryTrackingPage() {
       if (response.ok) {
         const data = await response.json();
         setDelivery(data.data);
-        determineCurrentStep(data.data.status);
       } else {
         setError('Livraison non trouvée');
       }
@@ -160,89 +203,173 @@ export default function DeliveryTrackingPage() {
     }
   };
 
-  const determineCurrentStep = (status: string) => {
-    const stepMap: Record<string, number> = {
-      ACCEPTED: 0,
-      PICKED_UP: 2,
-      DELIVERED: 3,
-    };
-    setCurrentStep(stepMap[status] || 0);
+  // Où en est le livreur du commerce, et du client.
+  const retraitConnu =
+    delivery?.pickupLat != null && delivery?.pickupLng != null
+      ? { lat: delivery.pickupLat, lng: delivery.pickupLng }
+      : null;
+  const clientConnu =
+    delivery?.latitude != null && delivery?.longitude != null
+      ? { lat: delivery.latitude, lng: delivery.longitude }
+      : null;
+  const distanceCommerce = location && retraitConnu ? distanceM(location, retraitConnu) : null;
+  const distanceClient = location && clientConnu ? distanceM(location, clientConnu) : null;
+
+  /**
+   * Arrivé au commerce : le GPS le situe à moins de 150 m, ou il le déclare
+   * lui-même quand le GPS ne sait pas le situer. Un commerce jamais situé ne
+   * peut pas se détecter : la prise en charge reste alors ouverte.
+   */
+  const auCommerce =
+    arriveeDeclaree ||
+    !retraitConnu ||
+    (distanceCommerce != null && distanceCommerce <= RAYON_ARRIVEE_COMMERCE_M);
+
+  // Le GPS ne le trouve pas, ou trop mal pour trancher : il peut se déclarer
+  // arrivé plutôt que de rester bloqué devant la porte.
+  const gpsIncertain = !location || (precision != null && precision > PRECISION_SUFFISANTE_M);
+
+  const currentStep = !delivery
+    ? 0
+    : delivery.status === 'DELIVERED'
+      ? 3
+      : delivery.status === 'PICKED_UP'
+        ? 2
+        : auCommerce
+          ? 1
+          : 0;
+
+  const envoyerStatut = async (status: 'PICKED_UP' | 'DELIVERED', preuve?: Record<string, string>) => {
+    const token = localStorage.getItem('driverToken');
+    if (!token) return null;
+
+    return fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status, ...(preuve || {}) }),
+    });
   };
 
-  const handleNextStep = async () => {
-    if (!delivery) return;
+  /**
+   * La commande quitte le commerce : le GPS part aussitôt vers le client.
+   *
+   * La fenêtre s'ouvre dans le geste même du livreur — un navigateur refuse
+   * une fenêtre ouverte après une attente réseau — puis reçoit l'itinéraire
+   * une fois la prise en charge enregistrée.
+   */
+  const prendreEnCharge = async () => {
+    if (!delivery || updating) return;
+
+    const lien = lienItineraire(delivery.latitude, delivery.longitude, delivery.deliveryAddress);
+    const gps = lien ? window.open('', '_blank') : null;
+
+    setUpdating(true);
+    setError('');
+    try {
+      const reponse = await envoyerStatut('PICKED_UP');
+      if (reponse?.ok) {
+        if (gps && lien) gps.location.href = lien;
+        await loadDeliveryData();
+      } else {
+        gps?.close();
+        const lu = await reponse?.json().catch(() => null);
+        setRefus(lu?.error || "La prise en charge n'a pas pu être enregistrée");
+      }
+    } catch (err) {
+      gps?.close();
+      setRefus("La prise en charge n'a pas pu être enregistrée");
+      console.error('Error updating delivery:', err);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  /** Clôt la course sur sa preuve : le code du client, ou la photo du dépôt. */
+  const confirmerRemise = async (preuve: Record<string, string>) => {
+    if (!delivery || updating) return;
+
+    setUpdating(true);
+    setRefus('');
+    try {
+      const reponse = await envoyerStatut('DELIVERED', preuve);
+
+      if (reponse?.ok) {
+        // Relire la course plutôt que de croire la réponse du PATCH : celle-ci
+        // rend l'enregistrement brut, sans le type de preuve mis en forme.
+        await loadDeliveryData();
+        setTimeout(() => router.push('/driver'), 2000);
+        return;
+      }
+
+      // Un code refusé se disait « Erreur lors de la mise à jour » : le
+      // livreur ne savait pas s'il s'était trompé de chiffre.
+      const lu = await reponse?.json().catch(() => null);
+      setRefus(lu?.error || "La remise n'a pas pu être confirmée");
+      // Le champ se vide pour la saisie suivante, qui se vérifiera d'elle-même.
+      if (preuve.code) setCode('');
+      // Code bloqué : la photo devient la seule issue, autant y basculer.
+      if (lu?.code === 'CODE_LOCKED' || /bloqué/.test(lu?.error || '')) setModePhoto(true);
+      await loadDeliveryData();
+    } catch (err) {
+      setRefus('Erreur lors de la confirmation de la remise');
+      console.error('Error updating delivery:', err);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Arrivé au commerce : le téléphone vibre et la page descend jusqu'au
+  // curseur, qui sinon reste sous la carte.
+  useEffect(() => {
+    if (currentStep !== 1) return;
+    try {
+      navigator.vibrate?.(200);
+    } catch {
+      // Sans vibreur, le défilement suffit.
+    }
+    priseEnChargeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [currentStep]);
+
+  // Quatre chiffres saisis : le code se vérifie sans autre geste.
+  useEffect(() => {
+    if (code.length === 4 && !modePhoto && currentStep === 2 && !updating) {
+      confirmerRemise({ code });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code]);
+
+  /** L'appareil photo du téléphone s'ouvre ; la photo part aussitôt prise. */
+  const photographier = async (fichier: File | undefined) => {
+    if (!fichier) return;
 
     const token = localStorage.getItem('driverToken');
     if (!token) return;
 
-    setUpdating(true);
-
+    setEnvoiPhoto(true);
+    setRefus('');
     try {
-      /**
-       * L'état où mène l'étape courante.
-       *
-       * Un tableau indexé par `currentStep + 1` était décalé : depuis
-       * PICKED_UP, qui est l'étape 2, il cherchait un quatrième élément qui
-       * n'existait pas et envoyait `undefined`. Le bouton « Livrer &
-       * Confirmer » ne pouvait donc jamais clore une course.
-       */
-      const SUITE: Record<number, string> = { 0: 'PICKED_UP', 1: 'PICKED_UP', 2: 'DELIVERED' };
-      const nextStatus = SUITE[currentStep];
+      const photo = await reduirePhoto(fichier);
+      const formulaire = new FormData();
+      formulaire.append('photo', photo, 'depot.jpg');
 
-      if (!nextStatus) {
-        setUpdating(false);
-        return;
-      }
-
-      setRefus('');
-
-      const response = await fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          status: nextStatus,
-          // La preuve n'accompagne que la remise : les étapes précédentes n'en
-          // demandent aucune.
-          ...(nextStatus === 'DELIVERED'
-            ? modePhoto
-              ? { photoUrl, note }
-              : { code }
-            : {}),
-        }),
+      const reponse = await fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}/photo`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formulaire,
       });
+      const lu = await reponse.json().catch(() => null);
 
-      if (response.ok) {
-        // Relire la course plutôt que de croire la réponse du PATCH : celle-ci
-        // rend l'enregistrement brut, sans le type de preuve mis en forme.
-        await loadDeliveryData();
-
-        if (nextStatus === 'DELIVERED') {
-          setTimeout(() => {
-            router.push('/driver');
-          }, 2000);
-        }
+      if (reponse.ok && lu?.data?.photoUrl) {
+        setPhotoUrl(lu.data.photoUrl);
       } else {
-        // Un code refusé se disait « Erreur lors de la mise à jour » : le
-        // livreur ne savait pas s'il s'était trompé de chiffre.
-        const lu = await response.json().catch(() => null);
-
-        if (nextStatus === 'DELIVERED') {
-          setRefus(lu?.error || "La remise n'a pas pu être confirmée");
-          // Code bloqué : la photo devient la seule issue, autant y basculer.
-          if (lu?.code === 'CODE_LOCKED') setModePhoto(true);
-          await loadDeliveryData();
-        } else {
-          setError(lu?.error || 'Erreur lors de la mise à jour');
-        }
+        setRefus(lu?.error || "La photo n'a pas pu être envoyée, reprenez-la");
       }
-    } catch (err) {
-      setError('Erreur lors de la mise à jour de la livraison');
-      console.error('Error updating delivery:', err);
+    } catch {
+      setRefus("La photo n'a pas pu être envoyée, reprenez-la");
     } finally {
-      setUpdating(false);
+      setEnvoiPhoto(false);
+      // Le même fichier doit pouvoir être repris.
+      if (appareil.current) appareil.current.value = '';
     }
   };
 
@@ -393,38 +520,84 @@ export default function DeliveryTrackingPage() {
             {/* Current Step Details */}
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-bold text-white mb-6">
-                {currentStep === 0 && '📍 Allez au restaurant'}
-                {currentStep === 1 && '📦 Récupérez la commande'}
+                {currentStep === 0 && '📍 Allez au commerce'}
+                {currentStep === 1 && '📦 Prenez en charge la commande'}
                 {currentStep === 2 && '🚗 Allez chez le client'}
-                {currentStep === 3 && '✓ Confirmez la livraison'}
+                {currentStep === 3 && '✓ Livraison terminée'}
               </h2>
 
               {currentStep === 0 && (
                 <div className="space-y-4">
-                  <p className="text-gray-300 mb-4">Rendez-vous au restaurant pour récupérer la commande</p>
+                  <p className="text-gray-300 mb-4">Rendez-vous au commerce pour récupérer la commande</p>
                   <div className="bg-gray-700 rounded-lg p-4 flex gap-3">
                     <MapPin size={24} className="text-orange-500 flex-shrink-0" />
                     <div>
-                      <p className="text-white font-semibold">{delivery.pickupStore || 'Restaurant'}</p>
+                      <p className="text-white font-semibold">{delivery.pickupStore || 'Commerce'}</p>
                       <p className="text-gray-400">{delivery.pickupAddress}</p>
                     </div>
                   </div>
+
+                  {/* La prise en charge se déverrouille à l'arrivée : elle ne
+                      se valide pas depuis chez soi. */}
+                  <p className="text-sm text-gray-400">
+                    {distanceCommerce != null
+                      ? `Encore ${
+                          distanceCommerce >= 1000
+                            ? `${(distanceCommerce / 1000).toFixed(1)} km`
+                            : `${Math.round(distanceCommerce)} m`
+                        } : la prise en charge s'ouvrira à votre arrivée.`
+                      : 'Recherche de votre position… La prise en charge s\'ouvrira à votre arrivée.'}
+                  </p>
+
+                  <GlisserPourValider libelle="Arrivez au commerce pour déverrouiller" onValide={() => {}} desactive />
+
+                  {gpsIncertain && (
+                    <button
+                      type="button"
+                      onClick={() => setArriveeDeclaree(true)}
+                      className="block text-sm text-orange-400 hover:underline"
+                    >
+                      Le GPS ne me situe pas : je suis bien au commerce
+                    </button>
+                  )}
                 </div>
               )}
 
               {currentStep === 1 && (
                 <div className="space-y-4">
-                  <p className="text-gray-300 mb-4">Récupérez la commande auprès du restaurant</p>
+                  <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
+                    <p className="text-green-200 font-semibold">
+                      Vous êtes arrivé chez {delivery.pickupStore || 'le commerce'}
+                    </p>
+                    <p className="text-green-300/80 text-sm">
+                      Vérifiez la commande, puis glissez pour la prendre en charge. Le GPS partira
+                      aussitôt vers le client.
+                    </p>
+                  </div>
+
+                  {refus && (
+                    <p role="status" className="text-sm text-red-400">
+                      {refus}
+                    </p>
+                  )}
+
                   {delivery.items && delivery.items.length > 0 && (
                     <div className="bg-gray-700 rounded-lg p-4 space-y-2">
                       <p className="text-white font-semibold mb-3">Articles à récupérer:</p>
                       {delivery.items.map((item: any, idx: number) => (
                         <div key={idx} className="flex justify-between text-gray-300 text-sm">
-                          <span>{item.name} x{item.quantity}</span>
+                          <span>{item.product?.name || item.name} x{item.quantity}</span>
                         </div>
                       ))}
                     </div>
                   )}
+
+                  <div ref={priseEnChargeRef} />
+                  <GlisserPourValider
+                    libelle="Glisser pour prendre en charge"
+                    onValide={prendreEnCharge}
+                    enCours={updating}
+                  />
                 </div>
               )}
 
@@ -438,6 +611,14 @@ export default function DeliveryTrackingPage() {
                       <p className="text-gray-400">{delivery.deliveryAddress}</p>
                     </div>
                   </div>
+
+                  {/* À 300 m, le serveur prévient le client de descendre. */}
+                  {distanceClient != null && distanceClient <= RAYON_APPROCHE_CLIENT_M && (
+                    <p className="flex items-center gap-2 text-sm text-green-300">
+                      <BellRing size={16} />
+                      Le client est prévenu de votre arrivée : il peut descendre.
+                    </p>
+                  )}
 
                   {/* La preuve de la remise. Une course se clôturait sur un
                       simple clic : rien ne distinguait un repas remis en main
@@ -456,14 +637,26 @@ export default function DeliveryTrackingPage() {
                         <label htmlFor="code-remise" className="block text-sm text-gray-400">
                           Code à quatre chiffres, demandé au client
                         </label>
-                        <input
-                          id="code-remise"
-                          value={code}
-                          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                          inputMode="numeric"
-                          placeholder="0000"
-                          className="w-32 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-2xl tracking-[0.3em] text-center"
-                        />
+                        <div className="flex items-center gap-3">
+                          <input
+                            id="code-remise"
+                            value={code}
+                            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            placeholder="0000"
+                            disabled={updating}
+                            className="w-32 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-2xl tracking-[0.3em] text-center disabled:opacity-60"
+                          />
+                          {updating && (
+                            <span className="flex items-center gap-2 text-sm text-gray-400">
+                              <Loader size={16} className="animate-spin" /> Vérification…
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Le code se vérifie tout seul dès le quatrième chiffre.
+                        </p>
                         {delivery.essaisRestants != null && delivery.essaisRestants < 5 && (
                           <p className="text-xs text-amber-300">
                             {delivery.essaisRestants} essai
@@ -481,23 +674,57 @@ export default function DeliveryTrackingPage() {
                       </>
                     ) : (
                       <>
-                        <label htmlFor="photo-depot" className="block text-sm text-gray-400">
-                          Lien vers la photo du dépôt
-                        </label>
+                        {/* L'appareil photo du téléphone s'ouvre directement :
+                            coller un lien vers une photo hébergée ailleurs, personne
+                            ne le faisait. La photo reste chez nous, et le client la
+                            voit sur son suivi. */}
                         <input
+                          ref={appareil}
                           id="photo-depot"
-                          type="url"
-                          value={photoUrl}
-                          onChange={(e) => setPhotoUrl(e.target.value)}
-                          placeholder="https://…"
-                          className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={(e) => photographier(e.target.files?.[0])}
                         />
-                        {/* L'hébergement de fichiers n'est pas branché : le dire
-                            plutôt que de laisser croire à un envoi. */}
-                        <p className="text-xs text-gray-500">
-                          L&apos;envoi de fichiers n&apos;est pas encore disponible : déposez un
-                          lien vers votre photo.
-                        </p>
+
+                        {photoUrl ? (
+                          <div className="space-y-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={photoUrl}
+                              alt="Photo du dépôt"
+                              className="w-full max-h-72 object-cover rounded-lg border border-gray-600"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => appareil.current?.click()}
+                              disabled={envoiPhoto}
+                              className="text-sm text-orange-400 hover:underline"
+                            >
+                              Reprendre la photo
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => appareil.current?.click()}
+                            disabled={envoiPhoto}
+                            className="w-full bg-gray-700 hover:bg-gray-600 border border-dashed border-gray-500 text-white font-semibold py-6 rounded-lg flex flex-col items-center justify-center gap-2 disabled:opacity-60"
+                          >
+                            {envoiPhoto ? (
+                              <>
+                                <Loader size={28} className="animate-spin" />
+                                Envoi de la photo…
+                              </>
+                            ) : (
+                              <>
+                                <Camera size={28} />
+                                Photographier le dépôt
+                              </>
+                            )}
+                          </button>
+                        )}
 
                         <label htmlFor="note-depot" className="block text-sm text-gray-400">
                           Où avez-vous déposé ?
@@ -509,6 +736,16 @@ export default function DeliveryTrackingPage() {
                           placeholder="Devant la porte, chez le gardien…"
                           className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
                         />
+
+                        <button
+                          type="button"
+                          onClick={() => confirmerRemise({ photoUrl, note })}
+                          disabled={!photoUrl || updating || envoiPhoto}
+                          className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
+                        >
+                          {updating ? <Loader size={18} className="animate-spin" /> : <CheckCircle size={18} />}
+                          Confirmer le dépôt
+                        </button>
 
                         {delivery.codeAttendu && (
                           <button
@@ -574,38 +811,16 @@ export default function DeliveryTrackingPage() {
                 <p className="text-green-400 text-2xl font-bold">{euro((delivery.totalAmount || 0))}</p>
               </div>
 
-              {/* Action Button */}
-              {currentStep < 3 && (
-                <div className="space-y-3">
-                  <button
-                    onClick={handleNextStep}
-                    disabled={updating}
-                    className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
-                  >
-                    {updating ? (
-                      <>
-                        <Loader size={18} className="animate-spin" />
-                        Mise à jour...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle size={18} />
-                        Étape suivante
-                      </>
-                    )}
-                  </button>
-
-                  {/* Cancel Delivery Button */}
-                  {currentStep < 2 && (
-                    <button
-                      onClick={() => setShowCancelModal(true)}
-                      className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 border border-red-600/50"
-                    >
-                      <X size={18} />
-                      Annuler la course
-                    </button>
-                  )}
-                </div>
+              {/* Chaque étape se valide à sa place : la prise en charge au
+                  commerce, la remise par le code ou la photo. */}
+              {currentStep < 2 && (
+                <button
+                  onClick={() => setShowCancelModal(true)}
+                  className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 border border-red-600/50"
+                >
+                  <X size={18} />
+                  Annuler la course
+                </button>
               )}
 
               {currentStep === 3 && (
