@@ -9,6 +9,9 @@
     "updates": {
       "enabled": false
     },
-    "plugins": []
+    "plugins": [],
+    "android": {
+      "package": "com.amir_games.zuponemerchant"
+    }
   }
 }
