@@ -29,8 +29,10 @@ export async function apiFetch<T = any>(
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (response.status === 401) onUnauthorized?.();
-    throw new ApiError(data?.message || data?.error || `Erreur ${response.status}`, response.status);
+    // MISSING_ORG est un 401 du serveur pour une requête incomplète, pas une
+    // session expirée : il ne doit pas déconnecter.
+    if (response.status === 401 && data?.code !== 'MISSING_ORG') onUnauthorized?.();
+    throw new ApiError(data?.error || data?.message || `Erreur ${response.status}`, response.status);
   }
   return data as T;
 }

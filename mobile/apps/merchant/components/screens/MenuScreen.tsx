@@ -45,7 +45,7 @@ export default function MenuScreen({ token, storeId, onBack }: { token: string; 
     try {
       await apiFetch(`/api/products/${product.id}/availability`, token, {
         method: 'PATCH',
-        body: { isAvailable: next },
+        body: { isAvailable: next, storeId },
       });
     } catch (e: any) {
       setProducts((list) => list.map((p) => (p.id === product.id ? { ...p, isAvailable: !next } : p)));
