@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, BadgeCheck, Check, Clock, FileText, Upload, X } from 'lucide-react';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -104,6 +105,10 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
   useEffect(() => {
     charger();
   }, [charger]);
+
+  // Une pièce déposée par le commerçant, examinée par un collègue : le
+  // dossier suit.
+  useDonneesModifiees(['merchant-profile', 'organizations'], charger, { orgId });
 
   const statuer = async (piece: Piece, approuve: boolean) => {
     setErreur('');

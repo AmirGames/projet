@@ -8,12 +8,13 @@
  * une course dans la minute.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bike, Car, Check, Eye, ExternalLink, Truck, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -88,8 +89,9 @@ export default function LivreursPage() {
 
   const jeton = () => localStorage.getItem('accessToken');
 
-  const charger = useCallback(async () => {
-    setChargement(true);
+  // silencieux : une relecture en direct garde la page affichée.
+  const charger = useCallback(async (silencieux = false) => {
+    if (!silencieux) setChargement(true);
     setErreur('');
 
     try {
@@ -112,6 +114,27 @@ export default function LivreursPage() {
   useEffect(() => {
     charger();
   }, [charger]);
+
+  // Un livreur qui s'inscrit ou dépose une pièce, validé par un collègue :
+  // la file suit, et le dossier ouvert avec elle.
+  const dossierOuvert = useRef<string | null>(null);
+  dossierOuvert.current = dossier?.driver.id ?? null;
+
+  useDonneesModifiees('drivers', async (modification) => {
+    charger(true);
+
+    const id = dossierOuvert.current;
+    if (!id || (modification?.id && modification.id !== id)) return;
+
+    try {
+      const reponse = await fetch(`${API_URL}/api/superowner/drivers/${id}`, {
+        headers: { Authorization: `Bearer ${jeton()}` },
+      });
+      if (reponse.ok && dossierOuvert.current === id) setDossier(await reponse.json());
+    } catch {
+      // Le dossier affiché reste celui d'avant ; la relecture suivante corrigera.
+    }
+  });
 
   const ouvrirDossier = async (livreur: Livreur) => {
     if (dossier?.driver.id === livreur.id) {

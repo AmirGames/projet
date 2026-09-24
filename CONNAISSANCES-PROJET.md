@@ -415,10 +415,23 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
   le relais ne voit rien : l'annoncer avec `signalerModification()`.
 - Une page qui se relit en direct ne doit pas se remplacer par
   « Chargement… » : lui passer un chargement `silencieux`.
-- Pages branchées : commandes du commerçant (liste, fiche, tableau de bord),
-  commandes du client (liste, fiche), accueil, historique et course du
-  livreur, tableau de bord et fiche boutique de la plateforme. Vérifié par
-  `frontend/scripts/verif-commandes-direct.mjs`.
+- **Le nom de la famille et le propriétaire** d'une route se règlent dans
+  `ROUTES` et `LOCALISATEURS` (`middleware/diffusion.ts`) : sans entrée, la
+  famille est le premier segment après `/api/` (`superowner` ne dirait rien à
+  l'écran des tickets). Les tickets remontent à leur organisation, un livreur
+  ou un versement à l'e-mail du livreur.
+- Pages branchées :
+  - commandes : commerçant (liste, fiche, tableau de bord), client (liste,
+    fiche), livreur (accueil, historique, course), plateforme (tableau de
+    bord, fiche boutique) — `verif-commandes-direct` ;
+  - catalogue du commerçant (produits, catégories, horaires, zones,
+    promotions) et vitrine, dont le panier se remet d'accord avec le menu
+    (plat retiré ou épuisé sorti, nouveau prix repris) ;
+  - tickets (support du commerçant, tickets de la plateforme et du
+    super-admin, conversation ouverte) ;
+  - plateforme : commerçants (liste, fiche, dossier), livreurs (file et
+    dossier ouvert), versements, statistiques, boutiques ; côté livreur, son
+    dossier et ses versements — `verif-catalogue-support-direct`.
 - `/admin/orders` et `/admin/orders/[id]` ne sont pas branchées : ce sont des
   brouillons (boutique codée en dur, fiche qui ne charge rien).
 

@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { HelpCircle, MessageSquare, Clock, AlertCircle } from 'lucide-react';
 
 import { TicketConversation } from '@/components/TicketConversation';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -67,8 +68,14 @@ export default function SupportTicketsPage() {
     fetchTickets();
   }, [offset, filterStatus, filterPriority, voirArchives]);
 
-  const fetchTickets = async () => {
-    setLoading(true);
+  // Un ticket ouvert par un commerçant, une réponse, un changement de statut
+  // par un collègue : la liste suit.
+  useDonneesModifiees('tickets', () => fetchTickets(true));
+
+  // silencieux : une relecture en direct garde la liste affichée — et la
+  // conversation ouverte dedans.
+  const fetchTickets = async (silencieux = false) => {
+    if (!silencieux) setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
       const query = new URLSearchParams({

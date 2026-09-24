@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { Building2, Users, Ban, CheckCircle, XCircle, Eye, Gift, X } from 'lucide-react';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 interface Organization {
   id: string;
@@ -178,8 +179,15 @@ export default function OrganizationsPage() {
     fetchOrganizations();
   }, [offset, aValider]);
 
-  const fetchOrganizations = async () => {
-    setLoading(true);
+  // Un commerce qui s'inscrit, dépose une pièce, est validé par un collègue :
+  // la file suit.
+  useDonneesModifiees(['organizations', 'merchant-profile', 'stores'], () => fetchOrganizations(true), {
+    delaiMs: 1000,
+  });
+
+  // silencieux : une relecture en direct garde la page affichée.
+  const fetchOrganizations = async (silencieux = false) => {
+    if (!silencieux) setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
       const query = new URLSearchParams({

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Send } from 'lucide-react';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -59,6 +60,10 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
     setLoading(true);
     fetchMessages();
   }, [fetchMessages]);
+
+  // La réponse de l'autre côté arrive sans recharger : le support pour le
+  // commerçant, le commerçant pour le support.
+  useDonneesModifiees('tickets', fetchMessages, { id: ticketId });
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Plus, Trash2, Clock, Power } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -107,6 +108,10 @@ export default function HorairesPage() {
   useEffect(() => {
     charger();
   }, [charger]);
+
+  // Les horaires changés par un collègue, la boutique fermée par la
+  // plateforme : la page suit.
+  useDonneesModifiees(['store-hours', 'stores'], charger, { storeId, actif: Boolean(storeId) });
 
   const ouvrirLEdition = (jour: string) => {
     const actuel = data?.operatingHours[jour];

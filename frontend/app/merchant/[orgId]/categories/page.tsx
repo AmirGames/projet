@@ -22,6 +22,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useCurrentStore } from '@/lib/current-store';
 
 import { useTranslations } from 'next-intl';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Category {
@@ -138,6 +139,13 @@ export default function CategoriesPage() {
       fetchStoreAndCategories();
     }
   }, [storeId]);
+
+  // Une catégorie ajoutée ou réordonnée ailleurs, ou un plat qui change de
+  // catégorie (le compte par catégorie bouge) : la liste suit.
+  useDonneesModifiees(['categories', 'products'], () => fetchStoreAndCategories(), {
+    storeId,
+    actif: Boolean(storeId),
+  });
 
   const fetchStoreAndCategories = async () => {
     if (!storeId) return;

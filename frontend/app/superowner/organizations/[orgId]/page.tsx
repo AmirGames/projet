@@ -8,6 +8,7 @@ import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
 import { DossierCommercant } from '@/components/DossierCommercant';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -64,7 +65,16 @@ export default function MerchantDetailPage() {
     fetchMerchant();
   }, [merchantId]);
 
-  const fetchMerchant = async () => {
+  // Sa formule, son statut, ses boutiques, ses commandes : la fiche suit.
+  useDonneesModifiees(
+    ['organizations', 'merchant-profile', 'stores', 'orders', 'tickets'],
+    () => fetchMerchant(true),
+    { orgId: merchantId, delaiMs: 1000 }
+  );
+
+  // silencieux : une relecture en direct ne touche pas à la formule en cours
+  // de choix, et un échec passager ne renvoie pas à la liste.
+  const fetchMerchant = async (silencieux = false) => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}`, {
@@ -77,10 +87,11 @@ export default function MerchantDetailPage() {
 
       const data = await response.json();
       setMerchant(data);
-      setNewTier(data.tier);
+      if (!silencieux) setNewTier(data.tier);
     } catch (error) {
       // Un commerçant qui n'existe pas n'est pas un incident : on ramène à la
       // liste sans encombrer la console.
+      if (silencieux) return;
       router.push('/superowner/organizations');
     } finally {
       setLoading(false);

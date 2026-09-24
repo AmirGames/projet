@@ -13,6 +13,7 @@ import { Banknote, CalendarRange, Check, FileText, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -82,8 +83,9 @@ export default function VersementsPage() {
 
   const jeton = () => localStorage.getItem('accessToken');
 
-  const charger = useCallback(async () => {
-    setChargement(true);
+  // silencieux : une relecture en direct garde la page affichée.
+  const charger = useCallback(async (silencieux = false) => {
+    if (!silencieux) setChargement(true);
     setErreur('');
 
     try {
@@ -119,6 +121,10 @@ export default function VersementsPage() {
   useEffect(() => {
     charger();
   }, [charger]);
+
+  // Une course livrée grossit ce qui est dû ; un versement payé ou annulé
+  // par un collègue change de colonne : la page suit.
+  useDonneesModifiees(['payouts', 'orders', 'drivers'], () => charger(true), { delaiMs: 1500 });
 
   const agir = async (chemin: string, corps?: unknown) => {
     setErreur('');

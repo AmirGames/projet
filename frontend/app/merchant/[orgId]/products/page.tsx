@@ -24,6 +24,7 @@ import { useCurrentStore } from '@/lib/current-store';
 
 import { euro } from '@/lib/format';
 import { DeclinaisonsProduit } from '@/components/DeclinaisonsProduit';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -251,6 +252,18 @@ export default function ProductsPage() {
       fetchCategories();
     }
   }, [storeId]);
+
+  // Un collègue ajoute un plat, le passe en épuisé, réordonne le menu : la
+  // liste suit. Une seconde d'attente : chaque relecture relit aussi les avis
+  // de chaque plat.
+  useDonneesModifiees(
+    ['products', 'categories', 'product-media', 'product-tags', 'reviews'],
+    () => {
+      fetchProducts();
+      fetchCategories();
+    },
+    { storeId, delaiMs: 1000, actif: Boolean(storeId) }
+  );
 
   const fetchCategories = async () => {
     try {

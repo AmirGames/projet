@@ -8,6 +8,7 @@ import { ShoppingCart, MapPin, Phone, Clock, Star, Check } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { TunnelCommande } from '@/components/TunnelCommande';
 import { useStoreLive } from '@/lib/use-store-live';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 import {
   autresPaniers,
   enregistrerPanier,
@@ -266,8 +267,7 @@ export default function StorefrontPage() {
           }
           const menu = (menuData.data?.menu || {}) as Record<string, any[]>;
 
-          setCategories(
-            Object.entries(menu).map(([nom, produits]) => ({
+          const lues: Category[] = Object.entries(menu).map(([nom, produits]) => ({
               id: nom,
               name: nom,
               products: produits.map((produit) => ({
@@ -291,8 +291,10 @@ export default function StorefrontPage() {
                   url: image.url,
                 })),
               })),
-            }))
-          );
+            }));
+
+          setCategories(lues);
+          return lues;
         }
       }
     } catch (error) {
@@ -300,7 +302,45 @@ export default function StorefrontPage() {
     } finally {
       setLoading(false);
     }
+
+    return null;
   };
+
+  /**
+   * Remet le panier d'accord avec le menu relu.
+   *
+   * Un plat retiré ou épuisé en sort ; un plat dont le prix a changé garde sa
+   * quantité mais prend le nouveau prix. Sans cela, le panier affichait un
+   * total que le serveur refuserait au moment de payer.
+   */
+  const rapprocherLePanier = (menu: Category[]) => {
+    const parId = new Map(menu.flatMap((categorie) => categorie.products).map((produit) => [produit.id, produit]));
+
+    setCart((panier) =>
+      panier.flatMap((ligne) => {
+        const frais = parId.get(ligne.product.id);
+        if (!frais || !frais.isAvailable) return [];
+
+        if (!ligne.variante) return [{ ...ligne, product: frais }];
+
+        const variante = frais.variants?.find((v) => v.id === ligne.variante!.id);
+        if (!variante || !variante.isAvailable) return [];
+
+        return [{ ...ligne, product: frais, variante }];
+      })
+    );
+  };
+
+  // Le commerçant change son menu, ses prix, ses horaires : la vitrine suit,
+  // et le panier avec elle.
+  useDonneesModifiees(
+    ['products', 'categories', 'store-hours', 'stores', 'promotions', 'reviews', 'product-media'],
+    async () => {
+      const menu = await fetchStoreData();
+      if (menu) rapprocherLePanier(menu);
+    },
+    { storeId: store?.id, delaiMs: 800, actif: Boolean(store?.id) }
+  );
 
   /**
    * La clé d'une ligne de panier.

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { MessageCircle, Plus, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { TicketConversation } from '@/components/TicketConversation';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -49,8 +50,13 @@ export default function SupportPage() {
     fetchTickets();
   }, [orgId, showArchived]);
 
-  const fetchTickets = async () => {
-    setLoading(true);
+  // Une réponse du support, un ticket clos ou rouvert : la liste suit.
+  useDonneesModifiees('tickets', () => fetchTickets(true), { orgId });
+
+  // silencieux : une relecture en direct garde la liste affichée — et la
+  // conversation ouverte dedans.
+  const fetchTickets = async (silencieux = false) => {
+    if (!silencieux) setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/support/tickets?orgId=${orgId}&archived=${showArchived}`, {

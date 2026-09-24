@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Archive, ArchiveRestore, MessageCircle } from 'lucide-react';
 import { TicketConversation } from '@/components/TicketConversation';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -36,6 +37,9 @@ export default function TicketsPage() {
   useEffect(() => {
     fetchTickets();
   }, [statusFilter, showArchived]);
+
+  // Un ticket ouvert ou une réponse, ailleurs : la liste suit.
+  useDonneesModifiees('tickets', () => fetchTickets());
 
   const fetchTickets = async () => {
     try {

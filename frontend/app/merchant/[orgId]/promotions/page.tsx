@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Edit2, Trash2, Search, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -56,6 +57,14 @@ export default function PromotionsPage() {
       fetchPromotions();
     }
   }, [storeId]);
+
+  // Une promotion créée, suspendue ou utilisée (son compteur bouge) : la
+  // liste suit.
+  useDonneesModifiees(['promotions', 'orders'], () => fetchPromotions(), {
+    storeId,
+    delaiMs: 1000,
+    actif: Boolean(storeId),
+  });
 
   const fetchPromotions = async () => {
     try {

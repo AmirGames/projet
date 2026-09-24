@@ -32,7 +32,8 @@
     "verif:carte": "node scripts/verif-carte-zones.mjs",
     "verif:horaires": "node scripts/verif-horaires-genre.mjs",
     "verif:session": "node scripts/verif-session-perimee.mjs",
-    "verif:commandes-direct": "node scripts/verif-commandes-direct.mjs"
+    "verif:commandes-direct": "node scripts/verif-commandes-direct.mjs",
+    "verif:catalogue-direct": "node scripts/verif-catalogue-support-direct.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.8.0",

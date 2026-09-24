@@ -57,28 +57,104 @@ const RESSOURCES_PUBLIQUES = new Set([
   "reviews",
 ]);
 
-/**
- * Les ressources désignées par leur propre identifiant, et le modèle qui
- * mène de la ressource à sa boutique.
- */
-const MODELES: Record<string, string> = {
-  products: "product",
-  categories: "category",
-  orders: "order",
-  "order-management": "order",
-  promotions: "promotion",
-  "delivery-zones": "deliveryZone",
-  reviews: "review",
-};
-
+/** Ce que le relais retient d'un identifiant : à qui il appartient. */
 interface Localisation {
-  orgId: string;
+  orgId?: string;
   storeId?: string;
+  /** L'identifiant de la donnée elle-même, quand elle est d'un type connu. */
+  id?: string;
   /** L'identifiant désigne une commande : ceux qui la suivent sont prévenus. */
   orderId?: string;
+  /** Les comptes à prévenir directement (un livreur n'a pas d'organisation). */
+  emails?: string[];
 }
 
-// Le lien entre un identifiant et son commerçant ne change pas : le garder
+/**
+ * Comment remonter d'une donnée à ceux qu'elle concerne.
+ *
+ * Chaque modèle a son propriétaire : une boutique pour le catalogue, une
+ * organisation pour les tickets, un compte pour le livreur et ses versements.
+ */
+type Localisateur = (id: string) => Promise<Localisation | null>;
+
+const parBoutique =
+  (modele: string, commande = false): Localisateur =>
+  async (id) => {
+    const trouvee = await (db as any)[modele].findUnique({
+      where: { id },
+      select: { storeId: true, store: { select: { orgId: true } } },
+    });
+    if (!trouvee?.store?.orgId) return null;
+    return { id, orgId: trouvee.store.orgId, storeId: trouvee.storeId, orderId: commande ? id : undefined };
+  };
+
+const emailsDuLivreur = (livreur: { email: string; user: { email: string } | null } | null) =>
+  livreur ? [...new Set([livreur.user?.email, livreur.email].filter((e): e is string => !!e))] : [];
+
+const LOCALISATEURS: Record<string, Localisateur> = {
+  product: parBoutique("product"),
+  category: parBoutique("category"),
+  order: parBoutique("order", true),
+  promotion: parBoutique("promotion"),
+  deliveryZone: parBoutique("deliveryZone"),
+  review: parBoutique("review"),
+  merchantTicket: async (id) => {
+    const ticket = await db.merchantTicket.findUnique({ where: { id }, select: { orgId: true } });
+    return ticket ? { id, orgId: ticket.orgId } : null;
+  },
+  driver: async (id) => {
+    const livreur = await db.driver.findUnique({
+      where: { id },
+      select: { email: true, user: { select: { email: true } } },
+    });
+    return livreur ? { id, emails: emailsDuLivreur(livreur) } : null;
+  },
+  driverPayout: async (id) => {
+    const versement = await db.driverPayout.findUnique({
+      where: { id },
+      select: { driver: { select: { email: true, user: { select: { email: true } } } } },
+    });
+    return versement ? { id, emails: emailsDuLivreur(versement.driver) } : null;
+  },
+};
+
+/**
+ * Les familles de routes : le nom annoncé aux écrans, et le modèle désigné
+ * par les identifiants du chemin. La première qui correspond l'emporte.
+ *
+ * Sans entrée ici, la famille est le premier segment après /api/ — ce qui,
+ * pour l'administration, ne dirait que « superowner » : l'écran des tickets ne
+ * saurait pas que c'est un ticket.
+ */
+const ROUTES: { prefixe: string; ressource?: string; modele?: string }[] = [
+  { prefixe: "/api/support/tickets", ressource: "tickets", modele: "merchantTicket" },
+  { prefixe: "/api/superowner/support-tickets", ressource: "tickets", modele: "merchantTicket" },
+  { prefixe: "/api/admin/tickets", ressource: "tickets", modele: "merchantTicket" },
+  { prefixe: "/api/superowner/drivers", ressource: "drivers", modele: "driver" },
+  { prefixe: "/api/superowner/driver-support", ressource: "driver-support", modele: "driver" },
+  { prefixe: "/api/superowner/payouts", ressource: "payouts", modele: "driverPayout" },
+  { prefixe: "/api/superowner/organizations", ressource: "organizations" },
+  { prefixe: "/api/admin/merchants", ressource: "organizations" },
+  { prefixe: "/api/superowner/stores", ressource: "stores" },
+  { prefixe: "/api/products", modele: "product" },
+  { prefixe: "/api/categories", modele: "category" },
+  { prefixe: "/api/orders", modele: "order" },
+  { prefixe: "/api/order-management", modele: "order" },
+  { prefixe: "/api/promotions", modele: "promotion" },
+  { prefixe: "/api/delivery-zones", modele: "deliveryZone" },
+  { prefixe: "/api/reviews", modele: "review" },
+];
+
+/** La famille d'une route, et le modèle de ses identifiants. */
+function familleDe(chemin: string): { ressource: string; modele?: string } | null {
+  const route = ROUTES.find(
+    (candidate) => chemin === candidate.prefixe || chemin.startsWith(candidate.prefixe + "/")
+  );
+  const ressource = route?.ressource ?? chemin.split("/")[2];
+  return ressource ? { ressource, modele: route?.modele } : null;
+}
+
+// Le lien entre un identifiant et son propriétaire ne change pas : le garder
 // évite de relire la base à chaque écriture.
 const DUREE_CACHE_MS = 60000;
 const cache = new Map<string, { valeur: Localisation | null; expireA: number }>();
@@ -89,7 +165,7 @@ function identifiant(valeur: unknown): string | null {
   return typeof valeur === "string" && ressembleAUnId(valeur) && valeur.length < 64 ? valeur : null;
 }
 
-/** À quel commerçant appartient cet identifiant, s'il désigne quelque chose de connu. */
+/** À qui appartient cet identifiant, s'il désigne quelque chose de connu. */
 async function localiser(id: string, modele?: string): Promise<Localisation | null> {
   const cle = `${modele || ""}:${id}`;
   const connu = cache.get(cle);
@@ -106,22 +182,8 @@ async function localiser(id: string, modele?: string): Promise<Localisation | nu
 
     if (organisation) {
       valeur = { orgId: organisation.id };
-    } else if (modele) {
-      const delegue = (db as any)[modele];
-      const trouvee = delegue?.findUnique
-        ? await delegue.findUnique({
-            where: { id },
-            select: { storeId: true, store: { select: { orgId: true } } },
-          })
-        : null;
-
-      if (trouvee?.store?.orgId) {
-        valeur = {
-          orgId: trouvee.store.orgId,
-          storeId: trouvee.storeId,
-          orderId: modele === "order" ? id : undefined,
-        };
-      }
+    } else if (modele && LOCALISATEURS[modele]) {
+      valeur = await LOCALISATEURS[modele](id);
     }
   }
 
@@ -146,6 +208,9 @@ async function emailDeLAppelant(req: Request): Promise<string | null> {
   }
 }
 
+const distincts = (valeurs: (string | undefined)[]) =>
+  [...new Set(valeurs.filter((valeur): valeur is string => !!valeur))];
+
 /** Qui prévenir, calculé avant que la route ne s'exécute. */
 async function destinataires(req: Request, ressource: string, modele?: string) {
   const corps = (req.body || {}) as Record<string, unknown>;
@@ -166,13 +231,14 @@ async function destinataires(req: Request, ressource: string, modele?: string) {
   ]);
 
   const trouvees = localisations.filter((l): l is Localisation => l !== null);
-  const storeIds = [...new Set(trouvees.map((l) => l.storeId).filter((s): s is string => !!s))];
+  const storeIds = distincts(trouvees.map((l) => l.storeId));
+  const orgIds = distincts(trouvees.map((l) => l.orgId));
 
   const cible: Destinataires = {
     plateforme: true,
-    emails: email ? [email] : [],
-    orgIds: [...new Set(trouvees.map((l) => l.orgId))],
-    commandes: trouvees.map((l) => l.orderId).filter((o): o is string => !!o),
+    emails: distincts([email ?? undefined, ...trouvees.flatMap((l) => l.emails || [])]),
+    orgIds,
+    commandes: distincts(trouvees.map((l) => l.orderId)),
     boutiquesPubliques: RESSOURCES_PUBLIQUES.has(ressource) ? storeIds : [],
   };
 
@@ -180,11 +246,12 @@ async function destinataires(req: Request, ressource: string, modele?: string) {
     ressource,
     action: ACTIONS[req.method],
     storeId: storeIds.length === 1 ? storeIds[0] : undefined,
-    orgId: cible.orgIds!.length === 1 ? cible.orgIds![0] : undefined,
+    orgId: orgIds.length === 1 ? orgIds[0] : undefined,
   };
 
-  const orderId = cible.commandes![0];
-  if (orderId) modification.id = orderId;
+  // La donnée elle-même : une fiche ouverte ne se relit que pour elle.
+  const id = trouvees.find((l) => l.id)?.id;
+  if (id) modification.id = id;
 
   return { modification, cible };
 }
@@ -194,12 +261,12 @@ export function diffusionModifications(req: Request, res: Response, next: NextFu
   if (!req.path.startsWith("/api/")) return next();
   if (IGNOREES.some((motif) => motif.test(req.path))) return next();
 
-  const ressource = req.path.split("/")[2];
-  if (!ressource) return next();
+  const famille = familleDe(req.path);
+  if (!famille) return next();
 
   // Lancé tout de suite, sans retenir la requête : après une suppression, la
   // ressource n'existerait plus pour dire à qui elle appartenait.
-  const envoi = destinataires(req, ressource, MODELES[ressource]).catch((err) => {
+  const envoi = destinataires(req, famille.ressource, famille.modele).catch((err) => {
     logger.warn("Temps réel : destinataires introuvables", {
       chemin: req.path,
       error: err instanceof Error ? err.message : err,
