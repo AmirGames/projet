@@ -316,7 +316,7 @@ export default function MerchantApp() {
               style={styles.menuBackdrop}
               onPress={() => setMenuOpen(false)}
             />
-            <View style={styles.menuDrawer}>
+            <View style={styles.menuDrawerRight}>
               <View style={styles.menuHeader}>
                 <Text style={styles.menuTitle}>Menu</Text>
                 <TouchableOpacity onPress={() => setMenuOpen(false)}>
@@ -536,6 +536,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingTop: 20,
     paddingBottom: 20,
+  },
+  menuDrawerRight: {
+    width: '70%',
+    backgroundColor: '#fff',
+    paddingTop: 20,
+    paddingBottom: 20,
+    marginLeft: 'auto',
   },
   menuHeader: {
     flexDirection: 'row',
