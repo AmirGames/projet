@@ -25,6 +25,7 @@ const STATUS_COLORS = {
 
 export default function MerchantApp() {
   const [screen, setScreen] = useState('login');
+  const [tab, setTab] = useState('orders');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -202,51 +203,115 @@ export default function MerchantApp() {
 
   // Orders List Screen
   if (screen === 'orders') {
+    const renderTabContent = () => {
+      if (tab === 'orders') {
+        return (
+          <>
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.headerTitle}>Commandes</Text>
+                <Text style={styles.headerEmail}>{email}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.logoutButton}
+                onPress={() => {}}
+              >
+                <Text style={styles.logoutButtonText}>⚙</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={orders}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.orderCard}
+                  onPress={() => {
+                    setSelectedOrder(item);
+                    setScreen('detail');
+                  }}
+                >
+                  <View style={styles.orderHeader}>
+                    <Text style={styles.orderNumber}>#{item.id.slice(-6).toUpperCase()}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status?.toLowerCase()] || '#999' }]}>
+                      <Text style={styles.statusText}>{STATUS_LABELS[item.status?.toLowerCase()] || item.status}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.customerName}>{item.customerName || 'Anonyme'}</Text>
+                  <Text style={styles.orderTotal}>{parseFloat(item.totalAmount).toFixed(2)} €</Text>
+                </TouchableOpacity>
+              )}
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>Aucune commande</Text>
+                </View>
+              }
+            />
+          </>
+        );
+      } else if (tab === 'settings') {
+        return (
+          <View style={styles.settingsContainer}>
+            <Text style={styles.settingsTitle}>Paramètres</Text>
+            <TouchableOpacity style={styles.settingItem}>
+              <Text style={styles.settingLabel}>Notifications</Text>
+              <Text style={styles.settingArrow}>›</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.settingItem}>
+              <Text style={styles.settingLabel}>À propos</Text>
+              <Text style={styles.settingArrow}>›</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
+              <Text style={[styles.settingLabel, styles.logoutText]}>Déconnexion</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      } else if (tab === 'account') {
+        return (
+          <View style={styles.accountContainer}>
+            <View style={styles.profileCard}>
+              <View style={styles.profileAvatar}>
+                <Text style={styles.avatarText}>👤</Text>
+              </View>
+              <Text style={styles.profileName}>{email.split('@')[0]}</Text>
+              <Text style={styles.profileEmail}>{email}</Text>
+            </View>
+          </View>
+        );
+      }
+    };
+
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <StatusBar style="light" />
         <View style={styles.dashboardContainer}>
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>Commandes</Text>
-              <Text style={styles.headerEmail}>{email}</Text>
-            </View>
+          {renderTabContent()}
+
+          <View style={styles.bottomTabBar}>
             <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleLogout}
+              style={[styles.tabButton, tab === 'orders' && styles.tabButtonActive]}
+              onPress={() => setTab('orders')}
             >
-              <Text style={styles.logoutButtonText}>Quitter</Text>
+              <Text style={[styles.tabIcon, tab === 'orders' && styles.tabIconActive]}>📋</Text>
+              <Text style={[styles.tabLabel, tab === 'orders' && styles.tabLabelActive]}>Commandes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.tabButton, tab === 'settings' && styles.tabButtonActive]}
+              onPress={() => setTab('settings')}
+            >
+              <Text style={[styles.tabIcon, tab === 'settings' && styles.tabIconActive]}>⚙️</Text>
+              <Text style={[styles.tabLabel, tab === 'settings' && styles.tabLabelActive]}>Paramètres</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.tabButton, tab === 'account' && styles.tabButtonActive]}
+              onPress={() => setTab('account')}
+            >
+              <Text style={[styles.tabIcon, tab === 'account' && styles.tabIconActive]}>👤</Text>
+              <Text style={[styles.tabLabel, tab === 'account' && styles.tabLabelActive]}>Compte</Text>
             </TouchableOpacity>
           </View>
-
-          <FlatList
-            data={orders}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.orderCard}
-                onPress={() => {
-                  setSelectedOrder(item);
-                  setScreen('detail');
-                }}
-              >
-                <View style={styles.orderHeader}>
-                  <Text style={styles.orderNumber}>#{item.id.slice(-6).toUpperCase()}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status?.toLowerCase()] || '#999' }]}>
-                    <Text style={styles.statusText}>{STATUS_LABELS[item.status?.toLowerCase()] || item.status}</Text>
-                  </View>
-                </View>
-                <Text style={styles.customerName}>{item.customerName || 'Anonyme'}</Text>
-                <Text style={styles.orderTotal}>{parseFloat(item.totalAmount).toFixed(2)} €</Text>
-              </TouchableOpacity>
-            )}
-            contentContainerStyle={styles.listContent}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>Aucune commande</Text>
-              </View>
-            }
-          />
         </View>
       </SafeAreaView>
     );
@@ -643,5 +708,103 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
+  },
+  bottomTabBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff',
+    paddingBottom: 8,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  tabButtonActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#007AFF',
+  },
+  tabIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  tabIconActive: {
+    fontSize: 24,
+  },
+  tabLabel: {
+    fontSize: 11,
+    color: '#999',
+    fontWeight: '500',
+  },
+  tabLabelActive: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  settingsContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  settingsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#333',
+  },
+  settingItem: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  settingLabel: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  settingArrow: {
+    fontSize: 16,
+    color: '#999',
+  },
+  logoutText: {
+    color: '#f44336',
+  },
+  accountContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 30,
+  },
+  profileCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 30,
+    alignItems: 'center',
+  },
+  profileAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  avatarText: {
+    fontSize: 40,
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  profileEmail: {
+    fontSize: 14,
+    color: '#999',
   },
 });
