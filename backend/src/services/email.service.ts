@@ -108,7 +108,7 @@ export class EmailService {
               </div>
 
               <div style="text-align: center;">
-                <a href="${EMAIL_CONFIG.siteUrl}/order-confirmation?orderId=${order.id}" class="button">
+                <a href="${EMAIL_CONFIG.siteUrl}/track?commande=${order.id}" class="button">
                   Voir ma commande
                 </a>
               </div>
@@ -172,7 +172,7 @@ export class EmailService {
                 <p><strong>Montant :</strong> €${Number(order.totalAmount).toFixed(2)}</p>
               </div>
               <div style="text-align: center;">
-                <a href="${EMAIL_CONFIG.siteUrl}/order-confirmation?orderId=${order.id}" class="button">
+                <a href="${EMAIL_CONFIG.siteUrl}/track?commande=${order.id}" class="button">
                   Voir ma commande
                 </a>
               </div>

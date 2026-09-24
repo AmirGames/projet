@@ -9,6 +9,7 @@ import { useOrderTracking } from '@/lib/use-order-tracking';
 
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
+import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
 
 import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -23,6 +24,13 @@ interface Order {
   deliveryAddress: string;
   createdAt: string;
   items?: any[];
+  deliveryType?: 'PICKUP' | 'DELIVERY';
+  pickupTime?: string | null;
+  /** L'heure à laquelle la commande sera prête, annoncée à l'acceptation. */
+  estimatedReadyAt?: string | null;
+  rejectionReason?: string | null;
+  rejectionNote?: string | null;
+  paymentStatus?: string;
 }
 
 // Le suivi distingue trois points : d'où part la commande, où elle va, et où
@@ -47,10 +55,12 @@ export default function OrderTrackingPage() {
     loadOrderData();
   }, [orderId]);
 
-  // Update order status when WebSocket status changes
+  // Le statut change en direct : on relit la commande entière, pour l'heure
+  // annoncée à l'acceptation ou le motif d'un refus.
   useEffect(() => {
     if (orderStatus && order) {
       setOrder(prev => prev ? { ...prev, status: orderStatus } : null);
+      loadOrderData();
     }
   }, [orderStatus]);
 
@@ -220,6 +230,31 @@ export default function OrderTrackingPage() {
                     <p className="text-white text-xl font-semibold">{statusInfo.label}</p>
                   </div>
                 </div>
+                {order.status === 'PENDING' && (
+                  <p className="text-sm text-yellow-300">
+                    Le restaurant doit confirmer votre commande. Vous serez prévenu dès qu&apos;il
+                    l&apos;aura acceptée.
+                  </p>
+                )}
+                {['ACCEPTED', 'PREPARING', 'READY'].includes(order.status) && order.estimatedReadyAt && (
+                  <p className="text-sm text-gray-200">
+                    {order.deliveryType === 'PICKUP' && order.pickupTime
+                      ? `Retrait prévu à ${heure(order.pickupTime)}`
+                      : `Prête vers ${heure(order.estimatedReadyAt)}`}
+                  </p>
+                )}
+                {order.status === 'REJECTED' && (
+                  <div className="text-sm text-red-300 space-y-1">
+                    <p>
+                      {MOTIFS_POUR_LE_CLIENT[order.rejectionReason || ''] ||
+                        'Le restaurant a refusé votre commande.'}
+                    </p>
+                    {order.rejectionNote && <p>« {order.rejectionNote} »</p>}
+                    {order.paymentStatus === 'SUCCEEDED' && (
+                      <p>Vous avez payé en ligne : le restaurant doit vous rembourser.</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Progress Bar */}

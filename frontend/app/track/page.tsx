@@ -6,6 +6,7 @@ import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 
 
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
+import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
 
 // Leaflet touche `window` dès l'import : la carte ne se charge que côté navigateur.
 const SuiviLivraisonClient = dynamic(
@@ -26,7 +27,7 @@ interface OrderItem {
 
 interface Order {
   id: string;
-  status: 'PENDING' | 'ACCEPTED' | 'READY' | 'COMPLETED' | 'REJECTED';
+  status: 'PENDING' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'REJECTED';
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -45,6 +46,11 @@ interface Order {
   /** Le code à donner au livreur à la porte. Nul une fois la course remise. */
   codeRemise?: string | null;
   preuveDeLivraison?: string | null;
+  /** L'heure à laquelle la commande sera prête, annoncée à l'acceptation. */
+  estimatedReadyAt?: string | null;
+  rejectionReason?: string | null;
+  rejectionNote?: string | null;
+  paymentStatus?: string;
 }
 
 interface Delivery {
@@ -62,6 +68,7 @@ interface Delivery {
 const statusSteps = [
   { status: 'PENDING', label: 'En Attente', icon: Clock, color: 'text-yellow-400' },
   { status: 'ACCEPTED', label: 'Acceptée', icon: CheckCircle, color: 'text-blue-400' },
+  { status: 'PREPARING', label: 'En préparation', icon: Clock, color: 'text-orange-400' },
   { status: 'READY', label: 'Prête', icon: Package, color: 'text-green-400' },
   { status: 'COMPLETED', label: 'Livrée', icon: Truck, color: 'text-purple-400' },
 ];
@@ -69,6 +76,7 @@ const statusSteps = [
 const statusColors: { [key: string]: string } = {
   PENDING: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50',
   ACCEPTED: 'bg-blue-600/20 text-blue-400 border-blue-600/50',
+  PREPARING: 'bg-orange-600/20 text-orange-400 border-orange-600/50',
   READY: 'bg-green-600/20 text-green-400 border-green-600/50',
   COMPLETED: 'bg-purple-600/20 text-purple-400 border-purple-600/50',
   REJECTED: 'bg-red-600/20 text-red-400 border-red-600/50',
@@ -157,6 +165,27 @@ export default function TrackOrderPage() {
     rechercher(demandee);
   }, [rechercher]);
 
+  /**
+   * Tant que la commande avance, la page se relit d'elle-même.
+   *
+   * Un client invité n'a pas de connexion en direct : sans cela, il ne voyait
+   * « acceptée » ou « annulée » qu'en rechargeant la page.
+   */
+  useEffect(() => {
+    if (!order?.id || ['COMPLETED', 'REJECTED'].includes(order.status)) return;
+
+    const minuteur = setInterval(async () => {
+      try {
+        const reponse = await fetch(`${API_URL}/api/orders/${order.id}`);
+        if (reponse.ok) setOrder(await reponse.json());
+      } catch {
+        // Hors ligne : on réessaiera au prochain passage.
+      }
+    }, 20000);
+
+    return () => clearInterval(minuteur);
+  }, [order?.id, order?.status]);
+
   const getStatusIndex = (status: string) => {
     return statusSteps.findIndex(s => s.status === status);
   };
@@ -219,11 +248,12 @@ export default function TrackOrderPage() {
                 <div className="text-right">
                   <p className="text-gray-400 text-sm mb-1">Statut Actuel</p>
                   <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold border ${statusColors[order.status]}`}>
-                    {order.status === 'PENDING' && '⏳ En Attente'}
+                    {order.status === 'PENDING' && '⏳ En attente de confirmation'}
                     {order.status === 'ACCEPTED' && '✅ Acceptée'}
+                    {order.status === 'PREPARING' && '👨‍🍳 En préparation'}
                     {order.status === 'READY' && '📦 Prête'}
                     {order.status === 'COMPLETED' && '✓ Livrée'}
-                    {order.status === 'REJECTED' && '❌ Rejetée'}
+                    {order.status === 'REJECTED' && '❌ Annulée'}
                   </span>
                 </div>
               </div>
@@ -267,8 +297,14 @@ export default function TrackOrderPage() {
                             {step.label}
                           </p>
                           <p className="text-sm text-gray-500 mt-1">
-                            {step.status === 'PENDING' && 'Votre commande a été reçue et est en attente de confirmation'}
-                            {step.status === 'ACCEPTED' && 'La boutique a accepté votre commande'}
+                            {step.status === 'PENDING' && 'Votre commande a été reçue et attend la confirmation du restaurant'}
+                            {step.status === 'ACCEPTED' &&
+                              (order.estimatedReadyAt
+                                ? order.deliveryType === 'PICKUP' && order.pickupTime
+                                  ? `La boutique a accepté votre commande : elle vous attendra à ${heure(order.pickupTime)}`
+                                  : `La boutique a accepté votre commande : prête vers ${heure(order.estimatedReadyAt)}`
+                                : 'La boutique a accepté votre commande')}
+                            {step.status === 'PREPARING' && 'Votre commande est en cuisine'}
                             {step.status === 'READY' && 'Votre commande est prête à être livrée/retirée'}
                             {step.status === 'COMPLETED' && 'Commande livrée avec succès'}
                           </p>
@@ -286,10 +322,19 @@ export default function TrackOrderPage() {
                 <div className="flex gap-4">
                   <AlertCircle size={24} className="text-red-400 flex-shrink-0" />
                   <div>
-                    <h3 className="text-lg font-bold text-red-400 mb-2">Commande Rejetée</h3>
+                    <h3 className="text-lg font-bold text-red-400 mb-2">Commande annulée</h3>
                     <p className="text-red-300">
-                      Désolé, votre commande a été rejetée par la boutique. Veuillez contacter le vendeur pour plus d'informations.
+                      {MOTIFS_POUR_LE_CLIENT[order.rejectionReason || ''] ||
+                        'Désolé, votre commande a été refusée par la boutique.'}
                     </p>
+                    {order.rejectionNote && (
+                      <p className="text-red-200 mt-2">« {order.rejectionNote} »</p>
+                    )}
+                    {order.paymentStatus === 'SUCCEEDED' && (
+                      <p className="text-red-200 mt-2">
+                        Vous avez payé en ligne : le restaurant doit vous rembourser.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

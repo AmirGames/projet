@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { ShoppingCart, MapPin, Phone, Clock, Star, Check } from 'lucide-react';
 
 import { euro } from '@/lib/format';
@@ -741,8 +742,10 @@ export default function StorefrontPage() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold mb-2">Commande Confirmée!</h2>
-              <p className="text-gray-400">Votre commande a été créée avec succès</p>
+              <h2 className="text-2xl font-bold mb-2">Commande envoyée !</h2>
+              <p className="text-gray-400">
+                Le restaurant doit maintenant la confirmer.
+              </p>
             </div>
 
             <div className="bg-gray-700 rounded-lg p-4">
@@ -752,11 +755,18 @@ export default function StorefrontPage() {
 
             <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
               <p className="text-blue-400 text-sm">
-                Vous recevrez bientôt un email de confirmation avec les détails de votre commande.
+                Vous recevrez un e-mail dès que le restaurant l&apos;aura acceptée, avec l&apos;heure
+                prévue — ou s&apos;il ne peut pas l&apos;honorer.
               </p>
             </div>
 
             <div className="space-y-2">
+              <Link
+                href={`/track?commande=${orderConfirmation.id}`}
+                className="block w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-colors"
+              >
+                Suivre ma commande
+              </Link>
               <button
                 onClick={() => setOrderConfirmation(null)}
                 className="w-full py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors"

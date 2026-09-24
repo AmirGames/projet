@@ -131,8 +131,11 @@ export default function CheckoutPage() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold mb-2">Commande confirmée</h2>
-              <p className="text-gray-400">Votre commande a bien été transmise au commerce.</p>
+              <h2 className="text-2xl font-bold mb-2">Commande envoyée</h2>
+              <p className="text-gray-400">
+                Le commerce doit maintenant la confirmer. Vous recevrez un e-mail dès qu&apos;il
+                l&apos;aura acceptée, avec l&apos;heure prévue.
+              </p>
             </div>
 
             <div className="bg-gray-700 rounded-lg p-4">
