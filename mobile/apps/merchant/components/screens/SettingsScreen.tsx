@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
 import { API_URL } from '../../lib/api';
 import { Card, COLORS, Row, ScreenHeader, ui } from '../ui';
@@ -14,7 +14,6 @@ export default function SettingsScreen({
   onTestSound,
   pushEnabled,
   pushInfo,
-  onLogout,
   onBack,
 }: {
   preparationMinutes: number;
@@ -24,15 +23,8 @@ export default function SettingsScreen({
   onTestSound: () => void;
   pushEnabled: boolean;
   pushInfo?: string;
-  onLogout: () => void;
   onBack: () => void;
 }) {
-  const confirmLogout = () =>
-    Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: onLogout },
-    ]);
-
   return (
     <View style={{ flex: 1 }}>
       <ScreenHeader title="Paramètres ⚙️" onBack={onBack} />
@@ -56,7 +48,7 @@ export default function SettingsScreen({
           <View style={styles.switchRow}>
             <View style={{ flex: 1, marginRight: 12 }}>
               <Text style={styles.switchLabel}>Sonnerie et vibration</Text>
-              <Text style={styles.help}>Sonne à chaque nouvelle commande, puis toutes les 30 s tant qu'une commande attend.</Text>
+              <Text style={styles.help}>Sonne à chaque nouvelle commande, puis toutes les 5 s tant qu'une commande attend.</Text>
             </View>
             <Switch value={soundEnabled} onValueChange={onChangeSound} trackColor={{ true: COLORS.success, false: '#ccc' }} />
           </View>
@@ -78,9 +70,6 @@ export default function SettingsScreen({
           <Row label="Serveur" value={API_URL} last />
         </Card>
 
-        <TouchableOpacity style={styles.logout} onPress={confirmLogout}>
-          <Text style={styles.logoutText}>🚪 Déconnexion</Text>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -106,11 +95,4 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   chipText: { fontSize: 14, color: COLORS.text },
   chipTextActive: { color: '#fff', fontWeight: '600' },
-  logout: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  logoutText: { color: COLORS.danger, fontSize: 16, fontWeight: '600' },
 });

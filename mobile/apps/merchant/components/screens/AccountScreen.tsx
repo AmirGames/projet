@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
 
@@ -22,7 +22,7 @@ const ORG_STATUS_LABELS: Record<string, string> = {
   CLOSED: 'Fermé',
 };
 
-export default function AccountScreen({ token, onLogout, onBack }: { token: string; onLogout: () => void; onBack: () => void }) {
+export default function AccountScreen({ token, onBack }: { token: string; onBack: () => void }) {
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -85,10 +85,6 @@ export default function AccountScreen({ token, onLogout, onBack }: { token: stri
               <Row label="Statut" value={ORG_STATUS_LABELS[org.status || ''] || org.status || '—'} last />
             </Card>
           ))}
-
-          <TouchableOpacity style={styles.logout} onPress={onLogout}>
-            <Text style={styles.logoutText}>🚪 Déconnexion</Text>
-          </TouchableOpacity>
         </ScrollView>
       )}
     </View>
@@ -115,11 +111,4 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 30, color: '#fff', fontWeight: 'bold' },
   name: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   email: { fontSize: 14, color: COLORS.muted, marginTop: 2 },
-  logout: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  logoutText: { color: COLORS.danger, fontSize: 16, fontWeight: '600' },
 });

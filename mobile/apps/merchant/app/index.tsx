@@ -452,7 +452,6 @@ export default function MerchantApp() {
           onTestSound={ring}
           pushEnabled={pushSetup?.status === 'enabled'}
           pushInfo={pushSetup ? (pushSetup.status === 'enabled' ? undefined : pushSetup.reason) : 'Vérification…'}
-          onLogout={handleLogout}
           onBack={back}
         />
       );
@@ -470,7 +469,7 @@ export default function MerchantApp() {
       );
     }
     if (tab === 'support' && session) return <SupportScreen token={token} orgId={session.orgId} onBack={back} />;
-    if (tab === 'account') return <AccountScreen token={token} onLogout={handleLogout} onBack={back} />;
+    if (tab === 'account') return <AccountScreen token={token} onBack={back} />;
     if (tab === 'commandes-jour') {
       return (
         <>

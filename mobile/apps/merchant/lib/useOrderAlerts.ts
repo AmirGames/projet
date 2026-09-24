@@ -14,7 +14,7 @@ export interface NewOrderEvent {
   echeance?: string;
 }
 
-const REMINDER_MS = 30_000;
+const REMINDER_MS = 5_000;
 const VIBRATION_PATTERN = [0, 400, 200, 400];
 
 /**
@@ -55,6 +55,7 @@ export function useOrderAlerts({
     if (!callbacks.current.soundEnabled) return;
     Vibration.vibrate(VIBRATION_PATTERN);
     try {
+      player.volume = 1;
       player.seekTo(0);
       player.play();
     } catch (e) {
