@@ -460,10 +460,9 @@ export default function RoleSelectionPage() {
                   required
                 >
                   <option value="">Type de véhicule</option>
-                  <option value="Motorcycle">Moto</option>
-                  <option value="Car">Voiture</option>
-                  <option value="Bicycle">Vélo</option>
-                  <option value="Truck">Camion</option>
+                  <option value="scooter">Scooter / Moto</option>
+                  <option value="car">Voiture</option>
+                  <option value="bike">Vélo</option>
                 </select>
                 <input
                   type="text"

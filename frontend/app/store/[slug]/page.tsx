@@ -255,7 +255,9 @@ export default function StorefrontPage() {
                 ? {
                     ...actuelle,
                     isOpenNow: menuData.data.isOpenNow,
-                    enAttenteDeValidation: !!menuData.data.enAttenteDeValidation,
+                    isOpen:
+                      typeof menuData.data.isOpen === 'boolean' ? menuData.data.isOpen : actuelle.isOpen,
+                    enAttenteDeValidation: menuData.data.enAttenteDeValidation === true,
                   }
                 : actuelle
             );
@@ -711,12 +713,18 @@ export default function StorefrontPage() {
                       role="status"
                       className="rounded-lg border border-amber-700/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-200"
                     >
-                      {commandeBloquee
-                        ? 'Momentanément indisponible — commande impossible pour le moment.'
-                        : 'Fermé pour le moment — commandez pour un retrait sur un prochain créneau.'}
+                      {store?.enAttenteDeValidation
+                        ? 'Boutique pas encore ouverte aux commandes.'
+                        : commandeBloquee
+                          ? 'Momentanément indisponible — commande impossible pour le moment.'
+                          : 'Fermé pour le moment — commandez pour un retrait sur un prochain créneau.'}
                     </p>
                   )}
 
+                  {/* Hors des horaires, la commande reste possible : le tunnel
+                      propose un créneau de retrait ultérieur et le serveur
+                      l'accepte. Seuls le bouton rapide et un commerce non
+                      validé la bloquent — ce que le serveur refuse aussi. */}
                   <button
                     onClick={() => setShowCheckout(true)}
                     disabled={commandeBloquee}
