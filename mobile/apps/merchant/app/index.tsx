@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, FlatList, ScrollView, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, FlatList, ScrollView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 const API_URL = 'http://192.168.0.80:3001';
@@ -255,7 +255,7 @@ export default function MerchantApp() {
   if (screen === 'detail' && selectedOrder) {
     const order = selectedOrder;
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? 0 : 12 }]}>
         <StatusBar style="light" />
         <View style={styles.dashboardContainer}>
           <View style={styles.detailHeader}>
@@ -367,7 +367,7 @@ export default function MerchantApp() {
             )}
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
