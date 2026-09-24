@@ -20,7 +20,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia } from './inscription.mjs';
+import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -90,6 +90,7 @@ const boutique = await appeler('/api/stores', {
   },
 });
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
+await ouvrirToutLeJour(appeler, storeId, T);
 
 // Les zones sont celles d'un commerçant qui livre lui-même : avec les livreurs
 // de la plateforme, les frais suivent la distance et aucune zone n'est dite.

@@ -10,7 +10,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia } from './inscription.mjs';
+import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -80,6 +80,7 @@ const ouvrirBoutique = async (suffixe, nomDuPlat, prix) => {
   });
 
   const storeId = boutique.donnees.store?.id || boutique.donnees.id;
+  await ouvrirToutLeJour(appeler, storeId, jeton);
 
   await appeler('/api/products', {
     method: 'POST',

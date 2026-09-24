@@ -67,3 +67,26 @@ export async function inscriptionVia(appeler, options) {
     donnees: { ...inscription.donnees, organization: { id: org.id, name: org.name, slug: org.slug } },
   };
 }
+
+/**
+ * Ouvre une boutique de 00:00 à 23:59, tous les jours.
+ *
+ * La vitrine suit désormais l'état d'ouverture réel : hors des horaires, on ne
+ * commande plus. Une boutique sans horaires prend ceux par défaut (9 h – 22 h),
+ * et une suite lancée à 7 h échouait là où elle passait l'après-midi. Les
+ * suites qui ne vérifient pas les horaires s'en affranchissent ainsi ; celles
+ * qui les vérifient (creneaux-retrait, horaires-genre) posent les leurs.
+ */
+export async function ouvrirToutLeJour(appeler, storeId, jeton) {
+  for (const jour of ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']) {
+    const reponse = await appeler(`/api/store-hours/${storeId}/day/${jour}`, {
+      method: 'PUT',
+      jeton,
+      corps: { open: '00:00', close: '23:59', closed: false },
+    });
+
+    if (reponse.statut >= 400) {
+      throw new Error(`Horaires refusés (${jour}) : statut ${reponse.statut} ${JSON.stringify(reponse.donnees)}`);
+    }
+  }
+}

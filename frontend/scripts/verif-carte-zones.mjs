@@ -24,7 +24,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia } from './inscription.mjs';
+import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 import { entrerEspaceCommercant } from './connexion.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
@@ -101,6 +101,7 @@ const boutique = await appeler('/api/stores', {
   },
 });
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
+await ouvrirToutLeJour(appeler, storeId, T);
 
 const avant = await boutiqueVue(storeId, T);
 check('la boutique naît sans coordonnées', avant?.latitude == null, `${avant?.latitude}`);
