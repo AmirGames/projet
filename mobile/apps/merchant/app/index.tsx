@@ -5,6 +5,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const API_URL = 'http://192.168.0.80:3001';
 
+interface Order {
+  id: string;
+  status?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  totalAmount: number;
+  taxAmount?: number;
+  deliveryType?: string;
+  deliveryAddress?: string;
+  deliveryCity?: string;
+  deliveryPostal?: string;
+  items?: Array<{
+    id: string;
+    product?: { name: string };
+    quantity: number;
+    total: number;
+  }>;
+  storeId?: string;
+}
+
 const STATUS_LABELS = {
   pending: 'En attente',
   accepted: 'Acceptée',
@@ -24,18 +45,19 @@ const STATUS_COLORS = {
 };
 
 export default function MerchantApp() {
-  const [screen, setScreen] = useState('login');
-  const [tab, setTab] = useState('orders');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [orders, setOrders] = useState([]);
-  const [accessToken, setAccessToken] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [storeId, setStoreId] = useState('');
+  const [screen, setScreen] = useState<string>('login');
+  const [tab, setTab] = useState<string>('dashboard');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [accessToken, setAccessToken] = useState<string>('');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [storeId, setStoreId] = useState<string>('');
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
-  const fetchOrders = async (token, orgId) => {
+  const fetchOrders = async (token: string, orgId: string) => {
     try {
       const storesResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
         method: 'GET',
@@ -93,8 +115,8 @@ export default function MerchantApp() {
       if (response.ok) {
         setAccessToken(data.accessToken);
         setIsLoggedIn(true);
-        setScreen('orders');
-        setTab('account');
+        setScreen('dashboard');
+        setTab('dashboard');
 
         if (data.organization) {
           await fetchOrders(data.accessToken, data.organization.id);
@@ -117,13 +139,14 @@ export default function MerchantApp() {
     setOrders([]);
     setAccessToken('');
     setScreen('login');
-    setTab('account');
+    setTab('dashboard');
+    setMenuOpen(false);
   };
 
-  const handleOrderAction = async (action, orderId) => {
+  const handleOrderAction = async (action: string, orderId: string) => {
     try {
       let endpoint = '';
-      let body = {};
+      let body: any = {};
 
       if (action === 'accept') {
         endpoint = `/api/order-management/${storeId}/${orderId}/accept`;
@@ -147,8 +170,11 @@ export default function MerchantApp() {
 
       if (response.ok) {
         Alert.alert('Succès', `Commande ${action === 'accept' ? 'acceptée' : action === 'reject' ? 'refusée' : 'marquée prête'}`);
-        await fetchOrders(accessToken, selectedOrder.storeId);
-        setScreen('orders');
+        if (selectedOrder?.storeId) {
+          await fetchOrders(accessToken, selectedOrder.storeId);
+        }
+        setScreen('dashboard');
+        setTab('commandes-jour');
       } else {
         Alert.alert('Erreur', 'Impossible d\'effectuer l\'action');
       }
@@ -204,45 +230,69 @@ export default function MerchantApp() {
     );
   }
 
-  // Orders List Screen
-  if (screen === 'orders') {
+  // Dashboard Screen
+  if (screen === 'dashboard') {
     const renderTabContent = () => {
-      if (tab === 'orders') {
+      if (tab === 'dashboard') {
         return (
           <>
             <View style={styles.header}>
               <View>
-                <Text style={styles.headerTitle}>Commandes</Text>
+                <Text style={styles.headerTitle}>Tableau de Bord</Text>
                 <Text style={styles.headerEmail}>{email}</Text>
               </View>
-              <TouchableOpacity
-                style={styles.logoutButton}
-                onPress={() => {}}
-              >
-                <Text style={styles.logoutButtonText}>⚙</Text>
-              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.dashboardContent}>
+              <View style={styles.statsContainer}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{orders.length}</Text>
+                  <Text style={styles.statLabel}>Commandes</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{orders.filter((o: Order) => o.status?.toLowerCase() === 'pending').length}</Text>
+                  <Text style={styles.statLabel}>En attente</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statValue}>{orders.filter((o: Order) => o.status?.toLowerCase() === 'preparing').length}</Text>
+                  <Text style={styles.statLabel}>En préparation</Text>
+                </View>
+              </View>
+            </ScrollView>
+          </>
+        );
+      } else if (tab === 'commandes-jour') {
+        return (
+          <>
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.headerTitle}>Commandes du Jour</Text>
+                <Text style={styles.headerEmail}>{email}</Text>
+              </View>
             </View>
             <FlatList
               data={orders}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.orderCard}
-                  onPress={() => {
-                    setSelectedOrder(item);
-                    setScreen('detail');
-                  }}
-                >
-                  <View style={styles.orderHeader}>
-                    <Text style={styles.orderNumber}>#{item.id.slice(-6).toUpperCase()}</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status?.toLowerCase()] || '#999' }]}>
-                      <Text style={styles.statusText}>{STATUS_LABELS[item.status?.toLowerCase()] || item.status}</Text>
+              renderItem={({ item }: { item: Order }) => {
+                const statusKey = item.status?.toLowerCase() as keyof typeof STATUS_LABELS;
+                return (
+                  <TouchableOpacity
+                    style={styles.orderCard}
+                    onPress={() => {
+                      setSelectedOrder(item);
+                      setScreen('detail');
+                    }}
+                  >
+                    <View style={styles.orderHeader}>
+                      <Text style={styles.orderNumber}>#{item.id.slice(-6).toUpperCase()}</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: statusKey && STATUS_COLORS[statusKey] ? STATUS_COLORS[statusKey] : '#999' }]}>
+                        <Text style={styles.statusText}>{statusKey && STATUS_LABELS[statusKey] ? STATUS_LABELS[statusKey] : item.status}</Text>
+                      </View>
                     </View>
-                  </View>
-                  <Text style={styles.customerName}>{item.customerName || 'Anonyme'}</Text>
-                  <Text style={styles.orderTotal}>{parseFloat(item.totalAmount).toFixed(2)} €</Text>
-                </TouchableOpacity>
-              )}
+                    <Text style={styles.customerName}>{item.customerName || 'Anonyme'}</Text>
+                    <Text style={styles.orderTotal}>{parseFloat(String(item.totalAmount)).toFixed(2)} €</Text>
+                  </TouchableOpacity>
+                );
+              }}
               contentContainerStyle={styles.listContent}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
@@ -252,67 +302,81 @@ export default function MerchantApp() {
             />
           </>
         );
-      } else if (tab === 'settings') {
-        return (
-          <View style={styles.settingsContainer}>
-            <Text style={styles.settingsTitle}>Paramètres</Text>
-            <TouchableOpacity style={styles.settingItem}>
-              <Text style={styles.settingLabel}>Notifications</Text>
-              <Text style={styles.settingArrow}>›</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.settingItem}>
-              <Text style={styles.settingLabel}>À propos</Text>
-              <Text style={styles.settingArrow}>›</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
-              <Text style={[styles.settingLabel, styles.logoutText]}>Déconnexion</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      } else if (tab === 'account') {
-        return (
-          <View style={styles.accountContainer}>
-            <View style={styles.profileCard}>
-              <View style={styles.profileAvatar}>
-                <Text style={styles.avatarText}>👤</Text>
-              </View>
-              <Text style={styles.profileName}>{email.split('@')[0]}</Text>
-              <Text style={styles.profileEmail}>{email}</Text>
-            </View>
-          </View>
-        );
       }
     };
 
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <StatusBar style="light" />
+
+        {/* Menu Drawer */}
+        {menuOpen && (
+          <View style={styles.menuOverlay}>
+            <TouchableOpacity
+              style={styles.menuBackdrop}
+              onPress={() => setMenuOpen(false)}
+            />
+            <View style={styles.menuDrawer}>
+              <View style={styles.menuHeader}>
+                <Text style={styles.menuTitle}>Menu</Text>
+                <TouchableOpacity onPress={() => setMenuOpen(false)}>
+                  <Text style={styles.closeButton}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity style={styles.menuItem} onPress={() => { setTab('dashboard'); setMenuOpen(false); }}>
+                <Text style={styles.menuItemText}>📊 Statistiques</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem}>
+                <Text style={styles.menuItemText}>🍕 Menu</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem}>
+                <Text style={styles.menuItemText}>🏪 Boutique</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem}>
+                <Text style={styles.menuItemText}>⚙️ Paramètres</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem}>
+                <Text style={styles.menuItemText}>👤 Mon Compte</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
+                <Text style={styles.menuItemLogoutText}>🚪 Déconnexion</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         <View style={styles.dashboardContainer}>
           {renderTabContent()}
 
           <View style={styles.bottomTabBar}>
             <TouchableOpacity
-              style={[styles.tabButton, tab === 'account' && styles.tabButtonActive]}
-              onPress={() => setTab('account')}
+              style={styles.tabButtonLeft}
+              onPress={() => setMenuOpen(true)}
             >
-              <Text style={[styles.tabIcon, tab === 'account' && styles.tabIconActive]}>👤</Text>
-              <Text style={[styles.tabLabel, tab === 'account' && styles.tabLabelActive]}>Compte</Text>
+              <Text style={styles.tabIcon}>☰</Text>
+              <Text style={styles.tabLabel}>Menu</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.tabButton, tab === 'settings' && styles.tabButtonActive]}
-              onPress={() => setTab('settings')}
+              style={[styles.tabButtonCenter, tab === 'dashboard' && styles.tabButtonActive]}
+              onPress={() => setTab('dashboard')}
             >
-              <Text style={[styles.tabIcon, tab === 'settings' && styles.tabIconActive]}>⚙️</Text>
-              <Text style={[styles.tabLabel, tab === 'settings' && styles.tabLabelActive]}>Paramètres</Text>
+              <Text style={[styles.tabIcon, tab === 'dashboard' && styles.tabIconActive]}>📊</Text>
+              <Text style={[styles.tabLabel, tab === 'dashboard' && styles.tabLabelActive]}>Dashboard</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.tabButton, tab === 'orders' && styles.tabButtonActive]}
-              onPress={() => setTab('orders')}
+              style={[styles.tabButtonRight, tab === 'commandes-jour' && styles.tabButtonActive]}
+              onPress={() => setTab('commandes-jour')}
             >
-              <Text style={[styles.tabIcon, tab === 'orders' && styles.tabIconActive]}>📋</Text>
-              <Text style={[styles.tabLabel, tab === 'orders' && styles.tabLabelActive]}>Commandes</Text>
+              <Text style={[styles.tabIcon, tab === 'commandes-jour' && styles.tabIconActive]}>📋</Text>
+              <Text style={[styles.tabLabel, tab === 'commandes-jour' && styles.tabLabelActive]}>Commandes</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -328,7 +392,7 @@ export default function MerchantApp() {
         <StatusBar style="light" />
         <View style={styles.dashboardContainer}>
           <View style={styles.detailHeader}>
-            <TouchableOpacity onPress={() => setScreen('orders')}>
+            <TouchableOpacity onPress={() => setScreen('dashboard')}>
               <Text style={styles.backButton}>← Retour</Text>
             </TouchableOpacity>
           </View>
@@ -336,9 +400,14 @@ export default function MerchantApp() {
           <ScrollView style={styles.detailContent}>
             <View style={styles.detailOrderHeader}>
               <Text style={styles.detailOrderNumber}>#{order.id.slice(-6).toUpperCase()}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[order.status?.toLowerCase()] || '#999' }]}>
-                <Text style={styles.statusText}>{STATUS_LABELS[order.status?.toLowerCase()] || order.status}</Text>
-              </View>
+              {(() => {
+                const statusKey = order.status?.toLowerCase() as keyof typeof STATUS_LABELS;
+                return (
+                  <View style={[styles.statusBadge, { backgroundColor: statusKey && STATUS_COLORS[statusKey] ? STATUS_COLORS[statusKey] : '#999' }]}>
+                    <Text style={styles.statusText}>{statusKey && STATUS_LABELS[statusKey] ? STATUS_LABELS[statusKey] : order.status}</Text>
+                  </View>
+                );
+              })()}
             </View>
 
             <View style={styles.section}>
@@ -359,11 +428,11 @@ export default function MerchantApp() {
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Articles</Text>
-              {order.items && order.items.map((item) => (
+              {order.items && order.items.map((item: any) => (
                 <View key={item.id} style={styles.itemRow}>
                   <Text style={styles.itemName}>{item.product?.name || 'Produit'}</Text>
                   <Text style={styles.itemQty}>x{item.quantity}</Text>
-                  <Text style={styles.itemPrice}>{parseFloat(item.total).toFixed(2)} €</Text>
+                  <Text style={styles.itemPrice}>{parseFloat(String(item.total)).toFixed(2)} €</Text>
                 </View>
               ))}
             </View>
@@ -392,15 +461,15 @@ export default function MerchantApp() {
               <Text style={styles.sectionTitle}>Total</Text>
               <View style={styles.row}>
                 <Text style={styles.label}>Sous-total</Text>
-                <Text style={styles.value}>{parseFloat(order.totalAmount).toFixed(2)} €</Text>
+                <Text style={styles.value}>{parseFloat(String(order.totalAmount)).toFixed(2)} €</Text>
               </View>
               <View style={styles.row}>
                 <Text style={styles.label}>TVA</Text>
-                <Text style={styles.value}>{parseFloat(order.taxAmount).toFixed(2)} €</Text>
+                <Text style={styles.value}>{parseFloat(String(order.taxAmount || 0)).toFixed(2)} €</Text>
               </View>
               <View style={[styles.row, styles.totalRow]}>
                 <Text style={[styles.label, styles.totalLabel]}>Total</Text>
-                <Text style={styles.totalValue}>{parseFloat(order.totalAmount).toFixed(2)} €</Text>
+                <Text style={styles.totalValue}>{parseFloat(String(order.totalAmount)).toFixed(2)} €</Text>
               </View>
             </View>
 
@@ -413,13 +482,13 @@ export default function MerchantApp() {
                 <View style={styles.actionGroup}>
                   <TouchableOpacity
                     style={[styles.btn, styles.btnAccept]}
-                    onPress={() => handleOrderAction('accept', order.id)}
+                    onPress={() => handleOrderAction('accept', String(order.id))}
                   >
                     <Text style={styles.btnText}>✓ Accepter</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.btn, styles.btnReject]}
-                    onPress={() => handleOrderAction('reject', order.id)}
+                    onPress={() => handleOrderAction('reject', String(order.id))}
                   >
                     <Text style={styles.btnText}>✗ Refuser</Text>
                   </TouchableOpacity>
@@ -429,7 +498,7 @@ export default function MerchantApp() {
             {order.status?.toLowerCase() === 'accepted' && (
               <TouchableOpacity
                 style={[styles.btn, styles.btnReady]}
-                onPress={() => handleOrderAction('ready', order.id)}
+                onPress={() => handleOrderAction('ready', String(order.id))}
               >
                 <Text style={styles.btnText}>📦 Marquer prêt</Text>
               </TouchableOpacity>
@@ -447,6 +516,65 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#007AFF',
+    position: 'relative',
+  },
+  menuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    zIndex: 999,
+  },
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  menuDrawer: {
+    width: '70%',
+    backgroundColor: '#fff',
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+  menuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  menuTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    fontSize: 24,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  menuItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  menuItemLogout: {
+    marginTop: 8,
+    borderBottomWidth: 0,
+  },
+  menuItemLogoutText: {
+    fontSize: 16,
+    color: '#f44336',
+    fontWeight: '500',
   },
   loginContainer: {
     flex: 1,
@@ -724,6 +852,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
   },
+  tabButtonLeft: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  tabButtonCenter: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  tabButtonRight: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
   tabButtonActive: {
     borderBottomWidth: 2,
     borderBottomColor: '#007AFF',
@@ -743,6 +886,38 @@ const styles = StyleSheet.create({
   tabLabelActive: {
     color: '#007AFF',
     fontWeight: '600',
+  },
+  dashboardContent: {
+    flex: 1,
+    paddingHorizontal: 12,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingVertical: 20,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
   },
   settingsContainer: {
     flex: 1,
