@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
+import { useRealtimeEvent } from '../../lib/realtime';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
 
 interface Store {
@@ -208,6 +209,13 @@ export default function StoreScreen({ token, storeId, onBack }: { token: string;
   useEffect(() => {
     load();
   }, [load]);
+
+  useRealtimeEvent('boutique-statut', (e: { storeId: string; isOpen: boolean }) => {
+    if (e.storeId === storeId) setHours((h) => (h ? { ...h, isOpen: e.isOpen } : h));
+  });
+  useRealtimeEvent('boutique-horaires', (e: { storeId: string; operatingHours: Record<string, DayHours> }) => {
+    if (e.storeId === storeId) setHours((h) => (h ? { ...h, operatingHours: e.operatingHours } : h));
+  });
 
   const setOpen = async (isOpen: boolean) => {
     if (!hours) return;

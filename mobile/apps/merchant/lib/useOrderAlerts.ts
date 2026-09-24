@@ -3,6 +3,7 @@ import { AppState, Vibration } from 'react-native';
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import { io, Socket } from 'socket.io-client';
 import { API_URL } from './api';
+import { dispatchRealtime } from './realtime';
 
 export interface NewOrderEvent {
   orderId: string;
@@ -23,6 +24,7 @@ const VIBRATION_PATTERN = [0, 400, 200, 400];
  */
 export function useOrderAlerts({
   token,
+  storeId,
   soundEnabled,
   pendingCount,
   onNewOrder,
@@ -30,6 +32,7 @@ export function useOrderAlerts({
   onNotification,
 }: {
   token: string;
+  storeId: string;
   soundEnabled: boolean;
   pendingCount: number;
   onNewOrder: (event: NewOrderEvent) => void;
@@ -38,6 +41,8 @@ export function useOrderAlerts({
 }) {
   const player = useAudioPlayer(require('../assets/sounds/new_order.wav'));
   const [connected, setConnected] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
+  const storeIdRef = useRef(storeId);
 
   const callbacks = useRef({ onNewOrder, onOrdersChanged, onNotification, soundEnabled });
   callbacks.current = { onNewOrder, onOrdersChanged, onNotification, soundEnabled };
@@ -66,10 +71,17 @@ export function useOrderAlerts({
       reconnection: true,
     });
 
+    socketRef.current = socket;
+    // Chaque écran écoute ce qui le concerne (support, menu, boutique…).
+    socket.onAny((event: string, payload: unknown) => dispatchRealtime(event, payload));
+
     socket.on('connect', () => {
       setConnected(true);
+      // Salon public de la boutique : disponibilité des produits.
+      if (storeIdRef.current) socket.emit('join-store', storeIdRef.current);
       // Ce qui est arrivé pendant la coupure n'a pas été envoyé : on recharge.
       callbacks.current.onOrdersChanged();
+      dispatchRealtime('reconnecte', null);
     });
     socket.on('disconnect', () => setConnected(false));
     socket.on('connect_error', () => setConnected(false));
@@ -79,20 +91,35 @@ export function useOrderAlerts({
       callbacks.current.onNewOrder(event);
     });
     socket.on('commande-traitee', () => callbacks.current.onOrdersChanged());
+    socket.on('commande-maj', () => callbacks.current.onOrdersChanged());
     socket.on('notification', () => callbacks.current.onNotification?.());
 
     return () => {
       socket.removeAllListeners();
+      socket.offAny();
       socket.disconnect();
+      socketRef.current = null;
       setConnected(false);
     };
   }, [token, ring]);
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    const previous = storeIdRef.current;
+    storeIdRef.current = storeId;
+    if (!socket?.connected || previous === storeId) return;
+    if (previous) socket.emit('leave-store', previous);
+    if (storeId) socket.emit('join-store', storeId);
+  }, [storeId]);
 
   // Retour au premier plan : le socket a pu être coupé par le système.
   useEffect(() => {
     if (!token) return;
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') callbacks.current.onOrdersChanged();
+      if (state === 'active') {
+        callbacks.current.onOrdersChanged();
+        dispatchRealtime('reconnecte', null);
+      }
     });
     return () => sub.remove();
   }, [token]);

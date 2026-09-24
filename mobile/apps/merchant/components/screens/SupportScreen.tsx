@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { apiFetch } from '../../lib/api';
+import { useRealtimeEvent } from '../../lib/realtime';
 import { COLORS, ErrorBox, Loading, ScreenHeader, ui } from '../ui';
 
 interface Ticket {
@@ -132,7 +133,23 @@ function Conversation({ token, ticket, onBack }: { token: string; ticket: Ticket
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList<TicketMessage>>(null);
-  const closed = ticket.status === 'CLOSED';
+  const [status, setStatus] = useState(ticket.status);
+  const closed = status === 'CLOSED';
+
+  const addMessage = (message: TicketMessage) => {
+    setMessages((list) => (list.some((m) => m.id === message.id) ? list : [...list, message]));
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+  };
+
+  // Les réponses du support arrivent sans rafraîchir.
+  useRealtimeEvent('ticket-message', (e: { ticketId: string; message: TicketMessage; status?: string }) => {
+    if (e.ticketId !== ticket.id) return;
+    addMessage(e.message);
+    if (e.status) setStatus(e.status);
+  });
+  useRealtimeEvent('ticket-maj', (e: { ticketId: string; status: string }) => {
+    if (e.ticketId === ticket.id) setStatus(e.status);
+  });
 
   const load = useCallback(async () => {
     try {
@@ -148,6 +165,7 @@ function Conversation({ token, ticket, onBack }: { token: string; ticket: Ticket
   useEffect(() => {
     load();
   }, [load]);
+  useRealtimeEvent('reconnecte', load);
 
   const send = async () => {
     if (!text.trim()) return;
@@ -157,9 +175,8 @@ function Conversation({ token, ticket, onBack }: { token: string; ticket: Ticket
         method: 'POST',
         body: { body: text.trim() },
       });
-      setMessages((m) => [...m, res.data]);
+      addMessage(res.data);
       setText('');
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
     } catch (e: any) {
       Alert.alert('Erreur', e.message || 'Envoi impossible');
     } finally {
@@ -167,11 +184,11 @@ function Conversation({ token, ticket, onBack }: { token: string; ticket: Ticket
     }
   };
 
-  const status = STATUS[ticket.status] || { label: ticket.status, color: '#999' };
+  const statusInfo = STATUS[status] || { label: status, color: '#999' };
 
   return (
     <View style={{ flex: 1 }}>
-      <ScreenHeader title={ticket.title} subtitle={status.label} onBack={onBack} />
+      <ScreenHeader title={ticket.title} subtitle={statusInfo.label} onBack={onBack} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {loading ? (
           <Loading />
@@ -245,6 +262,11 @@ export default function SupportScreen({ token, orgId, onBack }: { token: string;
   useEffect(() => {
     load();
   }, [load]);
+
+  // Nouveaux tickets, réponses et changements de statut : la liste suit.
+  useRealtimeEvent('ticket-maj', load);
+  useRealtimeEvent('ticket-message', load);
+  useRealtimeEvent('reconnecte', load);
 
   if (view === 'new') {
     return <NewTicket token={token} orgId={orgId} onCancel={() => setView('list')} onDone={() => { setView('list'); load(); }} />;

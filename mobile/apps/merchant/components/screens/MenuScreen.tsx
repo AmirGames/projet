@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, RefreshControl, SectionList, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
+import { useRealtimeEvent } from '../../lib/realtime';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
 
 interface Product {
@@ -37,6 +38,13 @@ export default function MenuScreen({ token, storeId, onBack }: { token: string; 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Un produit passé épuisé depuis un autre appareil se met à jour ici.
+  useRealtimeEvent('produit-disponibilite', (e: { productId: string; storeId: string; isAvailable: boolean }) => {
+    if (e.storeId !== storeId) return;
+    setProducts((list) => list.map((p) => (p.id === e.productId ? { ...p, isAvailable: e.isAvailable } : p)));
+  });
+  useRealtimeEvent('reconnecte', load);
 
   const toggleAvailability = async (product: Product) => {
     const next = !product.isAvailable;

@@ -6,6 +6,7 @@ import { API_URL, apiFetch, formatEuros, setUnauthorizedHandler } from '../lib/a
 import { clearSession, DEFAULT_PREFS, loadPrefs, loadSession, Prefs, savePrefs, saveSession, Session } from '../lib/session';
 import { isPending, isToday, Order, statusColor, statusLabel } from '../lib/orders';
 import { NewOrderEvent, useOrderAlerts } from '../lib/useOrderAlerts';
+import { useRealtimeEvent } from '../lib/realtime';
 import { onOrderNotificationTap, PushOrderData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
 import StatsScreen from '../components/screens/StatsScreen';
 import MenuScreen from '../components/screens/MenuScreen';
@@ -198,15 +199,39 @@ export default function MerchantApp() {
 
   const pendingCount = orders.filter(isPending).length;
 
+  // Un même changement arrive souvent par plusieurs événements : un seul
+  // rechargement suffit.
+  const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleReload = () => {
+    if (reloadTimer.current) clearTimeout(reloadTimer.current);
+    reloadTimer.current = setTimeout(() => loadOrders(token, storeIdRef.current), 300);
+  };
+
+  useRealtimeEvent('boutique-statut', (e: { storeId: string; isOpen: boolean }) =>
+    setStores((list) => list.map((st) => (st.id === e.storeId ? { ...st, isOpen: e.isOpen } : st)))
+  );
+
+  useRealtimeEvent('compte-statut', (e: { status: string; reason?: string | null }) => {
+    if (e.status === 'ACTIVE') {
+      Alert.alert('Compte réactivé', 'Votre compte commerçant est de nouveau actif.');
+    } else {
+      Alert.alert(
+        e.status === 'SUSPENDED' ? 'Compte suspendu' : 'Compte modifié',
+        e.reason || 'Le statut de votre compte a changé. Contactez le support pour plus d’informations.'
+      );
+    }
+  });
+
   const { connected, ring } = useOrderAlerts({
     token,
+    storeId,
     soundEnabled: prefs.soundEnabled,
     pendingCount,
     onNewOrder: (event) => {
       setBanner(event);
-      if (event.storeId === storeIdRef.current) loadOrders(token, event.storeId);
+      if (event.storeId === storeIdRef.current) scheduleReload();
     },
-    onOrdersChanged: () => loadOrders(token, storeIdRef.current),
+    onOrdersChanged: scheduleReload,
     onNotification: () => {
       loadUnread(token);
       setNotifRefreshKey((k) => k + 1);

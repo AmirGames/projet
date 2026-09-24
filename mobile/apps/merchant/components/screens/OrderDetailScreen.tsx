@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
+import { useRealtimeEvent } from '../../lib/realtime';
 import { Card, COLORS, Row, ScreenHeader, ui } from '../ui';
 import { PREPARATION_CHOICES } from './SettingsScreen';
 import { Order, statusColor, statusLabel } from '../../lib/orders';
@@ -54,6 +55,19 @@ export default function OrderDetailScreen({
 
   const status = (order.status || '').toUpperCase();
   const base = `/api/order-management/${storeId}/${order.id}`;
+
+  // La commande a pu avancer ailleurs : autre téléphone, site web, livreur.
+  const refresh = async () => {
+    try {
+      const fresh = await apiFetch<Order>(base, token);
+      setOrder((o) => ({ ...o, ...fresh, items: fresh.items?.length ? fresh.items : o.items }));
+    } catch {
+      // On garde l'affichage actuel.
+    }
+  };
+  useRealtimeEvent('commande-maj', (e: { orderId: string }) => e.orderId === order.id && refresh());
+  useRealtimeEvent('commande-traitee', (e: { orderId: string }) => e.orderId === order.id && refresh());
+  useRealtimeEvent('reconnecte', refresh);
 
   const run = async (request: () => Promise<{ order?: Partial<Order> }>, success: string) => {
     setBusy(true);

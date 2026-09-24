@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { apiFetch } from '../../lib/api';
+import { useRealtimeEvent } from '../../lib/realtime';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
 
 interface Review {
@@ -76,6 +77,8 @@ export default function ReviewsScreen({ token, storeId, onBack }: { token: strin
   useEffect(() => {
     load();
   }, [load]);
+
+  useRealtimeEvent('avis-nouveau', (e: { storeId: string }) => e.storeId === storeId && load());
 
   const loadMore = async () => {
     if (loadingMore || reviews.length >= total) return;
