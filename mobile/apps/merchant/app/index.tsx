@@ -18,6 +18,7 @@ import DashboardScreen from '../components/screens/DashboardScreen';
 import ReviewsScreen from '../components/screens/ReviewsScreen';
 import NotificationsScreen from '../components/screens/NotificationsScreen';
 import SupportScreen from '../components/screens/SupportScreen';
+import PromotionsScreen from '../components/screens/PromotionsScreen';
 
 interface StoreSummary {
   id: string;
@@ -30,6 +31,7 @@ const DRAWER_ITEMS = [
   { tab: 'stats', label: '📊 Statistiques' },
   { tab: 'menu', label: '🍕 Menu' },
   { tab: 'boutique', label: '🏪 Boutique' },
+  { tab: 'promotions', label: '🏷️ Promotions' },
   { tab: 'reviews', label: '⭐ Avis clients' },
   { tab: 'notifications', label: '🔔 Notifications' },
   { tab: 'support', label: '💬 Support' },
@@ -432,7 +434,7 @@ export default function MerchantApp() {
   );
 
   const renderTabContent = () => {
-    if (!storeId && ['stats', 'menu', 'boutique', 'reviews'].includes(tab)) {
+    if (!storeId && ['stats', 'menu', 'boutique', 'reviews', 'promotions'].includes(tab)) {
       return (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>Aucune boutique associée à ce compte</Text>
@@ -456,6 +458,7 @@ export default function MerchantApp() {
         />
       );
     }
+    if (tab === 'promotions') return <PromotionsScreen key={storeId} token={token} storeId={storeId} onBack={back} />;
     if (tab === 'reviews') return <ReviewsScreen key={storeId} token={token} storeId={storeId} onBack={back} />;
     if (tab === 'notifications') {
       return (

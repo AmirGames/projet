@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, RefreshControl, SectionList, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, RefreshControl, SectionList, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { useRealtimeEvent } from '../../lib/realtime';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import ProductEditor, { Category } from '../ProductEditor';
 
 interface Product {
   id: string;
@@ -21,12 +22,18 @@ export default function MenuScreen({ token, storeId, onBack }: { token: string; 
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [pending, setPending] = useState<Record<string, boolean>>({});
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [editing, setEditing] = useState<Product | null>(null);
 
   const load = useCallback(async () => {
     setError('');
     try {
-      const data = await apiFetch<{ products: Product[] }>(`/api/products/store/${storeId}?limit=500`, token);
+      const [data, cats] = await Promise.all([
+        apiFetch<{ products: Product[] }>(`/api/products/store/${storeId}?limit=500`, token),
+        apiFetch<{ categories: Category[] }>(`/api/categories/store/${storeId}`, token).catch(() => ({ categories: [] })),
+      ]);
       setProducts(data.products || []);
+      setCategories(cats.categories || []);
     } catch (e: any) {
       setError(e.message || 'Impossible de charger le menu');
     } finally {
@@ -45,6 +52,10 @@ export default function MenuScreen({ token, storeId, onBack }: { token: string; 
     setProducts((list) => list.map((p) => (p.id === e.productId ? { ...p, isAvailable: e.isAvailable } : p)));
   });
   useRealtimeEvent('reconnecte', load);
+  // Produit ou catégorie modifié ailleurs (autre téléphone, site web).
+  useRealtimeEvent('donnees-modifiees', (e: { ressource: string; storeId?: string }) => {
+    if ((e.ressource === 'products' || e.ressource === 'categories') && (!e.storeId || e.storeId === storeId)) load();
+  });
 
   const toggleAvailability = async (product: Product) => {
     const next = !product.isAvailable;
@@ -113,7 +124,7 @@ export default function MenuScreen({ token, storeId, onBack }: { token: string; 
           renderSectionHeader={({ section }) => <Text style={styles.sectionTitle}>{section.title}</Text>}
           renderItem={({ item }) => (
             <View style={[styles.item, !item.isAvailable && styles.itemOff]}>
-              <View style={{ flex: 1, marginRight: 12 }}>
+              <TouchableOpacity style={{ flex: 1, marginRight: 12 }} onPress={() => setEditing(item)}>
                 <Text style={[styles.name, !item.isAvailable && styles.nameOff]}>{item.name}</Text>
                 {item.description ? (
                   <Text style={styles.desc} numberOfLines={1}>{item.description}</Text>
@@ -121,9 +132,10 @@ export default function MenuScreen({ token, storeId, onBack }: { token: string; 
                 <Text style={styles.price}>
                   {formatEuros(item.price)}
                   {!item.isAvailable ? '  ·  Épuisé' : ''}
-                  {item.status && item.status !== 'PUBLISHED' ? '  ·  Non publié' : ''}
+                  {item.status && item.status !== 'ACTIVE' ? '  ·  Brouillon' : ''}
                 </Text>
-              </View>
+                <Text style={styles.edit}>Modifier ›</Text>
+              </TouchableOpacity>
               <Switch
                 value={item.isAvailable}
                 onValueChange={() => toggleAvailability(item)}
@@ -136,6 +148,19 @@ export default function MenuScreen({ token, storeId, onBack }: { token: string; 
           ListEmptyComponent={
             <Text style={styles.empty}>{search ? 'Aucun produit trouvé' : 'Aucun produit dans le menu'}</Text>
           }
+        />
+      )}
+
+      {editing && (
+        <ProductEditor
+          product={editing}
+          categories={categories}
+          token={token}
+          onClose={() => setEditing(null)}
+          onSaved={(saved) => {
+            setProducts((list) => list.map((p) => (p.id === saved.id ? { ...p, ...saved } : p)));
+            setEditing(null);
+          }}
         />
       )}
     </View>
@@ -174,5 +199,6 @@ const styles = StyleSheet.create({
   nameOff: { textDecorationLine: 'line-through' },
   desc: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
   price: { fontSize: 13, color: COLORS.primary, fontWeight: '600', marginTop: 4 },
+  edit: { fontSize: 12, color: COLORS.primary, marginTop: 4, fontWeight: '600' },
   empty: { textAlign: 'center', color: COLORS.muted, marginTop: 40 },
 });
