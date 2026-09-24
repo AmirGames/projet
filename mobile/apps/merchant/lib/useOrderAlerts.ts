@@ -27,18 +27,20 @@ export function useOrderAlerts({
   pendingCount,
   onNewOrder,
   onOrdersChanged,
+  onNotification,
 }: {
   token: string;
   soundEnabled: boolean;
   pendingCount: number;
   onNewOrder: (event: NewOrderEvent) => void;
   onOrdersChanged: () => void;
+  onNotification?: () => void;
 }) {
   const player = useAudioPlayer(require('../assets/sounds/new_order.wav'));
   const [connected, setConnected] = useState(false);
 
-  const callbacks = useRef({ onNewOrder, onOrdersChanged, soundEnabled });
-  callbacks.current = { onNewOrder, onOrdersChanged, soundEnabled };
+  const callbacks = useRef({ onNewOrder, onOrdersChanged, onNotification, soundEnabled });
+  callbacks.current = { onNewOrder, onOrdersChanged, onNotification, soundEnabled };
 
   useEffect(() => {
     setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
@@ -77,6 +79,7 @@ export function useOrderAlerts({
       callbacks.current.onNewOrder(event);
     });
     socket.on('commande-traitee', () => callbacks.current.onOrdersChanged());
+    socket.on('notification', () => callbacks.current.onNotification?.());
 
     return () => {
       socket.removeAllListeners();

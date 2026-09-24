@@ -13,6 +13,9 @@ import StoreScreen from '../components/screens/StoreScreen';
 import SettingsScreen from '../components/screens/SettingsScreen';
 import AccountScreen from '../components/screens/AccountScreen';
 import OrderDetailScreen from '../components/screens/OrderDetailScreen';
+import ReviewsScreen from '../components/screens/ReviewsScreen';
+import NotificationsScreen from '../components/screens/NotificationsScreen';
+import SupportScreen from '../components/screens/SupportScreen';
 
 interface StoreSummary {
   id: string;
@@ -25,6 +28,9 @@ const DRAWER_ITEMS = [
   { tab: 'stats', label: '📊 Statistiques' },
   { tab: 'menu', label: '🍕 Menu' },
   { tab: 'boutique', label: '🏪 Boutique' },
+  { tab: 'reviews', label: '⭐ Avis clients' },
+  { tab: 'notifications', label: '🔔 Notifications' },
+  { tab: 'support', label: '💬 Support' },
   { tab: 'settings', label: '⚙️ Paramètres' },
   { tab: 'account', label: '👤 Mon Compte' },
 ];
@@ -47,6 +53,8 @@ export default function MerchantApp() {
   const [banner, setBanner] = useState<NewOrderEvent | null>(null);
   const [pushSetup, setPushSetup] = useState<PushSetup | null>(null);
   const [pendingOpen, setPendingOpen] = useState<PushOrderData | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifRefreshKey, setNotifRefreshKey] = useState(0);
 
   const token = session?.accessToken || '';
   const currentStore = stores.find((s) => s.id === storeId);
@@ -113,6 +121,7 @@ export default function MerchantApp() {
     setStores([]);
     setStorePickerOpen(false);
     setBanner(null);
+    setUnreadCount(0);
   }, []);
 
   // Démarrage : on reprend la session enregistrée et on renouvelle le jeton.
@@ -173,6 +182,19 @@ export default function MerchantApp() {
   // Toucher une notification ouvre la commande, dans la bonne boutique.
   useEffect(() => onOrderNotificationTap(setPendingOpen), []);
 
+  const loadUnread = useCallback(async (accessToken: string) => {
+    try {
+      const res = await apiFetch<{ unreadCount: number }>('/api/notifications?limit=1', accessToken);
+      setUnreadCount(res.unreadCount || 0);
+    } catch {
+      // Le compteur reste tel quel : il sera recalculé à la prochaine notification.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (token) loadUnread(token);
+  }, [token, loadUnread]);
+
   const pendingCount = orders.filter(isPending).length;
 
   const { connected, ring } = useOrderAlerts({
@@ -184,6 +206,10 @@ export default function MerchantApp() {
       if (event.storeId === storeIdRef.current) loadOrders(token, event.storeId);
     },
     onOrdersChanged: () => loadOrders(token, storeIdRef.current),
+    onNotification: () => {
+      loadUnread(token);
+      setNotifRefreshKey((k) => k + 1);
+    },
   });
 
   const switchStore = async (id: string) => {
@@ -368,9 +394,19 @@ export default function MerchantApp() {
     </View>
   );
   const back = () => setTab('dashboard');
+  const bell = (
+    <TouchableOpacity style={styles.bell} onPress={() => setTab('notifications')} hitSlop={8}>
+      <Text style={styles.bellIcon}>🔔</Text>
+      {unreadCount > 0 && (
+        <View style={styles.bellBadge}>
+          <Text style={styles.tabBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
 
   const renderTabContent = () => {
-    if (!storeId && (tab === 'stats' || tab === 'menu' || tab === 'boutique')) {
+    if (!storeId && ['stats', 'menu', 'boutique', 'reviews'].includes(tab)) {
       return (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>Aucune boutique associée à ce compte</Text>
@@ -395,15 +431,29 @@ export default function MerchantApp() {
         />
       );
     }
+    if (tab === 'reviews') return <ReviewsScreen key={storeId} token={token} storeId={storeId} onBack={back} />;
+    if (tab === 'notifications') {
+      return (
+        <NotificationsScreen
+          token={token}
+          refreshKey={notifRefreshKey}
+          onBack={back}
+          onUnreadChange={setUnreadCount}
+          onOpenOrder={(orderId, sId) => setPendingOpen({ orderId, storeId: sId || undefined })}
+        />
+      );
+    }
+    if (tab === 'support' && session) return <SupportScreen token={token} orgId={session.orgId} onBack={back} />;
     if (tab === 'account') return <AccountScreen token={token} onLogout={handleLogout} onBack={back} />;
     if (tab === 'commandes-jour') {
       return (
         <>
           <View style={styles.header}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle}>Commandes du Jour</Text>
               {headerSubtitle}
             </View>
+            {bell}
           </View>
           <FlatList
             data={todayOrders}
@@ -444,10 +494,11 @@ export default function MerchantApp() {
     return (
       <>
         <View style={styles.header}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle}>Tableau de Bord</Text>
             {headerSubtitle}
           </View>
+          {bell}
         </View>
         <ScrollView
           style={styles.dashboardContent}
@@ -546,6 +597,7 @@ export default function MerchantApp() {
               </TouchableOpacity>
             </View>
 
+            <ScrollView>
             {currentStore && (
               <View style={styles.storeBlock}>
                 <Text style={styles.storeBlockLabel}>Boutique</Text>
@@ -578,13 +630,17 @@ export default function MerchantApp() {
                 style={[styles.menuItem, tab === item.tab && styles.menuItemActive]}
                 onPress={() => openFromMenu(item.tab)}
               >
-                <Text style={styles.menuItemText}>{item.label}</Text>
+                <Text style={styles.menuItemText}>
+                  {item.label}
+                  {item.tab === 'notifications' && unreadCount > 0 ? `  (${unreadCount})` : ''}
+                </Text>
               </TouchableOpacity>
             ))}
 
             <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
               <Text style={styles.menuItemLogoutText}>🚪 Déconnexion</Text>
             </TouchableOpacity>
+            </ScrollView>
           </View>
           <TouchableOpacity style={styles.menuBackdrop} onPress={closeMenu} />
         </View>
@@ -620,6 +676,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -12,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#f44336',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  bell: {
+    padding: 6,
+  },
+  bellIcon: {
+    fontSize: 22,
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 0,
+    right: -2,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
