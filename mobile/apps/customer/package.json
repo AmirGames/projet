@@ -2,7 +2,7 @@
   "name": "@zupone/customer",
   "version": "1.0.0",
   "description": "Zupone Customer Mobile App",
-  "main": "node_modules/expo/AppEntry.js",
+  "main": "App.tsx",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
