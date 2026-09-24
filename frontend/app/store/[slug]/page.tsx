@@ -32,6 +32,8 @@ interface Store {
   isOpen?: boolean;
   /** Ce que disent à la fois le planning hebdomadaire et le bouton rapide, croisés. */
   isOpenNow?: boolean;
+  /** Commerce pas encore validé : la vitrine se prévisualise, la commande est refusée. */
+  enAttenteDeValidation?: boolean;
   createdAt: string;
 }
 
@@ -248,7 +250,15 @@ export default function StorefrontPage() {
           // fermée, que le serveur refusait ensuite.
           if (typeof menuData.data?.isOpenNow === 'boolean') {
             setStore((actuelle) =>
-              actuelle ? { ...actuelle, isOpenNow: menuData.data.isOpenNow } : actuelle
+              actuelle
+                ? {
+                    ...actuelle,
+                    isOpenNow: menuData.data.isOpenNow,
+                    isOpen:
+                      typeof menuData.data.isOpen === 'boolean' ? menuData.data.isOpen : actuelle.isOpen,
+                    enAttenteDeValidation: menuData.data.enAttenteDeValidation === true,
+                  }
+                : actuelle
             );
           }
           const menu = (menuData.data?.menu || {}) as Record<string, any[]>;
@@ -693,15 +703,21 @@ export default function StorefrontPage() {
                       role="status"
                       className="rounded-lg border border-amber-700/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-200"
                     >
-                      {store?.isOpen === false
-                        ? 'Momentanément indisponible — commande impossible pour le moment.'
-                        : 'Fermé pour le moment — hors des horaires d\u2019ouverture.'}
+                      {store?.enAttenteDeValidation
+                        ? 'Boutique pas encore ouverte aux commandes.'
+                        : store?.isOpen === false
+                          ? 'Momentanément indisponible — commande impossible pour le moment.'
+                          : 'Fermé pour le moment — vous pouvez commander pour un retrait plus tard.'}
                     </p>
                   )}
 
+                  {/* Hors des horaires, la commande reste possible : le tunnel
+                      propose un créneau de retrait ultérieur et le serveur
+                      l'accepte. Seuls le bouton rapide et un commerce non
+                      validé la bloquent — ce que le serveur refuse aussi. */}
                   <button
                     onClick={() => setShowCheckout(true)}
-                    disabled={store?.isOpenNow === false}
+                    disabled={store?.isOpen === false || store?.enAttenteDeValidation === true}
                     className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Passer la Commande
