@@ -30,9 +30,10 @@ export default function LoginScreen() {
   const [orders, setOrders] = useState([]);
   const [accessToken, setAccessToken] = useState('');
 
-  const fetchOrders = async (token) => {
+  const fetchOrders = async (token, orgId) => {
     try {
-      const response = await fetch(`${API_URL}/api/merchants/orders`, {
+      // Fetch stores for this organization
+      const storesResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -40,9 +41,27 @@ export default function LoginScreen() {
         },
       });
 
-      const data = await response.json();
-      if (response.ok) {
-        setOrders(data);
+      const stores = await storesResponse.json();
+      if (!storesResponse.ok || !Array.isArray(stores) || stores.length === 0) {
+        console.error('Aucune boutique trouvée');
+        return;
+      }
+
+      // Use first store
+      const storeId = stores[0].id;
+
+      // Fetch orders for this store
+      const ordersResponse = await fetch(`${API_URL}/api/orders/${storeId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await ordersResponse.json();
+      if (ordersResponse.ok) {
+        setOrders(data.data || data || []);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des commandes:', error);
@@ -68,7 +87,9 @@ export default function LoginScreen() {
       if (response.ok) {
         setAccessToken(data.accessToken);
         setIsLoggedIn(true);
-        await fetchOrders(data.accessToken);
+        if (data.organization) {
+          await fetchOrders(data.accessToken, data.organization.id);
+        }
       } else {
         Alert.alert('Erreur', data.message || 'Connexion échouée');
       }
