@@ -43,6 +43,29 @@ DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" VERIF_A
 | `DATABASE_URL` | Base visée — **elle sera vidée** | (obligatoire) |
 | `VERIF_AUTORISER_RESET` | `oui` pour lever le garde-fou du nom de base | (absent) |
 
+### Les réglages de l'API pour la suite complète
+
+Trois suites vérifient un comportement que la configuration de test
+(`.env.test`) coupe. Sans ces réglages, elles échouent — une dizaine de
+contrôles — alors que rien n'est cassé :
+
+| Variable | Où | Pourquoi | Suite concernée |
+|---|---|---|---|
+| `LOG_LEVEL=info` | API **et** vérifications | `.env.test` met `error`, ce qui masque les avertissements que la suite relit ; elle lance aussi sa propre API avec l'environnement des vérifications | `verif-journal` |
+| `ENABLE_EMAIL_VERIFICATION=true` | API | `.env.test` coupe le courriel de confirmation envoyé à l'inscription | `verif-compte-email` |
+| `WEBHOOK_RELANCES_MS=300,600,900` et `WEBHOOK_BALAYAGE_MS=200` | API | Les relances réelles s'espacent d'une minute à une demi-heure : la suite ne les verrait jamais | `verif-webhooks` |
+
+```bash
+# L'API
+PORT=3099 LOG_LEVEL=info ENABLE_EMAIL_VERIFICATION=true \
+  WEBHOOK_RELANCES_MS=300,600,900 WEBHOOK_BALAYAGE_MS=200 npm run dev
+
+# Les vérifications
+LOG_LEVEL=info VERIF_API_URL=http://localhost:3099 npm run verif
+```
+
+(`DATABASE_URL` est à ajouter aux deux commandes, comme plus haut.)
+
 ## La base est vidée à chaque script
 
 Tous les scripts partent du même postulat : **le premier compte inscrit devient
