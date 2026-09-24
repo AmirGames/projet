@@ -56,7 +56,7 @@ export default function LoginScreen() {
       console.log('Using storeId:', storeId);
 
       // Fetch orders for this store
-      const ordersResponse = await fetch(`${API_URL}/api/orders/${storeId}`, {
+      const ordersResponse = await fetch(`${API_URL}/api/orders?storeId=${storeId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ export default function LoginScreen() {
       console.log('Orders data:', JSON.stringify(data, null, 2));
 
       if (ordersResponse.ok) {
-        const ordersList = data.data || data || [];
+        const ordersList = data.orders || data.data || data || [];
         console.log('Setting orders:', ordersList.length);
         setOrders(ordersList);
       } else {
