@@ -32,7 +32,6 @@ export default function LoginScreen() {
 
   const fetchOrders = async (token, orgId) => {
     try {
-      console.log('Fetching stores for orgId:', orgId);
       // Fetch stores for this organization
       const storesResponse = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
         method: 'GET',
@@ -42,18 +41,14 @@ export default function LoginScreen() {
         },
       });
 
-      console.log('Stores response status:', storesResponse.status);
       const stores = await storesResponse.json();
-      console.log('Stores data:', JSON.stringify(stores, null, 2));
 
       if (!storesResponse.ok || !Array.isArray(stores) || stores.length === 0) {
-        Alert.alert('Aucune boutique trouvée', 'Créez une boutique pour voir les commandes');
+        console.error('Aucune boutique trouvée');
         return;
       }
 
-      // Use first store
       const storeId = stores[0].id;
-      console.log('Using storeId:', storeId);
 
       // Fetch orders for this store
       const ordersResponse = await fetch(`${API_URL}/api/orders?storeId=${storeId}`, {
@@ -64,20 +59,16 @@ export default function LoginScreen() {
         },
       });
 
-      console.log('Orders response status:', ordersResponse.status);
       const data = await ordersResponse.json();
-      console.log('Orders data:', JSON.stringify(data, null, 2));
 
       if (ordersResponse.ok) {
         const ordersList = data.orders || data.data || data || [];
-        console.log('Setting orders:', ordersList.length);
         setOrders(ordersList);
       } else {
-        Alert.alert('Erreur', 'Impossible de charger les commandes');
+        console.error('Erreur lors du chargement des commandes');
       }
     } catch (error) {
       console.error('Erreur lors du chargement des commandes:', error);
-      Alert.alert('Erreur', error.message || 'Erreur réseau');
     }
   };
 
