@@ -6,18 +6,12 @@ import { ApiError } from "../middleware/errorHandler";
 import { db } from "../services/db";
 import { logger } from "../config/logger";
 import { avisDuClientSurCommande } from "../services/avis-client.service";
+import { ReviewModerationService } from "../services/review-moderation.service";
 
 const router = Router();
 
-const createReviewSchema = z.object({
-  productId: z.string().min(1),
-  customerId: z.string().optional(),
-  rating: z.number().min(1).max(5),
-  comment: z.string().max(1000).optional(),
-});
-
-const updateReviewStatusSchema = z.object({
-  status: z.enum(["PENDING", "APPROVED", "REJECTED"]),
+const signalementSchema = z.object({
+  reason: z.string().trim().min(5, "Expliquez en quelques mots pourquoi vous signalez cet avis").max(1000),
 });
 
 const avisCommandeSchema = z.object({
@@ -86,18 +80,23 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
 
     const existant = await db.review.findFirst({
       where: { customerId: client.id, storeId: commande.storeId, productId },
-      select: { id: true },
+      select: { id: true, status: true },
     });
 
     const cible = body.type === "STORE" ? "le restaurant" : "ce produit";
 
     if (existant) {
-      // Le statut reste celui qu'il était : un avis écarté par la modération
-      // ne redevient pas visible parce que le client l'a retouché.
+      // Le statut reste celui qu'il était : un avis retiré par la plateforme
+      // ne redevient pas visible parce que le client l'a retouché. Sa nouvelle
+      // version repasse devant elle.
       await db.review.update({
         where: { id: existant.id },
-        data: { rating: body.rating, comment: body.comment },
+        data: { rating: body.rating, comment: body.comment, editedAt: new Date() },
       });
+
+      if (existant.status === "REMOVED") {
+        await ReviewModerationService.apresRetoucheDUnAvisRetire(existant.id);
+      }
 
       res.json({ message: `Votre avis sur ${cible} est mis à jour`, type: body.type, misAJour: true });
       return;
@@ -145,12 +144,12 @@ router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next
     const storeId = req.params.storeId as string;
     const skip = req.query.skip ? parseInt(req.query.skip as string) : 0;
     const take = req.query.take ? parseInt(req.query.take as string) : 50;
-    const status = req.query.status as string | undefined;
     const productId = req.query.productId as string | undefined;
+    const filtre = req.query.filtre as "signales" | "retires" | undefined;
 
-    logger.info("Fetching reviews", { storeId, skip, take, status });
+    logger.info("Fetching reviews", { storeId, skip, take, filtre });
 
-    const result = await ReviewService.getReviews(storeId, { skip, take, status, productId });
+    const result = await ReviewService.getReviews(storeId, { skip, take, productId, filtre });
     res.json(result);
   } catch (err) {
     next(err);
@@ -171,51 +170,22 @@ router.get("/:storeId/:reviewId", authMiddleware, async (req: Request, res: Resp
   }
 });
 
-router.post("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+// POST /reviews/:storeId/:reviewId/report - Le commerçant signale un avis.
+// Il ne peut ni le rejeter ni le supprimer : c'est la plateforme qui tranche.
+router.post("/:storeId/:reviewId/report", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const storeId = req.params.storeId as string;
-    const body = createReviewSchema.parse(req.body);
+    const body = signalementSchema.parse(req.body);
 
-    logger.info("Creating review", { storeId });
+    const signalement = await ReviewModerationService.signaler(
+      req.params.storeId as string,
+      req.params.reviewId as string,
+      body.reason,
+      req.userId as string
+    );
 
-    const review = await ReviewService.createReview(storeId, body);
     res.status(201).json({
-      message: "Review created successfully",
-      review,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.patch("/:storeId/:reviewId/status", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const storeId = req.params.storeId as string;
-    const reviewId = req.params.reviewId as string;
-    const body = updateReviewStatusSchema.parse(req.body);
-
-    logger.info("Updating review status", { storeId, reviewId });
-
-    const review = await ReviewService.updateReviewStatus(storeId, reviewId, body.status);
-    res.json({
-      message: "Review status updated successfully",
-      review,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.delete("/:storeId/:reviewId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const storeId = req.params.storeId as string;
-    const reviewId = req.params.reviewId as string;
-
-    logger.info("Deleting review", { storeId, reviewId });
-
-    await ReviewService.deleteReview(storeId, reviewId);
-    res.json({
-      message: "Review deleted successfully",
+      message: "Avis signalé : la plateforme va l'examiner",
+      signalement: { id: signalement.id, signaleLe: signalement.createdAt },
     });
   } catch (err) {
     next(err);

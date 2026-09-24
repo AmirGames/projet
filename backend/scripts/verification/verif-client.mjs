@@ -133,7 +133,7 @@ const relanceAvant = (await j(await get('/api/client/me/orders', cToken)))?.data
 check('historique : pas de relance sur un avis récent', relanceAvant === false, JSON.stringify(relanceAvant));
 
 // L'avis date de vingt jours, la commande d'hier : on relance.
-await sqlExec(`UPDATE "Review" SET "updatedAt" = NOW() - INTERVAL '20 days' WHERE "productId" IS NULL AND "storeId" = '${storeId}'`);
+await sqlExec(`UPDATE "Review" SET "editedAt" = NOW() - INTERVAL '20 days' WHERE "productId" IS NULL AND "storeId" = '${storeId}'`);
 await sqlExec(`UPDATE "Order" SET "createdAt" = NOW() - INTERVAL '1 day' WHERE id = '${orderId}'`);
 const relanceApres = (await j(await get('/api/client/me/orders', cToken)))?.data?.[0]?.avisARedemander;
 check('historique : relance quand l avis a plus de quinze jours', relanceApres === true, JSON.stringify(relanceApres));

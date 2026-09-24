@@ -64,7 +64,8 @@
       "securityAudit": "Security",
       "auditLogs": "Audit Log",
       "accessLogs": "Access Log",
-      "driverSupport": "Driver chat"
+      "driverSupport": "Driver chat",
+      "reviews": "Reported reviews"
     }
   },
   "superownerDashboard": {
@@ -1245,7 +1246,8 @@
     "address": "Address",
     "startSearching": "Start looking for restaurants →",
     "previousReview": "You gave {note}★ in {date}. Still agree?",
-    "reviewWanted": "⭐ Your review"
+    "reviewWanted": "⭐ Your review",
+    "previousRemoved": "This review was removed by the platform. If you edit it, the platform will review it again."
   },
   "clientOrderDetail": {
     "statusPending": "Pending",
@@ -1398,28 +1400,35 @@
   },
   "merchantReviews": {
     "title": "Reviews and Ratings",
-    "subtitle": "Manage and moderate customer reviews",
+    "subtitle": "Your customers' reviews",
     "loading": "Loading reviews...",
     "total": "Total",
-    "pending": "Pending",
-    "approved": "Approved",
-    "rejected": "Rejected",
     "allReviews": "All reviews",
     "noReviews": "No reviews found",
     "product": "Product",
     "rating": "Rating",
     "by": "By",
-    "approved_status": "✓ Approved",
-    "rejected_status": "✕ Rejected",
-    "pending_status": "⧖ Pending",
-    "approve": "Approve",
-    "delete": "Delete",
     "pagination": "Page {page} of {total}",
     "previous": "Previous",
     "next": "Next",
     "backToDashboard": "← Back to dashboard",
-    "description": "Manage and moderate customer reviews",
-    "storeReview": "Review of the shop"
+    "description": "Your customers' reviews. Report a review you find abusive: the platform decides whether to keep or remove it.",
+    "storeReview": "Review of the shop",
+    "moderationNotice": "You cannot delete a review. Report it with a reason: the platform will look into it and decide whether to keep or remove it. It stays published in the meantime.",
+    "reportedCount": "Reported, pending",
+    "removedCount": "Removed by the platform",
+    "filterReported": "Reported",
+    "filterRemoved": "Removed",
+    "publishedStatus": "✓ Published",
+    "reportedStatus": "⧖ Reported — awaiting the platform",
+    "keptStatus": "✓ Kept by the platform",
+    "removedStatus": "✕ Removed by the platform",
+    "platformNote": "Platform note:",
+    "report": "Report",
+    "reportPlaceholder": "Why do you find this review abusive? (insults, customer never ordered…)",
+    "sendReport": "Send to the platform",
+    "cancel": "Cancel",
+    "reportError": "The report could not be sent"
   },
   "clientRestaurant": {
     "notFound": "This restaurant could not be found",
@@ -1920,5 +1929,29 @@
     "gpsLost": "GPS lost",
     "loadError": "Could not load.",
     "sendError": "The message was not sent."
+  },
+  "superownerReviews": {
+    "title": "Reported reviews",
+    "description": "Merchants report, the platform decides: keep or remove the review.",
+    "tabPending": "To review",
+    "tabDecided": "Decided",
+    "loading": "Loading...",
+    "loadError": "Could not load reports",
+    "decisionError": "The decision could not be saved",
+    "emptyPending": "No reviews to look at",
+    "emptyDecided": "No decisions yet",
+    "storeReview": "Review of the store",
+    "noComment": "No comment",
+    "by": "By {name} ({email})",
+    "reportedBy": "Reported by {who} on {date}",
+    "reportedAuto": "Back on {date}: the customer edited a removed review",
+    "decidedBy": "Decided by {who} on {date}",
+    "notePlaceholder": "Note for the merchant (optional)",
+    "keep": "Keep the review",
+    "remove": "Remove the review",
+    "republish": "Republish",
+    "keepRemoved": "Keep removed",
+    "kept": "Kept",
+    "removed": "Removed"
   }
 }

@@ -60,6 +60,8 @@ interface AvisDonne {
   rating: number;
   comment: string | null;
   donneLe: string;
+  /** Retiré par la plateforme : il n'est plus publié. */
+  retire: boolean;
 }
 
 interface AvisDejaDonnes {
@@ -301,9 +303,12 @@ export default function ReviewPage() {
       ...(date.getFullYear() !== new Date().getFullYear() && { year: 'numeric' }),
     });
     return (
-      <p className="text-orange-300 text-sm mb-3">
-        {t('previousReview', { note: avis.rating, date: dateAvis })}
-      </p>
+      <div className="mb-3">
+        <p className="text-orange-300 text-sm">
+          {t('previousReview', { note: avis.rating, date: dateAvis })}
+        </p>
+        {avis.retire && <p className="text-gray-400 text-xs mt-1">{t('previousRemoved')}</p>}
+      </div>
     );
   };
 

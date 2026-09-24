@@ -1405,7 +1405,13 @@ model Review {
   comment     String?
   helpfulCount Int    @default(0)
 
-  status      String  @default("PENDING") // PENDING, APPROVED, REJECTED
+  // APPROVED : publié. REMOVED : retiré par la plateforme. Le commerçant ne
+  // décide pas du sort d'un avis : il le signale (ReviewReport).
+  status      String  @default("PENDING")
+  // La dernière fois que le client l'a écrit ou retouché. updatedAt bouge
+  // aussi à chaque décision de modération, qui ne change rien à son contenu.
+  editedAt    DateTime @default(now())
+  reports     ReviewReport[]
 
   // Relations
   store       Store   @relation("ReviewToStore", fields: [storeId], references: [id], onDelete: Cascade)
@@ -1419,6 +1425,32 @@ model Review {
   @@index([productId])
   @@index([status])
   @@index([createdAt])
+}
+
+/// Un signalement d'avis, et la décision de la plateforme.
+///
+/// Le commerçant signale, la plateforme tranche : conserver l'avis ou le
+/// retirer. Un avis retiré que le client retouche revient ici aussi, sans
+/// auteur, pour que la plateforme décide de le republier ou non.
+model ReviewReport {
+  id           String   @id @default(cuid())
+  reviewId     String
+  review       Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  reason       String
+  /// Le compte qui a signalé ; absent quand le signalement est automatique.
+  reportedById String?
+  createdAt    DateTime @default(now())
+
+  /// KEPT : l'avis reste publié. REMOVED : il est retiré. Absente tant que la
+  /// plateforme n'a pas tranché.
+  decision     String?
+  decisionNote String?
+  decidedById  String?
+  decidedAt    DateTime?
+
+  @@index([reviewId])
+  @@index([decision])
 }
 
 // ============================================================================

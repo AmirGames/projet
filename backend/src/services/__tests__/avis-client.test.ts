@@ -15,17 +15,17 @@ describe("avisARedemander", () => {
   });
 
   it("ne relance pas un avis récent", () => {
-    const avis = { updatedAt: ilYa(DELAI_RELANCE_JOURS - 1) };
+    const avis = { editedAt: ilYa(DELAI_RELANCE_JOURS - 1) };
     expect(avisARedemander({ status: "COMPLETED", createdAt: ilYa(0) }, avis, maintenant)).toBe(false);
   });
 
   it("relance un avis de plus de quinze jours sur une commande plus récente", () => {
-    const avis = { updatedAt: ilYa(DELAI_RELANCE_JOURS + 1) };
+    const avis = { editedAt: ilYa(DELAI_RELANCE_JOURS + 1) };
     expect(avisARedemander({ status: "COMPLETED", createdAt: ilYa(1) }, avis, maintenant)).toBe(true);
   });
 
   it("ne relance pas sur une commande antérieure à l'avis", () => {
-    const avis = { updatedAt: ilYa(30) };
+    const avis = { editedAt: ilYa(30) };
     expect(avisARedemander({ status: "COMPLETED", createdAt: ilYa(40) }, avis, maintenant)).toBe(false);
   });
 });

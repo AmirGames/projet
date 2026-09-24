@@ -64,7 +64,8 @@
       "securityAudit": "Sécurité",
       "auditLogs": "Journal",
       "accessLogs": "Connexions",
-      "driverSupport": "Chat livreurs"
+      "driverSupport": "Chat livreurs",
+      "reviews": "Avis signalés"
     }
   },
   "superownerDashboard": {
@@ -1245,7 +1246,8 @@
     "address": "Adresse",
     "startSearching": "Commencer à chercher des restaurants →",
     "previousReview": "Vous aviez mis {note}★ en {date}. Toujours d'accord ?",
-    "reviewWanted": "⭐ Votre avis"
+    "reviewWanted": "⭐ Votre avis",
+    "previousRemoved": "Cet avis a été retiré par la plateforme. Si vous le modifiez, elle l'examinera à nouveau."
   },
   "clientOrderDetail": {
     "statusPending": "En attente",
@@ -1398,28 +1400,35 @@
   },
   "merchantReviews": {
     "title": "Avis et Évaluations",
-    "subtitle": "Gérez et modérez les avis clients",
+    "subtitle": "Les avis de vos clients",
     "loading": "Chargement des avis...",
     "total": "Total",
-    "pending": "En Attente",
-    "approved": "Approuvés",
-    "rejected": "Rejetés",
     "allReviews": "Tous les avis",
     "noReviews": "Aucun avis trouvé",
     "product": "Produit",
     "rating": "Évaluation",
     "by": "Par",
-    "approved_status": "✓ Approuvé",
-    "rejected_status": "✕ Rejeté",
-    "pending_status": "⧖ En Attente",
-    "approve": "Approuver",
-    "delete": "Supprimer",
     "pagination": "Page {page} sur {total}",
     "previous": "Précédent",
     "next": "Suivant",
     "backToDashboard": "← Retour au tableau de bord",
-    "description": "Gérez et modérez les avis clients",
-    "storeReview": "Avis sur le commerce"
+    "description": "Les avis de vos clients. Un avis qui vous semble abusif se signale : la plateforme décide de le conserver ou de le retirer.",
+    "storeReview": "Avis sur le commerce",
+    "moderationNotice": "Vous ne pouvez pas supprimer un avis. Signalez-le avec un motif : la plateforme l'examine et décide de le conserver ou de le retirer. Il reste publié en attendant.",
+    "reportedCount": "Signalés, en attente",
+    "removedCount": "Retirés par la plateforme",
+    "filterReported": "Signalés",
+    "filterRemoved": "Retirés",
+    "publishedStatus": "✓ Publié",
+    "reportedStatus": "⧖ Signalé — en attente de la plateforme",
+    "keptStatus": "✓ Conservé par la plateforme",
+    "removedStatus": "✕ Retiré par la plateforme",
+    "platformNote": "Note de la plateforme :",
+    "report": "Signaler",
+    "reportPlaceholder": "Pourquoi cet avis vous semble-t-il abusif ? (propos injurieux, client qui n'a jamais commandé…)",
+    "sendReport": "Envoyer à la plateforme",
+    "cancel": "Annuler",
+    "reportError": "Le signalement n'a pas pu être envoyé"
   },
   "clientRestaurant": {
     "notFound": "Ce commerce est introuvable",
@@ -1920,5 +1929,29 @@
     "gpsLost": "GPS perdu",
     "loadError": "Chargement impossible.",
     "sendError": "Le message n'est pas parti."
+  },
+  "superownerReviews": {
+    "title": "Avis signalés",
+    "description": "Les commerçants signalent, la plateforme tranche : conserver ou retirer l'avis.",
+    "tabPending": "À examiner",
+    "tabDecided": "Traités",
+    "loading": "Chargement...",
+    "loadError": "Impossible de charger les signalements",
+    "decisionError": "La décision n'a pas pu être enregistrée",
+    "emptyPending": "Aucun avis à examiner",
+    "emptyDecided": "Aucune décision pour le moment",
+    "storeReview": "Avis sur le commerce",
+    "noComment": "Sans commentaire",
+    "by": "Par {name} ({email})",
+    "reportedBy": "Signalé par {who} le {date}",
+    "reportedAuto": "Revenu le {date} : le client a modifié un avis retiré",
+    "decidedBy": "Tranché par {who} le {date}",
+    "notePlaceholder": "Note pour le commerçant (facultative)",
+    "keep": "Conserver l'avis",
+    "remove": "Retirer l'avis",
+    "republish": "Republier",
+    "keepRemoved": "Laisser retiré",
+    "kept": "Conservé",
+    "removed": "Retiré"
   }
 }

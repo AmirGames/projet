@@ -17,35 +17,37 @@ export interface AvisDonne {
   rating: number;
   comment: string | null;
   donneLe: Date;
+  /** Retiré par la plateforme : il n'est plus publié. */
+  retire: boolean;
 }
 
 /** Faut-il inviter le client à (re)donner son avis sur cette commande ? */
 export function avisARedemander(
   commande: { status: string; createdAt: Date },
-  avisRestaurant: { updatedAt: Date } | null | undefined,
+  avisRestaurant: { editedAt: Date } | null | undefined,
   maintenant = new Date()
 ): boolean {
   if (commande.status !== "COMPLETED") return false;
   if (!avisRestaurant) return true;
 
   const avisAncien =
-    maintenant.getTime() - avisRestaurant.updatedAt.getTime() > DELAI_RELANCE_JOURS * JOUR_MS;
+    maintenant.getTime() - avisRestaurant.editedAt.getTime() > DELAI_RELANCE_JOURS * JOUR_MS;
   // Une commande antérieure à l'avis a déjà été prise en compte par celui-ci.
-  const commandeApresAvis = commande.createdAt.getTime() > avisRestaurant.updatedAt.getTime();
+  const commandeApresAvis = commande.createdAt.getTime() > avisRestaurant.editedAt.getTime();
 
   return avisAncien && commandeApresAvis;
 }
 
 /** Les avis restaurant d'un client, par commerce. */
 export async function avisRestaurantParCommerce(customerId: string, storeIds: string[]) {
-  if (storeIds.length === 0) return new Map<string, { updatedAt: Date }>();
+  if (storeIds.length === 0) return new Map<string, { editedAt: Date }>();
 
   const avis = await db.review.findMany({
     where: { customerId, storeId: { in: storeIds }, productId: null },
-    select: { storeId: true, updatedAt: true },
+    select: { storeId: true, editedAt: true },
   });
 
-  return new Map(avis.map((a) => [a.storeId, { updatedAt: a.updatedAt }]));
+  return new Map(avis.map((a) => [a.storeId, { editedAt: a.editedAt }]));
 }
 
 /** Ce que le client a déjà dit du restaurant et des plats d'une commande. */
@@ -59,13 +61,14 @@ export async function avisDuClientSurCommande(
       storeId: commande.storeId,
       OR: [{ productId: null }, { productId: { in: commande.productIds } }],
     },
-    select: { productId: true, rating: true, comment: true, updatedAt: true },
+    select: { productId: true, rating: true, comment: true, editedAt: true, status: true },
   });
 
   const versAvis = (a: (typeof avis)[number]): AvisDonne => ({
     rating: a.rating,
     comment: a.comment,
-    donneLe: a.updatedAt,
+    donneLe: a.editedAt,
+    retire: a.status === "REMOVED",
   });
 
   const restaurant = avis.find((a) => a.productId === null) ?? null;

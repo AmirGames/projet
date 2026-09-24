@@ -120,7 +120,7 @@ const TENTATIVES = [
 
   // Le chemin, quand l'identifiant n'est pas en première position
   ['lire les avis de l’autre par le chemin', () => get(`/api/reviews/${alice.storeId}`, bob.jeton)],
-  ['modérer un avis de l’autre', () => patch(`/api/reviews/${alice.storeId}/x/status`, { status: 'APPROVED' }, bob.jeton)],
+  ['signaler un avis de l’autre', () => post(`/api/reviews/${alice.storeId}/x/report`, { reason: 'Intrusion dans la boutique voisine' }, bob.jeton)],
   ['lire les factures de l’autre', () => get(`/api/invoices/${alice.storeId}`, bob.jeton)],
   ['lire le chiffre d’affaires de l’autre', () => get(`/api/invoices/${alice.storeId}/stats/revenue`, bob.jeton)],
   ['lire les commandes de l’autre par le chemin', () => get(`/api/order-management/${alice.storeId}`, bob.jeton)],

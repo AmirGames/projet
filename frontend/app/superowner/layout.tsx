@@ -10,6 +10,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import {
+  Flag,
   Home,
   Building2,
   CreditCard,
@@ -115,6 +116,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       items: [
         { label: t('nav.supportTickets'), icon: LifeBuoy, href: '/superowner/support-tickets' },
         { label: t('nav.driverSupport'), icon: MessageCircle, href: '/superowner/driver-support' },
+        { label: t('nav.reviews'), icon: Flag, href: '/superowner/reviews' },
         { label: t('nav.notifications'), icon: Megaphone, href: '/superowner/notifications' },
         { label: t('nav.userManagement'), icon: Users, href: '/superowner/user-management' },
       ],
