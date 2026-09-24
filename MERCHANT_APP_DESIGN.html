@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zupone Merchant App - Design</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f0f0; padding: 20px; }
+    
+    .container { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; }
+    .phone-frame { width: 375px; height: 812px; background: #fff; border-radius: 40px; border: 12px solid #000; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
+    .screen { flex: 1; display: none; flex-direction: column; }
+    .screen.active { display: flex; }
+    .status-bar { height: 44px; background: #007AFF; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; color: white; font-size: 12px; }
+    .content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    
+    /* Login Screen */
+    .login-container { flex: 1; justify-content: center; padding: 40px 20px; background: linear-gradient(135deg, #007AFF 0%, #0055CC 100%); display: flex; flex-direction: column; }
+    .logo { font-size: 40px; font-weight: bold; color: white; text-align: center; margin-bottom: 10px; }
+    .subtitle { font-size: 18px; color: rgba(255,255,255,0.9); text-align: center; margin-bottom: 50px; }
+    .input-group { margin-bottom: 15px; }
+    .input-group input { width: 100%; padding: 12px 15px; border-radius: 10px; border: none; font-size: 16px; }
+    .btn { width: 100%; padding: 14px; border-radius: 10px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+    .btn-primary { background: #0055CC; color: white; }
+    .btn-primary:hover { background: #004399; }
+    
+    /* Header */
+    .header { background: #007AFF; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .header-title { font-size: 24px; font-weight: bold; }
+    .header-email { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+    .btn-logout { background: rgba(255,255,255,0.2); color: white; padding: 8px 16px; border-radius: 6px; border: none; font-size: 14px; cursor: pointer; }
+    
+    /* Orders List */
+    .orders-list { padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+    .order-card { background: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .order-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-2px); }
+    .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .order-number { font-size: 16px; font-weight: bold; color: #333; }
+    .status-badge { padding: 6px 12px; border-radius: 15px; font-size: 11px; font-weight: 600; color: white; }
+    .status-pending { background: #FFA500; }
+    .status-accepted { background: #4CAF50; }
+    .status-completed { background: #4CAF50; }
+    .order-customer { font-size: 14px; color: #666; margin-bottom: 8px; }
+    .order-total { font-size: 16px; font-weight: 600; color: #007AFF; }
+    
+    /* Order Detail */
+    .detail-header { padding: 20px; background: white; border-bottom: 1px solid #eee; }
+    .detail-order-number { font-size: 28px; font-weight: bold; color: #333; margin-bottom: 10px; }
+    .detail-status { padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; color: white; font-size: 12px; }
+    .detail-content { padding: 20px; }
+    .detail-section { margin-bottom: 25px; }
+    .section-title { font-size: 12px; font-weight: 600; color: #999; text-transform: uppercase; margin-bottom: 12px; }
+    .detail-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .detail-label { color: #666; font-size: 14px; }
+    .detail-value { font-weight: 600; color: #333; }
+    
+    /* Items */
+    .item-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+    .item-name { flex: 1; }
+    .item-qty { color: #666; margin: 0 10px; }
+    .item-price { font-weight: 600; }
+    
+    /* Action Buttons */
+    .actions { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+    .action-group { display: flex; gap: 10px; }
+    .btn-action { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; font-size: 14px; }
+    .btn-accept { background: #4CAF50; color: white; }
+    .btn-reject { background: #f44336; color: white; }
+    .btn-ready { background: #2196F3; color: white; }
+    .btn-details { background: #007AFF; color: white; width: 100%; }
+    
+    /* Back Button */
+    .btn-back { background: none; border: none; color: #007AFF; font-weight: 600; cursor: pointer; font-size: 16px; padding: 10px 0; }
+    
+    /* Navigation */
+    .nav-buttons { padding: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .nav-btn { padding: 10px 20px; background: #007AFF; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    
+    /* Screen Nav */
+    .screen-nav { padding: 10px; background: #f5f5f5; display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
+    .screen-nav button { padding: 6px 12px; background: white; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .screen-nav button.active { background: #007AFF; color: white; border-color: #007AFF; }
+    
+    /* Empty State */
+    .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #999; text-align: center; padding: 20px; }
+    
+    /* Timeline */
+    .timeline { position: relative; padding: 20px 0; }
+    .timeline-item { display: flex; gap: 15px; margin-bottom: 20px; }
+    .timeline-dot { width: 12px; height: 12px; background: #007AFF; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+    .timeline-content { flex: 1; }
+    .timeline-time { font-size: 12px; color: #999; }
+    .timeline-text { font-size: 14px; color: #333; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Login Screen -->
+  <div class="phone-frame">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>🔋</span>
+    </div>
+    
+    <div class="screen active" id="login">
+      <div class="login-container">
+        <div class="logo">Zupone</div>
+        <div class="subtitle">Commerçant</div>
+        <div class="input-group">
+          <input type="email" placeholder="Email" value="commercant@test.com">
+        </div>
+        <div class="input-group">
+          <input type="password" placeholder="Mot de passe" value="••••••••">
+        </div>
+        <button class="btn btn-primary" onclick="navigate('orders')">Se connecter</button>
+      </div>
+    </div>
+
+    <!-- Orders List Screen -->
+    <div class="screen" id="orders">
+      <div class="header">
+        <div>
+          <div class="header-title">Commandes</div>
+          <div class="header-email">commercant@test.com</div>
+        </div>
+        <button class="btn-logout" onclick="navigate('login')">Quitter</button>
+      </div>
+      <div class="content">
+        <div class="orders-list">
+          <div class="order-card" onclick="navigate('detail')">
+            <div class="order-header">
+              <div class="order-number">#8MY2R</div>
+              <div class="status-badge status-pending">En attente</div>
+            </div>
+            <div class="order-customer">client</div>
+            <div class="order-total">30.00 €</div>
+          </div>
+          
+          <div class="order-card" onclick="navigate('detail')">
+            <div class="order-header">
+              <div class="order-number">#SZ401</div>
+              <div class="status-badge status-completed">Livrée</div>
+            </div>
+            <div class="order-customer">client</div>
+            <div class="order-total">15.00 €</div>
+          </div>
+          
+          <div class="order-card" onclick="navigate('detail')">
+            <div class="order-header">
+              <div class="order-number">#1GTL8</div>
+              <div class="status-badge status-completed">Livrée</div>
+            </div>
+            <div class="order-customer">client</div>
+            <div class="order-total">30.00 €</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Detail Screen -->
+    <div class="screen" id="detail">
+      <div class="header">
+        <button class="btn-back" onclick="navigate('orders')">← Retour</button>
+      </div>
+      <div class="content" style="overflow-y: auto;">
+        <div class="detail-header">
+          <div class="detail-order-number">#8MY2R</div>
+          <div class="detail-status status-pending">EN ATTENTE</div>
+        </div>
+
+        <div class="detail-content">
+          <div class="detail-section">
+            <div class="section-title">Client</div>
+            <div class="detail-row">
+              <span class="detail-label">Nom</span>
+              <span class="detail-value">client</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Email</span>
+              <span class="detail-value">client@test.com</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Téléphone</span>
+              <span class="detail-value">+32789456123</span>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="section-title">Articles</div>
+            <div class="item-row">
+              <div class="item-name">4 Fromages</div>
+              <div class="item-qty">x2</div>
+              <div class="item-price">30.00 €</div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="section-title">Livraison</div>
+            <div class="detail-row">
+              <span class="detail-label">Type</span>
+              <span class="detail-value">Livraison</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Adresse</span>
+              <span class="detail-value">75 Chaussée de Waterloo</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Ville</span>
+              <span class="detail-value">Namur (5000)</span>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="section-title">Total</div>
+            <div class="detail-row">
+              <span class="detail-label">Sous-total</span>
+              <span class="detail-value">30.00 €</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">TVA</span>
+              <span class="detail-value">1.70 €</span>
+            </div>
+            <div class="detail-row" style="border-top: 1px solid #ddd; padding-top: 10px; margin-top: 10px;">
+              <span class="detail-label" style="font-weight: bold;">Total</span>
+              <span class="detail-value" style="color: #007AFF; font-size: 18px;">30.00 €</span>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="section-title">Historique</div>
+            <div class="timeline">
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <div class="timeline-time">23 sept 20:33</div>
+                  <div class="timeline-text">Commande créée</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="action-group">
+          <button class="btn-action btn-accept" onclick="alert('Accepté avec préparation')">Accepter</button>
+          <button class="btn-action btn-reject" onclick="alert('Refuser avec motif')">Refuser</button>
+        </div>
+        <button class="btn-action btn-ready" onclick="alert('Marqué comme prêt')">Marquer prêt</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen-nav">
+  <button class="nav-btn active" onclick="navigate('login')">Login</button>
+  <button class="nav-btn" onclick="navigate('orders')">Orders List</button>
+  <button class="nav-btn" onclick="navigate('detail')">Order Detail</button>
+</div>
+
+<script>
+function navigate(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screen).classList.add('active');
+  
+  document.querySelectorAll('.screen-nav button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>
