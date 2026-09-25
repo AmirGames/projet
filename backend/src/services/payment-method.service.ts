@@ -1,6 +1,8 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
+
+const { Decimal } = Prisma;
 
 export interface PaymentMethodData {
   type: string;
