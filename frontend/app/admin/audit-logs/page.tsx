@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { History } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -31,11 +31,7 @@ export default function AuditLogsPage() {
   const [total, setTotal] = useState(0);
   const limit = 50;
 
-  useEffect(() => {
-    fetchLogs();
-  }, [limit, offset]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const query = new URLSearchParams({
@@ -59,7 +55,11 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [offset]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [limit, offset, fetchLogs]);
 
   const getActionColor = (action: string) => {
     const colors: { [key: string]: string } = {
