@@ -3,7 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Search, MapPin, Star, Clock, TrendingUp, Heart } from 'lucide-react';
+import { MapPin, Star, Clock, TrendingUp, Heart, ChevronDown, Navigation } from 'lucide-react';
+
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import {
+  enregistrerAdresseLivraison,
+  lireAdresseLivraison,
+  type AdresseLivraison,
+} from '@/lib/adresseLivraison';
 
 import { euro } from '@/lib/format';
 
@@ -38,19 +45,11 @@ export default function ClientHomePage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [filteredStores, setFilteredStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState({ lat: null as number | null, lng: null as number | null });
-  const [address, setAddress] = useState('');
-  const [useGPS, setUseGPS] = useState(false);
+  // L'adresse retenue, et le texte en cours de saisie quand on la change.
+  const [adresse, setAdresse] = useState<AdresseLivraison | null>(null);
+  const [saisie, setSaisie] = useState('');
+  const [edition, setEdition] = useState(false);
   const [sortBy, setSortBy] = useState('rating');
-
-  useEffect(() => {
-    loadStores();
-  }, []);
-
-  useEffect(() => {
-    filterAndSortStores();
-  }, [stores, searchQuery, sortBy]);
 
   const loadStores = useCallback(async () => {
     try {
@@ -84,6 +83,35 @@ export default function ClientHomePage() {
     }
   }, []);
 
+  /** Les restaurants proches de l'adresse, ou tous faute de coordonnées. */
+  const chargerPour = useCallback(
+    (choisie: AdresseLivraison | null) => {
+      if (choisie?.latitude != null && choisie?.longitude != null) {
+        loadNearbyStores(choisie.latitude, choisie.longitude);
+      } else {
+        loadStores();
+      }
+    },
+    [loadNearbyStores, loadStores]
+  );
+
+  // L'adresse enregistrée lors d'une visite précédente sert d'emblée ; sans
+  // elle, on ouvre directement la saisie.
+  useEffect(() => {
+    const enregistree = lireAdresseLivraison();
+    setAdresse(enregistree);
+    setEdition(!enregistree);
+    chargerPour(enregistree);
+  }, [chargerPour]);
+
+  const retenir = (choisie: AdresseLivraison) => {
+    enregistrerAdresseLivraison(choisie);
+    setAdresse(choisie);
+    setSaisie('');
+    setEdition(false);
+    chargerPour(choisie);
+  };
+
   const getLocationByGPS = useCallback(() => {
     if (!navigator.geolocation) {
       alert(t('geolocationNotSupported'));
@@ -93,38 +121,37 @@ export default function ClientHomePage() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        setLocation({ lat: latitude, lng: longitude });
-        setUseGPS(true);
-        loadNearbyStores(latitude, longitude);
+        retenir({
+          label: t('currentPosition'),
+          street: '',
+          city: '',
+          postalCode: '',
+          latitude,
+          longitude,
+        });
       },
       (error) => {
         console.error('GPS error:', error);
         alert(t('cantAccessLocation'));
       }
     );
-  }, [loadNearbyStores, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t, chargerPour]);
 
-  const filterAndSortStores = () => {
-    let filtered = stores;
+  useEffect(() => {
+    // Copie : trier `stores` en place modifiait l'état sans que React le sache.
+    const filtered = [...stores];
 
-    if (searchQuery) {
-      filtered = filtered.filter(store =>
-        store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        store.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Sort
     if (sortBy === 'rating') {
       filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    } else if (sortBy === 'distance' && location.lat) {
-      filtered.sort((a, b) => (a.distance || 999) - (b.distance || 999));
+    } else if (sortBy === 'distance') {
+      filtered.sort((a, b) => (a.distance ?? 999) - (b.distance ?? 999));
     } else if (sortBy === 'delivery') {
       filtered.sort((a, b) => (a.deliveryCost || 0) - (b.deliveryCost || 0));
     }
 
     setFilteredStores(filtered);
-  };
+  }, [stores, sortBy]);
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -134,56 +161,73 @@ export default function ClientHomePage() {
           <h1 className="text-4xl font-bold mb-4">{t('title')}</h1>
           <p className="text-xl mb-8 text-orange-100">{t('subtitle')}</p>
 
-          {/* Search & Location */}
-          <div className="space-y-4 mb-6">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-4 top-3 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder={t('searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none"
-              />
-            </div>
-
-            {/* Location Options */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="relative">
-                <MapPin className="absolute left-4 top-3 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder={t('locationPlaceholder')}
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none"
-                />
+          {/* Adresse de livraison — une fois retenue, elle se résume à une
+              pastille qu'on touche pour la changer. */}
+          <div className="flex flex-col md:flex-row md:items-start gap-3 mb-6">
+            {edition ? (
+              <div className="flex-1 flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <MapPin className="absolute left-4 top-3 z-10 text-gray-400 pointer-events-none" size={20} />
+                  <AddressAutocomplete
+                    value={saisie}
+                    onChange={setSaisie}
+                    onSelect={(choisie) =>
+                      retenir({
+                        label: [choisie.street, choisie.city].filter(Boolean).join(', ') || choisie.label,
+                        street: choisie.street,
+                        city: choisie.city,
+                        postalCode: choisie.postalCode,
+                        latitude: choisie.latitude,
+                        longitude: choisie.longitude,
+                      })
+                    }
+                    placeholder={t('locationPlaceholder')}
+                    className="w-full pl-12 pr-4 py-3 rounded-lg text-gray-900 focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={getLocationByGPS}
+                  className="bg-white text-red-600 font-semibold py-3 px-6 rounded-lg hover:bg-orange-50 flex items-center justify-center gap-2"
+                >
+                  <Navigation size={18} />
+                  {t('myLocation')}
+                </button>
+                {adresse && (
+                  <button
+                    onClick={() => {
+                      setSaisie('');
+                      setEdition(false);
+                    }}
+                    className="py-3 px-4 rounded-lg text-white/90 hover:bg-white/10"
+                  >
+                    {t('cancel')}
+                  </button>
+                )}
               </div>
-              <button
-                onClick={getLocationByGPS}
-                className="bg-white text-red-600 font-semibold py-3 px-6 rounded-lg hover:bg-orange-50 flex items-center justify-center gap-2"
-              >
-                <MapPin size={18} />
-                {t('myLocation')}
-              </button>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-3 rounded-lg text-gray-900 bg-white focus:outline-none"
-              >
-                <option value="rating">{t('sortByRating')}</option>
-                <option value="distance">{t('sortByDistance')}</option>
-                <option value="delivery">{t('sortByDelivery')}</option>
-              </select>
-            </div>
-
-            {/* GPS Status */}
-            {useGPS && location.lat && (
-              <p className="text-sm text-orange-100">
-                ✓ Localisation: {location.lat.toFixed(4)}, {location.lng?.toFixed(4)}
-              </p>
+            ) : (
+              adresse && (
+                <button
+                  onClick={() => setEdition(true)}
+                  title={t('changeAddress')}
+                  className="flex-1 md:flex-none flex items-center gap-2 bg-white text-gray-900 py-3 px-4 rounded-full hover:bg-orange-50 max-w-full"
+                >
+                  <MapPin size={18} className="text-red-600 flex-shrink-0" />
+                  <span className="text-gray-500 flex-shrink-0">{t('deliverTo')}</span>
+                  <span className="font-semibold truncate">{adresse.label}</span>
+                  <ChevronDown size={18} className="flex-shrink-0" />
+                </button>
+              )
             )}
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="md:ml-auto h-12 px-4 rounded-lg text-gray-900 bg-white focus:outline-none"
+            >
+              <option value="rating">{t('sortByRating')}</option>
+              <option value="distance">{t('sortByDistance')}</option>
+              <option value="delivery">{t('sortByDelivery')}</option>
+            </select>
           </div>
         </div>
       </section>
@@ -198,13 +242,13 @@ export default function ClientHomePage() {
           <div className="text-center py-20">
             <TrendingUp size={48} className="mx-auto text-gray-600 mb-4" />
             <p className="text-white text-lg">{t('noRestaurantsFound')}</p>
-            <p className="text-gray-400">{t('tryAnotherSearch')}</p>
+            <p className="text-gray-400">{t('tryAnotherAddress')}</p>
           </div>
         ) : (
           <>
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-white mb-4">
-                {searchQuery ? t('searchResults') : t('nearbyRestaurants')} ({filteredStores.length})
+                {adresse?.latitude != null ? t('nearbyRestaurants') : t('allRestaurants')} ({filteredStores.length})
               </h2>
 
               {/* Restaurants Grid */}

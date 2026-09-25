@@ -1191,7 +1191,13 @@
     "seeMenu": "Voir le menu →",
     "locationGeolocation": "✓ Localisation:",
     "geolocationNotSupported": "Géolocalisation non supportée",
-    "cantAccessLocation": "Impossible d'accéder à votre localisation"
+    "cantAccessLocation": "Impossible d'accéder à votre localisation",
+    "deliverTo": "Livrer à",
+    "changeAddress": "Changer d'adresse",
+    "currentPosition": "Ma position actuelle",
+    "cancel": "Annuler",
+    "allRestaurants": "Tous les restaurants",
+    "tryAnotherAddress": "Aucun restaurant ne livre encore ici. Essayez une autre adresse."
   },
   "clientOrders": {
     "title": "Mes Commandes",

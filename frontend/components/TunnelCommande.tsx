@@ -19,6 +19,7 @@ import { AlertCircle } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { lireAdresseLivraison } from '@/lib/adresseLivraison';
 import { totalDuPanier, type LignePanier } from '@/lib/paniers';
 import { useAuth } from '@/lib/auth-context';
 import { StripePayment } from '@/components/stripe-payment';
@@ -131,6 +132,25 @@ export function TunnelCommande({
     }
   }, [livraisonFermee]);
 
+  // L'adresse retenue sur l'accueil pré-remplit la livraison.
+  useEffect(() => {
+    const retenue = lireAdresseLivraison();
+    if (!retenue?.street) return;
+
+    setCheckoutForm((formulaire) =>
+      formulaire.deliveryAddress
+        ? formulaire
+        : {
+            ...formulaire,
+            deliveryAddress: retenue.street,
+            deliveryCity: retenue.city,
+            deliveryPostal: retenue.postalCode,
+            deliveryLat: retenue.latitude ?? undefined,
+            deliveryLng: retenue.longitude ?? undefined,
+          }
+    );
+  }, []);
+
   // Charger les informations du profil utilisateur si connecté.
   useEffect(() => {
     if (!user) return;
@@ -153,9 +173,12 @@ export function TunnelCommande({
           customerName: profil.name || formulaire.customerName,
           customerEmail: profil.email || formulaire.customerEmail,
           customerPhone: profil.phone || formulaire.customerPhone,
-          deliveryAddress: profil.address || formulaire.deliveryAddress,
-          deliveryCity: profil.city || formulaire.deliveryCity,
-          deliveryPostal: profil.postalCode || formulaire.deliveryPostal,
+          // L'adresse choisie sur l'accueil prime sur celle du profil.
+          deliveryAddress: formulaire.deliveryAddress || profil.address || '',
+          deliveryCity: formulaire.deliveryAddress ? formulaire.deliveryCity : profil.city || formulaire.deliveryCity,
+          deliveryPostal: formulaire.deliveryAddress
+            ? formulaire.deliveryPostal
+            : profil.postalCode || formulaire.deliveryPostal,
         }));
       })
       .catch(() => undefined);
