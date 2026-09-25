@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useTypesDeCommerce } from '@/lib/types-commerce';
 import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -400,11 +401,17 @@ export default function MerchantRegisterPage() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Adresse *
                   </label>
-                  <input
-                    type="text"
-                    name="address"
+                  <AddressAutocomplete
                     value={formData.address}
-                    onChange={handleChange}
+                    onChange={(valeur) => setFormData((prev) => ({ ...prev, address: valeur }))}
+                    onSelect={(adresse) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        address: adresse.street,
+                        city: adresse.city || prev.city,
+                        postalCode: adresse.postalCode || prev.postalCode,
+                      }))
+                    }
                     className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
                       errors.address ? 'border-red-500' : 'border-gray-600'
                     }`}

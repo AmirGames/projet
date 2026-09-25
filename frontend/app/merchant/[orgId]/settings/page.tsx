@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle, ImagePlus, Trash2 } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
 
@@ -528,10 +529,17 @@ export default function StoreSettings() {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Adresse</label>
-                  <input
-                    type="text"
+                  <AddressAutocomplete
                     value={formData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    onChange={(valeur) => handleInputChange('address', valeur)}
+                    onSelect={(adresse) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        address: adresse.street,
+                        city: adresse.city || prev.city,
+                        postalCode: adresse.postalCode || prev.postalCode,
+                      }))
+                    }
                     className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
                     placeholder="Votre adresse"
                   />

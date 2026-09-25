@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import Link from 'next/link';
 
 import { useTranslations } from 'next-intl';
@@ -280,11 +281,17 @@ export default function MerchantOnboardPage() {
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Adresse *
                 </label>
-                <input
-                  type="text"
-                  name="address"
+                <AddressAutocomplete
                   value={formData.address}
-                  onChange={handleChange}
+                  onChange={(valeur) => setFormData((prev) => ({ ...prev, address: valeur }))}
+                  onSelect={(adresse) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      address: adresse.street,
+                      city: adresse.city || prev.city,
+                      postalCode: adresse.postalCode || prev.postalCode,
+                    }))
+                  }
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                 />
                 {errors.address && <p className="text-red-400 text-sm mt-1">{errors.address}</p>}

@@ -248,6 +248,65 @@ function dansLePerimetre(entite: any): boolean {
   return pays.includes(code);
 }
 
+/** Longueur du code postal de chaque pays du périmètre. */
+const CHIFFRES_CODE_POSTAL: Record<string, number> = { fr: 5, mc: 5, be: 4, lu: 4, ch: 4 };
+
+/** Pays cités en toutes lettres, dans les langues qu'on croise. */
+const NOMS_DE_PAYS: Array<[RegExp, string]> = [
+  [/\b(belgique|belgium|belgi[eë]|belgien)\b/i, "be"],
+  [/\b(suisse|schweiz|switzerland|svizzera)\b/i, "ch"],
+  [/\bfrance\b/i, "fr"],
+];
+
+const MOIS =
+  /(janvier|f[ée]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[ée]cembre)\s*$/i;
+
+/**
+ * Le pays que l'adresse elle-même trahit, sans rien demander à personne.
+ *
+ * Un nom de pays écrit en toutes lettres d'abord ; sinon la forme du code
+ * postal : cinq chiffres pour la France, quatre pour la Belgique. Une année
+ * (« rue du 8 Mai 1945 ») n'est pas un code postal. Dans le doute — quatre
+ * chiffres avec la Belgique *et* la Suisse au périmètre — on ne dit rien.
+ */
+export function paysDuTexte(texte: string): string | undefined {
+  const autorises = paysAutorises();
+  const permis = (code: string) => autorises.length === 0 || autorises.includes(code);
+
+  for (const [motif, code] of NOMS_DE_PAYS) {
+    if (motif.test(texte) && permis(code)) return code;
+  }
+
+  const candidats = autorises.length > 0 ? autorises : Object.keys(CHIFFRES_CODE_POSTAL);
+
+  for (const nombre of texte.matchAll(/\b\d{4,5}\b/g)) {
+    if (MOIS.test(texte.slice(0, nombre.index))) continue;
+
+    const pays = candidats.filter((code) => CHIFFRES_CODE_POSTAL[code] === nombre[0].length);
+    if (pays.length === 1) return pays[0];
+  }
+
+  return undefined;
+}
+
+/**
+ * L'indice du navigateur, complété par ce que dit le texte. Le texte l'emporte :
+ * un client en Belgique qui tape « 59000 Lille » cherche bien Lille.
+ */
+export function completerIndice(texte: string, indice: Indice = {}): Indice {
+  const pays = paysDuTexte(texte);
+  return pays ? { ...indice, pays } : indice;
+}
+
+/** Distance approchée, en degrés : suffit à dire lequel de deux points est le plus proche. */
+function ecart(a: { latitude: number; longitude: number }, b: Suggestion): number {
+  if (b.latitude === null || b.longitude === null) return Infinity;
+
+  const dLat = a.latitude - b.latitude;
+  const dLon = (a.longitude - b.longitude) * Math.cos((a.latitude * Math.PI) / 180);
+  return dLat * dLat + dLon * dLon;
+}
+
 export class AddressService {
   /**
    * Suggestions pour une saisie.
@@ -518,8 +577,27 @@ export class AddressService {
       return { point: null, disponible: true, adresse: null };
     }
 
-    const { suggestions, available } = await this.rechercher(requete, 1, indice);
-    const premiere = suggestions[0];
+    /**
+     * On ne se contente plus du premier résultat.
+     *
+     * La BAN rend toujours une approximation française, même pour une adresse
+     * belge : prise telle quelle, elle situait un client de Liège à Lille, et
+     * sa commande partait hors zone. Le pays déduit du texte fait remonter les
+     * bonnes adresses ; et quand on connaît un point de repère — la boutique,
+     * pour l'adresse de son client — c'est la plus proche qui l'emporte.
+     */
+    const complete = completerIndice(requete, indice);
+    const { suggestions, available } = await this.rechercher(requete, 5, complete);
+
+    const situees = suggestions.filter((s) => s.latitude !== null && s.longitude !== null);
+    const repere =
+      typeof complete.latitude === "number" && typeof complete.longitude === "number"
+        ? { latitude: complete.latitude, longitude: complete.longitude }
+        : null;
+
+    const premiere = repere
+      ? [...situees].sort((a, b) => ecart(repere, a) - ecart(repere, b))[0] || suggestions[0]
+      : suggestions[0];
 
     if (!premiere || premiere.latitude === null || premiere.longitude === null) {
       return { point: null, disponible: available, adresse: premiere || null };

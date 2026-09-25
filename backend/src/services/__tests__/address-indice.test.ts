@@ -1,6 +1,6 @@
 jest.mock("../../config/logger", () => ({ logger: { warn: jest.fn(), info: jest.fn(), error: jest.fn() } }));
 
-import { AddressService, indiceValide } from "../address.service";
+import { AddressService, indiceValide, paysDuTexte } from "../address.service";
 
 /**
  * Un client belge qui tape son adresse : la BAN rend toujours une approximation
@@ -64,5 +64,26 @@ describe("Recherche d'adresses orientée par le navigateur", () => {
       latitude: 50.64,
       longitude: 4.67,
     });
+  });
+
+  it("déduit le pays du texte de l'adresse", () => {
+    expect(paysDuTexte("Rue de la Station 12, 4000 Liège")).toBe("be");
+    expect(paysDuTexte("12 rue de la paix 75002 Paris")).toBe("fr");
+    expect(paysDuTexte("Chaussée de Louvain, Belgique")).toBe("be");
+    // Une année n'est pas un code postal.
+    expect(paysDuTexte("rue du 8 mai 1945")).toBeUndefined();
+  });
+
+  it("situe une adresse belge écrite à la main en Belgique, pas à Lille", async () => {
+    const { point } = await AddressService.situer("12 rue de la station 4000 Liège");
+    expect(point).toEqual({ latitude: 50.63, longitude: 5.57 });
+  });
+
+  it("retient l'adresse la plus proche de la boutique", async () => {
+    const { point } = await AddressService.situer("12 rue de la station", {
+      latitude: 50.6,
+      longitude: 5.5,
+    });
+    expect(point).toEqual({ latitude: 50.63, longitude: 5.57 });
   });
 });

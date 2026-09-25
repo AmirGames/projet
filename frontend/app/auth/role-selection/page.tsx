@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useTypesDeCommerce } from "@/lib/types-commerce";
 import Link from "next/link";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { useTranslations } from 'next-intl';
 
 interface Roles {
@@ -369,17 +370,21 @@ export default function RoleSelectionPage() {
                   className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
-                <input
-                  type="text"
+                <AddressAutocomplete
                   placeholder="Adresse"
                   value={merchantFormData.address}
-                  onChange={(e) =>
-                    setMerchantFormData({
-                      ...merchantFormData,
-                      address: e.target.value,
-                    })
+                  onChange={(valeur) =>
+                    setMerchantFormData((prev) => ({ ...prev, address: valeur }))
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  onSelect={(adresse) =>
+                    setMerchantFormData((prev) => ({
+                      ...prev,
+                      address: adresse.street,
+                      city: adresse.city || prev.city,
+                      postalCode: adresse.postalCode || prev.postalCode,
+                    }))
+                  }
+                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <input

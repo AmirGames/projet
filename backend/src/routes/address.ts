@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { AddressService, fournisseurActif, indiceValide } from "../services/address.service";
+import { AddressService, completerIndice, fournisseurActif, indiceValide } from "../services/address.service";
 
 const router = Router();
 
@@ -17,11 +17,13 @@ router.get("/search", async (req: Request, res: Response) => {
   const requete = ((req.query.q as string) || "").trim();
   const limite = Math.min(parseInt((req.query.limit as string) || "5") || 5, 10);
 
-  const indice = indiceValide({
+  // Ce que le texte dit du pays (« 4000 Liège ») passe devant la supposition
+  // du navigateur.
+  const indice = completerIndice(requete, indiceValide({
     pays: req.query.country,
     latitude: req.query.lat,
     longitude: req.query.lon,
-  });
+  }));
 
   const resultat = await AddressService.rechercher(requete, limite, indice);
 

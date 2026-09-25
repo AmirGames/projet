@@ -419,7 +419,9 @@ export class DeliveryZoneService {
     let point = adresse;
 
     if (!estUnPoint(point) && (adresse.texte || "").trim().length >= 3) {
-      const situee = await AddressService.situer(adresse.texte as string);
+      // Le client habite près de la boutique : c'est le meilleur repère pour
+      // départager deux rues homonymes, de part et d'autre d'une frontière.
+      const situee = await AddressService.situer(adresse.texte as string, depart);
 
       if (situee.point) {
         point = situee.point;
@@ -547,7 +549,9 @@ export class DeliveryZoneService {
     let point = adresse;
 
     if (!estUnPoint(point) && (adresse.texte || "").trim().length >= 3) {
-      const situee = await AddressService.situer(adresse.texte as string);
+      // Le client habite près de la boutique : c'est le meilleur repère pour
+      // départager deux rues homonymes, de part et d'autre d'une frontière.
+      const situee = await AddressService.situer(adresse.texte as string, depart);
 
       if (situee.point) {
         point = situee.point;
