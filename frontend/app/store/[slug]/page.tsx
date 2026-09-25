@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { ShoppingCart, MapPin, Phone, Clock, Star, Check, X, Bike } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { ShoppingCart, MapPin, Phone, Clock, Star, X, Bike } from 'lucide-react';
 
 import { euro } from '@/lib/format';
-import { TunnelCommande } from '@/components/TunnelCommande';
 import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
 import { lireAdresseLivraison, type AdresseLivraison } from '@/lib/adresseLivraison';
 import { useStoreLive } from '@/lib/use-store-live';
@@ -14,8 +12,6 @@ import { useDonneesModifiees } from '@/lib/temps-reel';
 import {
   enregistrerPanier,
   lirePanier,
-  viderPanier,
-  type LignePanier,
 } from '@/lib/paniers';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -82,14 +78,10 @@ interface Category {
   products: Product[];
 }
 
-interface OrderConfirmation {
-  id: string;
-  orderNumber: string;
-}
-
 export default function StorefrontPage() {
   const params = useParams();
   const slug = params?.slug as string;
+  const router = useRouter();
 
   const [store, setStore] = useState<Store | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -122,7 +114,6 @@ export default function StorefrontPage() {
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('panier') === '1') setShowCart(true);
   }, []);
-  const [showCheckout, setShowCheckout] = useState(false);
   /**
    * La boutique dont le panier a déjà été lu.
    *
@@ -132,7 +123,6 @@ export default function StorefrontPage() {
    * pouvait commander un plat qui venait d'être retiré.
    */
   const panierLu = useRef<string | null>(null);
-  const [orderConfirmation, setOrderConfirmation] = useState<OrderConfirmation | null>(null);
   // L'adresse choisie sur l'accueil (ou ici) et ce qu'il en coûte d'y livrer.
   const [adresse, setAdresse] = useState<AdresseLivraison | null | undefined>(undefined);
   const [livraison, setLivraison] = useState<Livraison | null>(null);
@@ -494,17 +484,6 @@ export default function StorefrontPage() {
   const fraisConnus = livraison?.livrable ? livraison.frais : null;
   const manqueAuMinimum =
     livraison?.livrable && livraison.minimum > cartTotal ? livraison.minimum - cartTotal : 0;
-
-  /** Le panier tel que le tunnel de commande l'attend. */
-  const lignesDuPanier: LignePanier[] = cart.map((item) => ({
-    productId: item.product.id,
-    name: item.product.name,
-    description: item.product.description,
-    price: prixDeLaLigne(item),
-    quantity: item.quantity,
-    isAvailable: item.product.isAvailable,
-    ...(item.variante ? { variantId: item.variante.id, variantNom: item.variante.label } : {}),
-  }));
 
   /**
    * Les seuls cas où le serveur refuse toute commande : bouton rapide sur
@@ -933,10 +912,9 @@ export default function StorefrontPage() {
                       l'accepte. Seuls le bouton rapide et un commerce non
                       validé la bloquent — ce que le serveur refuse aussi. */}
                   <button
-                    onClick={() => {
-                      setShowCart(false);
-                      setShowCheckout(true);
-                    }}
+                    // La commande se passe sur une page à elle, `/checkout` : le
+                    // panier y est déjà, enregistré sous cette boutique.
+                    onClick={() => router.push(`/checkout?boutique=${store!.id}`)}
                     disabled={commandeBloquee}
                     className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -949,88 +927,6 @@ export default function StorefrontPage() {
         )}
       </div>
 
-      {/* Confirmation Modal */}
-      {orderConfirmation && (
-        <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full text-center p-8 space-y-6">
-            <div className="flex justify-center">
-              <div className="w-16 h-16 bg-green-600/20 border border-green-600 rounded-full flex items-center justify-center">
-                <Check size={32} className="text-green-400" />
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Commande envoyée !</h2>
-              <p className="text-gray-400">
-                Le restaurant doit maintenant la confirmer.
-              </p>
-            </div>
-
-            <div className="bg-gray-700 rounded-lg p-4">
-              <p className="text-gray-400 text-sm mb-1">Numéro de commande</p>
-              <p className="text-2xl font-bold text-red-400">#{orderConfirmation.orderNumber}</p>
-            </div>
-
-            <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
-              <p className="text-blue-400 text-sm">
-                Vous recevrez un e-mail dès que le restaurant l&apos;aura acceptée, avec l&apos;heure
-                prévue — ou s&apos;il ne peut pas l&apos;honorer.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Link
-                href={`/track?commande=${orderConfirmation.id}`}
-                className="block w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-colors"
-              >
-                Suivre ma commande
-              </Link>
-              <button
-                onClick={() => setOrderConfirmation(null)}
-                className="w-full py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors"
-              >
-                Retour à la boutique
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Checkout Modal */}
-      {showCheckout && !orderConfirmation && store && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-2xl w-full my-8">
-            <div className="border-b border-gray-700 p-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Informations de Livraison</h2>
-              <button
-                onClick={() => setShowCheckout(false)}
-                className="text-gray-400 hover:text-white text-2xl"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Le même tunnel que la page /checkout : il n'existait qu'ici, si
-                bien que l'autre chemin de commande n'avait pas de champ
-                d'adresse. */}
-            <TunnelCommande
-              boutique={{ id: store.id, name: store.name }}
-              lignes={lignesDuPanier}
-              ouverteMaintenant={store.isOpenNow}
-              surAnnulation={() => setShowCheckout(false)}
-              surCommandePassee={(commande) => {
-                setOrderConfirmation({ id: commande.id, orderNumber: commande.numero });
-
-                // La commande est passée : ce panier-là n'a plus lieu d'être.
-                setCart([]);
-                viderPanier(store.id);
-                setShowCheckout(false);
-                setShowCart(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

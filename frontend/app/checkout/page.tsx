@@ -18,11 +18,10 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check } from 'lucide-react';
 
 import { euro } from '@/lib/format';
-import { TunnelCommande } from '@/components/TunnelCommande';
+import { TunnelCommande, type BoutiqueCommandee } from '@/components/TunnelCommande';
 import { useTranslations } from 'next-intl';
 import {
   autresPaniers,
-  cleDeLigne,
   nombreDArticles,
   totalDuPanier,
   viderPanier,
@@ -36,7 +35,7 @@ export default function CheckoutPage() {
   const t = useTranslations('common');
   const router = useRouter();
 
-  const [boutique, setBoutique] = useState<{ id: string; name: string } | null>(null);
+  const [boutique, setBoutique] = useState<BoutiqueCommandee | null>(null);
   // Hors des horaires, le tunnel ne propose que le retrait sur un créneau.
   const [ouverteMaintenant, setOuverteMaintenant] = useState<boolean | undefined>(undefined);
   // Les autres paniers en attente : c'est au client de dire lequel il commande.
@@ -74,19 +73,28 @@ export default function CheckoutPage() {
     }
 
     setLignes(retenu.lignes);
-    setBoutique({ id: retenu.storeId, name: retenu.storeName });
+    setBoutique({ id: retenu.storeId, name: retenu.storeName, slug: retenu.storeSlug });
     setChargement(false);
 
-    // La route publique donne l'état d'ouverture, et le nom quand celui
-    // enregistré manque (panier composé avant cette version).
+    // La route publique donne l'état d'ouverture, l'adresse et le logo de la
+    // boutique, et le nom quand celui enregistré manque (panier composé avant
+    // cette version).
     fetch(`${API_URL}/api/client/stores/${retenu.storeId}`)
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => {
         if (typeof donnees?.data?.isOpenNow === 'boolean') {
           setOuverteMaintenant(donnees.data.isOpenNow);
         }
-        const nom = donnees?.data?.store?.name || donnees?.data?.name;
-        if (!retenu.storeName && nom) setBoutique({ id: retenu.storeId, name: nom });
+        const lue = donnees?.data;
+        if (!lue) return;
+        setBoutique((actuelle) => ({
+          id: retenu.storeId,
+          name: actuelle?.name || lue.name || '',
+          slug: actuelle?.slug || lue.slug,
+          address: lue.address,
+          city: lue.city,
+          logo: lue.settings?.logo,
+        }));
       })
       .catch(() => undefined);
   }, []);
@@ -121,7 +129,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6">
         {confirmation ? (
           <div className="max-w-md mx-auto bg-gray-800 border border-gray-700 rounded-lg text-center p-8 space-y-6">
             <div className="flex justify-center">
@@ -197,54 +205,16 @@ export default function CheckoutPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg">
-              <h2 className="text-xl font-bold mb-4">Résumé de la commande</h2>
-
-              <div className="space-y-3 mb-6 pb-6 border-b border-gray-700">
-                {lignes.map((ligne) => (
-                  <div
-                    key={cleDeLigne(ligne.productId, ligne.variantId)}
-                    className="flex justify-between gap-4"
-                  >
-                    <span className="min-w-0">
-                      {ligne.name}
-                      {/* Sans le nom de la déclinaison, deux lignes du même plat
-                          seraient indistinguables. */}
-                      {ligne.variantNom && (
-                        <span className="text-gray-400"> — {ligne.variantNom}</span>
-                      )}
-                      <span className="text-gray-400"> × {ligne.quantity}</span>
-                    </span>
-                    <span className="text-green-400 whitespace-nowrap">
-                      {euro(ligne.price * ligne.quantity)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-between text-lg font-bold">
-                <span>Sous-total</span>
-                <span className="text-green-400">{euro(totalDuPanier(lignes))}</span>
-              </div>
-            </div>
-
-            <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg">
-              <h2 className="text-xl font-bold mb-4">Vos informations</h2>
-
-              <TunnelCommande
-                boutique={boutique}
-                lignes={lignes}
-                disposition="page"
-                ouverteMaintenant={ouverteMaintenant}
-                surCommandePassee={(commande) => {
-                  setConfirmation({ id: commande.id, numero: commande.numero });
-                  viderPanier(boutique.id);
-                  setLignes([]);
-                }}
-              />
-            </div>
-          </div>
+          <TunnelCommande
+            boutique={boutique}
+            lignes={lignes}
+            ouverteMaintenant={ouverteMaintenant}
+            surCommandePassee={(commande) => {
+              setConfirmation({ id: commande.id, numero: commande.numero });
+              viderPanier(boutique.id);
+              setLignes([]);
+            }}
+          />
         )}
       </div>
     </div>
