@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ShoppingCart, MapPin, Phone, Clock, Star, Check } from 'lucide-react';
+import { ShoppingCart, MapPin, Phone, Clock, Star, Check, X } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { TunnelCommande } from '@/components/TunnelCommande';
@@ -401,6 +401,19 @@ export default function StorefrontPage() {
   const prixDeLaLigne = (item: { product: Product; variante?: Declinaison }) =>
     Number(item.variante?.prixEffectif ?? item.product.price ?? 0);
 
+  // Échap referme le tiroir du panier.
+  useEffect(() => {
+    if (!showCart) return;
+    const surTouche = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowCart(false);
+    };
+    window.addEventListener('keydown', surTouche);
+    return () => window.removeEventListener('keydown', surTouche);
+  }, [showCart]);
+
+  // Le badge compte les articles, pas les lignes : 1 × 4 Fromages et
+  // 2 × Kebab font 3 articles, pas 2.
+  const nombreArticles = cart.reduce((somme, item) => somme + item.quantity, 0);
   const cartTotal = cart.reduce((sum, item) => sum + prixDeLaLigne(item) * item.quantity, 0);
 
   /** Le panier tel que le tunnel de commande l'attend. */
@@ -458,9 +471,9 @@ export default function StorefrontPage() {
             >
               <ShoppingCart size={20} />
               Panier
-              {cart.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
-                  {cart.length}
+              {nombreArticles > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white min-w-[1.5rem] h-6 px-1 rounded-full flex items-center justify-center text-xs font-bold">
+                  {nombreArticles > 99 ? '99+' : nombreArticles}
                 </span>
               )}
             </button>
@@ -490,9 +503,10 @@ export default function StorefrontPage() {
         </div>
       </header>
 
-      <div className="flex">
-        {/* Main Content */}
-        <main className={`flex-1 transition-all ${showCart ? 'max-w-4xl' : 'w-full'}`}>
+      <div>
+        {/* Main Content — sa largeur ne dépend plus du panier : ouvrir ce
+            dernier décalait toute la page vers la gauche. */}
+        <main className="w-full">
           <div className="max-w-6xl mx-auto p-6 space-y-8">
             {categories.length === 0 ? (
               <div className="text-center py-12">
@@ -659,10 +673,31 @@ export default function StorefrontPage() {
           </div>
         </main>
 
-        {/* Shopping Cart Sidebar */}
+        {/* Shopping Cart Drawer — il glisse par-dessus la page au lieu de
+            la pousser. */}
         {showCart && (
-          <aside className="w-96 bg-gray-800 border-l border-gray-700 p-6 overflow-y-auto max-h-screen">
-            <h2 className="text-2xl font-bold mb-4">Votre Panier</h2>
+          <div
+            className="fixed inset-0 z-40 bg-black/50"
+            onClick={() => setShowCart(false)}
+            aria-hidden="true"
+          />
+        )}
+        {showCart && (
+          <aside
+            role="dialog"
+            aria-label="Votre panier"
+            className="fixed top-0 right-0 z-50 h-full w-full sm:w-96 bg-gray-800 border-l border-gray-700 p-6 overflow-y-auto shadow-2xl"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold">Votre Panier</h2>
+              <button
+                onClick={() => setShowCart(false)}
+                aria-label="Fermer le panier"
+                className="p-1 rounded text-gray-400 hover:text-white hover:bg-gray-700"
+              >
+                <X size={22} />
+              </button>
+            </div>
 
             {/* Un panier laissé chez un autre commerce n'est pas perdu : il
                 attend, et on le lui rappelle plutôt que de le lui resservir
@@ -785,7 +820,10 @@ export default function StorefrontPage() {
                       l'accepte. Seuls le bouton rapide et un commerce non
                       validé la bloquent — ce que le serveur refuse aussi. */}
                   <button
-                    onClick={() => setShowCheckout(true)}
+                    onClick={() => {
+                      setShowCart(false);
+                      setShowCheckout(true);
+                    }}
                     disabled={commandeBloquee}
                     className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
