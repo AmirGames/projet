@@ -26,6 +26,7 @@ interface FavoriteStore {
     totalRatings?: number;
     deliveryCost?: number;
     distance?: number;
+    settings?: { logo?: string | null } | null;
   };
 }
 
@@ -119,13 +120,26 @@ export default function FavoritesPage() {
               const store = favorite.store;
               return (
                 <div key={favorite.id} className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition">
-                  {/* Store Image Placeholder */}
-                  <div className="bg-gradient-to-r from-orange-500 to-red-500 h-40 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-white text-4xl font-bold opacity-50">
-                        {store.name.charAt(0)}
+                  {/* Le logo du commerce, comme sur l'accueil ; à défaut, son initiale. */}
+                  <div
+                    className={`relative h-40 flex items-center justify-center ${
+                      store.settings?.logo ? 'bg-white' : 'bg-gradient-to-r from-orange-500 to-red-500'
+                    }`}
+                  >
+                    {store.settings?.logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={store.settings.logo}
+                        alt={store.name}
+                        className="absolute inset-0 h-full w-full object-contain p-3"
+                      />
+                    ) : (
+                      <div className="text-center">
+                        <div className="text-white text-4xl font-bold opacity-50">
+                          {store.name.charAt(0)}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   <div className="p-4">
