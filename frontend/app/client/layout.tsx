@@ -6,6 +6,7 @@ import { Home, ShoppingCart, Heart, User, Menu, X, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PaniersAccueil } from '@/components/PaniersAccueil';
+import { BandeauCommandeEnCours } from '@/components/BandeauCommandeEnCours';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { useAuth } from '@/lib/auth-context';
 
@@ -142,6 +143,8 @@ export default function ClientLayout({
             </div>
           </div>
         </nav>
+
+        <BandeauCommandeEnCours />
 
         {/* Main Content */}
         <main>{children}</main>
