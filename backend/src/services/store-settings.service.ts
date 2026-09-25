@@ -222,6 +222,21 @@ export class StoreSettingsService {
     }
   }
 
+  /** La boutique retrouve son initiale sur fond coloré. */
+  static async removeLogo(storeId: string) {
+    const store = await db.store.findUnique({ where: { id: storeId } });
+
+    if (!store) {
+      throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");
+    }
+
+    const { logo: _retire, ...settings } = (
+      typeof store.settings === "object" && store.settings ? store.settings : {}
+    ) as Record<string, any>;
+
+    return db.store.update({ where: { id: storeId }, data: { settings } });
+  }
+
   static async uploadBanner(storeId: string, bannerUrl: string) {
     try {
       const store = await db.store.findUnique({

@@ -3,6 +3,9 @@ import { z } from "zod";
 import { emailFacultatif } from "../utils/validation";
 import { StoreSettingsService } from "../services/store-settings.service";
 import { authMiddleware } from "../middleware/auth";
+import { uploadMiddleware } from "../middleware/file-upload";
+import { ApiError } from "../middleware/errorHandler";
+import { FileUploadService } from "../services/file-upload.service";
 import { logger } from "../config/logger";
 
 const router = Router();
@@ -92,6 +95,63 @@ router.post("/:storeId/logo", authMiddleware, async (req: Request, res: Response
       message: "Logo uploaded",
       logo: (store.settings as any)?.logo,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Un logo s'affiche sur chaque carte de la liste : une image, et légère. */
+const LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const LOGO_TAILLE_MAX = 2 * 1024 * 1024;
+
+// POST /store-settings/:storeId/logo/upload - Envoyer le fichier du logo (protected)
+router.post(
+  "/:storeId/logo/upload",
+  authMiddleware,
+  uploadMiddleware.single("file"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const storeId = req.params.storeId as string;
+
+      if (!req.file) {
+        throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
+      }
+      if (!LOGO_TYPES.includes(req.file.mimetype)) {
+        throw new ApiError(400, "Le logo doit être une image JPG, PNG ou WebP", "INVALID_FILE_TYPE");
+      }
+      if (req.file.size > LOGO_TAILLE_MAX) {
+        throw new ApiError(400, "Le logo ne doit pas dépasser 2 Mo", "FILE_TOO_LARGE");
+      }
+
+      logger.info("Uploading store logo file", { storeId, size: req.file.size });
+
+      const { url } = await FileUploadService.uploadPublicImage(
+        req.file.buffer,
+        req.file.originalname || "logo",
+        req.file.mimetype
+      );
+      const store = await StoreSettingsService.uploadLogo(storeId, url);
+
+      res.json({
+        message: "Logo enregistré",
+        logo: (store.settings as any)?.logo,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// DELETE /store-settings/:storeId/logo - Retirer le logo (protected)
+router.delete("/:storeId/logo", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const storeId = req.params.storeId as string;
+
+    logger.info("Removing store logo", { storeId });
+
+    await StoreSettingsService.removeLogo(storeId);
+
+    res.json({ message: "Logo retiré", logo: null });
   } catch (err) {
     next(err);
   }

@@ -38,6 +38,8 @@ interface Store {
   isOpenNow?: boolean;
   /** Commerce pas encore validé : la fiche se lit, aucune commande ne passe. */
   enAttenteDeValidation?: boolean;
+  /** Le logo que le commerçant a déposé depuis ses paramètres. */
+  settings?: { logo?: string | null } | null;
   createdAt: string;
 }
 
@@ -538,14 +540,24 @@ export default function StorefrontPage() {
       <header className="bg-gradient-to-r from-red-600 to-orange-600 py-8 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">{store.name}</h1>
-              {store.genreLibelle && (
-                <span className="inline-block mb-2 rounded-full bg-white/20 px-3 py-0.5 text-sm font-semibold">
-                  {store.genreLibelle}
-                </span>
+            <div className="flex items-center gap-4">
+              {store.settings?.logo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={store.settings.logo}
+                  alt={store.name}
+                  className="h-20 w-20 shrink-0 rounded-xl bg-white object-contain p-1 shadow-lg"
+                />
               )}
-              <p className="text-white/90 max-w-2xl">{store.description}</p>
+              <div>
+                <h1 className="text-4xl font-bold mb-2">{store.name}</h1>
+                {store.genreLibelle && (
+                  <span className="inline-block mb-2 rounded-full bg-white/20 px-3 py-0.5 text-sm font-semibold">
+                    {store.genreLibelle}
+                  </span>
+                )}
+                <p className="text-white/90 max-w-2xl">{store.description}</p>
+              </div>
             </div>
             <button
               onClick={() => setShowCart(!showCart)}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, ImagePlus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
 
@@ -73,6 +73,9 @@ export default function StoreSettings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('general');
+  // Le logo s'enregistre à l'envoi du fichier, sans attendre le bouton du bas.
+  const [logo, setLogo] = useState<string | null>(null);
+  const [logoEnCours, setLogoEnCours] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -162,6 +165,7 @@ export default function StoreSettings() {
 
       const data = await response.json();
       const settings_obj = data.settings || {};
+      setLogo(settings_obj.logo || null);
       setFormData({
         name: data.name || '',
         description: data.description || '',
@@ -195,6 +199,67 @@ export default function StoreSettings() {
       setMessage({ type: 'error', text: t('loadError') });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const envoyerLogo = async (fichier: File) => {
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    if (!token || !storeId) return;
+
+    if (fichier.size > 2 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Le logo ne doit pas dépasser 2 Mo' });
+      return;
+    }
+
+    try {
+      setLogoEnCours(true);
+      const corps = new FormData();
+      corps.append('file', fichier);
+
+      const response = await fetch(`${API_URL}/api/store-settings/${storeId}/logo/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: corps,
+      });
+      const lu = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setMessage({ type: 'error', text: lu?.error || "Le logo n'a pas pu être envoyé" });
+        return;
+      }
+
+      setLogo(lu?.logo || null);
+      setMessage({ type: 'success', text: 'Logo enregistré' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      setMessage({ type: 'error', text: "Le logo n'a pas pu être envoyé" });
+    } finally {
+      setLogoEnCours(false);
+    }
+  };
+
+  const retirerLogo = async () => {
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    if (!token || !storeId) return;
+
+    try {
+      setLogoEnCours(true);
+      const response = await fetch(`${API_URL}/api/store-settings/${storeId}/logo`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        setMessage({ type: 'error', text: "Le logo n'a pas pu être retiré" });
+        return;
+      }
+
+      setLogo(null);
+      setMessage({ type: 'success', text: 'Logo retiré' });
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setLogoEnCours(false);
     }
   };
 
@@ -313,6 +378,67 @@ export default function StoreSettings() {
             {/* General Tab */}
             {activeTab === 'general' && (
               <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Logo de la boutique</label>
+                  <div className="flex items-center gap-4">
+                    {/* Le même fond que la carte vue par les clients : blanc avec
+                        un logo, dégradé avec l'initiale. */}
+                    <div
+                      className={`h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-600 flex items-center justify-center ${
+                        logo ? 'bg-white p-1.5' : 'bg-gradient-to-r from-orange-500 to-red-500'
+                      }`}
+                    >
+                      {logo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={logo} alt="Logo de la boutique" className="h-full w-full object-contain" />
+                      ) : (
+                        <span className="text-2xl font-bold text-white opacity-50">
+                          {formData.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        <label
+                          className={`inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 ${
+                            logoEnCours ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                          }`}
+                        >
+                          <ImagePlus size={16} />
+                          {logo ? 'Changer le logo' : 'Ajouter un logo'}
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="hidden"
+                            disabled={logoEnCours}
+                            onChange={(e) => {
+                              const fichier = e.target.files?.[0];
+                              if (fichier) envoyerLogo(fichier);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                        {logo && (
+                          <button
+                            type="button"
+                            onClick={retirerLogo}
+                            disabled={logoEnCours}
+                            className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50"
+                          >
+                            <Trash2 size={16} />
+                            Retirer
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Idéal : PNG à fond transparent ou blanc, format carré. JPG, PNG ou WebP, 2 Mo maximum.
+                        <br />
+                        Affiché sur fond blanc sur votre carte dans la liste des restaurants.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Nom de la boutique</label>
                   <input
