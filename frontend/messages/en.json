@@ -1197,7 +1197,8 @@
     "deliveryFee": "Delivery fee:",
     "freeDelivery": "Free delivery",
     "minimum": "min.",
-    "notDelivered": "Doesn't deliver to your address — pickup available"
+    "notDelivered": "Doesn't deliver to your address — pickup available",
+    "categories": "Categories"
   },
   "clientOrders": {
     "title": "My Orders",

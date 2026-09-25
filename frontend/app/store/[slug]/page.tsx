@@ -28,6 +28,8 @@ interface Store {
   address?: string | null;
   city?: string | null;
   postalCode?: string | null;
+  /** « Pizzas », « Japonaise : sushis », « Fleuriste »… */
+  genreLibelle?: string | null;
   phone?: string | null;
   email?: string | null;
   /** Fermée momentanément (bouton rapide du commerçant) : la vitrine reste lisible, la commande non. */
@@ -330,6 +332,7 @@ export default function StorefrontPage() {
                     isOpen:
                       typeof menuData.data.isOpen === 'boolean' ? menuData.data.isOpen : actuelle.isOpen,
                     enAttenteDeValidation: menuData.data.enAttenteDeValidation === true,
+                    genreLibelle: menuData.data.genreLibelle ?? actuelle.genreLibelle ?? null,
                   }
                 : actuelle
             );
@@ -537,6 +540,11 @@ export default function StorefrontPage() {
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-4xl font-bold mb-2">{store.name}</h1>
+              {store.genreLibelle && (
+                <span className="inline-block mb-2 rounded-full bg-white/20 px-3 py-0.5 text-sm font-semibold">
+                  {store.genreLibelle}
+                </span>
+              )}
               <p className="text-white/90 max-w-2xl">{store.description}</p>
             </div>
             <button

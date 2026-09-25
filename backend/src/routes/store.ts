@@ -9,6 +9,7 @@ import { PlanService } from "../services/plan.service";
 import {
   TYPES_ETABLISSEMENT,
   TYPES_CUISINE,
+  FAMILLES_AFFICHEES,
   CODES_ETABLISSEMENT,
   CODES_CUISINE,
 } from "../services/store-type.service";
@@ -99,7 +100,7 @@ router.post("/", authMiddleware, checkOrgStatus, async (req: Request, res: Respo
 router.get("/types", (_req: Request, res: Response) => {
   res.json({
     success: true,
-    data: { etablissements: TYPES_ETABLISSEMENT, cuisines: TYPES_CUISINE },
+    data: { etablissements: TYPES_ETABLISSEMENT, cuisines: TYPES_CUISINE, familles: FAMILLES_AFFICHEES },
   });
 });
 

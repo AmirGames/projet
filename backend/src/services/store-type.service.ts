@@ -188,3 +188,173 @@ export function normaliserGenre(
       : null,
   };
 }
+
+/**
+ * Les familles qu'affiche le client, à la manière des grandes plateformes.
+ *
+ * Quatre-vingt-dix-sept cuisines, c'est juste pour le commerçant qui se
+ * décrit, bien trop pour un client qui cherche « une pizza » : il faudrait
+ * faire défiler une rangée sans fin. On les regroupe donc en familles, chacune
+ * avec son pictogramme. Les commerces qui ne font pas de restauration ont la
+ * leur, d'après leur type d'établissement.
+ *
+ * Chaque cuisine appartient à une famille et une seule : un test le vérifie,
+ * pour qu'une cuisine ajoutée à la liste ne passe pas à la trappe.
+ */
+export const FAMILLES = [
+  { code: "pizza", libelle: "Pizzas", emoji: "🍕", cuisines: ["pizza", "italian"] },
+  { code: "burgers", libelle: "Burgers", emoji: "🍔", cuisines: ["burgers", "american"] },
+  { code: "kebab", libelle: "Kebab", emoji: "🌯", cuisines: ["kebab", "turkish"] },
+  { code: "halal", libelle: "Halal", emoji: "🥙", cuisines: ["halal"] },
+  { code: "chicken", libelle: "Poulet", emoji: "🍗", cuisines: ["chicken", "chicken-wings", "southern", "soul-food"] },
+  { code: "fast-food", libelle: "Fast food", emoji: "🍟", cuisines: ["snacks", "fish-and-chips", "comfort-food"] },
+  { code: "sandwiches", libelle: "Sandwichs", emoji: "🥪", cuisines: ["salads-sandwiches"] },
+  {
+    code: "sushi",
+    libelle: "Sushis",
+    emoji: "🍣",
+    cuisines: ["sushi", "japanese-sushi", "japanese-ramen", "japanese-other", "poke"],
+  },
+  {
+    code: "chinese",
+    libelle: "Chinoise",
+    emoji: "🥡",
+    cuisines: [
+      "chinese-cantonese",
+      "chinese-hotpot",
+      "chinese-noodles",
+      "chinese-other",
+      "chinese-sichuan",
+      "chinese-taiwanese",
+    ],
+  },
+  {
+    code: "asian",
+    libelle: "Asiatique",
+    emoji: "🍜",
+    cuisines: [
+      "asian",
+      "asian-other",
+      "asian-fusion",
+      "thai",
+      "vietnamese",
+      "korean",
+      "indonesian",
+      "malaysian",
+      "filipino",
+      "burmese",
+    ],
+  },
+  { code: "indian", libelle: "Indienne", emoji: "🍛", cuisines: ["indian", "pakistani", "bangladeshi"] },
+  {
+    code: "oriental",
+    libelle: "Orientale",
+    emoji: "🧆",
+    cuisines: ["lebanese", "middle-eastern", "moroccan", "israeli", "egyptian", "mediterranean", "greek"],
+  },
+  { code: "mexican", libelle: "Mexicaine", emoji: "🌮", cuisines: ["mexican", "tacos", "burrito", "tex-mex"] },
+  { code: "grill", libelle: "Grill", emoji: "🥩", cuisines: ["grill", "barbecue", "argentinian", "brazilian"] },
+  { code: "seafood", libelle: "Poisson", emoji: "🦐", cuisines: ["fish-seafood", "seafood"] },
+  {
+    code: "french",
+    libelle: "Française",
+    emoji: "🥖",
+    cuisines: [
+      "french",
+      "fine-dining",
+      "european",
+      "european-other",
+      "german",
+      "spanish",
+      "portuguese",
+      "russian",
+      "georgian",
+      "pub-food",
+      "modern-australian",
+    ],
+  },
+  {
+    code: "healthy",
+    libelle: "Healthy",
+    emoji: "🥗",
+    cuisines: ["healthy", "vegetarian-vegan", "juice-smoothies"],
+  },
+  {
+    code: "bakery",
+    libelle: "Boulangerie",
+    emoji: "🥐",
+    cuisines: ["bakery", "bakery-pastry", "breakfast-brunch", "crepes"],
+  },
+  { code: "desserts", libelle: "Desserts", emoji: "🍰", cuisines: ["desserts", "desserts-other", "cake", "ice-cream"] },
+  { code: "coffee", libelle: "Café", emoji: "☕", cuisines: ["coffee-tea", "bubble-tea"] },
+  {
+    code: "world",
+    libelle: "Du monde",
+    emoji: "🌍",
+    cuisines: [
+      "african-ethiopian",
+      "african-other",
+      "caribbean",
+      "cajun-creole",
+      "hawaiian",
+      "kosher",
+      "chilean",
+      "colombian",
+      "ecuadorian",
+      "empanadas",
+      "guatemalan",
+      "latin-american-other",
+      "peruvian",
+      "venezuelan",
+      "other",
+    ],
+  },
+  // Les commerces hors restauration, d'après leur type d'établissement.
+  { code: "groceries", libelle: "Courses", emoji: "🛒", etablissements: ["supermarket", "grocery"] },
+  { code: "deli", libelle: "Épicerie fine", emoji: "🧀", etablissements: ["deli"] },
+  { code: "alcohol", libelle: "Alcool", emoji: "🍷", cuisines: ["alcohol"], etablissements: ["liquor"] },
+  { code: "flowers", libelle: "Fleurs", emoji: "💐", etablissements: ["florist"] },
+  { code: "pharmacy", libelle: "Parapharmacie", emoji: "💊", etablissements: ["pharmacy"] },
+  { code: "shop", libelle: "Boutiques", emoji: "🛍️", etablissements: ["shop"] },
+] as const satisfies readonly {
+  code: string;
+  libelle: string;
+  emoji: string;
+  cuisines?: readonly string[];
+  etablissements?: readonly string[];
+}[];
+
+export type Famille = (typeof FAMILLES)[number];
+
+const FAMILLE_PAR_CUISINE = new Map<string, Famille>();
+const FAMILLE_PAR_ETABLISSEMENT = new Map<string, Famille>();
+for (const famille of FAMILLES) {
+  for (const cuisine of ("cuisines" in famille ? famille.cuisines : []) as readonly string[]) {
+    FAMILLE_PAR_CUISINE.set(cuisine, famille);
+  }
+  for (const etab of ("etablissements" in famille ? famille.etablissements : []) as readonly string[]) {
+    FAMILLE_PAR_ETABLISSEMENT.set(etab, famille);
+  }
+}
+
+/**
+ * Ce que le client lit d'un commerce : sa famille (pour filtrer) et le libellé
+ * le plus précis connu — « Japonaise : sushis » plutôt que « Sushis ».
+ */
+export function genreDuCommerce(store: { businessType?: string | null; cuisineType?: string | null }) {
+  const famille =
+    (aUneCuisine(store.businessType) || !store.businessType
+      ? FAMILLE_PAR_CUISINE.get(store.cuisineType || "")
+      : undefined) ?? FAMILLE_PAR_ETABLISSEMENT.get(store.businessType || "");
+
+  return {
+    famille: famille?.code ?? null,
+    genreLibelle:
+      (aUneCuisine(store.businessType) || !store.businessType ? libelleDeLaCuisine(store.cuisineType) : null) ??
+      libelleDeLEtablissement(store.businessType) ??
+      null,
+  };
+}
+
+/** Les familles telles que l'écran les affiche, sans la table de rattachement. */
+export const FAMILLES_AFFICHEES = FAMILLES.map(({ code, libelle, emoji }) => ({ code, libelle, emoji }));

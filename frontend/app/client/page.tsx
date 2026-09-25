@@ -34,6 +34,9 @@ interface Store {
   /** Ce que disent à la fois le planning hebdomadaire et le bouton rapide, croisés. */
   isOpenNow?: boolean;
   products?: any[];
+  /** La famille (« pizza », « sushi »…) qui sert de filtre, et le libellé précis. */
+  famille?: string | null;
+  genreLibelle?: string | null;
   /** Les frais jusqu'à l'adresse du client, quand elle est connue. */
   livraison?: {
     livrable: boolean;
@@ -41,6 +44,12 @@ interface Store {
     minimum: number;
     deliveryMinutes: number | null;
   } | null;
+}
+
+interface Famille {
+  code: string;
+  libelle: string;
+  emoji: string;
 }
 
 /** Les frais qui s'appliquent vraiment : ceux de la zone, sinon le forfait. */
@@ -55,6 +64,29 @@ export default function ClientHomePage() {
   // `undefined` tant que le navigateur n'a pas été lu.
   const [adresse, setAdresse] = useState<AdresseLivraison | null | undefined>(undefined);
   const [sortBy, setSortBy] = useState('rating');
+  // Les familles de cuisine (Pizzas, Sushis…), et celle que le client a choisie.
+  const [familles, setFamilles] = useState<Famille[]>([]);
+  const [familleChoisie, setFamilleChoisie] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/stores/types`)
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) => setFamilles(donnees?.data?.familles || []))
+      .catch(() => undefined);
+  }, []);
+
+  // Seules les familles représentées autour du client : une rangée de
+  // catégories vides ne mènerait qu'à « aucun restaurant ».
+  const famillesPresentes = familles.filter((famille) =>
+    stores.some((store) => store.famille === famille.code)
+  );
+
+  // Une famille qui disparaît (nouvelle adresse) ne filtre plus rien.
+  useEffect(() => {
+    if (familleChoisie && !stores.some((store) => store.famille === familleChoisie)) {
+      setFamilleChoisie(null);
+    }
+  }, [stores, familleChoisie]);
 
   const loadStores = useCallback(async () => {
     try {
@@ -110,7 +142,9 @@ export default function ClientHomePage() {
 
   useEffect(() => {
     // Copie : trier `stores` en place modifiait l'état sans que React le sache.
-    const filtered = [...stores];
+    const filtered = familleChoisie
+      ? stores.filter((store) => store.famille === familleChoisie)
+      : [...stores];
 
     if (sortBy === 'rating') {
       filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -127,7 +161,7 @@ export default function ClientHomePage() {
     );
 
     setFilteredStores(filtered);
-  }, [stores, sortBy]);
+  }, [stores, sortBy, familleChoisie]);
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -164,6 +198,37 @@ export default function ClientHomePage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-12">
+        {/* Les catégories, à la manière des grandes plateformes : une rangée
+            qui défile, un clic filtre, un second clic annule. */}
+        {famillesPresentes.length > 0 && (
+          <nav aria-label={t('categories')} className="-mx-4 px-4 mb-10 overflow-x-auto">
+            <ul className="flex gap-2 pb-2 w-max">
+              {famillesPresentes.map((famille) => {
+                const choisie = familleChoisie === famille.code;
+                return (
+                  <li key={famille.code}>
+                    <button
+                      type="button"
+                      aria-pressed={choisie}
+                      onClick={() => setFamilleChoisie(choisie ? null : famille.code)}
+                      className={`w-24 flex flex-col items-center gap-2 rounded-xl py-3 transition ${
+                        choisie ? 'bg-orange-600/20 ring-2 ring-orange-500' : 'hover:bg-gray-800'
+                      }`}
+                    >
+                      <span className="text-4xl leading-none" aria-hidden="true">
+                        {famille.emoji}
+                      </span>
+                      <span className={`text-sm ${choisie ? 'text-white font-semibold' : 'text-gray-300'}`}>
+                        {famille.libelle}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        )}
+
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <p className="text-white text-lg">{t('loadingRestaurants')}</p>
@@ -178,7 +243,12 @@ export default function ClientHomePage() {
           <>
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-white mb-4">
-                {adresse?.latitude != null ? t('nearbyRestaurants') : t('allRestaurants')} ({filteredStores.length})
+                {familleChoisie
+                  ? familles.find((famille) => famille.code === familleChoisie)?.libelle
+                  : adresse?.latitude != null
+                    ? t('nearbyRestaurants')
+                    : t('allRestaurants')}{' '}
+                ({filteredStores.length})
               </h2>
 
               {/* Restaurants Grid */}
@@ -205,8 +275,13 @@ export default function ClientHomePage() {
                       <div className="p-4">
                         {/* Name & Badge */}
                         <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-lg font-bold text-white">{store.name}</h3>
-                          <Heart size={18} className="text-gray-400 hover:text-red-500" />
+                          <div className="min-w-0">
+                            <h3 className="text-lg font-bold text-white">{store.name}</h3>
+                            {store.genreLibelle && (
+                              <p className="text-sm text-orange-400">{store.genreLibelle}</p>
+                            )}
+                          </div>
+                          <Heart size={18} className="flex-shrink-0 text-gray-400 hover:text-red-500" />
                         </div>
 
                         {/* Description */}

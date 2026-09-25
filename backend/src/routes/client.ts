@@ -6,6 +6,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint } from "../utils/geo";
 import { boutiqueVisible, livreVraiment } from "../utils/visibilite-boutique";
 import { StoreHoursService } from "../services/store-hours.service";
+import { genreDuCommerce } from "../services/store-type.service";
 import { trierProduitsSelonCategorie } from "../services/category.service";
 import { DeliveryZoneService } from "../services/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";
@@ -55,6 +56,8 @@ router.get("/stores", async (_req: Request, res: Response, next: NextFunction) =
         // rapide, croisés — pas juste le bouton, sinon un jour fermé dans les
         // horaires n'a jamais d'effet ici.
         isOpenNow: StoreHoursService.isOpenNow(store),
+        // La famille (Pizzas, Sushis…) pour filtrer, et le libellé précis.
+        ...genreDuCommerce(store),
       })),
     });
   } catch (err) {
@@ -126,6 +129,8 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
             distance: parseFloat(distance.toFixed(2)),
             estimatedDeliveryTime: Math.ceil(distance * 5) + " min",
             isOpenNow: StoreHoursService.isOpenNow(store),
+            // La famille (Pizzas, Sushis…) pour filtrer, et le libellé précis.
+            ...genreDuCommerce(store),
             // Un calcul qui échoue ne prive pas le client de la boutique.
             livraison: verdict
               ? {
@@ -199,6 +204,8 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
       data: (await avecLaVraieNote(stores)).map((store) => ({
         ...store,
         isOpenNow: StoreHoursService.isOpenNow(store),
+        // La famille (Pizzas, Sushis…) pour filtrer, et le libellé précis.
+        ...genreDuCommerce(store),
       })),
     });
   } catch (err) {
@@ -363,6 +370,7 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
         // mais un commerce pas encore validé n'est jamais ouvert.
         isOpenNow: !!store.org?.approvedAt && StoreHoursService.isOpenNow(store),
         enAttenteDeValidation: !store.org?.approvedAt,
+        ...genreDuCommerce(store),
         averageRating:
           noteDuCommerce._count._all > 0 ? (noteDuCommerce._avg.rating ?? 0).toFixed(1) : 0,
         reviewCount: noteDuCommerce._count._all

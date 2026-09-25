@@ -1197,7 +1197,8 @@
     "deliveryFee": "Frais de livraison :",
     "freeDelivery": "Livraison gratuite",
     "minimum": "min.",
-    "notDelivered": "Ne livre pas à votre adresse — retrait possible"
+    "notDelivered": "Ne livre pas à votre adresse — retrait possible",
+    "categories": "Catégories"
   },
   "clientOrders": {
     "title": "Mes Commandes",
