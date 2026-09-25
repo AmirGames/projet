@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -29,6 +30,7 @@ import { useRealtimeEvent } from '../../lib/realtime';
 import type { Prefs } from '../../lib/session';
 import type { Position } from '../../lib/useDriverLocation';
 import SlideToConfirm from '../SlideToConfirm';
+import LiveMap, { RouteInfo } from '../LiveMap';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
 
 /** En deçà, le livreur est au commerce : la prise en charge se déverrouille. */
@@ -74,6 +76,9 @@ export default function DeliveryScreen({
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelOther, setCancelOther] = useState('');
+  // La carte de la course en plein écran, et l'itinéraire qu'elle a calculé.
+  const [mapOpen, setMapOpen] = useState(false);
+  const [route, setRoute] = useState<RouteInfo | null>(null);
 
   const load = useCallback(
     async (silent = false) => {
@@ -107,6 +112,7 @@ export default function DeliveryScreen({
     delivery?.pickupLat != null && delivery?.pickupLng != null ? { lat: delivery.pickupLat, lng: delivery.pickupLng } : null;
   const dropoff =
     delivery?.latitude != null && delivery?.longitude != null ? { lat: delivery.latitude, lng: delivery.longitude } : null;
+  const driverPoint = position ? { lat: position.lat, lng: position.lng } : null;
   const toPickup = position && pickup ? distanceM(position, pickup) : null;
   const toCustomer = position && dropoff ? distanceM(position, dropoff) : null;
 
@@ -140,7 +146,25 @@ export default function DeliveryScreen({
   const sendStatus = (status: 'PICKED_UP' | 'DELIVERED', proof?: Record<string, string>) =>
     apiFetch(`/api/drivers/deliveries/${deliveryId}`, token, { method: 'PATCH', body: { status, ...(proof || {}) } });
 
-  /** La commande quitte le commerce : le GPS part aussitôt vers le client. */
+  /**
+   * L'itinéraire vers la prochaine étape : la carte de l'application, qui
+   * suit le livreur en direct, ou l'application de navigation qu'il a choisie.
+   */
+  const navigate = (towardCustomer: boolean) => {
+    if (!delivery) return;
+    if (navigationApp === 'zupone') {
+      setMapOpen(true);
+      return;
+    }
+    openNavigation(
+      towardCustomer
+        ? { lat: delivery.latitude, lng: delivery.longitude, address: delivery.deliveryAddress }
+        : { lat: delivery.pickupLat, lng: delivery.pickupLng, address: delivery.pickupAddress },
+      navigationApp
+    );
+  };
+
+  /** La commande quitte le commerce : l'itinéraire part aussitôt vers le client. */
   const takeOrder = async () => {
     if (!delivery || updating) return;
     setUpdating(true);
@@ -149,7 +173,7 @@ export default function DeliveryScreen({
       await sendStatus('PICKED_UP');
       await load(true);
       onChanged();
-      openNavigation({ lat: delivery.latitude, lng: delivery.longitude, address: delivery.deliveryAddress }, navigationApp);
+      navigate(true);
     } catch (e: any) {
       setRefusal(e.message || "La prise en charge n'a pas pu être enregistrée");
     } finally {
@@ -304,21 +328,30 @@ export default function DeliveryScreen({
               {towardCustomer ? `📍 ${delivery.deliveryAddress || 'Adresse du client'}` : `🏪 ${delivery.pickupStore || 'Commerce'}`}
             </Text>
             {!towardCustomer && <Text style={styles.address}>{delivery.pickupAddress}</Text>}
-            {(towardCustomer ? toCustomer : toPickup) != null && (
+            {route ? (
+              <Text style={styles.distance}>
+                🕒 {formatDuration(route.durationS)} · {formatDistance(route.distanceM)} par la route
+              </Text>
+            ) : (towardCustomer ? toCustomer : toPickup) != null ? (
               <Text style={styles.distance}>À {formatDistance((towardCustomer ? toCustomer : toPickup)!)}</Text>
+            ) : null}
+            {!mapOpen && (
+              <TouchableOpacity activeOpacity={0.9} onPress={() => setMapOpen(true)} style={styles.mapPreview}>
+                <LiveMap
+                  driver={driverPoint}
+                  pickup={pickup}
+                  dropoff={dropoff}
+                  target={towardCustomer ? 'dropoff' : 'pickup'}
+                  height={220}
+                  onRoute={setRoute}
+                />
+              </TouchableOpacity>
             )}
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() =>
-                openNavigation(
-                  towardCustomer
-                    ? { lat: delivery.latitude, lng: delivery.longitude, address: delivery.deliveryAddress }
-                    : { lat: delivery.pickupLat, lng: delivery.pickupLng, address: delivery.pickupAddress },
-                  navigationApp
-                )
-              }
-            >
-              <Text style={styles.navButtonText}>🧭 Lancer le GPS {towardCustomer ? 'vers le client' : 'vers le commerce'}</Text>
+            <TouchableOpacity style={styles.navButton} onPress={() => navigate(towardCustomer)}>
+              <Text style={styles.navButtonText}>
+                {navigationApp === 'zupone' ? '🗺️ Itinéraire en plein écran' : '🧭 Lancer le GPS'}{' '}
+                {towardCustomer ? 'vers le client' : 'vers le commerce'}
+              </Text>
             </TouchableOpacity>
           </Card>
         )}
@@ -496,11 +529,82 @@ export default function DeliveryScreen({
           </Card>
         )}
       </ScrollView>
+      <Modal visible={mapOpen && !finished} animationType="slide" onRequestClose={() => setMapOpen(false)}>
+        <View style={styles.fullMap}>
+          <View style={styles.fullMapHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fullMapTitle} numberOfLines={1}>
+                {towardCustomer ? `📍 ${delivery.deliveryAddress || 'Client'}` : `🏪 ${delivery.pickupStore || 'Commerce'}`}
+              </Text>
+              <Text style={styles.fullMapInfo}>
+                {route
+                  ? `${formatDuration(route.durationS)} · ${formatDistance(route.distanceM)}`
+                  : position
+                    ? 'Calcul de l’itinéraire…'
+                    : 'Recherche de votre position…'}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => setMapOpen(false)} style={styles.fullMapClose} hitSlop={10}>
+              <Text style={styles.fullMapCloseText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <LiveMap
+            driver={driverPoint}
+            pickup={pickup}
+            dropoff={dropoff}
+            target={towardCustomer ? 'dropoff' : 'pickup'}
+            onRoute={setRoute}
+          />
+          {step === 1 && (
+            <TouchableOpacity style={styles.fullMapAction} onPress={() => setMapOpen(false)}>
+              <Text style={styles.fullMapActionText}>📦 Vous êtes au commerce : prendre en charge</Text>
+            </TouchableOpacity>
+          )}
+          {step === 2 && toCustomer != null && toCustomer <= CUSTOMER_NEAR_M && (
+            <TouchableOpacity style={styles.fullMapAction} onPress={() => setMapOpen(false)}>
+              <Text style={styles.fullMapActionText}>🏠 Vous êtes arrivé : remettre la commande</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
 
+/** « 12 min », « 1 h 05 ». */
+function formatDuration(seconds: number) {
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  if (minutes < 60) return `${minutes} min`;
+  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`;
+}
+
 const styles = StyleSheet.create({
+  mapPreview: { marginTop: 10 },
+  fullMap: { flex: 1, backgroundColor: COLORS.bg },
+  fullMapHeader: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    paddingTop: 44,
+    paddingBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fullMapTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  fullMapInfo: { color: '#fff', opacity: 0.9, fontSize: 14, marginTop: 2 },
+  fullMapClose: { marginLeft: 12, padding: 4 },
+  fullMapCloseText: { color: '#fff', fontSize: 22, fontWeight: '700' },
+  fullMapAction: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 28,
+    backgroundColor: COLORS.success,
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: 'center',
+    elevation: 6,
+  },
+  fullMapActionText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   stepRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
   stepCircle: {
     width: 30,

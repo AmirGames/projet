@@ -7,6 +7,7 @@ import type { GpsState } from '../../lib/useDriverLocation';
 import { Card, COLORS, Row, ScreenHeader, ui } from '../ui';
 
 const NAVIGATION_APPS: { key: Prefs['navigationApp']; label: string }[] = [
+  { key: 'zupone', label: 'Carte Zupone' },
   { key: 'google', label: 'Google Maps' },
   { key: 'waze', label: 'Waze' },
   ...(Platform.OS === 'ios' ? [{ key: 'apple' as const, label: 'Plans' }] : []),
@@ -66,7 +67,10 @@ export default function SettingsScreen({
         </Card>
 
         <Card title="Navigation">
-          <Text style={styles.help}>Application ouverte par « Lancer le GPS ».</Text>
+          <Text style={styles.help}>
+            « Itinéraire » ouvre la carte de l’application, qui vous suit en direct. Choisissez une autre application
+            pour être guidé par elle à la place.
+          </Text>
           <View style={styles.chips}>
             {NAVIGATION_APPS.map((app) => (
               <TouchableOpacity

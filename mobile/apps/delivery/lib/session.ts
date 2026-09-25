@@ -11,11 +11,17 @@ export interface Session {
 
 export interface Prefs {
   soundEnabled: boolean;
-  /** Application de navigation ouverte par « Lancer le GPS ». */
-  navigationApp: 'google' | 'waze' | 'apple';
+  /**
+   * Ce que fait « Itinéraire » : la carte de l'application (par défaut), ou
+   * une application de navigation extérieure.
+   */
+  navigationApp: 'zupone' | 'google' | 'waze' | 'apple';
 }
 
-export const DEFAULT_PREFS: Prefs = { soundEnabled: true, navigationApp: 'google' };
+export const DEFAULT_PREFS: Prefs = { soundEnabled: true, navigationApp: 'zupone' };
+
+/** Version des préférences : la 2 a amené la carte intégrée. */
+const PREFS_VERSION = 2;
 
 async function read<T>(key: string): Promise<T | null> {
   try {
@@ -39,6 +45,12 @@ export const saveSession = (session: Session) => write(SESSION_KEY, session);
 export const clearSession = () => SecureStore.deleteItemAsync(SESSION_KEY).catch(() => undefined);
 
 export async function loadPrefs(): Promise<Prefs> {
-  return { ...DEFAULT_PREFS, ...(await read<Partial<Prefs>>(PREFS_KEY)) };
+  const stored = await read<Partial<Prefs> & { v?: number }>(PREFS_KEY);
+  const { v, ...rest } = stored || {};
+  const prefs: Prefs = { ...DEFAULT_PREFS, ...rest };
+  // Avant la carte intégrée, Google Maps était le choix par défaut, pas celui
+  // du livreur : la carte de l'application prend sa place.
+  if ((v ?? 1) < PREFS_VERSION) prefs.navigationApp = 'zupone';
+  return prefs;
 }
-export const savePrefs = (prefs: Prefs) => write(PREFS_KEY, prefs);
+export const savePrefs = (prefs: Prefs) => write(PREFS_KEY, { ...prefs, v: PREFS_VERSION });

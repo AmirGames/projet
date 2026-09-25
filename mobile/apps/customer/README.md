@@ -23,8 +23,8 @@ même tiroir latéral, mêmes composants (`components/ui.tsx`).
   de service, total avant de valider. **Paiement en ligne** par la feuille de
   paiement Stripe quand la plateforme l'a branché (`GET /api/payments/config`).
 - **Suivi en direct** : étapes, heure annoncée à l'acceptation, motif d'un
-  refus, livreur (note, véhicule, appel), distance restante, position sur la
-  carte du téléphone, **code de remise**, photo du dépôt, « votre livreur est
+  refus, livreur (note, véhicule, appel), distance restante, **carte intégrée**
+  où le livreur avance en direct avec son itinéraire et l'heure d'arrivée, **code de remise**, photo du dépôt, « votre livreur est
   bientôt là » (vibration).
 - **Mes commandes**, **Avis** (commerce, plats, livreur), **Favoris**,
   **Notifications**, **Paramètres**, **Mon compte**.
@@ -55,6 +55,7 @@ paiement en ligne est actif, l'application ne propose que les espèces.
 
 ```
 app/index.tsx              écran racine : session, onglets, tiroir, bandeau, écrans empilés
+components/LiveMap.tsx     carte de la livraison en direct (Leaflet dans une WebView)
 components/ui.tsx          en-tête, cartes, lignes, chargement (commun aux trois applications)
 components/screens/        un fichier par écran
 lib/api.ts                 appels au serveur, montants, adresses des images

@@ -287,8 +287,9 @@ Par honnêteté, ce qui manque encore :
 - **Les applications mobiles** (`mobile/apps/merchant`, `delivery`, `customer`)
   sont écrites mais pas encore publiées. Celle du livreur n'envoie sa position
   qu'au premier plan ; celle du client ne commande qu'avec un compte (le site
-  garde la commande sans compte) et montre le livreur sur la carte du
-  téléphone plutôt que sur une carte intégrée.
+  garde la commande sans compte). Leurs cartes s'appuient sur les serveurs
+  publics d'OpenStreetMap et d'OSRM, à remplacer par un service payant ou
+  hébergé avant l'ouverture au public.
 - **Prisma 5.22 → 7**, à faire une fois le reste stabilisé.
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.

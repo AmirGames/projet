@@ -6,7 +6,6 @@ import {
   DELIVERY_STATUS,
   hhmm,
   itemName,
-  openMap,
   OrderDetail,
   orderStatus,
   REJECTION_REASONS,
@@ -15,10 +14,14 @@ import {
   VEHICLE_LABELS,
 } from '../../lib/orders';
 import { useRealtimeEvent, useRoom } from '../../lib/realtime';
+import LiveMap, { RouteInfo } from '../LiveMap';
 import type { DeliveryUpdate, OrderUpdate } from '../../lib/useCustomerRealtime';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
 
 const STEPS = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED'];
+
+const toPoint = (p?: { latitude: number; longitude: number } | null) =>
+  p ? { lat: p.latitude, lng: p.longitude } : null;
 
 /** Le suivi d'une commande, en direct : étapes, heure annoncée, livreur et code de remise. */
 export default function OrderScreen({
@@ -39,6 +42,7 @@ export default function OrderScreen({
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState<{ title: string; message: string } | null>(null);
+  const [route, setRoute] = useState<RouteInfo | null>(null);
 
   const load = useCallback(async () => {
     setError('');
@@ -219,10 +223,23 @@ export default function OrderScreen({
                 ) : null}
               </View>
             )}
-            {tracking.position && ['ACCEPTED', 'PICKED_UP'].includes(tracking.status) && (
-              <TouchableOpacity style={styles.mapButton} onPress={() => openMap(tracking.position!)}>
-                <Text style={styles.mapButtonText}>🗺️ Voir le livreur sur la carte</Text>
-              </TouchableOpacity>
+            {['ACCEPTED', 'PICKED_UP'].includes(tracking.status) && (tracking.position || tracking.destination) && (
+              <View style={styles.map}>
+                <LiveMap
+                  driver={toPoint(tracking.position)}
+                  pickup={toPoint(tracking.retrait)}
+                  dropoff={toPoint(tracking.destination)}
+                  target={tracking.status === 'PICKED_UP' ? 'dropoff' : 'pickup'}
+                  follow="overview"
+                  height={260}
+                  onRoute={setRoute}
+                />
+                {route && tracking.status === 'PICKED_UP' && !tracking.gpsPerdu ? (
+                  <Text style={styles.eta}>
+                    🕒 Arrivée dans {Math.max(1, Math.round(route.durationS / 60))} min environ
+                  </Text>
+                ) : null}
+              </View>
             )}
           </Card>
         )}
@@ -312,8 +329,8 @@ const styles = StyleSheet.create({
   driverName: { fontSize: 15, fontWeight: '700', color: COLORS.text },
   smallButton: { backgroundColor: COLORS.bg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
   smallButtonText: { color: COLORS.primary, fontWeight: '600' },
-  mapButton: { backgroundColor: COLORS.bg, borderRadius: 8, paddingVertical: 10, alignItems: 'center', marginTop: 12 },
-  mapButtonText: { color: COLORS.primary, fontWeight: '600', fontSize: 15 },
+  map: { marginTop: 12 },
+  eta: { fontSize: 14, fontWeight: '700', color: COLORS.primary, marginTop: 8, textAlign: 'center' },
   code: { backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 12 },
   codeLabel: { color: '#fff', opacity: 0.85, fontSize: 12, fontWeight: '600', textTransform: 'uppercase' },
   codeValue: { color: '#fff', fontSize: 40, fontWeight: '800', letterSpacing: 4, marginVertical: 6 },

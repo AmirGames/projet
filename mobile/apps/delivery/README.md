@@ -11,7 +11,10 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
   pas validé, **courses proposées** avec compte à rebours (accepter / refuser),
   course en cours, gains du jour et de la semaine, note, **pause** (15, 30, 60 min).
 - **Course** : les quatre étapes (aller au commerce, prendre en charge, aller au
-  client, remettre), lancement du GPS (Google Maps, Waze ou Plans), prise en
+  client, remettre), **carte intégrée** qui suit le livreur en direct avec
+  l'itinéraire par la route, le temps et la distance restants (OpenStreetMap et
+  OSRM, sans clé ; Google Maps, Waze ou Plans restent au choix dans les
+  paramètres), prise en
   charge **déverrouillée à moins de 150 m du commerce** par un curseur à glisser
   (ou « le GPS ne me situe pas »), attente tant que la commande n'est pas prête,
   **preuve de remise** par le code à quatre chiffres du client (vérifié seul) ou
@@ -53,6 +56,7 @@ push. Le projet EAS doit être configuré (`npx eas-cli@latest init`).
 app/index.tsx              écran racine : session, onglets, tiroir, bandeau
 components/ui.tsx          en-tête, cartes, lignes, chargement (commun au commerçant)
 components/SlideToConfirm  curseur « glisser pour valider »
+components/LiveMap         carte de la course en direct (Leaflet dans une WebView)
 components/screens/        un fichier par écran
 lib/api.ts                 appels au serveur, format des montants
 lib/session.ts             session et préférences (SecureStore)

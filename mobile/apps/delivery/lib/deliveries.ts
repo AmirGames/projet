@@ -129,7 +129,7 @@ export const shortId = (id: string) => `#${id.slice(-6).toUpperCase()}`;
  */
 export async function openNavigation(
   target: { lat?: number | null; lng?: number | null; address?: string },
-  app: Prefs['navigationApp']
+  app: Exclude<Prefs['navigationApp'], 'zupone'>
 ) {
   const coords = target.lat != null && target.lng != null ? `${target.lat},${target.lng}` : null;
   const query = coords || encodeURIComponent(target.address || '');

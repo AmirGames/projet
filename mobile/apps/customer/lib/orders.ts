@@ -57,6 +57,8 @@ export interface Tracking {
   estimatedTime?: number | null;
   boutique?: string | null;
   adresseLivraison?: string | null;
+  /** Le commerce, d'où part la commande. */
+  retrait?: { latitude: number; longitude: number } | null;
   destination?: { latitude: number; longitude: number } | null;
   position?: { latitude: number; longitude: number; misAJourLe?: string | null } | null;
   gpsPerdu?: boolean;
@@ -131,8 +133,3 @@ export function callPhone(phone?: string | null) {
   Linking.openURL(`tel:${phone.replace(/[^\d+]/g, '')}`).catch(() => undefined);
 }
 
-/** Montre un point sur la carte du téléphone. */
-export function openMap(point: { latitude: number; longitude: number }) {
-  const coords = `${point.latitude},${point.longitude}`;
-  Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${coords}`).catch(() => undefined);
-}
