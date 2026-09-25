@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ShoppingCart, MapPin, Phone, Clock, Star, Check, X } from 'lucide-react';
+import { ShoppingCart, MapPin, Phone, Clock, Star, Check, X, Bike } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { TunnelCommande } from '@/components/TunnelCommande';
+import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
+import { lireAdresseLivraison, type AdresseLivraison } from '@/lib/adresseLivraison';
 import { useStoreLive } from '@/lib/use-store-live';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import {
@@ -62,6 +64,16 @@ interface Product {
   note?: { moyenne: number; nombre: number } | null;
 }
 
+/** Les conditions de livraison de la boutique à l'adresse du client. */
+interface Livraison {
+  livrable: boolean;
+  zone: { name: string; minOrder: number; deliveryMinutes: number | null } | null;
+  distanceKm: number | null;
+  frais: number;
+  minimum: number;
+  raison: string;
+}
+
 interface Category {
   id: string;
   name: string;
@@ -99,6 +111,45 @@ export default function StorefrontPage() {
    */
   const panierLu = useRef<string | null>(null);
   const [orderConfirmation, setOrderConfirmation] = useState<OrderConfirmation | null>(null);
+  // L'adresse choisie sur l'accueil (ou ici) et ce qu'il en coûte d'y livrer.
+  const [adresse, setAdresse] = useState<AdresseLivraison | null | undefined>(undefined);
+  const [livraison, setLivraison] = useState<Livraison | null>(null);
+
+  useEffect(() => {
+    setAdresse(lireAdresseLivraison());
+  }, []);
+
+  useEffect(() => {
+    if (!store?.id || !adresse) {
+      setLivraison(null);
+      return;
+    }
+
+    const situee = adresse.latitude != null && adresse.longitude != null;
+    const ecrite = [adresse.street, adresse.postalCode, adresse.city].filter(Boolean).join(' ');
+    if (!situee && !ecrite) {
+      setLivraison(null);
+      return;
+    }
+
+    const parametres = situee
+      ? `?lat=${adresse.latitude}&lng=${adresse.longitude}`
+      : `?adresse=${encodeURIComponent(ecrite)}`;
+
+    let annule = false;
+    fetch(`${API_URL}/api/client/stores/${store.id}/zone-livraison${parametres}`)
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) => {
+        if (!annule) setLivraison(donnees?.data || null);
+      })
+      .catch(() => {
+        if (!annule) setLivraison(null);
+      });
+
+    return () => {
+      annule = true;
+    };
+  }, [store?.id, adresse]);
 
   useEffect(() => {
     if (slug) {
@@ -415,6 +466,11 @@ export default function StorefrontPage() {
   // 2 × Kebab font 3 articles, pas 2.
   const nombreArticles = cart.reduce((somme, item) => somme + item.quantity, 0);
   const cartTotal = cart.reduce((sum, item) => sum + prixDeLaLigne(item) * item.quantity, 0);
+  // Les frais ne s'ajoutent que s'ils sont connus, c'est-à-dire l'adresse
+  // retenue et desservie.
+  const fraisConnus = livraison?.livrable ? livraison.frais : null;
+  const manqueAuMinimum =
+    livraison?.livrable && livraison.minimum > cartTotal ? livraison.minimum - cartTotal : 0;
 
   /** Le panier tel que le tunnel de commande l'attend. */
   const lignesDuPanier: LignePanier[] = cart.map((item) => ({
@@ -499,6 +555,32 @@ export default function StorefrontPage() {
                 {store.isOpenNow === false ? 'Fermé' : 'Ouvert'}
               </span>
             </div>
+          </div>
+
+          {/* Livraison à l'adresse du client : les frais se lisent avant de
+              remplir le panier, plus seulement au moment de commander. */}
+          <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-3 text-sm">
+            <ChoixAdresseLivraison adresse={adresse} onChange={setAdresse} />
+            {adresse && livraison && (
+              livraison.livrable ? (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-white">
+                  <span className="flex items-center gap-2 font-semibold">
+                    <Bike size={18} />
+                    {livraison.frais > 0 ? `Livraison ${euro(livraison.frais)}` : 'Livraison gratuite'}
+                  </span>
+                  {livraison.minimum > 0 && (
+                    <span className="text-white/90">Minimum {euro(livraison.minimum)}</span>
+                  )}
+                  {livraison.zone?.deliveryMinutes != null && (
+                    <span className="text-white/90">≈ {livraison.zone.deliveryMinutes} min</span>
+                  )}
+                </div>
+              ) : (
+                <p className="rounded-lg bg-black/25 px-3 py-2 text-amber-100">
+                  {livraison.raison || 'Livraison indisponible à cette adresse.'} Le retrait sur place reste possible.
+                </p>
+              )
+            )}
           </div>
         </div>
       </header>
@@ -788,14 +870,29 @@ export default function StorefrontPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Livraison</span>
-                    {/* Les frais dépendent de l'adresse : ils s'affichent dans
-                        le tunnel, dès que le client l'a saisie. */}
-                    <span>selon la zone</span>
+                    {/* Les frais dépendent de l'adresse : sans elle, ils
+                        s'affichent dans le tunnel, dès qu'elle est saisie. */}
+                    <span>
+                      {fraisConnus == null
+                        ? livraison && !livraison.livrable
+                          ? 'non desservi'
+                          : 'selon la zone'
+                        : fraisConnus > 0
+                          ? euro(fraisConnus)
+                          : 'Gratuite'}
+                    </span>
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-3">
                     <span>Total</span>
-                    <span>{euro(cartTotal)}</span>
+                    <span>{euro(cartTotal + (fraisConnus ?? 0))}</span>
                   </div>
+
+                  {manqueAuMinimum > 0 && (
+                    <p className="rounded-lg border border-amber-700/50 bg-amber-900/30 px-3 py-2 text-sm text-amber-200">
+                      Encore {euro(manqueAuMinimum)} pour atteindre le minimum de livraison (
+                      {euro(livraison!.minimum)}).
+                    </p>
+                  )}
 
                   {/* Une boutique fermée reste consultable : elle disparaissait
                       purement et simplement de la liste des commerces. Fermée par

@@ -1192,10 +1192,6 @@
     "locationGeolocation": "✓ Localisation:",
     "geolocationNotSupported": "Géolocalisation non supportée",
     "cantAccessLocation": "Impossible d'accéder à votre localisation",
-    "deliverTo": "Livrer à",
-    "changeAddress": "Changer d'adresse",
-    "currentPosition": "Ma position actuelle",
-    "cancel": "Annuler",
     "allRestaurants": "Tous les restaurants",
     "tryAnotherAddress": "Aucun restaurant ne livre encore ici. Essayez une autre adresse."
   },
@@ -1960,5 +1956,16 @@
     "keepRemoved": "Laisser retiré",
     "kept": "Conservé",
     "removed": "Retiré"
+  },
+  "deliveryAddress": {
+    "deliverTo": "Livrer à",
+    "change": "Changer d'adresse",
+    "enterAddress": "Indiquez votre adresse de livraison",
+    "placeholder": "Adresse ou ville...",
+    "myLocation": "Ma Localisation",
+    "currentPosition": "Ma position actuelle",
+    "cancel": "Annuler",
+    "geolocationNotSupported": "Géolocalisation non supportée",
+    "cantAccessLocation": "Impossible d'accéder à votre localisation"
   }
 }
