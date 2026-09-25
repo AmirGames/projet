@@ -55,13 +55,13 @@ export default function Home() {
           </Link>
 
           {!user || (!isMerchant && !rolesLoading) ? (
-            <Link href="/merchant/register" className="font-semibold text-slate-900 transition hover:text-primary">
+            <Link href="/devenir-commercant" className="font-semibold text-slate-900 transition hover:text-primary">
               Devenir commerçant
             </Link>
           ) : null}
 
           {!user || (!isDriver && !rolesLoading) ? (
-            <Link href="/driver/signup" className="font-semibold text-slate-900 transition hover:text-primary">
+            <Link href="/devenir-livreur" className="font-semibold text-slate-900 transition hover:text-primary">
               Devenir livreur
             </Link>
           ) : null}
@@ -142,7 +142,7 @@ export default function Home() {
             Catalogue, horaires par service, zones de livraison réglées sur une
             carte, et le suivi de chaque commande.
           </p>
-          <Link href="/merchant/register" className="font-bold text-primary">
+          <Link href="/devenir-commercant" className="font-bold text-primary">
             Ouvrir ma boutique →
           </Link>
         </div>
@@ -154,7 +154,7 @@ export default function Home() {
             Un dossier examiné une fois, puis des courses proposées au plus proche
             disponible, avec une rémunération calculée.
           </p>
-          <Link href="/driver/signup" className="font-bold text-primary">
+          <Link href="/devenir-livreur" className="font-bold text-primary">
             Devenir livreur →
           </Link>
         </div>
@@ -220,7 +220,7 @@ export default function Home() {
             quelques minutes et gardez la main sur votre catalogue et vos prix.
           </p>
           <Link
-            href="/merchant/register"
+            href="/devenir-commercant"
             className="inline-block rounded-full bg-accent px-8 py-4 font-bold text-white transition hover:bg-accent-hover"
           >
             Créer ma boutique
@@ -243,12 +243,12 @@ export default function Home() {
               Commerces
             </Link>
             {!user || (!isMerchant && !rolesLoading) ? (
-              <Link href="/merchant/register" className="mb-2 block text-slate-300 hover:text-white">
+              <Link href="/devenir-commercant" className="mb-2 block text-slate-300 hover:text-white">
                 Devenir commerçant
               </Link>
             ) : null}
             {!user || (!isDriver && !rolesLoading) ? (
-              <Link href="/driver/signup" className="mb-2 block text-slate-300 hover:text-white">
+              <Link href="/devenir-livreur" className="mb-2 block text-slate-300 hover:text-white">
                 Devenir livreur
               </Link>
             ) : null}

@@ -170,8 +170,9 @@ export default function ClientLayout({
               <div>
                 <h3 className="text-white font-bold mb-4">Rejoindre</h3>
                 <ul className="space-y-2 text-gray-400 text-sm">
-                  <li><Link href="/merchant/register" className="text-gray-400 hover:text-white">Devenir commerçant</Link></li>
-                  <li><Link href="/driver/signup" className="text-gray-400 hover:text-white">Devenir livreur</Link></li>
+                  <li><Link href="/devenir-commercant" className="text-gray-400 hover:text-white">Devenir commerçant</Link></li>
+                  <li><Link href="/devenir-livreur" className="text-gray-400 hover:text-white">Devenir livreur</Link></li>
+                  <li><Link href="/devenir-chauffeur" className="text-gray-400 hover:text-white">Devenir chauffeur</Link></li>
                 </ul>
               </div>
             </div>
