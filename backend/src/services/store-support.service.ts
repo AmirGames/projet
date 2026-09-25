@@ -4,6 +4,7 @@ import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
 import { AddressService } from "./address.service";
 import { MerchantApprovalService } from "./merchant-approval.service";
+import { TRANSMISE } from "../utils/commande-transmise";
 
 /**
  * La fiche d'une boutique vue par la plateforme, et les rares champs qu'elle
@@ -81,18 +82,18 @@ export class StoreSupportService {
 
     const [commandes, derniere, dernieresCommandes] = await Promise.all([
       db.order.aggregate({
-        where: { storeId, deletedAt: null },
+        where: { storeId, deletedAt: null, ...TRANSMISE },
         _sum: { totalAmount: true },
       }),
       db.order.findFirst({
-        where: { storeId, deletedAt: null },
+        where: { storeId, deletedAt: null, ...TRANSMISE },
         orderBy: { createdAt: "desc" },
         select: { createdAt: true, status: true },
       }),
       // Les 20 dernières commandes avec leur commission figée — ce que le
       // superowner ne pouvait plus voir après la refonte.
       db.order.findMany({
-        where: { storeId, deletedAt: null },
+        where: { storeId, deletedAt: null, ...TRANSMISE },
         orderBy: { createdAt: "desc" },
         take: 20,
         // commissionFrozen et tierAtOrder sont ajoutés par la migration

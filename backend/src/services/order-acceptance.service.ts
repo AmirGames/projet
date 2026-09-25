@@ -5,7 +5,9 @@ import { emitWebhook } from "./webhook.service";
 import { EmailService } from "./email.service";
 import { DispatchService } from "./dispatch.service";
 import { Notifier, enArrierePlan } from "./notifier.service";
+import { paymentService } from "./payment.service";
 import { emitOrderUpdate, emitNotification, emitMerchantEvent } from "../config/socket";
+import { arriveeChezLeCommercant } from "../utils/commande-transmise";
 
 /**
  * Accepter ou refuser une commande, comme sur les plateformes de livraison.
@@ -60,10 +62,13 @@ const ETATS_EN_COURS = ["ACCEPTED", "PREPARING", "READY"] as const;
  */
 export function echeanceDeReponse(commande: {
   createdAt: Date;
+  submittedAt?: Date | null;
   deliveryType: string;
   pickupTime: Date | null;
 }): Date {
-  const auPlusTot = commande.createdAt.getTime() + REPONSE_LIVRAISON_MIN * MINUTE;
+  // Le délai court depuis l'arrivée chez le commerçant : pour une commande
+  // payée en ligne, l'encaissement, pas la création.
+  const auPlusTot = arriveeChezLeCommercant(commande).getTime() + REPONSE_LIVRAISON_MIN * MINUTE;
 
   if (commande.deliveryType === "PICKUP" && commande.pickupTime) {
     return new Date(
@@ -82,6 +87,9 @@ function heure(date: Date) {
     timeZone: "Europe/Paris",
   });
 }
+
+const euros = (montant: number) =>
+  montant.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 
 /**
  * Vérifie un changement d'état fait par les boutons génériques.
@@ -213,7 +221,7 @@ export class OrderAcceptanceService {
 
     const commande = await db.order.findUnique({ where: { id: orderId } });
 
-    if (!commande || commande.storeId !== storeId || commande.deletedAt) {
+    if (!commande || commande.storeId !== storeId || commande.deletedAt || !commande.submittedAt) {
       throw new ApiError(404, "Commande introuvable", "ORDER_NOT_FOUND");
     }
 
@@ -294,7 +302,7 @@ export class OrderAcceptanceService {
       },
     });
 
-    if (!commande || (storeId && commande.storeId !== storeId) || commande.deletedAt) {
+    if (!commande || (storeId && commande.storeId !== storeId) || commande.deletedAt || !commande.submittedAt) {
       throw new ApiError(404, "Commande introuvable", "ORDER_NOT_FOUND");
     }
 
@@ -343,6 +351,22 @@ export class OrderAcceptanceService {
       });
     }
 
+    // Payée en ligne : l'argent repart tout de suite, sans attendre que le
+    // commerçant y pense. Pas encore payée : l'intention est annulée. Un échec
+    // chez Stripe n'annule pas le refus — il est noté, et le client prévenu
+    // qu'il sera remboursé autrement.
+    let rembourse: { amount: number } | null = null;
+    let remboursementEchoue = false;
+    try {
+      rembourse = await paymentService.rembourserCommande(orderId, `Commande refusée : ${motif}`);
+    } catch (err) {
+      remboursementEchoue = true;
+      logger.error("Remboursement impossible au refus de la commande", {
+        orderId,
+        error: (err as Error).message,
+      });
+    }
+
     const refusee = await db.order.findUniqueOrThrow({ where: { id: orderId } });
 
     emitWebhook("order.status_changed", {
@@ -361,8 +385,10 @@ export class OrderAcceptanceService {
 
     let message = `Votre commande chez ${commande.store.name} est annulée : ${MOTIFS_DE_REFUS[motif]}.`;
     if (precision) message += ` Précision du restaurant : « ${precision} ».`;
-    if (refusee.paymentStatus === "SUCCEEDED") {
-      message += ` Vous avez payé en ligne : le restaurant doit vous rembourser${
+    if (rembourse) {
+      message += ` Vous avez payé en ligne : ${euros(rembourse.amount / 100)} vous sont remboursés, ils apparaîtront sur votre compte sous 5 à 10 jours.`;
+    } else if (remboursementEchoue || refusee.paymentStatus === "SUCCEEDED") {
+      message += ` Vous avez payé en ligne : vous serez remboursé, contactez le restaurant en cas de question${
         commande.store.phone ? ` (tél. ${commande.store.phone})` : ""
       }.`;
     }
@@ -444,9 +470,9 @@ export class OrderAcceptanceService {
       where: {
         status: "PENDING",
         deletedAt: null,
-        createdAt: { lt: new Date(Date.now() - REPONSE_LIVRAISON_MIN * MINUTE) },
+        submittedAt: { lt: new Date(Date.now() - REPONSE_LIVRAISON_MIN * MINUTE) },
       },
-      select: { id: true, createdAt: true, deliveryType: true, pickupTime: true },
+      select: { id: true, createdAt: true, submittedAt: true, deliveryType: true, pickupTime: true },
       take: 100,
     });
 

@@ -653,6 +653,8 @@ enum PaymentStatus {
   PENDING
   SUCCEEDED
   FAILED
+  /// Encaissé puis rendu au client : commande refusée ou annulée.
+  REFUNDED
 }
 
 enum DeliveryType {
@@ -687,6 +689,14 @@ model Order {
 
   // Status
   status          OrderStatus  @default(PENDING)
+
+  /// L'heure à laquelle la commande est parvenue au commerçant.
+  ///
+  /// Payée sur place : aussitôt passée. Payée par carte : seulement quand
+  /// Stripe a confirmé l'encaissement — le commerçant ne doit pas préparer une
+  /// commande que le client n'a jamais réglée. Vide, la commande n'existe pas
+  /// encore pour lui : ni liste, ni sonnerie, ni délai de réponse.
+  submittedAt     DateTime?    @default(now())
 
   // Payment
   totalAmount     Decimal      @db.Decimal(10, 2)
@@ -779,6 +789,7 @@ model Order {
   @@index([paymentStatus])
   @@index([createdAt])
   @@index([deletedAt])
+  @@index([submittedAt])
 }
 
 model OrderItem {
@@ -826,6 +837,12 @@ model Payment {
   stripeStatus    String?      // requires_payment_method, succeeded, etc.
   
   paidAt          DateTime?
+
+  /// Le remboursement, quand la commande est refusée ou annulée après
+  /// l'encaissement. Le montant est celui que Stripe a réellement rendu.
+  refundedAt      DateTime?
+  refundedAmount  Decimal?     @db.Decimal(10, 2)
+  stripeRefundId  String?
 
   // Relations
   order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)

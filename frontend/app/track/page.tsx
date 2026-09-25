@@ -339,9 +339,14 @@ export default function TrackOrderPage() {
                     {order.rejectionNote && (
                       <p className="text-red-200 mt-2">« {order.rejectionNote} »</p>
                     )}
+                    {order.paymentStatus === 'REFUNDED' && (
+                      <p className="text-red-200 mt-2">
+                        Vous avez payé en ligne : vous êtes remboursé, sous 5 à 10 jours sur votre compte.
+                      </p>
+                    )}
                     {order.paymentStatus === 'SUCCEEDED' && (
                       <p className="text-red-200 mt-2">
-                        Vous avez payé en ligne : le restaurant doit vous rembourser.
+                        Vous avez payé en ligne : votre remboursement est en cours de traitement.
                       </p>
                     )}
                   </div>

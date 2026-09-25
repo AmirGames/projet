@@ -13,6 +13,8 @@ import { StoreHoursService } from "./store-hours.service";
 import { emitMerchantEvent } from "../config/socket";
 import { Notifier, enArrierePlan } from "./notifier.service";
 import { OrderAcceptanceService, echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
+import { getEnv } from "../config/env";
+import { TRANSMISE, payeEnLigne } from "../utils/commande-transmise";
 
 export interface OrderData {
   storeId: string;
@@ -309,7 +311,7 @@ export class OrderService {
       }
 
       /** Le moyen de paiement doit être celui de cette boutique, et actif. */
-      let moyenDePaiement: { id: string; name: string } | null = null;
+      let moyenDePaiement: { id: string; name: string; type: string } | null = null;
 
       if (data.paymentMethodId) {
         const propose = await db.paymentMethod.findFirst({
@@ -334,7 +336,7 @@ export class OrderService {
           );
         }
 
-        moyenDePaiement = { id: propose.id, name: propose.name };
+        moyenDePaiement = { id: propose.id, name: propose.name, type: propose.type };
       }
 
       /**
@@ -425,9 +427,17 @@ export class OrderService {
         );
       }
 
+      // Payée en ligne (tout sauf les espèces), la commande attend l'encaissement avant de partir au
+      // commerçant : c'est le webhook Stripe qui la lui transmet.
+      const enLigne = payeEnLigne(
+        moyenDePaiement?.type,
+        getEnv().ENABLE_STRIPE && Boolean(process.env.STRIPE_SECRET_KEY)
+      );
+
       const order = await db.order.create({
         data: {
           storeId: data.storeId,
+          ...(enLigne ? { submittedAt: null } : {}),
           customerName: data.customerName,
           customerEmail: data.customerEmail,
           customerPhone: data.customerPhone,
@@ -479,52 +489,65 @@ export class OrderService {
         },
       });
 
-      try {
-        await EmailService.sendOrderConfirmation(order);
-      } catch (emailErr) {
-        logger.warn("Email notification failed, but order was created", { error: emailErr });
+      if (!enLigne) {
+        await this.annoncerAuCommercant(order);
       }
 
-      // L'événement était proposé à l'abonnement et n'était émis nulle part :
-      // une caisse branchée dessus n'a jamais vu passer une seule commande.
-      emitWebhook("order.created", {
-        orderId: order.id,
-        storeId: order.storeId,
-        status: order.status,
-        deliveryType: order.deliveryType,
-        totalAmount: Number(order.totalAmount),
-        customerName: order.customerName,
-        createdAt: order.createdAt,
-      });
-
-      // La boutique sonne : la commande attend d'être acceptée, et le temps
-      // pour répondre est compté.
-      emitMerchantEvent(order.storeId, "commande-nouvelle", {
-        orderId: order.id,
-        storeId: order.storeId,
-        customerName: order.customerName,
-        deliveryType: order.deliveryType,
-        totalAmount: Number(order.totalAmount),
-        echeance: echeanceDeReponse(order).toISOString(),
-      });
-
-      // Et le téléphone du commerçant, même application fermée.
-      enArrierePlan(
-        Notifier.pushEquipeBoutique(order.storeId, {
-          title: "🔔 Nouvelle commande",
-          body: `${order.customerName || "Un client"} · ${
-            order.deliveryType === "DELIVERY" ? "Livraison" : "Retrait"
-          } · ${Number(order.totalAmount).toFixed(2)} €`,
-          data: { type: "commande-nouvelle", orderId: order.id, storeId: order.storeId },
-          channelId: "new-orders",
-          sound: "new_order.wav",
-        })
-      );
-
-      return order;
+      return { ...order, paiementEnLigne: enLigne };
     } catch (error: any) {
       throw error;
     }
+  }
+
+  /**
+   * La commande parvient au commerçant : e-mail de confirmation au client,
+   * événement pour les caisses branchées, sonnerie et notification.
+   *
+   * Aussitôt passée pour un paiement sur place ; à l'encaissement pour un
+   * paiement en ligne (appelée par le webhook Stripe).
+   */
+  static async annoncerAuCommercant(order: any) {
+    try {
+      await EmailService.sendOrderConfirmation(order);
+    } catch (emailErr) {
+      logger.warn("Email notification failed, but order was created", { error: emailErr });
+    }
+
+    // L'événement était proposé à l'abonnement et n'était émis nulle part :
+    // une caisse branchée dessus n'a jamais vu passer une seule commande.
+    emitWebhook("order.created", {
+      orderId: order.id,
+      storeId: order.storeId,
+      status: order.status,
+      deliveryType: order.deliveryType,
+      totalAmount: Number(order.totalAmount),
+      customerName: order.customerName,
+      createdAt: order.createdAt,
+    });
+
+    // La boutique sonne : la commande attend d'être acceptée, et le temps
+    // pour répondre est compté.
+    emitMerchantEvent(order.storeId, "commande-nouvelle", {
+      orderId: order.id,
+      storeId: order.storeId,
+      customerName: order.customerName,
+      deliveryType: order.deliveryType,
+      totalAmount: Number(order.totalAmount),
+      echeance: echeanceDeReponse(order).toISOString(),
+    });
+
+    // Et le téléphone du commerçant, même application fermée.
+    enArrierePlan(
+      Notifier.pushEquipeBoutique(order.storeId, {
+        title: "🔔 Nouvelle commande",
+        body: `${order.customerName || "Un client"} · ${
+          order.deliveryType === "DELIVERY" ? "Livraison" : "Retrait"
+        } · ${Number(order.totalAmount).toFixed(2)} €`,
+        data: { type: "commande-nouvelle", orderId: order.id, storeId: order.storeId },
+        channelId: "new-orders",
+        sound: "new_order.wav",
+      })
+    );
   }
 
   static async getById(id: string) {
@@ -547,7 +570,7 @@ export class OrderService {
 
   static async getByStoreId(storeId: string, limit: number = 100, offset: number = 0) {
     return await db.order.findMany({
-      where: { storeId },
+      where: { storeId, ...TRANSMISE },
       include: {
         items: { include: { product: { include: { category: { select: { name: true, displayOrder: true } } } } } },
         delivery: {
@@ -569,7 +592,7 @@ export class OrderService {
 
   static async getByStatus(storeId: string, status: string, limit: number = 50) {
     return await db.order.findMany({
-      where: { storeId, status: status as any },
+      where: { storeId, status: status as any, ...TRANSMISE },
       include: {
         items: { include: { product: true } },
       },
@@ -660,7 +683,7 @@ export class OrderService {
   }
 
   static async countByStoreId(storeId: string) {
-    return await db.order.count({ where: { storeId } });
+    return await db.order.count({ where: { storeId, ...TRANSMISE } });
   }
 
   static async getRecentOrders(storeId: string, days: number = 7) {
@@ -669,6 +692,7 @@ export class OrderService {
       where: {
         storeId,
         createdAt: { gte: since },
+        ...TRANSMISE,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -731,6 +755,7 @@ export class OrderService {
   static async getByOrgId(orgId: string, status?: string, limit: number = 100, offset: number = 0) {
     const whereClause: any = {
       store: { orgId },
+      ...TRANSMISE,
     };
 
     if (status && status !== "ALL") {
@@ -758,7 +783,7 @@ export class OrderService {
    * dur : les deux compteurs n'étaient jamais renseignés.
    */
   static async chiffreAffairesOrg(orgId: string, status?: string) {
-    const where: any = { store: { orgId }, deletedAt: null };
+    const where: any = { store: { orgId }, deletedAt: null, ...TRANSMISE };
     if (status && status !== "ALL") where.status = status;
 
     const somme = await db.order.aggregate({
@@ -776,6 +801,7 @@ export class OrderService {
   static async countByOrgId(orgId: string, status?: string) {
     const whereClause: any = {
       store: { orgId },
+      ...TRANSMISE,
     };
 
     if (status && status !== "ALL") {

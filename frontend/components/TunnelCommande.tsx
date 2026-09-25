@@ -21,6 +21,7 @@ import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { totalDuPanier, type LignePanier } from '@/lib/paniers';
 import { useAuth } from '@/lib/auth-context';
+import { StripePayment } from '@/components/stripe-payment';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -82,6 +83,13 @@ export function TunnelCommande({
   >([]);
   const [submitting, setSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+  /**
+   * La commande attend le paiement en ligne.
+   *
+   * Elle n'est pas encore partie au commerçant : elle ne lui parvient qu'une
+   * fois l'encaissement confirmé. Le panier est gardé jusque-là.
+   */
+  const [aPayer, setAPayer] = useState<(CommandePassee & { montant: number }) | null>(null);
   /**
    * Les moyens de paiement du commerçant.
    *
@@ -417,8 +425,14 @@ export function TunnelCommande({
 
       const recue = await response.json();
       const id = recue.order?.id || recue.id;
+      const commande = { id, numero: String(id).slice(-8).toUpperCase() };
 
-      surCommandePassee({ id, numero: String(id).slice(-8).toUpperCase() });
+      if (recue.order?.paiementEnLigne) {
+        setAPayer({ ...commande, montant: Number(recue.order.totalAmount) });
+        return;
+      }
+
+      surCommandePassee(commande);
     } catch (error) {
       console.error('Checkout error:', error);
       setCheckoutError('Erreur de connexion. Veuillez réessayer.');
@@ -430,6 +444,35 @@ export function TunnelCommande({
   const enFenetre = disposition === 'modale';
   const champ =
     'w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500';
+
+  if (aPayer) {
+    return (
+      <div className={enFenetre ? 'p-6 space-y-4' : 'space-y-4'}>
+        <h3 className="font-bold text-lg">Paiement en ligne</h3>
+        <p className="text-sm text-gray-400">
+          Commande n° {aPayer.numero} — {euro(aPayer.montant)}. Elle sera transmise à{' '}
+          {boutique.name} dès le paiement accepté.
+        </p>
+        <StripePayment
+          orderId={aPayer.id}
+          amount={aPayer.montant}
+          customerEmail={checkoutForm.customerEmail}
+          customerName={checkoutForm.customerName}
+          onPaymentComplete={(reussi) => {
+            if (reussi) surCommandePassee({ id: aPayer.id, numero: aPayer.numero });
+          }}
+        />
+        {surAnnulation && (
+          <button
+            onClick={surAnnulation}
+            className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors"
+          >
+            Annuler
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>

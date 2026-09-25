@@ -67,6 +67,26 @@ LOG_LEVEL=info VERIF_API_URL=http://localhost:3099 npm run verif
 
 (`DATABASE_URL` est à ajouter aux deux commandes, comme plus haut.)
 
+### Le paiement, à part
+
+Avec Stripe actif, toute commande qui n'est pas payée en espèces attend
+l'encaissement avant de parvenir au commerçant. Les autres suites passent
+leurs commandes sans moyen de paiement : elles ont besoin de Stripe coupé,
+comme dans `.env.test`. `verif-paiement` a besoin du contraire, et se joue
+donc contre une API à elle :
+
+```bash
+# L'API, Stripe actif — aucune suite n'appelle Stripe pour de vrai
+PORT=3099 ENABLE_STRIPE=true STRIPE_SECRET_KEY=sk_test_factice \
+  STRIPE_WEBHOOK_SECRET=whsec_verification npm run dev
+
+# La suite : elle signe elle-même les événements du webhook
+STRIPE_WEBHOOK_SECRET=whsec_verification VERIF_API_URL=http://localhost:3099 \
+  npm run verif -- verif-paiement
+```
+
+Contre une API sans Stripe, elle s'arrête d'emblée et le dit.
+
 ## La base est vidée à chaque script
 
 Tous les scripts partent du même postulat : **le premier compte inscrit devient

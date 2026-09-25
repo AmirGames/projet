@@ -44,8 +44,6 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 
 ### Ce qui est volontairement reporté
 
-- **Le paiement en ligne** (webhooks Stripe, remboursements) — « tant que le
-  reste n'est pas fait ».
 - **La migration Prisma 5.22 → 7** — « on termine tout le site et après on fait
   une migration ».
 - **Le stock par ingrédient** (une pizza consomme de la mozzarella), abandonné
@@ -64,7 +62,7 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Authentification** | JWT (jeton d'accès + jeton de renouvellement) |
 | **Courriel** | SMTP via nodemailer, Mailpit en développement |
 | **Adresses** | BAN pour la France + Photon pour la Belgique (`ADDRESS_PROVIDER=ban+photon`) |
-| **Paiement** | Stripe — intention de paiement seulement |
+| **Paiement** | Stripe — intention liée à la commande, webhook signé, remboursement au refus |
 
 ```
 backend/    API REST — 37 routeurs, 43 services, 43 modèles Prisma
@@ -461,6 +459,26 @@ Deux invariants à ne jamais casser :
   que paie un client. Tout autre champ est refusé explicitement, chaque
   correction part au journal avec son avant et son après, et le commerçant est
   prévenu.
+- **Tout se paie par Stripe, sauf les espèces.** Une commande qui n'est pas en
+  `CASH` — y compris sans moyen de paiement choisi — n'arrive au commerçant
+  qu'encaissée, dès que `ENABLE_STRIPE` est vrai avec une clé. Elle naît
+  avec `Order.submittedAt` vide : absente de ses listes, de ses chiffres, de
+  l'acceptation, et sans délai de réponse. L'encaissement (webhook ou
+  `/confirm`) la lui transmet une seule fois, sonnerie comprise, et son délai
+  court de là. Toute requête côté commerçant filtre avec `TRANSMISE`
+  (`backend/src/utils/commande-transmise.ts`). Jamais payée au bout de trente
+  minutes, elle est retirée (`deletedAt`) et son intention annulée.
+- **Une commande n'est « payée » que sur la parole de Stripe.** Le montant de
+  l'intention est lu sur la commande, jamais dans la requête. Le webhook
+  (`POST /api/payments/webhook`, monté avant le lecteur JSON pour vérifier la
+  signature sur le corps brut) passe `paymentStatus` à `SUCCEEDED`, `FAILED`
+  ou `REFUNDED` ; `/api/payments/confirm` relit aussi Stripe pour ne pas
+  attendre le webhook. Un refus rembourse de lui-même (clé d'idempotence
+  `remboursement-<orderId>`), ou annule l'intention si rien n'est encore payé ;
+  un paiement arrivé après le refus repart aussitôt. Le reste — commande déjà
+  prise par un livreur, litige — passe par le support :
+  `POST /api/superowner/orders/:id/refund`. Un remboursement que Stripe
+  n'arrive pas à faire (`refund.failed`) remet la commande en `SUCCEEDED`.
 - **Les frais de service ne sont jamais au commerçant.** Figés sur la
   commande (`Order.serviceFeeAmount`), ils sortent de l'assiette de sa
   commission, de son chiffre et de sa facture, et lui sont réclamés sur le
@@ -626,15 +644,10 @@ et `net::ERR_`.
 
 ### À faire ensuite
 
-Le carnet ci-dessous — le plus gros morceau étant le paiement en ligne, reporté
-volontairement.
+Le carnet ci-dessous.
 
 ### Le reste du carnet
 
-- **Le paiement en ligne.** L'intention de paiement est créée chez Stripe, mais
-  le webhook qui confirme l'encaissement et le remboursement ne sont pas
-  écrits : une commande reste en paiement « en attente ». *Reporté
-  volontairement.*
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
 - **Se servir de la note à l'attribution** : elle est écrite et lue, mais le

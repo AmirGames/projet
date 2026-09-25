@@ -106,9 +106,12 @@ export function ReponseCommande({
         {commande.rejectionNote && (
           <p className="text-gray-400">« {commande.rejectionNote} »</p>
         )}
+        {commande.paymentStatus === 'REFUNDED' && (
+          <p className="text-gray-400">Payée en ligne : le client a été remboursé.</p>
+        )}
         {commande.paymentStatus === 'SUCCEEDED' && (
           <p className="flex items-center gap-1 text-amber-400">
-            <AlertTriangle size={14} /> Payée en ligne : à rembourser au client.
+            <AlertTriangle size={14} /> Payée en ligne : le remboursement automatique a échoué, contactez le support.
           </p>
         )}
       </div>
@@ -147,7 +150,7 @@ export function ReponseCommande({
       />
       {commande.paymentStatus === 'SUCCEEDED' && (
         <p className="text-xs text-amber-400">
-          Cette commande est payée en ligne : vous devrez rembourser le client.
+          Cette commande est payée en ligne : le client sera remboursé automatiquement.
         </p>
       )}
       <div className="flex gap-2">

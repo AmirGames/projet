@@ -3,6 +3,7 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { emitWebhook } from "./webhook.service";
 import { OrderAcceptanceService, echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
+import { TRANSMISE } from "../utils/commande-transmise";
 
 export interface OrderFilterOptions {
   skip?: number;
@@ -20,7 +21,7 @@ export class OrderManagementService {
       const skip = options?.skip || 0;
       const take = options?.take || 50;
 
-      const whereClause: any = { storeId };
+      const whereClause: any = { storeId, ...TRANSMISE };
       
       if (options?.status) {
         whereClause.status = options.status;
@@ -137,7 +138,7 @@ export class OrderManagementService {
         },
       });
 
-      if (!order || order.storeId !== storeId) {
+      if (!order || order.storeId !== storeId || !order.submittedAt) {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
 
@@ -153,7 +154,7 @@ export class OrderManagementService {
         where: { id: orderId },
       });
 
-      if (!order || order.storeId !== storeId) {
+      if (!order || order.storeId !== storeId || !order.submittedAt) {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
 
@@ -248,7 +249,7 @@ export class OrderManagementService {
         where: { id: orderId },
       });
 
-      if (!order || order.storeId !== storeId) {
+      if (!order || order.storeId !== storeId || !order.submittedAt) {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
 
@@ -280,6 +281,7 @@ export class OrderManagementService {
         where: {
           storeId,
           createdAt: { gte: startDate },
+          ...TRANSMISE,
         },
         select: {
           id: true,
@@ -334,6 +336,7 @@ export class OrderManagementService {
       const orders = await db.order.findMany({
         where: {
           storeId,
+          ...TRANSMISE,
           createdAt: {
             gte: today,
             lt: tomorrow,
