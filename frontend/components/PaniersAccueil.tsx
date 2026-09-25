@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LienRegional';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, ShoppingCart } from 'lucide-react';
 

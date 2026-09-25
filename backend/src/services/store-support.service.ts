@@ -2,7 +2,7 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
-import { AddressService } from "./address.service";
+import { AddressService, paysDeLAdresse } from "./address.service";
 import { MerchantApprovalService } from "./merchant-approval.service";
 import { TRANSMISE } from "../utils/commande-transmise";
 
@@ -41,8 +41,11 @@ const CHAMPS_CORRIGEABLES = {
 
 export type ChampCorrigeable = keyof typeof CHAMPS_CORRIGEABLES;
 
+/** Ce qui suit l'adresse sans se saisir : journalisé, jamais corrigeable. */
+const CHAMPS_DEDUITS: Record<string, string> = { countryCode: "Pays" };
+
 export const libelleDuChamp = (champ: string) =>
-  CHAMPS_CORRIGEABLES[champ as ChampCorrigeable] || champ;
+  CHAMPS_CORRIGEABLES[champ as ChampCorrigeable] || CHAMPS_DEDUITS[champ] || champ;
 
 /** Un slug ne sert que s'il tient dans une URL. */
 const SLUG_VALIDE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -264,16 +267,23 @@ export class StoreSupportService {
       donnees.city !== undefined ||
       donnees.postalCode !== undefined;
 
+    const nouvelleAdresse = {
+      address: (donnees.address ?? boutique.address) as string | null,
+      postalCode: (donnees.postalCode ?? boutique.postalCode) as string | null,
+      city: (donnees.city ?? boutique.city) as string | null,
+    };
+
+    // Le pays suit l'adresse : il décide des régions du site où la boutique
+    // est listée.
+    if (adresseTouchee) donnees.countryCode = paysDeLAdresse(nouvelleAdresse);
+
     if (adresseTouchee && donnees.latitude === undefined && donnees.longitude === undefined) {
-      const texte = [
-        donnees.address ?? boutique.address,
-        donnees.postalCode ?? boutique.postalCode,
-        donnees.city ?? boutique.city,
-      ]
+      const texte = [nouvelleAdresse.address, nouvelleAdresse.postalCode, nouvelleAdresse.city]
         .filter(Boolean)
         .join(" ");
 
       const situation = await AddressService.situer(texte);
+      donnees.countryCode = paysDeLAdresse(nouvelleAdresse, situation.adresse);
 
       if (situation.point) {
         donnees.latitude = situation.point.latitude;

@@ -201,6 +201,7 @@ export class StoreSettingsService {
       if (position) {
         updateData.latitude = position.latitude;
         updateData.longitude = position.longitude;
+        updateData.countryCode = position.pays;
       }
 
       await db.store.update({ where: { id: storeId }, data: updateData });

@@ -37,7 +37,7 @@ import {
   Tag,
   User,
 } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/LienRegional';
 import { useRouter } from 'next/navigation';
 
 import { euro } from '@/lib/format';

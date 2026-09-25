@@ -438,6 +438,35 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
   d'abord cliquer sur « Panier ».
 - Elle titre ses catégories en `h2` et ses plats en `h3`, dans des `<section>`.
 
+**Les régions (`/be-fr/`, `/fr-fr/`, `/gb-en/`…)**
+- Seules les pages publiques indexables portent le préfixe : accueil,
+  `/restaurants`, `/restaurant/*`, `/store/*` (sauf `/store/new`), pages
+  légales, pages « devenir ». Liste dans `frontend/i18n/chemins-regionaux.ts`.
+- **Aucune page n'est déplacée** : le middleware retire le préfixe, réécrit
+  vers la page d'origine et transmet la région par l'en-tête
+  `x-zupone-region`. Une page publique appelée sans préfixe est redirigée
+  (307) vers la région du visiteur : cookie `ZUPONE_REGION`, sinon langue
+  choisie, sinon `Accept-Language`, sinon `fr-fr`.
+- Un script de vérification qui ouvre `/restaurants` atterrit donc sur
+  `/fr-fr/restaurants` : comparer les adresses sans le préfixe.
+- Sur les pages publiques, importer `Link` depuis `@/components/LienRegional`
+  plutôt que `next/link`, pour éviter un détour par la redirection.
+- `usePathname()` renvoie l'adresse visible, préfixe compris.
+- **Chaque boutique a un pays** (`Store.countryCode`, « fr », « be »…), déduit
+  de son adresse à chaque changement (`paysDeLAdresse` : le texte d'abord, le
+  géocodage ensuite). `GET /api/client/stores?pays=be` ne liste que les
+  boutiques belges **et celles dont le pays est inconnu** — une boutique de
+  trop plutôt qu'un commerce introuvable. `/stores/nearby` ne filtre pas : la
+  distance prime, frontière comprise.
+- Les boutiques d'avant ce champ : la migration donne `fr` aux codes postaux à
+  cinq chiffres ; les autres restent vides jusqu'à leur prochain changement
+  d'adresse ou leur prochaine commande sans position.
+- **SEO** (`frontend/lib/seo-regional.ts`) : chaque page régionale porte une
+  balise `canonical` et des `hreflang` (fr-BE, en-GB…, plus `x-default` vers
+  l'adresse sans préfixe). La vitrine ne les déclare que dans les régions du
+  pays de son commerce, et sa canonique y renvoie. `/sitemap.xml` et
+  `/robots.txt` sont générés (`app/sitemap.ts`, `app/robots.ts`).
+
 ---
 
 ## 8. Ce qui est actif en ce moment

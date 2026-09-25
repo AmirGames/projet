@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/LienRegional';
 import { EMAIL_CONTACT, PAGES_LEGALES } from '@/lib/editeur';
 
 /** Cadre commun des pages légales : sommaire à gauche, texte lisible à droite. */

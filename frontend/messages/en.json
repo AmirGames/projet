@@ -26,7 +26,12 @@
     "dashboard": "Dashboard",
     "superOwner": "Super Owner",
     "logout": "Log out",
-    "language": "Language"
+    "language": "Language",
+    "region": "Region",
+    "languageAndRegion": "Language and region",
+    "suggestedRegions": "Suggested languages and regions",
+    "chooseRegion": "Choose a language and region",
+    "close": "Close"
   },
   "superowner": {
     "loading": "Loading...",

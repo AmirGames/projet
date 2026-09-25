@@ -1,7 +1,7 @@
 'use client';
 
 import { PAGES_LEGALES } from '@/lib/editeur';
-import Link from "next/link";
+import Link from '@/components/LienRegional';
 import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
 

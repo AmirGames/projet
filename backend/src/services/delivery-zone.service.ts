@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint, pointDansPolygone, airePolygone, Point } from "../utils/geo";
-import { AddressService } from "./address.service";
+import { AddressService, paysDeLAdresse } from "./address.service";
 import { modeDeLivraison, ModeDeLivraison } from "./delivery-mode.service";
 import { DispatchService } from "./dispatch.service";
 
@@ -352,8 +352,13 @@ export class DeliveryZoneService {
           boutique.latitude = situee.point.latitude;
           boutique.longitude = situee.point.longitude;
 
+          // Le pays au passage : les boutiques d'avant ce champ le reçoivent
+          // ici, sans que personne n'ait à ressaisir son adresse.
           await db.store
-            .update({ where: { id: storeId }, data: situee.point })
+            .update({
+              where: { id: storeId },
+              data: { ...situee.point, countryCode: paysDeLAdresse(boutique, situee.adresse) },
+            })
             .catch(() => undefined);
         }
       }

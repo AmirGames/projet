@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import Link from '@/components/LienRegional';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 

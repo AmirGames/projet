@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/LienRegional';
 import { PAYS, type Pays } from '@/lib/pays-infos';
 
 export interface Etape {

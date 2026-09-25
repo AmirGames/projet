@@ -296,6 +296,16 @@ export function paysDuTexte(texte: string): string | undefined {
 }
 
 /**
+ * Le pays d'une boutique, d'après son adresse écrite puis, à défaut, d'après
+ * l'adresse que le géocodage a retenue. Le texte passe d'abord : la BAN rend
+ * une approximation française même pour une adresse belge.
+ */
+export function paysDeLAdresse(adresse: AdresseDeBoutique, trouvee?: Suggestion | null): string | null {
+  const texte = [adresse.address, adresse.postalCode, adresse.city].filter(Boolean).join(" ");
+  return paysDuTexte(texte) || trouvee?.countryCode || null;
+}
+
+/**
  * L'indice du navigateur, complété par ce que dit le texte. Le texte l'emporte :
  * un client en Belgique qui tape « 59000 Lille » cherche bien Lille.
  */
@@ -639,7 +649,13 @@ export class AddressService {
     avant: AdresseDeBoutique,
     apres: AdresseDeBoutique,
     fournie: { latitude?: number | null; longitude?: number | null } = {}
-  ): Promise<{ latitude: number | null; longitude: number | null; trouvee: boolean } | null> {
+  ): Promise<{
+    latitude: number | null;
+    longitude: number | null;
+    trouvee: boolean;
+    /** Le pays de la nouvelle adresse, voir paysDeLAdresse. */
+    pays: string | null;
+  } | null> {
     const propre = (valeur?: string | null) => (valeur || "").trim().toLowerCase();
 
     const change = (["address", "city", "postalCode"] as const).some(
@@ -649,18 +665,24 @@ export class AddressService {
     if (!change) return null;
 
     if (typeof fournie.latitude === "number" && typeof fournie.longitude === "number") {
-      return { latitude: fournie.latitude, longitude: fournie.longitude, trouvee: true };
+      return {
+        latitude: fournie.latitude,
+        longitude: fournie.longitude,
+        trouvee: true,
+        pays: paysDeLAdresse(apres),
+      };
     }
 
     const texte = [apres.address, apres.postalCode, apres.city].filter(Boolean).join(" ");
 
     // Pas l'ancienne position pour repère : la boutique déménage peut-être, et
     // l'adresse complète — code postal et ville — suffit à la situer.
-    const { point } = await this.situer(texte);
+    const { point, adresse } = await this.situer(texte);
+    const pays = paysDeLAdresse(apres, adresse);
 
     return point
-      ? { ...point, trouvee: true }
-      : { latitude: null, longitude: null, trouvee: false };
+      ? { ...point, trouvee: true, pays }
+      : { latitude: null, longitude: null, trouvee: false, pays };
   }
 
   /** Vide le cache : utile après un changement de fournisseur. */

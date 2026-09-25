@@ -26,7 +26,12 @@
     "dashboard": "Dashboard",
     "superOwner": "Super Owner",
     "logout": "Déconnexion",
-    "language": "Langue"
+    "language": "Langue",
+    "region": "Région",
+    "languageAndRegion": "Langue et région",
+    "suggestedRegions": "Langues et régions suggérées",
+    "chooseRegion": "Choisissez une langue et une région",
+    "close": "Fermer"
   },
   "superowner": {
     "loading": "Chargement...",
