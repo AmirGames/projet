@@ -34,7 +34,18 @@ interface Store {
   /** Ce que disent à la fois le planning hebdomadaire et le bouton rapide, croisés. */
   isOpenNow?: boolean;
   products?: any[];
+  /** Les frais jusqu'à l'adresse du client, quand elle est connue. */
+  livraison?: {
+    livrable: boolean;
+    frais: number;
+    minimum: number;
+    deliveryMinutes: number | null;
+  } | null;
 }
+
+/** Les frais qui s'appliquent vraiment : ceux de la zone, sinon le forfait. */
+const fraisDe = (store: Store) =>
+  store.livraison ? (store.livraison.livrable ? store.livraison.frais : Infinity) : store.deliveryCost || 0;
 
 export default function ClientHomePage() {
   const t = useTranslations('clientHome');
@@ -106,7 +117,7 @@ export default function ClientHomePage() {
     } else if (sortBy === 'distance') {
       filtered.sort((a, b) => (a.distance ?? 999) - (b.distance ?? 999));
     } else if (sortBy === 'delivery') {
-      filtered.sort((a, b) => (a.deliveryCost || 0) - (b.deliveryCost || 0));
+      filtered.sort((a, b) => fraisDe(a) - fraisDe(b));
     }
 
     setFilteredStores(filtered);
@@ -226,10 +237,14 @@ export default function ClientHomePage() {
                             </div>
                           )}
 
-                          {store.estimatedDeliveryTime && (
+                          {(store.livraison?.deliveryMinutes != null || store.estimatedDeliveryTime) && (
                             <div className="flex items-center gap-2 text-gray-400">
                               <Clock size={14} />
-                              <span>{store.estimatedDeliveryTime}</span>
+                              <span>
+                                {store.livraison?.deliveryMinutes != null
+                                  ? `${store.livraison.deliveryMinutes} min`
+                                  : store.estimatedDeliveryTime}
+                              </span>
                             </div>
                           )}
 
@@ -241,12 +256,35 @@ export default function ClientHomePage() {
                         </div>
 
                         {/* Delivery Cost */}
-                        {store.deliveryCost !== undefined && (
-                          <div className="mt-3 pt-3 border-t border-gray-700">
-                            <span className="text-orange-400 font-semibold">
-                              {t('fees')} {euro(store.deliveryCost)}
-                            </span>
+                        {/* Les frais jusqu'à l'adresse retenue ; à défaut, le
+                            forfait de la boutique. */}
+                        {store.livraison ? (
+                          <div className="mt-3 pt-3 border-t border-gray-700 text-sm">
+                            {store.livraison.livrable ? (
+                              <>
+                                <span className="text-orange-400 font-semibold">
+                                  {store.livraison.frais > 0
+                                    ? `${t('deliveryFee')} ${euro(store.livraison.frais)}`
+                                    : t('freeDelivery')}
+                                </span>
+                                {store.livraison.minimum > 0 && (
+                                  <span className="text-gray-400">
+                                    {' '}· {t('minimum')} {euro(store.livraison.minimum)}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-amber-400 font-semibold">{t('notDelivered')}</span>
+                            )}
                           </div>
+                        ) : (
+                          store.deliveryCost !== undefined && (
+                            <div className="mt-3 pt-3 border-t border-gray-700">
+                              <span className="text-orange-400 font-semibold">
+                                {t('fees')} {euro(store.deliveryCost)}
+                              </span>
+                            </div>
+                          )
                         )}
 
                         {/* CTA Button */}

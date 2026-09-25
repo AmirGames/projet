@@ -1193,7 +1193,11 @@
     "geolocationNotSupported": "Géolocalisation non supportée",
     "cantAccessLocation": "Impossible d'accéder à votre localisation",
     "allRestaurants": "Tous les restaurants",
-    "tryAnotherAddress": "Aucun restaurant ne livre encore ici. Essayez une autre adresse."
+    "tryAnotherAddress": "Aucun restaurant ne livre encore ici. Essayez une autre adresse.",
+    "deliveryFee": "Frais de livraison :",
+    "freeDelivery": "Livraison gratuite",
+    "minimum": "min.",
+    "notDelivered": "Ne livre pas à votre adresse — retrait possible"
   },
   "clientOrders": {
     "title": "Mes Commandes",

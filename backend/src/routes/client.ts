@@ -119,10 +119,32 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
       .filter(store => store.distance <= maxDist)
       .sort((a, b) => a.distance - b.distance);
 
+    // Les frais de livraison jusqu'à l'adresse du client, boutique par
+    // boutique : la liste les affichait au forfait, sans tenir compte des
+    // zones. Un calcul qui échoue ne prive pas le client de la liste.
+    const avecLivraison = await Promise.all(
+      storesWithDistance.map(async (store) => {
+        try {
+          const verdict = await DeliveryZoneService.verdict(store.id, { latitude: lat, longitude: lng });
+          return {
+            ...store,
+            livraison: {
+              livrable: verdict.livrable,
+              frais: verdict.frais,
+              minimum: verdict.minimum,
+              deliveryMinutes: verdict.zone?.deliveryMinutes ?? null,
+            },
+          };
+        } catch {
+          return { ...store, livraison: null };
+        }
+      })
+    );
+
     res.json({
       success: true,
-      count: storesWithDistance.length,
-      data: await avecLaVraieNote(storesWithDistance)
+      count: avecLivraison.length,
+      data: await avecLaVraieNote(avecLivraison)
     });
   } catch (err) {
     next(err);
