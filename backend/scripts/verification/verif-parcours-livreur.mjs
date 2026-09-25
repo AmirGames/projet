@@ -65,7 +65,7 @@ const produit = await j(
 const productId = produit.product?.id || produit.id;
 
 const livreur = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: `d-${uniq}@t.fr`,
     password: MDP,
@@ -83,7 +83,7 @@ await patch('/api/drivers/location', COMMERCE, D);
 const clientEmail = `c-${uniq}@t.fr`;
 
 const commande = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
     customerEmail: clientEmail,
@@ -169,7 +169,7 @@ const pdf = await envoyerPhoto(Buffer.from('%PDF-1.4'), 'application/pdf');
 check('un PDF n’est pas une photo', pdf.status === 400, `statut ${pdf.status}`);
 
 const autre = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Autre ${uniq}`,
     email: `d2-${uniq}@t.fr`,
     password: MDP,
@@ -211,7 +211,7 @@ check('course close : plus de photo', tard.status === 400, `statut ${tard.status
 
 titre('Le code du client reste la preuve normale');
 const seconde = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
     customerEmail: clientEmail,

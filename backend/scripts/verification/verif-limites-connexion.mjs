@@ -8,7 +8,7 @@ const cible = `cible-${uniq}@t.fr`;
 const voisin = `voisin-${uniq}@t.fr`;
 
 for (const email of [cible, voisin]) {
-  await post('/api/auth/signup', { email, password: MDP, name: `L ${uniq}` });
+  await post('/api/auth/signup', { conditionsAcceptees: true, email, password: MDP, name: `L ${uniq}` });
 }
 
 // ===== Connexion =====
@@ -53,7 +53,7 @@ check(
 titre('Inscription hors production');
 const inscriptions = [];
 for (let n = 0; n < 12; n++) {
-  const reponse = await post('/api/auth/signup', {
+  const reponse = await post('/api/auth/signup', { conditionsAcceptees: true,
     email: `serie-${n}-${uniq}@t.fr`,
     password: MDP,
     name: `S ${n}`,

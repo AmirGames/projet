@@ -43,7 +43,7 @@ const produit = await j(
 const productId = produit.product?.id || produit.id;
 
 const commander = (email, quantite = 1) =>
-  post('/api/orders', {
+  post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
     customerEmail: email,

@@ -6,6 +6,7 @@ import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { emitOrderUpdate } from "../config/socket";
 import { db } from "../services/db";
+import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
 
 import { DispatchService } from "../services/dispatch.service";
 
@@ -89,6 +90,7 @@ const createOrderSchema = z.object({
       })
     )
     .optional(),
+  ...champAcceptation,
 });
 
 const updateOrderStatusSchema = z.object({
@@ -98,11 +100,17 @@ const updateOrderStatusSchema = z.object({
 // POST /orders - Create order (public, for guest checkout)
 router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const body = createOrderSchema.parse(req.body);
+    const { conditionsAcceptees: _accepte, ...body } = createOrderSchema.parse(req.body);
 
     logger.info("Creating order", { customerName: body.customerName, storeId: body.storeId });
 
     const order = await OrderService.create(body);
+
+    await enregistrerAcceptation(req, {
+      email: body.customerEmail,
+      orderId: order.id,
+      documents: ["cgv", "confidentialite"],
+    });
 
     res.status(201).json({
       message: "Commande créée",

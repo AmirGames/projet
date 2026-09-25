@@ -45,7 +45,7 @@ const prodB1 = await j(await post('/api/products', { storeId: idB, name: 'Pain B
 const prodB2 = await j(await post('/api/products', { storeId: idB, name: 'Pain B2', price: 4, stock: 10, status: 'ACTIVE' }, marchandToken));
 check('produits créés', !!(prodA?.product?.id && prodB1?.product?.id && prodB2?.product?.id));
 
-const cmd = async (storeId, montant, email) => j(await post('/api/orders', {
+const cmd = async (storeId, montant, email) => j(await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client Test', customerEmail: email, customerPhone: '0600000000',
   deliveryType: 'PICKUP', totalAmount: montant,
 }));

@@ -10,6 +10,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import {
+  Scale,
   Flag,
   Home,
   Building2,
@@ -125,6 +126,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
         { label: t('nav.apiKeys'), icon: Key, href: '/superowner/api-keys' },
         { label: t('nav.webhooks'), icon: Webhook, href: '/superowner/webhooks' },
         { label: t('nav.systemConfig'), icon: Settings, href: '/superowner/system-config' },
+        { label: t('nav.legalPages'), icon: Scale, href: '/superowner/pages-legales' },
         { label: t('nav.advancedSettings'), icon: Sliders, href: '/superowner/advanced-settings' },
       ],
     },

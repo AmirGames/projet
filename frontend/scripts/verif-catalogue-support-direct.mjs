@@ -64,7 +64,7 @@ const attendre = async (page, condition, delaiMs = 6000) => {
 
 const plateforme = await appeler('/api/auth/signup', {
   method: 'POST',
-  corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `Plateforme ${uniq}` },
+  corps: { conditionsAcceptees: true, email: `p-${uniq}@t.fr`, password: MDP, name: `Plateforme ${uniq}` },
 });
 const TP = plateforme.donnees.accessToken;
 
@@ -223,14 +223,14 @@ const pOrganisations = await ouvrir(TP, '/superowner/organizations');
 const livreur = `Livreur ${uniq}`;
 const inscription = await appeler('/api/drivers/register', {
   method: 'POST',
-  corps: { name: livreur, email: `l-${uniq}@t.fr`, password: MDP, phone: '0612345678', vehicleType: 'bike' },
+  corps: { conditionsAcceptees: true, name: livreur, email: `l-${uniq}@t.fr`, password: MDP, phone: '0612345678', vehicleType: 'bike' },
 });
 check('un livreur s’inscrit', inscription.statut < 400, JSON.stringify(inscription.donnees)?.slice(0, 200));
 check('il apparaît dans la file des livreurs', await attendre(pLivreurs, contient(pLivreurs, livreur)));
 
 const nouveau = await appeler('/api/auth/signup', {
   method: 'POST',
-  corps: { email: `n-${uniq}@t.fr`, password: MDP, name: `Nouveau ${uniq}` },
+  corps: { conditionsAcceptees: true, email: `n-${uniq}@t.fr`, password: MDP, name: `Nouveau ${uniq}` },
 });
 const commerce = `Primeur ${uniq}`;
 await appeler('/api/organizations', {

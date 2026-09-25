@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, FormEvent, useEffect } from 'react';
+import AcceptationConditions from '@/components/AcceptationConditions';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useTypesDeCommerce } from '@/lib/types-commerce';
@@ -36,6 +37,7 @@ export default function MerchantRegisterPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [successMessage, setSuccessMessage] = useState('');
@@ -170,6 +172,7 @@ export default function MerchantRegisterPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          conditionsAcceptees,
           businessName: formData.businessName,
           email: formData.email,
           password: formData.password,
@@ -557,10 +560,19 @@ export default function MerchantRegisterPage() {
               </p>
             </div>
 
+            <AcceptationConditions
+              coche={conditionsAcceptees}
+              onChange={setConditionsAcceptees}
+              documents={[
+                { href: '/cgu', libelle: 'les conditions générales d’utilisation' },
+                { href: '/conditions-commercants', libelle: 'les conditions générales commerçants' },
+              ]}
+            />
+
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !conditionsAcceptees}
               className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               {loading ? (

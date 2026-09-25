@@ -139,7 +139,7 @@ let numeroOrganisation = 0;
  * servent comme avant.
  */
 export async function inscription(corps) {
-  const reponse = await post("/api/auth/signup", corps);
+  const reponse = await post("/api/auth/signup", { conditionsAcceptees: true, ...corps });
   const donnees = await j(reponse);
 
   if (!reponse.ok || !donnees?.accessToken) {

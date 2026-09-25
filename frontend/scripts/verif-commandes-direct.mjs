@@ -53,7 +53,7 @@ const base = baseDeDonnees();
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', { method: 'POST', corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` } });
+await appeler('/api/auth/signup', { method: 'POST', corps: { conditionsAcceptees: true, email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` } });
 
 const commercant = await inscriptionVia(appeler, {
   method: 'POST',
@@ -87,7 +87,7 @@ const productId = produit.donnees.product?.id || produit.donnees.id;
 
 const cliente = await appeler('/api/auth/signup', {
   method: 'POST',
-  corps: { email: `c-${uniq}@t.fr`, password: MDP, name: `Cliente ${uniq}` },
+  corps: { conditionsAcceptees: true, email: `c-${uniq}@t.fr`, password: MDP, name: `Cliente ${uniq}` },
 });
 const TC = cliente.donnees.accessToken;
 
@@ -95,7 +95,7 @@ const commander = async () => {
   const reponse = await appeler('/api/orders', {
     method: 'POST',
     jeton: TC,
-    corps: {
+    corps: { conditionsAcceptees: true,
       storeId,
       customerName: 'Cliente',
       customerEmail: `c-${uniq}@t.fr`,

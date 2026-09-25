@@ -160,7 +160,7 @@ const produit = await j(
 );
 
 const commande = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `C ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,

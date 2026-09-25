@@ -19,7 +19,7 @@ const commercant = await j(
 const T = commercant.accessToken;
 
 const livreur = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Livreur ${uniq}`,
     email: `l-${uniq}@t.fr`,
     password: MDP,

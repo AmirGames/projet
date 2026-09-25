@@ -31,6 +31,7 @@ const j = async (reponse) => {
 await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` });
 
 const fiche = (suffixe, businessType, extra = {}) => ({
+  conditionsAcceptees: true,
   businessName: `Commerce ${suffixe} ${uniq}`,
   email: `${suffixe}-${uniq}@t.fr`,
   password: MDP,
@@ -99,7 +100,7 @@ check(
 
 titre('« Devenir commerçant » crée aussi une boutique située et genrée');
 const client = await j(
-  await post('/api/auth/signup', { email: `client-${uniq}@t.fr`, password: MDP, name: `Client ${uniq}` })
+  await post('/api/auth/signup', { conditionsAcceptees: true, email: `client-${uniq}@t.fr`, password: MDP, name: `Client ${uniq}` })
 );
 const { email: _e, password: _p, ...corpsDevenir } = fiche('devenu', 'Pharmacy');
 const devenu = await post('/api/auth/me/become-merchant', corpsDevenir, client.accessToken);

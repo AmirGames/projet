@@ -66,7 +66,7 @@ check('la boutique a des coordonnées', coordonnees.startsWith('45.76'), coordon
 
 async function creerLivreur(prefixe, position, enLigne = true) {
   const compte = await j(
-    await post('/api/drivers/register', {
+    await post('/api/drivers/register', { conditionsAcceptees: true,
       name: `${prefixe} ${uniq}`,
       email: `${prefixe}-${uniq}@t.fr`,
       password: 'Password123!',
@@ -115,7 +115,7 @@ const horsLigne = await creerLivreur('horsligne', PRES, false);
 // ===== La commande =====
 
 const commande = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: 'Client Test',
     customerEmail: `c-${uniq}@t.fr`,
@@ -274,7 +274,7 @@ check('il redevient disponible', redevenuLibre === 'true', redevenuLibre);
 titre('Expiration d\'une proposition');
 // Une deuxième commande, proposée puis laissée sans réponse.
 const commande2 = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: 'Client Deux',
     customerEmail: `c2-${uniq}@t.fr`,
@@ -328,7 +328,7 @@ check(
 
 titre('Commande à emporter');
 const emporter = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: 'Client Trois',
     customerEmail: `c3-${uniq}@t.fr`,

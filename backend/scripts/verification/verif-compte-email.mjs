@@ -14,7 +14,7 @@ const nouveauMotDePasse = 'NouveauPass456!';
 
 titre('Inscription');
 const inscription = await j(
-  await post('/api/auth/signup', { email, password: motDePasseInitial, name: `Oubli ${uniq}` })
+  await post('/api/auth/signup', { conditionsAcceptees: true, email, password: motDePasseInitial, name: `Oubli ${uniq}` })
 );
 check('compte créé', !!inscription?.accessToken, JSON.stringify(inscription)?.slice(0, 150));
 

@@ -43,7 +43,7 @@ const produitId = produit.product?.id || produit.id;
 
 const commander = async () => {
   const reponse = await j(
-    await post("/api/orders", {
+    await post("/api/orders", { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
       customerEmail: `c-${uniq}@t.fr`,

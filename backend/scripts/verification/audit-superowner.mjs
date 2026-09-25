@@ -11,7 +11,7 @@ const b = await j(await post('/api/stores', {
 }, m.accessToken));
 const storeId = b.store?.id || b.id;
 await post('/api/products', { storeId, name: 'Pain', price: 2, stock: 5, status: 'ACTIVE' }, m.accessToken);
-await post('/api/orders', { storeId, customerName: 'C', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000', deliveryType: 'PICKUP', totalAmount: 40 });
+await post('/api/orders', { conditionsAcceptees: true, storeId, customerName: 'C', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000', deliveryType: 'PICKUP', totalAmount: 40 });
 
 const lire = async (nom, chemin, verif) => {
   const r = await get(chemin, T);

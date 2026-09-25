@@ -62,7 +62,7 @@ const virement = await moyen("BANK_TRANSFER", "Virement");
 
 const commander = async (paymentMethodId) => {
   const reponse = await j(
-    await post("/api/orders", {
+    await post("/api/orders", { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
       customerEmail: `c-${uniq}@t.fr`,

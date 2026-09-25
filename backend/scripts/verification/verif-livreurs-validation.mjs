@@ -41,7 +41,7 @@ const produit = await j(
 const productId = produit.product?.id || produit.id;
 
 const commande = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
@@ -61,7 +61,7 @@ const orderId = commande.order?.id || commande.id;
 
 titre('Un livreur qui s’inscrit attend');
 const livreur = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: `d-${uniq}@t.fr`,
     password: MDP,
@@ -238,7 +238,7 @@ check(
 
 titre('Un dossier jamais validé ne se « rétablit » pas');
 const autre = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Sami ${uniq}`,
     email: `d2-${uniq}@t.fr`,
     password: MDP,

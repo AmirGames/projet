@@ -101,7 +101,7 @@ check('sans pile d’appels', !/"stack"/.test(ligneDuRefus), ligneDuRefus.slice(
 titre('Une saisie invalide non plus');
 const inscription = await appeler('/api/auth/signup', {
   method: 'POST',
-  corps: { email: 'pas-un-email', password: 'x', name: 'A' },
+  corps: { conditionsAcceptees: true, email: 'pas-un-email', password: 'x', name: 'A' },
 });
 check('la route répond 400', inscription.status === 400, `statut ${inscription.status}`);
 

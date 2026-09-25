@@ -66,7 +66,7 @@ titre('Quand le compte disparaît');
 // L'inscription seule, sans l'organisation d'inscription() : la créer
 // passerait par l'API avec ce jeton, et le serveur se souviendrait du compte.
 const condamne = await j(
-  await post('/api/auth/signup', { email: `d-${uniq}@t.fr`, password: MDP, name: `D ${uniq}` })
+  await post('/api/auth/signup', { conditionsAcceptees: true, email: `d-${uniq}@t.fr`, password: MDP, name: `D ${uniq}` })
 );
 const TD = condamne.accessToken;
 const RD = condamne.refreshToken;

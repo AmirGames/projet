@@ -20,6 +20,7 @@ import {
   DUREE_REINITIALISATION_MS,
 } from "../services/account-token.service";
 import { db } from "../services/db";
+import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
 import { StoreService } from "../services/store.service";
 import { normaliserGenre } from "../services/store-type.service";
 
@@ -28,7 +29,7 @@ const router = Router();
 // POST /auth/signup
 router.post("/signup", limiterInscriptions, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const body = signupSchema.parse(req.body);
+    const body = signupSchema.extend(champAcceptation).parse(req.body);
 
     logger.info("Signup attempt", { email: body.email });
 
@@ -47,6 +48,8 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
         isSystemAdmin: isFirstUser,
       },
     });
+
+    await enregistrerAcceptation(req, { email: user.email, userId: user.id, documents: ["cgu", "cgv", "confidentialite"] });
 
     if (isFirstUser) {
       logger.info("First user created - marked as Super Owner", { userId: user.id });
@@ -582,6 +585,7 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
       description: z.string().min(1).max(1000),
       storeName: z.string().min(1).max(200),
       storeSlug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+      ...champAcceptation,
     });
 
     const body = schema.parse(req.body);
@@ -629,6 +633,12 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
         isSuperOwner: isFirstUser,
         isSystemAdmin: isFirstUser,
       },
+    });
+
+    await enregistrerAcceptation(req, {
+      email: user.email,
+      userId: user.id,
+      documents: ["cgu", "conditions-commercants", "confidentialite"],
     });
 
     if (isFirstUser) {

@@ -20,7 +20,7 @@ const productId = (await j(await post('/api/products', { storeId, name: 'Pizza',
 
 const emailClient = `c-${uniq}@t.fr`;
 const TC = (await j(await inscription({ email: emailClient, password: MDP, name: 'Client Test' }))).accessToken;
-const orderId = (await j(await post('/api/orders', {
+const orderId = (await j(await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client Test', customerEmail: emailClient, customerPhone: '0600000000',
   deliveryType: 'PICKUP', totalAmount: 12, feesAmount: 0,
 }))).order.id;

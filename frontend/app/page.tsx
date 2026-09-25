@@ -1,5 +1,6 @@
 'use client';
 
+import { PAGES_LEGALES } from '@/lib/editeur';
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
@@ -229,7 +230,7 @@ export default function Home() {
 
       {/* FOOTER */}
       <footer className="bg-slate-900 px-6 py-16 text-white md:px-10">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 md:grid-cols-3">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 md:grid-cols-4">
           <div>
             <h4 className="mb-3 text-lg font-bold">Zupone</h4>
             <p className="text-slate-300">
@@ -268,6 +269,14 @@ export default function Home() {
                 Mon espace
               </Link>
             )}
+          </div>
+          <div>
+            <h4 className="mb-3 text-lg font-bold">Informations légales</h4>
+            {PAGES_LEGALES.map((page) => (
+              <Link key={page.href} href={page.href} className="mb-2 block text-slate-300 hover:text-white">
+                {page.titre}
+              </Link>
+            ))}
           </div>
         </div>
       </footer>

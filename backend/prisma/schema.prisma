@@ -1962,3 +1962,38 @@ model SecurityEvent {
   @@index([severity])
   @@index([action])
 }
+
+// Preuve qu'une personne a accepté les conditions : qui, quels documents, dans
+// quelle version, quand et depuis où. Jamais modifiée ni supprimée avec le
+// compte : c'est elle qu'on oppose en cas de litige.
+model AcceptationConditions {
+  id         String   @id @default(cuid())
+  userId     String?
+  orderId    String?
+  email      String
+  documents  String[]
+  version    String
+  ip         String?
+  userAgent  String?
+  acceptedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([orderId])
+  @@index([email])
+}
+
+// Chaque version publiée d'une page légale. Rien n'est écrasé : la version en
+// vigueur est la plus récente, et les anciennes restent consultables pour
+// savoir quel texte une personne a accepté.
+model PageLegaleVersion {
+  id         String   @id @default(cuid())
+  slug       String
+  version    String
+  titre      String
+  contenu    String
+  publieLe   DateTime @default(now())
+  publiePar  String?
+
+  @@unique([slug, version])
+  @@index([slug, publieLe])
+}

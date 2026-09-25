@@ -20,7 +20,7 @@ const emailClient = `client-${uniq}@t.fr`;
 const compteClient = await j(await inscription({ email: emailClient, password: 'Password123!', name: 'Client Test' }));
 const cToken = compteClient.accessToken;
 
-const commande = await j(await post('/api/orders', {
+const commande = await j(await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client Test', customerEmail: emailClient, customerPhone: '0600000000',
   deliveryType: 'DELIVERY', deliveryAddress: '9 rue Client', deliveryCity: 'Lyon',
   totalAmount: 24, feesAmount: 3,
@@ -57,7 +57,7 @@ console.log('\n[Suivi de livraison]');
 const sansCourse = await j(await get(`/api/client/deliveries/${orderId}`, cToken));
 check('aucune course : réponse vide et non erreur', sansCourse?.data === null, JSON.stringify(sansCourse));
 
-const livreur = await j(await post('/api/drivers/register', {
+const livreur = await j(await post('/api/drivers/register', { conditionsAcceptees: true,
   name: 'Livreur', email: `d-${uniq}@t.fr`, password: 'Password123!', phone: '0611111111', vehicleType: 'bike',
 }));
 // La course passe par l'attribution : un livreur ne peut plus prendre une

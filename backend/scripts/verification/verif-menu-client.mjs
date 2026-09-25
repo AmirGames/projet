@@ -129,7 +129,7 @@ check(
 );
 
 titre('Commander un plat épuisé');
-const commande = await post('/api/orders', {
+const commande = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: 'Client Test',
   customerEmail: `c-${uniq}@t.fr`,
@@ -147,7 +147,7 @@ check('le code est exploitable', refus?.code === 'PRODUCT_UNAVAILABLE', refus?.c
 titre('Retour en disponible');
 await patch(`/api/products/${idProduit(margherita)}/availability`, { isAvailable: true, storeId }, T);
 
-const denouveau = await post('/api/orders', {
+const denouveau = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: 'Client Test',
   customerEmail: `c2-${uniq}@t.fr`,

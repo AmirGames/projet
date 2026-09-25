@@ -37,6 +37,7 @@ import productTagRouter from "./routes/product-tag";
 import adminRouter from "./routes/admin";
 import superAdminRouter from "./routes/super-admin";
 import superOwnerRouter from "./routes/superowner";
+import pagesLegalesRouter from "./routes/pages-legales";
 import clientRouter from "./routes/client";
 import mapsRouter from "./routes/maps";
 import driversRouter from "./routes/drivers";
@@ -168,6 +169,7 @@ export function createApp(): Express {
   app.use("/api/admin", adminRouter);
   app.use("/api/super-admin", superAdminRouter);
   app.use("/api/superowner", superOwnerRouter);
+  app.use("/api/pages-legales", pagesLegalesRouter);
   app.use("/api/client", clientRouter);
   app.use("/api/maps", mapsRouter);
   app.use("/api/drivers", driversRouter);

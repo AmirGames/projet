@@ -52,7 +52,7 @@ const produit = await j(
 const productId = produit.product?.id || produit.id;
 
 const livreur = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: `d-${uniq}@t.fr`,
     password: MDP,
@@ -70,7 +70,7 @@ await patch('/api/drivers/location', { latitude: 45.764, longitude: 4.8357 }, D)
 /** Une course acceptée et récupérée, prête à être remise. */
 async function courseAuSeuil() {
   const commande = await j(
-    await post('/api/orders', {
+    await post('/api/orders', { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
       customerEmail: `c-${uniq}@t.fr`,
@@ -280,7 +280,7 @@ check(
 
 titre('Les étapes précédentes n’en demandent pas');
 const quatrieme = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
     customerEmail: `c4-${uniq}@t.fr`,
@@ -338,7 +338,7 @@ check('la photo la clôt', parPhoto.status === 200, `statut ${parPhoto.status}`)
 
 titre('La course d’un autre livreur reste hors de portée');
 const autre = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Sami ${uniq}`,
     email: `d2-${uniq}@t.fr`,
     password: MDP,

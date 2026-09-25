@@ -116,7 +116,7 @@ check('un visiteur peut le faire vérifier', validation.status === 200, `statut 
 check('la remise est calculée', Number(remise?.discountAmount) === 3.2, `${remise?.discountAmount}`);
 
 titre('La commande porte tout cela');
-const commande = await post('/api/orders', {
+const commande = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: `Client ${uniq}`,
   customerEmail: `c-${uniq}@t.fr`,
@@ -176,7 +176,7 @@ const plat2 = await j(
   await post('/api/products', { storeId: storeId2, name: `Plat ${uniq}`, price: 10, status: 'ACTIVE' }, autre.accessToken)
 );
 
-const volee = await post('/api/orders', {
+const volee = await post('/api/orders', { conditionsAcceptees: true,
   storeId: storeId2,
   customerName: `Client ${uniq}`,
   customerEmail: `c2-${uniq}@t.fr`,

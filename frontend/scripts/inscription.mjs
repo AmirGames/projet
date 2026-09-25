@@ -44,7 +44,10 @@ export const baseDeDonnees = base;
 const suffixe = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 export async function inscriptionVia(appeler, options) {
-  const inscription = await appeler('/api/auth/signup', options);
+  const inscription = await appeler('/api/auth/signup', {
+    ...options,
+    corps: { conditionsAcceptees: true, ...options.corps },
+  });
   const jeton = inscription.donnees?.accessToken;
 
   if (!jeton) return inscription;

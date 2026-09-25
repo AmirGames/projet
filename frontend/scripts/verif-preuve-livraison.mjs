@@ -103,7 +103,7 @@ const productId = produit.donnees.product?.id || produit.donnees.id;
 
 const inscription = await appeler('/api/drivers/register', {
   method: 'POST',
-  corps: {
+  corps: { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: emailLivreur,
     password: MDP,
@@ -122,7 +122,7 @@ await appeler('/api/drivers/location', { method: 'PATCH', jeton: D, corps: POSIT
 async function courseAuSeuil({ recuperee = true } = {}) {
   const commande = await appeler('/api/orders', {
     method: 'POST',
-    corps: {
+    corps: { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
       customerEmail: `c-${uniq}@t.fr`,

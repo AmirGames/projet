@@ -16,7 +16,7 @@ const storeId = b.store?.id || b.id;
 const p = await j(await post('/api/products', { storeId, name: 'Croissant', price: 2.5, stock: 20, status: 'ACTIVE' }, token));
 check('produit enregistré à 2.50', Number(p?.product?.price) === 2.5, JSON.stringify(p?.product?.price));
 
-await post('/api/orders', {
+await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000',
   deliveryType: 'PICKUP', totalAmount: 12.5,
 });

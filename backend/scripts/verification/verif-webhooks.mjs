@@ -182,7 +182,7 @@ titre("Une commande passée est diffusée");
 recus.length = 0;
 
 const commande = await j(
-  await post("/api/orders", {
+  await post("/api/orders", { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
