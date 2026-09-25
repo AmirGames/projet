@@ -34,6 +34,8 @@ interface Store {
   /** Ce que disent à la fois le planning hebdomadaire et le bouton rapide, croisés. */
   isOpenNow?: boolean;
   products?: any[];
+  /** Le logo que le commerçant a déposé depuis ses paramètres. */
+  settings?: { logo?: string | null } | null;
   /** Les frais jusqu'à l'adresse du client, quand elle est connue. */
   livraison?: {
     livrable: boolean;
@@ -187,11 +189,20 @@ export default function ClientHomePage() {
                 {filteredStores.map((store) => (
                   <Link key={store.id} href={`/store/${store.slug}`}>
                     <div className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-xl transition transform hover:scale-105 cursor-pointer h-full">
-                      {/* Restaurant Image Placeholder */}
+                      {/* Le logo du commerce ; à défaut, son initiale. */}
                       <div className="relative bg-gradient-to-r from-orange-500 to-red-500 h-40 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-white text-4xl font-bold opacity-50">{store.name.charAt(0)}</div>
-                        </div>
+                        {store.settings?.logo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={store.settings.logo}
+                            alt={store.name}
+                            className="absolute inset-0 h-full w-full object-contain p-4"
+                          />
+                        ) : (
+                          <div className="text-center">
+                            <div className="text-white text-4xl font-bold opacity-50">{store.name.charAt(0)}</div>
+                          </div>
+                        )}
 
                         {/* Une boutique fermée disparaissait de la liste : le
                             client croyait le commerce parti. */}
