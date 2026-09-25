@@ -2,17 +2,33 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ChevronRight, ShoppingCart } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import {
   EVENEMENT_PANIERS,
   nombreDArticles,
+  retenirVitrineDuPanier,
   tousLesPaniers,
   totalDuPanier,
   type PanierBoutique,
 } from '@/lib/paniers';
 import { lireAdresseLivraison, type AdresseLivraison } from '@/lib/adresseLivraison';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+/** L'adresse de la vitrine d'un commerce, retrouvée depuis son identifiant. */
+async function slugDuCommerce(storeId: string): Promise<string | null> {
+  try {
+    const reponse = await fetch(`${API_URL}/api/client/stores/${storeId}`);
+    if (!reponse.ok) return null;
+    const donnees = await reponse.json();
+    return typeof donnees?.data?.slug === 'string' && donnees.data.slug ? donnees.data.slug : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Le panier de l'accueil : tous les paniers en cours, un par commerce.
@@ -27,6 +43,35 @@ export function PaniersAccueil() {
   const [adresse, setAdresse] = useState<AdresseLivraison | null>(null);
   const [ouvert, setOuvert] = useState(false);
   const conteneur = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  /**
+   * Un panier ramène toujours à la vitrine, où l'on peut encore ajouter des
+   * articles. Un panier créé avant qu'on garde l'adresse de la vitrine la
+   * retrouve à l'ouverture de la liste, puis la garde.
+   */
+  useEffect(() => {
+    if (!ouvert) return;
+    paniers
+      .filter((panier) => !panier.storeSlug)
+      .forEach(async (panier) => {
+        const slug = await slugDuCommerce(panier.storeId);
+        if (slug) retenirVitrineDuPanier(panier.storeId, slug);
+      });
+  }, [ouvert, paniers]);
+
+  // Au cas où l'on clique avant que l'adresse soit retrouvée.
+  const allerAuCommerce = async (panier: PanierBoutique) => {
+    setOuvert(false);
+    const slug = panier.storeSlug || (await slugDuCommerce(panier.storeId));
+    if (slug) {
+      retenirVitrineDuPanier(panier.storeId, slug);
+      router.push(`/store/${slug}?panier=1`);
+    } else {
+      // Commerce introuvable (supprimé, réseau coupé) : reste le tunnel.
+      router.push(`/checkout?boutique=${panier.storeId}`);
+    }
+  };
 
   useEffect(() => {
     const relire = () => {
@@ -88,15 +133,14 @@ export function PaniersAccueil() {
             <ul className="divide-y divide-gray-700 max-h-[70vh] overflow-y-auto">
               {paniers.map((panier) => (
                 <li key={panier.storeId}>
+                  {/* Retour à la vitrine, panier ouvert : on peut y ajouter
+                      des articles avant de commander. */}
                   <Link
-                    // Retour à la vitrine, panier ouvert ; à défaut de
-                    // l'adresse de la vitrine, le tunnel de commande.
-                    href={
-                      panier.storeSlug
-                        ? `/store/${panier.storeSlug}?panier=1`
-                        : `/checkout?boutique=${panier.storeId}`
-                    }
-                    onClick={() => setOuvert(false)}
+                    href={`/store/${panier.storeSlug || ''}?panier=1`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      allerAuCommerce(panier);
+                    }}
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gray-700/60 transition"
                   >
                     <span className="w-12 h-12 flex-shrink-0 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-lg font-bold">

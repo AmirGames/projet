@@ -132,6 +132,27 @@ export function enregistrerPanier(
   }
 }
 
+/**
+ * Retient l'adresse de la vitrine d'un panier créé avant qu'on la garde.
+ *
+ * Ni les articles ni la date du panier ne changent : il ne remonte pas en
+ * tête de liste pour autant.
+ */
+export function retenirVitrineDuPanier(storeId: string, storeSlug: string) {
+  const magasin = lireMagasin();
+  const panier = magasin[storeId];
+  if (!panier || !storeSlug || panier.storeSlug === storeSlug) return;
+
+  magasin[storeId] = { ...panier, storeSlug };
+  ecrireMagasin(magasin);
+
+  try {
+    window.dispatchEvent(new Event(EVENEMENT_PANIERS));
+  } catch {
+    // Hors navigateur : rien à prévenir.
+  }
+}
+
 /** Émis à chaque modification d'un panier, dans l'onglet courant. */
 export const EVENEMENT_PANIERS = 'zupone-paniers-modifies';
 
