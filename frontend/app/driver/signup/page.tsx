@@ -56,6 +56,7 @@ export default function InscriptionLivreurPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          conditionsAcceptees,
           ...formulaire,
           vehiclePlate: formulaire.vehiclePlate || undefined,
         }),

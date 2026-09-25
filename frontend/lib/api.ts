@@ -10,12 +10,12 @@ const getAuthHeaders = () => {
 
 export const api = {
   // Auth endpoints
-  signup: async (email: string, password: string, name: string) => {
+  signup: async (email: string, password: string, name: string, conditionsAcceptees: boolean) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name, confirmPassword: password }),
+        body: JSON.stringify({ email, password, name, confirmPassword: password, conditionsAcceptees }),
       });
       const data = await response.json();
       if (!response.ok) {

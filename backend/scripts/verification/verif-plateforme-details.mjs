@@ -95,7 +95,7 @@ check('sa formule annonce sa commission', Number(quota?.tierCommission) === 12, 
 // ===== La facturation dit d'où vient le montant =====
 
 titre('La facturation montre son calcul');
-await post('/api/orders', {
+await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: `Client ${uniq}`,
   customerEmail: `c-${uniq}@t.fr`,

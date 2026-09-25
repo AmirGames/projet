@@ -59,7 +59,7 @@ async function installer(suffixe) {
   );
 
   const commande = await j(
-    await post('/api/orders', {
+    await post('/api/orders', { conditionsAcceptees: true,
       storeId,
       customerName: `C ${uniq}`,
       customerEmail: `c${suffixe}-${uniq}@t.fr`,
@@ -266,7 +266,7 @@ check(
 );
 
 titre('Un client commande sans compte');
-const commandeClient = await post('/api/orders', {
+const commandeClient = await post('/api/orders', { conditionsAcceptees: true,
   storeId: alice.storeId,
   customerName: `Visiteur ${uniq}`,
   customerEmail: `v-${uniq}@t.fr`,
@@ -294,7 +294,7 @@ const TC = clientConnecte.accessToken;
 
 const sienne = await post(
   '/api/orders',
-  {
+  { conditionsAcceptees: true,
     storeId: alice.storeId,
     customerName: `Client ${uniq}`,
     customerEmail: `cl-${uniq}@t.fr`,

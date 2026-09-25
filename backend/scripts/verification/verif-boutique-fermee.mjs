@@ -44,7 +44,7 @@ check(
   'absente de la liste'
 );
 
-const premiere = await post('/api/orders', {
+const premiere = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: `Client ${uniq}`,
   customerEmail: `c-${uniq}@t.fr`,
@@ -83,7 +83,7 @@ check(
 );
 
 titre('Mais on n’y commande plus');
-const refusee = await post('/api/orders', {
+const refusee = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: `Client ${uniq}`,
   customerEmail: `c2-${uniq}@t.fr`,
@@ -109,7 +109,7 @@ check('aucune commande n’a été enregistrée pendant la fermeture', commandes
 
 titre('Rouverte, elle reprend');
 await patch(`/api/store-hours/${storeId}/status`, { isOpen: true }, T);
-const reprise = await post('/api/orders', {
+const reprise = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: `Client ${uniq}`,
   customerEmail: `c3-${uniq}@t.fr`,

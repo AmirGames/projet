@@ -25,7 +25,7 @@ const MDP = 'Password123!';
 
 const inscrireCommerce = async (prefixe) =>
   j(
-    await post('/api/auth/merchant-register', {
+    await post('/api/auth/merchant-register', { conditionsAcceptees: true,
       businessName: `${prefixe} ${uniq}`,
       email: `${prefixe}-${uniq}@t.fr`,
       password: MDP,
@@ -140,7 +140,7 @@ check('la plateforme non plus ne force pas l’ouverture', forcee.status === 403
 
 titre('Il ne vend pas, même boutique ouverte en base');
 await sqlExec(`UPDATE "Store" SET "isOpen" = true WHERE id = '${storeId}'`);
-const commande = await post('/api/orders', {
+const commande = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: 'Client Test',
   customerEmail: `client-${uniq}@t.fr`,
@@ -270,7 +270,7 @@ const ouvre = await patch(`/api/store-hours/${storeId}/status`, { isOpen: true }
 check('l’ouverture passe', ouvre.status === 200, String(ouvre.status));
 const listeApres = await j(await get('/api/client/stores'));
 check('il apparaît aux clients', (listeApres?.data || []).some((b) => b.id === storeId));
-const commandeApres = await post('/api/orders', {
+const commandeApres = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: 'Client Test',
   customerEmail: `client-${uniq}@t.fr`,

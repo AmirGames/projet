@@ -658,6 +658,17 @@ Le carnet ci-dessous.
 
 ---
 
+**Pages légales et acceptation des conditions.** Mentions légales, CGU, CGV,
+conditions commerçants et livreurs, confidentialité et cookies vivent sous
+`frontend/app/(legal)` ; l'identité de l'éditeur est dans `frontend/lib/editeur.ts`
+(champs entre crochets à remplir avant l'ouverture). Les quatre points d'entrée
+— `/auth/signup`, `/auth/merchant-register`, `/drivers/register`, `POST /orders` —
+exigent `conditionsAcceptees: true` et enregistrent la preuve dans
+`AcceptationConditions` (documents, version, IP, navigateur). **À chaque
+modification d'un texte légal, changer `VERSION_CONDITIONS`**
+(`backend/src/services/acceptation-conditions.service.ts`). Tout script qui
+appelle ces routes doit envoyer le champ.
+
 ## 9. Conventions d'écriture
 
 Elles se lisent dans le code existant, mais autant les dire.

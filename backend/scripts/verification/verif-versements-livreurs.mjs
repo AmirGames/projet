@@ -52,7 +52,7 @@ const produit = await j(
 const productId = produit.product?.id || produit.id;
 
 const livreur = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: `d-${uniq}@t.fr`,
     password: MDP,
@@ -72,7 +72,7 @@ const driverId = (await j(await get('/api/drivers/me', D)))?.data?.id;
 /** Une commande livrée de bout en bout, pour créer une course à payer. */
 async function courseLivree() {
   const commande = await j(
-    await post('/api/orders', {
+    await post('/api/orders', { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
       customerEmail: `c-${uniq}@t.fr`,
@@ -202,7 +202,7 @@ check('chacune porte son montant', (detail?.data?.deliveries || []).every((c) =>
 
 titre('Le relevé d’un autre livreur reste fermé');
 const autre = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Sami ${uniq}`,
     email: `d2-${uniq}@t.fr`,
     password: MDP,
@@ -332,7 +332,7 @@ titre('Une course non livrée n’est jamais due');
 // Seules les courses menées à leur terme se paient : une course acceptée mais
 // abandonnée ne doit rien.
 const enCours = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
     customerEmail: `c2-${uniq}@t.fr`,

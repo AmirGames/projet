@@ -66,7 +66,7 @@ if (!plateforme.donnees?.accessToken) {
 
 const inscription = await appeler('/api/drivers/register', {
   method: 'POST',
-  corps: {
+  corps: { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: emailLivreur,
     password: MDP,

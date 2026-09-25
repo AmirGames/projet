@@ -60,7 +60,7 @@ const aKm = (km) => ({
 });
 
 const commander = (position, quantite) =>
-  post('/api/orders', {
+  post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `C ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
@@ -216,7 +216,7 @@ check('le total suit', Number(totalLoin) === 34.5, `${totalLoin} au lieu de 34.5
 
 titre('Des frais annoncés par le client sont ignorés');
 const tricherie = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `C ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
@@ -242,7 +242,7 @@ check('elle est refusée', horsZone.status === 400, `statut ${horsZone.status}`)
 check('le code le dit', corpsHorsZone?.code === 'DELIVERY_OUT_OF_ZONE', corpsHorsZone?.code);
 
 titre('Le retrait n’est pas concerné');
-const retrait = await post('/api/orders', {
+const retrait = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: `C ${uniq}`,
   customerEmail: `c-${uniq}@t.fr`,

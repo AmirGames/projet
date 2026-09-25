@@ -49,7 +49,7 @@ const nouveauMotDePasse = 'ToutAutre456!';
 await fetch(`${API}/api/auth/signup`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password: ancienMotDePasse, name: `Parcours ${identifiant}` }),
+  body: JSON.stringify({ conditionsAcceptees: true, email, password: ancienMotDePasse, name: `Parcours ${identifiant}` }),
 });
 boite.vider();
 

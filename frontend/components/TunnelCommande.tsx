@@ -468,6 +468,7 @@ export function TunnelCommande({
 
     try {
       const orderData = {
+        conditionsAcceptees,
         storeId: boutique.id,
         customerName: checkoutForm.customerName,
         customerEmail: checkoutForm.customerEmail,

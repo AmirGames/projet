@@ -30,7 +30,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const result = await api.signup(email, password, name);
+      const result = await api.signup(email, password, name, conditionsAcceptees);
 
       if (result.error) {
         setError(result.error || result.message || t("error"));

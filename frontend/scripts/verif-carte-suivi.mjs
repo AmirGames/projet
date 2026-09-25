@@ -123,7 +123,7 @@ await inscriptionVia(appeler, {
 const courseEnCours = async (suffixe, coordonneesClient) => {
   const commande = await appeler('/api/orders', {
     method: 'POST',
-    corps: {
+    corps: { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
       customerEmail: emailClient,
@@ -144,7 +144,7 @@ const courseEnCours = async (suffixe, coordonneesClient) => {
 
   const livreur = await appeler('/api/drivers/register', {
     method: 'POST',
-    corps: {
+    corps: { conditionsAcceptees: true,
       name: `Karim ${suffixe}`,
       email: `d-${suffixe}-${uniq}@t.fr`,
       password: MDP,

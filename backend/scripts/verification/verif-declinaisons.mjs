@@ -179,7 +179,7 @@ check(
 // ===== Commander =====
 
 const commander = (variantId, prixAnnonce, total) =>
-  post('/api/orders', {
+  post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `C ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
@@ -248,7 +248,7 @@ const totalFacture = await sqlScalaire(`SELECT "totalAmount" FROM "Order" WHERE 
 check('le total suit les lignes', Number(totalFacture) === 16.5, totalFacture);
 
 const deuxArticles = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `C ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
@@ -269,7 +269,7 @@ check('plusieurs lignes sont bien totalisées', Number(totalDeux) === 34, `${tot
 check(
   'une quantité fantaisiste est refusée',
   (
-    await post('/api/orders', {
+    await post('/api/orders', { conditionsAcceptees: true,
       storeId,
       customerName: `C ${uniq}`,
       customerEmail: `c-${uniq}@t.fr`,

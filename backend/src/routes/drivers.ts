@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../services/db";
+import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { uploadMiddleware } from "../middleware/file-upload";
@@ -80,6 +81,7 @@ const inscriptionSchema = z.object({
   phone: z.string().min(9, "Téléphone invalide"),
   vehicleType: z.enum(["car", "scooter", "bike"]),
   vehiclePlate: z.string().optional(),
+  ...champAcceptation,
 });
 
 // POST /drivers/register - Inscription d'un livreur
@@ -100,6 +102,12 @@ router.post("/register", limiterInscriptions, async (req: Request, res: Response
 
     const utilisateur = await db.user.create({
       data: { email: body.email, name: body.name, passwordHash },
+    });
+
+    await enregistrerAcceptation(req, {
+      email: utilisateur.email,
+      userId: utilisateur.id,
+      documents: ["cgu", "conditions-livreurs", "confidentialite"],
     });
 
     const livreur = await db.driver.create({

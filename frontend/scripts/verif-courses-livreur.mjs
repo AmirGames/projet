@@ -96,7 +96,7 @@ const emailLivreur = `livreur-${uniq}@t.fr`;
 
 const livreur = await appeler('/api/drivers/register', {
   method: 'POST',
-  corps: {
+  corps: { conditionsAcceptees: true,
     name: `Livreur ${uniq}`,
     email: emailLivreur,
     password: motDePasse,
@@ -172,7 +172,7 @@ check(
 titre('Une commande cherche un livreur');
 const commande = await appeler('/api/orders', {
   method: 'POST',
-  corps: {
+  corps: { conditionsAcceptees: true,
     storeId,
     customerName: 'Client Test',
     customerEmail: `c-${uniq}@t.fr`,

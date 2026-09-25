@@ -136,7 +136,7 @@ const payer = async (reponse) => {
 
 const commander = async (storeId, totalAmount, customerEmail) =>
   payer(
-    await post("/api/orders", {
+    await post("/api/orders", { conditionsAcceptees: true,
       storeId,
       customerName: "Client",
       customerEmail,
@@ -154,7 +154,7 @@ await commander(gare, 40, "c4@demo.fr");
 // ===== Livreur, avec une course menée à son terme =====
 
 const livreur = await j(
-  await post("/api/drivers/register", {
+  await post("/api/drivers/register", { conditionsAcceptees: true,
     name: "Karim Livreur",
     email: "livreur@demo.fr",
     password: "Password123!",
@@ -175,7 +175,7 @@ await patch("/api/drivers/location", { latitude: 45.764, longitude: 4.8357 }, li
 
 const aLivrer = attendu(
   await payer(
-    await post("/api/orders", {
+    await post("/api/orders", { conditionsAcceptees: true,
       storeId: gare,
       customerName: "Client Livraison",
       customerEmail: "livraison@demo.fr",

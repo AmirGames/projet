@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  Linking,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -133,6 +134,7 @@ function CheckoutBody({
   const [codeError, setCodeError] = useState('');
   const [checkingCode, setCheckingCode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const [error, setError] = useState('');
   // Le délai de repentir court : rien n'est encore parti.
   const [pending, setPending] = useState(false);
@@ -300,6 +302,7 @@ function CheckoutBody({
         {
           method: 'POST',
           body: {
+            conditionsAcceptees,
             storeId: cart.storeId,
             customerName: contact.name.trim(),
             customerEmail: contact.email.trim(),
@@ -566,9 +569,24 @@ function CheckoutBody({
         {error ? <Text style={[styles.error, { textAlign: 'center', marginBottom: 10 }]}>{error}</Text> : null}
 
         <TouchableOpacity
-          style={[styles.submit, (submitting || lines.length === 0) && { opacity: 0.6 }]}
+          style={styles.conditions}
+          onPress={() => setConditionsAcceptees((v) => !v)}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: conditionsAcceptees }}
+        >
+          <Text style={styles.conditionsCase}>{conditionsAcceptees ? '☑' : '☐'}</Text>
+          <Text style={styles.conditionsTexte}>
+            J&apos;ai lu et j&apos;accepte les{' '}
+            <Text style={styles.conditionsLien} onPress={() => Linking.openURL('https://zupone.com/cgv')}>
+              conditions générales de vente
+            </Text>
+            .
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.submit, (submitting || lines.length === 0 || !conditionsAcceptees) && { opacity: 0.6 }]}
           onPress={review}
-          disabled={submitting || lines.length === 0}
+          disabled={submitting || lines.length === 0 || !conditionsAcceptees}
         >
           {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Commander · {formatEuros(total)}</Text>}
         </TouchableOpacity>
@@ -602,6 +620,10 @@ function CheckoutBody({
 }
 
 const styles = StyleSheet.create({
+  conditions: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginVertical: 12 },
+  conditionsCase: { fontSize: 18, color: COLORS.text },
+  conditionsTexte: { flex: 1, color: COLORS.text },
+  conditionsLien: { textDecorationLine: 'underline' },
   help: { fontSize: 13, color: '#666', marginVertical: 6 },
   error: { fontSize: 13, color: COLORS.danger, marginTop: 6 },
   line: {

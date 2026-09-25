@@ -115,7 +115,7 @@ const C = client.donnees.accessToken;
 // Un seul livreur pour toutes les courses : c'est sa moyenne qu'on regarde.
 const livreur = await appeler('/api/drivers/register', {
   method: 'POST',
-  corps: {
+  corps: { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: `d-${uniq}@t.fr`,
     password: MDP,
@@ -134,7 +134,7 @@ await appeler('/api/drivers/location', { method: 'PATCH', jeton: D, corps: BOUTI
 const course = async ({ remettre }) => {
   const commande = await appeler('/api/orders', {
     method: 'POST',
-    corps: {
+    corps: { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
       customerEmail: emailClient,

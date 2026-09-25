@@ -172,6 +172,7 @@ export default function MerchantRegisterPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          conditionsAcceptees,
           businessName: formData.businessName,
           email: formData.email,
           password: formData.password,

@@ -102,7 +102,7 @@ const client = await inscriptionVia(appeler, {
 
 const commande = await appeler('/api/orders', {
   method: 'POST',
-  corps: {
+  corps: { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
     customerEmail: emailClient,
@@ -122,7 +122,7 @@ const orderId = commande.donnees.order?.id || commande.donnees.id;
 // Le livreur, en ligne et positionné près de la boutique.
 const livreur = await appeler('/api/drivers/register', {
   method: 'POST',
-  corps: {
+  corps: { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: `d-${uniq}@t.fr`,
     password: motDePasse,

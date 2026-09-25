@@ -28,6 +28,7 @@ check('le produit reste publié', relu?.status === 'ACTIVE', JSON.stringify(relu
 
 console.log('\n[La commande refuse un produit épuisé]');
 const panier = (qte = 1) => ({
+  conditionsAcceptees: true,
   storeId, customerName: 'Client Test', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000',
   deliveryType: 'PICKUP', totalAmount: 12 * qte,
   items: [{ productId: prodId, quantity: qte, price: 12 }],
