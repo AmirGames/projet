@@ -1,4 +1,4 @@
-import type { Langue } from "./langues";
+import { estUneLangueSupportee, type Langue } from "./langues";
 
 /**
  * Les régions : un pays et la langue dans laquelle on le parcourt. Le code
@@ -42,12 +42,39 @@ const REGION_PAR_LANGUE: Record<Langue, string> = {
 
 export const NOM_COOKIE_REGION = "ZUPONE_REGION";
 
+/**
+ * En-tête posé par le middleware quand la page est demandée sous un
+ * sous-répertoire de région : la langue et la région de l'adresse priment
+ * sur les cookies pour ce rendu-là.
+ */
+export const ENTETE_REGION = "x-zupone-region";
+
 export function trouverRegion(code: string | undefined): Region | undefined {
   return REGIONS.find((r) => r.code === code);
 }
 
 export function regionParDefaut(langue: Langue): Region {
   return trouverRegion(REGION_PAR_LANGUE[langue]) ?? REGIONS[0];
+}
+
+/** « fr-BE » pour l'attribut lang de la page. */
+export function baliseLangue(region: Region): string {
+  return `${region.langue}-${region.code.split("-")[0].toUpperCase()}`;
+}
+
+/**
+ * Devine la région d'un visiteur d'après ses langues préférées (en-tête
+ * Accept-Language ou navigator.languages) : fr-BE → be-fr, en → gb-en.
+ */
+export function regionDesLangues(langues: readonly string[]): Region | undefined {
+  for (const brute of langues) {
+    const [langue, pays] = brute.trim().toLowerCase().split("-");
+    const region =
+      (pays && trouverRegion(`${pays}-${langue}`)) ||
+      (estUneLangueSupportee(langue) ? regionParDefaut(langue) : undefined);
+    if (region) return region;
+  }
+  return undefined;
 }
 
 /**

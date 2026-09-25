@@ -11,42 +11,29 @@ import {
   REGIONS,
   regionParDefaut,
   regionsSuggerees,
-  trouverRegion,
   type Region,
 } from '@/i18n/regions';
+import { ajouterRegion, separerRegion } from '@/i18n/chemins-regionaux';
+import { useRegion } from '@/lib/region-context';
 
 const UN_AN = 60 * 60 * 24 * 365;
-
-function lireCookie(nom: string): string | undefined {
-  return document.cookie
-    .split('; ')
-    .find((c) => c.startsWith(`${nom}=`))
-    ?.split('=')[1];
-}
 
 /**
  * Le sélecteur de région : le bouton affiche le pays en cours, et ouvre une
  * fenêtre où chaque carte associe une langue et un pays.
  *
- * Pas encore de segment d'URL : choisir une région pose le cookie de région
- * et celui de langue, puis redemande à Next.js de re-rendre les pages serveur
- * — la même adresse reste affichée. Les sous-répertoires /be-fr/… viendront
- * s'appuyer sur ce même cookie.
+ * Choisir une région pose le cookie de région et celui de langue. Sur une
+ * page publique (/be-fr/restaurants), on passe à la même page sous la
+ * nouvelle région (/gb-en/restaurants) ; ailleurs, l'adresse reste et
+ * Next.js re-rend les pages serveur avec les nouveaux cookies.
  */
 export function LanguageSwitcher() {
   const locale = useLocale() as Langue;
   const t = useTranslations('nav');
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [region, setRegion] = useState<Region>(() => regionParDefaut(locale));
+  const region = useRegion() ?? regionParDefaut(locale);
   const [suggerees, setSuggerees] = useState<Region[]>([]);
-
-  // Le cookie n'est lisible qu'une fois dans le navigateur. Une région dont
-  // la langue ne correspond plus (langue changée ailleurs) est ignorée.
-  useEffect(() => {
-    const enregistree = trouverRegion(lireCookie(NOM_COOKIE_REGION));
-    setRegion(enregistree && enregistree.langue === locale ? enregistree : regionParDefaut(locale));
-  }, [locale]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -67,9 +54,16 @@ export function LanguageSwitcher() {
   const choisir = (choix: Region) => {
     document.cookie = `${NOM_COOKIE_REGION}=${choix.code};path=/;max-age=${UN_AN};samesite=lax`;
     document.cookie = `${NOM_COOKIE_LANGUE}=${choix.langue};path=/;max-age=${UN_AN};samesite=lax`;
-    setRegion(choix);
     setIsOpen(false);
-    if (choix.langue !== locale) router.refresh();
+
+    const { region: dansAdresse, reste } = separerRegion(window.location.pathname);
+    if (dansAdresse) {
+      // Rechargement complet : une navigation côté client garderait le
+      // layout racine, donc l'ancienne langue et l'ancienne région.
+      window.location.assign(ajouterRegion(reste, choix.code) + window.location.search + window.location.hash);
+    } else {
+      router.refresh();
+    }
   };
 
   const carte = (r: Region, encadree: boolean) => (

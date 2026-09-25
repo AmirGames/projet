@@ -1,10 +1,9 @@
 const createNextIntlPlugin = require("next-intl/plugin");
 
-// La locale ne vit pas dans l'URL (pas de /fr/, /en/) : trois domaines se
-// partagent déjà le routage (voir middleware.ts) et ajouter un préfixe de
-// langue par-dessus aurait voulu dire déplacer les 80 et quelques pages sous
-// un segment [locale]. La locale se lit plutôt dans un cookie, voir
-// i18n/request.ts.
+// Pas de segment [locale] : déplacer les 80 et quelques pages dessous aurait
+// été un chantier à part entière. La locale se lit dans un cookie, ou dans la
+// région de l'adresse (/be-fr/…) que le middleware retire des pages
+// publiques avant de les servir — voir i18n/request.ts et middleware.ts.
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 /** @type {import('next').NextConfig} */

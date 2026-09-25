@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LienRegional';
 import { Search, MapPin, Star, Clock } from 'lucide-react';
 
 interface Restaurant {

@@ -438,6 +438,21 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
   d'abord cliquer sur « Panier ».
 - Elle titre ses catégories en `h2` et ses plats en `h3`, dans des `<section>`.
 
+**Les régions (`/be-fr/`, `/fr-fr/`, `/gb-en/`…)**
+- Seules les pages publiques indexables portent le préfixe : accueil,
+  `/restaurants`, `/restaurant/*`, `/store/*` (sauf `/store/new`), pages
+  légales, pages « devenir ». Liste dans `frontend/i18n/chemins-regionaux.ts`.
+- **Aucune page n'est déplacée** : le middleware retire le préfixe, réécrit
+  vers la page d'origine et transmet la région par l'en-tête
+  `x-zupone-region`. Une page publique appelée sans préfixe est redirigée
+  (307) vers la région du visiteur : cookie `ZUPONE_REGION`, sinon langue
+  choisie, sinon `Accept-Language`, sinon `fr-fr`.
+- Un script de vérification qui ouvre `/restaurants` atterrit donc sur
+  `/fr-fr/restaurants` : comparer les adresses sans le préfixe.
+- Sur les pages publiques, importer `Link` depuis `@/components/LienRegional`
+  plutôt que `next/link`, pour éviter un détour par la redirection.
+- `usePathname()` renvoie l'adresse visible, préfixe compris.
+
 ---
 
 ## 8. Ce qui est actif en ce moment
