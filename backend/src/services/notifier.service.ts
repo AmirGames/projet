@@ -248,15 +248,28 @@ export class Notifier {
     );
   }
 
-  /** Pousse une notification au navigateur du livreur, s'il s'est abonné. */
+  /**
+   * Prévient le livreur : sur son navigateur s'il s'y est abonné, et sur les
+   * téléphones où l'application livreur est connectée à son compte.
+   */
   static async pushLivreur(driverId: string, message: MessagePush) {
     const livreur = await db.driver.findUnique({
       where: { id: driverId },
-      select: { pushSubscription: true },
+      select: { pushSubscription: true, userId: true },
     });
-    if (!livreur?.pushSubscription) return false;
+    if (!livreur) return false;
 
-    const resultat = await this.push(livreur.pushSubscription, message);
+    const [navigateur, mobile] = await Promise.all([
+      this.pushNavigateurLivreur(driverId, livreur.pushSubscription, message),
+      this.pushMobileLivreur(livreur.userId, message),
+    ]);
+    return navigateur || mobile > 0;
+  }
+
+  private static async pushNavigateurLivreur(driverId: string, abonnement: unknown, message: MessagePush) {
+    if (!abonnement) return false;
+
+    const resultat = await this.push(abonnement, message);
     if (resultat === "expire") {
       await db.driver
         .update({ where: { id: driverId }, data: { pushSubscription: Prisma.DbNull } })
@@ -264,6 +277,35 @@ export class Notifier {
       return false;
     }
     return resultat;
+  }
+
+  /**
+   * L'application livreur ouvre la course touchée : son identifiant voyage
+   * dans les données, lu sur le lien prévu pour le navigateur. Une course
+   * proposée sonne sur son propre canal Android, et n'est plus retentée
+   * au-delà d'une minute : elle aura expiré.
+   */
+  private static async pushMobileLivreur(userId: string | null, message: MessagePush) {
+    if (!userId) return 0;
+
+    const appareils = await db.pushDevice.findMany({
+      where: { userId, app: "delivery" },
+      select: { token: true },
+    });
+    if (appareils.length === 0) return 0;
+
+    const deliveryId = message.url?.match(/\/driver\/deliveries\/([^/?#]+)/)?.[1];
+    const proposee = message.tag === "course-proposee";
+
+    return this.expoPush(
+      appareils.map((a) => a.token),
+      {
+        title: message.title,
+        body: message.body,
+        data: { tag: message.tag, url: message.url, ...(deliveryId ? { deliveryId } : {}) },
+        ...(proposee ? { channelId: "new-courses", sound: "new_course.wav", ttl: 60 } : {}),
+      }
+    );
   }
 
   /**
