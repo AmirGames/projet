@@ -41,6 +41,7 @@ const LIBELLES_PRIORITE: Record<string, string> = {
 };
 import { TicketMessageService } from "../services/ticket-message.service";
 import { logger } from "../config/logger";
+import { PagesLegalesService } from "../services/pages-legales.service";
 import { paymentService } from "../services/payment.service";
 import { DriverSupportService, LONGUEUR_MAX } from "../services/driver-support.service";
 import { fraisDusALaPlateforme, fraisDeServiceDus } from "../services/delivery-mode.service";
@@ -2902,6 +2903,48 @@ router.post("/orders/:id/refund", authMiddleware, isSuperOwner, async (req: Requ
       amount: (remboursement?.amount ?? 0) / 100,
       status: remboursement?.status,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+// ============================================================================
+// PAGES LÉGALES
+// ============================================================================
+
+// GET /superowner/pages-legales - Pages en vigueur et historique des versions
+router.get("/pages-legales", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const pages = await PagesLegalesService.toutes();
+    const data = await Promise.all(
+      pages.map(async (page) => ({ ...page, historique: await PagesLegalesService.historique(page.slug) }))
+    );
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const publicationPageLegaleSchema = z.object({
+  titre: z.string().trim().min(1, "Titre requis").max(200),
+  contenu: z.string().trim().min(1, "Le texte ne peut pas être vide").max(100_000),
+  version: z
+    .string()
+    .trim()
+    .min(1, "Version requise")
+    .max(40)
+    .regex(/^[\w.\-]+$/, "Lettres, chiffres, points, tirets uniquement"),
+});
+
+// POST /superowner/pages-legales/:slug - Publier une nouvelle version
+router.post("/pages-legales/:slug", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = publicationPageLegaleSchema.parse(req.body);
+    const slug = req.params.slug as string;
+    const publiee = await PagesLegalesService.publier(slug, body, (req as any).actorEmail);
+    await journaliser(req, "PAGE_LEGALE_PUBLIEE", slug, { version: publiee.version, titre: publiee.titre });
+    res.status(201).json({ data: publiee });
   } catch (err) {
     next(err);
   }

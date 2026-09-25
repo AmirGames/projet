@@ -1,12 +1,7 @@
 import type { Request } from "express";
 import { z } from "zod";
 import { db } from "./db";
-
-/**
- * Version des textes en vigueur. À changer à chaque modification des pages
- * légales (frontend/app/(legal)) : on sait alors qui a accepté quelle version.
- */
-export const VERSION_CONDITIONS = "2026-09-25";
+import { PagesLegalesService } from "./pages-legales.service";
 
 export type DocumentLegal = "cgu" | "cgv" | "conditions-commercants" | "conditions-livreurs" | "confidentialite";
 
@@ -23,10 +18,13 @@ export async function enregistrerAcceptation(
   preuve: { email: string; documents: DocumentLegal[]; userId?: string; orderId?: string },
   client: Pick<typeof db, "acceptationConditions"> = db
 ) {
+  // La version de chaque document au moment de l'acceptation, publiée depuis
+  // l'espace superowner (Pages légales).
+  const version = await PagesLegalesService.versionsDe(preuve.documents);
   return client.acceptationConditions.create({
     data: {
       ...preuve,
-      version: VERSION_CONDITIONS,
+      version,
       ip: req.ip ?? null,
       userAgent: req.get("user-agent")?.slice(0, 500) ?? null,
     },

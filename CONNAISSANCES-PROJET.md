@@ -659,15 +659,18 @@ Le carnet ci-dessous.
 ---
 
 **Pages légales et acceptation des conditions.** Mentions légales, CGU, CGV,
-conditions commerçants et livreurs, confidentialité et cookies vivent sous
-`frontend/app/(legal)` ; l'identité de l'éditeur est dans `frontend/lib/editeur.ts`
-(champs entre crochets à remplir avant l'ouverture). Les quatre points d'entrée
-— `/auth/signup`, `/auth/merchant-register`, `/drivers/register`, `POST /orders` —
-exigent `conditionsAcceptees: true` et enregistrent la preuve dans
-`AcceptationConditions` (documents, version, IP, navigateur). **À chaque
-modification d'un texte légal, changer `VERSION_CONDITIONS`**
-(`backend/src/services/acceptation-conditions.service.ts`). Tout script qui
-appelle ces routes doit envoyer le champ.
+conditions commerçants et livreurs, confidentialité et cookies s'affichent sous
+`frontend/app/(legal)` mais leur texte vient de l'API (`/api/pages-legales`).
+Il se modifie dans l'espace superowner, **Pages légales** : chaque publication
+crée une version (`PageLegaleVersion`) qui n'est plus jamais réécrite ; tant
+qu'aucune n'est publiée, le texte de départ de
+`backend/src/data/pages-legales.defaut.ts` est servi (champs entre crochets à
+remplir avant l'ouverture). Les quatre points d'entrée — `/auth/signup`,
+`/auth/merchant-register`, `/drivers/register`, `POST /orders` — exigent
+`conditionsAcceptees: true` et enregistrent la preuve dans
+`AcceptationConditions`, avec la version en vigueur de chaque document
+(« cgu@v2 cgv@2026-09-25 … »). Tout script qui appelle ces routes doit
+envoyer le champ.
 
 ## 9. Conventions d'écriture
 

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { EDITEUR, PAGES_LEGALES } from '@/lib/editeur';
+import { EMAIL_CONTACT, PAGES_LEGALES } from '@/lib/editeur';
 
 /** Cadre commun des pages légales : sommaire à gauche, texte lisible à droite. */
 export default function LayoutLegal({ children }: { children: React.ReactNode }) {
@@ -23,8 +23,7 @@ export default function LayoutLegal({ children }: { children: React.ReactNode })
         <article className="legal max-w-3xl">
           {children}
           <p className="mt-12 border-t border-slate-200 pt-4 text-sm text-slate-500">
-            Dernière mise à jour : {EDITEUR.miseAJour}. Une question ? Écrivez-nous à{' '}
-            <a href={`mailto:${EDITEUR.email}`}>{EDITEUR.email}</a>.
+            Une question ? Écrivez-nous à <a href={`mailto:${EMAIL_CONTACT}`}>{EMAIL_CONTACT}</a>.
           </p>
         </article>
       </div>
