@@ -49,6 +49,9 @@ export const NOM_COOKIE_REGION = "ZUPONE_REGION";
  */
 export const ENTETE_REGION = "x-zupone-region";
 
+/** Le chemin de la page sans son préfixe (/restaurants pour /be-fr/restaurants). */
+export const ENTETE_CHEMIN = "x-zupone-chemin";
+
 export function trouverRegion(code: string | undefined): Region | undefined {
   return REGIONS.find((r) => r.code === code);
 }

@@ -11,6 +11,7 @@ import {
 } from '@/lib/domaines';
 import { NOM_COOKIE_LANGUE, estUneLangueSupportee } from '@/i18n/langues';
 import {
+  ENTETE_CHEMIN,
   ENTETE_REGION,
   NOM_COOKIE_REGION,
   REGIONS,
@@ -112,6 +113,7 @@ export function middleware(requete: NextRequest) {
   // L'en-tête de région ne vient que d'ici, jamais du navigateur.
   const entetes = new Headers(requete.headers);
   entetes.delete(ENTETE_REGION);
+  entetes.delete(ENTETE_CHEMIN);
 
   const { region, reste } = separerRegion(chemin);
 
@@ -128,6 +130,7 @@ export function middleware(requete: NextRequest) {
     if (typeof cible !== 'string') return cible;
 
     entetes.set(ENTETE_REGION, region.code);
+    entetes.set(ENTETE_CHEMIN, reste);
     const url = requete.nextUrl.clone();
     url.pathname = cible;
     const reponse = NextResponse.rewrite(url, { request: { headers: entetes } });

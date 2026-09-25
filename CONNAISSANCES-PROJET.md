@@ -461,6 +461,11 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 - Les boutiques d'avant ce champ : la migration donne `fr` aux codes postaux à
   cinq chiffres ; les autres restent vides jusqu'à leur prochain changement
   d'adresse ou leur prochaine commande sans position.
+- **SEO** (`frontend/lib/seo-regional.ts`) : chaque page régionale porte une
+  balise `canonical` et des `hreflang` (fr-BE, en-GB…, plus `x-default` vers
+  l'adresse sans préfixe). La vitrine ne les déclare que dans les régions du
+  pays de son commerce, et sa canonique y renvoie. `/sitemap.xml` et
+  `/robots.txt` sont générés (`app/sitemap.ts`, `app/robots.ts`).
 
 ---
 
