@@ -234,7 +234,7 @@ export const paymentService = {
   },
 
   /**
-   * La commande payée par carte part enfin au commerçant : elle entre dans
+   * La commande payée en ligne part enfin au commerçant : elle entre dans
    * ses listes, sa boutique sonne, et son délai de réponse commence. Une seule
    * fois — le webhook et `/confirm` peuvent arriver tous les deux.
    */
@@ -264,7 +264,7 @@ export const paymentService = {
   },
 
   /**
-   * Les paiements par carte jamais aboutis.
+   * Les paiements en ligne jamais aboutis.
    *
    * Le client a fermé l'onglet, ou sa banque a refusé : la commande n'est
    * jamais partie au commerçant et ne partira plus. Elle est retirée, et son

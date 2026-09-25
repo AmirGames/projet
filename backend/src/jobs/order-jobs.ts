@@ -9,7 +9,7 @@ import { logger } from "../config/logger";
  *   prévenu : sinon il attendait une commande que personne n'avait vue.
  * - Une livraison acceptée appelle son livreur quand elle est bientôt prête,
  *   d'après le temps de préparation annoncé.
- * - Une commande par carte jamais payée est retirée au bout de trente minutes.
+ * - Une commande à payer en ligne jamais payée est retirée au bout de trente minutes.
  *
  * Aucun événement ne signale « le commerçant n'a pas répondu » : il faut
  * passer voir. Trente secondes suffisent devant des délais de dix minutes.

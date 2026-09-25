@@ -427,7 +427,7 @@ export class OrderService {
         );
       }
 
-      // Payée par carte, la commande attend l'encaissement avant de partir au
+      // Payée en ligne (tout sauf les espèces), la commande attend l'encaissement avant de partir au
       // commerçant : c'est le webhook Stripe qui la lui transmet.
       const enLigne = payeEnLigne(
         moyenDePaiement?.type,
@@ -504,7 +504,7 @@ export class OrderService {
    * événement pour les caisses branchées, sonnerie et notification.
    *
    * Aussitôt passée pour un paiement sur place ; à l'encaissement pour un
-   * paiement par carte (appelée par le webhook Stripe).
+   * paiement en ligne (appelée par le webhook Stripe).
    */
   static async annoncerAuCommercant(order: any) {
     try {

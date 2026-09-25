@@ -459,15 +459,15 @@ Deux invariants à ne jamais casser :
   que paie un client. Tout autre champ est refusé explicitement, chaque
   correction part au journal avec son avant et son après, et le commerçant est
   prévenu.
-- **Une commande par carte n'arrive au commerçant qu'encaissée.** Elle naît
+- **Tout se paie par Stripe, sauf les espèces.** Une commande qui n'est pas en
+  `CASH` — y compris sans moyen de paiement choisi — n'arrive au commerçant
+  qu'encaissée, dès que `ENABLE_STRIPE` est vrai avec une clé. Elle naît
   avec `Order.submittedAt` vide : absente de ses listes, de ses chiffres, de
   l'acceptation, et sans délai de réponse. L'encaissement (webhook ou
   `/confirm`) la lui transmet une seule fois, sonnerie comprise, et son délai
   court de là. Toute requête côté commerçant filtre avec `TRANSMISE`
   (`backend/src/utils/commande-transmise.ts`). Jamais payée au bout de trente
-  minutes, elle est retirée (`deletedAt`) et son intention annulée. Sont
-  payés en ligne les types `STRIPE`, `CREDIT_CARD`, `DEBIT_CARD`, et seulement
-  si `ENABLE_STRIPE` est vrai avec une clé ; les autres se règlent sur place.
+  minutes, elle est retirée (`deletedAt`) et son intention annulée.
 - **Une commande n'est « payée » que sur la parole de Stripe.** Le montant de
   l'intention est lu sur la commande, jamais dans la requête. Le webhook
   (`POST /api/payments/webhook`, monté avant le lecteur JSON pour vérifier la

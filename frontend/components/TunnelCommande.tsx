@@ -84,7 +84,7 @@ export function TunnelCommande({
   const [submitting, setSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   /**
-   * La commande attend le paiement par carte.
+   * La commande attend le paiement en ligne.
    *
    * Elle n'est pas encore partie au commerçant : elle ne lui parvient qu'une
    * fois l'encaissement confirmé. Le panier est gardé jusque-là.
@@ -448,7 +448,7 @@ export function TunnelCommande({
   if (aPayer) {
     return (
       <div className={enFenetre ? 'p-6 space-y-4' : 'space-y-4'}>
-        <h3 className="font-bold text-lg">Paiement par carte</h3>
+        <h3 className="font-bold text-lg">Paiement en ligne</h3>
         <p className="text-sm text-gray-400">
           Commande n° {aPayer.numero} — {euro(aPayer.montant)}. Elle sera transmise à{' '}
           {boutique.name} dès le paiement accepté.

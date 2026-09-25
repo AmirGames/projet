@@ -1,20 +1,20 @@
 /**
  * Ce que le commerçant voit de ses commandes.
  *
- * Une commande payée par carte naît sans `submittedAt` : elle attend
+ * Une commande payée en ligne (tout sauf les espèces) naît sans `submittedAt` : elle attend
  * l'encaissement. Tant qu'il n'est pas confirmé, elle n'apparaît ni dans ses
  * listes, ni dans ses chiffres, et personne ne lui demande d'y répondre.
  */
 export const TRANSMISE = { submittedAt: { not: null } } as const;
 
 /**
- * Les moyens de paiement réglés en ligne, par carte, avant que la commande
- * parte au commerçant. Les autres (espèces, virement…) se règlent sur place.
+ * Toute commande se règle en ligne, par Stripe, avant de partir au
+ * commerçant — sauf les espèces, réglées à la remise. Une commande sans moyen
+ * de paiement choisi se règle en ligne elle aussi : rien ne dit qu'elle sera
+ * payée autrement.
  */
-export const TYPES_PAYES_EN_LIGNE = ["STRIPE", "CREDIT_CARD", "DEBIT_CARD"];
-
 export function payeEnLigne(type: string | null | undefined, stripeActif: boolean) {
-  return stripeActif && !!type && TYPES_PAYES_EN_LIGNE.includes(type);
+  return stripeActif && type !== "CASH";
 }
 
 /** Le moment de référence pour le délai de réponse du commerçant. */

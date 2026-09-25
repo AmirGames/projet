@@ -1,10 +1,11 @@
 /**
- * Le paiement par carte : une commande n'arrive au commerçant qu'une fois
+ * Le paiement en ligne : une commande n'arrive au commerçant qu'une fois
  * encaissée.
  *
- * Payée par carte, elle naît sans être transmise : ni liste, ni acceptation,
+ * Tout se paie par Stripe, sauf les espèces. Payée en ligne, elle naît sans
+ * être transmise : ni liste, ni acceptation,
  * ni délai de réponse. C'est le webhook Stripe, signé, qui la lui transmet —
- * une seule fois, même si Stripe renvoie l'événement. Payée sur place, elle
+ * une seule fois, même si Stripe renvoie l'événement. Payée en espèces, elle
  * part tout de suite, comme avant.
  *
  * Les événements sont signés ici avec le secret du webhook : l'API et cette
@@ -57,6 +58,7 @@ const moyen = async (type, name) => {
 };
 const carte = await moyen("CREDIT_CARD", "Carte bancaire");
 const especes = await moyen("CASH", "Espèces");
+const virement = await moyen("BANK_TRANSFER", "Virement");
 
 const commander = async (paymentMethodId) => {
   const reponse = await j(
@@ -112,13 +114,31 @@ const intention = (orderId, montant, surcharge = {}) => ({
   ...surcharge,
 });
 
-// ===== Payée sur place =====
+// Une API sans Stripe laisse tout partir au commerçant : la suite n'aurait
+// rien à vérifier, autant le dire d'emblée plutôt qu'en vingt échecs.
+const sonde = await commander(undefined);
+if (sonde?.paiementEnLigne !== true) {
+  console.error(
+    "L'API visée n'a pas Stripe actif : relancez-la avec ENABLE_STRIPE=true, " +
+      "une STRIPE_SECRET_KEY quelconque et le même STRIPE_WEBHOOK_SECRET."
+  );
+  process.exit(1);
+}
 
-titre("Payée sur place, la commande part tout de suite");
+// ===== Payée en espèces =====
+
+titre("Payée en espèces, la commande part tout de suite");
 const surPlace = await commander(especes);
 check("elle est créée", typeof surPlace?.id === "string", JSON.stringify(surPlace));
 check("sans paiement en ligne", surPlace?.paiementEnLigne === false, `${surPlace?.paiementEnLigne}`);
 check("le commerçant la voit", (await listeDuCommercant()).includes(surPlace?.id));
+
+titre("Tout le reste se paie par Stripe");
+const parVirement = await commander(virement);
+check("un virement aussi", parVirement?.paiementEnLigne === true, `${parVirement?.paiementEnLigne}`);
+const sansMoyen = await commander(undefined);
+check("une commande sans moyen choisi aussi", sansMoyen?.paiementEnLigne === true, `${sansMoyen?.paiementEnLigne}`);
+check("aucune des deux n'arrive au commerçant", !(await listeDuCommercant()).some((c) => c === parVirement?.id || c === sansMoyen?.id));
 
 // ===== Payée par carte =====
 

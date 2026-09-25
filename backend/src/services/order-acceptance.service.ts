@@ -67,7 +67,7 @@ export function echeanceDeReponse(commande: {
   pickupTime: Date | null;
 }): Date {
   // Le délai court depuis l'arrivée chez le commerçant : pour une commande
-  // payée par carte, l'encaissement, pas la création.
+  // payée en ligne, l'encaissement, pas la création.
   const auPlusTot = arriveeChezLeCommercant(commande).getTime() + REPONSE_LIVRAISON_MIN * MINUTE;
 
   if (commande.deliveryType === "PICKUP" && commande.pickupTime) {
