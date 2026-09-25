@@ -110,7 +110,7 @@ export default function MerchantDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [orgId, storeId, router]);
+  }, [orgId, storeId, router, t]);
 
   useEffect(() => {
     // On attend la liste des boutiques pour ne pas charger deux fois :

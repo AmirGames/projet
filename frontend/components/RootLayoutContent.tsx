@@ -64,7 +64,7 @@ export default function RootLayoutContent({
     };
 
     initializeTheme();
-  }, [API_URL]);
+  }, [t]);
 
   // Masquer la navbar sur :
   // - la page d'accueil (qui a son propre header)

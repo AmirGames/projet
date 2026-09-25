@@ -193,7 +193,7 @@ export function CarteZones({
     }
 
     carte.current.setView([latitude, longitude], Math.max(carte.current.getZoom(), 12));
-  }, [prete, latitude, longitude]);
+  }, [prete, latitude, longitude, t]);
 
   // Le point n'est déplaçable que tant que la page le permet (onPosition) :
   // une boutique posée d'un clic devient fixe aussitôt. Sans cela, le point
@@ -350,7 +350,7 @@ export function CarteZones({
     } else {
       poignee.current.setLatLng(positionPoignee);
     }
-  }, [prete, latitude, longitude, zoneActive]);
+  }, [prete, latitude, longitude, zoneActive, t]);
 
   return (
     <div>

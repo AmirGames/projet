@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 
@@ -22,10 +22,6 @@ export default function AdminAnalytics() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
-
   // Agrège les lignes de toutes les commandes pour classer les produits.
   const meilleuresVentes = (orders: any[], products: any[]) => {
     const parProduit = new Map<string, { name: string; sales: number; revenue: number }>();
@@ -45,7 +41,7 @@ export default function AdminAnalytics() {
     return [...parProduit.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
   };
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const storeId = localStorage.getItem('storeId');
       if (!storeId) {
@@ -86,7 +82,11 @@ export default function AdminAnalytics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
 
   if (loading) return <div className="text-center py-8">Chargement...</div>;
 

@@ -71,9 +71,12 @@ export interface MessagePush {
 
 /**
  * Numéro au format international (E.164), attendu par les fournisseurs SMS.
- * Les numéros français saisis en « 06 12 34 56 78 » deviennent « +33612345678 ».
+ *
+ * Les formulaires envoient déjà le numéro avec l'indicatif du pays choisi.
+ * L'indicatif par défaut ne sert qu'aux numéros nationaux enregistrés avant :
+ * « 0470 12 34 56 » devient « +32470123456 » (lancement en Belgique).
  */
-export function numeroInternational(numero: string, indicatif = process.env.SMS_DEFAULT_COUNTRY_CODE || "33") {
+export function numeroInternational(numero: string, indicatif = process.env.SMS_DEFAULT_COUNTRY_CODE || "32") {
   const chiffres = numero.replace(/[^\d+]/g, "");
   if (chiffres.startsWith("+")) return chiffres;
   if (chiffres.startsWith("00")) return `+${chiffres.slice(2)}`;

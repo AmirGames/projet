@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -102,11 +102,7 @@ export default function ReviewPage() {
     products: {}
   });
 
-  useEffect(() => {
-    loadOrderData();
-  }, [orderId]);
-
-  const loadOrderData = async () => {
+  const loadOrderData = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -166,7 +162,11 @@ export default function ReviewPage() {
       setError(t('errorLoading'));
       setLoading(false);
     }
-  };
+  }, [orderId, router, t]);
+
+  useEffect(() => {
+    loadOrderData();
+  }, [orderId, loadOrderData]);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();

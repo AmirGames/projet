@@ -1,12 +1,16 @@
 'use client';
 
 import { useState, FormEvent, useEffect } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
 import AcceptationConditions from '@/components/AcceptationConditions';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useTypesDeCommerce } from '@/lib/types-commerce';
 import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { SelecteurPays } from '@/components/SelecteurPays';
+import { usePays } from '@/lib/pays-client';
+import { PAYS } from '@/lib/pays-infos';
 
 import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -43,6 +47,7 @@ export default function MerchantRegisterPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [apiError, setApiError] = useState('');
   const { etablissements, cuisines } = useTypesDeCommerce();
+  const [pays, setPays] = usePays();
 
   // Rediriger vers onboard si connecté
   useEffect(() => {
@@ -105,6 +110,8 @@ export default function MerchantRegisterPage() {
 
     if (!formData.postalCode.trim()) {
       newErrors.postalCode = 'Le code postal est requis';
+    } else if (!PAYS[pays].codePostal.test(formData.postalCode.trim())) {
+      newErrors.postalCode = `Code postal invalide pour la ${PAYS[pays].nom} (ex. ${PAYS[pays].exempleCodePostal})`;
     }
 
     if (!formData.description.trim()) {
@@ -182,10 +189,11 @@ export default function MerchantRegisterPage() {
             formData.businessType === 'restaurant' && formData.cuisineType
               ? formData.cuisineType
               : null,
-          phone: formData.phone,
+          phone: telephoneInternational(formData.phone, pays),
           address: formData.address,
           city: formData.city,
           postalCode: formData.postalCode,
+          country: pays,
           website: formData.website || null,
           description: formData.description,
           storeName: formData.storeName,
@@ -354,7 +362,7 @@ export default function MerchantRegisterPage() {
                     className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
                       errors.phone ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    placeholder="+33 6 12 34 56 78"
+                    placeholder={PAYS[pays].exempleTelephone}
                   />
                   {errors.phone && <p className="text-red-400 text-sm mt-1">{errors.phone}</p>}
                 </div>
@@ -401,6 +409,17 @@ export default function MerchantRegisterPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
+                  <label htmlFor="pays" className="block text-sm font-medium text-gray-300 mb-2">
+                    Pays *
+                  </label>
+                  <SelecteurPays
+                    pays={pays}
+                    onChange={setPays}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Adresse *
                   </label>
@@ -418,7 +437,8 @@ export default function MerchantRegisterPage() {
                     className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
                       errors.address ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    placeholder="123 Rue de la Paix"
+                    placeholder={PAYS[pays].exempleRue}
+                    pays={pays}
                   />
                   {errors.address && <p className="text-red-400 text-sm mt-1">{errors.address}</p>}
                 </div>
@@ -435,7 +455,7 @@ export default function MerchantRegisterPage() {
                     className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
                       errors.city ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    placeholder="Paris"
+                    placeholder={PAYS[pays].exempleVille}
                   />
                   {errors.city && <p className="text-red-400 text-sm mt-1">{errors.city}</p>}
                 </div>
@@ -452,7 +472,7 @@ export default function MerchantRegisterPage() {
                     className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
                       errors.postalCode ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    placeholder="75001"
+                    placeholder={PAYS[pays].exempleCodePostal}
                   />
                   {errors.postalCode && <p className="text-red-400 text-sm mt-1">{errors.postalCode}</p>}
                 </div>

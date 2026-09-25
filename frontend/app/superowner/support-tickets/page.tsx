@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { HelpCircle, MessageSquare, Clock, AlertCircle } from 'lucide-react';
 
@@ -64,17 +64,13 @@ export default function SupportTicketsPage() {
   const [voirArchives, setVoirArchives] = useState(false);
   const limit = 20;
 
-  useEffect(() => {
-    fetchTickets();
-  }, [offset, filterStatus, filterPriority, voirArchives]);
-
   // Un ticket ouvert par un commerçant, une réponse, un changement de statut
   // par un collègue : la liste suit.
   useDonneesModifiees('tickets', () => fetchTickets(true));
 
   // silencieux : une relecture en direct garde la liste affichée — et la
   // conversation ouverte dedans.
-  const fetchTickets = async (silencieux = false) => {
+  const fetchTickets = useCallback(async (silencieux = false) => {
     if (!silencieux) setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -107,7 +103,11 @@ export default function SupportTicketsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterPriority, filterStatus, offset, t, voirArchives]);
+
+  useEffect(() => {
+    fetchTickets();
+  }, [offset, filterStatus, filterPriority, voirArchives, fetchTickets]);
 
   const handleUpdateStatus = async (ticketId: string, newStatus: string) => {
     try {

@@ -21,6 +21,8 @@
  */
 
 import { useEffect, useState } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
+import { paysDuNavigateur } from '@/lib/pays-client';
 import {
   AlertCircle,
   Bike,
@@ -241,13 +243,14 @@ export function TunnelCommande({
   }, [user]);
 
   // Les conditions de livraison se lisent dès que l'adresse est retenue.
+  // Seuls ces champs comptent : le reste du formulaire ne relance rien.
+  const { deliveryType, deliveryLat, deliveryLng, deliveryAddress, deliveryCity, deliveryPostal } = checkoutForm;
   useEffect(() => {
-    if (!boutique.id || checkoutForm.deliveryType !== 'DELIVERY') {
+    if (!boutique.id || deliveryType !== 'DELIVERY') {
       setLivraison(null);
       return;
     }
 
-    const { deliveryLat, deliveryLng, deliveryAddress, deliveryCity, deliveryPostal } = checkoutForm;
     let annule = false;
 
     const situee = deliveryLat !== undefined && deliveryLng !== undefined;
@@ -279,12 +282,12 @@ export function TunnelCommande({
     };
   }, [
     boutique.id,
-    checkoutForm.deliveryType,
-    checkoutForm.deliveryLat,
-    checkoutForm.deliveryLng,
-    checkoutForm.deliveryAddress,
-    checkoutForm.deliveryCity,
-    checkoutForm.deliveryPostal,
+    deliveryType,
+    deliveryLat,
+    deliveryLng,
+    deliveryAddress,
+    deliveryCity,
+    deliveryPostal,
   ]);
 
   // Un champ d'heure libre laissait choisir 9 h alors que la boutique ouvre à
@@ -472,7 +475,7 @@ export function TunnelCommande({
         storeId: boutique.id,
         customerName: checkoutForm.customerName,
         customerEmail: checkoutForm.customerEmail,
-        customerPhone: checkoutForm.customerPhone,
+        customerPhone: telephoneInternational(checkoutForm.customerPhone, paysDuNavigateur()),
         deliveryType: checkoutForm.deliveryType,
         deliveryAddress: checkoutForm.deliveryAddress || undefined,
         deliveryCity: checkoutForm.deliveryCity || undefined,

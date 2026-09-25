@@ -54,7 +54,7 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
     } finally {
       setLoading(false);
     }
-  }, [basePath, ticketId]);
+  }, [basePath, ticketId, t]);
 
   useEffect(() => {
     setLoading(true);

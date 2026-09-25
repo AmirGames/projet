@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DollarSign } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -35,11 +35,7 @@ export default function CommissionsPage() {
   const [total, setTotal] = useState(0);
   const limit = 20;
 
-  useEffect(() => {
-    fetchCommissions();
-  }, [limit, offset]);
-
-  const fetchCommissions = async () => {
+  const fetchCommissions = useCallback(async () => {
     setLoading(true);
     try {
       const query = new URLSearchParams({
@@ -64,7 +60,11 @@ export default function CommissionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [offset]);
+
+  useEffect(() => {
+    fetchCommissions();
+  }, [limit, offset, fetchCommissions]);
 
   const getPeriodLabel = (period: string) => {
     const [year, month] = period.split("-");

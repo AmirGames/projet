@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { TrendingUp } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
@@ -40,16 +40,12 @@ export default function AnalyticsDashboard() {
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState<TimeRange>('30days');
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [timeRange]);
-
   // Les chiffres portent sur toute la plateforme : relus au plus toutes les
   // cinq secondes, quelle que soit l'activité.
   useDonneesModifiees('*', () => fetchAnalytics(true), { delaiMs: 5000 });
 
   // silencieux : une relecture en direct garde la page affichée.
-  const fetchAnalytics = async (silencieux = false) => {
+  const fetchAnalytics = useCallback(async (silencieux = false) => {
     if (!silencieux) setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -67,7 +63,11 @@ export default function AnalyticsDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t, timeRange]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [timeRange, fetchAnalytics]);
 
   const getGrowthColor = (growth: number) => {
     return growth >= 0 ? 'text-green-400' : 'text-red-400';

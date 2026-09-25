@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Sliders, Save } from 'lucide-react';
@@ -37,11 +37,7 @@ export default function AdvancedSettingsPage() {
     { id: 'automation', label: t('featureAutomation') },
   ];
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -58,7 +54,11 @@ export default function AdvancedSettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   const saveSettings = async () => {
     if (!settings) return;

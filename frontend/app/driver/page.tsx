@@ -59,17 +59,13 @@ export default function DriverDashboard() {
   const [pauseReason, setPauseReason] = useState<string | null>(null);
   const [earnings, setEarnings] = useState(0);
 
-  useEffect(() => {
-    loadDriverData();
-  }, []);
-
   // Sa course en cours, son statut, ses gains : l'accueil suit ce que font le
   // commerçant, le client et la plateforme.
   useDonneesModifiees(['orders', 'drivers'], () => loadDriverData(true));
 
   // silencieux : une relecture en direct qui échoue (réseau coupé un instant)
   // ne renvoie pas le livreur à la connexion ; la suivante corrigera.
-  const loadDriverData = async (silencieux = false) => {
+  const loadDriverData = useCallback(async (silencieux = false) => {
     const token = localStorage.getItem('driverToken');
     if (!token) {
       router.push('/driver/login');
@@ -125,7 +121,11 @@ export default function DriverDashboard() {
       if (silencieux) return;
       router.push('/driver/login');
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    loadDriverData();
+  }, [loadDriverData]);
 
   const basculerDisponibilite = async () => {
     const token = localStorage.getItem('driverToken');

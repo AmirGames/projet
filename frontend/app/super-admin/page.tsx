@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Users, ShoppingCart, TrendingUp, AlertCircle } from 'lucide-react';
@@ -24,20 +24,7 @@ export default function SuperAdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    console.log("Super-admin page loaded, token exists:", !!token);
-
-    if (!token) {
-      console.log("No token, redirecting to login");
-      router.push('/login');
-      return;
-    }
-
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/admin/stats`, {
@@ -57,7 +44,20 @@ export default function SuperAdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    console.log("Super-admin page loaded, token exists:", !!token);
+
+    if (!token) {
+      console.log("No token, redirecting to login");
+      router.push('/login');
+      return;
+    }
+
+    fetchStats();
+  }, [router, fetchStats]);
 
   if (loading)
     return <div className="text-center py-8">{t('loading')}</div>;

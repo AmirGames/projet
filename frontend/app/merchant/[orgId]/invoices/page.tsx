@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Download, Eye } from 'lucide-react';
@@ -46,14 +46,7 @@ export default function InvoicesPage() {
 
   const itemsPerPage = 20;
 
-  useEffect(() => {
-    if (storeId) {
-      fetchInvoices();
-      fetchStats();
-    }
-  }, [storeId, page, filter]);
-
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
@@ -84,9 +77,9 @@ export default function InvoicesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, router, storeId]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
@@ -103,7 +96,14 @@ export default function InvoicesPage() {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  };
+  }, [storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchInvoices();
+      fetchStats();
+    }
+  }, [storeId, page, filter, fetchInvoices, fetchStats]);
 
   const handleDownloadInvoice = async (orderId: string, invoiceNumber: string) => {
     try {

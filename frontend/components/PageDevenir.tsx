@@ -1,4 +1,5 @@
 import Link from '@/components/LienRegional';
+import { PAYS, type Pays } from '@/lib/pays-infos';
 
 export interface Etape {
   titre: string;
@@ -16,7 +17,7 @@ export interface Question {
   reponse: string;
 }
 
-interface Props {
+export interface ContenuDevenir {
   badge: string;
   titre: string;
   accroche: string;
@@ -26,6 +27,11 @@ interface Props {
   prerequis: string[];
   questions: Question[];
   conditions?: { libelle: string; href: string };
+}
+
+interface Props extends ContenuDevenir {
+  pays: Pays;
+  chemin: string;
 }
 
 /**
@@ -43,10 +49,14 @@ export function PageDevenir({
   prerequis,
   questions,
   conditions,
+  pays,
+  chemin,
 }: Props) {
+  // Le formulaire d'inscription reprend le pays affiché ici.
+  const lienCta = cta.href.startsWith('/') ? `${cta.href}?pays=${pays}` : cta.href;
   const bouton = (
     <Link
-      href={cta.href}
+      href={lienCta}
       className="inline-block rounded-full bg-accent px-8 py-4 font-bold text-white transition hover:bg-accent-hover"
     >
       {cta.libelle}
@@ -59,9 +69,25 @@ export function PageDevenir({
         <Link href="/" className="text-2xl font-black text-primary md:text-3xl">
           Zupone
         </Link>
-        <Link href="/login" className="font-semibold text-slate-900 hover:text-primary">
-          Connexion
-        </Link>
+        <div className="flex items-center gap-4">
+          <nav aria-label="Pays" className="flex gap-1 rounded-full border border-slate-200 p-1 text-sm">
+            {(Object.keys(PAYS) as Pays[]).map((code) => (
+              <Link
+                key={code}
+                href={`${chemin}?pays=${code}`}
+                aria-current={code === pays ? 'true' : undefined}
+                className={`rounded-full px-3 py-1 font-semibold ${
+                  code === pays ? 'bg-primary text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {PAYS[code].drapeau} {PAYS[code].nom}
+              </Link>
+            ))}
+          </nav>
+          <Link href="/login" className="hidden font-semibold text-slate-900 hover:text-primary sm:inline">
+            Connexion
+          </Link>
+        </div>
       </header>
 
       <section className="bg-gradient-to-b from-white to-slate-100 px-6 py-16 text-center md:py-24">
@@ -69,7 +95,10 @@ export function PageDevenir({
           {badge}
         </span>
         <h1 className="mx-auto mb-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">{titre}</h1>
-        <p className="mx-auto mb-9 max-w-2xl text-lg text-slate-500">{accroche}</p>
+        <p className="mx-auto mb-3 max-w-2xl text-lg text-slate-500">{accroche}</p>
+        <p className="mb-9 text-sm text-slate-500">
+          Informations pour : {PAYS[pays].drapeau} {PAYS[pays].nom}
+        </p>
         {bouton}
       </section>
 
@@ -97,7 +126,7 @@ export function PageDevenir({
       </section>
 
       <section className="mx-auto max-w-3xl px-6 py-16">
-        <h2 className="mb-6 text-3xl font-black">Ce qu'il vous faut</h2>
+        <h2 className="mb-6 text-3xl font-black">Ce qu'il vous faut en {PAYS[pays].nom}</h2>
         <ul className="space-y-3">
           {prerequis.map((p) => (
             <li key={p} className="flex gap-3">

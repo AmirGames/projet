@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Search, Users } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
@@ -62,14 +62,8 @@ export default function StaffPage() {
   const [formError, setFormError] = useState('');
 
 
-  useEffect(() => {
-    if (storeId) {
-      fetchStaff();
-    }
-  }, [storeId]);
 
-
-  const fetchStaff = async () => {
+  const fetchStaff = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/staff?storeId=${storeId}`, {
@@ -86,7 +80,13 @@ export default function StaffPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchStaff();
+    }
+  }, [storeId, fetchStaff]);
 
   const handleSaveStaff = async () => {
     setFormError('');

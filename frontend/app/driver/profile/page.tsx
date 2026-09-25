@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
+import { paysDuNavigateur } from '@/lib/pays-client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -43,11 +45,7 @@ export default function DriverProfilePage() {
     address: '',
   });
 
-  useEffect(() => {
-    loadDriverData();
-  }, []);
-
-  const loadDriverData = async () => {
+  const loadDriverData = useCallback(async () => {
     const token = localStorage.getItem('driverToken');
     if (!token) {
       router.push('/driver/login');
@@ -77,7 +75,11 @@ export default function DriverProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    loadDriverData();
+  }, [loadDriverData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -102,7 +104,10 @@ export default function DriverProfilePage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          phone: formData.phone ? telephoneInternational(formData.phone, paysDuNavigateur()) : formData.phone,
+        })
       });
 
       if (response.ok) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Tag, Plus, Trash2, Edit2 } from "lucide-react";
 import { useTranslations } from 'next-intl';
 
@@ -45,11 +45,7 @@ export default function ProductTagPage({
   const storeId = params.orgId;
   const take = 20;
 
-  useEffect(() => {
-    fetchTags();
-  }, [skip]);
-
-  const fetchTags = async () => {
+  const fetchTags = useCallback(async () => {
     setLoading(true);
     try {
       const query = new URLSearchParams({
@@ -73,7 +69,11 @@ export default function ProductTagPage({
     } finally {
       setLoading(false);
     }
-  };
+  }, [skip, storeId]);
+
+  useEffect(() => {
+    fetchTags();
+  }, [skip, fetchTags]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle, ImagePlus, Trash2 } from 'lucide-react';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
@@ -148,13 +148,7 @@ export default function StoreSettings() {
       .catch(() => undefined);
   }, []);
 
-  useEffect(() => {
-    if (storeId) {
-      fetchSettings();
-    }
-  }, [storeId]);
-
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) {
@@ -209,7 +203,13 @@ export default function StoreSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router, storeId, t]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchSettings();
+    }
+  }, [storeId, fetchSettings]);
 
   const envoyerLogo = async (fichier: File) => {
     const token = localStorage.getItem('accessToken') || localStorage.getItem('token');

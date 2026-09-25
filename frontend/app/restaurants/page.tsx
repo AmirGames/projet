@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from '@/components/LienRegional';
 import { Search, MapPin, Star, Clock } from 'lucide-react';
 import { filtrePays } from '@/i18n/regions';
@@ -27,7 +27,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function RestaurantsPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [cuisineFilter, setCuisineFilter] = useState('');
@@ -38,10 +37,6 @@ export default function RestaurantsPage() {
     fetchRestaurants();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [region]);
-
-  useEffect(() => {
-    filterRestaurants();
-  }, [searchTerm, cuisineFilter, restaurants]);
 
   const fetchRestaurants = async () => {
     setLoading(true);
@@ -78,7 +73,7 @@ export default function RestaurantsPage() {
     }
   };
 
-  const filterRestaurants = () => {
+  const filteredRestaurants = useMemo(() => {
     let filtered = restaurants;
 
     if (searchTerm) {
@@ -93,8 +88,8 @@ export default function RestaurantsPage() {
       filtered = filtered.filter((r) => r.cuisine === cuisineFilter);
     }
 
-    setFilteredRestaurants(filtered);
-  };
+    return filtered;
+  }, [restaurants, searchTerm, cuisineFilter]);
 
   const uniqueCuisines = [...new Set(restaurants.map((r) => r.cuisine))];
 

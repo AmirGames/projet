@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { euro } from '@/lib/format';
@@ -24,11 +24,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -65,7 +61,11 @@ export default function AdminDashboard() {
       setError('Erreur lors du chargement');
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
 
   if (loading) {

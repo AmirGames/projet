@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -49,16 +49,12 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
 
-  useEffect(() => {
-    loadOrders();
-  }, []);
-
   // Acceptée, en route, livrée : chaque étape apparaît sans recharger.
   useDonneesModifiees('orders', () => loadOrders(true));
 
   // silencieux : une relecture en direct ne vide pas la liste le temps de la
   // réponse.
-  const loadOrders = async (silencieux = false) => {
+  const loadOrders = useCallback(async (silencieux = false) => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -80,7 +76,11 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
   const filteredOrders = orders.filter(order => {
     if (filter === 'active') {

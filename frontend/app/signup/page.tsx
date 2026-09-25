@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import Link from "next/link";
+import { SelecteurPays } from "@/components/SelecteurPays";
+import { usePays } from "@/lib/pays-client";
 
 export default function SignupPage() {
   const t = useTranslations('auth.signup');
@@ -17,6 +19,8 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
+  // Retenu pour la suite : les adresses de livraison de ce pays passent en tête.
+  const [pays, setPays] = usePays();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +72,15 @@ export default function SignupPage() {
         )}
 
         <form onSubmit={handleSignup} className="space-y-4">
+          <div>
+            <label htmlFor="pays" className="block text-slate-700 font-medium mb-2">Pays</label>
+            <SelecteurPays
+              pays={pays}
+              onChange={setPays}
+              className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
           <div>
             <label className="block text-slate-700 font-medium mb-2">{t("name")}</label>
             <input

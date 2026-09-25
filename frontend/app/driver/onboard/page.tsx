@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
+import { paysDuNavigateur } from '@/lib/pays-client';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { AlertCircle, CheckCircle, Loader, Bike, Car, Truck } from 'lucide-react';
@@ -87,7 +89,10 @@ export default function DriverOnboardPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          phone: telephoneInternational(formData.phone, paysDuNavigateur()),
+        }),
       });
 
       const data = await response.json();

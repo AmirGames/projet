@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Bell, Trash2, Check } from "lucide-react";
 import { useTranslations } from 'next-intl';
 
@@ -41,12 +41,7 @@ export default function NotificationsPage({
   const storeId = params.orgId;
   const take = 20;
 
-  useEffect(() => {
-    fetchNotifications();
-    fetchUnreadCount();
-  }, [filterRead, skip]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
       const isRead =
@@ -73,9 +68,9 @@ export default function NotificationsPage({
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterRead, skip, storeId]);
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/notifications/${storeId}/unread/count`, {
         headers: {
@@ -90,7 +85,12 @@ export default function NotificationsPage({
     } catch (err) {
       console.error("Failed to fetch unread count:", err);
     }
-  };
+  }, [storeId]);
+
+  useEffect(() => {
+    fetchNotifications();
+    fetchUnreadCount();
+  }, [filterRead, skip, fetchNotifications, fetchUnreadCount]);
 
   const markAsRead = async (notificationId: string) => {
     try {

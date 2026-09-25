@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -52,11 +52,7 @@ export default function MerchantDetailPage() {
     }
   };
 
-  useEffect(() => {
-    fetchMerchant();
-  }, [merchantId]);
-
-  const fetchMerchant = async () => {
+  const fetchMerchant = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}`, {
@@ -74,7 +70,11 @@ export default function MerchantDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [merchantId, router]);
+
+  useEffect(() => {
+    fetchMerchant();
+  }, [merchantId, fetchMerchant]);
 
   const handleUpdate = async () => {
     if (!merchant) return;

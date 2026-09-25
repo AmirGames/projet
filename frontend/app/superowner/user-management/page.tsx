@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Users, Plus, Trash2 } from 'lucide-react';
 
@@ -37,11 +37,7 @@ export default function UserManagementPage() {
   const [formData, setFormData] = useState({ email: '', name: '', role: 'ADMIN' });
   const limit = 20;
 
-  useEffect(() => {
-    fetchAdmins();
-  }, [offset]);
-
-  const fetchAdmins = async () => {
+  const fetchAdmins = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -64,7 +60,11 @@ export default function UserManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [offset, t]);
+
+  useEffect(() => {
+    fetchAdmins();
+  }, [offset, fetchAdmins]);
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();

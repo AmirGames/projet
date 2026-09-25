@@ -190,7 +190,7 @@ export default function ProfilCommercantPage() {
     } finally {
       setChargement(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     charger();

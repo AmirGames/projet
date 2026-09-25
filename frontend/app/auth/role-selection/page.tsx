@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { telephoneInternational } from "@/lib/pays-infos";
+import { paysDuNavigateur } from "@/lib/pays-client";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useTypesDeCommerce } from "@/lib/types-commerce";
@@ -80,6 +82,7 @@ export default function RoleSelectionPage() {
     try {
       await api.becomeMerchant({
         ...merchantFormData,
+        phone: telephoneInternational(merchantFormData.phone, paysDuNavigateur()),
         // Une cuisine n'a de sens qu'en restauration.
         cuisineType:
           merchantFormData.businessType === "restaurant" && merchantFormData.cuisineType
@@ -113,7 +116,10 @@ export default function RoleSelectionPage() {
     setError("");
 
     try {
-      await api.becomeDriver(driverFormData);
+      await api.becomeDriver({
+        ...driverFormData,
+        phone: telephoneInternational(driverFormData.phone, paysDuNavigateur()),
+      });
       // Refresh roles
       const data = await api.getRoles();
       setRoles(data.roles);

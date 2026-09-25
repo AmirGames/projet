@@ -581,6 +581,8 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
       address: z.string().min(1).max(500),
       city: z.string().min(1).max(100),
       postalCode: z.string().min(1).max(20),
+      // Pays du commerce (« BE », « FR ») : fixe les règles de facturation.
+      country: z.enum(["BE", "FR"]).optional(),
       website: z.string().url().optional().nullable(),
       description: z.string().min(1).max(1000),
       storeName: z.string().min(1).max(200),
@@ -656,6 +658,7 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
         tier: "FREE",
         plan: "STARTER",
         status: "ACTIVE",
+        ...(body.country && { billingCountry: body.country === "BE" ? "Belgique" : "France" }),
         // La plateforme elle-même n'a personne pour la valider.
         approvedAt: isFirstUser ? new Date() : null,
       },
