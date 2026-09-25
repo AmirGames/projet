@@ -33,7 +33,8 @@ function base() {
   if (!prisma) {
     const exiger = createRequire(new URL('../../backend/package.json', import.meta.url));
     const { PrismaClient } = exiger('@prisma/client');
-    prisma = new PrismaClient();
+    const { PrismaPg } = exiger('@prisma/adapter-pg');
+    prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
   }
   return prisma;
 }
