@@ -4,6 +4,7 @@ import { fraisDeServiceEnVigueur } from "../services/delivery-mode.service";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint } from "../utils/geo";
+import { boutiqueVisible, livreVraiment } from "../utils/visibilite-boutique";
 import { StoreHoursService } from "../services/store-hours.service";
 import { trierProduitsSelonCategorie } from "../services/category.service";
 import { DeliveryZoneService } from "../services/delivery-zone.service";
@@ -72,7 +73,7 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
 
     const lat = parseFloat(latitude as string);
     const lng = parseFloat(longitude as string);
-    const maxDist = parseFloat(maxDistance as string);
+    const maxDist = parseFloat(maxDistance as string) || 5;
 
     // Récupérer tous les stores avec localisation
     const stores = await db.store.findMany({
@@ -94,52 +95,60 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
       }
     });
 
-    // Calculer distance avec Haversine formula
-    const storesWithDistance = stores
-      .map(store => {
-        const R = 6371; // Earth radius in km
-        const dLat = (lat - (store.latitude || 0)) * (Math.PI / 180);
-        const dLng = (lng - (store.longitude || 0)) * (Math.PI / 180);
-        const a =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(lat * (Math.PI / 180)) *
-            Math.cos((store.latitude || 0) * (Math.PI / 180)) *
-            Math.sin(dLng / 2) *
-            Math.sin(dLng / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c;
+    // Au-delà, aucun commerce de quartier ne livre : on n'interroge même pas
+    // ses zones, pour ne pas calculer un verdict par boutique du pays.
+    const PORTEE_MAX_KM = Math.max(50, maxDist);
+
+    const proches = stores
+      .map((store) => ({
+        store,
+        distance: distanceKm(
+          { latitude: lat, longitude: lng },
+          { latitude: store.latitude as number, longitude: store.longitude as number }
+        ),
+      }))
+      .filter(({ distance }) => distance <= PORTEE_MAX_KM);
+
+    // `maxDistance` n'est plus un couperet : c'est le rayon où l'on montre
+    // aussi les boutiques qui ne livrent pas, pour un retrait sur place. Au
+    // delà, seules restent celles dont les zones couvrent vraiment l'adresse.
+    const evaluees = await Promise.all(
+      proches.map(async ({ store, distance }) => {
+        const verdict = await DeliveryZoneService.verdict(store.id, { latitude: lat, longitude: lng }).catch(
+          () => null
+        );
+        const livre = livreVraiment(verdict, distance, maxDist);
 
         return {
-          ...store,
-          distance: parseFloat(distance.toFixed(2)),
-          estimatedDeliveryTime: Math.ceil(distance * 5) + " min",
-          isOpenNow: StoreHoursService.isOpenNow(store),
+          visible: boutiqueVisible(verdict, distance, maxDist),
+          store: {
+            ...store,
+            distance: parseFloat(distance.toFixed(2)),
+            estimatedDeliveryTime: Math.ceil(distance * 5) + " min",
+            isOpenNow: StoreHoursService.isOpenNow(store),
+            // Un calcul qui échoue ne prive pas le client de la boutique.
+            livraison: verdict
+              ? {
+                  livrable: livre,
+                  frais: verdict.frais,
+                  minimum: verdict.minimum,
+                  deliveryMinutes: verdict.zone?.deliveryMinutes ?? null,
+                }
+              : null,
+          },
         };
       })
-      .filter(store => store.distance <= maxDist)
-      .sort((a, b) => a.distance - b.distance);
-
-    // Les frais de livraison jusqu'à l'adresse du client, boutique par
-    // boutique : la liste les affichait au forfait, sans tenir compte des
-    // zones. Un calcul qui échoue ne prive pas le client de la liste.
-    const avecLivraison = await Promise.all(
-      storesWithDistance.map(async (store) => {
-        try {
-          const verdict = await DeliveryZoneService.verdict(store.id, { latitude: lat, longitude: lng });
-          return {
-            ...store,
-            livraison: {
-              livrable: verdict.livrable,
-              frais: verdict.frais,
-              minimum: verdict.minimum,
-              deliveryMinutes: verdict.zone?.deliveryMinutes ?? null,
-            },
-          };
-        } catch {
-          return { ...store, livraison: null };
-        }
-      })
     );
+
+    // Celles qui livrent d'abord, puis les autres ; la plus proche en tête.
+    const avecLivraison = evaluees
+      .filter(({ visible }) => visible)
+      .map(({ store }) => store)
+      .sort(
+        (a, b) =>
+          Number(b.livraison?.livrable !== false) - Number(a.livraison?.livrable !== false) ||
+          a.distance - b.distance
+      );
 
     res.json({
       success: true,

@@ -120,6 +120,12 @@ export default function ClientHomePage() {
       filtered.sort((a, b) => fraisDe(a) - fraisDe(b));
     }
 
+    // Quel que soit le tri, celles qui livrent à l'adresse passent devant
+    // celles où l'on ne peut que retirer sur place (tri stable).
+    filtered.sort(
+      (a, b) => Number(b.livraison?.livrable !== false) - Number(a.livraison?.livrable !== false)
+    );
+
     setFilteredStores(filtered);
   }, [stores, sortBy]);
 
