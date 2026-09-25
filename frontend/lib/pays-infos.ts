@@ -40,3 +40,20 @@ export function paysValide(code: string | null | undefined): Pays | null {
   const c = (code || '').toUpperCase();
   return c in PAYS ? (c as Pays) : null;
 }
+
+/**
+ * Numéro au format international (« +32470123456 »), selon le pays choisi.
+ * Un numéro déjà international (« +33… », « 0033… ») garde son indicatif ;
+ * un numéro national (« 0470 12 34 56 ») reçoit celui du pays. Envoyé ainsi,
+ * le serveur n'a plus à deviner le pays pour les SMS.
+ */
+export function telephoneInternational(numero: string, pays: Pays): string {
+  const chiffres = numero.replace(/[^\d+]/g, '');
+  if (!chiffres) return numero.trim();
+  if (chiffres.startsWith('+')) return chiffres;
+  if (chiffres.startsWith('00')) return `+${chiffres.slice(2)}`;
+  const indicatif = PAYS[pays].indicatif;
+  // « 32470… » tapé sans le « + » : l'indicatif est déjà là.
+  if (chiffres.startsWith(indicatif.slice(1)) && chiffres.length > 10) return `+${chiffres}`;
+  return `${indicatif}${chiffres.replace(/^0/, '')}`;
+}

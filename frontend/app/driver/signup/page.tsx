@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
 import AcceptationConditions from '@/components/AcceptationConditions';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -62,6 +63,7 @@ export default function InscriptionLivreurPage() {
         body: JSON.stringify({
           conditionsAcceptees,
           ...formulaire,
+          phone: telephoneInternational(formulaire.phone, pays),
           vehiclePlate: formulaire.vehiclePlate || undefined,
         }),
       });

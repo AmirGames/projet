@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
+import { paysDuNavigateur } from '@/lib/pays-client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { User, Mail, ShoppingBag, Wallet, Save } from 'lucide-react';
@@ -89,7 +91,7 @@ export default function ProfilClientPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           name: formulaire.name,
-          phone: formulaire.phone || undefined,
+          phone: formulaire.phone ? telephoneInternational(formulaire.phone, paysDuNavigateur()) : undefined,
           address: formulaire.address,
           city: formulaire.city,
           postalCode: formulaire.postalCode,

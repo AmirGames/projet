@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, FormEvent, useEffect } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
 import AcceptationConditions from '@/components/AcceptationConditions';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
@@ -188,7 +189,7 @@ export default function MerchantRegisterPage() {
             formData.businessType === 'restaurant' && formData.cuisineType
               ? formData.cuisineType
               : null,
-          phone: formData.phone,
+          phone: telephoneInternational(formData.phone, pays),
           address: formData.address,
           city: formData.city,
           postalCode: formData.postalCode,

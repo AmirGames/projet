@@ -21,6 +21,8 @@
  */
 
 import { useEffect, useState } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
+import { paysDuNavigateur } from '@/lib/pays-client';
 import {
   AlertCircle,
   Bike,
@@ -472,7 +474,7 @@ export function TunnelCommande({
         storeId: boutique.id,
         customerName: checkoutForm.customerName,
         customerEmail: checkoutForm.customerEmail,
-        customerPhone: checkoutForm.customerPhone,
+        customerPhone: telephoneInternational(checkoutForm.customerPhone, paysDuNavigateur()),
         deliveryType: checkoutForm.deliveryType,
         deliveryAddress: checkoutForm.deliveryAddress || undefined,
         deliveryCity: checkoutForm.deliveryCity || undefined,
