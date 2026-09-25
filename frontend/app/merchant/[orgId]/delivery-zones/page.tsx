@@ -106,13 +106,6 @@ export default function DeliveryZonesPage() {
     }
   }, [storeId]);
 
-  useEffect(() => {
-    if (storeId) {
-      fetchZones();
-      chargerBoutique();
-    }
-  }, [storeId, chargerBoutique]);
-
   // Une zone dessinée par un collègue, l'adresse de la boutique déplacée :
   // la carte suit.
   useDonneesModifiees(
@@ -215,7 +208,7 @@ export default function DeliveryZonesPage() {
     }
   };
 
-  const fetchZones = async () => {
+  const fetchZones = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/delivery-zones?storeId=${storeId}`, {
@@ -231,7 +224,14 @@ export default function DeliveryZonesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchZones();
+      chargerBoutique();
+    }
+  }, [storeId, chargerBoutique, fetchZones]);
 
   const handleSaveZone = async () => {
     setFormError('');

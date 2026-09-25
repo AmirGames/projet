@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Search, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
@@ -52,12 +52,6 @@ export default function PromotionsPage() {
     activeDays: [] as number[],
   });
 
-  useEffect(() => {
-    if (storeId) {
-      fetchPromotions();
-    }
-  }, [storeId]);
-
   // Une promotion créée, suspendue ou utilisée (son compteur bouge) : la
   // liste suit.
   useDonneesModifiees(['promotions', 'orders'], () => fetchPromotions(), {
@@ -66,7 +60,7 @@ export default function PromotionsPage() {
     actif: Boolean(storeId),
   });
 
-  const fetchPromotions = async () => {
+  const fetchPromotions = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/promotions?storeId=${storeId}`, {
@@ -82,7 +76,13 @@ export default function PromotionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchPromotions();
+    }
+  }, [storeId, fetchPromotions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

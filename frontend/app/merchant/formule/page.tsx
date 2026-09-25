@@ -90,7 +90,7 @@ export default function MaFormulePage() {
     } finally {
       setChargement(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     charger();

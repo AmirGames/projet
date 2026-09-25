@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Trash2, Edit2, Power, Plus, X } from 'lucide-react';
 import Link from 'next/link';
@@ -118,11 +118,7 @@ export default function PaymentMethodsPage() {
     }
   };
 
-  useEffect(() => {
-    if (storeId) fetchPaymentMethods();
-  }, [storeId, page]);
-
-  const fetchPaymentMethods = async () => {
+  const fetchPaymentMethods = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
@@ -147,7 +143,11 @@ export default function PaymentMethodsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, router, storeId]);
+
+  useEffect(() => {
+    if (storeId) fetchPaymentMethods();
+  }, [storeId, page, fetchPaymentMethods]);
 
   const handleToggle = async (methodId: string) => {
     try {

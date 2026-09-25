@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Clock, CheckCircle, AlertCircle, Package, Eye, Truck } from 'lucide-react';
@@ -111,14 +111,6 @@ export default function OrdersPage() {
 
   const itemsPerPage = 20;
 
-  useEffect(() => {
-    if (storeId) {
-      fetchOrders();
-      fetchStats();
-      fetchDeliverySettings();
-    }
-  }, [storeId, filter, page]);
-
   // Le bandeau des nouvelles commandes mène ici, filtré sur celles à accepter.
   // Lu après le premier affichage : le rendu serveur ne connaît pas l'adresse.
   useEffect(() => {
@@ -126,19 +118,6 @@ export default function OrdersPage() {
       setFilter('PENDING');
     }
   }, []);
-
-  // Une commande arrive, ou quelqu'un y répond : la liste se relit seule.
-  useEffect(() => {
-    if (!storeId) return;
-
-    const relire = () => {
-      fetchOrders();
-      fetchStats();
-    };
-
-    window.addEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
-    return () => window.removeEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
-  }, [storeId, filter, page]);
 
   // Ailleurs aussi : un collègue, le livreur, le client, une annulation
   // automatique. La liste suit sans qu'on recharge.
@@ -151,7 +130,7 @@ export default function OrdersPage() {
     { storeId, actif: Boolean(storeId) }
   );
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
@@ -183,9 +162,9 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, page, router, storeId]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
@@ -202,9 +181,9 @@ export default function OrdersPage() {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  };
+  }, [storeId]);
 
-  const fetchDeliverySettings = async () => {
+  const fetchDeliverySettings = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;
@@ -222,7 +201,28 @@ export default function OrdersPage() {
     } catch (error) {
       console.error('Error fetching delivery settings:', error);
     }
-  };
+  }, [storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchOrders();
+      fetchStats();
+      fetchDeliverySettings();
+    }
+  }, [storeId, fetchOrders, fetchStats, fetchDeliverySettings]);
+
+  // Une commande arrive, ou quelqu'un y répond : la liste se relit seule.
+  useEffect(() => {
+    if (!storeId) return;
+
+    const relire = () => {
+      fetchOrders();
+      fetchStats();
+    };
+
+    window.addEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
+    return () => window.removeEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
+  }, [storeId, fetchOrders, fetchStats]);
 
   const handleCallDelivery = async (orderId: string) => {
     try {

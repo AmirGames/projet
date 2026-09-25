@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -46,11 +46,7 @@ export default function MerchantDashboard() {
     totalRevenue: 0,
   });
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const org = localStorage.getItem('currentOrgId');
@@ -108,7 +104,11 @@ export default function MerchantDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router, t]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const ouvrirBoutique = (storeId: string) => {
     memoriserBoutique(orgId, storeId);

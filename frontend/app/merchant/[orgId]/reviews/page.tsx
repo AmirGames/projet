@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Star, Flag } from 'lucide-react';
 import Link from 'next/link';
@@ -50,22 +50,16 @@ export default function ReviewsPage() {
 
   const itemsPerPage = 20;
 
-  useEffect(() => {
-    if (storeId) {
-      fetchReviews();
-    }
-  }, [storeId, filtre, page]);
-
   const jeton = () => localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-  const compter = async (token: string, f: 'signales' | 'retires') => {
+  const compter = useCallback(async (token: string, f: 'signales' | 'retires') => {
     const res = await fetch(`${API_URL}/api/reviews/${storeId}?take=1&filtre=${f}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return res.ok ? (await res.json()).total || 0 : 0;
-  };
+  }, [storeId]);
 
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     try {
       setLoading(true);
       const token = jeton();
@@ -100,7 +94,13 @@ export default function ReviewsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [compter, filtre, page, router, storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchReviews();
+    }
+  }, [storeId, filtre, page, fetchReviews]);
 
   // Le commerçant ne rejette ni ne supprime un avis : il le signale, avec un
   // motif, et la plateforme décide de le conserver ou de le retirer.

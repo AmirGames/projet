@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Plus, Edit2, Trash2, Search, AlertCircle, Package, GripVertical } from 'lucide-react';
 import {
@@ -246,13 +246,6 @@ export default function ProductsPage() {
     })
   );
 
-  useEffect(() => {
-    if (storeId) {
-      fetchProducts();
-      fetchCategories();
-    }
-  }, [storeId]);
-
   // Un collègue ajoute un plat, le passe en épuisé, réordonne le menu : la
   // liste suit. Une seconde d'attente : chaque relecture relit aussi les avis
   // de chaque plat.
@@ -265,45 +258,7 @@ export default function ProductsPage() {
     { storeId, delaiMs: 1000, actif: Boolean(storeId) }
   );
 
-  const fetchCategories = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/categories?storeId=${storeId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data.categories || []);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
-
-  const fetchProducts = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/products?storeId=${storeId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const sorted = (data.products || []).sort((a: Product, b: Product) => a.displayOrder - b.displayOrder);
-        setProducts(sorted);
-
-        // Charger les stats pour chaque produit
-        await fetchProductsStats(sorted);
-      }
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchProductsStats = async (productList: Product[]) => {
+  const fetchProductsStats = useCallback(async (productList: Product[]) => {
     try {
       const token = localStorage.getItem('accessToken');
       const stats: Record<string, ProductStats> = {};
@@ -327,7 +282,52 @@ export default function ProductsPage() {
     } catch (error) {
       console.error('Error fetching products stats:', error);
     }
-  };
+  }, [storeId]);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/categories?storeId=${storeId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.categories || []);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  }, [storeId]);
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_URL}/api/products?storeId=${storeId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const sorted = (data.products || []).sort((a: Product, b: Product) => a.displayOrder - b.displayOrder);
+        setProducts(sorted);
+
+        // Charger les stats pour chaque produit
+        await fetchProductsStats(sorted);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [storeId, fetchProductsStats]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchProducts();
+      fetchCategories();
+    }
+  }, [storeId, fetchProducts, fetchCategories]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;

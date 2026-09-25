@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react';
 import {
   DndContext,
@@ -134,12 +134,6 @@ export default function CategoriesPage() {
     })
   );
 
-  useEffect(() => {
-    if (storeId) {
-      fetchStoreAndCategories();
-    }
-  }, [storeId]);
-
   // Une catégorie ajoutée ou réordonnée ailleurs, ou un plat qui change de
   // catégorie (le compte par catégorie bouge) : la liste suit.
   useDonneesModifiees(['categories', 'products'], () => fetchStoreAndCategories(), {
@@ -147,7 +141,7 @@ export default function CategoriesPage() {
     actif: Boolean(storeId),
   });
 
-  const fetchStoreAndCategories = async () => {
+  const fetchStoreAndCategories = useCallback(async () => {
     if (!storeId) return;
 
     try {
@@ -167,7 +161,13 @@ export default function CategoriesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchStoreAndCategories();
+    }
+  }, [storeId, fetchStoreAndCategories]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;

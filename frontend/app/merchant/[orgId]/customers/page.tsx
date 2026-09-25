@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Search, Mail, Phone, Trash2, Lock, Eye } from 'lucide-react';
@@ -44,13 +44,7 @@ export default function CustomersPage() {
 
   const itemsPerPage = 20;
 
-  useEffect(() => {
-    if (storeId) {
-      fetchCustomers();
-    }
-  }, [storeId, search, page]);
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
@@ -82,7 +76,13 @@ export default function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, router, search, storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchCustomers();
+    }
+  }, [storeId, search, page, fetchCustomers]);
 
   const handleDelete = async (customerId: string) => {
     try {

@@ -1,7 +1,7 @@
 'use client';
 
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Trash2, Send, Plus, X } from 'lucide-react';
 import Link from 'next/link';
@@ -122,13 +122,7 @@ export default function MarketingPage() {
     }
   };
 
-  useEffect(() => {
-    if (storeId) {
-      fetchCampaigns();
-    }
-  }, [storeId, filter, page]);
-
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
@@ -158,7 +152,13 @@ export default function MarketingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, page, router, storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchCampaigns();
+    }
+  }, [storeId, filter, page, fetchCampaigns]);
 
   const handleDeleteCampaign = async (campaignId: string) => {
     try {

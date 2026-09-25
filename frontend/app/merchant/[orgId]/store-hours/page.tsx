@@ -103,7 +103,7 @@ export default function HorairesPage() {
     } finally {
       setChargement(false);
     }
-  }, [storeId]);
+  }, [storeId, t]);
 
   useEffect(() => {
     charger();

@@ -1,7 +1,7 @@
 'use client';
 
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Download, TrendingUp, DollarSign, ShoppingCart, Users } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
@@ -64,14 +64,8 @@ export default function ReportsPage() {
   const [endDate, setEndDate] = useState('');
 
 
-  useEffect(() => {
-    if (storeId) {
-      fetchAllReports();
-    }
-  }, [storeId, startDate, endDate]);
 
-
-  const fetchAllReports = async () => {
+  const fetchAllReports = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -104,7 +98,13 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [endDate, startDate, storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchAllReports();
+    }
+  }, [storeId, startDate, endDate, fetchAllReports]);
 
   const handleExport = async (type: string) => {
     setExporting(true);

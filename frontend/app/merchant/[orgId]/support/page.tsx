@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { MessageCircle, Plus, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { TicketConversation } from '@/components/TicketConversation';
@@ -46,16 +46,12 @@ export default function SupportPage() {
   const [openTicketId, setOpenTicketId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
-  useEffect(() => {
-    fetchTickets();
-  }, [orgId, showArchived]);
-
   // Une réponse du support, un ticket clos ou rouvert : la liste suit.
   useDonneesModifiees('tickets', () => fetchTickets(true), { orgId });
 
   // silencieux : une relecture en direct garde la liste affichée — et la
   // conversation ouverte dedans.
-  const fetchTickets = async (silencieux = false) => {
+  const fetchTickets = useCallback(async (silencieux = false) => {
     if (!silencieux) setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -72,7 +68,11 @@ export default function SupportPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orgId, showArchived]);
+
+  useEffect(() => {
+    fetchTickets();
+  }, [orgId, showArchived, fetchTickets]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

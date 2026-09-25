@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { TrendingUp, Calendar, DollarSign, ShoppingCart, Users, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -45,13 +45,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30');
 
-  useEffect(() => {
-    if (storeId) {
-      fetchAnalytics();
-    }
-  }, [storeId, timeRange]);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/orders?storeId=${storeId}`, {
@@ -110,7 +104,13 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId, timeRange]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchAnalytics();
+    }
+  }, [storeId, timeRange, fetchAnalytics]);
 
   if (loading) {
     return (
