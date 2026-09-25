@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import AcceptationConditions from '@/components/AcceptationConditions';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -29,6 +30,7 @@ export default function InscriptionLivreurPage() {
     vehiclePlate: '',
   });
   const [erreur, setErreur] = useState('');
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const [envoi, setEnvoi] = useState(false);
 
   // Rediriger vers onboard si connecté
@@ -180,9 +182,18 @@ export default function InscriptionLivreurPage() {
             </div>
           )}
 
+          <AcceptationConditions
+            coche={conditionsAcceptees}
+            onChange={setConditionsAcceptees}
+            documents={[
+              { href: '/cgu', libelle: 'les conditions générales d’utilisation' },
+              { href: '/conditions-livreurs', libelle: 'les conditions générales livreurs' },
+            ]}
+          />
+
           <button
             type="submit"
-            disabled={envoi}
+            disabled={envoi || !conditionsAcceptees}
             className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-gray-600 text-white font-semibold py-3 rounded-lg transition-colors"
           >
             {envoi ? 'Création du compte...' : 'Créer mon compte'}

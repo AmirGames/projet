@@ -45,6 +45,7 @@ import { cleDeLigne, nombreDArticles, totalDuPanier, type LignePanier } from '@/
 import { useAuth } from '@/lib/auth-context';
 import { StripePayment } from '@/components/stripe-payment';
 import { DelaiAnnulation } from '@/components/DelaiAnnulation';
+import AcceptationConditions from '@/components/AcceptationConditions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -109,6 +110,7 @@ export function TunnelCommande({
     { date: string; libelle: string; creneaux: { valeur: string; libelle: string }[] }[]
   >([]);
   const [submitting, setSubmitting] = useState(false);
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const router = useRouter();
   /**
@@ -1210,12 +1212,19 @@ export function TunnelCommande({
 
           {alerte}
 
+          <AcceptationConditions
+            coche={conditionsAcceptees}
+            onChange={setConditionsAcceptees}
+            documents={[{ href: '/cgv', libelle: 'les conditions générales de vente' }]}
+          />
+
           <button
             onClick={commander}
             // Hors zone ou sous le minimum, le serveur refuserait : autant le dire
             // avant que le client valide.
             disabled={
               submitting ||
+              !conditionsAcceptees ||
               sousLeMinimum ||
               (enLivraison && livraison?.livrable === false)
             }

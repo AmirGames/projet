@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import AcceptationConditions from '@/components/AcceptationConditions';
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
@@ -15,6 +16,7 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,9 +116,19 @@ export default function SignupPage() {
             />
           </div>
 
+          <AcceptationConditions
+            clair
+            coche={conditionsAcceptees}
+            onChange={setConditionsAcceptees}
+            documents={[
+              { href: "/cgu", libelle: "les conditions générales d’utilisation" },
+              { href: "/cgv", libelle: "les conditions générales de vente" },
+            ]}
+          />
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !conditionsAcceptees}
             className="w-full bg-accent hover:bg-accent-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 transition"
           >
             {loading ? t("registering") : t("submit")}
