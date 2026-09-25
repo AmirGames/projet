@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { CreditCard } from 'lucide-react';
@@ -99,11 +99,7 @@ export default function BillingPage() {
   const [detailEnCours, setDetailEnCours] = useState<string | null>(null);
   const limit = 20;
 
-  useEffect(() => {
-    fetchBillings();
-  }, [offset]);
-
-  const fetchBillings = async () => {
+  const fetchBillings = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -129,7 +125,11 @@ export default function BillingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [offset, t]);
+
+  useEffect(() => {
+    fetchBillings();
+  }, [offset, fetchBillings]);
 
   const euro = (valeur: number) =>
     Number(valeur || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });

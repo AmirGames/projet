@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -61,10 +61,6 @@ export default function MerchantDetailPage() {
     }
   };
 
-  useEffect(() => {
-    fetchMerchant();
-  }, [merchantId]);
-
   // Sa formule, son statut, ses boutiques, ses commandes : la fiche suit.
   useDonneesModifiees(
     ['organizations', 'merchant-profile', 'stores', 'orders', 'tickets'],
@@ -74,7 +70,7 @@ export default function MerchantDetailPage() {
 
   // silencieux : une relecture en direct ne touche pas à la formule en cours
   // de choix, et un échec passager ne renvoie pas à la liste.
-  const fetchMerchant = async (silencieux = false) => {
+  const fetchMerchant = useCallback(async (silencieux = false) => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}`, {
@@ -96,7 +92,11 @@ export default function MerchantDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [merchantId, router, t]);
+
+  useEffect(() => {
+    fetchMerchant();
+  }, [merchantId, fetchMerchant]);
 
   const handleUpdate = async () => {
     if (!merchant) return;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { Building2, Users, Ban, CheckCircle, XCircle, Eye, Gift, X } from 'lucide-react';
@@ -175,10 +175,6 @@ export default function OrganizationsPage() {
     }
   };
 
-  useEffect(() => {
-    fetchOrganizations();
-  }, [offset, aValider]);
-
   // Un commerce qui s'inscrit, dépose une pièce, est validé par un collègue :
   // la file suit.
   useDonneesModifiees(['organizations', 'merchant-profile', 'stores'], () => fetchOrganizations(true), {
@@ -186,7 +182,7 @@ export default function OrganizationsPage() {
   });
 
   // silencieux : une relecture en direct garde la page affichée.
-  const fetchOrganizations = async (silencieux = false) => {
+  const fetchOrganizations = useCallback(async (silencieux = false) => {
     if (!silencieux) setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -210,7 +206,11 @@ export default function OrganizationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [aValider, offset, t]);
+
+  useEffect(() => {
+    fetchOrganizations();
+  }, [offset, aValider, fetchOrganizations]);
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {

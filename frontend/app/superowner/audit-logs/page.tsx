@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useState, useEffect } from 'react';
+import { Fragment, useState, useEffect, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Shield, AlertCircle } from 'lucide-react';
 
@@ -48,11 +48,7 @@ export default function AuditLogsPage() {
 
   const actions = ['ALL', 'CREATE', 'READ', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'PERMISSION_CHANGE'];
 
-  useEffect(() => {
-    fetchLogs();
-  }, [offset, filterAction, filterStatus]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -82,7 +78,11 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterAction, filterStatus, offset, t]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [offset, filterAction, filterStatus, fetchLogs]);
 
   const getStatusColor = (status: string) => {
     return status === 'SUCCESS'
