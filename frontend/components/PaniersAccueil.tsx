@@ -18,16 +18,32 @@ import { lireAdresseLivraison, type AdresseLivraison } from '@/lib/adresseLivrai
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-/** L'adresse de la vitrine d'un commerce, retrouvée depuis son identifiant. */
-async function slugDuCommerce(storeId: string): Promise<string | null> {
+/** Ce que le panier montre d'un commerce : l'adresse de sa vitrine et son logo. */
+interface FicheCommerce {
+  slug: string | null;
+  logo: string | null;
+}
+
+/** La fiche d'un commerce, retrouvée depuis son identifiant. */
+async function ficheDuCommerce(storeId: string): Promise<FicheCommerce | null> {
   try {
     const reponse = await fetch(`${API_URL}/api/client/stores/${storeId}`);
     if (!reponse.ok) return null;
     const donnees = await reponse.json();
-    return typeof donnees?.data?.slug === 'string' && donnees.data.slug ? donnees.data.slug : null;
+    const slug = donnees?.data?.slug;
+    const logo = donnees?.data?.settings?.logo;
+    return {
+      slug: typeof slug === 'string' && slug ? slug : null,
+      logo: typeof logo === 'string' && logo ? logo : null,
+    };
   } catch {
     return null;
   }
+}
+
+/** L'adresse de la vitrine d'un commerce, retrouvée depuis son identifiant. */
+async function slugDuCommerce(storeId: string): Promise<string | null> {
+  return (await ficheDuCommerce(storeId))?.slug ?? null;
 }
 
 /**
@@ -42,6 +58,9 @@ export function PaniersAccueil() {
   const [paniers, setPaniers] = useState<PanierBoutique[]>([]);
   const [adresse, setAdresse] = useState<AdresseLivraison | null>(null);
   const [ouvert, setOuvert] = useState(false);
+  // Le logo n'est pas gardé dans le panier : il est relu à l'ouverture, et le
+  // commerçant peut le changer entre-temps.
+  const [logos, setLogos] = useState<Record<string, string | null>>({});
   const conteneur = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -53,11 +72,15 @@ export function PaniersAccueil() {
   useEffect(() => {
     if (!ouvert) return;
     paniers
-      .filter((panier) => !panier.storeSlug)
+      .filter((panier) => !panier.storeSlug || !(panier.storeId in logos))
       .forEach(async (panier) => {
-        const slug = await slugDuCommerce(panier.storeId);
-        if (slug) retenirVitrineDuPanier(panier.storeId, slug);
+        const fiche = await ficheDuCommerce(panier.storeId);
+        if (!fiche) return;
+        if (fiche.slug && !panier.storeSlug) retenirVitrineDuPanier(panier.storeId, fiche.slug);
+        setLogos((actuels) => ({ ...actuels, [panier.storeId]: fiche.logo }));
       });
+    // `logos` se remplit ici même : le relire relancerait la recherche.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ouvert, paniers]);
 
   // Au cas où l'on clique avant que l'adresse soit retrouvée.
@@ -143,9 +166,18 @@ export function PaniersAccueil() {
                     }}
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gray-700/60 transition"
                   >
-                    <span className="w-12 h-12 flex-shrink-0 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-lg font-bold">
-                      {(panier.storeName || '?').charAt(0).toUpperCase()}
-                    </span>
+                    {logos[panier.storeId] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={logos[panier.storeId] as string}
+                        alt={panier.storeName || 'Commerce'}
+                        className="w-12 h-12 flex-shrink-0 rounded-full bg-white object-contain p-1"
+                      />
+                    ) : (
+                      <span className="w-12 h-12 flex-shrink-0 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-lg font-bold">
+                        {(panier.storeName || '?').charAt(0).toUpperCase()}
+                      </span>
+                    )}
                     <span className="min-w-0 flex-1">
                       <span className="block font-semibold text-white truncate">
                         {panier.storeName || 'Commerce'}

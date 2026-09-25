@@ -190,13 +190,19 @@ export default function ClientHomePage() {
                   <Link key={store.id} href={`/store/${store.slug}`}>
                     <div className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-xl transition transform hover:scale-105 cursor-pointer h-full">
                       {/* Le logo du commerce ; à défaut, son initiale. */}
-                      <div className="relative bg-gradient-to-r from-orange-500 to-red-500 h-40 flex items-center justify-center">
+                      {/* Sur fond blanc : le dégradé orange effaçait les logos
+                          orange et encadrait mal ceux sur fond blanc. */}
+                      <div
+                        className={`relative h-40 flex items-center justify-center ${
+                          store.settings?.logo ? 'bg-white' : 'bg-gradient-to-r from-orange-500 to-red-500'
+                        }`}
+                      >
                         {store.settings?.logo ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={store.settings.logo}
                             alt={store.name}
-                            className="absolute inset-0 h-full w-full object-contain p-4"
+                            className="absolute inset-0 h-full w-full object-contain p-3"
                           />
                         ) : (
                           <div className="text-center">
