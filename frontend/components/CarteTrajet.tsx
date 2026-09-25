@@ -200,7 +200,7 @@ export function CarteTrajet({ retrait, destination, livreur, livree, hauteur = 2
         carte.current.setView([connus[0].latitude, connus[0].longitude], 14);
       }
     }
-  }, [prete, retrait, destination, livreur, livree]);
+  }, [prete, retrait, destination, livreur, livree, t]);
 
   return (
     <div
