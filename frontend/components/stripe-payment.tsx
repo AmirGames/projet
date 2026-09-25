@@ -16,18 +16,46 @@ interface StripePaymentProps {
   customerEmail: string;
   customerName: string;
   onPaymentComplete: (success: boolean) => void;
+  /**
+   * Appelé au clic sur « Payer », carte complète : le parent laisse au client
+   * quelques secondes pour se raviser, puis appelle `payer`.
+   */
+  demanderConfirmation?: (payer: () => void) => void;
 }
 
-function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPaymentComplete }: StripePaymentProps) {
+function StripePaymentForm({
+  orderId,
+  amount,
+  customerEmail,
+  customerName,
+  onPaymentComplete,
+  demanderConfirmation,
+}: StripePaymentProps) {
   const t = useTranslations('stripePayment');
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Stripe dit ce qui manque (code postal, date…) : autant le montrer avant le
+  // délai de repentir plutôt qu'après.
+  const [carteErreur, setCarteErreur] = useState('');
+  const [carteComplete, setCarteComplete] = useState(false);
 
-  const handlePayment = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!demanderConfirmation) {
+      void handlePayment();
+      return;
+    }
+    if (!carteComplete) {
+      setError(carteErreur || 'Veuillez compléter les informations de la carte.');
+      return;
+    }
+    setError('');
+    demanderConfirmation(() => void handlePayment());
+  };
 
+  const handlePayment = async () => {
     if (!stripe || !elements) {
       setError(t('stripeNotLoaded'));
       return;
@@ -86,9 +114,13 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
   };
 
   return (
-    <form onSubmit={handlePayment} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="bg-gray-700 p-4 rounded-lg">
         <CardElement
+          onChange={(ev) => {
+            setCarteComplete(ev.complete);
+            setCarteErreur(ev.error?.message || '');
+          }}
           options={{
             style: {
               base: {

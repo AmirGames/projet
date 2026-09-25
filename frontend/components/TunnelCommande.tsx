@@ -36,6 +36,7 @@ import {
   User,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
@@ -43,6 +44,7 @@ import { lireAdresseLivraison } from '@/lib/adresseLivraison';
 import { cleDeLigne, nombreDArticles, totalDuPanier, type LignePanier } from '@/lib/paniers';
 import { useAuth } from '@/lib/auth-context';
 import { StripePayment } from '@/components/stripe-payment';
+import { DelaiAnnulation } from '@/components/DelaiAnnulation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -108,6 +110,14 @@ export function TunnelCommande({
   >([]);
   const [submitting, setSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+  const router = useRouter();
+  /**
+   * Ce qui partira au commerçant une fois le délai de repentir écoulé.
+   *
+   * Tant qu'il court, rien n'est transmis : « Retour » ramène à la boutique,
+   * le panier intact, pour y ajouter le dessert oublié.
+   */
+  const [enAttente, setEnAttente] = useState<{ partir: () => void } | null>(null);
   /**
    * La commande attend le paiement en ligne.
    *
@@ -439,6 +449,19 @@ export function TunnelCommande({
       return;
     }
 
+    // Payée en espèces, la commande part au commerçant dès sa création : le
+    // délai se place avant. Payée en ligne, elle n'attend que l'encaissement :
+    // le délai se place au clic sur « Payer ».
+    const moyen = moyens.find((m) => m.id === moyenChoisi);
+    if (moyen?.type === 'CASH') {
+      setEnAttente({ partir: () => void envoyer() });
+      return;
+    }
+
+    await envoyer();
+  };
+
+  const envoyer = async () => {
     setSubmitting(true);
 
     try {
@@ -527,9 +550,49 @@ export function TunnelCommande({
     </div>
   ) : null;
 
+  const libelleDuCreneau = (valeur: string) => {
+    for (const jour of creneaux) {
+      const trouve = jour.creneaux.find((c) => c.valeur === valeur);
+      if (trouve) return `${jour.libelle}, ${trouve.libelle}`;
+    }
+    return valeur;
+  };
+
+  const delai = enAttente ? (
+    <DelaiAnnulation
+      lieu={enLivraison ? checkoutForm.deliveryAddress || 'Livraison' : `Retrait chez ${boutique.name}`}
+      precisionLieu={
+        enLivraison
+          ? [checkoutForm.deliveryPostal, checkoutForm.deliveryCity].filter(Boolean).join(' ')
+          : adresseBoutique
+      }
+      horaire={
+        enLivraison
+          ? livraison?.zone?.deliveryMinutes
+            ? `Livraison : environ ${livraison.zone.deliveryMinutes} minutes`
+            : 'Livraison dès que possible'
+          : checkoutForm.pickupTime
+            ? `Retrait : ${libelleDuCreneau(checkoutForm.pickupTime)}`
+            : 'Retrait'
+      }
+      boutique={boutique.name}
+      lignes={lignes}
+      surPartir={() => {
+        const { partir } = enAttente;
+        setEnAttente(null);
+        partir();
+      }}
+      surRetour={() => {
+        setEnAttente(null);
+        if (boutique.slug) router.push(`/store/${boutique.slug}`);
+      }}
+    />
+  ) : null;
+
   if (aPayer) {
     return (
       <div className={`${carte} max-w-xl mx-auto p-6 space-y-4`}>
+        {delai}
         <h3 className="font-bold text-lg">Paiement en ligne</h3>
         <p className="text-sm text-gray-400">
           Commande n° {aPayer.numero} — {euro(aPayer.montant)}. Elle sera transmise à{' '}
@@ -540,6 +603,7 @@ export function TunnelCommande({
           amount={aPayer.montant}
           customerEmail={checkoutForm.customerEmail}
           customerName={checkoutForm.customerName}
+          demanderConfirmation={(payer) => setEnAttente({ partir: payer })}
           onPaymentComplete={(reussi) => {
             if (reussi) surCommandePassee({ id: aPayer.id, numero: aPayer.numero });
           }}
@@ -550,6 +614,7 @@ export function TunnelCommande({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
+      {delai}
       {/* ——— Colonne de gauche : où, comment, avec quoi ——— */}
       <div className="space-y-6 min-w-0">
         <section className={`${carte} p-6`}>
