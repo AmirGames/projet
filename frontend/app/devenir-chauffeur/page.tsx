@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function DevenirChauffeurPage() {
   return (
     <PageDevenir
-      badge="Chauffeur VTC Zupone · bientôt"
+      badge="Chauffeur VTC · Bientôt disponible"
       titre="Conduisez des passagers dans votre ville"
       accroche="Zupone prépare son service de transport de personnes. Chauffeurs VTC, faites-vous connaître dès maintenant pour faire partie des premiers sur la plateforme."
       cta={{

@@ -68,6 +68,7 @@ export default function Home() {
 
           <Link href="/devenir-chauffeur" className="font-semibold text-slate-900 transition hover:text-primary">
             Devenir chauffeur
+            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">Bientôt disponible</span>
           </Link>
 
           {!user ? (
@@ -164,7 +165,10 @@ export default function Home() {
         </div>
 
         <div className="rounded-3xl border border-slate-200 p-8 transition hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(37,99,235,0.08)]">
-          <div className="mb-4 text-4xl">🚘</div>
+          <div className="mb-4 flex items-center justify-between">
+            <span className="text-4xl">🚘</span>
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">Bientôt disponible</span>
+          </div>
           <h2 className="mb-2 text-xl font-bold">Pour les chauffeurs VTC</h2>
           <p className="mb-4 text-slate-500">
             Le transport de personnes arrive bientôt. Chauffeurs VTC, faites-vous
@@ -270,6 +274,7 @@ export default function Home() {
             ) : null}
             <Link href="/devenir-chauffeur" className="mb-2 block text-slate-300 hover:text-white">
               Devenir chauffeur
+              <span className="ml-2 rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-bold text-amber-300">Bientôt disponible</span>
             </Link>
           </div>
           <div>
