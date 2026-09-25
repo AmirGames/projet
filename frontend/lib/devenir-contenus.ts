@@ -1,6 +1,6 @@
 import type { ContenuDevenir } from '@/components/PageDevenir';
 import { EMAIL_CONTACT } from '@/lib/editeur';
-import type { Pays } from '@/lib/pays';
+import type { Pays } from '@/lib/pays-infos';
 
 /**
  * Contenu des pages « Devenir … » par rôle et par pays. Les prérequis et la

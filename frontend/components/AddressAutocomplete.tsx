@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { MapPin } from 'lucide-react';
+import { paysDuNavigateur, devinerPaysNavigateur } from '@/lib/pays-client';
+import { paysValide } from '@/lib/pays-infos';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -27,39 +29,6 @@ interface Indice {
   pays?: string;
   latitude?: number;
   longitude?: number;
-}
-
-/** Fuseaux horaires propres à un pays : l'indice le plus fiable, et gratuit. */
-const PAYS_PAR_FUSEAU: Record<string, string> = {
-  'Europe/Brussels': 'be',
-  'Europe/Paris': 'fr',
-  'Europe/Luxembourg': 'lu',
-  'Europe/Zurich': 'ch',
-  'Europe/Monaco': 'mc',
-};
-
-/**
- * Le pays, deviné sans rien demander.
- *
- * Le fuseau horaire d'abord : bien des Belges ont un navigateur réglé en
- * « fr-FR », mais leur système est à l'heure de Bruxelles. La langue ensuite
- * (« fr-BE », « nl-BE »), faute de mieux.
- */
-function devinerPays(): string | undefined {
-  try {
-    const fuseau = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (fuseau && PAYS_PAR_FUSEAU[fuseau]) return PAYS_PAR_FUSEAU[fuseau];
-  } catch {
-    // Intl absent : on passe à la langue.
-  }
-
-  const langues = typeof navigator !== 'undefined' ? navigator.languages || [navigator.language] : [];
-  for (const langue of langues) {
-    const region = (langue || '').split('-')[1];
-    if (region && /^[a-z]{2}$/i.test(region)) return region.toLowerCase();
-  }
-
-  return undefined;
 }
 
 /**
@@ -94,8 +63,13 @@ let indicePromis: Promise<Indice> | null = null;
 
 function obtenirIndice(): Promise<Indice> {
   if (!indicePromis) {
+    // Un pays où la plateforme opère : celui qu'elle retient (choix, cookie,
+    // fuseau). Ailleurs (Luxembourg, Suisse…), le pays deviné tel quel.
+    const devine = devinerPaysNavigateur();
+    const pays = devine && !paysValide(devine) ? devine : paysDuNavigateur().toLowerCase();
+
     indicePromis = positionDejaAutorisee().then((position) => ({
-      pays: devinerPays(),
+      pays,
       ...(position || {}),
     }));
   }
@@ -125,6 +99,11 @@ interface Props {
   className?: string;
   required?: boolean;
   id?: string;
+  /**
+   * Pays choisi dans le formulaire (« BE », « FR ») : ses adresses passent en
+   * tête. Sans lui, le pays est deviné.
+   */
+  pays?: string;
 }
 
 /**
@@ -141,6 +120,7 @@ export function AddressAutocomplete({
   className = '',
   required,
   id,
+  pays,
 }: Props) {
   const t = useTranslations('addressAutocomplete');
   const [suggestions, setSuggestions] = useState<AdresseChoisie[]>([]);
@@ -161,12 +141,12 @@ export function AddressAutocomplete({
   useEffect(() => {
     let actif = true;
     obtenirIndice().then((trouve) => {
-      if (actif) indice.current = trouve;
+      if (actif) indice.current = pays ? { ...trouve, pays: pays.toLowerCase() } : trouve;
     });
     return () => {
       actif = false;
     };
-  }, []);
+  }, [pays]);
 
   const rechercher = useCallback(async (requete: string) => {
     if (requete.trim().length < 3) {

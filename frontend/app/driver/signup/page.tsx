@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { Bike, Car, Truck } from 'lucide-react';
+import { SelecteurPays } from '@/components/SelecteurPays';
+import { usePays } from '@/lib/pays-client';
+import { PAYS } from '@/lib/pays-infos';
 
 import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -29,6 +32,7 @@ export default function InscriptionLivreurPage() {
     vehicleType: 'bike',
     vehiclePlate: '',
   });
+  const [pays, setPays] = usePays();
   const [erreur, setErreur] = useState('');
   const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const [envoi, setEnvoi] = useState(false);
@@ -105,6 +109,15 @@ export default function InscriptionLivreurPage() {
           )}
 
           <div>
+            <label htmlFor="pays" className="block text-sm text-gray-400 mb-1">Pays où vous livrez</label>
+            <SelecteurPays
+              pays={pays}
+              onChange={setPays}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
+            />
+          </div>
+
+          <div>
             <label className="block text-sm text-gray-400 mb-1">Nom complet</label>
             <input
               type="text"
@@ -131,6 +144,7 @@ export default function InscriptionLivreurPage() {
               type="tel"
               required
               minLength={9}
+              placeholder={PAYS[pays].exempleTelephone}
               {...champ('phone')}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
             />

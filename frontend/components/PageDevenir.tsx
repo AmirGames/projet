@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PAYS, type Pays } from '@/lib/pays';
+import { PAYS, type Pays } from '@/lib/pays-infos';
 
 export interface Etape {
   titre: string;
@@ -52,9 +52,11 @@ export function PageDevenir({
   pays,
   chemin,
 }: Props) {
+  // Le formulaire d'inscription reprend le pays affiché ici.
+  const lienCta = cta.href.startsWith('/') ? `${cta.href}?pays=${pays}` : cta.href;
   const bouton = (
     <Link
-      href={cta.href}
+      href={lienCta}
       className="inline-block rounded-full bg-accent px-8 py-4 font-bold text-white transition hover:bg-accent-hover"
     >
       {cta.libelle}
