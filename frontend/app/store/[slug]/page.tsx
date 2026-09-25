@@ -12,12 +12,10 @@ import { lireAdresseLivraison, type AdresseLivraison } from '@/lib/adresseLivrai
 import { useStoreLive } from '@/lib/use-store-live';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import {
-  autresPaniers,
   enregistrerPanier,
   lirePanier,
   viderPanier,
   type LignePanier,
-  type PanierBoutique,
 } from '@/lib/paniers';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -97,9 +95,29 @@ export default function StorefrontPage() {
   >([]);
   // La déclinaison retenue pour chaque plat, avant l'ajout au panier.
   const [choix, setChoix] = useState<Record<string, string>>({});
-  // Les paniers laissés chez d'autres commerces : ils attendent leur tour.
-  const [ailleurs, setAilleurs] = useState<PanierBoutique[]>([]);
   const [showCart, setShowCart] = useState(false);
+  // Les frais de service de la plateforme : le serveur les ajoute à toute
+  // commande, livrée ou à emporter. Le panier ne les montrait pas, si bien que
+  // son total était plus bas que celui réellement payé.
+  const [fraisDeService, setFraisDeService] = useState(0);
+
+  useEffect(() => {
+    let annule = false;
+    fetch(`${API_URL}/api/client/service-fee`)
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) => {
+        if (!annule && donnees?.data) setFraisDeService(Number(donnees.data.frais) || 0);
+      })
+      .catch(() => undefined);
+    return () => {
+      annule = true;
+    };
+  }, []);
+
+  // Arrivé depuis le panier de l'accueil : le panier s'ouvre d'emblée.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('panier') === '1') setShowCart(true);
+  }, []);
   const [showCheckout, setShowCheckout] = useState(false);
   /**
    * La boutique dont le panier a déjà été lu.
@@ -253,7 +271,6 @@ export default function StorefrontPage() {
       })
     );
 
-    setAilleurs(autresPaniers(store.id));
   }, [store?.id, loading, categories]);
 
   // Chaque modification est enregistrée sous la boutique courante, et nulle
@@ -279,9 +296,10 @@ export default function StorefrontPage() {
         isAvailable: item.product.isAvailable,
         ...(item.variante ? { variantId: item.variante.id, variantNom: item.variante.label } : {}),
       })),
-      store.name
+      store.name,
+      store.slug
     );
-  }, [cart, store?.id, store?.name]);
+  }, [cart, store?.id, store?.name, store?.slug]);
 
 
   const fetchStoreData = async () => {
@@ -785,38 +803,6 @@ export default function StorefrontPage() {
               </button>
             </div>
 
-            {/* Un panier laissé chez un autre commerce n'est pas perdu : il
-                attend, et on le lui rappelle plutôt que de le lui resservir
-                ici par erreur. */}
-            {ailleurs.length > 0 && (
-              <div className="mb-4 rounded-lg border border-amber-700/40 bg-amber-900/15 px-3 py-2">
-                <p className="text-xs text-amber-200 font-semibold mb-1">
-                  {ailleurs.length === 1
-                    ? 'Un panier vous attend ailleurs'
-                    : `${ailleurs.length} paniers vous attendent ailleurs`}
-                </p>
-                <ul className="space-y-0.5">
-                  {ailleurs.map((autre) => (
-                    <li key={autre.storeId} className="text-xs">
-                      {/* Le rappel n'était qu'un constat : on pouvait voir
-                          qu'un panier attendait ailleurs, sans aucun moyen de
-                          le reprendre. */}
-                      <a
-                        href={`/checkout?boutique=${autre.storeId}`}
-                        className="text-amber-300 hover:text-amber-200 hover:underline"
-                      >
-                        {autre.storeName || 'Une autre boutique'} —{' '}
-                        {autre.lignes.reduce((somme, ligne) => somme + ligne.quantity, 0)} article
-                        {autre.lignes.reduce((somme, ligne) => somme + ligne.quantity, 0) > 1
-                          ? 's'
-                          : ''}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
             {cart.length === 0 ? (
               <p className="text-gray-400 text-center py-8">Votre panier est vide</p>
             ) : (
@@ -886,9 +872,15 @@ export default function StorefrontPage() {
                           : 'Gratuite'}
                     </span>
                   </div>
+                  {fraisDeService > 0 && (
+                    <div className="flex justify-between">
+                      <span>Frais de service</span>
+                      <span>{euro(fraisDeService)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-3">
                     <span>Total</span>
-                    <span>{euro(cartTotal + (fraisConnus ?? 0))}</span>
+                    <span>{euro(cartTotal + (fraisConnus ?? 0) + fraisDeService)}</span>
                   </div>
 
                   {manqueAuMinimum > 0 && (
@@ -1012,7 +1004,6 @@ export default function StorefrontPage() {
                 // La commande est passée : ce panier-là n'a plus lieu d'être.
                 setCart([]);
                 viderPanier(store.id);
-                setAilleurs(autresPaniers(store.id));
                 setShowCheckout(false);
                 setShowCart(false);
               }}

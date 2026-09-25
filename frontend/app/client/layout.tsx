@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Home, ShoppingCart, Heart, User, Menu, X, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { PaniersAccueil } from '@/components/PaniersAccueil';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { useAuth } from '@/lib/auth-context';
 
@@ -56,6 +57,7 @@ export default function ClientLayout({
             </SelecteurEspace>
 
             <div className="flex items-center gap-2">
+              <PaniersAccueil />
               <LanguageSwitcher />
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -129,6 +131,7 @@ export default function ClientLayout({
             </div>
 
             <div className="flex items-center gap-4">
+              <PaniersAccueil />
               <button
                 onClick={seDeconnecter}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition"

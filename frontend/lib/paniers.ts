@@ -39,6 +39,8 @@ export interface LignePanier {
 export interface PanierBoutique {
   storeId: string;
   storeName: string;
+  /** Pour revenir à la vitrine depuis le panier de l'accueil. */
+  storeSlug?: string;
   lignes: LignePanier[];
   /** Pour afficher « il y a deux jours » et trier les paniers en attente. */
   majA: string;
@@ -99,7 +101,8 @@ export function lirePanier(storeId: string | undefined): LignePanier[] {
 export function enregistrerPanier(
   storeId: string | undefined,
   lignes: LignePanier[],
-  storeName = ''
+  storeName = '',
+  storeSlug = ''
 ) {
   if (!storeId) return;
 
@@ -112,13 +115,25 @@ export function enregistrerPanier(
       storeId,
       // Le nom connu est conservé si l'appelant ne le repasse pas.
       storeName: storeName || magasin[storeId]?.storeName || '',
+      storeSlug: storeSlug || magasin[storeId]?.storeSlug || undefined,
       lignes,
       majA: new Date().toISOString(),
     };
   }
 
   ecrireMagasin(magasin);
+
+  // Le panier de l'accueil se met à jour sans recharger la page. (L'événement
+  // `storage` ne prévient que les autres onglets.)
+  try {
+    window.dispatchEvent(new Event(EVENEMENT_PANIERS));
+  } catch {
+    // Hors navigateur : rien à prévenir.
+  }
 }
+
+/** Émis à chaque modification d'un panier, dans l'onglet courant. */
+export const EVENEMENT_PANIERS = 'zupone-paniers-modifies';
 
 export function viderPanier(storeId: string | undefined) {
   enregistrerPanier(storeId, []);
@@ -134,6 +149,11 @@ export function autresPaniers(storeId: string | undefined): PanierBoutique[] {
   return Object.values(lireMagasin())
     .filter((panier) => panier.storeId !== storeId && panier.lignes.length > 0)
     .sort((a, b) => (a.majA < b.majA ? 1 : -1));
+}
+
+/** Tous les paniers non vides, du plus récent au plus ancien. */
+export function tousLesPaniers(): PanierBoutique[] {
+  return autresPaniers(undefined);
 }
 
 /** Le nombre d'articles d'un panier, quantités comprises. */
