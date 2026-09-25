@@ -23,7 +23,7 @@ import categoryRouter from "./routes/category";
 import orderRouter from "./routes/order";
 import orderManagementRouter from "./routes/order-management";
 import invoiceRouter from "./routes/invoice";
-import paymentRouter from "./routes/payment";
+import paymentRouter, { stripeWebhookHandler } from "./routes/payment";
 import promotionRouter from "./routes/promotion";
 import customerRouter from "./routes/customer";
 import reviewRouter from "./routes/review";
@@ -77,6 +77,12 @@ export function createApp(): Express {
       allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
+
+  // ===== Webhook Stripe =====
+  // Avant le lecteur JSON : Stripe signe le corps brut, et une fois relu en
+  // objet il ne se vérifie plus. Avant aussi la maintenance et les verrous de
+  // compte : un encaissement doit être noté quoi qu'il arrive au site.
+  app.post("/api/payments/webhook", express.raw({ type: "application/json" }), stripeWebhookHandler);
 
   // ===== Body parsing =====
   app.use(express.json({ limit: "10mb" }));

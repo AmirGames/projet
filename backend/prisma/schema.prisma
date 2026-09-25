@@ -653,6 +653,8 @@ enum PaymentStatus {
   PENDING
   SUCCEEDED
   FAILED
+  /// Encaissé puis rendu au client : commande refusée ou annulée.
+  REFUNDED
 }
 
 enum DeliveryType {
@@ -826,6 +828,12 @@ model Payment {
   stripeStatus    String?      // requires_payment_method, succeeded, etc.
   
   paidAt          DateTime?
+
+  /// Le remboursement, quand la commande est refusée ou annulée après
+  /// l'encaissement. Le montant est celui que Stripe a réellement rendu.
+  refundedAt      DateTime?
+  refundedAmount  Decimal?     @db.Decimal(10, 2)
+  stripeRefundId  String?
 
   // Relations
   order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)

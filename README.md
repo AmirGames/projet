@@ -11,8 +11,8 @@ emporter ou à livrer.
 > **État du projet.** Fonctionnel de bout en bout en local : on crée un compte,
 > une boutique, un menu, on commande sans compte, le commerçant suit sa commande
 > et un livreur — une fois son dossier validé par la plateforme — la prend en
-> charge. Le paiement en ligne reste incomplet (voir
-> [Ce qui n'est pas terminé](#ce-qui-nest-pas-terminé)). Rien n'est encore
+> charge. Le paiement en ligne par carte (Stripe) est confirmé par webhook et
+> remboursé automatiquement quand une commande est refusée. Rien n'est encore
 > déployé.
 
 ## Ce que fait la plateforme
@@ -149,7 +149,7 @@ emporter ou à livrer.
 | **Langues** | next-intl, français et anglais (`frontend/messages/`) |
 | **Adresses** | Base Adresse Nationale pour la France, Photon (OpenStreetMap) pour la Belgique et au-delà — les deux interrogés ensemble. Google Places (New) en option, si la pertinence prime sur le coût |
 | **Cartes** | Leaflet, fond de carte OpenStreetMap (sans clé ni compte) |
-| **Paiement** | Stripe (intention de paiement ; webhook et remboursement à faire) |
+| **Paiement** | Stripe — intention de paiement, webhook signé (`POST /api/payments/webhook`), remboursement |
 
 Un seul dépôt, deux applications :
 
@@ -275,9 +275,6 @@ vides pour rester sur un domaine unique.
 
 Par honnêteté, ce qui manque encore :
 
-- **Le paiement en ligne.** L'intention de paiement est créée chez Stripe, mais
-  le webhook qui confirme l'encaissement et le remboursement ne sont pas écrits :
-  une commande reste en paiement « en attente ».
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
 - **Les vérifications des derniers chantiers livreur** : pause, perte du

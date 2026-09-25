@@ -29,6 +29,9 @@ jest.mock("../notifier.service", () => ({
   Notifier: { pushLivreur: jest.fn(async () => true) },
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
+jest.mock("../payment.service", () => ({
+  paymentService: { rembourserCommande: jest.fn(async () => null) },
+}));
 jest.mock("../dispatch.service", () => ({
   DispatchService: {
     creerCourse: jest.fn(async () => ({ id: "course-1", driverId: null })),
@@ -44,6 +47,7 @@ import {
 import { EmailService } from "../email.service";
 import { DispatchService } from "../dispatch.service";
 import { Notifier } from "../notifier.service";
+import { paymentService } from "../payment.service";
 
 const MINUTE = 60 * 1000;
 
@@ -181,6 +185,43 @@ describe("OrderAcceptanceService", () => {
     expect(db.order.updateMany.mock.calls[0][0].data.rejectionReason).toBe("EXCEPTIONAL_CLOSURE");
     const [, contenu] = (EmailService.sendOrderStatusUpdate as jest.Mock).mock.calls[0] as any[];
     expect(contenu.message).toContain("fermer exceptionnellement");
+  });
+
+  it("rembourse une commande payée en ligne et le dit au client", async () => {
+    db.order.findUnique.mockResolvedValue({
+      ...base,
+      status: "PENDING",
+      deliveryType: "PICKUP",
+      delivery: null,
+      store: { name: "Chez Tamara", phone: null },
+    });
+    db.order.findUniqueOrThrow.mockResolvedValue({ ...base, status: "REJECTED", paymentStatus: "REFUNDED" });
+    (paymentService.rembourserCommande as unknown as jest.Mock<(...args: any[]) => any>).mockResolvedValueOnce({ id: "re_1", amount: 2350 });
+
+    await OrderAcceptanceService.refuser("boutique-1", "cmd-1", "TOO_BUSY");
+
+    expect(paymentService.rembourserCommande).toHaveBeenCalledWith("cmd-1", expect.stringContaining("TOO_BUSY"));
+    const [, contenu] = (EmailService.sendOrderStatusUpdate as jest.Mock).mock.calls[0] as any[];
+    expect(contenu.message).toMatch(/23,50\s€ vous sont remboursés/);
+  });
+
+  it("refuse quand même si Stripe ne rembourse pas, et prévient le client", async () => {
+    db.order.findUnique.mockResolvedValue({
+      ...base,
+      status: "ACCEPTED",
+      deliveryType: "PICKUP",
+      delivery: null,
+      store: { name: "Chez Tamara", phone: "0612345678" },
+    });
+    db.order.findUniqueOrThrow.mockResolvedValue({ ...base, status: "REJECTED", paymentStatus: "SUCCEEDED" });
+    (paymentService.rembourserCommande as unknown as jest.Mock<(...args: any[]) => any>).mockRejectedValueOnce(new Error("Stripe indisponible"));
+
+    await OrderAcceptanceService.refuser("boutique-1", "cmd-1", "OTHER");
+
+    expect(db.order.updateMany.mock.calls[0][0].data.status).toBe("REJECTED");
+    const [, contenu] = (EmailService.sendOrderStatusUpdate as jest.Mock).mock.calls[0] as any[];
+    expect(contenu.message).toContain("vous serez remboursé");
+    expect(contenu.message).toContain("0612345678");
   });
 
   it("ne refuse pas une commande déjà prise par un livreur", async () => {
