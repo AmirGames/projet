@@ -1198,7 +1198,11 @@
     "freeDelivery": "Free delivery",
     "minimum": "min.",
     "notDelivered": "Doesn't deliver to your address — pickup available",
-    "categories": "Categories"
+    "categories": "Categories",
+    "emptyCategory": "No shops in this category yet",
+    "seeAll": "See all shops",
+    "previous": "Previous",
+    "next": "Next"
   },
   "clientOrders": {
     "title": "My Orders",

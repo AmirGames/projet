@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { MapPin, Star, Clock, TrendingUp, Heart } from 'lucide-react';
+import { MapPin, Star, Clock, TrendingUp, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
 import { lireAdresseLivraison, type AdresseLivraison } from '@/lib/adresseLivraison';
@@ -77,18 +77,11 @@ export default function ClientHomePage() {
       .catch(() => undefined);
   }, []);
 
-  // Seules les familles représentées autour du client : une rangée de
-  // catégories vides ne mènerait qu'à « aucun restaurant ».
-  const famillesPresentes = familles.filter((famille) =>
-    stores.some((store) => store.famille === famille.code)
-  );
-
-  // Une famille qui disparaît (nouvelle adresse) ne filtre plus rien.
-  useEffect(() => {
-    if (familleChoisie && !stores.some((store) => store.famille === familleChoisie)) {
-      setFamilleChoisie(null);
-    }
-  }, [stores, familleChoisie]);
+  // Toutes les familles s'affichent, même sans commerce pour l'instant : la
+  // rangée garde la même allure d'une adresse à l'autre.
+  const rangee = useRef<HTMLUListElement>(null);
+  const defiler = (sens: 1 | -1) =>
+    rangee.current?.scrollBy({ left: sens * rangee.current.clientWidth * 0.8, behavior: 'smooth' });
 
   const loadStores = useCallback(async () => {
     try {
@@ -202,25 +195,45 @@ export default function ClientHomePage() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* Les catégories, à la manière des grandes plateformes : une rangée
             qui défile, un clic filtre, un second clic annule. */}
-        {famillesPresentes.length > 0 && (
-          <nav aria-label={t('categories')} className="-mx-4 px-4 mb-10 overflow-x-auto">
-            <ul className="flex gap-2 pb-2 w-max">
-              {famillesPresentes.map((famille) => {
+        {familles.length > 0 && (
+          <nav aria-label={t('categories')} className="relative mb-10">
+            {/* Un fondu sous la flèche : les catégories y glissent au lieu de
+                buter contre elle. */}
+            <div className="hidden md:flex absolute inset-y-0 left-0 z-10 w-16 items-center justify-start pointer-events-none bg-gradient-to-r from-gray-900 via-gray-900/90 to-transparent">
+              <button
+                type="button"
+                onClick={() => defiler(-1)}
+                aria-label={t('previous')}
+                className="pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full bg-gray-700 text-white shadow-lg hover:bg-gray-600"
+              >
+                <ChevronLeft size={20} />
+              </button>
+            </div>
+            <ul
+              ref={rangee}
+              className="flex gap-2 pb-2 md:px-10 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {familles.map((famille) => {
                 const choisie = familleChoisie === famille.code;
                 return (
                   <li key={famille.code}>
                     <button
                       type="button"
                       aria-pressed={choisie}
+                      title={famille.libelle}
                       onClick={() => setFamilleChoisie(choisie ? null : famille.code)}
-                      className={`w-24 flex flex-col items-center gap-2 rounded-xl py-3 transition ${
+                      className={`w-24 flex-shrink-0 flex flex-col items-center gap-2 rounded-xl py-3 transition ${
                         choisie ? 'bg-orange-600/20 ring-2 ring-orange-500' : 'hover:bg-gray-800'
                       }`}
                     >
                       <span className="text-4xl leading-none" aria-hidden="true">
                         {famille.emoji}
                       </span>
-                      <span className={`text-sm ${choisie ? 'text-white font-semibold' : 'text-gray-300'}`}>
+                      <span
+                        className={`w-full px-1 truncate text-center text-sm ${
+                          choisie ? 'text-white font-semibold' : 'text-gray-300'
+                        }`}
+                      >
                         {famille.libelle}
                       </span>
                     </button>
@@ -228,6 +241,18 @@ export default function ClientHomePage() {
                 );
               })}
             </ul>
+            {/* Un fondu sous la flèche : les catégories y glissent au lieu de
+                buter contre elle. */}
+            <div className="hidden md:flex absolute inset-y-0 right-0 z-10 w-16 items-center justify-end pointer-events-none bg-gradient-to-l from-gray-900 via-gray-900/90 to-transparent">
+              <button
+                type="button"
+                onClick={() => defiler(1)}
+                aria-label={t('next')}
+                className="pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full bg-gray-700 text-white shadow-lg hover:bg-gray-600"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
           </nav>
         )}
 
@@ -238,8 +263,23 @@ export default function ClientHomePage() {
         ) : filteredStores.length === 0 ? (
           <div className="text-center py-20">
             <TrendingUp size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-white text-lg">{t('noRestaurantsFound')}</p>
-            <p className="text-gray-400">{t('tryAnotherAddress')}</p>
+            {familleChoisie ? (
+              <>
+                <p className="text-white text-lg">{t('emptyCategory')}</p>
+                <button
+                  type="button"
+                  onClick={() => setFamilleChoisie(null)}
+                  className="mt-3 text-orange-400 hover:text-orange-300 font-semibold"
+                >
+                  {t('seeAll')}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-white text-lg">{t('noRestaurantsFound')}</p>
+                <p className="text-gray-400">{t('tryAnotherAddress')}</p>
+              </>
+            )}
           </div>
         ) : (
           <>

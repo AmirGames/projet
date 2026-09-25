@@ -1198,7 +1198,11 @@
     "freeDelivery": "Livraison gratuite",
     "minimum": "min.",
     "notDelivered": "Ne livre pas à votre adresse — retrait possible",
-    "categories": "Catégories"
+    "categories": "Catégories",
+    "emptyCategory": "Aucun commerce dans cette catégorie pour l'instant",
+    "seeAll": "Voir tous les commerces",
+    "previous": "Précédent",
+    "next": "Suivant"
   },
   "clientOrders": {
     "title": "Mes Commandes",
