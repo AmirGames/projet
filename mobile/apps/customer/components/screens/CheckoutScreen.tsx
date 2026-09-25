@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,6 +16,7 @@ import { Cart, CartLine, cartTotal, changeQuantity, lineKey } from '../../lib/ca
 import type { DeliveryAddress } from '../../lib/session';
 import type { DeliveryVerdict } from '../../lib/stores';
 import { Card, COLORS, Loading, Row, ScreenHeader, ui } from '../ui';
+import { CancelDelay } from '../CancelDelay';
 
 interface PaymentConfig {
   enLigne: boolean;
@@ -45,6 +45,8 @@ interface Props {
   onChangeLines: (lines: CartLine[]) => void;
   onChangeAddress: () => void;
   onBack: () => void;
+  /** « Retour » pendant le délai de repentir : revenir au menu du commerce. */
+  onBackToStore: () => void;
   onOrdered: (orderId: string) => void;
 }
 
@@ -111,6 +113,7 @@ function CheckoutBody({
   onChangeLines,
   onChangeAddress,
   onBack,
+  onBackToStore,
   onOrdered,
 }: Props & { config: PaymentConfig; pay?: Pay }) {
   const lines = cart.lines;
@@ -131,6 +134,8 @@ function CheckoutBody({
   const [checkingCode, setCheckingCode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  // Le délai de repentir court : rien n'est encore parti.
+  const [pending, setPending] = useState(false);
   /** Commande créée, en attente du paiement en ligne : elle n'est pas encore chez le commerçant. */
   const [toPay, setToPay] = useState<{ id: string; amount: number } | null>(null);
 
@@ -254,7 +259,8 @@ function CheckoutBody({
     }
   };
 
-  const submit = async () => {
+  /** Vérifie la commande, puis laisse au client le délai pour se raviser. */
+  const review = () => {
     setError('');
     if (!contact.name.trim() || !contact.email.trim() || contact.phone.trim().length < 9) {
       setError('Indiquez votre nom, votre e-mail et un téléphone valide.');
@@ -282,7 +288,10 @@ function CheckoutBody({
       setError('Votre panier est vide.');
       return;
     }
+    setPending(true);
+  };
 
+  const submit = async () => {
     setSubmitting(true);
     try {
       const res = await apiFetch<{ order: { id: string; totalAmount: number | string; paiementEnLigne?: boolean } }>(
@@ -355,6 +364,13 @@ function CheckoutBody({
   }
 
   const day = slots[slotDay];
+  const slotLabel = (value: string) => {
+    for (const d of slots) {
+      const found = d.creneaux.find((c) => c.valeur === value);
+      if (found) return `${d.libelle}, ${found.libelle}`;
+    }
+    return value;
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -551,17 +567,36 @@ function CheckoutBody({
 
         <TouchableOpacity
           style={[styles.submit, (submitting || lines.length === 0) && { opacity: 0.6 }]}
-          onPress={() =>
-            Alert.alert('Confirmer la commande', `${cart.storeName} · ${formatEuros(total)}`, [
-              { text: 'Annuler', style: 'cancel' },
-              { text: 'Commander', onPress: submit },
-            ])
-          }
+          onPress={review}
           disabled={submitting || lines.length === 0}
         >
           {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Commander · {formatEuros(total)}</Text>}
         </TouchableOpacity>
       </ScrollView>
+
+      {pending && (
+        <CancelDelay
+          place={mode === 'DELIVERY' ? address?.label || address?.street || 'Livraison' : `Retrait chez ${cart.storeName}`}
+          placeDetail={mode === 'DELIVERY' ? [address?.street, address?.city].filter(Boolean).join(', ') : undefined}
+          timing={
+            mode === 'DELIVERY'
+              ? verdict?.zone?.deliveryMinutes
+                ? `Livraison : environ ${verdict.zone.deliveryMinutes} minutes`
+                : 'Livraison dès que possible'
+              : `Retrait : ${slotLabel(pickupTime)}`
+          }
+          storeName={cart.storeName}
+          lines={lines}
+          onGo={() => {
+            setPending(false);
+            void submit();
+          }}
+          onBack={() => {
+            setPending(false);
+            onBackToStore();
+          }}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }

@@ -428,6 +428,14 @@ export default function CustomerApp() {
             onChangeLines={(lines) => setLines({ id: cart.storeId, name: cart.storeName, logo: cart.storeLogo }, lines)}
             onChangeAddress={() => pushPage({ kind: 'address' })}
             onBack={popPage}
+            onBackToStore={() =>
+              setPages((stack) => {
+                const below = stack[stack.length - 2];
+                return below?.kind === 'store' && below.storeId === cart.storeId
+                  ? stack.slice(0, -1)
+                  : [...stack.slice(0, -1), { kind: 'store', storeId: cart.storeId }];
+              })
+            }
             onOrdered={(orderId) => {
               updateCarts((c) => withLines(c, { id: cart.storeId, name: cart.storeName }, []));
               loadOrders(token);
