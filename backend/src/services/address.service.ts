@@ -61,6 +61,12 @@ const CENTRES: Record<string, { latitude: number; longitude: number }> = {
   mc: { latitude: 43.74, longitude: 7.42 },
 };
 
+export interface AdresseDeBoutique {
+  address?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+}
+
 export type Fournisseur = "ban" | "photon" | "ban+photon" | "google";
 
 const DELAI_MS = 4000;
@@ -590,13 +596,17 @@ export class AddressService {
     const { suggestions, available } = await this.rechercher(requete, 5, complete);
 
     const situees = suggestions.filter((s) => s.latitude !== null && s.longitude !== null);
+    // Le plus proche, mais d'abord parmi les adresses du bon pays : une rue
+    // homonyme juste de l'autre côté de la frontière ne doit pas l'emporter.
+    const duPays = complete.pays ? situees.filter((s) => s.countryCode === complete.pays) : [];
+    const candidates = duPays.length > 0 ? duPays : situees;
     const repere =
       typeof complete.latitude === "number" && typeof complete.longitude === "number"
         ? { latitude: complete.latitude, longitude: complete.longitude }
         : null;
 
     const premiere = repere
-      ? [...situees].sort((a, b) => ecart(repere, a) - ecart(repere, b))[0] || suggestions[0]
+      ? [...candidates].sort((a, b) => ecart(repere, a) - ecart(repere, b))[0] || suggestions[0]
       : suggestions[0];
 
     if (!premiere || premiere.latitude === null || premiere.longitude === null) {
@@ -608,6 +618,49 @@ export class AddressService {
       disponible: true,
       adresse: premiere,
     };
+  }
+
+  /**
+   * La position d'une boutique dont l'adresse vient d'être modifiée.
+   *
+   * Corriger l'adresse en laissant les anciennes coordonnées faisait lire la
+   * bonne adresse au commerçant pendant que clients et livreurs continuaient
+   * d'aller à l'ancienne. La position suit donc l'adresse :
+   *
+   * - celle de la suggestion retenue, si l'écran la fournit ;
+   * - sinon, l'adresse est située ici ;
+   * - introuvable ou service en panne, la position est effacée plutôt que
+   *   laissée fausse : la boutique se re-situe d'elle-même à la prochaine
+   *   commande, et la carte des zones propose de la poser à la main.
+   *
+   * Rend `null` quand l'adresse n'a pas changé : il n'y a alors rien à toucher.
+   */
+  static async repositionner(
+    avant: AdresseDeBoutique,
+    apres: AdresseDeBoutique,
+    fournie: { latitude?: number | null; longitude?: number | null } = {}
+  ): Promise<{ latitude: number | null; longitude: number | null; trouvee: boolean } | null> {
+    const propre = (valeur?: string | null) => (valeur || "").trim().toLowerCase();
+
+    const change = (["address", "city", "postalCode"] as const).some(
+      (champ) => propre(avant[champ]) !== propre(apres[champ])
+    );
+
+    if (!change) return null;
+
+    if (typeof fournie.latitude === "number" && typeof fournie.longitude === "number") {
+      return { latitude: fournie.latitude, longitude: fournie.longitude, trouvee: true };
+    }
+
+    const texte = [apres.address, apres.postalCode, apres.city].filter(Boolean).join(" ");
+
+    // Pas l'ancienne position pour repère : la boutique déménage peut-être, et
+    // l'adresse complète — code postal et ville — suffit à la situer.
+    const { point } = await this.situer(texte);
+
+    return point
+      ? { ...point, trouvee: true }
+      : { latitude: null, longitude: null, trouvee: false };
   }
 
   /** Vide le cache : utile après un changement de fournisseur. */

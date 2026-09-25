@@ -459,8 +459,8 @@ export default function DeliveryZonesPage() {
 
           {boutique?.latitude != null && (
             <p className="text-sm text-slate-400 mb-3">
-              Position fixée d'après l'adresse de la boutique. Pour la corriger, contactez le
-              support depuis vos réglages.
+              Position fixée d'après l'adresse de la boutique. Elle suit l'adresse : pour la
+              corriger, modifiez l'adresse dans vos réglages.
             </p>
           )}
 

@@ -16,6 +16,10 @@ const updateSettingsSchema = z.object({
   address: z.string().max(200).optional(),
   city: z.string().max(100).optional(),
   postalCode: z.string().max(20).optional(),
+  // La position de la suggestion d'adresse retenue : plus sûre qu'un
+  // géocodage du texte, qui reste le recours.
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
   phone: z.string().max(20).optional(),
   email: emailFacultatif,
   website: z.string().url().optional().or(z.literal("")),

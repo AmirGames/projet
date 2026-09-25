@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { AddressService } from "./address.service";
 import { ApiError } from "../middleware/errorHandler";
 import { verifierLaTva } from "./merchant-profile.service";
 import {
@@ -14,6 +15,9 @@ export interface StoreSettingsData {
   address?: string;
   city?: string;
   postalCode?: string;
+  /** Position de la suggestion d'adresse retenue, si l'écran en a une. */
+  latitude?: number | null;
+  longitude?: number | null;
   phone?: string;
   email?: string;
   website?: string;
@@ -187,11 +191,27 @@ export class StoreSettingsService {
         settings: updatedSettings,
       };
 
+      // L'adresse change : la position suit.
+      const position = await AddressService.repositionner(store, {
+        address: updateData.address ?? store.address,
+        city: updateData.city ?? store.city,
+        postalCode: updateData.postalCode ?? store.postalCode,
+      }, { latitude: data.latitude, longitude: data.longitude });
+
+      if (position) {
+        updateData.latitude = position.latitude;
+        updateData.longitude = position.longitude;
+      }
+
       await db.store.update({ where: { id: storeId }, data: updateData });
 
       // Relu par le même chemin que la lecture : l'écran reçoit l'héritage
-      // depuis la société, et non un objet à moitié rempli.
-      return this.getSettings(storeId);
+      // depuis la société, et non un objet à moitié rempli. `position` dit à
+      // l'écran si la nouvelle adresse a pu être située.
+      const relus = await this.getSettings(storeId);
+      return position
+        ? { ...relus, position: position.trouvee ? "recalculee" : "introuvable" }
+        : relus;
     } catch (error: any) {
       if (error.code === "P2025") {
         throw new ApiError(404, "Store not found", "STORE_NOT_FOUND");

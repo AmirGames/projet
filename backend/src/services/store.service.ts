@@ -154,9 +154,35 @@ export class StoreService {
         }
       });
 
+      /**
+       * L'adresse change sans position posée à la main : la position suit.
+       * Une position fournie explicitement — la carte des zones — l'emporte.
+       */
+      let position: { latitude: number | null; longitude: number | null } | null = null;
+
+      if (
+        (data.address || data.city || data.postalCode) &&
+        data.latitude === undefined &&
+        data.longitude === undefined
+      ) {
+        const avant = await db.store.findUnique({
+          where: { id },
+          select: { address: true, city: true, postalCode: true },
+        });
+
+        if (avant) {
+          position = await AddressService.repositionner(avant, {
+            address: data.address || avant.address,
+            city: data.city || avant.city,
+            postalCode: data.postalCode || avant.postalCode,
+          });
+        }
+      }
+
       return await db.store.update({
         where: { id },
         data: {
+          ...(position && { latitude: position.latitude, longitude: position.longitude }),
           ...(data.name && { name: data.name }),
           ...(data.slug && { slug: data.slug }),
           ...(data.address && { address: data.address }),

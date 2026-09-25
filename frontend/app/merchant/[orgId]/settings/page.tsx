@@ -88,6 +88,12 @@ export default function StoreSettings() {
     address: '',
     city: '',
     postalCode: '',
+    /**
+     * Position de la suggestion d'adresse retenue. Absente, le serveur situe
+     * l'adresse lui-même : taper par-dessus une suggestion l'efface donc.
+     */
+    latitude: undefined as number | undefined,
+    longitude: undefined as number | undefined,
     phone: '',
     email: '',
     notifications: {
@@ -177,6 +183,8 @@ export default function StoreSettings() {
         address: data.address || '',
         city: data.city || '',
         postalCode: data.postalCode || '',
+        latitude: undefined,
+        longitude: undefined,
         phone: data.phone || '',
         email: data.email || '',
         notifications: settings_obj.notifications || {
@@ -265,9 +273,11 @@ export default function StoreSettings() {
   };
 
   const handleInputChange = (field: string, value: any) => {
+    const adresse = field === 'address' || field === 'city' || field === 'postalCode';
     setFormData(prev => ({
       ...prev,
       [field]: value,
+      ...(adresse && { latitude: undefined, longitude: undefined }),
     }));
   };
 
@@ -308,7 +318,27 @@ export default function StoreSettings() {
         return;
       }
 
-      setMessage({ type: 'success', text: 'Réglages enregistrés' });
+      // La position de la boutique suit son adresse : si la nouvelle est
+      // introuvable, le commerçant doit le savoir, sans quoi aucun livreur ne
+      // viendrait sans qu'il comprenne pourquoi.
+      if (lu?.settings?.position === 'introuvable') {
+        setMessage({
+          type: 'error',
+          text:
+            "Réglages enregistrés, mais la nouvelle adresse n'a pas pu être située sur la carte. " +
+            'Vérifiez-la, ou posez la boutique sur la carte depuis vos zones de livraison.',
+        });
+        fetchSettings();
+        return;
+      }
+
+      setMessage({
+        type: 'success',
+        text:
+          lu?.settings?.position === 'recalculee'
+            ? 'Réglages enregistrés — position de la boutique mise à jour'
+            : 'Réglages enregistrés',
+      });
       setTimeout(() => setMessage(null), 3000);
       fetchSettings();
     } catch (error) {
@@ -538,6 +568,8 @@ export default function StoreSettings() {
                         address: adresse.street,
                         city: adresse.city || prev.city,
                         postalCode: adresse.postalCode || prev.postalCode,
+                        latitude: adresse.latitude ?? undefined,
+                        longitude: adresse.longitude ?? undefined,
                       }))
                     }
                     className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"

@@ -86,4 +86,40 @@ describe("Recherche d'adresses orientée par le navigateur", () => {
     });
     expect(point).toEqual({ latitude: 50.63, longitude: 5.57 });
   });
+
+  describe("repositionner une boutique dont l'adresse change", () => {
+    const avant = { address: "12 rue de la station", city: "Lille", postalCode: "59000" };
+
+    it("ne touche à rien si l'adresse n'a pas changé", async () => {
+      expect(await AddressService.repositionner(avant, { ...avant, city: " lille " })).toBeNull();
+    });
+
+    it("prend la position de la suggestion retenue", async () => {
+      const apres = { ...avant, city: "Liège", postalCode: "4000" };
+      expect(await AddressService.repositionner(avant, apres, { latitude: 1, longitude: 2 })).toEqual({
+        latitude: 1,
+        longitude: 2,
+        trouvee: true,
+      });
+    });
+
+    it("situe la nouvelle adresse, belge comprise", async () => {
+      const apres = { ...avant, city: "Liège", postalCode: "4000" };
+      expect(await AddressService.repositionner(avant, apres)).toEqual({
+        latitude: 50.63,
+        longitude: 5.57,
+        trouvee: true,
+      });
+    });
+
+    it("efface la position plutôt que de garder l'ancienne si l'adresse est introuvable", async () => {
+      global.fetch = jest.fn(async () => ({ ok: true, json: async () => ({ features: [] }) })) as any;
+      const apres = { ...avant, address: "nulle part" };
+      expect(await AddressService.repositionner(avant, apres)).toEqual({
+        latitude: null,
+        longitude: null,
+        trouvee: false,
+      });
+    });
+  });
 });
