@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
 import { paysDuNavigateur } from '@/lib/pays-client';
 import { useTranslations } from 'next-intl';
@@ -45,11 +45,7 @@ export default function DriverProfilePage() {
     address: '',
   });
 
-  useEffect(() => {
-    loadDriverData();
-  }, []);
-
-  const loadDriverData = async () => {
+  const loadDriverData = useCallback(async () => {
     const token = localStorage.getItem('driverToken');
     if (!token) {
       router.push('/driver/login');
@@ -79,7 +75,11 @@ export default function DriverProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    loadDriverData();
+  }, [loadDriverData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

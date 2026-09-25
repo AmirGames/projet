@@ -155,10 +155,6 @@ export default function DeliveryTrackingPage() {
 
   const { enLigne, gps, positionRecue, erreurPosition } = useSignalGps(surRetourReseau);
 
-  useEffect(() => {
-    loadDeliveryData();
-  }, [deliveryId]);
-
   // La commande est annulée, le commerçant la déclare prête : la course suit.
   // Le livreur ne reçoit que les annonces de ses propres courses.
   useDonneesModifiees('orders', () => loadDeliveryData(true));
@@ -184,7 +180,7 @@ export default function DeliveryTrackingPage() {
   }, [envoyerPosition, positionRecue, erreurPosition]);
 
   // silencieux : une relecture en direct qui échoue garde la course affichée.
-  const loadDeliveryData = async (silencieux = false) => {
+  const loadDeliveryData = useCallback(async (silencieux = false) => {
     const token = localStorage.getItem('driverToken');
     if (!token) {
       router.push('/driver/login');
@@ -210,7 +206,11 @@ export default function DeliveryTrackingPage() {
       setError('Erreur lors du chargement de la livraison');
       setLoading(false);
     }
-  };
+  }, [deliveryId, router]);
+
+  useEffect(() => {
+    loadDeliveryData();
+  }, [deliveryId, loadDeliveryData]);
 
   // Où en est le livreur du commerce, et du client.
   const retraitConnu =
