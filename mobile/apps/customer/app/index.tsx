@@ -15,6 +15,7 @@ import {
 import { Carts, CartLine, itemCount, loadCarts, saveCarts, sortedCarts, withLines } from '../lib/carts';
 import { isActive, OrderSummary, orderStatus } from '../lib/orders';
 import { useCustomerRealtime } from '../lib/useCustomerRealtime';
+import { useCartSync } from '../lib/useCartSync';
 import { onCustomerNotificationTap, PushCustomerData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
 import { COLORS } from '../components/ui';
 import HomeScreen from '../components/screens/HomeScreen';
@@ -94,6 +95,9 @@ export default function CustomerApp() {
       return next;
     });
   }, []);
+
+  // Les paniers suivent le compte : ceux du site apparaissent ici, en direct.
+  useCartSync({ token, carts, setCarts });
 
   const loadOrders = useCallback(async (accessToken: string) => {
     if (!accessToken) return;

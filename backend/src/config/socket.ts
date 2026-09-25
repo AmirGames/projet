@@ -422,6 +422,17 @@ export function emitDriverEvent(email: string, evenement: string, donnees: unkno
   io.to(salonUtilisateur(email)).emit(evenement, donnees);
 }
 
+/**
+ * Pousse un événement à tous les appareils connectés d'un compte : ses
+ * onglets du site comme ses téléphones (un panier modifié ailleurs, par
+ * exemple).
+ */
+export function emitUserEvent(email: string, evenement: string, donnees: unknown) {
+  if (!io || !email) return;
+
+  io.to(salonUtilisateur(email)).emit(evenement, donnees);
+}
+
 /** Pousse un événement à l'équipe support (superowners et admins système). */
 export function emitSupportEvent(evenement: string, donnees: unknown) {
   if (!io) return;

@@ -12,6 +12,7 @@ import { DeliveryZoneService } from "../services/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";
 import { avisARedemander, avisRestaurantParCommerce } from "../services/avis-client.service";
 import { avecLaVraieNote } from "../services/review.service";
+import { CustomerCartService, panierSchema } from "../services/customer-cart.service";
 import {
   COMMENTAIRE_MAX,
   NOTE_MAX,
@@ -904,6 +905,28 @@ router.delete("/me/favorites/:storeId", authMiddleware, async (req: Request, res
       success: true,
       message: "Supprimé des favoris"
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/client/me/paniers - Les paniers du compte, quel que soit l'appareil
+router.get("/me/paniers", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    res.json({ success: true, data: await CustomerCartService.lister(client.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/client/me/paniers/:storeId - Remplace le panier d'un commerce (vide : vidé)
+router.put("/me/paniers/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    const recu = panierSchema.parse(req.body);
+    const panier = await CustomerCartService.enregistrer(client, req.params.storeId as string, recu);
+    res.json({ success: true, data: panier });
   } catch (err) {
     next(err);
   }

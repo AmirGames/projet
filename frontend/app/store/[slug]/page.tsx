@@ -11,6 +11,7 @@ import { useStoreLive } from '@/lib/use-store-live';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import {
   enregistrerPanier,
+  EVENEMENT_PANIER_DISTANT,
   lirePanier,
 } from '@/lib/paniers';
 
@@ -123,6 +124,8 @@ export default function StorefrontPage() {
    * pouvait commander un plat qui venait d'être retiré.
    */
   const panierLu = useRef<string | null>(null);
+  // Le panier modifié sur un autre appareil du compte (le téléphone) : on le relit.
+  const [relecturePanier, setRelecturePanier] = useState(0);
   // L'adresse choisie sur l'accueil (ou ici) et ce qu'il en coûte d'y livrer.
   const [adresse, setAdresse] = useState<AdresseLivraison | null | undefined>(undefined);
   const [livraison, setLivraison] = useState<Livraison | null>(null);
@@ -265,7 +268,18 @@ export default function StorefrontPage() {
       })
     );
 
-  }, [store?.id, loading, categories]);
+  }, [store?.id, loading, categories, relecturePanier]);
+
+  useEffect(() => {
+    if (!store?.id) return;
+    const surPanierDistant = (evenement: Event) => {
+      if ((evenement as CustomEvent<{ storeId: string }>).detail?.storeId !== store.id) return;
+      panierLu.current = null;
+      setRelecturePanier((n) => n + 1);
+    };
+    window.addEventListener(EVENEMENT_PANIER_DISTANT, surPanierDistant);
+    return () => window.removeEventListener(EVENEMENT_PANIER_DISTANT, surPanierDistant);
+  }, [store?.id]);
 
   // Chaque modification est enregistrée sous la boutique courante, et nulle
   // part ailleurs.

@@ -16,7 +16,9 @@ même tiroir latéral, mêmes composants (`components/ui.tsx`).
 - **Vitrine** : menu rangé par catégories dans l'ordre du commerçant, plats
   épuisés en direct (retirés du panier s'ils y étaient), déclinaisons, favori,
   livraison ou non à l'adresse retenue.
-- **Un panier par commerce**, gardé sur le téléphone.
+- **Un panier par commerce**, gardé sur le téléphone et **partagé avec le site** :
+  un panier commencé sur l'ordinateur apparaît sur le téléphone, et inversement,
+  en direct (`GET/PUT /api/client/me/paniers`, annonce « panier-modifie »).
 - **Commande** : livraison ou retrait (seul le retrait hors des horaires),
   zone vérifiée et minimum annoncé, créneaux de retrait tenus aux horaires,
   coordonnées pré-remplies, moyen de paiement du commerçant, code promo, frais
@@ -61,6 +63,7 @@ components/screens/        un fichier par écran
 lib/api.ts                 appels au serveur, montants, adresses des images
 lib/session.ts             session et adresse de livraison (SecureStore)
 lib/carts.ts               un panier par commerce (AsyncStorage)
+lib/useCartSync.ts         paniers partagés avec le compte (site ↔ téléphone)
 lib/stores.ts              commerces, menus, zones de livraison
 lib/orders.ts              commandes, statuts, suivi
 lib/useCustomerRealtime.ts connexion temps réel et salons des commandes

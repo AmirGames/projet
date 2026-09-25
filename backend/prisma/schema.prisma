@@ -479,6 +479,7 @@ model Store {
   notifications Notification[] @relation("NotificationToStore")
   tags          ProductTag[] @relation("TagToStore")
   favorites     FavoriteStore[] @relation("StoreFavorites")
+  customerCarts CustomerCart[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1338,6 +1339,35 @@ model Staff {
 // FAVORITES & PREFERENCES
 // ============================================================================
 
+/// Le panier d'un client chez un commerce, gardé sur le serveur.
+///
+/// Il ne vivait que dans l'appareil où il avait été composé : commencé sur le
+/// site, il n'existait pas sur le téléphone. Rangé ici, il suit le compte, et
+/// chaque modification est annoncée en direct aux autres appareils.
+///
+/// Un panier vidé (commandé, ou vidé à la main) reste une ligne sans articles
+/// plutôt que de disparaître : sans cette trace, l'appareil resté hors ligne
+/// qui en gardait une copie la renverrait, et le panier ressusciterait.
+model CustomerCart {
+  id          String   @id @default(cuid())
+  customerId  String
+  storeId     String
+  storeName   String   @default("")
+  storeSlug   String?
+  storeLogo   String?
+  /// Les lignes, au format du site (`frontend/lib/paniers.ts`) : productId,
+  /// variantId, name, variantNom, price (euros), quantity.
+  lines       Json     @default("[]")
+
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  updatedAt   DateTime @updatedAt
+
+  @@unique([customerId, storeId])
+  @@index([customerId])
+}
+
 model FavoriteStore {
   id        String  @id @default(cuid())
   customerId String
@@ -1395,6 +1425,7 @@ model Customer {
   reviews         Review[] @relation("ReviewToCustomer")
   driverRatings   DriverRating[]
   favorites       FavoriteStore[] @relation("CustomerFavorites")
+  carts           CustomerCart[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
