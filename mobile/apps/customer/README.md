@@ -1,56 +1,68 @@
-# Welcome to your Expo app 👋
+# Zupone — application client
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application mobile du client, construite sur le même modèle que les
+applications commerçant (`../merchant`) et livreur (`../delivery`) : même
+connexion, même barre du bas (Menu · Accueil · Paniers · Commande en cours),
+même tiroir latéral, mêmes composants (`components/ui.tsx`).
 
-## Get started
+## Ce que fait l'application
 
-1. Install dependencies
+- **Connexion ou création de compte** (tout compte peut commander : la fiche
+  client naît à la première visite).
+- **Accueil** : adresse de livraison (suggestions du serveur ou position du
+  téléphone), recherche, catégories de cuisine (Pizzas, Sushis…), tri (note,
+  distance, frais), commerces qui livrent à l'adresse d'abord, avec leurs frais
+  et leur minimum, et les **paniers en cours**.
+- **Vitrine** : menu rangé par catégories dans l'ordre du commerçant, plats
+  épuisés en direct (retirés du panier s'ils y étaient), déclinaisons, favori,
+  livraison ou non à l'adresse retenue.
+- **Un panier par commerce**, gardé sur le téléphone.
+- **Commande** : livraison ou retrait (seul le retrait hors des horaires),
+  zone vérifiée et minimum annoncé, créneaux de retrait tenus aux horaires,
+  coordonnées pré-remplies, moyen de paiement du commerçant, code promo, frais
+  de service, total avant de valider. **Paiement en ligne** par la feuille de
+  paiement Stripe quand la plateforme l'a branché (`GET /api/payments/config`).
+- **Suivi en direct** : étapes, heure annoncée à l'acceptation, motif d'un
+  refus, livreur (note, véhicule, appel), distance restante, position sur la
+  carte du téléphone, **code de remise**, photo du dépôt, « votre livreur est
+  bientôt là » (vibration).
+- **Mes commandes**, **Avis** (commerce, plats, livreur), **Favoris**,
+  **Notifications**, **Paramètres**, **Mon compte**.
 
-   ```bash
-   npm install
-   ```
+En direct (Socket.IO) : chaque commande en cours est suivie dans son salon,
+la vitrine ouverte dans celui du commerce. Une notification push prévient
+application fermée (commande acceptée ou annulée, étapes de la livraison,
+livreur proche) ; la toucher ouvre la commande.
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Lancer
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+L'adresse du serveur est dans `lib/api.ts` (`API_URL`).
 
-### Other setup steps
+Les notifications push, la localisation et le paiement Stripe demandent une
+**build de développement** (`npx expo run:android` ou
+`npx eas-cli@latest build --profile development`) : Expo Go ne les porte pas.
+Le projet EAS doit être configuré (`npx eas-cli@latest init`).
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Sans clé publique Stripe côté serveur (`STRIPE_PUBLISHABLE_KEY`) alors que le
+paiement en ligne est actif, l'application ne propose que les espèces.
 
-## Learn more
+## Organisation
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```
+app/index.tsx              écran racine : session, onglets, tiroir, bandeau, écrans empilés
+components/ui.tsx          en-tête, cartes, lignes, chargement (commun aux trois applications)
+components/screens/        un fichier par écran
+lib/api.ts                 appels au serveur, montants, adresses des images
+lib/session.ts             session et adresse de livraison (SecureStore)
+lib/carts.ts               un panier par commerce (AsyncStorage)
+lib/stores.ts              commerces, menus, zones de livraison
+lib/orders.ts              commandes, statuts, suivi
+lib/useCustomerRealtime.ts connexion temps réel et salons des commandes
+lib/push.ts                notifications push (app « customer »)
+lib/realtime.ts            abonnement aux événements et aux salons, écran par écran
+```

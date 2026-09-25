@@ -26,7 +26,7 @@ jest.mock("../email.service", () => ({
   EmailService: { sendOrderStatusUpdate: jest.fn() },
 }));
 jest.mock("../notifier.service", () => ({
-  Notifier: { pushLivreur: jest.fn(async () => true) },
+  Notifier: { pushLivreur: jest.fn(async () => true), pushClient: jest.fn(async () => 0) },
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
 jest.mock("../payment.service", () => ({

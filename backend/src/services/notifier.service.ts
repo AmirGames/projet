@@ -309,6 +309,27 @@ export class Notifier {
   }
 
   /**
+   * Prévient le client sur les téléphones où l'application client est
+   * connectée à son compte. La commande voyage dans les données : la toucher
+   * ouvre son suivi. Un client invité n'a pas de compte, donc pas de téléphone
+   * enregistré : l'e-mail et le SMS restent ses seuls canaux.
+   */
+  static async pushClient(email: string | null | undefined, message: MessageExpo) {
+    if (!email) return 0;
+
+    const appareils = await db.pushDevice.findMany({
+      where: { app: "customer", user: { email: { equals: email, mode: "insensitive" } } },
+      select: { token: true },
+    });
+    if (appareils.length === 0) return 0;
+
+    return this.expoPush(
+      appareils.map((a) => a.token),
+      message
+    );
+  }
+
+  /**
    * Prévient le client d'une étape de sa livraison, par e-mail et SMS.
    *
    * Seules trois étapes méritent un message hors application : un livreur a
@@ -354,6 +375,11 @@ export class Notifier {
     await Promise.all([
       this.email(commande.customerEmail, messages.sujet, messages.texte, lien),
       messages.sms ? this.sms(commande.customerPhone, messages.sms) : Promise.resolve(false),
+      this.pushClient(commande.customerEmail, {
+        title: messages.sujet,
+        body: messages.texte,
+        data: { tag: `livraison-${etape.toLowerCase()}`, orderId },
+      }),
     ]);
   }
 
@@ -441,6 +467,11 @@ export class Notifier {
     await Promise.all([
       this.email(commande.customerEmail, titre, texte, lien),
       this.sms(commande.customerPhone, `${texte} Suivi : ${lien}`),
+      this.pushClient(commande.customerEmail, {
+        title: titre,
+        body: texte,
+        data: { tag: "livreur-proche", orderId },
+      }),
     ]);
   }
 }

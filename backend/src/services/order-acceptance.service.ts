@@ -178,6 +178,16 @@ export class OrderAcceptanceService {
       });
     }
 
+    // Le téléphone, même application fermée : l'heure annoncée ou le refus
+    // n'attendent pas que le client rouvre son suivi.
+    enArrierePlan(
+      Notifier.pushClient(commande.customerEmail, {
+        title: titre,
+        body: message,
+        data: { tag: "commande", orderId: commande.id, status: commande.status },
+      })
+    );
+
     if (options.email === false) return;
 
     try {

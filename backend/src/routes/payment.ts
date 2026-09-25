@@ -3,6 +3,7 @@ import { z } from "zod";
 import { paymentService } from "../services/payment.service";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
+import { getEnv } from "../config/env";
 
 const router = Router();
 
@@ -81,6 +82,25 @@ router.get(
     }
   }
 );
+
+/**
+ * GET /api/payments/config — le paiement en ligne est-il branché ?
+ *
+ * L'application mobile en a besoin avant de proposer un moyen de paiement :
+ * une commande payée en ligne n'arrive au commerçant qu'une fois encaissée,
+ * et sans clé publique l'application ne saurait pas l'encaisser. La clé
+ * publique n'a rien de secret : c'est celle que le navigateur reçoit aussi.
+ */
+router.get("/config", (_req: Request, res: Response) => {
+  const enLigne = getEnv().ENABLE_STRIPE && Boolean(process.env.STRIPE_SECRET_KEY);
+  res.json({
+    success: true,
+    data: {
+      enLigne,
+      publishableKey: enLigne ? process.env.STRIPE_PUBLISHABLE_KEY || null : null,
+    },
+  });
+});
 
 /**
  * POST /api/payments/webhook — les événements Stripe.
