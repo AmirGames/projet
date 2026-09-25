@@ -284,9 +284,9 @@ Par honnêteté, ce qui manque encore :
   la disponibilité se bascule à la main, plat par plat.
 - **Les pages légales** : mentions légales, CGU, confidentialité, cookies.
   Aucune n'existe, et elles sont exigées avant d'ouvrir au public.
-- **Les applications mobiles client et livreur** (`mobile/apps/customer`,
-  `mobile/apps/delivery`) ne sont encore que le gabarit Expo ; seule
-  l'application commerçant est écrite.
+- **L'application mobile client** (`mobile/apps/customer`) n'est encore que le
+  gabarit Expo ; les applications commerçant et livreur (`mobile/apps/delivery`)
+  sont écrites. Celle du livreur n'envoie sa position qu'au premier plan.
 - **Prisma 5.22 → 7**, à faire une fois le reste stabilisé.
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.

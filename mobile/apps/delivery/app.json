@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "delivery",
-    "slug": "delivery",
+    "name": "Zupone Livreur",
+    "slug": "zupone-delivery",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -24,20 +24,36 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "updates": {
+      "enabled": false
+    }
+    },
     "plugins": [
-      "expo-router",
       [
-        "expo-splash-screen",
+        "expo-notifications",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "color": "#007AFF",
+          "sounds": [
+            "./assets/sounds/new_course.wav"
+          ]
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Zupone transmet votre position pendant que vous êtes en ligne : elle décide des courses qui vous sont proposées et permet au client de suivre sa livraison."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "L'appareil photo sert à photographier le dépôt d'une commande et vos pièces justificatives.",
+          "photosPermission": "La galerie sert à envoyer vos pièces justificatives."
         }
       ]
     ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+    "android": {
+      "package": "com.amir_games.zuponedelivery"
     }
   }
 }

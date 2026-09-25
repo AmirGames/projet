@@ -1,56 +1,64 @@
-# Welcome to your Expo app 👋
+# Zupone Livreur
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application mobile du livreur, construite sur le même modèle que l'application
+commerçant (`../merchant`) : même connexion, même barre du bas (Menu · Accueil ·
+Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`).
 
-## Get started
+## Ce que fait l'application
 
-1. Install dependencies
+- **Connexion** avec un compte livreur (un compte commerçant ou client est refusé).
+- **Accueil** : passage en ligne / hors ligne, état du dossier tant qu'il n'est
+  pas validé, **courses proposées** avec compte à rebours (accepter / refuser),
+  course en cours, gains du jour et de la semaine, note, **pause** (15, 30, 60 min).
+- **Course** : les quatre étapes (aller au commerce, prendre en charge, aller au
+  client, remettre), lancement du GPS (Google Maps, Waze ou Plans), prise en
+  charge **déverrouillée à moins de 150 m du commerce** par un curseur à glisser
+  (ou « le GPS ne me situe pas »), attente tant que la commande n'est pas prête,
+  **preuve de remise** par le code à quatre chiffres du client (vérifié seul) ou
+  par la **photo du dépôt**, appel du client, annulation avec motif.
+- **Historique** des courses (filtres, gains et kilomètres cumulés).
+- **Revenus** : jour / semaine / mois, ce qui reste dû, ce qui attend le
+  virement, ce qui a été versé, et les relevés.
+- **Mes avis**, **Notifications**, **Support** (discussion en direct),
+  **Paramètres** (sonnerie, application de navigation, état du GPS et des push),
+  **Mon compte** (profil, véhicule, **dossier** avec envoi des pièces depuis
+  l'appareil photo ou la galerie).
 
-   ```bash
-   npm install
-   ```
+En direct (Socket.IO) : une course proposée sonne et vibre toutes les 5 s tant
+qu'elle attend ; commande prête, course annulée, GPS perdu, fin de pause et
+réponses du support arrivent sans recharger. Une notification push prévient
+application fermée ; la toucher ouvre la course ou le support.
 
-2. Start the app
+La position est envoyée à `PATCH /api/drivers/location` tant que le livreur est
+en ligne ou sur une course (au premier plan : gardez l'application ouverte
+pendant les courses).
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Lancer
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+L'adresse du serveur est dans `lib/api.ts` (`API_URL`).
 
-### Other setup steps
+Les notifications push, la localisation et l'appareil photo demandent une
+**build de développement** (`npx expo run:android` ou
+`npx eas-cli@latest build --profile development`) : Expo Go ne reçoit pas les
+push. Le projet EAS doit être configuré (`npx eas-cli@latest init`).
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Organisation
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```
+app/index.tsx              écran racine : session, onglets, tiroir, bandeau
+components/ui.tsx          en-tête, cartes, lignes, chargement (commun au commerçant)
+components/SlideToConfirm  curseur « glisser pour valider »
+components/screens/        un fichier par écran
+lib/api.ts                 appels au serveur, format des montants
+lib/session.ts             session et préférences (SecureStore)
+lib/deliveries.ts          types, statuts, distances, lancement du GPS
+lib/useDriverAlerts.ts     connexion temps réel et sonnerie des courses
+lib/useDriverLocation.ts   suivi et envoi de la position
+lib/push.ts                notifications push (app « delivery »)
+lib/realtime.ts            abonnement aux événements, écran par écran
+```
