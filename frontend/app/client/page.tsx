@@ -72,6 +72,49 @@ export default function ClientHomePage() {
   // Les familles de cuisine (Pizzas, Sushis…), et celle que le client a choisie.
   const [familles, setFamilles] = useState<Famille[]>([]);
   const [familleChoisie, setFamilleChoisie] = useState<string | null>(null);
+  // Les commerces mis en favoris par le client connecté.
+  const [favoris, setFavoris] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+    fetch(`${API_URL}/api/client/me/favorites`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) =>
+        setFavoris(new Set((donnees?.data || []).map((f: { storeId: string }) => f.storeId))),
+      )
+      .catch(() => undefined);
+  }, []);
+
+  // Le cœur est dans le lien de la carte : sans preventDefault, le clic
+  // ouvrait la boutique au lieu d'ajouter aux favoris.
+  const basculerFavori = async (e: React.MouseEvent, storeId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+    const estFavori = favoris.has(storeId);
+    const suivant = new Set(favoris);
+    if (estFavori) suivant.delete(storeId);
+    else suivant.add(storeId);
+    setFavoris(suivant);
+    try {
+      const reponse = await fetch(
+        estFavori ? `${API_URL}/api/client/me/favorites/${storeId}` : `${API_URL}/api/client/me/favorites`,
+        {
+          method: estFavori ? 'DELETE' : 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: estFavori ? undefined : JSON.stringify({ storeId }),
+        },
+      );
+      if (!reponse.ok) throw new Error();
+    } catch {
+      setFavoris(favoris);
+    }
+  };
 
   useEffect(() => {
     fetch(`${API_URL}/api/stores/types`)
@@ -343,7 +386,21 @@ export default function ClientHomePage() {
                               <p className="text-sm text-orange-400">{store.genreLibelle}</p>
                             )}
                           </div>
-                          <Heart size={18} className="flex-shrink-0 text-gray-400 hover:text-red-500" />
+                          <button
+                            type="button"
+                            onClick={(e) => basculerFavori(e, store.id)}
+                            aria-pressed={favoris.has(store.id)}
+                            className="flex-shrink-0 p-1 -m-1"
+                          >
+                            <Heart
+                              size={18}
+                              className={
+                                favoris.has(store.id)
+                                  ? 'text-red-500 fill-red-500'
+                                  : 'text-gray-400 hover:text-red-500'
+                              }
+                            />
+                          </button>
                         </div>
 
                         {/* Description */}
