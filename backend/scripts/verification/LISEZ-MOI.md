@@ -46,7 +46,7 @@ DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" VERIF_A
 
 ### Les réglages de l'API pour la suite complète
 
-Trois suites vérifient un comportement que la configuration de test
+Quatre suites vérifient un comportement que la configuration de test
 (`.env.test`) coupe. Sans ces réglages, elles échouent — une dizaine de
 contrôles — alors que rien n'est cassé :
 
@@ -55,14 +55,17 @@ contrôles — alors que rien n'est cassé :
 | `LOG_LEVEL=info` | API **et** vérifications | `.env.test` met `error`, ce qui masque les avertissements que la suite relit ; elle lance aussi sa propre API avec l'environnement des vérifications | `verif-journal` |
 | `ENABLE_EMAIL_VERIFICATION=true` | API | `.env.test` coupe le courriel de confirmation envoyé à l'inscription | `verif-compte-email` |
 | `WEBHOOK_RELANCES_MS=300,600,900` et `WEBHOOK_BALAYAGE_MS=200` | API | Les relances réelles s'espacent d'une minute à une demi-heure : la suite ne les verrait jamais | `verif-webhooks` |
+| `ENABLE_STRIPE=true`, `STRIPE_SECRET_KEY=sk_test_factice` et le même `STRIPE_WEBHOOK_SECRET` | API **et** vérifications (le secret) | `.env.test` coupe Stripe : une commande par carte partirait au commerçant sans attendre l'encaissement. La suite signe elle-même les événements du webhook ; aucune n'appelle Stripe pour de vrai | `verif-paiement` |
 
 ```bash
 # L'API
 PORT=3099 LOG_LEVEL=info ENABLE_EMAIL_VERIFICATION=true \
-  WEBHOOK_RELANCES_MS=300,600,900 WEBHOOK_BALAYAGE_MS=200 npm run dev
+  WEBHOOK_RELANCES_MS=300,600,900 WEBHOOK_BALAYAGE_MS=200 \
+  ENABLE_STRIPE=true STRIPE_SECRET_KEY=sk_test_factice STRIPE_WEBHOOK_SECRET=whsec_verification \
+  npm run dev
 
 # Les vérifications
-LOG_LEVEL=info VERIF_API_URL=http://localhost:3099 npm run verif
+LOG_LEVEL=info STRIPE_WEBHOOK_SECRET=whsec_verification VERIF_API_URL=http://localhost:3099 npm run verif
 ```
 
 (`DATABASE_URL` est à ajouter aux deux commandes, comme plus haut.)

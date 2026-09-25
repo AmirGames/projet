@@ -6,7 +6,9 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { euro } from '@/lib/format';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+const cleStripe = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+const stripePromise = cleStripe ? loadStripe(cleStripe) : null;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface StripePaymentProps {
   orderId: string;
@@ -35,19 +37,11 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
     setError('');
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-      // Create payment intent
+      // Le serveur lit le montant sur la commande : seul son identifiant part.
       const intentResponse = await fetch(`${API_URL}/api/payments/intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId,
-          storeId: 'default', // Could be extracted from order details
-          amount,
-          customerEmail,
-          customerName,
-        }),
+        body: JSON.stringify({ orderId }),
       });
 
       if (!intentResponse.ok) {
@@ -74,6 +68,13 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
         setError(result.error.message || t('paymentFailed'));
         onPaymentComplete(false);
       } else if (result.paymentIntent?.status === 'succeeded') {
+        // Le webhook fait foi, mais il peut arriver après : ce relevé transmet
+        // la commande au commerçant sans l'attendre. Son échec n'y change rien.
+        await fetch(`${API_URL}/api/payments/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentIntentId: result.paymentIntent.id }),
+        }).catch(() => undefined);
         onPaymentComplete(true);
       }
     } catch (err) {
@@ -119,6 +120,14 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
 }
 
 export function StripePayment(props: StripePaymentProps) {
+  if (!stripePromise) {
+    return (
+      <p className="text-red-400 text-sm">
+        Le paiement par carte n&apos;est pas configuré (clé publique Stripe manquante).
+      </p>
+    );
+  }
+
   return (
     <Elements stripe={stripePromise}>
       <StripePaymentForm {...props} />

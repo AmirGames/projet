@@ -215,8 +215,9 @@ export const paymentService = {
 
     logger.info("Commande payée", { orderId: commande.id, paymentIntentId: intention.id });
 
-    // Payée alors qu'elle venait d'être refusée : l'argent repart aussitôt.
-    if (commande.status === "REJECTED") {
+    // Payée alors qu'elle venait d'être refusée, ou abandonnée : l'argent
+    // repart aussitôt.
+    if (commande.status === "REJECTED" || commande.deletedAt) {
       try {
         await this.rembourserCommande(commande.id, "Paiement reçu après le refus de la commande");
       } catch (err) {
@@ -227,7 +228,89 @@ export const paymentService = {
       }
     }
 
+    await this.transmettreAuCommercant(commande.id);
+
     return commande;
+  },
+
+  /**
+   * La commande payée par carte part enfin au commerçant : elle entre dans
+   * ses listes, sa boutique sonne, et son délai de réponse commence. Une seule
+   * fois — le webhook et `/confirm` peuvent arriver tous les deux.
+   */
+  async transmettreAuCommercant(orderId: string) {
+    const { count } = await db.order.updateMany({
+      where: { id: orderId, submittedAt: null, status: "PENDING", deletedAt: null },
+      data: { submittedAt: new Date() },
+    });
+    if (count === 0) return false;
+
+    const commande = await db.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: { product: { include: { category: { select: { name: true } } } }, variant: true },
+        },
+      },
+    });
+    if (!commande) return false;
+
+    // Import tardif : le service des commandes dépend déjà de celui-ci.
+    const { OrderService } = await import("./order.service");
+    await OrderService.annoncerAuCommercant(commande);
+
+    logger.info("Commande transmise au commerçant après encaissement", { orderId });
+    return true;
+  },
+
+  /**
+   * Les paiements par carte jamais aboutis.
+   *
+   * Le client a fermé l'onglet, ou sa banque a refusé : la commande n'est
+   * jamais partie au commerçant et ne partira plus. Elle est retirée, et son
+   * intention annulée pour qu'un paiement tardif ne la ressuscite pas. Si
+   * l'encaissement a eu lieu sans que le webhook soit passé, elle est
+   * transmise au lieu d'être retirée.
+   */
+  async abandonnerLesPaiementsNonAboutis(delaiMinutes = 30) {
+    const abandonnees = await db.order.findMany({
+      where: {
+        submittedAt: null,
+        deletedAt: null,
+        status: "PENDING",
+        paymentStatus: { in: ["PENDING", "FAILED"] },
+        createdAt: { lt: new Date(Date.now() - delaiMinutes * 60 * 1000) },
+      },
+      select: { id: true, paymentId: true },
+      take: 50,
+    });
+
+    let retirees = 0;
+    for (const commande of abandonnees) {
+      try {
+        if (commande.paymentId) {
+          const intention = await stripe.paymentIntents.retrieve(commande.paymentId);
+          if (intention.status === "succeeded") {
+            await this.marquerPaye(intention);
+            continue;
+          }
+          await this.annulerIntention(commande.paymentId);
+        }
+
+        await db.order.updateMany({
+          where: { id: commande.id, submittedAt: null },
+          data: { deletedAt: new Date() },
+        });
+        retirees += 1;
+      } catch (err) {
+        logger.warn("Commande non payée impossible à retirer", {
+          orderId: commande.id,
+          error: (err as Error).message,
+        });
+      }
+    }
+
+    return retirees;
   },
 
   async marquerEchec(intention: Stripe.PaymentIntent) {

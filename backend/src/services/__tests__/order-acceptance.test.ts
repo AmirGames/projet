@@ -54,6 +54,17 @@ const MINUTE = 60 * 1000;
 describe("echeanceDeReponse", () => {
   const passee = new Date("2026-09-24T08:00:00Z");
 
+  it("compte le délai depuis l'encaissement pour une commande payée par carte", () => {
+    const payee = new Date(passee.getTime() + 4 * MINUTE);
+    const echeance = echeanceDeReponse({
+      createdAt: passee,
+      submittedAt: payee,
+      deliveryType: "DELIVERY",
+      pickupTime: null,
+    });
+    expect(echeance.getTime() - payee.getTime()).toBe(10 * MINUTE);
+  });
+
   it("laisse dix minutes pour une livraison", () => {
     const echeance = echeanceDeReponse({ createdAt: passee, deliveryType: "DELIVERY", pickupTime: null });
     expect(echeance.getTime() - passee.getTime()).toBe(10 * MINUTE);
@@ -105,6 +116,7 @@ describe("OrderAcceptanceService", () => {
     deliveryMode: null,
     deletedAt: null,
     createdAt: new Date(),
+    submittedAt: new Date(),
   };
 
   beforeEach(() => {
@@ -222,6 +234,14 @@ describe("OrderAcceptanceService", () => {
     const [, contenu] = (EmailService.sendOrderStatusUpdate as jest.Mock).mock.calls[0] as any[];
     expect(contenu.message).toContain("vous serez remboursé");
     expect(contenu.message).toContain("0612345678");
+  });
+
+  it("ignore une commande par carte que le client n'a pas encore payée", async () => {
+    db.order.findUnique.mockResolvedValue({ ...base, status: "PENDING", submittedAt: null });
+
+    await expect(OrderAcceptanceService.accepter("boutique-1", "cmd-1", 20)).rejects.toMatchObject({
+      statusCode: 404,
+    });
   });
 
   it("ne refuse pas une commande déjà prise par un livreur", async () => {

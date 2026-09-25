@@ -8,7 +8,7 @@ const SECRET = "whsec_test_secret";
 const vraiStripe = new Stripe("sk_test_factice");
 
 const db: any = {
-  order: { findUnique: fn(), update: fn(), updateMany: fn() },
+  order: { findUnique: fn(), findMany: fn(), update: fn(), updateMany: fn() },
   payment: { findFirst: fn(), upsert: fn(), update: fn(), updateMany: fn() },
 };
 
@@ -23,6 +23,8 @@ jest.mock("../../config/stripe", () => ({
   stripe,
   STRIPE_CONFIG: { currency: "eur", webhookSecret: SECRET },
 }));
+const annoncerAuCommercant = fn();
+jest.mock("../order.service", () => ({ OrderService: { annoncerAuCommercant } }));
 jest.mock("../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
@@ -60,6 +62,7 @@ const commande = (surcharge: object = {}) => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  db.order.updateMany.mockResolvedValue({ count: 0 });
 });
 
 describe("webhook Stripe", () => {
@@ -87,6 +90,25 @@ describe("webhook Stripe", () => {
     });
     expect(db.payment.upsert.mock.calls[0][0].update.status).toBe("SUCCEEDED");
     expect(stripe.refunds.create).not.toHaveBeenCalled();
+  });
+
+  it("transmet la commande au commerçant une fois payée, une seule fois", async () => {
+    db.order.findUnique.mockResolvedValue(commande({ submittedAt: null }));
+    db.order.updateMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValue({ count: 0 });
+    const { corps, signature } = signe({
+      id: "evt_1",
+      object: "event",
+      type: "payment_intent.succeeded",
+      data: { object: intention() },
+    });
+
+    await paymentService.handleWebhook(corps, signature);
+    await paymentService.handleWebhook(corps, signature);
+
+    expect(db.order.updateMany.mock.calls[0][0]).toMatchObject({
+      where: { id: "cmd-1", submittedAt: null, status: "PENDING", deletedAt: null },
+    });
+    expect(annoncerAuCommercant).toHaveBeenCalledTimes(1);
   });
 
   it("rembourse aussitôt un paiement arrivé après le refus", async () => {
@@ -227,5 +249,27 @@ describe("createPaymentIntent", () => {
     db.order.findUnique.mockResolvedValue(commande({ paymentStatus: "SUCCEEDED" }));
 
     await expect(paymentService.createPaymentIntent("cmd-1")).rejects.toMatchObject({ statusCode: 409 });
+  });
+});
+
+describe("abandonnerLesPaiementsNonAboutis", () => {
+  it("retire une commande jamais payée et annule son intention", async () => {
+    db.order.findMany.mockResolvedValue([{ id: "cmd-1", paymentId: "pi_1" }]);
+    stripe.paymentIntents.retrieve.mockResolvedValue({ id: "pi_1", status: "requires_payment_method" });
+
+    expect(await paymentService.abandonnerLesPaiementsNonAboutis()).toBe(1);
+    expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith("pi_1");
+    expect(db.order.updateMany.mock.calls[0][0].data.deletedAt).toBeInstanceOf(Date);
+  });
+
+  it("transmet au lieu de retirer si l'encaissement a eu lieu sans webhook", async () => {
+    db.order.findMany.mockResolvedValue([{ id: "cmd-1", paymentId: "pi_1" }]);
+    stripe.paymentIntents.retrieve.mockResolvedValue(intention());
+    db.order.findUnique.mockResolvedValue(commande({ submittedAt: null }));
+    db.order.updateMany.mockResolvedValueOnce({ count: 1 });
+
+    expect(await paymentService.abandonnerLesPaiementsNonAboutis()).toBe(0);
+    expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
+    expect(annoncerAuCommercant).toHaveBeenCalledTimes(1);
   });
 });

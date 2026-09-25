@@ -7,6 +7,7 @@ import { DispatchService } from "./dispatch.service";
 import { Notifier, enArrierePlan } from "./notifier.service";
 import { paymentService } from "./payment.service";
 import { emitOrderUpdate, emitNotification, emitMerchantEvent } from "../config/socket";
+import { arriveeChezLeCommercant } from "../utils/commande-transmise";
 
 /**
  * Accepter ou refuser une commande, comme sur les plateformes de livraison.
@@ -61,10 +62,13 @@ const ETATS_EN_COURS = ["ACCEPTED", "PREPARING", "READY"] as const;
  */
 export function echeanceDeReponse(commande: {
   createdAt: Date;
+  submittedAt?: Date | null;
   deliveryType: string;
   pickupTime: Date | null;
 }): Date {
-  const auPlusTot = commande.createdAt.getTime() + REPONSE_LIVRAISON_MIN * MINUTE;
+  // Le délai court depuis l'arrivée chez le commerçant : pour une commande
+  // payée par carte, l'encaissement, pas la création.
+  const auPlusTot = arriveeChezLeCommercant(commande).getTime() + REPONSE_LIVRAISON_MIN * MINUTE;
 
   if (commande.deliveryType === "PICKUP" && commande.pickupTime) {
     return new Date(
@@ -217,7 +221,7 @@ export class OrderAcceptanceService {
 
     const commande = await db.order.findUnique({ where: { id: orderId } });
 
-    if (!commande || commande.storeId !== storeId || commande.deletedAt) {
+    if (!commande || commande.storeId !== storeId || commande.deletedAt || !commande.submittedAt) {
       throw new ApiError(404, "Commande introuvable", "ORDER_NOT_FOUND");
     }
 
@@ -298,7 +302,7 @@ export class OrderAcceptanceService {
       },
     });
 
-    if (!commande || (storeId && commande.storeId !== storeId) || commande.deletedAt) {
+    if (!commande || (storeId && commande.storeId !== storeId) || commande.deletedAt || !commande.submittedAt) {
       throw new ApiError(404, "Commande introuvable", "ORDER_NOT_FOUND");
     }
 
@@ -466,9 +470,9 @@ export class OrderAcceptanceService {
       where: {
         status: "PENDING",
         deletedAt: null,
-        createdAt: { lt: new Date(Date.now() - REPONSE_LIVRAISON_MIN * MINUTE) },
+        submittedAt: { lt: new Date(Date.now() - REPONSE_LIVRAISON_MIN * MINUTE) },
       },
-      select: { id: true, createdAt: true, deliveryType: true, pickupTime: true },
+      select: { id: true, createdAt: true, submittedAt: true, deliveryType: true, pickupTime: true },
       take: 100,
     });
 

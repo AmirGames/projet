@@ -690,6 +690,14 @@ model Order {
   // Status
   status          OrderStatus  @default(PENDING)
 
+  /// L'heure à laquelle la commande est parvenue au commerçant.
+  ///
+  /// Payée sur place : aussitôt passée. Payée par carte : seulement quand
+  /// Stripe a confirmé l'encaissement — le commerçant ne doit pas préparer une
+  /// commande que le client n'a jamais réglée. Vide, la commande n'existe pas
+  /// encore pour lui : ni liste, ni sonnerie, ni délai de réponse.
+  submittedAt     DateTime?    @default(now())
+
   // Payment
   totalAmount     Decimal      @db.Decimal(10, 2)
   taxAmount       Decimal      @db.Decimal(10, 2)
@@ -781,6 +789,7 @@ model Order {
   @@index([paymentStatus])
   @@index([createdAt])
   @@index([deletedAt])
+  @@index([submittedAt])
 }
 
 model OrderItem {
