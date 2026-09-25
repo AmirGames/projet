@@ -1,3 +1,4 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 import { dureeDeLaRequete, origineActuelle } from "../config/origine";
@@ -16,6 +17,7 @@ const journaliserLesRequetes = process.env.PRISMA_LOG_QUERIES === "true";
 
 const prismaClientSingleton = () => {
   return new PrismaClient({
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
     log: [
       ...(journaliserLesRequetes
         ? [{ emit: "stdout" as const, level: "query" as const }]
@@ -38,41 +40,48 @@ const prismaClientSingleton = () => {
  * remplacée, et hors requête — tâche de fond, script — rien n'est ajouté.
  */
 function garderLOrigine(client: PrismaClientBrut) {
-  client.$use(async (params, next) => {
-    const concerne = params.model === "SystemAuditLog" || params.model === "SecurityEvent";
-    const creation = params.action === "create" || params.action === "createMany";
+  return client.$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ model, operation, args, query }) {
+          const concerne =
+            model === "SystemAuditLog" || model === "SecurityEvent";
+          const creation = operation === "create" || operation === "createMany";
 
-    if (concerne && creation) {
-      const origine = origineActuelle();
-      const lignes = params.args?.data;
+          if (concerne && creation) {
+            const origine = origineActuelle();
+            const lignes = (args as any)?.data;
 
-      const duree = dureeDeLaRequete();
+            const duree = dureeDeLaRequete();
 
-      const completer = (ligne: any) => {
-        if (!ligne || typeof ligne !== "object") return ligne;
-        if (ligne.ipAddress === undefined && origine.ipAddress) ligne.ipAddress = origine.ipAddress;
-        if (ligne.userAgent === undefined && origine.userAgent) ligne.userAgent = origine.userAgent;
+            const completer = (ligne: any) => {
+              if (!ligne || typeof ligne !== "object") return ligne;
+              if (ligne.ipAddress === undefined && origine.ipAddress)
+                ligne.ipAddress = origine.ipAddress;
+              if (ligne.userAgent === undefined && origine.userAgent)
+                ligne.userAgent = origine.userAgent;
 
-        // Seuls les événements de sécurité portent une durée.
-        if (
-          params.model === "SecurityEvent" &&
-          ligne.durationMs === undefined &&
-          duree !== undefined
-        ) {
-          ligne.durationMs = duree;
-        }
+              // Seuls les événements de sécurité portent une durée.
+              if (
+                model === "SecurityEvent" &&
+                ligne.durationMs === undefined &&
+                duree !== undefined
+              ) {
+                ligne.durationMs = duree;
+              }
 
-        return ligne;
-      };
+              return ligne;
+            };
 
-      if (Array.isArray(lignes)) lignes.forEach(completer);
-      else completer(lignes);
-    }
+            if (Array.isArray(lignes)) lignes.forEach(completer);
+            else completer(lignes);
+          }
 
-    return next(params);
+          return query(args);
+        },
+      },
+    },
   });
-
-  return client;
 }
 
 /** Une écriture sur une commande ou sa livraison, telle que la base la voit. */
@@ -87,7 +96,9 @@ export interface EcritureCommande {
 let annonceurCommandes: ((ecriture: EcritureCommande) => void) | null = null;
 
 /** Branche celui qui annonce les écritures sur les commandes (le temps réel). */
-export function surEcritureCommande(annonceur: (ecriture: EcritureCommande) => void) {
+export function surEcritureCommande(
+  annonceur: (ecriture: EcritureCommande) => void,
+) {
   annonceurCommandes = annonceur;
 }
 
@@ -114,7 +125,8 @@ const CHAMPS_DE_POSITION = new Set([
   "updatedAt",
 ]);
 
-const texte = (valeur: unknown) => (typeof valeur === "string" ? valeur : undefined);
+const texte = (valeur: unknown) =>
+  typeof valeur === "string" ? valeur : undefined;
 
 /**
  * Toute écriture sur une commande est annoncée, d'où qu'elle vienne.
@@ -125,51 +137,69 @@ const texte = (valeur: unknown) => (typeof valeur === "string" ? valeur : undefi
  * requêtes ne les rattache pas au commerçant ; la base, elle, les voit
  * toutes passer.
  */
-function annoncerLesCommandes(client: PrismaClientBrut) {
-  client.$use(async (params, next) => {
-    const resultat = await next(params);
+function annoncerLesCommandes(client: PrismaClientAvecOrigine) {
+  return client.$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ model, operation, args, query }) {
+          const resultat: any = await query(args);
 
-    const action = ECRITURES[params.action];
-    if (!annonceurCommandes || !action) return resultat;
-    if (params.model !== "Order" && params.model !== "OrderDelivery") return resultat;
+          const action = ECRITURES[operation];
+          if (!annonceurCommandes || !action) return resultat;
+          if (model !== "Order" && model !== "OrderDelivery") return resultat;
 
-    try {
-      const donnees = params.args?.data;
-      if (
-        params.model === "OrderDelivery" &&
-        action === "modification" &&
-        donnees &&
-        typeof donnees === "object" &&
-        !Array.isArray(donnees) &&
-        Object.keys(donnees).every((champ) => CHAMPS_DE_POSITION.has(champ))
-      ) {
-        return resultat;
-      }
+          try {
+            const donnees = (args as any)?.data;
+            if (
+              model === "OrderDelivery" &&
+              action === "modification" &&
+              donnees &&
+              typeof donnees === "object" &&
+              !Array.isArray(donnees) &&
+              Object.keys(donnees).every((champ) =>
+                CHAMPS_DE_POSITION.has(champ),
+              )
+            ) {
+              return resultat;
+            }
 
-      const ou = params.args?.where || {};
-      const ligne = params.action.endsWith("Many") ? null : resultat;
+            const ou = (args as any)?.where || {};
+            const ligne = operation.endsWith("Many") ? null : resultat;
 
-      const ecriture: EcritureCommande =
-        params.model === "Order"
-          ? { action, orderId: texte(ligne?.id) ?? texte(ou.id), storeId: texte(ligne?.storeId) ?? texte(ou.storeId) }
-          : { action, orderId: texte(ligne?.orderId) ?? texte(ou.orderId), deliveryId: texte(ligne?.id) ?? texte(ou.id) };
+            const ecriture: EcritureCommande =
+              model === "Order"
+                ? {
+                    action,
+                    orderId: texte(ligne?.id) ?? texte(ou.id),
+                    storeId: texte(ligne?.storeId) ?? texte(ou.storeId),
+                  }
+                : {
+                    action,
+                    orderId: texte(ligne?.orderId) ?? texte(ou.orderId),
+                    deliveryId: texte(ligne?.id) ?? texte(ou.id),
+                  };
 
-      if (ecriture.orderId || ecriture.deliveryId || ecriture.storeId) annonceurCommandes(ecriture);
-    } catch {
-      // Une annonce manquée ne doit jamais faire échouer l'écriture.
-    }
+            if (ecriture.orderId || ecriture.deliveryId || ecriture.storeId)
+              annonceurCommandes(ecriture);
+          } catch {
+            // Une annonce manquée ne doit jamais faire échouer l'écriture.
+          }
 
-    return resultat;
+          return resultat;
+        },
+      },
+    },
   });
-
-  return client;
 }
 
 type PrismaClientBrut = ReturnType<typeof prismaClientSingleton>;
-type PrismaClientSingleton = PrismaClientBrut;
+type PrismaClientAvecOrigine = ReturnType<typeof garderLOrigine>;
+type PrismaClientSingleton = ReturnType<typeof annoncerLesCommandes>;
 
 const globalForPrisma = global as unknown as { prisma: PrismaClientSingleton };
 
-export const db = globalForPrisma.prisma || annoncerLesCommandes(garderLOrigine(prismaClientSingleton()));
+export const db: PrismaClientSingleton =
+  globalForPrisma.prisma ||
+  annoncerLesCommandes(garderLOrigine(prismaClientSingleton()));
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
