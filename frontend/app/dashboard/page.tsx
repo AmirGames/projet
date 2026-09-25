@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
@@ -27,13 +27,7 @@ export default function DashboardPage() {
     }
   }, [user, isLoading, router]);
 
-  useEffect(() => {
-    if (user && !isLoading) {
-      fetchRoles();
-    }
-  }, [user, isLoading]);
-
-  const fetchRoles = async () => {
+  const fetchRoles = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) return;
@@ -68,7 +62,13 @@ export default function DashboardPage() {
     } finally {
       setRolesLoading(false);
     }
-  };
+  }, [router, user?.isSuperOwner]);
+
+  useEffect(() => {
+    if (user && !isLoading) {
+      fetchRoles();
+    }
+  }, [user, isLoading, fetchRoles]);
 
   const isMerchant = roles?.merchant?.active ?? false;
   const isDriver = roles?.driver?.active ?? false;

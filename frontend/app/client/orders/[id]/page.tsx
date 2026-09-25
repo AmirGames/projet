@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Clock, AlertCircle, Wifi, WifiOff } from 'lucide-react';
@@ -58,19 +58,6 @@ export default function OrderTrackingPage() {
   // à le revoir quand il a plus de quinze jours.
   const [avis, setAvis] = useState<{ aRedemander: boolean; dejaDonne: boolean } | null>(null);
 
-  useEffect(() => {
-    loadOrderData();
-  }, [orderId]);
-
-  // Le statut change en direct : on relit la commande entière, pour l'heure
-  // annoncée à l'acceptation ou le motif d'un refus.
-  useEffect(() => {
-    if (orderStatus && order) {
-      setOrder(prev => prev ? { ...prev, status: orderStatus } : null);
-      loadOrderData();
-    }
-  }, [orderStatus]);
-
   // Ce que le statut ne dit pas : un livreur attribué, une heure revue, un
   // remboursement. La commande est relue à chaque écriture qui la touche.
   useDonneesModifiees('orders', () => loadOrderData(), { id: orderId });
@@ -93,7 +80,7 @@ export default function OrderTrackingPage() {
       .catch(() => {});
   }, [order?.status, orderId]);
 
-  const loadOrderData = async () => {
+  const loadOrderData = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -130,7 +117,21 @@ export default function OrderTrackingPage() {
       setError('Erreur lors du chargement de la commande');
       setLoading(false);
     }
-  };
+  }, [orderId, router]);
+
+  useEffect(() => {
+    loadOrderData();
+  }, [orderId, loadOrderData]);
+
+
+  // Le statut change en direct : on relit la commande entière, pour l'heure
+  // annoncée à l'acceptation ou le motif d'un refus.
+  useEffect(() => {
+    if (orderStatus) {
+      setOrder(prev => prev ? { ...prev, status: orderStatus } : null);
+      loadOrderData();
+    }
+  }, [orderStatus, loadOrderData]);
 
   const getStatusInfo = (status: string) => {
     const statuses: Record<string, { label: string; color: string; icon: string }> = {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -36,11 +36,7 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadFavorites();
-  }, []);
-
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -63,7 +59,11 @@ export default function FavoritesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router, t]);
+
+  useEffect(() => {
+    loadFavorites();
+  }, [loadFavorites]);
 
   const removeFavorite = async (storeId: string) => {
     const token = localStorage.getItem('accessToken');

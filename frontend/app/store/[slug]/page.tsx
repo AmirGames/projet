@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ShoppingCart, MapPin, Phone, Clock, Star, X, Bike } from 'lucide-react';
 
@@ -166,12 +166,6 @@ export default function StorefrontPage() {
     };
   }, [store?.id, adresse]);
 
-  useEffect(() => {
-    if (slug) {
-      fetchStoreData();
-    }
-  }, [slug]);
-
   // Le menu change pendant que le client compose son panier.
   useStoreLive(store?.id, ({ productId, isAvailable }) => {
     setCategories((precedentes) =>
@@ -310,7 +304,7 @@ export default function StorefrontPage() {
   }, [cart, store?.id, store?.name, store?.slug]);
 
 
-  const fetchStoreData = async () => {
+  const fetchStoreData = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/api/stores/slug/${slug}`);
       if (response.ok) {
@@ -382,7 +376,13 @@ export default function StorefrontPage() {
     }
 
     return null;
-  };
+  }, [slug]);
+
+  useEffect(() => {
+    if (slug) {
+      fetchStoreData();
+    }
+  }, [slug, fetchStoreData]);
 
   /**
    * Remet le panier d'accord avec le menu relu.
