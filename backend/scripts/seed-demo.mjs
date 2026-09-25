@@ -119,15 +119,32 @@ for (const [storeId, name, price] of produits) {
 
 // ===== Commandes =====
 
-const commander = (storeId, totalAmount, customerEmail) =>
-  post("/api/orders", {
-    storeId,
-    customerName: "Client",
-    customerEmail,
-    customerPhone: "0600000000",
-    deliveryType: "PICKUP",
-    totalAmount,
-  });
+/**
+ * Avec Stripe actif, tout ce qui n'est pas en espèces attend l'encaissement
+ * avant de parvenir au commerçant. La démo n'a pas de vraie carte : elle
+ * marque la commande payée et transmise, comme le ferait le webhook.
+ */
+const payer = async (reponse) => {
+  const commande = (await j(reponse))?.order;
+  if (commande?.paiementEnLigne) {
+    await sqlExec(
+      `UPDATE "Order" SET "paymentStatus" = 'SUCCEEDED', "submittedAt" = NOW() WHERE id = '${commande.id}'`
+    );
+  }
+  return commande;
+};
+
+const commander = async (storeId, totalAmount, customerEmail) =>
+  payer(
+    await post("/api/orders", {
+      storeId,
+      customerName: "Client",
+      customerEmail,
+      customerPhone: "0600000000",
+      deliveryType: "PICKUP",
+      totalAmount,
+    })
+  );
 
 await commander(centre, 12, "c1@demo.fr");
 await commander(gare, 25, "c2@demo.fr");
@@ -157,7 +174,7 @@ await patch("/api/drivers/availability", { isOnline: true }, livreur.accessToken
 await patch("/api/drivers/location", { latitude: 45.764, longitude: 4.8357 }, livreur.accessToken);
 
 const aLivrer = attendu(
-  await j(
+  await payer(
     await post("/api/orders", {
       storeId: gare,
       customerName: "Client Livraison",
@@ -174,7 +191,7 @@ const aLivrer = attendu(
   ),
   "commande à livrer"
 );
-const aLivrerId = aLivrer.order?.id || aLivrer.id;
+const aLivrerId = aLivrer.id;
 
 // Chaque étape est vérifiée : un jeu à moitié créé annoncerait une course
 // livrée qui n'existe pas.
