@@ -602,7 +602,7 @@ export default function StorefrontPage() {
                     {category.products.map(product => (
                       <div
                         key={product.id}
-                        className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden hover:border-red-600 transition-colors"
+                        className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden hover:border-red-600 transition-colors flex flex-col"
                       >
                         {/* Product Image */}
                         {product.images && product.images.length > 0 ? (
@@ -617,8 +617,12 @@ export default function StorefrontPage() {
                           </div>
                         )}
 
-                        {/* Product Info */}
-                        <div className="p-4 space-y-3">
+                        {/* Product Info — en colonne, pour que le prix et le
+                            bouton se calent en bas de la carte : sans cela, ils
+                            remontaient d'autant qu'il manquait une note ou une
+                            ligne de description, et les cartes d'une même
+                            rangée ne s'alignaient plus. */}
+                        <div className="p-4 flex flex-col gap-3 flex-1">
                           <h3 className="font-bold text-lg">{product.name}</h3>
                           <p className="text-gray-400 text-sm">{product.description}</p>
 
@@ -648,7 +652,7 @@ export default function StorefrontPage() {
                           )}
 
                           {/* Price & Stock */}
-                          <div className="flex items-center justify-between">
+                          <div className="mt-auto flex items-center justify-between">
                             <div>
                               <p className="text-2xl font-bold text-red-400">
                                 {euro(
