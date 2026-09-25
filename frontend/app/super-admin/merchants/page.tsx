@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Edit2, Lock, Unlock, Clock } from 'lucide-react';
 
@@ -26,11 +26,7 @@ export default function MerchantsPage() {
   const [filter, setFilter] = useState('ALL');
   const [actionError, setActionError] = useState('');
 
-  useEffect(() => {
-    fetchMerchants();
-  }, [filter]);
-
-  const fetchMerchants = async () => {
+  const fetchMerchants = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const status = filter === 'ALL' ? '' : filter;
@@ -51,7 +47,11 @@ export default function MerchantsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, router]);
+
+  useEffect(() => {
+    fetchMerchants();
+  }, [filter, fetchMerchants]);
 
   const handleToggleSuspension = async (merchant: Merchant) => {
     const suspending = merchant.status === 'ACTIVE';
