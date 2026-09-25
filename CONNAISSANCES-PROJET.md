@@ -664,7 +664,7 @@ conditions commerçants et livreurs, confidentialité et cookies s'affichent sou
 Il se modifie dans l'espace superowner, **Pages légales** : chaque publication
 crée une version (`PageLegaleVersion`) qui n'est plus jamais réécrite ; tant
 qu'aucune n'est publiée, le texte de départ de
-`backend/src/data/pages-legales.defaut.ts` est servi (champs entre crochets à
+`backend/src/contenus/pages-legales.defaut.ts` est servi (champs entre crochets à
 remplir avant l'ouverture). Les quatre points d'entrée — `/auth/signup`,
 `/auth/merchant-register`, `/drivers/register`, `POST /orders` — exigent
 `conditionsAcceptees: true` et enregistrent la preuve dans
