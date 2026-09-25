@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from '@/components/LienRegional';
 import { Search, MapPin, Star, Clock } from 'lucide-react';
+import { filtrePays } from '@/i18n/regions';
+import { useRegion } from '@/lib/region-context';
 
 interface Restaurant {
   id: string;
@@ -29,10 +31,13 @@ export default function RestaurantsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [cuisineFilter, setCuisineFilter] = useState('');
+  // Sous /be-fr/, les commerces belges seulement.
+  const region = useRegion();
 
   useEffect(() => {
     fetchRestaurants();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [region]);
 
   useEffect(() => {
     filterRestaurants();
@@ -41,7 +46,7 @@ export default function RestaurantsPage() {
   const fetchRestaurants = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/client/stores`, {
+      const res = await fetch(`${API_URL}/api/client/stores${filtrePays(region)}`, {
         headers: { 'Content-Type': 'application/json' },
       });
 

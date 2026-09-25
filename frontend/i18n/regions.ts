@@ -57,9 +57,22 @@ export function regionParDefaut(langue: Langue): Region {
   return trouverRegion(REGION_PAR_LANGUE[langue]) ?? REGIONS[0];
 }
 
+/** Le pays d'une région, « be » pour be-fr : ce que l'API filtre. */
+export function paysDeLaRegion(region: Region): string {
+  return region.code.split("-")[0];
+}
+
+/**
+ * Le paramètre à ajouter à la liste des commerces pour n'en garder que ceux
+ * du pays de la région (« ?pays=be »), vide sans région connue.
+ */
+export function filtrePays(region: Region | undefined): string {
+  return region ? `?pays=${paysDeLaRegion(region)}` : "";
+}
+
 /** « fr-BE » pour l'attribut lang de la page. */
 export function baliseLangue(region: Region): string {
-  return `${region.langue}-${region.code.split("-")[0].toUpperCase()}`;
+  return `${region.langue}-${paysDeLaRegion(region).toUpperCase()}`;
 }
 
 /**

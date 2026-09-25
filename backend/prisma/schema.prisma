@@ -405,6 +405,11 @@ model Store {
   address       String?
   city          String?
   postalCode    String?
+  /// Le pays de la boutique, code ISO en minuscules (« fr », « be »), déduit
+  /// de son adresse à chaque changement. Il décide des régions du site
+  /// (/fr-fr/, /be-fr/…) dans lesquelles elle est listée ; vide, elle l'est
+  /// partout plutôt que nulle part.
+  countryCode   String?
   phone         String?
   email         String?
   description   String?
@@ -487,6 +492,7 @@ model Store {
   @@unique([orgId, slug])
   @@index([orgId])
   @@index([deletedAt])
+  @@index([countryCode])
 }
 
 // ============================================================================

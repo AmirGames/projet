@@ -22,9 +22,21 @@ import {
 
 const router = Router();
 
+/** « be », « fr »… : le pays de la région du site, en deux lettres. */
+const paysDemande = (brut: unknown) =>
+  typeof brut === "string" && /^[a-z]{2}$/i.test(brut) ? brut.toLowerCase() : undefined;
+
 // GET /api/client/stores - Get all stores (public)
-router.get("/stores", async (_req: Request, res: Response, next: NextFunction) => {
+router.get("/stores", async (req: Request, res: Response, next: NextFunction) => {
   try {
+    /**
+     * `?pays=be` : les commerces de ce pays seulement — la région du site
+     * (/be-fr/…) décide de ce qu'on liste. Une boutique dont le pays n'est
+     * pas encore connu reste listée partout : mieux vaut une boutique de trop
+     * qu'un commerce devenu introuvable.
+     */
+    const pays = paysDemande(req.query.pays);
+
     const stores = await db.store.findMany({
       /**
        * Une boutique fermée reste dans la liste.
@@ -35,7 +47,11 @@ router.get("/stores", async (_req: Request, res: Response, next: NextFunction) =
        */
       // Un commerce pas encore validé ne se montre pas : il prépare sa
       // boutique, il ne vend pas encore.
-      where: { deletedAt: null, org: { status: "ACTIVE", approvedAt: { not: null } } },
+      where: {
+        deletedAt: null,
+        org: { status: "ACTIVE", approvedAt: { not: null } },
+        ...(pays && { OR: [{ countryCode: pays }, { countryCode: null }] }),
+      },
       include: {
         org: {
           select: { id: true, name: true, slug: true }

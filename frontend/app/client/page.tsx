@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
+import { filtrePays } from '@/i18n/regions';
+import { useRegion } from '@/lib/region-context';
 import Link from 'next/link';
 import { MapPin, Star, Clock, TrendingUp, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -60,6 +62,7 @@ const fraisDe = (store: Store) =>
 
 export default function ClientHomePage() {
   const t = useTranslations('clientHome');
+  const region = useRegion();
   const [stores, setStores] = useState<Store[]>([]);
   const [filteredStores, setFilteredStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +89,9 @@ export default function ClientHomePage() {
   const loadStores = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/client/stores`);
+      // Les commerces du pays de la région choisie ; ceux « près de moi »
+      // restent affaire de distance, frontière comprise.
+      const response = await fetch(`${API_URL}/api/client/stores${filtrePays(region)}`);
       if (!response.ok) throw new Error('Failed to load stores');
 
       const data = await response.json();
@@ -97,7 +102,7 @@ export default function ClientHomePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [region]);
 
   const loadNearbyStores = useCallback(async (lat: number, lng: number) => {
     try {

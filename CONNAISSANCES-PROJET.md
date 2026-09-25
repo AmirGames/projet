@@ -452,6 +452,15 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 - Sur les pages publiques, importer `Link` depuis `@/components/LienRegional`
   plutôt que `next/link`, pour éviter un détour par la redirection.
 - `usePathname()` renvoie l'adresse visible, préfixe compris.
+- **Chaque boutique a un pays** (`Store.countryCode`, « fr », « be »…), déduit
+  de son adresse à chaque changement (`paysDeLAdresse` : le texte d'abord, le
+  géocodage ensuite). `GET /api/client/stores?pays=be` ne liste que les
+  boutiques belges **et celles dont le pays est inconnu** — une boutique de
+  trop plutôt qu'un commerce introuvable. `/stores/nearby` ne filtre pas : la
+  distance prime, frontière comprise.
+- Les boutiques d'avant ce champ : la migration donne `fr` aux codes postaux à
+  cinq chiffres ; les autres restent vides jusqu'à leur prochain changement
+  d'adresse ou leur prochaine commande sans position.
 
 ---
 

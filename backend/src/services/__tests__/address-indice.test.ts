@@ -1,6 +1,6 @@
 jest.mock("../../config/logger", () => ({ logger: { warn: jest.fn(), info: jest.fn(), error: jest.fn() } }));
 
-import { AddressService, indiceValide, paysDuTexte } from "../address.service";
+import { AddressService, indiceValide, paysDeLAdresse, paysDuTexte } from "../address.service";
 
 /**
  * Un client belge qui tape son adresse : la BAN rend toujours une approximation
@@ -100,6 +100,7 @@ describe("Recherche d'adresses orientée par le navigateur", () => {
         latitude: 1,
         longitude: 2,
         trouvee: true,
+        pays: "be",
       });
     });
 
@@ -109,6 +110,7 @@ describe("Recherche d'adresses orientée par le navigateur", () => {
         latitude: 50.63,
         longitude: 5.57,
         trouvee: true,
+        pays: "be",
       });
     });
 
@@ -119,7 +121,25 @@ describe("Recherche d'adresses orientée par le navigateur", () => {
         latitude: null,
         longitude: null,
         trouvee: false,
+        pays: "fr",
       });
+    });
+  });
+
+  describe("le pays d'une boutique", () => {
+    it("se lit dans le code postal", () => {
+      expect(paysDeLAdresse({ address: "1 rue Neuve", postalCode: "1000", city: "Bruxelles" })).toBe("be");
+      expect(paysDeLAdresse({ address: "1 rue de Rivoli", postalCode: "75001", city: "Paris" })).toBe("fr");
+    });
+
+    it("préfère le texte à une approximation française du géocodage", () => {
+      const approximation = { countryCode: "fr" } as any;
+      expect(paysDeLAdresse({ postalCode: "4000", city: "Liège" }, approximation)).toBe("be");
+    });
+
+    it("reprend celui du géocodage quand le texte ne dit rien", () => {
+      expect(paysDeLAdresse({ address: "Grand-Place", city: "Mons" }, { countryCode: "be" } as any)).toBe("be");
+      expect(paysDeLAdresse({ address: "Grand-Place" })).toBeNull();
     });
   });
 });
