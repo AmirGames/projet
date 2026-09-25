@@ -306,7 +306,7 @@ export default function ReviewsPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-8 px-6 py-4 bg-gray-800 border border-gray-700 rounded-lg">
             <p className="text-sm text-gray-400">
-              {t('pagination').replace('{page}', (page + 1).toString()).replace('{total}', totalPages.toString())}
+              {t('pagination', { page: page + 1, total: totalPages })}
             </p>
             <div className="flex gap-2">
               <button

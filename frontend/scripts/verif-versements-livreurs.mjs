@@ -14,7 +14,7 @@
  */
 
 import { chromium } from 'playwright';
-import { validerLivreur, codeDeRemise } from './outils-livreur.mjs';
+import { validerLivreur, codeDeRemise, declarerPrete } from './outils-livreur.mjs';
 import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
@@ -141,6 +141,7 @@ async function courseLivree() {
   const courseId = attribution.donnees?.data?.deliveryId;
 
   await appeler(`/api/drivers/deliveries/${courseId}/accept`, { method: 'PATCH', jeton: D });
+  await declarerPrete(API, storeId, orderId, T);
   await appeler(`/api/drivers/deliveries/${courseId}`, {
     method: 'PATCH',
     jeton: D,

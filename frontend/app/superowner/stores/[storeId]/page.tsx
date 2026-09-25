@@ -139,10 +139,14 @@ export default function FicheBoutiquePage() {
 
   const jeton = () => localStorage.getItem('accessToken');
 
-  // silencieux : une relecture en direct ne remplace pas la fiche par la roue.
+  // silencieux : une relecture en direct ne remplace pas la fiche par la roue,
+  // et ne touche pas au message affiché — une commande arrivée pendant une
+  // correction effaçait le refus qu'on venait d'essuyer.
   const charger = useCallback(async (silencieux = false) => {
-    if (!silencieux) setChargement(true);
-    setErreur('');
+    if (!silencieux) {
+      setChargement(true);
+      setErreur('');
+    }
 
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/stores/${storeId}`, {
@@ -158,7 +162,7 @@ export default function FicheBoutiquePage() {
       const lu = await reponse.json();
       setFiche(lu.store);
     } catch (err) {
-      setErreur(err instanceof Error ? err.message : t('unknownError'));
+      if (!silencieux) setErreur(err instanceof Error ? err.message : t('unknownError'));
     } finally {
       setChargement(false);
     }

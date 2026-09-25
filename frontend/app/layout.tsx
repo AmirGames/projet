@@ -8,8 +8,8 @@ import { MaintenanceGate } from "@/components/MaintenanceGate";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SaaS Local - Digitalisation Commerces Locaux",
-  description: "Plateforme SaaS pour digitaliser votre commerce local",
+  title: "Zupone — Commandez chez vos commerces de proximité",
+  description: "La plateforme qui relie commerçants, clients et livreurs de proximité.",
 };
 
 export const viewport: Viewport = {

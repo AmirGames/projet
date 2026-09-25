@@ -91,8 +91,11 @@ export default function LivreursPage() {
 
   // silencieux : une relecture en direct garde la page affichée.
   const charger = useCallback(async (silencieux = false) => {
-    if (!silencieux) setChargement(true);
-    setErreur('');
+    // Une relecture en direct ne doit pas effacer le refus qu'on vient d'afficher.
+    if (!silencieux) {
+      setChargement(true);
+      setErreur('');
+    }
 
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/drivers?status=${filtre}`, {

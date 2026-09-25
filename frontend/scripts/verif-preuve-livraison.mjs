@@ -17,7 +17,7 @@
  */
 
 import { chromium } from 'playwright';
-import { validerLivreur, codeDeRemise } from './outils-livreur.mjs';
+import { validerLivreur, codeDeRemise, declarerPrete } from './outils-livreur.mjs';
 import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
@@ -144,6 +144,7 @@ async function courseAuSeuil({ recuperee = true } = {}) {
 
   await appeler(`/api/drivers/deliveries/${courseId}/accept`, { method: 'PATCH', jeton: D });
   if (recuperee) {
+    await declarerPrete(API, storeId, orderId, T);
     await appeler(`/api/drivers/deliveries/${courseId}`, {
       method: 'PATCH',
       jeton: D,
@@ -226,6 +227,8 @@ check(
 check('pas de prise en charge possible', !/Glisser pour prendre en charge/.test(enRoute), enRoute.slice(0, 900));
 
 titre('Au commerce, elle se déverrouille');
+// Le livreur n'emporte qu'une commande que le commerçant a déclarée prête.
+await declarerPrete(API, storeId, premiere.orderId, T);
 await contexte.setGeolocation(POSITION);
 await page.waitForTimeout(3000);
 

@@ -236,3 +236,22 @@ export async function validerLivreur(jetonLivreur, jetonPlateforme) {
 
   return driverId;
 }
+
+/**
+ * Le commerçant accepte la commande, la prépare et la déclare prête.
+ *
+ * Le livreur ne peut emporter qu'une commande prête : les scripts qui
+ * vérifient la suite de la course passent par le vrai chemin du commerçant
+ * avant le retrait, plutôt que de forcer l'état en base.
+ */
+export async function declarerPrete(storeId, orderId, jetonCommercant) {
+  await post(
+    `/api/order-management/${storeId}/${orderId}/accept`,
+    { preparationMinutes: 15 },
+    jetonCommercant
+  );
+
+  for (const status of ["PREPARING", "READY"]) {
+    await patch(`/api/order-management/${storeId}/${orderId}/status`, { status }, jetonCommercant);
+  }
+}

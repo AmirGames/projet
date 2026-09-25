@@ -139,7 +139,7 @@ export default function DriverOnboardPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">{t('heading')}</h1>
-              <p className="text-slate-400">{t('subtitle').replace('{email}', user?.email || '')}</p>
+              <p className="text-slate-400">{t('subtitle', { email: user?.email || '' })}</p>
             </div>
           </div>
         </div>

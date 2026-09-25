@@ -6,6 +6,7 @@
 //     chiffre du commerçant : ils lui sont réclamés avec la commission.
 
 import {
+  declarerPrete,
   API,
   inscription,
   titre,
@@ -111,6 +112,15 @@ const messagesProches = async () =>
     `SELECT COUNT(*)::int FROM "Notification" WHERE type = 'DRIVER_NEARBY' AND "relatedOrderId" = '${orderId}'`
   ));
 
+// Le message part sans que la réponse de position l'attende : on lui laisse
+// un instant pour arriver avant de compter.
+const messagesProchesArrives = async (attendus) => {
+  for (let essai = 0; essai < 20 && (await messagesProches()) < attendus; essai++) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return messagesProches();
+};
+
 // ===== À 300 m du client =====
 
 titre('En route vers le commerce, passer près du client ne le prévient pas');
@@ -118,6 +128,7 @@ await patch(`/api/drivers/deliveries/${courseId}/location`, auSudDuClient(100), 
 check('pas encore prévenu', (await prevenu()) === false, `${await prevenu()}`);
 
 titre('Commande récupérée : loin du client, rien');
+await declarerPrete(storeId, orderId, T);
 await patch(`/api/drivers/deliveries/${courseId}`, { status: 'PICKED_UP' }, D);
 await patch(`/api/drivers/deliveries/${courseId}/location`, auSudDuClient(1200), D);
 check('à 1,2 km : pas prévenu', (await prevenu()) === false, `${await prevenu()}`);
@@ -125,7 +136,7 @@ check('à 1,2 km : pas prévenu', (await prevenu()) === false, `${await prevenu(
 titre('À moins de 300 m, le client est prévenu');
 await patch(`/api/drivers/deliveries/${courseId}/location`, auSudDuClient(250), D);
 check('la marque est posée', (await prevenu()) === true, `${await prevenu()}`);
-check('un message dans sa cloche', (await messagesProches()) === 1, `${await messagesProches()}`);
+check('un message dans sa cloche', (await messagesProchesArrives(1)) === 1, `${await messagesProches()}`);
 
 const suivi = await j(await get(`/api/orders/${orderId}`));
 check('son suivi le dit', suivi?.livreurProche === true, `${suivi?.livreurProche}`);
@@ -218,6 +229,7 @@ const seconde = await j(
 const orderId2 = seconde.order?.id || seconde.id;
 const course2 = (await j(await post(`/api/orders/${orderId2}/dispatch`, {}, T)))?.data?.deliveryId;
 await patch(`/api/drivers/deliveries/${course2}/accept`, null, D);
+await declarerPrete(storeId, orderId2, T);
 await patch(`/api/drivers/deliveries/${course2}`, { status: 'PICKED_UP' }, D);
 const code = await codeDeRemise(course2);
 const parCode = await patch(`/api/drivers/deliveries/${course2}`, { status: 'DELIVERED', code }, D);

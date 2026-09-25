@@ -60,6 +60,9 @@ const nextConfig = {
       "/super-admin/notifications": "/superowner/notifications",
       "/super-admin/settings": "/superowner/system-config",
       "/super-admin/tickets": "/superowner/support-tickets",
+      // Même liste de livreurs que /superowner/members/deliveries, sous un
+      // second « Livreurs » dans le même menu.
+      "/superowner/members/drivers": "/superowner/members/deliveries",
     };
 
     const versCommercant = [
@@ -86,6 +89,19 @@ const nextConfig = {
       ...versCommercant.map((source) => ({
         source,
         destination: "/merchant",
+        permanent: true,
+      })),
+      // Première mouture de l'espace commerçant : sans menu, sans titre, et
+      // un produit à désigner par son identifiant. Les mêmes écrans vivent
+      // sous /merchant/:orgId, avec la liste des produits de la boutique.
+      ...[
+        ["notifications", "notifications"],
+        ["product-media", "product-media"],
+        ["product-seo", "product-seo"],
+        ["product-tag", "product-tags"],
+      ].map(([ancien, nouveau]) => ({
+        source: `/:orgId/merchant/dashboard/${ancien}`,
+        destination: `/merchant/:orgId/${nouveau}`,
         permanent: true,
       })),
     ];

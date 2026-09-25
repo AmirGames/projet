@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, ShoppingCart, Heart, User, Menu, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Home, ShoppingCart, Heart, User, Menu, X, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
+import { useAuth } from '@/lib/auth-context';
 
 export default function ClientLayout({
   children,
@@ -14,6 +15,16 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
+  const { logout } = useAuth();
+
+  // Un simple lien vers /login laissait la session ouverte : on revenait
+  // connecté au premier clic sur « Accueil ».
+  const seDeconnecter = () => {
+    setMobileMenuOpen(false);
+    logout();
+    router.push('/');
+  };
 
   const navItems = [
     { href: '/client', label: 'Accueil', icon: Home },
@@ -39,9 +50,9 @@ export default function ClientLayout({
           <div className="flex items-center justify-between p-4">
             <SelecteurEspace actuel="client" href="/client" className="gap-2 -ml-2 px-2 py-1">
               <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
-                UE
+                Z
               </div>
-              <span className="font-bold text-white">UberEats</span>
+              <span className="font-bold text-white">Zupone</span>
             </SelecteurEspace>
 
             <div className="flex items-center gap-2">
@@ -76,6 +87,13 @@ export default function ClientLayout({
                   </Link>
                 );
               })}
+              <button
+                onClick={seDeconnecter}
+                className="flex w-full items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 transition"
+              >
+                <LogOut size={20} />
+                Déconnexion
+              </button>
             </div>
           )}
         </nav>
@@ -85,9 +103,9 @@ export default function ClientLayout({
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
             <SelecteurEspace actuel="client" href="/client" className="gap-2 -ml-2 px-2 py-1">
               <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
-                UE
+                Z
               </div>
-              <span className="font-bold text-white text-lg">UberEats Like</span>
+              <span className="font-bold text-white text-lg">Zupone</span>
             </SelecteurEspace>
 
             <div className="flex items-center gap-4">
@@ -111,12 +129,12 @@ export default function ClientLayout({
             </div>
 
             <div className="flex items-center gap-4">
-              <Link
-                href="/login"
+              <button
+                onClick={seDeconnecter}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition"
               >
-                Logout
-              </Link>
+                Déconnexion
+              </button>
               <LanguageSwitcher />
             </div>
           </div>
@@ -125,46 +143,35 @@ export default function ClientLayout({
         {/* Main Content */}
         <main>{children}</main>
 
-        {/* Footer */}
+        {/* Footer : seulement des pages qui existent. */}
         <footer className="bg-gray-800 border-t border-gray-700 mt-20">
           <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
               <div>
-                <h3 className="text-white font-bold mb-4">Entreprise</h3>
+                <h3 className="text-white font-bold mb-4">Zupone</h3>
+                <p className="text-gray-400 text-sm">
+                  La plateforme qui relie commerçants, clients et livreurs de proximité.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-white font-bold mb-4">Commander</h3>
                 <ul className="space-y-2 text-gray-400 text-sm">
-                  <li><a href="#" className="hover:text-white">À propos</a></li>
-                  <li><a href="#" className="hover:text-white">Carrière</a></li>
-                  <li><a href="#" className="hover:text-white">Blog</a></li>
+                  <li><Link href="/restaurants" className="text-gray-400 hover:text-white">Commerces</Link></li>
+                  <li><Link href="/client/orders" className="text-gray-400 hover:text-white">Mes commandes</Link></li>
+                  <li><Link href="/track" className="text-gray-400 hover:text-white">Suivre une commande</Link></li>
                 </ul>
               </div>
               <div>
-                <h3 className="text-white font-bold mb-4">Support</h3>
+                <h3 className="text-white font-bold mb-4">Rejoindre</h3>
                 <ul className="space-y-2 text-gray-400 text-sm">
-                  <li><a href="#" className="hover:text-white">FAQ</a></li>
-                  <li><a href="#" className="hover:text-white">Contact</a></li>
-                  <li><a href="#" className="hover:text-white">Signaler un problème</a></li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-white font-bold mb-4">Légal</h3>
-                <ul className="space-y-2 text-gray-400 text-sm">
-                  <li><a href="#" className="hover:text-white">CGU</a></li>
-                  <li><a href="#" className="hover:text-white">Confidentialité</a></li>
-                  <li><a href="#" className="hover:text-white">Cookies</a></li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-white font-bold mb-4">Nous suivre</h3>
-                <ul className="space-y-2 text-gray-400 text-sm">
-                  <li><a href="#" className="hover:text-white">Facebook</a></li>
-                  <li><a href="#" className="hover:text-white">Twitter</a></li>
-                  <li><a href="#" className="hover:text-white">Instagram</a></li>
+                  <li><Link href="/merchant/register" className="text-gray-400 hover:text-white">Devenir commerçant</Link></li>
+                  <li><Link href="/driver/signup" className="text-gray-400 hover:text-white">Devenir livreur</Link></li>
                 </ul>
               </div>
             </div>
 
             <div className="border-t border-gray-700 pt-8 text-center text-gray-400 text-sm">
-              <p>&copy; 2024 UberEats Like. Tous droits réservés.</p>
+              <p>&copy; {new Date().getFullYear()} Zupone. Tous droits réservés.</p>
             </div>
           </div>
         </footer>

@@ -233,7 +233,7 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1566 contrôles, 48 suites
+# API : 1574 contrôles, 48 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
@@ -285,6 +285,11 @@ Par honnêteté, ce qui manque encore :
   d'attribution et paiement à la distance n'ont pas encore leur suite.
 - **Le stock par ingrédient** (une pizza consomme de la mozzarella). Aujourd'hui
   la disponibilité se bascule à la main, plat par plat.
+- **Les pages légales** : mentions légales, CGU, confidentialité, cookies.
+  Aucune n'existe, et elles sont exigées avant d'ouvrir au public.
+- **Les applications mobiles client et livreur** (`mobile/apps/customer`,
+  `mobile/apps/delivery`) ne sont encore que le gabarit Expo ; seule
+  l'application commerçant est écrite.
 - **Prisma 5.22 → 7**, à faire une fois le reste stabilisé.
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.

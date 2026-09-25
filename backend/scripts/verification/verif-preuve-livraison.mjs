@@ -1,6 +1,6 @@
 // Une course ne se clôt pas sur un simple clic : il faut prouver la remise.
 
-import { inscription,
+import { inscription, declarerPrete,
   titre,
   check,
   j,
@@ -91,6 +91,7 @@ async function courseAuSeuil() {
   const courseId = attribution?.data?.deliveryId;
 
   await patch(`/api/drivers/deliveries/${courseId}/accept`, null, D);
+  await declarerPrete(storeId, orderId, T);
   await patch(`/api/drivers/deliveries/${courseId}`, { status: 'PICKED_UP' }, D);
 
   return { orderId, courseId };
@@ -299,6 +300,7 @@ const courseQuatre = (await j(await post(`/api/orders/${orderQuatre}/dispatch`, 
   ?.deliveryId;
 
 await patch(`/api/drivers/deliveries/${courseQuatre}/accept`, null, D);
+await declarerPrete(storeId, orderQuatre, T);
 const recuperee = await patch(`/api/drivers/deliveries/${courseQuatre}`, { status: 'PICKED_UP' }, D);
 check('le retrait passe sans preuve', recuperee.status === 200, `statut ${recuperee.status}`);
 

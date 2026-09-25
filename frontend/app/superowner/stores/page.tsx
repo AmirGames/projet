@@ -51,8 +51,11 @@ export default function BoutiquesAdminPage() {
 
   // silencieux : une relecture en direct garde la page affichée.
   const charger = useCallback(async (silencieux = false) => {
-    if (!silencieux) setLoading(true);
-    setErreur('');
+    // Une relecture en direct ne doit pas effacer le refus qu'on vient d'afficher.
+    if (!silencieux) {
+      setLoading(true);
+      setErreur('');
+    }
 
     try {
       const token = localStorage.getItem('accessToken');
