@@ -654,6 +654,7 @@ router.get("/me/orders", authMiddleware, async (req: Request, res: Response, nex
         deliveryType: c.deliveryType,
         totalAmount: Number(c.totalAmount),
         createdAt: c.createdAt,
+        estimatedReadyAt: c.estimatedReadyAt,
         store: c.store,
         deliveryStatus: c.delivery?.status || null,
         // Le client est invité à donner son avis : jamais donné, ou vieux de
