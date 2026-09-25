@@ -66,6 +66,10 @@ export default function Home() {
             </Link>
           ) : null}
 
+          <Link href="/devenir-chauffeur" className="font-semibold text-slate-900 transition hover:text-primary">
+            Devenir chauffeur
+          </Link>
+
           {!user ? (
             <Link href="/login" className="font-semibold text-slate-900 transition hover:text-primary">
               Connexion
@@ -122,7 +126,7 @@ export default function Home() {
       </section>
 
       {/* SERVICES */}
-      <section className="grid grid-cols-1 gap-8 bg-white px-6 py-16 md:grid-cols-3 md:px-10 md:py-24">
+      <section className="grid grid-cols-1 gap-8 bg-white px-6 py-16 md:grid-cols-2 lg:grid-cols-4 md:px-10 md:py-24">
         <div className="rounded-3xl border border-slate-200 p-8 transition hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(37,99,235,0.08)]">
           <div className="mb-4 text-4xl">🛍️</div>
           <h2 className="mb-2 text-xl font-bold">Pour les clients</h2>
@@ -156,6 +160,18 @@ export default function Home() {
           </p>
           <Link href="/devenir-livreur" className="font-bold text-primary">
             Devenir livreur →
+          </Link>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 p-8 transition hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(37,99,235,0.08)]">
+          <div className="mb-4 text-4xl">🚘</div>
+          <h2 className="mb-2 text-xl font-bold">Pour les chauffeurs VTC</h2>
+          <p className="mb-4 text-slate-500">
+            Le transport de personnes arrive bientôt. Chauffeurs VTC, faites-vous
+            connaître pour être parmi les premiers.
+          </p>
+          <Link href="/devenir-chauffeur" className="font-bold text-primary">
+            Devenir chauffeur →
           </Link>
         </div>
       </section>
@@ -252,6 +268,9 @@ export default function Home() {
                 Devenir livreur
               </Link>
             ) : null}
+            <Link href="/devenir-chauffeur" className="mb-2 block text-slate-300 hover:text-white">
+              Devenir chauffeur
+            </Link>
           </div>
           <div>
             <h4 className="mb-3 text-lg font-bold">Compte</h4>
