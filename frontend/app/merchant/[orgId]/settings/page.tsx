@@ -381,7 +381,13 @@ export default function StoreSettings() {
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Logo de la boutique</label>
                   <div className="flex items-center gap-4">
-                    <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-600 bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center">
+                    {/* Le même fond que la carte vue par les clients : blanc avec
+                        un logo, dégradé avec l'initiale. */}
+                    <div
+                      className={`h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-600 flex items-center justify-center ${
+                        logo ? 'bg-white p-1.5' : 'bg-gradient-to-r from-orange-500 to-red-500'
+                      }`}
+                    >
                       {logo ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={logo} alt="Logo de la boutique" className="h-full w-full object-contain" />
@@ -425,7 +431,9 @@ export default function StoreSettings() {
                         )}
                       </div>
                       <p className="text-xs text-gray-500">
-                        JPG, PNG ou WebP, 2 Mo maximum. Affiché sur votre carte dans la liste des restaurants.
+                        Idéal : PNG à fond transparent ou blanc, format carré. JPG, PNG ou WebP, 2 Mo maximum.
+                        <br />
+                        Affiché sur fond blanc sur votre carte dans la liste des restaurants.
                       </p>
                     </div>
                   </div>
