@@ -55,16 +55,21 @@ export default function Home() {
           </Link>
 
           {!user || (!isMerchant && !rolesLoading) ? (
-            <Link href="/merchant/register" className="font-semibold text-slate-900 transition hover:text-primary">
+            <Link href="/devenir-commercant" className="font-semibold text-slate-900 transition hover:text-primary">
               Devenir commerçant
             </Link>
           ) : null}
 
           {!user || (!isDriver && !rolesLoading) ? (
-            <Link href="/driver/signup" className="font-semibold text-slate-900 transition hover:text-primary">
+            <Link href="/devenir-livreur" className="font-semibold text-slate-900 transition hover:text-primary">
               Devenir livreur
             </Link>
           ) : null}
+
+          <Link href="/devenir-chauffeur" className="font-semibold text-slate-900 transition hover:text-primary">
+            Devenir chauffeur
+            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">Bientôt disponible</span>
+          </Link>
 
           {!user ? (
             <Link href="/login" className="font-semibold text-slate-900 transition hover:text-primary">
@@ -122,7 +127,7 @@ export default function Home() {
       </section>
 
       {/* SERVICES */}
-      <section className="grid grid-cols-1 gap-8 bg-white px-6 py-16 md:grid-cols-3 md:px-10 md:py-24">
+      <section className="grid grid-cols-1 gap-8 bg-white px-6 py-16 md:grid-cols-2 lg:grid-cols-4 md:px-10 md:py-24">
         <div className="rounded-3xl border border-slate-200 p-8 transition hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(37,99,235,0.08)]">
           <div className="mb-4 text-4xl">🛍️</div>
           <h2 className="mb-2 text-xl font-bold">Pour les clients</h2>
@@ -142,7 +147,7 @@ export default function Home() {
             Catalogue, horaires par service, zones de livraison réglées sur une
             carte, et le suivi de chaque commande.
           </p>
-          <Link href="/merchant/register" className="font-bold text-primary">
+          <Link href="/devenir-commercant" className="font-bold text-primary">
             Ouvrir ma boutique →
           </Link>
         </div>
@@ -154,8 +159,23 @@ export default function Home() {
             Un dossier examiné une fois, puis des courses proposées au plus proche
             disponible, avec une rémunération calculée.
           </p>
-          <Link href="/driver/signup" className="font-bold text-primary">
+          <Link href="/devenir-livreur" className="font-bold text-primary">
             Devenir livreur →
+          </Link>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 p-8 transition hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(37,99,235,0.08)]">
+          <div className="mb-4 flex items-center justify-between">
+            <span className="text-4xl">🚘</span>
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">Bientôt disponible</span>
+          </div>
+          <h2 className="mb-2 text-xl font-bold">Pour les chauffeurs VTC</h2>
+          <p className="mb-4 text-slate-500">
+            Le transport de personnes arrive bientôt. Chauffeurs VTC, faites-vous
+            connaître pour être parmi les premiers.
+          </p>
+          <Link href="/devenir-chauffeur" className="font-bold text-primary">
+            Devenir chauffeur →
           </Link>
         </div>
       </section>
@@ -220,7 +240,7 @@ export default function Home() {
             quelques minutes et gardez la main sur votre catalogue et vos prix.
           </p>
           <Link
-            href="/merchant/register"
+            href="/devenir-commercant"
             className="inline-block rounded-full bg-accent px-8 py-4 font-bold text-white transition hover:bg-accent-hover"
           >
             Créer ma boutique
@@ -243,15 +263,19 @@ export default function Home() {
               Commerces
             </Link>
             {!user || (!isMerchant && !rolesLoading) ? (
-              <Link href="/merchant/register" className="mb-2 block text-slate-300 hover:text-white">
+              <Link href="/devenir-commercant" className="mb-2 block text-slate-300 hover:text-white">
                 Devenir commerçant
               </Link>
             ) : null}
             {!user || (!isDriver && !rolesLoading) ? (
-              <Link href="/driver/signup" className="mb-2 block text-slate-300 hover:text-white">
+              <Link href="/devenir-livreur" className="mb-2 block text-slate-300 hover:text-white">
                 Devenir livreur
               </Link>
             ) : null}
+            <Link href="/devenir-chauffeur" className="mb-2 block text-slate-300 hover:text-white">
+              Devenir chauffeur
+              <span className="ml-2 rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-bold text-amber-300">Bientôt disponible</span>
+            </Link>
           </div>
           <div>
             <h4 className="mb-3 text-lg font-bold">Compte</h4>
