@@ -10,6 +10,7 @@
  * Windows, macOS et Linux.
  */
 
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 /**
@@ -36,7 +37,7 @@ export async function reinitialiser() {
     );
   }
 
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
   try {
     const tables = await prisma.$queryRaw`

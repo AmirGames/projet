@@ -8,6 +8,7 @@
  * Adresse de l'API : VERIF_API_URL, sinon http://localhost:3001.
  */
 
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 export const API = process.env.VERIF_API_URL || "http://localhost:3001";
@@ -94,7 +95,7 @@ export const get = (chemin, jeton) =>
 let prisma = null;
 
 function base() {
-  if (!prisma) prisma = new PrismaClient();
+  if (!prisma) prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
   return prisma;
 }
 
