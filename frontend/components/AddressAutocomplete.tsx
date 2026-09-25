@@ -17,6 +17,105 @@ export interface AdresseChoisie {
   longitude: number | null;
 }
 
+/**
+ * Où se trouve, vraisemblablement, la personne qui tape.
+ *
+ * Sans cet indice, le serveur rend d'abord les adresses françaises : un client
+ * belge devait taper le nom de sa ville pour voir enfin la sienne.
+ */
+interface Indice {
+  pays?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+/** Fuseaux horaires propres à un pays : l'indice le plus fiable, et gratuit. */
+const PAYS_PAR_FUSEAU: Record<string, string> = {
+  'Europe/Brussels': 'be',
+  'Europe/Paris': 'fr',
+  'Europe/Luxembourg': 'lu',
+  'Europe/Zurich': 'ch',
+  'Europe/Monaco': 'mc',
+};
+
+/**
+ * Le pays, deviné sans rien demander.
+ *
+ * Le fuseau horaire d'abord : bien des Belges ont un navigateur réglé en
+ * « fr-FR », mais leur système est à l'heure de Bruxelles. La langue ensuite
+ * (« fr-BE », « nl-BE »), faute de mieux.
+ */
+function devinerPays(): string | undefined {
+  try {
+    const fuseau = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (fuseau && PAYS_PAR_FUSEAU[fuseau]) return PAYS_PAR_FUSEAU[fuseau];
+  } catch {
+    // Intl absent : on passe à la langue.
+  }
+
+  const langues = typeof navigator !== 'undefined' ? navigator.languages || [navigator.language] : [];
+  for (const langue of langues) {
+    const region = (langue || '').split('-')[1];
+    if (region && /^[a-z]{2}$/i.test(region)) return region.toLowerCase();
+  }
+
+  return undefined;
+}
+
+/**
+ * La position, seulement si la personne l'a déjà autorisée pour ce site.
+ *
+ * On ne déclenche jamais la demande d'autorisation pour un simple champ
+ * d'adresse : le pays suffit à mettre les bonnes adresses en tête.
+ */
+async function positionDejaAutorisee(): Promise<{ latitude: number; longitude: number } | null> {
+  try {
+    if (typeof navigator === 'undefined' || !navigator.geolocation || !navigator.permissions) {
+      return null;
+    }
+
+    const statut = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+    if (statut.state !== 'granted') return null;
+
+    return await new Promise((resoudre) => {
+      navigator.geolocation.getCurrentPosition(
+        (p) => resoudre({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
+        () => resoudre(null),
+        { enableHighAccuracy: false, maximumAge: 10 * 60 * 1000, timeout: 3000 }
+      );
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** Calculé une fois par page : le pays et la position ne bougent pas en tapant. */
+let indicePromis: Promise<Indice> | null = null;
+
+function obtenirIndice(): Promise<Indice> {
+  if (!indicePromis) {
+    indicePromis = positionDejaAutorisee().then((position) => ({
+      pays: devinerPays(),
+      ...(position || {}),
+    }));
+  }
+
+  return indicePromis;
+}
+
+function parametresIndice(indice: Indice): string {
+  const parametres = new URLSearchParams();
+  if (indice.pays) parametres.set('country', indice.pays);
+  if (typeof indice.latitude === 'number' && typeof indice.longitude === 'number') {
+    // Deux décimales suffisent à orienter la recherche.
+    parametres.set('lat', indice.latitude.toFixed(2));
+    parametres.set('lon', indice.longitude.toFixed(2));
+  }
+
+  const texte = parametres.toString();
+  return texte ? `&${texte}` : '';
+}
+
 interface Props {
   value: string;
   onChange: (valeur: string) => void;
@@ -57,6 +156,17 @@ export function AddressAutocomplete({
   // Une sélection ne doit pas relancer une recherche sur le texte qu'elle vient
   // d'écrire dans le champ.
   const ignorerProchaineRecherche = useRef(false);
+  const indice = useRef<Indice>({});
+
+  useEffect(() => {
+    let actif = true;
+    obtenirIndice().then((trouve) => {
+      if (actif) indice.current = trouve;
+    });
+    return () => {
+      actif = false;
+    };
+  }, []);
 
   const rechercher = useCallback(async (requete: string) => {
     if (requete.trim().length < 3) {
@@ -68,7 +178,7 @@ export function AddressAutocomplete({
 
     try {
       const reponse = await fetch(
-        `${API_URL}/api/addresses/search?q=${encodeURIComponent(requete)}`
+        `${API_URL}/api/addresses/search?q=${encodeURIComponent(requete)}${parametresIndice(indice.current)}`
       );
 
       if (!reponse.ok) {

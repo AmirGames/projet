@@ -29,9 +29,37 @@ export interface Suggestion {
   city: string;
   postalCode: string;
   country: string;
+  /** Code ISO du pays en minuscules (« fr », « be »), vide si inconnu. */
+  countryCode: string;
   latitude: number | null;
   longitude: number | null;
 }
+
+/**
+ * Où se trouve, vraisemblablement, la personne qui tape.
+ *
+ * Le navigateur le devine (fuseau horaire, langue, position si elle est déjà
+ * autorisée) : c'est ce qui permet à un client belge de voir des adresses
+ * belges d'abord, au lieu d'avoir à taper sa ville pour sortir de la France.
+ * Ce n'est qu'une préférence d'ordre, jamais un filtre.
+ */
+export interface Indice {
+  pays?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+/**
+ * Un point au cœur de chaque pays, pour orienter Photon quand on connaît le
+ * pays sans connaître la position.
+ */
+const CENTRES: Record<string, { latitude: number; longitude: number }> = {
+  fr: { latitude: 46.6, longitude: 2.4 },
+  be: { latitude: 50.64, longitude: 4.67 },
+  lu: { latitude: 49.78, longitude: 6.09 },
+  ch: { latitude: 46.8, longitude: 8.23 },
+  mc: { latitude: 43.74, longitude: 7.42 },
+};
 
 export type Fournisseur = "ban" | "photon" | "ban+photon" | "google";
 
@@ -88,6 +116,7 @@ function normaliserBan(entite: any): Suggestion {
     city: p.city || "",
     postalCode: p.postcode || "",
     country: "France",
+    countryCode: "fr",
     longitude: typeof coords[0] === "number" ? coords[0] : null,
     latitude: typeof coords[1] === "number" ? coords[1] : null,
   };
@@ -107,6 +136,7 @@ function normaliserPhoton(entite: any): Suggestion {
     city: ville,
     postalCode: p.postcode || "",
     country: p.country || "",
+    countryCode: (p.countrycode || "").toLowerCase(),
     longitude: typeof coords[0] === "number" ? coords[0] : null,
     latitude: typeof coords[1] === "number" ? coords[1] : null,
   };
@@ -121,8 +151,8 @@ function normaliserPhoton(entite: any): Suggestion {
 function normaliserGoogle(lieu: any): Suggestion {
   const composants: any[] = lieu?.addressComponents || [];
 
-  const composant = (type: string) =>
-    composants.find((c) => (c?.types || []).includes(type))?.longText || "";
+  const trouver = (type: string) => composants.find((c) => (c?.types || []).includes(type));
+  const composant = (type: string) => trouver(type)?.longText || "";
 
   const numero = composant("street_number");
   const voie = composant("route");
@@ -134,20 +164,79 @@ function normaliserGoogle(lieu: any): Suggestion {
     city: ville,
     postalCode: composant("postal_code"),
     country: composant("country"),
+    countryCode: (trouver("country")?.shortText || "").toLowerCase(),
     latitude: typeof lieu?.location?.latitude === "number" ? lieu.location.latitude : null,
     longitude: typeof lieu?.location?.longitude === "number" ? lieu.location.longitude : null,
   };
 }
 
-function construireUrl(requete: string, limite: number, fournisseur = fournisseurActif()): string {
-  if (fournisseur === "photon") {
-    // Photon n'a pas de filtre par pays : le tri se fait sur la réponse.
-    const base = process.env.PHOTON_API_URL || "https://photon.komoot.io/api/";
-    return `${base}?q=${encodeURIComponent(requete)}&limit=${limite}&lang=fr`;
+/** Le point vers lequel orienter la recherche : la position, sinon le pays. */
+function pointDeReference(indice: Indice): { latitude: number; longitude: number } | null {
+  if (typeof indice.latitude === "number" && typeof indice.longitude === "number") {
+    return { latitude: indice.latitude, longitude: indice.longitude };
   }
 
+  return (indice.pays && CENTRES[indice.pays]) || null;
+}
+
+function construireUrl(
+  requete: string,
+  limite: number,
+  fournisseur: "ban" | "photon",
+  indice: Indice = {}
+): string {
+  const point = pointDeReference(indice);
+
+  if (fournisseur === "photon") {
+    // Photon n'a pas de filtre par pays : le tri se fait sur la réponse. Il
+    // sait en revanche favoriser les résultats proches d'un point.
+    const base = process.env.PHOTON_API_URL || "https://photon.komoot.io/api/";
+    const biais = point ? `&lat=${point.latitude}&lon=${point.longitude}` : "";
+    return `${base}?q=${encodeURIComponent(requete)}&limit=${limite}&lang=fr${biais}`;
+  }
+
+  // La BAN ne prend une position qu'en guise de priorité, et seulement une
+  // vraie : le centre d'un pays ne lui apprendrait rien.
   const base = process.env.ADDRESS_API_URL || "https://api-adresse.data.gouv.fr/search/";
-  return `${base}?q=${encodeURIComponent(requete)}&limit=${limite}`;
+  const biais =
+    typeof indice.latitude === "number" && typeof indice.longitude === "number"
+      ? `&lat=${indice.latitude}&lon=${indice.longitude}`
+      : "";
+  return `${base}?q=${encodeURIComponent(requete)}&limit=${limite}${biais}`;
+}
+
+/**
+ * Nettoie l'indice venu du navigateur : un pays hors du périmètre ou une
+ * position fantaisiste sont ignorés plutôt que refusés.
+ */
+export function indiceValide(brut: { pays?: unknown; latitude?: unknown; longitude?: unknown }): Indice {
+  const indice: Indice = {};
+
+  const pays = typeof brut.pays === "string" ? brut.pays.trim().toLowerCase() : "";
+  const autorises = paysAutorises();
+  if (/^[a-z]{2}$/.test(pays) && (autorises.length === 0 || autorises.includes(pays))) {
+    indice.pays = pays;
+  }
+
+  const latitude = Number(brut.latitude);
+  const longitude = Number(brut.longitude);
+  if (
+    brut.latitude !== undefined &&
+    brut.longitude !== undefined &&
+    brut.latitude !== "" &&
+    brut.longitude !== "" &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    Math.abs(latitude) <= 90 &&
+    Math.abs(longitude) <= 180
+  ) {
+    // Deux décimales, soit un bon kilomètre : assez pour orienter, pas assez
+    // pour pister, et le cache reste utile d'une frappe à l'autre.
+    indice.latitude = Math.round(latitude * 100) / 100;
+    indice.longitude = Math.round(longitude * 100) / 100;
+  }
+
+  return indice;
 }
 
 /** Codes ISO des pays, tels que Photon les renvoie dans « countrycode ». */
@@ -188,7 +277,8 @@ export class AddressService {
    */
   private static async interrogerGoogle(
     requete: string,
-    limite: number
+    limite: number,
+    indice: Indice = {}
   ): Promise<{ suggestions: Suggestion[]; joignable: boolean }> {
     const cle = (process.env.GOOGLE_MAPS_API_KEY || "").trim();
 
@@ -219,8 +309,22 @@ export class AddressService {
           textQuery: requete,
           languageCode: "fr",
           // Un seul pays peut être transmis : au-delà, le tri se fait sur la
-          // réponse, comme pour Photon.
-          ...(pays.length === 1 ? { regionCode: pays[0].toUpperCase() } : {}),
+          // réponse, comme pour Photon. À défaut, celui du navigateur oriente.
+          ...(pays.length === 1
+            ? { regionCode: pays[0].toUpperCase() }
+            : indice.pays
+              ? { regionCode: indice.pays.toUpperCase() }
+              : {}),
+          ...(typeof indice.latitude === "number" && typeof indice.longitude === "number"
+            ? {
+                locationBias: {
+                  circle: {
+                    center: { latitude: indice.latitude, longitude: indice.longitude },
+                    radius: 50000,
+                  },
+                },
+              }
+            : {}),
           maxResultCount: Math.min(limite, 20),
         }),
       });
@@ -269,7 +373,8 @@ export class AddressService {
   private static async interroger(
     fournisseur: "ban" | "photon",
     requete: string,
-    limite: number
+    limite: number,
+    indice: Indice = {}
   ): Promise<{ suggestions: Suggestion[]; joignable: boolean }> {
     const controleur = new AbortController();
     const minuteur = setTimeout(() => controleur.abort(), DELAI_MS);
@@ -280,7 +385,7 @@ export class AddressService {
       const demandees =
         fournisseur === "photon" && paysAutorises().length > 0 ? limite * 4 : limite;
 
-      const reponse = await fetch(construireUrl(requete, demandees, fournisseur), {
+      const reponse = await fetch(construireUrl(requete, demandees, fournisseur, indice), {
         signal: controleur.signal,
         headers: { "User-Agent": "Zupone/1.0" },
       });
@@ -311,14 +416,21 @@ export class AddressService {
     }
   }
 
-  static async rechercher(requete: string, limite: number) {
+  static async rechercher(requete: string, limite: number, indice: Indice = {}) {
     // En dessous de trois caractères, tous les fournisseurs renvoient du bruit.
     if (requete.length < 3) {
       return { suggestions: [] as Suggestion[], available: true };
     }
 
     const fournisseur = fournisseurActif();
-    const cle = `${fournisseur}|${requete.toLowerCase()}|${limite}`;
+    const cle = [
+      fournisseur,
+      requete.toLowerCase(),
+      limite,
+      indice.pays || "",
+      indice.latitude ?? "",
+      indice.longitude ?? "",
+    ].join("|");
     const enCache = cache.get(cle);
 
     if (enCache && Date.now() < enCache.expireA) {
@@ -334,12 +446,12 @@ export class AddressService {
      */
     const reponses =
       fournisseur === "google"
-        ? [await this.interrogerGoogle(requete, limite)]
+        ? [await this.interrogerGoogle(requete, limite, indice)]
         : await Promise.all(
             (fournisseur === "ban+photon"
               ? (["ban", "photon"] as const)
               : ([fournisseur] as const)
-            ).map((lequel) => this.interroger(lequel, requete, limite))
+            ).map((lequel) => this.interroger(lequel, requete, limite, indice))
           );
 
     // Une même adresse peut revenir des deux côtés : on garde la première, donc
@@ -366,6 +478,16 @@ export class AddressService {
       return { suggestions: [] as Suggestion[], available: false };
     }
 
+    // La BAN répond toujours quelque chose, même à une adresse belge : sans ce
+    // tri, ses approximations françaises passaient devant les vraies adresses
+    // belges de Photon. Le pays de la personne passe donc en tête ; le tri est
+    // stable, l'ordre de pertinence est conservé à l'intérieur de chaque pays.
+    if (indice.pays) {
+      suggestions.sort(
+        (a, b) => Number(b.countryCode === indice.pays) - Number(a.countryCode === indice.pays)
+      );
+    }
+
     const retenues = suggestions.slice(0, limite);
 
     if (cache.size > TAILLE_MAX_CACHE) cache.clear();
@@ -385,7 +507,7 @@ export class AddressService {
    * conduite : une adresse introuvable est probablement mal écrite, un service
    * injoignable est notre panne et ne doit pas fermer la boutique.
    */
-  static async situer(texte: string): Promise<{
+  static async situer(texte: string, indice: Indice = {}): Promise<{
     point: { latitude: number; longitude: number } | null;
     disponible: boolean;
     adresse: Suggestion | null;
@@ -396,7 +518,7 @@ export class AddressService {
       return { point: null, disponible: true, adresse: null };
     }
 
-    const { suggestions, available } = await this.rechercher(requete, 1);
+    const { suggestions, available } = await this.rechercher(requete, 1, indice);
     const premiere = suggestions[0];
 
     if (!premiere || premiere.latitude === null || premiere.longitude === null) {
