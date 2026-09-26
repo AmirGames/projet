@@ -3,6 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
 import { FileUploadService } from "./file-upload.service";
+import { notifierPlateforme } from "./notification.service";
 
 /**
  * Le dossier d'un livreur, et sa validation par la plateforme.
@@ -111,7 +112,22 @@ export class DriverApprovalService {
 
     logger.info("Driver document submitted", { driverId, type: piece.type });
 
+    await this.signalerDepot(driverId, piece.type);
+
     return deposee;
+  }
+
+  /** Prévient la plateforme qu'une pièce attend son examen. */
+  private static async signalerDepot(driverId: string, type: TypeDocument) {
+    const livreur = await db.driver
+      .findUnique({ where: { id: driverId }, select: { name: true, email: true } })
+      .catch(() => null);
+
+    await notifierPlateforme(
+      `Nouveau document livreur — ${livreur?.name || livreur?.email || "livreur"}`,
+      `${libelleDuDocument(type)} a été mis en ligne et attend votre validation.`,
+      `/superowner/drivers`
+    );
   }
 
   /** Dépose une pièce via upload de fichier. */
@@ -154,6 +170,8 @@ export class DriverApprovalService {
       : await db.driverDocument.create({ data: { driverId, type: piece.type, ...valeurs } });
 
     logger.info("Driver document uploaded", { driverId, type: piece.type });
+
+    await this.signalerDepot(driverId, piece.type);
 
     return deposee;
   }

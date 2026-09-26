@@ -3,6 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
 import { FileUploadService } from "./file-upload.service";
+import { notifierPlateforme } from "./notification.service";
 
 /**
  * Le profil du commerçant : son identité de facturation, son propriétaire, son
@@ -337,9 +338,24 @@ export class MerchantProfileService {
       expiryReminderAt: null,
     };
 
-    return existante
-      ? db.organizationDocument.update({ where: { id: existante.id }, data: valeurs })
-      : db.organizationDocument.create({ data: { orgId, type: piece.type, ...valeurs } });
+    const deposee = existante
+      ? await db.organizationDocument.update({ where: { id: existante.id }, data: valeurs })
+      : await db.organizationDocument.create({ data: { orgId, type: piece.type, ...valeurs } });
+
+    await this.signalerDepot(orgId, piece.type);
+
+    return deposee;
+  }
+
+  /** Prévient la plateforme qu'une pièce attend son examen. */
+  private static async signalerDepot(orgId: string, type: TypeDocumentCommercant) {
+    const org = await db.organization.findUnique({ where: { id: orgId }, select: { name: true } }).catch(() => null);
+
+    await notifierPlateforme(
+      `Nouveau document — ${org?.name || "commerce"}`,
+      `${libelleDuDocumentCommercant(type)} a été mis en ligne et attend votre validation.`,
+      `/superowner/organizations/${orgId}`
+    );
   }
 
   /** Dépose une pièce via upload de fichier. */
@@ -384,6 +400,8 @@ export class MerchantProfileService {
       : await db.organizationDocument.create({ data: { orgId, type: piece.type, ...valeurs } });
 
     logger.info("Merchant document uploaded", { orgId, type: piece.type });
+
+    await this.signalerDepot(orgId, piece.type);
 
     return deposee;
   }

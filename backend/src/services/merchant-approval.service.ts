@@ -2,6 +2,7 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
+import { notifierPlateforme } from "./notification.service";
 import { EmailService } from "./email.service";
 import {
   PIECES_EXIGEES,
@@ -273,23 +274,7 @@ export class MerchantApprovalService {
   }
 
   private static async prevenirLaPlateforme(titre: string, message: string, lien: string) {
-    const plateforme = await db.user.findMany({
-      where: { OR: [{ isSuperOwner: true }, { isSystemAdmin: true }], status: "ACTIVE" },
-      select: { email: true },
-    });
-
-    for (const email of new Set(plateforme.map((u) => u.email))) {
-      const notification = await db.notification.create({
-        data: {
-          type: "PLATFORM_ANNOUNCEMENT",
-          title: titre,
-          message,
-          recipientEmail: email,
-          link: lien,
-        },
-      });
-
-      emitNotification(email, notification);
-    }
+    await notifierPlateforme(titre, message, lien);
   }
+
 }
