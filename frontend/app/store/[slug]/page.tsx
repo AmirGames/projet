@@ -7,7 +7,7 @@ import { ShoppingCart, MapPin, Phone, Clock, Star, X, Bike } from 'lucide-react'
 import { euro } from '@/lib/format';
 import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
 import { useAdresseLivraisonEnregistree, type AdresseLivraison } from '@/lib/adresseLivraison';
-import { useParametreAdresse } from '@/lib/navigateur';
+import { quitteLaPage, useParametreAdresse } from '@/lib/navigateur';
 import { useStoreLive } from '@/lib/use-store-live';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import {
@@ -374,7 +374,8 @@ export default function StorefrontPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching store:', error);
+      // Parti en plein chargement : la requête a été coupée, rien n'a échoué.
+      if (!quitteLaPage()) console.error('Error fetching store:', error);
     } finally {
       setLoading(false);
     }
