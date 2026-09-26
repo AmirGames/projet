@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { API_URL, apiFetch, formatEuros } from '../../lib/api';
 import { Driver, DRIVER_STATUS_LABELS, VEHICLE_LABELS } from '../../lib/deliveries';
-import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
+import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 interface Documents {
   status: string;
@@ -21,11 +21,12 @@ interface Documents {
   }[];
 }
 
-const DOC_STATUS: Record<string, { label: string; color: string }> = {
-  PENDING: { label: '⏳ En examen', color: COLORS.warning },
-  APPROVED: { label: '✓ Validée', color: COLORS.successText },
-  REJECTED: { label: '✗ Refusée', color: COLORS.danger },
-  EXPIRED: { label: '⚠ Expirée', color: COLORS.danger },
+// Le ton plutôt que la couleur : elle suit le thème en cours.
+const DOC_STATUS: Record<string, { label: string; tone: 'warning' | 'successText' | 'danger' }> = {
+  PENDING: { label: '⏳ En examen', tone: 'warning' },
+  APPROVED: { label: '✓ Validée', tone: 'successText' },
+  REJECTED: { label: '✗ Refusée', tone: 'danger' },
+  EXPIRED: { label: '⚠ Expirée', tone: 'danger' },
 };
 
 export default function AccountScreen({
@@ -168,7 +169,8 @@ export default function AccountScreen({
               </Text>
               {docs.piecesAttendues.map((piece, i) => {
                 const doc = docs.documents.find((d) => d.type === piece.type);
-                const st = doc ? DOC_STATUS[doc.status] || { label: doc.status, color: COLORS.muted } : null;
+                const known = doc ? DOC_STATUS[doc.status] : undefined;
+                const st = doc ? { label: known?.label || doc.status, color: known ? COLORS[known.tone] : COLORS.muted } : null;
                 const canUpload = !doc || doc.status === 'REJECTED' || doc.status === 'EXPIRED';
                 return (
                   <View key={piece.type} style={[styles.doc, i === docs.piecesAttendues.length - 1 && { borderBottomWidth: 0 }]}>
@@ -203,7 +205,7 @@ export default function AccountScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   profile: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
@@ -239,4 +241,4 @@ const styles = StyleSheet.create({
   docNote: { fontSize: 12, color: COLORS.secondary, marginTop: 2 },
   docButton: { backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
   docButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-});
+}));

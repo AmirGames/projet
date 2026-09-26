@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
-import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import { COLORS, ErrorBox, Loading, ScreenHeader, themedStyles } from '../ui';
 
 export interface AppNotification {
   id: string;
@@ -108,7 +108,7 @@ export default function NotificationsScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   list: { padding: 12, paddingBottom: 24 },
   markAll: { alignSelf: 'flex-end', paddingVertical: 6, marginBottom: 6 },
   markAllText: { color: COLORS.link, fontWeight: '600', fontSize: 14 },
@@ -119,4 +119,4 @@ const styles = StyleSheet.create({
   message: { fontSize: 13, color: COLORS.secondary, marginTop: 3, lineHeight: 18 },
   time: { fontSize: 12, color: COLORS.muted, marginTop: 6 },
   empty: { textAlign: 'center', color: COLORS.muted, marginTop: 40 },
-});
+}));

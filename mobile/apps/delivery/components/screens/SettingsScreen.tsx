@@ -1,10 +1,10 @@
 import React from 'react';
-import { Linking, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, Platform, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
 import { API_URL } from '../../lib/api';
 import type { Prefs } from '../../lib/session';
 import type { GpsState } from '../../lib/useDriverLocation';
-import { Card, COLORS, Row, ScreenHeader, ui } from '../ui';
+import { Card, COLORS, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 const NAVIGATION_APPS: { key: Prefs['navigationApp']; label: string }[] = [
   { key: 'zupone', label: 'Carte Zupone' },
@@ -13,12 +13,18 @@ const NAVIGATION_APPS: { key: Prefs['navigationApp']; label: string }[] = [
   ...(Platform.OS === 'ios' ? [{ key: 'apple' as const, label: 'Plans' }] : []),
 ];
 
-const GPS_LABELS: Record<GpsState, { text: string; color: string }> = {
-  off: { text: 'Inactif (hors ligne)', color: COLORS.muted },
-  searching: { text: 'Recherche…', color: COLORS.warning },
-  ok: { text: '✓ Position transmise', color: COLORS.successText },
-  denied: { text: '✗ Autorisation refusée', color: COLORS.danger },
-  error: { text: '✗ Signal indisponible', color: COLORS.danger },
+const THEMES: { key: Prefs['theme']; label: string }[] = [
+  { key: 'dark', label: '🌙 Sombre' },
+  { key: 'light', label: '☀️ Clair' },
+];
+
+// Des fonctions : les couleurs suivent le thème en cours.
+const GPS_LABELS: Record<GpsState, { text: string; color: () => string }> = {
+  off: { text: 'Inactif (hors ligne)', color: () => COLORS.muted },
+  searching: { text: 'Recherche…', color: () => COLORS.warning },
+  ok: { text: '✓ Position transmise', color: () => COLORS.successText },
+  denied: { text: '✗ Autorisation refusée', color: () => COLORS.danger },
+  error: { text: '✗ Signal indisponible', color: () => COLORS.danger },
 };
 
 export default function SettingsScreen({
@@ -42,6 +48,21 @@ export default function SettingsScreen({
     <View style={{ flex: 1 }}>
       <ScreenHeader title="Paramètres ⚙️" onBack={onBack} />
       <ScrollView contentContainerStyle={ui.content}>
+        <Card title="Apparence">
+          <Text style={styles.help}>Le thème sombre fatigue moins les yeux la nuit et économise la batterie.</Text>
+          <View style={styles.chips}>
+            {THEMES.map((t) => (
+              <TouchableOpacity
+                key={t.key}
+                style={[styles.chip, prefs.theme === t.key && styles.chipActive]}
+                onPress={() => onChangePrefs({ theme: t.key })}
+              >
+                <Text style={[styles.chipText, prefs.theme === t.key && styles.chipTextActive]}>{t.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Card>
+
         <Card title="Courses proposées">
           <View style={styles.switchRow}>
             <View style={{ flex: 1, marginRight: 12 }}>
@@ -87,7 +108,7 @@ export default function SettingsScreen({
         <Card title="Localisation">
           <View style={styles.statusRow}>
             <Text style={styles.switchLabel}>GPS</Text>
-            <Text style={[styles.status, { color: GPS_LABELS[gps].color }]}>{GPS_LABELS[gps].text}</Text>
+            <Text style={[styles.status, { color: GPS_LABELS[gps].color() }]}>{GPS_LABELS[gps].text}</Text>
           </View>
           <Text style={styles.help}>
             Votre position n'est transmise que lorsque vous êtes en ligne ou sur une course. Gardez l'application ouverte
@@ -110,7 +131,7 @@ export default function SettingsScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   help: { fontSize: 13, color: COLORS.secondary, marginBottom: 10 },
   switchRow: { flexDirection: 'row', alignItems: 'center' },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, marginBottom: 6 },
@@ -130,4 +151,4 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   chipText: { fontSize: 14, color: COLORS.text },
   chipTextActive: { color: '#fff', fontWeight: '600' },
-});
+}));

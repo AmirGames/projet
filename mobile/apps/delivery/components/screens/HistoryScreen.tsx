@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { deliveryStatus, formatKm, hhmm, shortId } from '../../lib/deliveries';
-import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import { COLORS, ErrorBox, Loading, ScreenHeader, themedStyles } from '../ui';
 
 interface HistoryItem {
   id: string;
@@ -160,7 +160,7 @@ export default function HistoryScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   filters: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingTop: 12 },
   chip: {
     paddingHorizontal: 12,
@@ -187,4 +187,4 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12, color: COLORS.muted, marginTop: 4 },
   payout: { fontSize: 15, fontWeight: '600', color: COLORS.link, marginTop: 6 },
   empty: { textAlign: 'center', color: COLORS.muted, marginTop: 40 },
-});
+}));

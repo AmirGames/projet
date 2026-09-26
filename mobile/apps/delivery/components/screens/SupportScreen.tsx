@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { apiFetch } from '../../lib/api';
 import { useRealtimeEvent } from '../../lib/realtime';
-import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import { COLORS, ErrorBox, Loading, ScreenHeader, themedStyles } from '../ui';
 
 interface SupportMessage {
   id: string;
@@ -163,7 +163,7 @@ export default function SupportScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   list: { padding: 12, paddingBottom: 16, flexGrow: 1 },
   emptyBox: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
@@ -198,4 +198,4 @@ const styles = StyleSheet.create({
   },
   send: { backgroundColor: COLORS.primary, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 11 },
   sendText: { color: '#fff', fontWeight: '700' },
-});
+}));

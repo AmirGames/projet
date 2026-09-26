@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL, ApiError, apiFetch, formatEuros, setUnauthorizedHandler } from '../lib/api';
@@ -9,7 +9,7 @@ import { useDriverAlerts } from '../lib/useDriverAlerts';
 import { DutyMode, Tracking, useDriverLocation } from '../lib/useDriverLocation';
 import { useRealtimeEvent } from '../lib/realtime';
 import { onDriverNotificationTap, PushDriverData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
-import { COLORS } from '../components/ui';
+import { applyTheme, COLORS, themedStyles } from '../components/ui';
 import DashboardScreen, { EarningsSummary } from '../components/screens/DashboardScreen';
 import DeliveryScreen from '../components/screens/DeliveryScreen';
 import HistoryScreen from '../components/screens/HistoryScreen';
@@ -65,6 +65,9 @@ export default function DeliveryApp() {
   const pushTokenRef = useRef<string | null>(null);
 
   const updatePrefs = (patch: Partial<Prefs>) => {
+    // Le thème change avant le rendu qui suit : tous les écrans affichés le
+    // relisent aussitôt.
+    if (patch.theme) applyTheme(patch.theme);
     setPrefs((p) => {
       const next = { ...p, ...patch };
       savePrefs(next);
@@ -136,6 +139,7 @@ export default function DeliveryApp() {
   useEffect(() => {
     (async () => {
       const [stored, storedPrefs] = await Promise.all([loadSession(), loadPrefs()]);
+      applyTheme(storedPrefs.theme);
       setPrefs(storedPrefs);
       if (stored?.refreshToken) {
         try {
@@ -709,7 +713,7 @@ export default function DeliveryApp() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   splash: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -801,7 +805,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.chrome,
     position: 'relative',
   },
   menuOverlay: {
@@ -899,7 +903,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bg,
   },
   header: {
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.header,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     paddingHorizontal: 16,
@@ -911,11 +915,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#fff',
+    color: COLORS.onHeader,
   },
   headerEmail: {
     fontSize: 11,
-    color: COLORS.secondary,
+    color: COLORS.onHeader,
+    opacity: 0.75,
     marginTop: 2,
   },
   emptyContainer: {
@@ -959,7 +964,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 18,
-    color: COLORS.link,
+    color: COLORS.onHeader,
+    opacity: 0.85,
     marginBottom: 40,
     textAlign: 'center',
   },
@@ -973,7 +979,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   loginButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.loginButton,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -989,7 +995,8 @@ const styles = StyleSheet.create({
   },
   signupHint: {
     marginTop: 20,
-    color: COLORS.secondary,
+    color: COLORS.onHeader,
+    opacity: 0.75,
     fontSize: 14,
     textAlign: 'center',
   },
@@ -1023,4 +1030,4 @@ const styles = StyleSheet.create({
     color: COLORS.link,
     fontWeight: '600',
   },
-});
+}));

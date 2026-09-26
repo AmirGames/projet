@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { shortId } from '../../lib/deliveries';
-import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
+import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 interface Earnings {
   total: number;
@@ -149,7 +149,7 @@ export default function EarningsScreen({ token, onBack }: { token: string; onBac
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   hero: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 12 },
   heroLabel: { fontSize: 13, color: COLORS.secondary },
   heroValue: { fontSize: 44, fontWeight: '600', color: COLORS.text, letterSpacing: -1, marginVertical: 2 },
@@ -169,4 +169,4 @@ const styles = StyleSheet.create({
   statementAmount: { fontSize: 15, fontWeight: '700', color: COLORS.text },
   statementStatus: { fontSize: 12, fontWeight: '600', marginTop: 2 },
   empty: { fontSize: 13, color: COLORS.muted, paddingVertical: 8 },
-});
+}));

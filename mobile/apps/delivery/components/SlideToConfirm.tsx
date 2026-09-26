@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Animated, PanResponder, StyleSheet, Text, View } from 'react-native';
-import { COLORS } from './ui';
+import { ActivityIndicator, Animated, PanResponder, Text, View } from 'react-native';
+import { COLORS, themedStyles } from './ui';
 
 const KNOB = 52;
 const PADDING = 4;
@@ -69,7 +69,7 @@ export default function SlideToConfirm({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   track: {
     height: KNOB + PADDING * 2,
     borderRadius: (KNOB + PADDING * 2) / 2,
@@ -99,4 +99,4 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
   },
   arrow: { fontSize: 26, fontWeight: '800', marginTop: -2 },
-});
+}));

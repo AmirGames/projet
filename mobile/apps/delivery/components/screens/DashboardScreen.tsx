@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { Delivery, deliveryStatus, Driver, formatKm, Offer, shortId } from '../../lib/deliveries';
 import type { GpsState } from '../../lib/useDriverLocation';
-import { COLORS } from '../ui';
+import { COLORS, themedStyles } from '../ui';
 
 
 const PAUSE_DURATIONS = [15, 30, 60];
@@ -27,10 +27,11 @@ function greeting(d: Date) {
   return 'Bonsoir';
 }
 
-const GPS_MESSAGES: Partial<Record<GpsState, { text: string; color: string }>> = {
-  searching: { text: 'Recherche de votre position…', color: COLORS.warning },
-  denied: { text: 'Localisation refusée : autorisez-la dans les réglages du téléphone pour recevoir des courses.', color: COLORS.danger },
-  error: { text: 'Signal GPS indisponible : vérifiez que la localisation est activée.', color: COLORS.danger },
+// Des fonctions : les couleurs suivent le thème en cours.
+const GPS_MESSAGES: Partial<Record<GpsState, { text: string; color: () => string }>> = {
+  searching: { text: 'Recherche de votre position…', color: () => COLORS.warning },
+  denied: { text: 'Localisation refusée : autorisez-la dans les réglages du téléphone pour recevoir des courses.', color: () => COLORS.danger },
+  error: { text: 'Signal GPS indisponible : vérifiez que la localisation est activée.', color: () => COLORS.danger },
 };
 
 function OfferCard({
@@ -253,7 +254,7 @@ export default function DashboardScreen({
 
         <View style={[styles.onlineCard, online && styles.onlineCardOn]}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.onlineTitle, online && { color: '#fff' }]}>{online ? '🟢 En ligne' : '⚪ Hors ligne'}</Text>
+            <Text style={[styles.onlineTitle, online && { color: '#FFFFFF' }]}>{online ? '🟢 En ligne' : '⚪ Hors ligne'}</Text>
             <Text style={[styles.onlineText, online && { color: '#fff', opacity: 0.9 }]}>
               {online
                 ? driver?.isAvailable
@@ -277,7 +278,7 @@ export default function DashboardScreen({
         </View>
 
         {gpsMessage && (
-          <View style={[styles.gpsBanner, { borderLeftColor: gpsMessage.color }]}>
+          <View style={[styles.gpsBanner, { borderLeftColor: gpsMessage.color() }]}>
             <Text style={styles.gpsText}>📡 {gpsMessage.text}</Text>
           </View>
         )}
@@ -349,7 +350,7 @@ export default function DashboardScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   screen: { flex: 1 },
   content: { padding: 12, paddingBottom: 24 },
   greeting: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 12, marginTop: 4 },
@@ -452,4 +453,4 @@ const styles = StyleSheet.create({
   pauseDurations: { flexDirection: 'row', gap: 8 },
   pauseButton: { flex: 1, backgroundColor: COLORS.warningBg, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
   pauseButtonText: { fontSize: 15, fontWeight: '700', color: COLORS.warning },
-});
+}));

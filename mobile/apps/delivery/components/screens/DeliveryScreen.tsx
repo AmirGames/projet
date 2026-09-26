@@ -31,7 +31,7 @@ import type { Prefs } from '../../lib/session';
 import type { Position, Tracking } from '../../lib/useDriverLocation';
 import SlideToConfirm from '../SlideToConfirm';
 import LiveMap, { RouteInfo } from '../LiveMap';
-import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
+import { Card, COLORS, ErrorBox, isDarkTheme, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 /** En deçà, le livreur est au commerce : la prise en charge se déverrouille. */
 const PICKUP_RADIUS_M = 150;
@@ -351,7 +351,7 @@ export default function DeliveryScreen({
             {!mapOpen && (
               <TouchableOpacity activeOpacity={0.9} onPress={() => setMapOpen(true)} style={styles.mapPreview}>
                 <LiveMap
-                  dark
+                  dark={isDarkTheme()}
                   driver={driverPoint}
                   pickup={pickup}
                   dropoff={dropoff}
@@ -563,7 +563,7 @@ export default function DeliveryScreen({
             </TouchableOpacity>
           </View>
           <LiveMap
-            dark
+            dark={isDarkTheme()}
             driver={driverPoint}
             pickup={pickup}
             dropoff={dropoff}
@@ -593,21 +593,21 @@ function formatDuration(seconds: number) {
   return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`;
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   mapPreview: { marginTop: 10 },
   fullMap: { flex: 1, backgroundColor: COLORS.raised },
   fullMapHeader: {
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.header,
     paddingHorizontal: 16,
     paddingTop: 44,
     paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  fullMapTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  fullMapInfo: { color: '#fff', opacity: 0.9, fontSize: 14, marginTop: 2 },
+  fullMapTitle: { color: COLORS.onHeader, fontSize: 17, fontWeight: '700' },
+  fullMapInfo: { color: COLORS.onHeader, opacity: 0.9, fontSize: 14, marginTop: 2 },
   fullMapClose: { marginLeft: 12, padding: 4 },
-  fullMapCloseText: { color: '#fff', fontSize: 22, fontWeight: '700' },
+  fullMapCloseText: { color: COLORS.onHeader, fontSize: 22, fontWeight: '700' },
   fullMapAction: {
     position: 'absolute',
     left: 12,
@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
   linkButtonText: { color: COLORS.link, fontWeight: '600', fontSize: 14, textAlign: 'center' },
   waiting: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, gap: 10 },
   waitingText: { fontSize: 15, color: COLORS.secondary, fontWeight: '600' },
-  near: { backgroundColor: COLORS.successBg, color: '#7EE2A0', borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 13 },
+  near: { backgroundColor: COLORS.successBg, color: COLORS.successOnBg, borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 13 },
   codeRow: { flexDirection: 'row', alignItems: 'center' },
   codeInput: {
     flex: 1,
@@ -710,4 +710,4 @@ const styles = StyleSheet.create({
   cancelKeepText: { color: COLORS.text, fontWeight: '600' },
   cancelConfirm: { flex: 1, backgroundColor: '#C62828', borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
   cancelConfirmText: { color: '#fff', fontWeight: '700' },
-});
+}));
