@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { API_URL, apiFetch, formatEuros } from '../../lib/api';
+import { reducePhoto } from '../../lib/photo';
 import { Driver, DRIVER_STATUS_LABELS, VEHICLE_LABELS } from '../../lib/deliveries';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
@@ -86,11 +87,8 @@ export default function AccountScreen({
     try {
       const form = new FormData();
       form.append('type', type);
-      form.append('file', {
-        uri: asset.uri,
-        name: asset.fileName || `${type.toLowerCase()}.jpg`,
-        type: asset.mimeType || 'image/jpeg',
-      } as any);
+      const photo = await reducePhoto(asset);
+      form.append('file', { ...photo, name: `${type.toLowerCase()}.jpg` } as any);
       const response = await fetch(`${API_URL}/api/drivers/documents/upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },

@@ -26,6 +26,7 @@ import {
   openNavigation,
   shortId,
 } from '../../lib/deliveries';
+import { reducePhoto } from '../../lib/photo';
 import { useRealtimeEvent } from '../../lib/realtime';
 import type { Prefs } from '../../lib/session';
 import type { Position, Tracking } from '../../lib/useDriverLocation';
@@ -75,6 +76,8 @@ export default function DeliveryScreen({
   const [photoUri, setPhotoUri] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [photoFile, setPhotoFile] = useState<{ uri: string; type: string; name: string } | null>(null);
+  const [photoError, setPhotoError] = useState('');
   const [note, setNote] = useState('');
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -222,23 +225,14 @@ export default function DeliveryScreen({
   }, [code]);
 
   /** L'appareil photo s'ouvre ; la photo part aussitôt prise. */
-  const takePhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Appareil photo', "Autorisez l'appareil photo dans les réglages du téléphone.");
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.6 });
-    if (result.canceled || !result.assets?.[0]) return;
-
-    const asset = result.assets[0];
-    setPhotoUri(asset.uri);
+  /** Envoie la photo déjà réduite ; rappelée telle quelle par « Renvoyer ». */
+  const uploadPhoto = async (file: { uri: string; type: string; name: string }) => {
     setPhotoUrl('');
     setUploading(true);
-    setRefusal('');
+    setPhotoError('');
     try {
       const form = new FormData();
-      form.append('photo', { uri: asset.uri, name: 'depot.jpg', type: asset.mimeType || 'image/jpeg' } as any);
+      form.append('photo', file as any);
       const response = await fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}/photo`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -246,12 +240,30 @@ export default function DeliveryScreen({
       });
       const data = await response.json().catch(() => null);
       if (response.ok && data?.data?.photoUrl) setPhotoUrl(data.data.photoUrl);
-      else setRefusal(data?.error || "La photo n'a pas pu être envoyée, reprenez-la");
+      else setPhotoError(data?.error || `La photo n'a pas pu être envoyée (erreur ${response.status})`);
     } catch {
-      setRefusal("La photo n'a pas pu être envoyée, reprenez-la");
+      setPhotoError("La photo n'a pas pu être envoyée : vérifiez votre connexion");
     } finally {
       setUploading(false);
     }
+  };
+
+  /** L'appareil photo s'ouvre ; la photo, réduite, part aussitôt prise. */
+  const takePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Appareil photo', "Autorisez l'appareil photo dans les réglages du téléphone.");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+    if (result.canceled || !result.assets?.[0]) return;
+
+    const asset = result.assets[0];
+    setPhotoUri(asset.uri);
+    setUploading(true);
+    const file = await reducePhoto(asset);
+    setPhotoFile(file);
+    await uploadPhoto(file);
   };
 
   const cancelDelivery = async () => {
@@ -370,7 +382,7 @@ export default function DeliveryScreen({
           </Card>
         )}
 
-        {refusal ? <Text style={styles.refusal}>{refusal}</Text> : null}
+        {refusal && step !== 2 ? <Text style={styles.refusal}>{refusal}</Text> : null}
 
         {step === 0 && (
           <Card title="📍 Allez au commerce">
@@ -408,6 +420,7 @@ export default function DeliveryScreen({
 
         {step === 2 && (
           <Card title="🤝 Remettez la commande">
+            {refusal ? <Text style={styles.refusal}>{refusal}</Text> : null}
             {toCustomer != null && toCustomer <= CUSTOMER_NEAR_M && (
               <Text style={styles.near}>🔔 Le client est prévenu de votre arrivée : il peut descendre.</Text>
             )}
@@ -443,6 +456,20 @@ export default function DeliveryScreen({
               <>
                 <Text style={styles.help}>Photographiez la commande déposée : le client la verra sur son suivi.</Text>
                 {photoUri ? <Image source={{ uri: photoUri }} style={styles.photo} /> : null}
+                {uploading ? (
+                  <Text style={styles.photoStatus}>Envoi de la photo…</Text>
+                ) : photoUrl ? (
+                  <Text style={[styles.photoStatus, { color: COLORS.successText }]}>✓ Photo envoyée</Text>
+                ) : photoError ? (
+                  <View style={styles.photoErrorBox}>
+                    <Text style={styles.photoErrorText}>{photoError}</Text>
+                    {photoFile && (
+                      <TouchableOpacity onPress={() => uploadPhoto(photoFile)}>
+                        <Text style={styles.photoRetry}>↻ Renvoyer la photo</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : null}
                 <TouchableOpacity style={styles.secondaryButton} onPress={takePhoto} disabled={uploading || updating}>
                   {uploading ? (
                     <ActivityIndicator color={COLORS.link} />
@@ -465,6 +492,9 @@ export default function DeliveryScreen({
                 >
                   {updating ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Confirmer le dépôt</Text>}
                 </TouchableOpacity>
+                {!photoUrl && !uploading && !photoError && (
+                  <Text style={styles.photoHint}>Prenez la photo du dépôt pour pouvoir confirmer.</Text>
+                )}
                 {delivery.codeAttendu && (
                   <TouchableOpacity style={styles.linkButton} onPress={() => setPhotoMode(false)}>
                     <Text style={styles.linkButtonText}>Le client est là : saisir son code</Text>
@@ -671,6 +701,11 @@ const styles = themedStyles(() => ({
     color: COLORS.text,
   },
   attempts: { fontSize: 13, color: COLORS.warning, fontWeight: '600', marginTop: 6 },
+  photoStatus: { fontSize: 13, fontWeight: '600', color: COLORS.secondary, marginBottom: 10, textAlign: 'center' },
+  photoErrorBox: { backgroundColor: COLORS.dangerBg, borderRadius: 10, padding: 12, marginBottom: 10 },
+  photoErrorText: { color: COLORS.danger, fontSize: 14, fontWeight: '600' },
+  photoRetry: { color: COLORS.link, fontSize: 15, fontWeight: '700', marginTop: 8 },
+  photoHint: { fontSize: 12, color: COLORS.muted, textAlign: 'center', marginTop: 8 },
   photo: { width: '100%', height: 220, borderRadius: 10, marginBottom: 10, backgroundColor: COLORS.raised },
   secondaryButton: {
     borderWidth: 1,

@@ -1,6 +1,7 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { logger } from "../config/logger";
 import { ZodError } from "zod";
+import { MulterError } from "multer";
 
 export class ApiError extends Error {
   constructor(
@@ -103,6 +104,25 @@ export const errorHandler = (
    * pile d'appels pour une virgule en trop.
    */
   const statutPorte = (err as { status?: number; statusCode?: number }).status;
+
+  /**
+   * Un fichier refusé à l'envoi est une erreur de l'appelant.
+   *
+   * multer rejette une photo trop lourde avec sa propre erreur : elle tombait
+   * dans le cas général et répondait « Internal server error ». Le livreur,
+   * devant la porte du client, ne savait pas que sa photo était simplement
+   * trop grosse.
+   */
+  if (err instanceof MulterError) {
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "Fichier trop lourd (10 Mo au plus) : reprenez la photo ou choisissez-en une plus légère."
+        : err.code === "LIMIT_UNEXPECTED_FILE"
+          ? "Fichier envoyé sous un nom de champ inattendu."
+          : "Fichier refusé à l'envoi.";
+    logger.warn("Requête refusée", { name: err.name, code: err.code, path: req.path, method: req.method });
+    return res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: message, code: err.code });
+  }
 
   const statut =
     err instanceof ApiError
