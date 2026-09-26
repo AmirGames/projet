@@ -20,7 +20,7 @@ import { useTranslations } from 'next-intl';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Plage {
   open: string;
@@ -88,7 +88,7 @@ export default function HorairesPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/store-hours/${storeId}`, {
+      const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -134,7 +134,7 @@ export default function HorairesPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/store-hours/${storeId}/day/${jour}`, {
+      const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}/day/${jour}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ closed: horaires.closed, plages: horaires.plages }),
@@ -165,7 +165,7 @@ export default function HorairesPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/store-hours/${storeId}/status`, {
+      const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ isOpen: !data.isOpen }),
@@ -194,7 +194,7 @@ export default function HorairesPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/store-hours/${storeId}/pickup-slots`, {
+      const reponse = await fetch(`${API_URL}/api/store-hours/${storeId}/pickup-slots`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(nouveauCreneau),
@@ -223,7 +223,7 @@ export default function HorairesPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`${API_URL}/store-hours/${storeId}/pickup-slots/${creneauId}`, {
+      await fetch(`${API_URL}/api/store-hours/${storeId}/pickup-slots/${creneauId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

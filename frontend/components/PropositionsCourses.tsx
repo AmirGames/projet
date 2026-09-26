@@ -10,7 +10,7 @@ import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
 import { notifierSiCache } from '@/components/ActiverNotifications';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** Cadence d'envoi de la position. Assez fréquente pour un suivi utile, assez
  *  espacée pour ne pas vider la batterie. */
@@ -90,7 +90,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
     if (!jeton.current) return;
 
     try {
-      const reponse = await fetch(`${API_URL}/drivers/offers`, {
+      const reponse = await fetch(`${API_URL}/api/drivers/offers`, {
         headers: { Authorization: `Bearer ${jeton.current}` },
       });
 
@@ -167,7 +167,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
           positionRecue();
 
           try {
-            await fetch(`${API_URL}/drivers/location`, {
+            await fetch(`${API_URL}/api/drivers/location`, {
               method: 'PATCH',
               headers: {
                 'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
     setErreur('');
 
     try {
-      const resultat = await fetch(`${API_URL}/drivers/offers/${propositionId}/${reponse}`, {
+      const resultat = await fetch(`${API_URL}/api/drivers/offers/${propositionId}/${reponse}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${jeton.current}` },
       });

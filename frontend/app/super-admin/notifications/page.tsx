@@ -6,7 +6,7 @@ import { Bell, Search, Trash2, Settings, AlertCircle, Info, CheckCircle } from '
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Notification {
   id: string;
@@ -39,7 +39,7 @@ export default function NotificationsPage() {
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/admin/notifications`, {
+      const response = await fetch(`${API_URL}/api/admin/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -61,7 +61,7 @@ export default function NotificationsPage() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`${API_URL}/admin/notifications`, {
+      await fetch(`${API_URL}/api/admin/notifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(formData),
@@ -78,7 +78,7 @@ export default function NotificationsPage() {
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`${API_URL}/admin/notifications/${notificationId}/read`, {
+      await fetch(`${API_URL}/api/admin/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -91,7 +91,7 @@ export default function NotificationsPage() {
   const handleDelete = async (notificationId: string) => {
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`${API_URL}/admin/notifications/${notificationId}`, {
+      await fetch(`${API_URL}/api/admin/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

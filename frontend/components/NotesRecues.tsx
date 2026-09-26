@@ -17,7 +17,7 @@ import { Star } from 'lucide-react';
 
 import { Etoiles } from '@/components/NoterLivreur';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Note {
   id: string;
@@ -35,7 +35,7 @@ export function NotesRecues() {
   useEffect(() => {
     (async () => {
       try {
-        const reponse = await fetch(`${API_URL}/drivers/ratings`, {
+        const reponse = await fetch(`${API_URL}/api/drivers/ratings`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
         });
 

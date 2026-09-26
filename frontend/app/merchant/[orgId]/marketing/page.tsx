@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Campaign {
   id: string;
@@ -58,7 +58,7 @@ export default function MarketingPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(
-        `${API_URL}/marketing/${storeId}/${campagne.id}/status`,
+        `${API_URL}/api/marketing/${storeId}/${campagne.id}/status`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -94,7 +94,7 @@ export default function MarketingPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/marketing/${storeId}`, {
+      const response = await fetch(`${API_URL}/api/marketing/${storeId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -139,7 +139,7 @@ export default function MarketingPage() {
         ...(filter !== 'ALL' && { status: filter }),
       });
 
-      const response = await fetch(`${API_URL}/marketing/${storeId}?${query}`, {
+      const response = await fetch(`${API_URL}/api/marketing/${storeId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -164,7 +164,7 @@ export default function MarketingPage() {
   const handleDeleteCampaign = async (campaignId: string) => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/marketing/${storeId}/${campaignId}`, {
+      const response = await fetch(`${API_URL}/api/marketing/${storeId}/${campaignId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -8,7 +8,7 @@ import { LifeBuoy } from 'lucide-react';
 import { FilSupport, type MessageSupport } from '@/components/FilSupport';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const SUJETS_RAPIDES = [
   'Le client ne répond pas',
@@ -33,7 +33,7 @@ export default function SupportLivreurPage() {
       return;
     }
     try {
-      const res = await fetch(`${API_URL}/drivers/support/messages`, {
+      const res = await fetch(`${API_URL}/api/drivers/support/messages`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const donnees = await res.json();
@@ -60,7 +60,7 @@ export default function SupportLivreurPage() {
     const surMessage = (message: MessageSupport) => {
       setMessages((liste) => (liste.some((m) => m.id === message.id) ? liste : [...liste, message]));
       if (message.sender === 'SUPPORT') {
-        fetch(`${API_URL}/drivers/support/read`, {
+        fetch(`${API_URL}/api/drivers/support/read`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => {});
@@ -89,7 +89,7 @@ export default function SupportLivreurPage() {
     if (!token) return false;
 
     try {
-      const res = await fetch(`${API_URL}/drivers/support/messages`, {
+      const res = await fetch(`${API_URL}/api/drivers/support/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ body: texte }),

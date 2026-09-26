@@ -18,7 +18,7 @@ import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Livreur {
   id: string;
@@ -100,7 +100,7 @@ export default function LivreursPage() {
     }
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/drivers?status=${filtre}`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/drivers?status=${filtre}`, {
         headers: { Authorization: `Bearer ${jeton()}` },
       });
 
@@ -131,7 +131,7 @@ export default function LivreursPage() {
     if (!id || (modification?.id && modification.id !== id)) return;
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/drivers/${id}`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/drivers/${id}`, {
         headers: { Authorization: `Bearer ${jeton()}` },
       });
       if (reponse.ok && dossierOuvert.current === id) setDossier(await reponse.json());
@@ -149,7 +149,7 @@ export default function LivreursPage() {
     setMotif('');
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/drivers/${livreur.id}`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/drivers/${livreur.id}`, {
         headers: { Authorization: `Bearer ${jeton()}` },
       });
 
@@ -164,7 +164,7 @@ export default function LivreursPage() {
     setErreur('');
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/drivers/${chemin}`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/drivers/${chemin}`, {
         method: chemin.includes('/documents/') ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton()}` },
         body: JSON.stringify(corps ?? {}),
@@ -178,7 +178,7 @@ export default function LivreursPage() {
       }
 
       const id = chemin.split('/')[0];
-      const rafraichi = await fetch(`${API_URL}/superowner/drivers/${id}`, {
+      const rafraichi = await fetch(`${API_URL}/api/superowner/drivers/${id}`, {
         headers: { Authorization: `Bearer ${jeton()}` },
       });
 

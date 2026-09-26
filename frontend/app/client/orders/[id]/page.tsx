@@ -15,7 +15,7 @@ import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
 
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
   id: string;
@@ -66,7 +66,7 @@ export default function OrderTrackingPage() {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
-    fetch(`${API_URL}/reviews/commande/${orderId}`, {
+    fetch(`${API_URL}/api/reviews/commande/${orderId}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((reponse) => (reponse.ok ? reponse.json() : null))
@@ -86,7 +86,7 @@ export default function OrderTrackingPage() {
     }
 
     try {
-      const orderResponse = await fetch(`${API_URL}/orders/${orderId}`, {
+      const orderResponse = await fetch(`${API_URL}/api/orders/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -100,7 +100,7 @@ export default function OrderTrackingPage() {
         setError('Commande non trouvée');
       }
 
-      const deliveryResponse = await fetch(`${API_URL}/client/deliveries/${orderId}`, {
+      const deliveryResponse = await fetch(`${API_URL}/api/client/deliveries/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

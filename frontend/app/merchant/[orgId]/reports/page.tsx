@@ -8,7 +8,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface SalesReport {
   totalOrders: number;
@@ -76,10 +76,10 @@ export default function ReportsPage() {
       if (endDate) params.append('endDate', endDate);
 
       const [salesRes, revenueRes, productsRes, customersRes] = await Promise.all([
-        fetch(`${API_URL}/reports/sales?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/reports/revenue?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/reports/products/${storeId}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/reports/customers/${storeId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/reports/sales?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/reports/revenue?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/reports/products/${storeId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/reports/customers/${storeId}`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
       if (salesRes.ok) setSalesReport(await salesRes.json());
@@ -116,7 +116,7 @@ export default function ReportsPage() {
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
 
-      const response = await fetch(`${API_URL}/reports/export/${type}?${params}`, {
+      const response = await fetch(`${API_URL}/api/reports/export/${type}?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

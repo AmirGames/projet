@@ -50,7 +50,7 @@ import { StripePayment } from '@/components/stripe-payment';
 import { DelaiAnnulation } from '@/components/DelaiAnnulation';
 import AcceptationConditions from '@/components/AcceptationConditions';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** Les conditions de livraison à l'adresse saisie. */
 interface Livraison {
@@ -219,7 +219,7 @@ export function TunnelCommande({
 
     let annule = false;
 
-    fetch(`${API_URL}/client/me`, {
+    fetch(`${API_URL}/api/client/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((reponse) => (reponse.ok ? reponse.json() : null))
@@ -274,7 +274,7 @@ export function TunnelCommande({
 
     // Sans temporisation, chaque frappe interrogerait le service d'adresses.
     const minuteur = setTimeout(() => {
-      fetch(`${API_URL}/client/stores/${requeteLivraison}`)
+      fetch(`${API_URL}/api/client/stores/${requeteLivraison}`)
         .then((reponse) => (reponse.ok ? reponse.json() : null))
         .then((donnees) => {
           if (!annule && donnees) setLivraison(donnees.data || null);
@@ -295,7 +295,7 @@ export function TunnelCommande({
 
     let annule = false;
 
-    fetch(`${API_URL}/client/stores/${boutique.id}/pickup-slots`)
+    fetch(`${API_URL}/api/client/stores/${boutique.id}/pickup-slots`)
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => {
         if (!annule && donnees) setCreneaux(donnees.data || []);
@@ -312,7 +312,7 @@ export function TunnelCommande({
 
     let annule = false;
 
-    fetch(`${API_URL}/client/stores/${boutique.id}/payment-methods`)
+    fetch(`${API_URL}/api/client/stores/${boutique.id}/payment-methods`)
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => {
         if (annule || !donnees) return;
@@ -337,7 +337,7 @@ export function TunnelCommande({
 
   useEffect(() => {
     let annule = false;
-    fetch(`${API_URL}/client/service-fee`)
+    fetch(`${API_URL}/api/client/service-fee`)
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => {
         if (!annule && donnees?.data) setFraisDeService(Number(donnees.data.frais) || 0);
@@ -382,7 +382,7 @@ export function TunnelCommande({
 
     try {
       const reponse = await fetch(
-        `${API_URL}/promotions/validate?storeId=${boutique.id}`,
+        `${API_URL}/api/promotions/validate?storeId=${boutique.id}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -503,7 +503,7 @@ export function TunnelCommande({
         })),
       };
 
-      const response = await fetch(`${API_URL}/orders`, {
+      const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),

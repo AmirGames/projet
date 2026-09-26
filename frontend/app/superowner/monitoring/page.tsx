@@ -30,7 +30,7 @@ import { GraphiqueColonnes } from '@/components/GraphiqueColonnes';
  * erreurs vécues par les visiteurs dans leur navigateur.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const RAFRAICHISSEMENT_MS = 10_000;
 
 type Statut = 'OK' | 'DEGRADE' | 'PANNE';
@@ -192,7 +192,7 @@ export default function SurveillancePage() {
       setChargement(true);
       try {
         const jeton = localStorage.getItem('accessToken');
-        const reponse = await fetch(`${API_URL}/superowner/monitoring${relever ? '/releve' : ''}`, {
+        const reponse = await fetch(`${API_URL}/api/superowner/monitoring${relever ? '/releve' : ''}`, {
           method: relever ? 'POST' : 'GET',
           headers: { Authorization: `Bearer ${jeton}` },
         });

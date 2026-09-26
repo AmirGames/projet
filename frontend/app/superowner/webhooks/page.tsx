@@ -29,7 +29,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Abonnement {
   id: string;
@@ -89,7 +89,7 @@ export default function WebhooksPage() {
     setChargement(true);
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/webhooks?limit=50`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/webhooks?limit=50`, {
         headers: { Authorization: `Bearer ${jeton()}` },
       });
 
@@ -127,7 +127,7 @@ export default function WebhooksPage() {
     setMessage('');
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/webhooks`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/webhooks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton()}` },
         body: JSON.stringify(formulaire),
@@ -157,7 +157,7 @@ export default function WebhooksPage() {
     if (!confirm(t('delete_confirm', { url }))) return;
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/webhooks/${id}`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/webhooks/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${jeton()}` },
       });
@@ -177,7 +177,7 @@ export default function WebhooksPage() {
 
   const changerLEtat = async (id: string, status: 'ACTIVE' | 'INACTIVE') => {
     try {
-      const reponse = await fetch(`${API_URL}/superowner/webhooks/${id}`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/webhooks/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton()}` },
         body: JSON.stringify({ status }),
@@ -201,7 +201,7 @@ export default function WebhooksPage() {
     setMessage(t('testSending'));
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/webhooks/${id}/essai`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/webhooks/${id}/essai`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${jeton()}` },
       });
@@ -229,7 +229,7 @@ export default function WebhooksPage() {
     }
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/webhooks/${id}/deliveries`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/webhooks/${id}/deliveries`, {
         headers: { Authorization: `Bearer ${jeton()}` },
       });
 

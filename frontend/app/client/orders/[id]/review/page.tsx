@@ -11,7 +11,7 @@ import { intituleDeLaLigne, type LigneAffichable } from '@/lib/ligne-commande';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface OrderItem extends LigneAffichable {
   id: string;
@@ -112,7 +112,7 @@ export default function ReviewPage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/orders/${orderId}`, {
+      const response = await fetch(`${API_URL}/api/orders/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -130,7 +130,7 @@ export default function ReviewPage() {
         // Un seul avis par restaurant et par plat, que le client met à jour :
         // le formulaire repart de ce qu'il avait dit.
         let donnes: AvisDejaDonnes = { restaurant: null, produits: {} };
-        const avisResponse = await fetch(`${API_URL}/reviews/commande/${orderId}`, {
+        const avisResponse = await fetch(`${API_URL}/api/reviews/commande/${orderId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (avisResponse.ok) {
@@ -148,7 +148,7 @@ export default function ReviewPage() {
         setReviews(prev => ({ ...prev, restaurant: depuis(donnes.restaurant), products: initialProducts }));
 
         if (commande.deliveryType !== 'PICKUP') {
-          const courseResponse = await fetch(`${API_URL}/client/deliveries/${orderId}`, {
+          const courseResponse = await fetch(`${API_URL}/api/client/deliveries/${orderId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (courseResponse.ok) {
@@ -186,7 +186,7 @@ export default function ReviewPage() {
       const requests = [];
 
       requests.push(
-        fetch(`${API_URL}/reviews`, {
+        fetch(`${API_URL}/api/reviews`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -203,7 +203,7 @@ export default function ReviewPage() {
 
       if (livreurANoter) {
         requests.push(
-          fetch(`${API_URL}/client/deliveries/${orderId}/rating`, {
+          fetch(`${API_URL}/api/client/deliveries/${orderId}/rating`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -221,7 +221,7 @@ export default function ReviewPage() {
         const productReview = reviews.products[plat.productId];
         if (productReview) {
           requests.push(
-            fetch(`${API_URL}/reviews`, {
+            fetch(`${API_URL}/api/reviews`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

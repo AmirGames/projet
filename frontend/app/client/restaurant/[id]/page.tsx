@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { useTranslations } from 'next-intl';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
  * Troisième vitrine du site, devenue une simple redirection.
@@ -28,7 +28,7 @@ export default function AncienneVitrineClient() {
 
     (async () => {
       try {
-        const reponse = await fetch(`${API_URL}/client/stores/${id}`);
+        const reponse = await fetch(`${API_URL}/api/client/stores/${id}`);
 
         if (!reponse.ok) {
           setIntrouvable(true);

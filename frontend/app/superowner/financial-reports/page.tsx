@@ -26,7 +26,7 @@ interface ReportsResponse {
   };
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function FinancialReportsPage() {
   const t = useTranslations('superownerFinancialReports');
@@ -47,7 +47,7 @@ export default function FinancialReportsPage() {
         offset: offset.toString(),
       });
 
-      const res = await fetch(`${API_URL}/superowner/financial-reports?${query}`, {
+      const res = await fetch(`${API_URL}/api/superowner/financial-reports?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

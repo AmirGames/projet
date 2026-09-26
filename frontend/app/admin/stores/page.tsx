@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Store as StoreIcon, Search, Package, ShoppingCart, ExternalLink } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 interface Boutique {
@@ -47,7 +47,7 @@ export default function BoutiquesAdminPage() {
         ...(recherche ? { search: recherche } : {}),
       });
 
-      const reponse = await fetch(`${API_URL}/admin/stores?${parametres}`, {
+      const reponse = await fetch(`${API_URL}/api/admin/stores?${parametres}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

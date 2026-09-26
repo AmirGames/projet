@@ -65,7 +65,7 @@ export default function BoutiquesAdminPage() {
         ...(recherche ? { search: recherche } : {}),
       });
 
-      const reponse = await fetch(`${API_URL}/admin/stores?${parametres}`, {
+      const reponse = await fetch(`${API_URL}/api/admin/stores?${parametres}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

@@ -46,7 +46,7 @@ interface Demande {
   createdAt: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function MaFormulePage() {
   const t = useTranslations('merchantSubscription');
@@ -72,7 +72,7 @@ export default function MaFormulePage() {
     setOrgId(org);
 
     try {
-      const reponse = await fetch(`${API_URL}/plans/${org}`, {
+      const reponse = await fetch(`${API_URL}/api/plans/${org}`, {
         headers: { Authorization: `Bearer ${jeton}` },
       });
       const donnees = await reponse.json();
@@ -104,7 +104,7 @@ export default function MaFormulePage() {
 
     try {
       const jeton = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/plans/${orgId}/demande`, {
+      const reponse = await fetch(`${API_URL}/api/plans/${orgId}/demande`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

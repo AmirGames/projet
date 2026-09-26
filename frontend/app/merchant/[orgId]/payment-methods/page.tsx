@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface PaymentMethod {
   id: string;
@@ -77,8 +77,8 @@ export default function PaymentMethodsPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const url = enEdition
-        ? `${API_URL}/payment-methods/${storeId}/${enEdition.id}`
-        : `${API_URL}/payment-methods/${storeId}`;
+        ? `${API_URL}/api/payment-methods/${storeId}/${enEdition.id}`
+        : `${API_URL}/api/payment-methods/${storeId}`;
 
       // Le type n'est pas modifiable après création : il détermine
       // l'intégration utilisée.
@@ -130,7 +130,7 @@ export default function PaymentMethodsPage() {
 
       const skip = page * itemsPerPage;
       const response = await fetch(
-        `${API_URL}/payment-methods/${storeId}?skip=${skip}&take=${itemsPerPage}`,
+        `${API_URL}/api/payment-methods/${storeId}?skip=${skip}&take=${itemsPerPage}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -153,7 +153,7 @@ export default function PaymentMethodsPage() {
   const handleToggle = async (methodId: string) => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/payment-methods/${storeId}/${methodId}/toggle`, {
+      const response = await fetch(`${API_URL}/api/payment-methods/${storeId}/${methodId}/toggle`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -169,7 +169,7 @@ export default function PaymentMethodsPage() {
   const handleDelete = async (methodId: string) => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/payment-methods/${storeId}/${methodId}`, {
+      const response = await fetch(`${API_URL}/api/payment-methods/${storeId}/${methodId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

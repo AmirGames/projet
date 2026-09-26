@@ -6,7 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
  * Le document à imprimer, et rien d'autre.
@@ -52,7 +52,7 @@ function DocumentImprimable() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/invoices/${storeId}/${orderId}`, {
+      const reponse = await fetch(`${API_URL}/api/invoices/${storeId}/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

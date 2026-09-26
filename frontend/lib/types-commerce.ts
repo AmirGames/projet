@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export interface TypeDeCommerce {
   code: string;
@@ -23,7 +23,7 @@ export function useTypesDeCommerce() {
   useEffect(() => {
     let annule = false;
 
-    fetch(`${API_URL}/stores/types`)
+    fetch(`${API_URL}/api/stores/types`)
       .then((r) => r.json())
       .then((lu) => {
         if (annule) return;

@@ -16,7 +16,7 @@ import { euro } from '@/lib/format';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Releve {
   id: string;
@@ -93,7 +93,7 @@ export default function VersementsPage() {
     }
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/payouts?status=${filtre}`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/payouts?status=${filtre}`, {
         headers: { Authorization: `Bearer ${jeton()}` },
       });
 
@@ -135,7 +135,7 @@ export default function VersementsPage() {
     setMessage('');
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/payouts${chemin}`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/payouts${chemin}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton()}` },
         body: JSON.stringify(corps ?? {}),

@@ -25,7 +25,7 @@ interface DataResponse {
   backups: Backup[];
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function DataManagementPage() {
   const t = useTranslations('superownerDataManagement');
@@ -40,7 +40,7 @@ export default function DataManagementPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/superowner/data-management`, {
+      const res = await fetch(`${API_URL}/api/superowner/data-management`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -66,7 +66,7 @@ export default function DataManagementPage() {
     setCreating(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/superowner/backups`, {
+      const res = await fetch(`${API_URL}/api/superowner/backups`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -90,7 +90,7 @@ export default function DataManagementPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/superowner/backups/${id}${action === 'restore' ? '/restore' : ''}`, {
+      const res = await fetch(`${API_URL}/api/superowner/backups/${id}${action === 'restore' ? '/restore' : ''}`, {
         method: action === 'restore' ? 'POST' : 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -110,7 +110,7 @@ export default function DataManagementPage() {
   const telecharger = async (id: string, nom: string) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/superowner/backups/${id}/download`, {
+      const res = await fetch(`${API_URL}/api/superowner/backups/${id}/download`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

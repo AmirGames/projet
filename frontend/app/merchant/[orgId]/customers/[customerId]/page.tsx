@@ -18,7 +18,7 @@ import { euro } from '@/lib/format';
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface CommandeClient {
   id: string;
@@ -71,7 +71,7 @@ export default function FicheClientPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/customers/${storeId}/${customerId}`, {
+      const reponse = await fetch(`${API_URL}/api/customers/${storeId}/${customerId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -103,7 +103,7 @@ export default function FicheClientPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/customers/${storeId}/${customerId}`, {
+      const reponse = await fetch(`${API_URL}/api/customers/${storeId}/${customerId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ notes: note }),
@@ -132,12 +132,12 @@ export default function FicheClientPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const reponse = bloque
-        ? await fetch(`${API_URL}/customers/${storeId}/${customerId}`, {
+        ? await fetch(`${API_URL}/api/customers/${storeId}/${customerId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ status: 'ACTIVE' }),
           })
-        : await fetch(`${API_URL}/customers/${storeId}/${customerId}/block`, {
+        : await fetch(`${API_URL}/api/customers/${storeId}/${customerId}/block`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
           });

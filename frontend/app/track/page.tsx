@@ -18,7 +18,7 @@ const SuiviLivraisonClient = dynamic(
   { ssr: false }
 );
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface OrderItem {
   id: string;
@@ -117,7 +117,7 @@ export default function TrackOrderPage() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/orders/${query}`);
+      const response = await fetch(`${API_URL}/api/orders/${query}`);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -137,7 +137,7 @@ export default function TrackOrderPage() {
       if (foundOrder?.deliveryType === 'DELIVERY' && foundOrder?.id) {
         try {
           const deliveryResponse = await fetch(
-            `${API_URL}/orders/${foundOrder.id}/delivery`
+            `${API_URL}/api/orders/${foundOrder.id}/delivery`
           );
           if (deliveryResponse.ok) {
             const deliveryData = await deliveryResponse.json();
@@ -194,7 +194,7 @@ export default function TrackOrderPage() {
 
     const minuteur = setInterval(async () => {
       try {
-        const reponse = await fetch(`${API_URL}/orders/${order.id}`);
+        const reponse = await fetch(`${API_URL}/api/orders/${order.id}`);
         if (reponse.ok) setOrder(await reponse.json());
       } catch {
         // Hors ligne : on réessaiera au prochain passage.

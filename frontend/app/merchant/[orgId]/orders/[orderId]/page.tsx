@@ -23,7 +23,7 @@ import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface LigneCommande {
   id: string;
@@ -112,7 +112,7 @@ export default function DetailCommandePage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/order-management/${storeId}/${orderId}`, {
+      const reponse = await fetch(`${API_URL}/api/order-management/${storeId}/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -156,7 +156,7 @@ export default function DetailCommandePage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/order-management/${storeId}/${orderId}/notes`, {
+      const reponse = await fetch(`${API_URL}/api/order-management/${storeId}/${orderId}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ notes: note }),

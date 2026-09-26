@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { ShoppingCart, Search, Filter, Eye, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Merchant {
   id: string;
@@ -29,7 +29,7 @@ export default function MerchantsPage() {
   const fetchMerchants = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/superowner/members/merchants`, {
+      const response = await fetch(`${API_URL}/api/superowner/members/merchants`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

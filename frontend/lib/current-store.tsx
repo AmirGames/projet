@@ -4,7 +4,7 @@ import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export interface MerchantStore {
   id: string;
@@ -62,7 +62,7 @@ export function CurrentStoreProvider({
     try {
       setError(null);
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/stores/org/${orgId}`, {
+      const response = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

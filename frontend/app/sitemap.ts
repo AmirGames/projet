@@ -28,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let boutiques: Array<{ slug: string; countryCode: string | null; updatedAt?: string }> = [];
   try {
-    const reponse = await fetch(`${API_URL}/client/stores`, { cache: 'no-store' });
+    const reponse = await fetch(`${API_URL}/api/client/stores`, { cache: 'no-store' });
     if (reponse.ok) boutiques = (await reponse.json()).data || [];
   } catch {
     // API injoignable : le plan garde au moins les pages fixes.

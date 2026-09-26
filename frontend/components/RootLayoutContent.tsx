@@ -8,7 +8,7 @@ import Navbar from './Navbar';
 import SynchroPaniers from './SynchroPaniers';
 import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const ESPACES_AVEC_NAVIGATION = ['/superowner', '/super-admin', '/admin', '/client'];
 

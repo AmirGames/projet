@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { Store, Bike, Crown, ShoppingCart } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
  * Page d'accueil des utilisateurs connectés.
@@ -36,7 +36,7 @@ export default function DashboardPage() {
       const token = localStorage.getItem('accessToken');
       if (!token) return;
 
-      const response = await fetch(`${API_URL}/auth/me/roles`, {
+      const response = await fetch(`${API_URL}/api/auth/me/roles`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

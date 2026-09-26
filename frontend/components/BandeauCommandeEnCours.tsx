@@ -7,7 +7,7 @@ import { ChevronRight } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface CommandeActive {
   id: string;
@@ -49,7 +49,7 @@ export function BandeauCommandeEnCours() {
     } catch {}
     if (!token) return;
     try {
-      const reponse = await fetch(`${API_URL}/client/me/orders`, {
+      const reponse = await fetch(`${API_URL}/api/client/me/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!reponse.ok) return;

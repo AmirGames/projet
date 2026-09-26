@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Store {
   id: string;
@@ -78,9 +78,9 @@ export default function MerchantDashboard() {
 
     try {
       const [orgRes, ordersRes, productsRes] = await Promise.all([
-        fetch(`${API_URL}/organizations/${orgId}`, { headers: auth }),
-        fetch(`${API_URL}/orders?${portee}`, { headers: auth }),
-        fetch(`${API_URL}/products?${portee}`, { headers: auth }),
+        fetch(`${API_URL}/api/organizations/${orgId}`, { headers: auth }),
+        fetch(`${API_URL}/api/orders?${portee}`, { headers: auth }),
+        fetch(`${API_URL}/api/products?${portee}`, { headers: auth }),
       ]);
 
       if (orgRes.ok) setOrg(await orgRes.json());

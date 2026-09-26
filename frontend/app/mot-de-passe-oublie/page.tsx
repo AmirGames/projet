@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { MailCheck } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
  * Demande d'un lien de réinitialisation.
@@ -24,7 +24,7 @@ export default function MotDePasseOublie() {
     setErreur('');
 
     try {
-      const reponse = await fetch(`${API_URL}/auth/forgot-password`, {
+      const reponse = await fetch(`${API_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

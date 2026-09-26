@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { AlertCircle, X } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Props {
   deliveryId: string;
@@ -49,7 +49,7 @@ export function AnnulerCourse({ deliveryId, onSuccess, onCancel }: Props) {
         return;
       }
 
-      const response = await fetch(`${API_URL}/drivers/deliveries/${deliveryId}/cancel`, {
+      const response = await fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}/cancel`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

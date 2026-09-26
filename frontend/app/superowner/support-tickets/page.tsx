@@ -8,7 +8,7 @@ import { TicketConversation } from '@/components/TicketConversation';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface SupportTicket {
   id: string;
@@ -86,7 +86,7 @@ export default function SupportTicketsPage() {
         query.append('archived', 'true');
       }
 
-      const res = await fetch(`${API_URL}/superowner/support-tickets?${query}`, {
+      const res = await fetch(`${API_URL}/api/superowner/support-tickets?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -113,7 +113,7 @@ export default function SupportTicketsPage() {
   const handleUpdateStatus = async (ticketId: string, newStatus: string) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/superowner/support-tickets/${ticketId}/status`, {
+      const res = await fetch(`${API_URL}/api/superowner/support-tickets/${ticketId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -132,7 +132,7 @@ export default function SupportTicketsPage() {
   const handleUpdatePriority = async (ticketId: string, priorite: string) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/superowner/support-tickets/${ticketId}/priority`, {
+      const res = await fetch(`${API_URL}/api/superowner/support-tickets/${ticketId}/priority`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ priority: priorite }),
