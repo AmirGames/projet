@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Copy, X } from 'lucide-react';
 
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const enSlug = (texte: string) =>
@@ -32,6 +34,9 @@ export default function DupliquerBoutique({
 }) {
   const t = useTranslations('dupliquerBoutique');
   const [form, setForm] = useState({ name: '', address: '', postalCode: '', city: '', phone: '' });
+  // La position d'une suggestion choisie : la boutique naît située sans
+  // repasser par le géocodage du serveur.
+  const [position, setPosition] = useState<{ latitude: number; longitude: number } | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
 
@@ -51,7 +56,7 @@ export default function DupliquerBoutique({
       const res = await fetch(`${API_URL}/api/stores/${source.id}/duplicate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...corps, slug: enSlug(form.name) }),
+        body: JSON.stringify({ ...corps, ...position, slug: enSlug(form.name) }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -88,7 +93,28 @@ export default function DupliquerBoutique({
         </label>
         <label className="block text-sm text-gray-300">
           {t('address')}
-          <input {...champ('address')} />
+          <AddressAutocomplete
+            value={form.address}
+            onChange={(valeur) => {
+              setForm((f) => ({ ...f, address: valeur }));
+              // Taper par-dessus une suggestion rendrait sa position fausse.
+              setPosition(null);
+            }}
+            onSelect={(adresse) => {
+              setForm((f) => ({
+                ...f,
+                address: adresse.street,
+                city: adresse.city || f.city,
+                postalCode: adresse.postalCode || f.postalCode,
+              }));
+              setPosition(
+                adresse.latitude != null && adresse.longitude != null
+                  ? { latitude: adresse.latitude, longitude: adresse.longitude }
+                  : null
+              );
+            }}
+            className={champ('address').className}
+          />
         </label>
         <div className="grid grid-cols-2 gap-3">
           <label className="block text-sm text-gray-300">
