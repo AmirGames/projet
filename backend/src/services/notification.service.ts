@@ -1,5 +1,36 @@
 import { db } from "./db";
 import { emitNotification } from "../config/socket";
+import { logger } from "../config/logger";
+
+/**
+ * Prévient l'équipe de la plateforme (superowners et admins système actifs) :
+ * cloche de l'application et poussée temps réel. N'échoue jamais : l'action
+ * qui déclenche l'alerte (un dépôt de pièce…) ne doit pas en dépendre.
+ */
+export async function notifierPlateforme(titre: string, message: string, lien: string) {
+  try {
+    const plateforme = await db.user.findMany({
+      where: { OR: [{ isSuperOwner: true }, { isSystemAdmin: true }], status: "ACTIVE" },
+      select: { email: true },
+    });
+
+    for (const email of new Set(plateforme.map((u) => u.email))) {
+      const notification = await db.notification.create({
+        data: {
+          type: "PLATFORM_ANNOUNCEMENT",
+          title: titre,
+          message,
+          recipientEmail: email,
+          link: lien,
+        },
+      });
+
+      emitNotification(email, notification);
+    }
+  } catch (err) {
+    logger.warn("Platform notification failed", { titre, error: err instanceof Error ? err.message : err });
+  }
+}
 
 export const notificationService = {
   async create(storeId: string, recipientEmail: string, title: string, message: string, type: string, relatedOrderId?: string) {
