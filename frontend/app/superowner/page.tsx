@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useTranslations } from 'next-intl';
 import { Users, DollarSign, AlertCircle, Server, Lock, ChevronRight } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import Link from 'next/link';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -59,7 +60,7 @@ export default function SuperOwnerDashboard() {
   // provoque qu'une relecture.
   useDonneesModifiees('*', () => fetchDashboardStats(), { delaiMs: 2000 });
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchDashboardStats();
   }, []);
 

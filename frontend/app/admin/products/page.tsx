@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Product {
   id: string;
@@ -31,7 +32,7 @@ export default function AdminProducts() {
     }
   };
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchProducts();
   }, []);
 

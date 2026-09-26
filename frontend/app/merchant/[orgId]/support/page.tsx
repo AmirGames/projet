@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { MessageCircle, Plus, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { TicketConversation } from '@/components/TicketConversation';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -70,7 +71,7 @@ export default function SupportPage() {
   // Une réponse du support, un ticket clos ou rouvert : la liste suit.
   useDonneesModifiees('tickets', () => fetchTickets(true), { orgId });
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchTickets();
   }, [orgId, showArchived, fetchTickets]);
 

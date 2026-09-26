@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 export default function ProductDetailPage() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function ProductDetailPage() {
     }
   };
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchProduct();
   }, [productId]);
 

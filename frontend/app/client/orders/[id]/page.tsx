@@ -13,6 +13,7 @@ import { intituleDeLaLigne } from '@/lib/ligne-commande';
 import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
 
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
@@ -119,7 +120,7 @@ export default function OrderTrackingPage() {
   // remboursement. La commande est relue à chaque écriture qui la touche.
   useDonneesModifiees('orders', () => loadOrderData(), { id: orderId });
 
-  useEffect(() => {
+  useEffectChargement(() => {
     loadOrderData();
   }, [orderId, loadOrderData]);
 

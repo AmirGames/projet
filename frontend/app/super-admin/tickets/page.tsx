@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Archive, ArchiveRestore, MessageCircle } from 'lucide-react';
 import { TicketConversation } from '@/components/TicketConversation';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -64,7 +65,7 @@ export default function TicketsPage() {
   // Un ticket ouvert ou une réponse, ailleurs : la liste suit.
   useDonneesModifiees('tickets', () => fetchTickets());
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchTickets();
   }, [statusFilter, showArchived, fetchTickets]);
 

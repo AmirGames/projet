@@ -13,11 +13,12 @@
  * commerçant.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Plus, Trash2, Clock, Power } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -105,7 +106,7 @@ export default function HorairesPage() {
     }
   }, [storeId, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

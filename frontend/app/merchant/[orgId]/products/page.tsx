@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Plus, Edit2, Trash2, Search, AlertCircle, Package, GripVertical } from 'lucide-react';
 import {
@@ -25,6 +25,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { DeclinaisonsProduit } from '@/components/DeclinaisonsProduit';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -322,7 +323,7 @@ export default function ProductsPage() {
     { storeId, delaiMs: 1000, actif: Boolean(storeId) }
   );
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (storeId) {
       fetchProducts();
       fetchCategories();

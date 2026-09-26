@@ -2,13 +2,14 @@
 
 import { useTranslations } from 'next-intl';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
 import { DossierCommercant } from '@/components/DossierCommercant';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -94,7 +95,7 @@ export default function MerchantDetailPage() {
     { orgId: merchantId, delaiMs: 1000 }
   );
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchMerchant();
   }, [merchantId, fetchMerchant]);
 

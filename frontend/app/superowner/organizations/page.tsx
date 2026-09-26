@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { Building2, Users, Ban, CheckCircle, XCircle, Eye, Gift, X } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Organization {
   id: string;
@@ -208,7 +209,7 @@ export default function OrganizationsPage() {
     delaiMs: 1000,
   });
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchOrganizations();
   }, [offset, aValider, fetchOrganizations]);
 

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Order {
   id: string;
@@ -36,7 +37,7 @@ export default function OrderDetailPage() {
     }
   };
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchOrder();
   }, [orderId]);
 

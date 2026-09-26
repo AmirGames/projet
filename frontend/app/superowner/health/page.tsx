@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import {
@@ -11,6 +11,7 @@ import {
   RefreshCw,
   XCircle,
 } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 /**
  * La santé de la plateforme, relevé par relevé.
@@ -84,7 +85,7 @@ export default function SanteSystemePage() {
     }
   }, [t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

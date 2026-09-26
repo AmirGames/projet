@@ -12,6 +12,7 @@ import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -203,7 +204,7 @@ export default function OrdersPage() {
     }
   }, [storeId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (storeId) {
       fetchOrders();
       fetchStats();

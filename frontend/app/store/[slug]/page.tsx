@@ -14,6 +14,7 @@ import {
   EVENEMENT_PANIER_DISTANT,
   lirePanier,
 } from '@/lib/paniers';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -382,7 +383,7 @@ export default function StorefrontPage() {
     return null;
   }, [slug]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (slug) {
       fetchStoreData();
     }

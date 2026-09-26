@@ -8,7 +8,7 @@
  * une course dans la minute.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { Bike, Car, Check, Eye, ExternalLink, Truck, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl';
 import { euro } from '@/lib/format';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -115,7 +116,7 @@ export default function LivreursPage() {
     }
   }, [filtre, t, tCommon]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

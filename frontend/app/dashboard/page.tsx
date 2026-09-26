@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { Store, Bike, Crown, ShoppingCart } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -66,7 +67,7 @@ export default function DashboardPage() {
     }
   }, [router, estSuperOwner]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (user && !isLoading) {
       fetchRoles();
     }

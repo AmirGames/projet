@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Order {
   id: string;
@@ -32,7 +33,7 @@ export default function AdminOrders() {
     }
   };
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchOrders();
   }, []);
 

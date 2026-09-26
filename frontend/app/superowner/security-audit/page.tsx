@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface AuditEvent {
   id: string;
@@ -69,7 +70,7 @@ export default function SecurityAuditPage() {
     }
   }, [offset, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchEvents();
   }, [offset, fetchEvents]);
 

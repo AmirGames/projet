@@ -11,6 +11,7 @@ import { AnnulerCourse } from '@/components/AnnulerCourse';
 import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
 import { GlisserPourValider } from '@/components/GlisserPourValider';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -208,7 +209,7 @@ export default function DeliveryTrackingPage() {
   // Le livreur ne reçoit que les annonces de ses propres courses.
   useDonneesModifiees('orders', () => loadDeliveryData(true));
 
-  useEffect(() => {
+  useEffectChargement(() => {
     loadDeliveryData();
   }, [deliveryId, loadDeliveryData]);
 

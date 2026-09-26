@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, Star, MapPin, Heart, Trash2 } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -62,7 +63,7 @@ export default function FavoritesPage() {
     }
   }, [router, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     loadFavorites();
   }, [loadFavorites]);
 

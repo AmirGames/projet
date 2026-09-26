@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { HelpCircle, MessageSquare, Clock, AlertCircle } from 'lucide-react';
 
 import { TicketConversation } from '@/components/TicketConversation';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -105,7 +106,7 @@ export default function SupportTicketsPage() {
   // par un collègue : la liste suit.
   useDonneesModifiees('tickets', () => fetchTickets(true));
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchTickets();
   }, [offset, filterStatus, filterPriority, voirArchives, fetchTickets]);
 

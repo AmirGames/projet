@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowLeft, Wallet, Package, Star, CalendarDays } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { MesVersements } from '@/components/MesVersements';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface CourseRemuneree {
@@ -73,7 +74,7 @@ export default function RevenusLivreurPage() {
     }
   }, [router, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

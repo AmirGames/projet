@@ -9,9 +9,10 @@
  * qu'on en fait, ce qu'aucun écran ne permettait.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { AlertCircle, Check, Clock, FileText, Upload, X } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -99,7 +100,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
     }
   }, []);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

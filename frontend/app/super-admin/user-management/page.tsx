@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Ban, Undo2, Search, AlertCircle } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface User {
   id: string;
@@ -34,7 +35,7 @@ export default function UserManagementPage() {
     }
   };
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchUsers();
   }, []);
 

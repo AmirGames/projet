@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Search, Eye, Mail } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Customer {
   id: string;
@@ -53,7 +54,7 @@ export default function AdminCustomers() {
     }
   };
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchCustomers();
   }, []);
 

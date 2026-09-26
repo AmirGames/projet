@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -16,6 +16,7 @@ import {
 import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -92,7 +93,7 @@ export default function FicheClientPage() {
     }
   }, [storeId, customerId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (!boutiqueEnCours) charger();
   }, [boutiqueEnCours, charger]);
 

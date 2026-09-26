@@ -1,8 +1,9 @@
 'use client';
 
-import { Fragment, useState, useEffect, useCallback } from 'react';
+import { Fragment, useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Shield, AlertCircle } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -80,7 +81,7 @@ export default function AuditLogsPage() {
     }
   }, [filterAction, filterStatus, offset, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchLogs();
   }, [offset, filterAction, filterStatus, fetchLogs]);
 

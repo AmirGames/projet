@@ -8,6 +8,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { useTranslations } from 'next-intl';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 // Leaflet touche à `window` dès son chargement : la carte ne peut pas être
 // rendue côté serveur.
@@ -226,7 +227,7 @@ export default function DeliveryZonesPage() {
     { storeId, actif: Boolean(storeId) }
   );
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (storeId) {
       fetchZones();
       chargerBoutique();

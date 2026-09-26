@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Category {
   id: string;
@@ -29,7 +30,7 @@ export default function AdminCategories() {
     }
   };
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchCategories();
   }, []);
 

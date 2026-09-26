@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Edit2, Lock, Unlock, Clock } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -49,7 +50,7 @@ export default function MerchantsPage() {
     }
   }, [filter, router]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchMerchants();
   }, [filter, fetchMerchants]);
 

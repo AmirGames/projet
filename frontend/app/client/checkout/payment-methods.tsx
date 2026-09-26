@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { CreditCard, Plus, Trash2 } from 'lucide-react';
 import { useDerniereValeur } from '@/lib/use-derniere-valeur';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -50,7 +51,7 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
     }
   }, [onSelectRef]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchPaymentMethods();
   }, [fetchPaymentMethods]);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -19,6 +19,7 @@ import { memoriserBoutique } from '@/lib/current-store';
 import { NotificationBell } from '@/components/NotificationBell';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -89,7 +90,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
     }
   }, []);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (auNiveauDuChoix) charger();
   }, [auNiveauDuChoix, charger]);
 

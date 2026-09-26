@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Settings, AlertTriangle } from "lucide-react";
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -54,7 +55,7 @@ export default function AdminSettingsPage() {
     }
   };
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchConfig();
   }, []);
 

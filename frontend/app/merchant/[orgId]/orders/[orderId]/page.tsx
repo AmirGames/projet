@@ -22,6 +22,7 @@ import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface LigneCommande {
@@ -133,7 +134,7 @@ export default function DetailCommandePage() {
     }
   }, [storeId, orderId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (!boutiqueEnCours) charger();
   }, [boutiqueEnCours, charger]);
 

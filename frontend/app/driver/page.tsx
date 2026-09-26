@@ -13,6 +13,7 @@ import { NotesRecues } from '@/components/NotesRecues';
 import { PauseLivreur } from '@/components/PauseLivreur';
 import { ActiverNotifications } from '@/components/ActiverNotifications';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Delivery {
@@ -123,7 +124,7 @@ export default function DriverDashboard() {
   // commerçant, le client et la plateforme.
   useDonneesModifiees(['orders', 'drivers'], () => loadDriverData(true));
 
-  useEffect(() => {
+  useEffectChargement(() => {
     loadDriverData();
   }, [loadDriverData]);
 

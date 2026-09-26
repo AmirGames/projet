@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Search, Download, Filter, Clock } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -41,7 +42,7 @@ export default function AccessLogsPage() {
     }
   };
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchAccessLogs();
   }, []);
 

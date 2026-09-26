@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Search, Mail, Phone, Trash2, Lock, Eye } from 'lucide-react';
@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -78,7 +79,7 @@ export default function CustomersPage() {
     }
   }, [page, router, search, storeId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (storeId) {
       fetchCustomers();
     }

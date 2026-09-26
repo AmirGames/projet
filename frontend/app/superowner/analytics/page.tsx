@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { TrendingUp } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -65,7 +66,7 @@ export default function AnalyticsDashboard() {
   // cinq secondes, quelle que soit l'activité.
   useDonneesModifiees('*', () => fetchAnalytics(true), { delaiMs: 5000 });
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchAnalytics();
   }, [timeRange, fetchAnalytics]);
 
