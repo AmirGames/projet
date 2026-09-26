@@ -47,7 +47,10 @@ export default async function RootLayout({
 
   return (
     <html lang={region ? baliseLangue(region) : locale}>
-      <body className="bg-gray-900 text-white">
+      {/* Des extensions (ColorZilla, gestionnaires de mots de passe…) ajoutent
+          des attributs à <body> avant l'hydratation : React ne signale plus
+          cet écart-là, et seulement sur cette balise. */}
+      <body className="bg-gray-900 text-white" suppressHydrationWarning>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <RegionProvider code={region?.code}>
             <AuthProvider>
