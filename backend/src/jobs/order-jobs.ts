@@ -1,6 +1,7 @@
 import { OrderAcceptanceService } from "../services/order-acceptance.service";
 import { paymentService } from "../services/payment.service";
 import { logger } from "../config/logger";
+import { Surveillance } from "../services/surveillance.service";
 
 /**
  * Le temps de réponse des commerçants, et l'appel des livreurs.
@@ -24,26 +25,30 @@ export class OrderJobs {
   static start() {
     if (minuteur) return;
 
+    Surveillance.declarerTache("commandes", "Suivi des commandes", INTERVALLE_MS);
+
     minuteur = setInterval(async () => {
       // Deux passes simultanées refuseraient ou dispatcheraient deux fois.
       if (enCours) return;
       enCours = true;
 
       try {
-        const refusees = await OrderAcceptanceService.refuserLesCommandesSansReponse();
-        if (refusees > 0) {
-          logger.info("Commandes sans réponse refusées", { nombre: refusees });
-        }
+        await Surveillance.executerTache("commandes", async () => {
+          const refusees = await OrderAcceptanceService.refuserLesCommandesSansReponse();
+          if (refusees > 0) {
+            logger.info("Commandes sans réponse refusées", { nombre: refusees });
+          }
 
-        const retirees = await paymentService.abandonnerLesPaiementsNonAboutis();
-        if (retirees > 0) {
-          logger.info("Commandes jamais payées retirées", { nombre: retirees });
-        }
+          const retirees = await paymentService.abandonnerLesPaiementsNonAboutis();
+          if (retirees > 0) {
+            logger.info("Commandes jamais payées retirées", { nombre: retirees });
+          }
 
-        const courses = await OrderAcceptanceService.lancerLesCoursesDues();
-        if (courses > 0) {
-          logger.info("Livreurs appelés pour des commandes bientôt prêtes", { nombre: courses });
-        }
+          const courses = await OrderAcceptanceService.lancerLesCoursesDues();
+          if (courses > 0) {
+            logger.info("Livreurs appelés pour des commandes bientôt prêtes", { nombre: courses });
+          }
+        });
       } catch (err) {
         logger.error("Suivi des commandes impossible", {
           error: err instanceof Error ? err.message : err,

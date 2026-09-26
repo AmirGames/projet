@@ -24,6 +24,7 @@ import { StoreSupportService, libelleDuChamp } from "../services/store-support.s
 import { MerchantProfileService } from "../services/merchant-profile.service";
 import { MerchantApprovalService } from "../services/merchant-approval.service";
 import { SystemHealthService } from "../services/system-health.service";
+import { Vigie } from "../services/vigie.service";
 import { ReviewModerationService } from "../services/review-moderation.service";
 
 const LIBELLES_STATUT: Record<string, string> = {
@@ -147,6 +148,24 @@ router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res
 router.get("/system-health", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     res.json({ success: true, data: await SystemHealthService.etat() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/monitoring - Le site en fonctionnement, en direct
+//
+// Trafic, erreurs, temps de réponse, processus, dépendances, tâches de fond
+// et incidents ouverts : ce que la santé, tirée de la base, ne voit pas.
+router.get("/monitoring", authMiddleware, isSuperOwner, (_req: Request, res: Response) => {
+  res.json({ success: true, data: Vigie.instantane() });
+});
+
+// POST /superowner/monitoring/releve - Relever tout de suite, sans attendre la vigie
+router.post("/monitoring/releve", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    await Vigie.passer();
+    res.json({ success: true, data: Vigie.instantane() });
   } catch (err) {
     next(err);
   }

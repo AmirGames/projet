@@ -284,6 +284,36 @@ Le format exact, la vérification de la signature en Node, PHP et Python, et la
 charge utile de chaque événement sont dans
 [`DOCUMENTATION-WEBHOOKS.md`](DOCUMENTATION-WEBHOOKS.md).
 
+## Surveillance
+
+**Administration → Surveillance** montre le site en fonctionnement, rafraîchi
+toutes les 10 secondes :
+
+- **Trafic** : requêtes par minute, taux d'erreurs 4xx/5xx, temps de réponse
+  (médiane, p95, p99), sur l'heure écoulée, et le détail route par route
+- **Serveur** : processeur, mémoire, retard de la boucle d'événements, charge,
+  connexions temps réel
+- **Services externes** : base de données, SMTP, Redis, Stripe, SMS, push
+- **Tâches de fond** : dernier passage, durée, échecs — une tâche qui ne tourne
+  plus se voit
+- **Pannes serveur** (réponses 5xx, avec leur pile) et **erreurs des visiteurs**,
+  remontées de leur navigateur et regroupées par empreinte
+
+Une vigie contrôle tout cela toutes les 30 secondes. Quand un seuil est franchi
+(base injoignable, plus de 2 % de 5xx, p95 au-delà de 1,5 s, mémoire à 85 %,
+tâche en échec…), elle ouvre un incident et prévient par courriel les comptes
+plateforme — et `MONITORING_ALERT_EMAILS`, `MONITORING_WEBHOOK_URL` s'ils sont
+renseignés —, puis signale le retour à la normale.
+
+Pour une sonde externe (UptimeRobot, Better Stack, répartiteur de charge) :
+
+| Adresse | Répond |
+|---|---|
+| `GET /health` | 200 tant que le processus tourne |
+| `GET /health/ready` | 200 si la base répond, **503** sinon |
+
+Les mesures sont gardées en mémoire, par instance et depuis son démarrage.
+
 ## Plusieurs domaines
 
 Le site sait se répartir sur trois domaines — public, commerçant, livreur — ou

@@ -2,6 +2,7 @@ import { Express, Request, Response, NextFunction } from "express";
 import { logger } from "../config/logger";
 import { ZodError } from "zod";
 import { MulterError } from "multer";
+import { Surveillance } from "../services/surveillance.service";
 
 export class ApiError extends Error {
   constructor(
@@ -147,6 +148,12 @@ export const errorHandler = (
     logger.warn("Requête refusée", contexte);
   } else {
     logger.error("Error caught", contexte);
+    Surveillance.erreurServeur({
+      route: `${req.method} ${req.originalUrl.split("?")[0]}`,
+      statut,
+      message: `${err.name}: ${err.message}`,
+      pile: err.stack,
+    });
   }
 
   if (err instanceof ZodError) {

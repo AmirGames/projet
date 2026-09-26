@@ -1,5 +1,6 @@
 import { WebhookService } from "../services/webhook.service";
 import { logger } from "../config/logger";
+import { Surveillance } from "../services/surveillance.service";
 
 /**
  * Rejoue les envois de webhooks dont la relance est due.
@@ -22,13 +23,17 @@ export class WebhookJobs {
   static start() {
     if (minuteur) return;
 
+    Surveillance.declarerTache("webhooks", "Relance des webhooks", INTERVALLE_MS);
+
     minuteur = setInterval(async () => {
       // Deux passes simultanées renverraient le même envoi deux fois.
       if (enCours) return;
       enCours = true;
 
       try {
-        const nombre = await WebhookService.relancerLesEnvoisDus();
+        const nombre = await Surveillance.executerTache("webhooks", () =>
+          WebhookService.relancerLesEnvoisDus()
+        );
 
         if (nombre > 0) {
           logger.info("Envois de webhooks relancés", { nombre });
