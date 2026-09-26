@@ -45,8 +45,6 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 
 ### Ce qui est volontairement reporté
 
-- **La migration Prisma 5.22 → 7** — « on termine tout le site et après on fait
-  une migration ».
 - **Le stock par ingrédient** (une pizza consomme de la mozzarella), abandonné
   au profit du simple bouton disponible / épuisé.
 
@@ -57,7 +55,7 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | | |
 |---|---|
 | **Frontend** | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS |
-| **Backend** | Express, TypeScript, Prisma 5.22 |
+| **Backend** | Express 5, TypeScript, Prisma 7.10 (adaptateur `@prisma/adapter-pg`) |
 | **Base de données** | PostgreSQL |
 | **Temps réel** | Socket.IO — une connexion par onglet, annonce de chaque écriture (`donnees-modifiees`), Redis pour relier plusieurs instances |
 | **Authentification** | JWT (jeton d'accès + jeton de renouvellement) |
@@ -66,8 +64,8 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Paiement** | Stripe — intention liée à la commande, webhook signé, remboursement au refus |
 
 ```
-backend/    API REST — 37 routeurs, 43 services, 43 modèles Prisma
-frontend/   Next.js — 82 pages
+backend/    API REST — 40 fichiers de routes, 61 services (hors tests), 53 modèles Prisma
+frontend/   Next.js — 142 pages
 ```
 
 **Le premier compte inscrit devient la plateforme** (superowner). Tous les
@@ -704,7 +702,9 @@ Le carnet ci-dessous.
   ses statistiques.
 - **Se servir de la note à l'attribution** : elle est écrite et lue, mais le
   dispatch départage toujours à la distance seule.
-- **Prisma 5.22 → 7.10**, une fois le reste stabilisé. *Reporté volontairement.*
+- **Prisma 7 → 8**, rien d'urgent : le projet est sur Prisma 7.10, toujours
+  maintenu, et Prisma 8 n'en est qu'aux versions candidates. À planifier quand
+  il sera stable.
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.
 

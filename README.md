@@ -168,7 +168,7 @@ emporter ou à livrer.
 Un seul dépôt, deux applications :
 
 ```
-backend/    API REST — 42 fichiers de routes, 72 services, 53 modèles Prisma
+backend/    API REST — 40 fichiers de routes, 61 services (hors tests), 53 modèles Prisma
 frontend/   Next.js — 142 pages
 ```
 
