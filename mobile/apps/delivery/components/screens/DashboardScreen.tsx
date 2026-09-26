@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, RefreshControl, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { Delivery, deliveryStatus, Driver, shortId } from '../../lib/deliveries';
-import type { GpsState } from '../../lib/useDriverLocation';
+import type { BackgroundState, GpsState } from '../../lib/useDriverLocation';
 import { COLORS, themedStyles } from '../ui';
 
 
@@ -115,6 +115,7 @@ export default function DashboardScreen({
   earnings,
   activeDeliveries,
   gps,
+  background,
   refreshing,
   onRefresh,
   togglingOnline,
@@ -130,6 +131,7 @@ export default function DashboardScreen({
   earnings: EarningsSummary | null;
   activeDeliveries: Delivery[];
   gps: GpsState;
+  background: BackgroundState;
   refreshing: boolean;
   onRefresh: () => void;
   togglingOnline: boolean;
@@ -218,6 +220,19 @@ export default function DashboardScreen({
           <View style={[styles.gpsBanner, { borderLeftColor: gpsMessage.color() }]}>
             <Text style={styles.gpsText}>📡 {gpsMessage.text}</Text>
           </View>
+        )}
+        {online && gps === 'ok' && background === 'denied' && (
+          <TouchableOpacity
+            style={[styles.gpsBanner, { borderLeftColor: COLORS.warning }]}
+            onPress={() => Linking.openSettings()}
+            accessibilityRole="button"
+          >
+            <Text style={styles.gpsText}>
+              📡 Votre position s’arrête dès que vous rangez le téléphone : les courses ne vous seront plus proposées et le
+              client ne vous verra plus avancer.
+            </Text>
+            <Text style={styles.gpsLink}>Autoriser la localisation « Toujours » →</Text>
+          </TouchableOpacity>
         )}
         {online && driver?.gpsLostAt && gps !== 'ok' && (
           <View style={[styles.gpsBanner, { borderLeftColor: COLORS.danger }]}>
@@ -319,6 +334,7 @@ const styles = themedStyles(() => ({
     borderLeftWidth: 4,
   },
   gpsText: { fontSize: 13, color: COLORS.text },
+  gpsLink: { fontSize: 13, fontWeight: '600', color: COLORS.link, marginTop: 6 },
   hero: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 12 },
   heroLabel: { fontSize: 13, color: COLORS.secondary },
   heroValue: { fontSize: 44, fontWeight: '600', color: COLORS.text, marginVertical: 2, letterSpacing: -1 },

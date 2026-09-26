@@ -1,20 +1,37 @@
 import { useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import * as Location from 'expo-location';
-import { apiFetch } from './api';
 import { distanceM } from './deliveries';
+import {
+  ensureBackgroundPermission,
+  lastSentAt,
+  Position,
+  sendPosition,
+  setSendInterval,
+  startBackgroundLocation,
+  stopBackgroundLocation,
+  subscribePositions,
+} from './backgroundLocation';
 
-export interface Position {
-  lat: number;
-  lng: number;
-  /** Précision annoncée par le téléphone, en mètres. */
-  accuracy: number | null;
-  at: number;
-}
+export type { Position };
 
 export type GpsState = 'off' | 'searching' | 'ok' | 'denied' | 'error';
 
-/** Ce que fait le livreur : de là dépend la précision dont on a besoin. */
-export type DutyMode = 'off' | 'idle' | 'delivery';
+/**
+ * Ce que fait le livreur : de là dépend la précision dont on a besoin.
+ * 'loading' : profil pas encore chargé, on ne touche à rien (une tâche en
+ * arrière-plan déjà lancée continue).
+ */
+export type DutyMode = 'loading' | 'off' | 'idle' | 'delivery';
+
+/**
+ * La position part-elle téléphone verrouillé ?
+ * - on : oui (tâche en arrière-plan) ;
+ * - denied : « Toujours » refusé, seulement application à l'écran ;
+ * - unavailable : impossible ici (Expo Go, web) ;
+ * - off : pas de suivi.
+ */
+export type BackgroundState = 'on' | 'denied' | 'unavailable' | 'off';
 
 /** Où va le livreur pendant une course, et s'il suit la carte en plein écran. */
 export interface Tracking {
@@ -22,7 +39,7 @@ export interface Tracking {
   navigating: boolean;
 }
 
-type Profile = 'off' | 'idle' | 'route' | 'near';
+type Profile = 'loading' | 'off' | 'idle' | 'route' | 'near';
 
 /**
  * Le GPS est le premier poste de consommation : on ne demande que la
@@ -38,8 +55,11 @@ type Profile = 'off' | 'idle' | 'route' | 'near';
  *
  * Chaque envoi réveille la radio du téléphone pour plusieurs secondes :
  * espacer les envois compte autant que baisser la précision.
+ *
+ * Ces réglages valent pour le suivi au premier plan ; la tâche en
+ * arrière-plan a les siens (voir backgroundLocation.ts).
  */
-const PROFILES: Record<Exclude<Profile, 'off'>, { watch: Location.LocationOptions; sendEveryMs: number; heartbeatMs: number }> = {
+const PROFILES: Record<Exclude<Profile, 'loading' | 'off'>, { watch: Location.LocationOptions; sendEveryMs: number; heartbeatMs: number }> = {
   idle: {
     watch: { accuracy: Location.Accuracy.Balanced, timeInterval: 30_000, distanceInterval: 100 },
     sendEveryMs: 60_000,
@@ -67,18 +87,35 @@ const HEARTBEAT_CHECK_MS = 15_000;
  * Suit la position du livreur tant qu'il est en ligne ou sur une course, et
  * l'envoie au serveur : c'est elle qui décide à qui la prochaine course est
  * proposée, et que le client voit bouger sur son suivi.
+ *
+ * Avec l'autorisation « Toujours », la position passe par la tâche en
+ * arrière-plan et continue téléphone verrouillé. Sans elle, l'écran la suit
+ * lui-même, tant que l'application est ouverte.
  */
 export function useDriverLocation(token: string, mode: DutyMode, tracking: Tracking) {
   const [position, setPosition] = useState<Position | null>(null);
   const [gps, setGps] = useState<GpsState>('off');
+  const [background, setBackground] = useState<BackgroundState>('off');
   const [near, setNear] = useState(false);
-  const lastSent = useRef(0);
+  // Retour dans l'application (depuis les réglages, souvent) : l'autorisation
+  // « Toujours » a pu changer, le suivi se relance.
+  const [recheck, setRecheck] = useState(0);
+  const backgroundRef = useRef(background);
+  backgroundRef.current = background;
   const latest = useRef<Position | null>(null);
   const target = useRef(tracking.target);
   target.current = tracking.target;
 
   const profile: Profile =
-    !token || mode === 'off' ? 'off' : mode === 'idle' ? 'idle' : tracking.navigating || near ? 'near' : 'route';
+    !token || mode === 'off'
+      ? 'off'
+      : mode === 'loading'
+        ? 'loading'
+        : mode === 'idle'
+          ? 'idle'
+          : tracking.navigating || near
+            ? 'near'
+            : 'route';
 
   // Nouvelle étape (commerce, puis client) : l'approche se réévalue.
   const updateNear = (p: Position | null) => {
@@ -95,25 +132,30 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
   }, [tracking.target?.lat, tracking.target?.lng]);
 
   useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && backgroundRef.current === 'denied') setRecheck((n) => n + 1);
+    });
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    if (profile === 'loading') return;
     if (profile === 'off') {
       setGps('off');
+      setBackground('off');
+      stopBackgroundLocation();
       return;
     }
 
     const { watch, sendEveryMs, heartbeatMs } = PROFILES[profile];
     let cancelled = false;
-    let subscription: Location.LocationSubscription | null = null;
+    let unsubscribe: (() => void) | null = null;
 
-    const send = (p: Position, force = false) => {
-      if (!force && Date.now() - lastSent.current < sendEveryMs) return;
-      lastSent.current = Date.now();
-      apiFetch('/api/drivers/location', token, {
-        method: 'PATCH',
-        body: { latitude: p.lat, longitude: p.lng },
-      }).catch(() => {
-        // Hors réseau : la position repartira au prochain envoi.
-        lastSent.current = 0;
-      });
+    const receive = (p: Position) => {
+      latest.current = p;
+      setPosition(p);
+      setGps('ok');
+      updateNear(p);
     };
 
     (async () => {
@@ -123,10 +165,26 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
       if (cancelled) return;
       if (status !== 'granted') {
         setGps('denied');
+        setBackground('off');
         return;
       }
+
+      const permission = await ensureBackgroundPermission(true);
+      if (cancelled) return;
+      if (permission === 'granted' && (await startBackgroundLocation(profile))) {
+        if (cancelled) return;
+        // La tâche reçoit les positions et les envoie ; l'écran les écoute.
+        unsubscribe = subscribePositions(receive);
+        setBackground('on');
+        return;
+      }
+      if (cancelled) return;
+      // Pas d'arrière-plan : l'écran suit et envoie lui-même.
+      await stopBackgroundLocation();
+      setBackground(permission === 'unavailable' ? 'unavailable' : 'denied');
+      setSendInterval(sendEveryMs);
       try {
-        subscription = await Location.watchPositionAsync(
+        const subscription = await Location.watchPositionAsync(
           watch,
           (loc) => {
             const p: Position = {
@@ -135,15 +193,13 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
               accuracy: loc.coords.accuracy ?? null,
               at: loc.timestamp,
             };
-            latest.current = p;
-            setPosition(p);
-            setGps('ok');
-            updateNear(p);
-            send(p);
+            receive(p);
+            sendPosition(p);
           },
           () => setGps('error')
         );
         if (cancelled) subscription.remove();
+        else unsubscribe = () => subscription.remove();
       } catch {
         if (!cancelled) setGps('error');
       }
@@ -152,17 +208,20 @@ export function useDriverLocation(token: string, mode: DutyMode, tracking: Track
     // Un livreur immobile ne déclenche plus le suivi : sa position repart
     // quand même, sinon le serveur le croirait sans signal. La vérification
     // est fréquente (un minuteur ne coûte rien, seul l'envoi réveille la
-    // radio) pour ne jamais dépasser l'échéance de plus de 15 s.
+    // radio) pour ne jamais dépasser l'échéance de plus de 15 s. Écran
+    // éteint, c'est la tâche en arrière-plan qui s'en charge.
     const heartbeat = setInterval(() => {
-      if (latest.current && Date.now() - lastSent.current >= heartbeatMs) send(latest.current, true);
+      if (latest.current && Date.now() - lastSentAt() >= heartbeatMs) sendPosition(latest.current, true);
     }, HEARTBEAT_CHECK_MS);
 
+    // La tâche continue au-delà de l'écran : on ne l'arrête que hors ligne
+    // (profil « off »), pas en quittant l'écran ni en changeant de profil.
     return () => {
       cancelled = true;
       clearInterval(heartbeat);
-      subscription?.remove();
+      unsubscribe?.();
     };
-  }, [token, profile]);
+  }, [token, profile, recheck]);
 
-  return { position, gps };
+  return { position, gps, background };
 }

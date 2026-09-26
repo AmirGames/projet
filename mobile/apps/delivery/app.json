@@ -23,7 +23,12 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Zupone transmet votre position pendant que vous êtes en ligne : elle décide des courses qui vous sont proposées et permet au client de suivre sa livraison."
+          "locationWhenInUsePermission": "Zupone transmet votre position pendant que vous êtes en ligne : elle décide des courses qui vous sont proposées et permet au client de suivre sa livraison.",
+          "locationAlwaysAndWhenInUsePermission": "Zupone transmet votre position pendant que vous êtes en ligne ou sur une course, même téléphone rangé : les courses proches vous sont proposées et le client suit sa livraison. Elle n'est plus transmise dès que vous passez hors ligne.",
+          "locationAlwaysPermission": "Zupone transmet votre position pendant que vous êtes en ligne ou sur une course, même téléphone rangé : les courses proches vous sont proposées et le client suit sa livraison. Elle n'est plus transmise dès que vous passez hors ligne.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       [

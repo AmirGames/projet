@@ -3,7 +3,7 @@ import { Linking, Platform, ScrollView, Switch, Text, TouchableOpacity, View } f
 import Constants from 'expo-constants';
 import { API_URL } from '../../lib/api';
 import type { Prefs } from '../../lib/session';
-import type { GpsState } from '../../lib/useDriverLocation';
+import type { BackgroundState, GpsState } from '../../lib/useDriverLocation';
 import { Card, COLORS, isDarkTheme, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 const NAVIGATION_APPS: { key: Prefs['navigationApp']; label: string }[] = [
@@ -28,6 +28,13 @@ const GPS_LABELS: Record<GpsState, { text: string; color: () => string }> = {
   error: { text: '✗ Signal indisponible', color: () => COLORS.danger },
 };
 
+const BACKGROUND_LABELS: Record<BackgroundState, { text: string; color: () => string }> = {
+  off: { text: 'Inactif (hors ligne)', color: () => COLORS.muted },
+  on: { text: '✓ Oui', color: () => COLORS.successText },
+  denied: { text: '✗ Application ouverte seulement', color: () => COLORS.danger },
+  unavailable: { text: 'Indisponible ici', color: () => COLORS.muted },
+};
+
 export default function SettingsScreen({
   prefs,
   onChangePrefs,
@@ -35,6 +42,7 @@ export default function SettingsScreen({
   pushEnabled,
   pushInfo,
   gps,
+  background,
   onBack,
 }: {
   prefs: Prefs;
@@ -43,6 +51,7 @@ export default function SettingsScreen({
   pushEnabled: boolean;
   pushInfo?: string;
   gps: GpsState;
+  background: BackgroundState;
   onBack: () => void;
 }) {
   return (
@@ -114,11 +123,21 @@ export default function SettingsScreen({
             <Text style={styles.switchLabel}>GPS</Text>
             <Text style={[styles.status, { color: GPS_LABELS[gps].color() }]}>{GPS_LABELS[gps].text}</Text>
           </View>
+          <View style={styles.statusRow}>
+            <Text style={styles.switchLabel}>Écran verrouillé</Text>
+            <Text style={[styles.status, { color: BACKGROUND_LABELS[background].color() }]}>
+              {BACKGROUND_LABELS[background].text}
+            </Text>
+          </View>
           <Text style={styles.help}>
-            Votre position n'est transmise que lorsque vous êtes en ligne ou sur une course. Gardez l'application ouverte
-            pendant vos courses.
+            Votre position n'est transmise que lorsque vous êtes en ligne ou sur une course.{' '}
+            {background === 'unavailable'
+              ? 'Cette version de l’application ne la transmet qu’à l’écran : gardez-la ouverte pendant vos courses.'
+              : `Avec la localisation « Toujours autoriser », elle continue téléphone rangé${
+                  Platform.OS === 'android' ? ' (une notification Zupone le signale)' : ''
+                }.`}
           </Text>
-          {gps === 'denied' && (
+          {(gps === 'denied' || background === 'denied') && (
             <TouchableOpacity style={styles.test} onPress={() => Linking.openSettings()}>
               <Text style={styles.testText}>Ouvrir les réglages du téléphone</Text>
             </TouchableOpacity>

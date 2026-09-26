@@ -46,8 +46,14 @@ réponses du support arrivent sans recharger. Une notification push prévient
 application fermée ; la toucher ouvre la course ou le support.
 
 La position est envoyée à `PATCH /api/drivers/location` tant que le livreur est
-en ligne ou sur une course (au premier plan : gardez l'application ouverte
-pendant les courses).
+en ligne ou sur une course, **même téléphone verrouillé** : avec la
+localisation « Toujours autoriser », une tâche en arrière-plan
+(`lib/backgroundLocation.ts`) prend le relais. Sur Android, une notification
+Zupone le signale tant qu'elle tourne, et elle continue si l'application est
+balayée pendant une course. Elle s'arrête hors ligne, à la déconnexion, ou
+quand le serveur répond que le livreur est passé hors ligne ailleurs. Sans
+« Toujours » (ou dans Expo Go), la position ne part qu'application ouverte :
+l'accueil le signale et mène aux réglages du téléphone.
 
 ## Lancer
 
@@ -78,7 +84,9 @@ lib/api.ts                 appels au serveur, format des montants
 lib/session.ts             session et préférences (SecureStore)
 lib/deliveries.ts          types, statuts, distances, lancement du GPS
 lib/useDriverAlerts.ts     connexion temps réel et sonnerie des courses
-lib/useDriverLocation.ts   suivi et envoi de la position
+lib/useDriverLocation.ts   suivi de la position, précision selon le moment
+lib/backgroundLocation.ts  position téléphone verrouillé (tâche en arrière-plan)
+lib/sessionFetch.ts        appels hors écran, jeton renouvelé au besoin
 lib/push.ts                notifications push (app « delivery »)
 lib/realtime.ts            abonnement aux événements, écran par écran
 ```

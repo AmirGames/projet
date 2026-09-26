@@ -218,8 +218,11 @@ export default function DeliveryApp() {
   // Position : transmise tant que le livreur est en ligne ou sur une course,
   // avec la précision qu'il faut à ce moment-là (voir useDriverLocation).
   const [tracking, setTracking] = useState<Tracking>({ target: null, navigating: false });
-  const dutyMode: DutyMode = activeDeliveries.length > 0 ? 'delivery' : driver?.isOnline ? 'idle' : 'off';
-  const { position, gps } = useDriverLocation(token, dutyMode, tracking);
+  // Profil pas encore chargé : on ne coupe pas le suivi en arrière-plan d'un
+  // livreur resté en ligne, application fermée.
+  const dutyMode: DutyMode =
+    activeDeliveries.length > 0 ? 'delivery' : driver ? (driver.isOnline ? 'idle' : 'off') : token ? 'loading' : 'off';
+  const { position, gps, background } = useDriverLocation(token, dutyMode, tracking);
 
   // Une proposition expirée disparaît d'elle-même, et la sonnerie avec : un
   // seul réveil, à l'échéance de la plus proche.
@@ -524,6 +527,7 @@ export default function DeliveryApp() {
           pushEnabled={pushSetup?.status === 'enabled'}
           pushInfo={pushSetup ? (pushSetup.status === 'enabled' ? undefined : pushSetup.reason) : 'Vérification…'}
           gps={gps}
+          background={background}
           onBack={back}
         />
       );
@@ -582,6 +586,7 @@ export default function DeliveryApp() {
         earnings={earnings}
         activeDeliveries={activeDeliveries}
         gps={gps}
+        background={background}
         refreshing={refreshing}
         onRefresh={refresh}
         togglingOnline={togglingOnline}

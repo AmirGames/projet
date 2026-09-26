@@ -576,7 +576,7 @@ export class DispatchService {
         longitude: position.longitude,
         lastLocationUpdate: maintenant,
       },
-      select: { currentOrderId: true, gpsLostAt: true },
+      select: { currentOrderId: true, gpsLostAt: true, isOnline: true },
     });
 
     // Import tardif : le service de disponibilité dépend déjà de celui-ci.
@@ -585,7 +585,10 @@ export class DispatchService {
       await DriverAvailabilityService.signalRetabli(driverId, livreur.gpsLostAt, livreur.currentOrderId);
     }
 
-    if (!livreur.currentOrderId) return { suivie: false };
+    // enLigne : l'application qui envoie sa position téléphone rangé arrête
+    // de la suivre quand le livreur est passé hors ligne ailleurs (site,
+    // mise hors ligne automatique).
+    if (!livreur.currentOrderId) return { suivie: false, enLigne: livreur.isOnline };
 
     const course = await db.orderDelivery.update({
       where: { id: livreur.currentOrderId },
@@ -611,7 +614,7 @@ export class DispatchService {
 
     await this.prevenirSiProche(course, position);
 
-    return { suivie: true, orderId: course.orderId };
+    return { suivie: true, enLigne: livreur.isOnline, orderId: course.orderId };
   }
 
   /**

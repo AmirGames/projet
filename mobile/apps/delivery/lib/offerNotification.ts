@@ -1,8 +1,7 @@
 import { Platform } from 'react-native';
 import { isRunningInExpoGo } from 'expo';
 import type * as NotificationsModule from 'expo-notifications';
-import { API_URL } from './api';
-import { loadSession, saveSession } from './session';
+import { fetchWithSession } from './sessionFetch';
 
 /**
  * Accepter une course depuis la notification, téléphone verrouillé.
@@ -35,36 +34,16 @@ function notifications(): typeof NotificationsModule | null {
 /** Une même course n'est acceptée qu'une fois, même si l'action arrive par deux chemins. */
 const handled = new Set<string>();
 
-/**
- * Accepte la course. fetch direct plutôt qu'apiFetch : un jeton périmé ne
- * doit pas déconnecter le livreur, il se renouvelle ici.
- */
+/** Accepte la course ; le jeton se renouvelle s'il a expiré (voir fetchWithSession). */
 export async function acceptOfferFromNotification(offerId: string): Promise<{ ok: boolean; message: string; deliveryId?: string }> {
   if (handled.has(offerId)) return { ok: true, message: 'Déjà acceptée' };
   handled.add(offerId);
 
-  const session = await loadSession();
-  if (!session) return { ok: false, message: 'Connectez-vous dans l’application pour accepter les courses.' };
-
-  const accept = (token: string) =>
-    fetch(`${API_URL}/api/drivers/offers/${offerId}/accept`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
   try {
-    let response = await accept(session.accessToken);
-    if (response.status === 401 && session.refreshToken) {
-      const refresh = await fetch(`${API_URL}/api/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: session.refreshToken }),
-      });
-      const renewed = await refresh.json().catch(() => null);
-      if (refresh.ok && renewed?.accessToken) {
-        await saveSession({ ...session, accessToken: renewed.accessToken });
-        response = await accept(renewed.accessToken);
-      }
+    const response = await fetchWithSession(`/api/drivers/offers/${offerId}/accept`, { method: 'POST' });
+    if (!response) {
+      handled.delete(offerId);
+      return { ok: false, message: 'Connectez-vous dans l’application pour accepter les courses.' };
     }
     const data = await response.json().catch(() => null);
     if (!response.ok) {
