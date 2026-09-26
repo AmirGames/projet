@@ -1,11 +1,12 @@
 import { Platform } from 'react-native';
 import { API_URL } from './api';
+import { reportReachable, reportUnreachable } from './network';
 
 type FileSystemLegacy = typeof import('expo-file-system/legacy');
 
 /** Chargé à la demande : une application compilée sans lui garde l'envoi par fetch. */
 let cached: FileSystemLegacy | null | undefined;
-function fileSystem(): FileSystemLegacy | null {
+export function fileSystem(): FileSystemLegacy | null {
   if (cached !== undefined) return cached;
   try {
     cached = Platform.OS === 'web' ? null : (require('expo-file-system/legacy') as FileSystemLegacy);
@@ -57,6 +58,7 @@ export async function uploadFile(
       } catch {
         // Réponse sans JSON : le statut suffit.
       }
+      reportReachable();
       return { status: res.status, ok: res.status >= 200 && res.status < 300, data };
     } catch (e) {
       nativeError = e;
@@ -68,9 +70,11 @@ export async function uploadFile(
     for (const [k, v] of Object.entries(fields)) form.append(k, v);
     form.append(fieldName, file as any);
     const response = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+    reportReachable();
     const data = await response.json().catch(() => null);
     return { status: response.status, ok: response.ok, data };
   } catch (e: any) {
+    reportUnreachable();
     const cause = (nativeError as any)?.message || e?.message || 'erreur inconnue';
     throw new Error(`Envoi impossible vers ${API_URL} : ${cause}`);
   }

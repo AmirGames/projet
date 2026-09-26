@@ -356,6 +356,61 @@ const parPhoto = await patch(
 );
 check('la photo la clôt', parPhoto.status === 200, `statut ${parPhoto.status}`);
 
+// ===== Les étapes envoyées au retour du réseau =====
+
+titre('Une remise renvoyée ne change rien');
+// L'application renvoie une étape dont la réponse s'est perdue.
+const livreeLe = await sqlScalaire(`SELECT "deliveryTime" FROM "OrderDelivery" WHERE id = '${courseId}'`);
+const renvoi = await patch(`/api/drivers/deliveries/${courseId}`, { status: 'DELIVERED', code }, D);
+check('le renvoi passe', renvoi.status === 200, `statut ${renvoi.status}`);
+const livreeApres = await sqlScalaire(`SELECT "deliveryTime" FROM "OrderDelivery" WHERE id = '${courseId}'`);
+check('l’heure de remise ne bouge pas', livreeApres === livreeLe, `${livreeLe} → ${livreeApres}`);
+
+titre('Une course livrée ne revient pas en arrière');
+const retour = await patch(`/api/drivers/deliveries/${courseId}`, { status: 'PICKED_UP' }, D);
+check('une prise en charge après la remise est refusée', retour.status === 409, `statut ${retour.status}`);
+const toujours = await sqlScalaire(`SELECT status FROM "OrderDelivery" WHERE id = '${courseId}'`);
+check('la course reste livrée', toujours === 'DELIVERED', toujours);
+
+titre('Une étape faite sans réseau garde son heure');
+const horsReseau = await courseAuSeuil();
+// Attribuée il y a une demi-heure, remise il y a dix minutes, envoyée maintenant.
+await sqlExec(
+  `UPDATE "OrderDelivery" SET "assignedAt" = now() - interval '30 minutes' WHERE id = '${horsReseau.courseId}'`
+);
+const ilYA10Min = new Date(Date.now() - 10 * 60_000);
+const tardive = await patch(
+  `/api/drivers/deliveries/${horsReseau.courseId}`,
+  { status: 'DELIVERED', code: await codeDeRemise(horsReseau.courseId), effectueLe: ilYA10Min.toISOString() },
+  D
+);
+check('la remise différée passe', tardive.status === 200, `statut ${tardive.status}`);
+const heureRetenue = await sqlScalaire(
+  `SELECT extract(epoch FROM "deliveryTime") * 1000 FROM "OrderDelivery" WHERE id = '${horsReseau.courseId}'`
+);
+check(
+  'l’heure retenue est celle de la remise, pas de l’envoi',
+  Math.abs(Number(heureRetenue) - ilYA10Min.getTime()) < 2000,
+  `${new Date(Number(heureRetenue)).toISOString()} au lieu de ${ilYA10Min.toISOString()}`
+);
+
+titre('Une heure invraisemblable est ignorée');
+const future = await courseAuSeuil();
+const demain = new Date(Date.now() + 24 * 3600_000);
+await patch(
+  `/api/drivers/deliveries/${future.courseId}`,
+  { status: 'DELIVERED', code: await codeDeRemise(future.courseId), effectueLe: demain.toISOString() },
+  D
+);
+const heureFuture = await sqlScalaire(
+  `SELECT extract(epoch FROM "deliveryTime") * 1000 FROM "OrderDelivery" WHERE id = '${future.courseId}'`
+);
+check(
+  'une heure dans le futur laisse place à l’heure de réception',
+  Math.abs(Number(heureFuture) - Date.now()) < 60_000,
+  new Date(Number(heureFuture)).toISOString()
+);
+
 titre('La course d’un autre livreur reste hors de portée');
 const autre = await j(
   await post('/api/drivers/register', { conditionsAcceptees: true,

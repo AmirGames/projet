@@ -847,6 +847,37 @@ router.patch(
       }
 
       /**
+       * Une course terminée ne revient pas en arrière.
+       *
+       * L'application renvoie au retour du réseau les étapes faites sans lui ;
+       * une prise en charge partie en double après la remise ne doit pas
+       * rouvrir une course livrée.
+       */
+      if ((course.status === "DELIVERED" || course.status === "FAILED") && status !== course.status) {
+        throw new ApiError(409, "Cette course est déjà terminée", "DELIVERY_FINISHED");
+      }
+
+      /**
+       * L'heure où l'étape a vraiment eu lieu.
+       *
+       * Faite sans réseau, elle n'arrive qu'au retour de celui-ci, parfois
+       * vingt minutes plus tard : l'historique et les statistiques doivent
+       * garder l'heure réelle. Retenue seulement si elle est plausible (dans
+       * les six dernières heures, pas dans le futur, pas avant l'attribution) ;
+       * sinon, l'heure de réception.
+       */
+      const maintenant = new Date();
+      const declaree = typeof req.body?.effectueLe === "string" ? new Date(req.body.effectueLe) : null;
+      const effectueLe =
+        declaree &&
+        !Number.isNaN(declaree.getTime()) &&
+        declaree.getTime() <= maintenant.getTime() + 60_000 &&
+        declaree.getTime() >= maintenant.getTime() - 6 * 3600_000 &&
+        (!course.assignedAt || declaree.getTime() >= course.assignedAt.getTime())
+          ? new Date(Math.min(declaree.getTime(), maintenant.getTime()))
+          : maintenant;
+
+      /**
        * La commande ne quitte le commerce qu'une fois prête.
        *
        * Le livreur est appelé dès « En préparation » pour avoir le temps
@@ -885,9 +916,9 @@ router.patch(
         where: { id: deliveryId },
         data: {
           status: status as any,
-          ...(status === "DELIVERED" && { deliveryTime: new Date() }),
+          ...(status === "DELIVERED" && course.status !== "DELIVERED" && { deliveryTime: effectueLe }),
           // L'heure de récupération sert à l'historique et aux statistiques.
-          ...(status === "PICKED_UP" && course.status !== "PICKED_UP" && { pickupTime: new Date() })
+          ...(status === "PICKED_UP" && course.status !== "PICKED_UP" && { pickupTime: effectueLe })
         },
         include: { order: { select: { feesAmount: true } } }
       });

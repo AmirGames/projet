@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { reportReachable, reportUnreachable } from './network';
 
 /**
  * L'adresse du serveur.
@@ -34,12 +35,33 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;
 }
 
+/**
+ * fetch, avec deux ajouts : l'état du réseau suit chaque appel (voir
+ * network.ts), et un appel sans réponse au bout de 20 s est abandonné. Sur
+ * un réseau qui ne passe plus, fetch attendait jusqu'à une minute : le
+ * livreur restait devant « Prise en charge… » sans savoir si c'était parti.
+ */
+export async function netFetch(url: string, init: RequestInit = {}, timeoutMs = 20_000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...init, signal: controller.signal });
+    reportReachable();
+    return response;
+  } catch (e) {
+    reportUnreachable();
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function apiFetch<T = any>(
   path: string,
   token: string,
   options: { method?: string; body?: unknown } = {}
 ): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await netFetch(`${API_URL}${path}`, {
     method: options.method || 'GET',
     headers: {
       'Content-Type': 'application/json',

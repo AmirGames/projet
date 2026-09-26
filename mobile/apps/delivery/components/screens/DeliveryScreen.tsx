@@ -15,6 +15,9 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { apiFetch, formatEuros } from '../../lib/api';
+import { isNetworkError, useOnline } from '../../lib/network';
+import { readJson, removeJson, writeJson } from '../../lib/offlineStore';
+import { dismissRejected, enqueueStep, stepLabel, useOutbox, withPendingSteps } from '../../lib/outbox';
 import {
   callPhone,
   Delivery,
@@ -66,7 +69,15 @@ export default function DeliveryScreen({
   /** La prochaine étape et la carte en plein écran décident de la précision du GPS. */
   onTrackingChange: (tracking: Tracking) => void;
 }) {
-  const [delivery, setDelivery] = useState<Delivery | null>(null);
+  const [serverDelivery, setDelivery] = useState<Delivery | null>(null);
+  // Affichée depuis le téléphone, faute de réseau : peut dater un peu.
+  const [fromCache, setFromCache] = useState(false);
+  const online = useOnline();
+  const outbox = useOutbox();
+  // Les étapes faites sans réseau font avancer la course à l'écran.
+  const delivery = serverDelivery && withPendingSteps(serverDelivery, outbox.pending);
+  const pendingHere = outbox.pending.filter((p) => p.deliveryId === deliveryId);
+  const rejectedHere = outbox.rejected.filter((r) => r.deliveryId === deliveryId);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -90,6 +101,8 @@ export default function DeliveryScreen({
   const [uploading, setUploading] = useState(false);
   const [photoFile, setPhotoFile] = useState<{ uri: string; type: string; name: string } | null>(null);
   const [photoError, setPhotoError] = useState('');
+  // La photo n'a pas pu partir faute de réseau : elle partira avec le dépôt.
+  const [photoOffline, setPhotoOffline] = useState(false);
   const [note, setNote] = useState('');
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -104,10 +117,23 @@ export default function DeliveryScreen({
       try {
         const res = await apiFetch<{ data: Delivery }>(`/api/drivers/deliveries/${deliveryId}`, token);
         setDelivery(res.data);
+        setFromCache(false);
         if (res.data.maintenant) setClockOffset(new Date(res.data.maintenant).getTime() - Date.now());
         setWaitEnd(res.data.attenteFinLe ? new Date(res.data.attenteFinLe).getTime() : null);
+        // Gardée sur le téléphone tant qu'elle est en cours : sans réseau, elle
+        // s'affiche quand même. Terminée, l'adresse et le téléphone du client
+        // n'ont plus à y rester.
+        if (res.data.status === 'DELIVERED' || res.data.status === 'FAILED') removeJson(`course-${deliveryId}`);
+        else writeJson(`course-${deliveryId}`, res.data);
       } catch (e: any) {
-        if (!silent) setError(e.message || 'Course introuvable');
+        const cached = isNetworkError(e) ? await readJson<Delivery>(`course-${deliveryId}`) : null;
+        if (cached) {
+          setDelivery((current) => current || cached);
+          setFromCache(true);
+          if (cached.attenteFinLe) setWaitEnd(new Date(cached.attenteFinLe).getTime());
+        } else if (!silent) {
+          setError(isNetworkError(e) ? 'Pas de réseau, et cette course n’est pas enregistrée sur le téléphone.' : e.message || 'Course introuvable');
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -125,6 +151,22 @@ export default function DeliveryScreen({
     if (m?.ressource === 'orders') load(true);
   });
   useRealtimeEvent('reconnecte', () => load(true));
+
+  // Le réseau revient, ou les étapes en attente sont parties : on relit.
+  const pendingCount = pendingHere.length;
+  const previousPending = useRef(pendingCount);
+  useEffect(() => {
+    if (pendingCount < previousPending.current) {
+      load(true);
+      onChanged();
+    }
+    previousPending.current = pendingCount;
+  }, [pendingCount]);
+  const wasOnline = useRef(online);
+  useEffect(() => {
+    if (online && !wasOnline.current) load(true);
+    wasOnline.current = online;
+  }, [online]);
 
   const pickup =
     delivery?.pickupLat != null && delivery?.pickupLng != null ? { lat: delivery.pickupLat, lng: delivery.pickupLng } : null;
@@ -182,7 +224,7 @@ export default function DeliveryScreen({
     wasWaiting.current = waiting;
   }, [waiting, waitLeft]);
 
-  const canConfirmDrop = Boolean(photoUrl) && note.trim().length >= 3;
+  const canConfirmDrop = Boolean(photoUrl || (photoOffline && photoFile)) && note.trim().length >= 3;
 
   /** Le client ne répond pas : l'attente de 6 minutes commence, et il est prévenu. */
   const startWait = async () => {
@@ -198,7 +240,11 @@ export default function DeliveryScreen({
       setTick(Date.now());
       setWaitEnd(new Date(res.data.attenteFinLe).getTime());
     } catch (e: any) {
-      setRefusal(e.message || "L'attente n'a pas pu commencer");
+      setRefusal(
+        isNetworkError(e)
+          ? 'Pas de réseau : l’attente doit être lancée en ligne, pour que le client soit prévenu. Rapprochez-vous d’une fenêtre ou sortez du bâtiment, puis réessayez.'
+          : e.message || "L'attente n'a pas pu commencer"
+      );
     } finally {
       setStartingWait(false);
     }
@@ -253,7 +299,13 @@ export default function DeliveryScreen({
       onChanged();
       navigate(true);
     } catch (e: any) {
-      setRefusal(e.message || "La prise en charge n'a pas pu être enregistrée");
+      if (isNetworkError(e)) {
+        // Sans réseau, la prise en charge est gardée et partira seule.
+        await enqueueStep({ kind: 'pickup', deliveryId });
+        navigate(true);
+      } else {
+        setRefusal(e.message || "La prise en charge n'a pas pu être enregistrée");
+      }
     } finally {
       setUpdating(false);
     }
@@ -265,11 +317,21 @@ export default function DeliveryScreen({
     setUpdating(true);
     setRefusal('');
     try {
+      // Photo restée sur le téléphone : le dépôt entier attend le réseau.
+      if (!proof.code && !proof.photoUrl) throw new TypeError('Pas de réseau');
       await sendStatus('DELIVERED', proof);
       Vibration.vibrate(150);
       await load(true);
       onChanged();
     } catch (e: any) {
+      if (isNetworkError(e)) {
+        // Sans réseau, la remise est gardée et partira seule. Le code, lui,
+        // ne se vérifie qu'au serveur : le livreur est prévenu s'il est refusé.
+        if (proof.code) await enqueueStep({ kind: 'handover', deliveryId, code: proof.code });
+        else await enqueueStep({ kind: 'drop', deliveryId, note: proof.note, photoUri: photoFile?.uri || photoUri, photoUrl: proof.photoUrl || undefined });
+        Vibration.vibrate(150);
+        return;
+      }
       setRefusal(e.message || "La remise n'a pas pu être confirmée");
       // Le champ se vide pour la saisie suivante.
       if (proof.code) setCode('');
@@ -291,13 +353,15 @@ export default function DeliveryScreen({
     setPhotoUrl('');
     setUploading(true);
     setPhotoError('');
+    setPhotoOffline(false);
     try {
       const res = await uploadFile(`/api/drivers/deliveries/${deliveryId}/photo`, token, file, 'photo');
       if (res.ok && res.data?.data?.photoUrl) setPhotoUrl(res.data.data.photoUrl);
       else setPhotoError(res.data?.error || `La photo n'a pas pu être envoyée (erreur ${res.status})`);
     } catch (e: any) {
-      // La vraie cause : « vérifiez votre connexion » ne disait rien d'utile.
-      setPhotoError(e?.message || "La photo n'a pas pu être envoyée");
+      // Pas de réseau : la photo reste sur le téléphone et partira avec le
+      // dépôt. Le livreur n'a pas à attendre devant la porte.
+      setPhotoOffline(true);
     } finally {
       setUploading(false);
     }
@@ -334,7 +398,12 @@ export default function DeliveryScreen({
       Alert.alert('Course annulée', 'Un autre livreur sera proposé au commerce.');
       onBack();
     } catch (e: any) {
-      Alert.alert('Annulation impossible', e.message || 'Réessayez');
+      Alert.alert(
+        'Annulation impossible',
+        isNetworkError(e)
+          ? 'Pas de réseau : l’annulation doit partir tout de suite pour qu’un autre livreur soit trouvé. Réessayez dès que vous captez, ou appelez le support.'
+          : e.message || 'Réessayez'
+      );
     } finally {
       setUpdating(false);
     }
@@ -388,10 +457,45 @@ export default function DeliveryScreen({
           })}
         </Card>
 
+        {rejectedHere.map((r) => (
+          <View key={r.id} style={[styles.banner, { backgroundColor: COLORS.dangerBg, borderLeftColor: COLORS.danger }]}>
+            <Text style={styles.bannerTitle}>⚠️ {stepLabel(r.kind)} n’a pas été acceptée</Text>
+            <Text style={styles.bannerText}>{r.message}</Text>
+            <TouchableOpacity onPress={() => dismissRejected(r.id)}>
+              <Text style={styles.photoRetry}>J’ai compris</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+        {pendingHere.length > 0 ? (
+          <View style={[styles.banner, { backgroundColor: COLORS.card, borderLeftColor: COLORS.warning }]}>
+            <Text style={styles.bannerTitle}>
+              {outbox.sending && online ? '⏳ Envoi en cours…' : '📴 Enregistré sur le téléphone'}
+            </Text>
+            <Text style={styles.bannerText}>
+              {pendingHere.map((p) => stepLabel(p.kind)).join(', ')} partira dès le retour du réseau, avec l’heure
+              exacte. Continuez votre course.
+              {pendingHere.some((p) => p.kind === 'handover')
+                ? ' Le code du client sera vérifié à ce moment-là : s’il est refusé, vous serez prévenu.'
+                : ''}
+            </Text>
+          </View>
+        ) : !online || fromCache ? (
+          <View style={[styles.banner, { backgroundColor: COLORS.card, borderLeftColor: COLORS.warning }]}>
+            <Text style={styles.bannerTitle}>📴 Pas de réseau</Text>
+            <Text style={styles.bannerText}>
+              La course reste utilisable : prise en charge et remise seront envoyées au retour du réseau.
+            </Text>
+          </View>
+        ) : null}
+
         {delivery.status === 'DELIVERED' && (
           <View style={[styles.banner, { backgroundColor: COLORS.successBg, borderLeftColor: COLORS.success }]}>
             <Text style={styles.bannerTitle}>✅ Course terminée</Text>
-            <Text style={styles.bannerText}>Merci ! Vous êtes de nouveau disponible pour la course suivante.</Text>
+            <Text style={styles.bannerText}>
+              {pendingHere.length > 0
+                ? 'Merci ! La remise part dès le retour du réseau ; vous serez de nouveau disponible à ce moment-là.'
+                : 'Merci ! Vous êtes de nouveau disponible pour la course suivante.'}
+            </Text>
             <TouchableOpacity style={styles.primaryButton} onPress={onBack}>
               <Text style={styles.primaryButtonText}>Retour à l’accueil</Text>
             </TouchableOpacity>
@@ -467,10 +571,20 @@ export default function DeliveryScreen({
             {orderReady ? (
               <SlideToConfirm label="Glisser pour prendre en charge" onConfirm={takeOrder} loading={updating} />
             ) : (
-              <View style={styles.waiting}>
-                <ActivityIndicator color={COLORS.link} />
-                <Text style={styles.waitingText}>En préparation…</Text>
-              </View>
+              <>
+                <View style={styles.waiting}>
+                  <ActivityIndicator color={COLORS.link} />
+                  <Text style={styles.waitingText}>En préparation…</Text>
+                </View>
+                {/* Sans réseau, « prête » ne peut pas arriver jusqu'ici : le
+                    commerçant qui tend la commande fait foi. Le serveur
+                    tranchera au retour du réseau. */}
+                {!online && (
+                  <TouchableOpacity style={styles.linkButton} onPress={takeOrder} disabled={updating}>
+                    <Text style={styles.linkButtonText}>Pas de réseau : le commerçant me remet la commande</Text>
+                  </TouchableOpacity>
+                )}
+              </>
             )}
           </Card>
         )}
@@ -584,6 +698,10 @@ export default function DeliveryScreen({
                   <Text style={styles.photoStatus}>Envoi de la photo…</Text>
                 ) : photoUrl ? (
                   <Text style={[styles.photoStatus, { color: COLORS.successText }]}>✓ Photo envoyée</Text>
+                ) : photoOffline ? (
+                  <Text style={[styles.photoStatus, { color: COLORS.warning }]}>
+                    📴 Pas de réseau : la photo est gardée et partira avec le dépôt.
+                  </Text>
                 ) : photoError ? (
                   <View style={styles.photoErrorBox}>
                     <Text style={styles.photoErrorText}>{photoError}</Text>
@@ -618,7 +736,9 @@ export default function DeliveryScreen({
                 </TouchableOpacity>
                 {!canConfirmDrop && !uploading && !photoError && (
                   <Text style={styles.photoHint}>
-                    {photoUrl ? 'Indiquez où vous avez déposé la commande.' : 'Prenez la photo du dépôt pour pouvoir confirmer.'}
+                    {photoUrl || photoOffline
+                      ? 'Indiquez où vous avez déposé la commande.'
+                      : 'Prenez la photo du dépôt pour pouvoir confirmer.'}
                   </Text>
                 )}
                 <TouchableOpacity style={styles.linkButton} onPress={() => setPhotoMode(false)}>

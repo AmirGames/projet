@@ -2,6 +2,7 @@ import { Alert, Platform } from 'react-native';
 import { isRunningInExpoGo } from 'expo';
 import * as Location from 'expo-location';
 import { fetchWithSession } from './sessionFetch';
+import { flushOutbox } from './outbox';
 
 /**
  * La position du livreur, téléphone verrouillé ou application en fond.
@@ -88,6 +89,9 @@ export async function sendPosition(p: Position, force = false) {
     } else if (!response.ok) {
       lastSent = 0;
     } else {
+      // Le serveur répond : les étapes faites sans réseau partent, même
+      // téléphone rangé (la file se lit une fois, puis reste en mémoire).
+      flushOutbox();
       // Passé hors ligne ailleurs (site, mise hors ligne automatique), sans
       // course : la position n'a plus à partir.
       const data = await response.json().catch(() => null);

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, useColorScheme } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, AppState, ScrollView, useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL, ApiError, apiFetch, setUnauthorizedHandler } from '../lib/api';
@@ -8,6 +8,9 @@ import { Delivery, Driver, Offer } from '../lib/deliveries';
 import { useDriverAlerts } from '../lib/useDriverAlerts';
 import { DutyMode, Tracking, useDriverLocation } from '../lib/useDriverLocation';
 import { useRealtimeEvent } from '../lib/realtime';
+import { isNetworkError, useOnline } from '../lib/network';
+import { clearOfflineStore, readJson, writeJson } from '../lib/offlineStore';
+import { clearOutbox, flushOutbox, useOutbox, withPendingSteps } from '../lib/outbox';
 import '../lib/offerNotification';
 import { onDriverNotificationTap, PushDriverData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
 import { applyTheme, COLORS, themedStyles } from '../components/ui';
@@ -80,6 +83,13 @@ export default function DeliveryApp() {
     });
   };
 
+  const online = useOnline();
+  const outbox = useOutbox();
+
+  /** Sans réseau, l'erreur le dit plutôt que « Network request failed ». */
+  const errorMessage = (e: any, fallback: string) =>
+    isNetworkError(e) ? 'Pas de réseau : réessayez dès que vous captez.' : e?.message || fallback;
+
   const patchDriver = useCallback((patch: Partial<Driver>) => setDriver((d) => (d ? { ...d, ...patch } : d)), []);
 
   const loadOffers = useCallback(async (accessToken: string) => {
@@ -92,20 +102,38 @@ export default function DeliveryApp() {
     }
   }, []);
 
-  /** Tout ce que l'accueil affiche : le livreur, ses courses, ses gains. */
+  /**
+   * Tout ce que l'accueil affiche : le livreur, ses courses, ses gains.
+   * Chaque réponse est gardée sur le téléphone ; sans réseau, c'est elle qui
+   * s'affiche, à commencer par la course en cours.
+   */
   const loadAll = useCallback(
     async (accessToken: string) => {
       if (!accessToken) return;
+      const cached = <T,>(key: string, apply: (value: T) => void) => async (e: unknown) => {
+        if (!isNetworkError(e)) return;
+        const value = await readJson<T>(key);
+        if (value) apply(value);
+      };
       await Promise.all([
         apiFetch<{ data: Driver }>('/api/drivers/me', accessToken)
-          .then((res) => setDriver(res.data))
-          .catch((e) => console.warn('Profil livreur indisponible', e)),
+          .then((res) => {
+            setDriver(res.data);
+            writeJson('livreur', res.data);
+          })
+          .catch(cached<Driver>('livreur', (d) => setDriver((current) => current || d))),
         apiFetch<{ data: Delivery[] }>('/api/drivers/deliveries?status=ACTIVE', accessToken)
-          .then((res) => setActiveDeliveries(res.data || []))
-          .catch(() => undefined),
+          .then((res) => {
+            setActiveDeliveries(res.data || []);
+            writeJson('courses-actives', res.data || []);
+          })
+          .catch(cached<Delivery[]>('courses-actives', (list) => setActiveDeliveries((current) => (current.length ? current : list)))),
         apiFetch<EarningsSummary>('/api/drivers/earnings', accessToken)
-          .then(setEarnings)
-          .catch(() => undefined),
+          .then((res) => {
+            setEarnings(res);
+            writeJson('gains', res);
+          })
+          .catch(cached<EarningsSummary>('gains', (g) => setEarnings((current) => current || g))),
         loadOffers(accessToken),
       ]);
     },
@@ -113,13 +141,29 @@ export default function DeliveryApp() {
   );
 
   const openSession = async (next: Session) => {
+    // Un autre compte sur ce téléphone : rien du précédent ne reste, ni ses
+    // courses ni ses étapes en attente.
+    const owner = await readJson<string>('proprietaire');
+    if (owner && owner !== next.email) {
+      await clearOutbox();
+      await clearOfflineStore();
+    }
+    writeJson('proprietaire', next.email);
     setSession(next);
     setEmail(next.email);
     setTab('dashboard');
     await loadAll(next.accessToken);
   };
 
-  const handleLogout = useCallback(() => {
+  /**
+   * forget : déconnexion voulue, les données du livreur quittent le
+   * téléphone. Une session expirée les garde : les étapes en attente
+   * partiront une fois le livreur reconnecté.
+   */
+  const handleLogout = useCallback((forget = false) => {
+    if (forget) {
+      clearOutbox().then(clearOfflineStore);
+    }
     const current = sessionRef.current;
     if (current && pushTokenRef.current) unregisterPush(current.accessToken, pushTokenRef.current);
     pushTokenRef.current = null;
@@ -175,7 +219,7 @@ export default function DeliveryApp() {
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      handleLogout();
+      handleLogout(false);
       Alert.alert('Session expirée', 'Veuillez vous reconnecter.');
     });
     return () => setUnauthorizedHandler(null);
@@ -215,13 +259,38 @@ export default function DeliveryApp() {
     if (token) loadUnread(token);
   }, [token, loadUnread]);
 
+  // Les courses encore à faire : une remise faite sans réseau, pas encore
+  // envoyée, n'en fait plus partie.
+  const visibleDeliveries = activeDeliveries
+    .map((d) => withPendingSteps(d, outbox.pending))
+    .filter((d) => d.status !== 'DELIVERED');
+
+  // Les étapes faites sans réseau partent au lancement, au retour dans
+  // l'application et à la reconnexion (le retour du réseau, lui, est suivi
+  // dans outbox.ts) ; une fois parties, l'accueil se relit.
+  useEffect(() => {
+    if (!token) return;
+    flushOutbox();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') flushOutbox();
+    });
+    return () => sub.remove();
+  }, [token]);
+  useRealtimeEvent('reconnecte', () => flushOutbox());
+  const pendingCount = outbox.pending.length;
+  const previousPending = useRef(pendingCount);
+  useEffect(() => {
+    if (pendingCount < previousPending.current && token) loadAll(token);
+    previousPending.current = pendingCount;
+  }, [pendingCount]);
+
   // Position : transmise tant que le livreur est en ligne ou sur une course,
   // avec la précision qu'il faut à ce moment-là (voir useDriverLocation).
   const [tracking, setTracking] = useState<Tracking>({ target: null, navigating: false });
   // Profil pas encore chargé : on ne coupe pas le suivi en arrière-plan d'un
   // livreur resté en ligne, application fermée.
   const dutyMode: DutyMode =
-    activeDeliveries.length > 0 ? 'delivery' : driver ? (driver.isOnline ? 'idle' : 'off') : token ? 'loading' : 'off';
+    visibleDeliveries.length > 0 ? 'delivery' : driver ? (driver.isOnline ? 'idle' : 'off') : token ? 'loading' : 'off';
   const { position, gps, background } = useDriverLocation(token, dutyMode, tracking);
 
   // Une proposition expirée disparaît d'elle-même, et la sonnerie avec : un
@@ -361,7 +430,7 @@ export default function DeliveryApp() {
       if (res.isOnline) loadOffers(token);
       else setOffers([]);
     } catch (e: any) {
-      Alert.alert(online ? 'Mise en ligne impossible' : 'Erreur', e.message || 'Réessayez');
+      Alert.alert(online ? 'Mise en ligne impossible' : 'Erreur', errorMessage(e, 'Réessayez'));
     } finally {
       setTogglingOnline(false);
     }
@@ -381,11 +450,27 @@ export default function DeliveryApp() {
         if (deliveryId) openDelivery(deliveryId);
       }
     } catch (e: any) {
-      Alert.alert('Course', e.message || "La réponse n'a pas été enregistrée");
+      Alert.alert('Course', errorMessage(e, "La réponse n'a pas été enregistrée"));
       loadOffers(token);
     } finally {
       setAnsweringOfferId(null);
     }
+  };
+
+  /** Des étapes attendent encore le réseau : se déconnecter les perdrait. */
+  const confirmLogout = () => {
+    if (pendingCount === 0) {
+      handleLogout(true);
+      return;
+    }
+    Alert.alert(
+      'Envois en attente',
+      `${pendingCount} étape${pendingCount > 1 ? 's' : ''} de course n’${pendingCount > 1 ? 'ont' : 'a'} pas encore été envoyée${pendingCount > 1 ? 's' : ''} faute de réseau. En vous déconnectant, elle${pendingCount > 1 ? 's' : ''} ser${pendingCount > 1 ? 'ont' : 'a'} perdue${pendingCount > 1 ? 's' : ''}.`,
+      [
+        { text: 'Rester connecté', style: 'cancel' },
+        { text: 'Me déconnecter quand même', style: 'destructive', onPress: () => handleLogout(true) },
+      ]
+    );
   };
 
   const openFromMenu = (target: string) => {
@@ -460,7 +545,7 @@ export default function DeliveryApp() {
   // « Tout va bien ? » : veille sur le livreur tant qu'une course est en cours.
   const safetyCheck = (
     <>
-      <SafetyCheck token={token} delivery={activeDeliveries[0] ?? null} position={position} />
+      <SafetyCheck token={token} delivery={visibleDeliveries[0] ?? null} position={position} />
       {/* Une course proposée passe devant tout le reste, comme un appel. */}
       <OfferSheet offers={offers} position={position} answeringOfferId={answeringOfferId} onAnswer={answerOffer} />
     </>
@@ -486,13 +571,14 @@ export default function DeliveryApp() {
     );
   }
 
-  const currentDelivery = activeDeliveries[0];
+  const currentDelivery = visibleDeliveries[0];
   const headerSubtitle = (
     <View style={styles.subtitleRow}>
-      <View style={[styles.liveDot, { backgroundColor: connected ? '#7CFC8A' : '#FFB3B3' }]} />
+      <View style={[styles.liveDot, { backgroundColor: online && connected ? '#7CFC8A' : '#FFB3B3' }]} />
       <Text style={styles.headerEmail}>
         {driver?.name || email}
-        {connected ? '' : '  · hors ligne'}
+        {!online ? '  · 📴 pas de réseau' : connected ? '' : '  · hors ligne'}
+        {pendingCount > 0 ? `  · ${pendingCount} envoi${pendingCount > 1 ? 's' : ''} en attente` : ''}
       </Text>
     </View>
   );
@@ -584,7 +670,7 @@ export default function DeliveryApp() {
         token={token}
         driver={driver}
         earnings={earnings}
-        activeDeliveries={activeDeliveries}
+        activeDeliveries={visibleDeliveries}
         gps={gps}
         background={background}
         refreshing={refreshing}
@@ -690,7 +776,7 @@ export default function DeliveryApp() {
                 </TouchableOpacity>
               ))}
 
-              <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
+              <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={confirmLogout}>
                 <Text style={styles.menuItemLogoutText}>🚪 Déconnexion</Text>
               </TouchableOpacity>
             </ScrollView>

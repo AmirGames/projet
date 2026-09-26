@@ -45,6 +45,17 @@ qu'elle attend ; commande prête, course annulée, GPS perdu, fin de pause et
 réponses du support arrivent sans recharger. Une notification push prévient
 application fermée ; la toucher ouvre la course ou le support.
 
+**Sans réseau** (sous-sol, cage d'escalier, zone blanche), la course continue.
+Elle s'affiche depuis le téléphone (la dernière version reçue), et **la prise en
+charge, la remise au code et le dépôt avec photo** sont enregistrés sur place
+puis envoyés seuls au retour du réseau, dans l'ordre et avec l'heure réelle
+(`effectueLe`). Un code saisi hors connexion ne se vérifie qu'à ce moment-là
+(il n'est jamais sur le téléphone) : refusé, le livreur est prévenu par une
+notification et sur l'écran de la course. Restent en ligne seulement :
+accepter une course, lancer l'attente du client (il doit être prévenu),
+annuler, passer en ligne. La déconnexion efface du téléphone la course et les
+envois en attente (après confirmation s'il en reste).
+
 La position est envoyée à `PATCH /api/drivers/location` tant que le livreur est
 en ligne ou sur une course, **même téléphone verrouillé** : avec la
 localisation « Toujours autoriser », une tâche en arrière-plan
@@ -87,6 +98,9 @@ lib/useDriverAlerts.ts     connexion temps réel et sonnerie des courses
 lib/useDriverLocation.ts   suivi de la position, précision selon le moment
 lib/backgroundLocation.ts  position téléphone verrouillé (tâche en arrière-plan)
 lib/sessionFetch.ts        appels hors écran, jeton renouvelé au besoin
+lib/network.ts             réseau présent ou non (téléphone et appels ratés)
+lib/outbox.ts              étapes faites sans réseau, envoyées au retour
+lib/offlineStore.ts        course et accueil gardés sur le téléphone
 lib/push.ts                notifications push (app « delivery »)
 lib/realtime.ts            abonnement aux événements, écran par écran
 ```
