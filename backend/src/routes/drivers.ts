@@ -426,6 +426,8 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         // l'attribution en a fait. L'application a besoin des deux.
         isOnline: driver.isOnline,
         isAvailable: driver.isAvailable,
+        // Combien de courses à la fois la plateforme autorise (tournée).
+        maxCourses: (await DispatchService.reglages()).tournee.maxCourses,
         latitude: driver.latitude,
         longitude: driver.longitude,
         lastLocationUpdate: driver.lastLocationUpdate,

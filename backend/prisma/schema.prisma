@@ -261,6 +261,11 @@ model SystemConfig {
   driverOfferSeconds  Int       @default(30)
   // Au-delà, on ne propose plus la course
   driverMaxRadiusKm   Float     @default(8)
+  // Plusieurs courses à la fois (tournée) : combien au plus (1 = jamais de
+  // regroupement), clients « au même endroit », détour accepté.
+  driverMaxCourses    Int       @default(3)
+  driverGroupClientKm Float     @default(2)
+  driverGroupDetourKm Float     @default(2)
 
   // Frais de service ajoutés à chaque commande du client. Ils reviennent à la
   // plateforme, jamais au commerçant. 0 les supprime.

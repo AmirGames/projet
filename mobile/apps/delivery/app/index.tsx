@@ -675,6 +675,7 @@ export default function DeliveryApp() {
             deliveries={visibleDeliveries}
             position={position}
             navigationApp={prefs.navigationApp}
+            maxCourses={driver?.maxCourses}
             onOpenDelivery={setCourseSel}
             onTrackingChange={setTracking}
           />

@@ -14,6 +14,8 @@ export interface Driver {
   isOnline: boolean;
   /** Ce que l'attribution en a fait : libre ou déjà sur une course. */
   isAvailable: boolean;
+  /** Combien de courses à la fois la plateforme autorise (réglable). */
+  maxCourses?: number;
   vehicleType?: string | null;
   licensePlate?: string | null;
   status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'SUSPENDED' | 'INACTIVE' | string;
@@ -63,7 +65,10 @@ export interface Stop {
   lng: number | null;
 }
 
-/** Trois courses au plus à la fois (le serveur en décide, l'écran le dit). */
+/**
+ * Trois courses au plus à la fois par défaut. La plateforme le règle : la
+ * valeur du serveur (driver.maxCourses) l'emporte.
+ */
 export const MAX_COURSES = 3;
 
 export interface DeliveryItem {

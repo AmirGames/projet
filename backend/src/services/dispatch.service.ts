@@ -9,7 +9,8 @@ import { Notifier, enArrierePlan } from "./notifier.service";
 import { randomUUID } from "crypto";
 import {
   detourPourRejoindre,
-  MAX_COURSES_PAR_LIVREUR,
+  REGLES_TOURNEE_PAR_DEFAUT,
+  ReglesTournee,
   versCourseTournee,
 } from "./tournee.service";
 
@@ -81,6 +82,8 @@ export interface Reglages {
   perKmFee: number;
   offerSeconds: number;
   maxRadiusKm: number;
+  /** Plusieurs courses à la fois : voir tournee.service.ts. */
+  tournee: ReglesTournee;
 }
 
 const REGLAGES_PAR_DEFAUT: Reglages = {
@@ -88,6 +91,7 @@ const REGLAGES_PAR_DEFAUT: Reglages = {
   perKmFee: 0.8,
   offerSeconds: 30,
   maxRadiusKm: 8,
+  tournee: REGLES_TOURNEE_PAR_DEFAUT,
 };
 
 export class DispatchService {
@@ -102,6 +106,11 @@ export class DispatchService {
       perKmFee: Number(config.driverPerKmFee),
       offerSeconds: config.driverOfferSeconds,
       maxRadiusKm: config.driverMaxRadiusKm,
+      tournee: {
+        maxCourses: config.driverMaxCourses,
+        rayonClientsKm: config.driverGroupClientKm,
+        detourMaxKm: config.driverGroupDetourKm,
+      },
     };
   }
 
@@ -267,7 +276,9 @@ export class DispatchService {
     pickupLng: number | null;
     deliveryLat: number | null;
     deliveryLng: number | null;
-  }) {
+  }, regles: ReglesTournee) {
+    // Une course par livreur : pas de tournée.
+    if (regles.maxCourses <= 1) return [];
     const nouvelle = versCourseTournee({ ...course, status: "ACCEPTED" });
     if (!estUnPoint(nouvelle.retrait) || !estUnPoint(nouvelle.remise)) return [];
 
@@ -297,7 +308,7 @@ export class DispatchService {
     return livreurs
       .map((livreur) => {
         const depart = estUnPoint(livreur) ? (livreur as Point) : null;
-        const detour = detourPourRejoindre(depart, livreur.deliveries.map(versCourseTournee), nouvelle);
+        const detour = detourPourRejoindre(depart, livreur.deliveries.map(versCourseTournee), nouvelle, regles);
         return {
           ...livreur,
           detour,
@@ -371,7 +382,7 @@ export class DispatchService {
     // tournée plutôt que de mobiliser un livreur de plus.
     const enTournee = prefere
       ? []
-      : (await this.livreursEnTournee(course)).filter((l) => sollicitable(course, l.id));
+      : (await this.livreursEnTournee(course, reglages.tournee)).filter((l) => sollicitable(course, l.id));
 
     const choisi = prefere || enTournee[0] || candidats[0];
 
@@ -388,7 +399,7 @@ export class DispatchService {
 
     // Un livreur libre : les autres commandes qui attendent et vont au même
     // endroit partent avec celle-ci, en un lot.
-    const lot = ajout ? [course] : await this.composerLot(course, choisi.id, sollicitable);
+    const lot = ajout ? [course] : await this.composerLot(course, choisi.id, sollicitable, reglages.tournee);
     const batchId = lot.length > 1 ? randomUUID() : null;
 
     const propositions = [];
@@ -443,8 +454,14 @@ export class DispatchService {
    */
   private static async composerLot<
     C extends { id: string; status: string; pickupLat: number | null; pickupLng: number | null; deliveryLat: number | null; deliveryLng: number | null; offers: Sollicitation[] },
-  >(course: C, driverId: string, sollicitable: (c: { offers: Sollicitation[] }, driverId: string) => boolean): Promise<C[]> {
+  >(
+    course: C,
+    driverId: string,
+    sollicitable: (c: { offers: Sollicitation[] }, driverId: string) => boolean,
+    regles: ReglesTournee
+  ): Promise<C[]> {
     const lot: C[] = [course];
+    if (regles.maxCourses <= 1) return lot;
     const retrait = { latitude: course.pickupLat, longitude: course.pickupLng };
     if (!estUnPoint(retrait)) return lot;
 
@@ -466,10 +483,13 @@ export class DispatchService {
 
     // À chaque tour, la commande qui rallonge le moins le lot.
     let restantes = enAttente.filter((c) => sollicitable(c, driverId));
-    while (lot.length < MAX_COURSES_PAR_LIVREUR && restantes.length > 0) {
+    while (lot.length < regles.maxCourses && restantes.length > 0) {
       const tournee = lot.map((c) => versCourseTournee({ ...c, status: "ACCEPTED" }));
       const classees = restantes
-        .map((c) => ({ c, detour: detourPourRejoindre(retrait as Point, tournee, versCourseTournee({ ...c, status: "ACCEPTED" })) }))
+        .map((c) => ({
+          c,
+          detour: detourPourRejoindre(retrait as Point, tournee, versCourseTournee({ ...c, status: "ACCEPTED" }), regles),
+        }))
         .filter((x): x is { c: C; detour: number } => x.detour != null)
         .sort((a, b) => a.detour - b.detour);
       if (classees.length === 0) break;
@@ -662,7 +682,7 @@ export class DispatchService {
    * Le livreur accepte : la course lui est attribuée, la rémunération figée.
    *
    * Une proposition d'un lot emporte tout le lot. Une course ajoutée rejoint
-   * la tournée en cours. Jamais plus de MAX_COURSES_PAR_LIVREUR à la fois.
+   * la tournée en cours. Jamais plus que le réglage de la plateforme à la fois.
    */
   static async accepter(offerId: string, driverId: string) {
     const proposition = await db.deliveryOffer.findUnique({
@@ -711,11 +731,14 @@ export class DispatchService {
       : [];
 
     const enCours = await db.orderDelivery.count({ where: { driverId, status: { in: STATUTS_EN_COURSE } } });
-    const place = MAX_COURSES_PAR_LIVREUR - enCours;
+    const { maxCourses } = (await this.reglages()).tournee;
+    const place = maxCourses - enCours;
     if (place <= 0) {
       throw new ApiError(
         409,
-        `Vous avez déjà ${MAX_COURSES_PAR_LIVREUR} courses en cours : terminez-en une d'abord.`,
+        enCours > 1
+          ? `Vous avez déjà ${enCours} courses en cours : terminez-en une d'abord.`
+          : "Vous avez déjà une course en cours : terminez-la d'abord.",
         "TOO_MANY_DELIVERIES"
       );
     }

@@ -29,6 +29,9 @@ interface Configuration {
   maintenanceMessage: string;
   driverMaxRadiusKm: number;
   driverOfferSeconds: number;
+  driverMaxCourses: number;
+  driverGroupClientKm: number;
+  driverGroupDetourKm: number;
   driverBaseFee: number;
   driverPerKmFee: number;
   serviceFee: number;
@@ -55,6 +58,9 @@ export default function SystemConfigPage() {
     maintenanceMessage: '',
     driverMaxRadiusKm: '',
     driverOfferSeconds: '',
+    driverMaxCourses: '',
+    driverGroupClientKm: '',
+    driverGroupDetourKm: '',
     driverBaseFee: '',
     driverPerKmFee: '',
     serviceFee: '',
@@ -87,6 +93,9 @@ export default function SystemConfigPage() {
         maintenanceMessage: c.maintenanceMessage || '',
         driverMaxRadiusKm: String(c.driverMaxRadiusKm ?? ''),
         driverOfferSeconds: String(c.driverOfferSeconds ?? ''),
+        driverMaxCourses: String(c.driverMaxCourses ?? ''),
+        driverGroupClientKm: String(c.driverGroupClientKm ?? ''),
+        driverGroupDetourKm: String(c.driverGroupDetourKm ?? ''),
         driverBaseFee: String(c.driverBaseFee ?? ''),
         driverPerKmFee: String(c.driverPerKmFee ?? ''),
         serviceFee: String(c.serviceFee ?? ''),
@@ -120,6 +129,9 @@ export default function SystemConfigPage() {
           maintenanceMessage: formulaire.maintenanceMessage,
           driverMaxRadiusKm: Number(formulaire.driverMaxRadiusKm),
           driverOfferSeconds: Math.round(Number(formulaire.driverOfferSeconds)),
+          driverMaxCourses: Math.round(Number(formulaire.driverMaxCourses)),
+          driverGroupClientKm: Number(formulaire.driverGroupClientKm),
+          driverGroupDetourKm: Number(formulaire.driverGroupDetourKm),
           driverBaseFee: Number(formulaire.driverBaseFee),
           driverPerKmFee: Number(formulaire.driverPerKmFee),
           serviceFee: Number(formulaire.serviceFee),
@@ -325,6 +337,75 @@ export default function SystemConfigPage() {
                 base + km × distance boutique → client. La plateforme encaisse ces frais puis les reverse
                 au livreur sur son relevé.
               </p>
+            </div>
+
+            {/* Plusieurs courses à la fois : les règles vivaient dans le code
+                (tournee.service.ts), sans moyen de les ajuster à la ville. */}
+            <div className="border-t border-gray-700 pt-4 space-y-3">
+              <h3 className="text-lg font-semibold text-white">Plusieurs courses à la fois</h3>
+              <p className="text-xs text-gray-400">
+                Un livreur peut prendre ensemble des commandes qui vont au même endroit : proposées en lot quand
+                elles attendent en même temps, ou ajoutées à sa course quand elles sont sur son trajet. Une
+                commande rejoint les autres si son client est proche d&apos;un autre client ou sur le trajet, et si
+                elle part du même commerce ou d&apos;un commerce sur le trajet. Chaque course reste payée ce qui est
+                annoncé.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="max-courses" className="block text-sm text-gray-400 mb-2">
+                    Courses par livreur, au plus
+                  </label>
+                  <input
+                    id="max-courses"
+                    type="number"
+                    step="1"
+                    min="1"
+                    max="5"
+                    value={formulaire.driverMaxCourses}
+                    onChange={(e) => setFormulaire({ ...formulaire, driverMaxCourses: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formulaire.driverMaxCourses === '1'
+                      ? 'Une seule course à la fois : aucun regroupement.'
+                      : 'De 1 à 5. 1 désactive le regroupement.'}
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="rayon-clients" className="block text-sm text-gray-400 mb-2">
+                    Clients au même endroit (km)
+                  </label>
+                  <input
+                    id="rayon-clients"
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    max="10"
+                    value={formulaire.driverGroupClientKm}
+                    onChange={(e) => setFormulaire({ ...formulaire, driverGroupClientKm: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Distance maximale entre deux clients d&apos;une même tournée</p>
+                </div>
+                <div>
+                  <label htmlFor="detour-max" className="block text-sm text-gray-400 mb-2">
+                    Détour accepté (km)
+                  </label>
+                  <input
+                    id="detour-max"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="10"
+                    value={formulaire.driverGroupDetourKm}
+                    onChange={(e) => setFormulaire({ ...formulaire, driverGroupDetourKm: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ce qu&apos;une course de plus peut rallonger la tournée (« sur le trajet »)
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="border-t border-gray-700 pt-4 space-y-3">

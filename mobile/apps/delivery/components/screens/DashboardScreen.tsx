@@ -199,8 +199,10 @@ export default function DashboardScreen({
                 ? driver?.isAvailable
                   ? 'Vous recevez les courses proches de vous.'
                   : activeDeliveries.length
-                    ? activeDeliveries.length >= MAX_COURSES
-                      ? `${MAX_COURSES} courses en cours : terminez-en une pour en recevoir une autre.`
+                    ? activeDeliveries.length >= (driver?.maxCourses ?? MAX_COURSES)
+                      ? activeDeliveries.length > 1
+                        ? `${activeDeliveries.length} courses en cours : terminez-en une pour en recevoir une autre.`
+                        : 'Course en cours : terminez-la pour en recevoir une autre.'
                       : 'Course en cours : d’autres courses sur votre trajet peuvent s’y ajouter.'
                     : 'Aucune course ne vous est proposée pour le moment.'
                 : 'Passez en ligne pour recevoir des courses.'}

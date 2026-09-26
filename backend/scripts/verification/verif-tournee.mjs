@@ -11,6 +11,7 @@ import {
   post,
   get,
   patch,
+  put,
   sqlScalaire,
   terminer,
   validerLivreur,
@@ -284,5 +285,39 @@ const annonce = await champ(
   `SELECT sum("driverPayout") FROM "OrderDelivery" WHERE id IN ('${c1.deliveryId}','${c3.deliveryId}')`
 );
 check('chaque course livrée est payée ce qui était annoncé', Math.abs(Number(gains) - Number(annonce)) < 0.01, `${gains} / ${annonce}`);
+
+// ===== Les règles se règlent dans l'espace plateforme =====
+
+titre('La plateforme règle la tournée');
+const regler = (corps) => put('/api/superowner/system-config', corps, S);
+check('zéro course par livreur est refusé', (await regler({ driverMaxCourses: 0 })).status === 400);
+check('six courses par livreur est refusé', (await regler({ driverMaxCourses: 6 })).status === 400);
+check('un commerçant ne peut pas les changer', (await put('/api/superowner/system-config', { driverMaxCourses: 5 }, T)).status === 403);
+const lu = (await j(await get('/api/superowner/system-config', S)))?.config;
+check(
+  'les réglages se lisent',
+  lu?.driverMaxCourses === 3 && lu?.driverGroupClientKm === 2 && lu?.driverGroupDetourKm === 2,
+  JSON.stringify({ max: lu?.driverMaxCourses, clients: lu?.driverGroupClientKm, detour: lu?.driverGroupDetourKm })
+);
+
+titre('Une course à la fois : plus de regroupement');
+check('le réglage passe', (await regler({ driverMaxCourses: 1 })).status === 200);
+const moi = (await j(await get('/api/drivers/me', un.jeton)))?.data;
+check('le livreur connaît la limite', moi?.maxCourses === 1, JSON.stringify(moi?.maxCourses));
+const c6 = await commander(boutiqueA, CLIENT_4);
+const pourUnSeul = await offresDe(un);
+check('le livreur en course ne reçoit rien', pourUnSeul.length === 0, JSON.stringify(pourUnSeul.map((o) => o.deliveryId)));
+check('la course part à un livreur libre', c6.propose === true, JSON.stringify(c6.propose));
+
+titre('Des clients plus proches exigés, sans détour');
+await regler({ driverMaxCourses: 3, driverGroupClientKm: 0.1, driverGroupDetourKm: 0 });
+// Même commerce que la course du livreur, client à ~150 m du sien : trop loin
+// avec 100 m exigés, et sans détour permis.
+const c7 = await commander(boutiqueA, { latitude: 44.8518, longitude: -0.5695 });
+const pourUnSerre = await offresDe(un);
+check('elle ne s’ajoute plus', !pourUnSerre.some((o) => o.deliveryId === c7.deliveryId), JSON.stringify(pourUnSerre));
+
+// Les autres suites comptent sur les valeurs d'origine.
+await regler({ driverMaxCourses: 3, driverGroupClientKm: 2, driverGroupDetourKm: 2 });
 
 await terminer();

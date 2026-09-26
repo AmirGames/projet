@@ -25,6 +25,7 @@ export default function TourneeScreen({
   deliveries,
   position,
   navigationApp,
+  maxCourses = MAX_COURSES,
   onOpenDelivery,
   onTrackingChange,
 }: {
@@ -33,6 +34,8 @@ export default function TourneeScreen({
   deliveries: Delivery[];
   position: Position | null;
   navigationApp: Prefs['navigationApp'];
+  /** Le réglage de la plateforme. */
+  maxCourses?: number;
   onOpenDelivery: (deliveryId: string) => void;
   onTrackingChange: (tracking: Tracking) => void;
 }) {
@@ -97,7 +100,7 @@ export default function TourneeScreen({
     <View style={{ flex: 1, backgroundColor: COLORS.raised }}>
       <ScreenHeader
         title={`Tournée · ${courses} course${courses > 1 ? 's' : ''}`}
-        subtitle={courses >= MAX_COURSES ? 'Complète : plus de course ajoutée' : 'D’autres courses sur votre trajet peuvent s’ajouter'}
+        subtitle={courses >= maxCourses ? 'Complète : plus de course ajoutée' : 'D’autres courses sur votre trajet peuvent s’ajouter'}
       />
       <ScrollView
         contentContainerStyle={ui.content}

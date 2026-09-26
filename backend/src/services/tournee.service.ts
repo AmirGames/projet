@@ -5,23 +5,33 @@ import { distanceKm, estUnPoint, Point } from "../utils/geo";
  *
  * Un livreur qui part d'un commerce avec une commande pour une rue revenait
  * à vide chercher la suivante, destinée à la rue d'à côté. Il peut désormais
- * en porter jusqu'à trois à la fois, à deux conditions :
+ * en porter plusieurs à la fois (trois par défaut), à deux conditions :
  *
- * - le client est proche d'un client déjà dans la tournée (à 2 km au plus),
- *   ou sur le trajet (le détour reste sous 2 km) ;
+ * - le client est proche d'un client déjà dans la tournée (2 km par défaut),
+ *   ou sur le trajet (le détour reste sous 2 km par défaut) ;
  * - la commande part du même commerce, ou d'un commerce sur le trajet (même
  *   limite de détour).
+ *
+ * Les trois valeurs se règlent dans l'espace plateforme.
  *
  * Le détour se mesure sur la tournée entière : ce qu'elle rallonge avec la
  * course en plus, retraits et remises compris, dans le meilleur ordre.
  */
 
-/** Au-delà, une course de plus ferait trop attendre les clients déjà servis. */
-export const MAX_COURSES_PAR_LIVREUR = 3;
-/** Clients « au même endroit ». */
-export const RAYON_CLIENTS_KM = 2;
-/** Ce qu'une course de plus peut rallonger la tournée. */
-export const DETOUR_MAX_KM = 2;
+/**
+ * Les règles de la tournée, réglables depuis l'espace plateforme
+ * (SystemConfig). Ces valeurs servent de repli.
+ */
+export interface ReglesTournee {
+  /** Au-delà, une course de plus ferait trop attendre les clients déjà servis. 1 : pas de tournée. */
+  maxCourses: number;
+  /** Clients « au même endroit ». */
+  rayonClientsKm: number;
+  /** Ce qu'une course de plus peut rallonger la tournée. */
+  detourMaxKm: number;
+}
+
+export const REGLES_TOURNEE_PAR_DEFAUT: ReglesTournee = { maxCourses: 3, rayonClientsKm: 2, detourMaxKm: 2 };
 /** Deux retraits plus proches que cela : le même commerce. */
 export const MEME_COMMERCE_KM = 0.1;
 
@@ -81,18 +91,23 @@ export function ordonner(depart: Point | null, courses: CourseTournee[]) {
  * depart : où se trouve le livreur (ou, pour un lot pas encore attribué, le
  * premier commerce).
  */
-export function detourPourRejoindre(depart: Point | null, courses: CourseTournee[], nouvelle: CourseTournee) {
-  if (courses.length === 0 || courses.length >= MAX_COURSES_PAR_LIVREUR) return null;
+export function detourPourRejoindre(
+  depart: Point | null,
+  courses: CourseTournee[],
+  nouvelle: CourseTournee,
+  regles: ReglesTournee = REGLES_TOURNEE_PAR_DEFAUT
+) {
+  if (courses.length === 0 || courses.length >= regles.maxCourses) return null;
   if (!estUnPoint(nouvelle.retrait) || !estUnPoint(nouvelle.remise)) return null;
   if (courses.some((c) => !estUnPoint(c.retrait) || !estUnPoint(c.remise))) return null;
 
   const avant = ordonner(depart, courses).km;
   const apres = ordonner(depart, [...courses, nouvelle]).km;
   const detour = Math.max(0, apres - avant);
-  const surLeTrajet = detour <= DETOUR_MAX_KM;
+  const surLeTrajet = detour <= regles.detourMaxKm;
 
   const memeCommerce = courses.some((c) => distanceKm(c.retrait, nouvelle.retrait) <= MEME_COMMERCE_KM);
-  const clientProche = courses.some((c) => distanceKm(c.remise, nouvelle.remise) <= RAYON_CLIENTS_KM);
+  const clientProche = courses.some((c) => distanceKm(c.remise, nouvelle.remise) <= regles.rayonClientsKm);
 
   if (!(memeCommerce || surLeTrajet)) return null;
   if (!(clientProche || surLeTrajet)) return null;
