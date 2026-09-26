@@ -9,7 +9,7 @@ import { useDriverAlerts } from '../lib/useDriverAlerts';
 import { DutyMode, Tracking, useDriverLocation } from '../lib/useDriverLocation';
 import { useRealtimeEvent } from '../lib/realtime';
 import { onDriverNotificationTap, PushDriverData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
-import { COLORS } from '../components/ui';
+import { COLORS, DARK } from '../components/ui';
 import DashboardScreen, { EarningsSummary } from '../components/screens/DashboardScreen';
 import DeliveryScreen from '../components/screens/DeliveryScreen';
 import HistoryScreen from '../components/screens/HistoryScreen';
@@ -456,7 +456,7 @@ export default function DeliveryApp() {
   // Delivery Detail Screen
   if (openDeliveryId) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.container, styles.containerDark]} edges={['top', 'bottom']}>
         <StatusBar style="light" />
         <DeliveryScreen
           key={openDeliveryId}
@@ -586,14 +586,17 @@ export default function DeliveryApp() {
     );
   };
 
+  // L'écran de course est au thème sombre, jusque sous la barre d'état.
+  const courseDark = tab === 'course' && Boolean(currentDelivery);
+
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, courseDark && styles.containerDark]} edges={['top', 'bottom']}>
       <StatusBar style="light" />
 
-      <View style={styles.dashboardContainer}>
+      <View style={[styles.dashboardContainer, courseDark && styles.containerDark]}>
         {renderTabContent()}
 
-        <View style={styles.bottomTabBar}>
+        <View style={[styles.bottomTabBar, courseDark && styles.bottomTabBarDark]}>
           <TouchableOpacity style={styles.tabButton} onPress={() => setMenuOpen(true)}>
             <View>
               <Text style={styles.tabIcon}>☰</Text>
@@ -803,6 +806,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.primary,
     position: 'relative',
+  },
+  containerDark: {
+    backgroundColor: DARK.bg,
+  },
+  bottomTabBarDark: {
+    backgroundColor: DARK.card,
+    borderTopColor: DARK.border,
   },
   menuOverlay: {
     position: 'absolute',

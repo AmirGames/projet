@@ -12,9 +12,39 @@ export const COLORS = {
   success: '#4CAF50',
 };
 
-export function ScreenHeader({ title, subtitle, onBack }: { title: string; subtitle?: string; onBack?: () => void }) {
+/**
+ * Thème sombre de l'écran de course. Le noir pur éteint les pixels des écrans
+ * OLED, la majorité des téléphones : c'est l'écran qui reste allumé le plus
+ * longtemps, en plein trajet. Les contrastes restent lisibles en plein soleil.
+ */
+export const DARK = {
+  primary: '#0A6CD6',
+  link: '#4DA3FF',
+  bg: '#000',
+  card: '#15181C',
+  raised: '#22262C',
+  text: '#ECEEF1',
+  secondary: '#B4BAC2',
+  muted: '#8B939D',
+  border: '#2A2F36',
+  danger: '#FF6B61',
+  success: '#23863F',
+  warning: '#F5B942',
+};
+
+export function ScreenHeader({
+  title,
+  subtitle,
+  onBack,
+  dark,
+}: {
+  title: string;
+  subtitle?: string;
+  onBack?: () => void;
+  dark?: boolean;
+}) {
   return (
-    <View style={ui.header}>
+    <View style={[ui.header, dark && ui.headerDark]}>
       {onBack && (
         <TouchableOpacity onPress={onBack} style={ui.back}>
           <Text style={ui.backText}>←</Text>
@@ -28,21 +58,31 @@ export function ScreenHeader({ title, subtitle, onBack }: { title: string; subti
   );
 }
 
-export function Card({ title, children }: { title?: string; children: React.ReactNode }) {
+export function Card({ title, children, dark }: { title?: string; children: React.ReactNode; dark?: boolean }) {
   return (
-    <View style={ui.card}>
-      {title ? <Text style={ui.cardTitle}>{title}</Text> : null}
+    <View style={[ui.card, dark && ui.cardDark]}>
+      {title ? <Text style={[ui.cardTitle, dark && { color: DARK.muted }]}>{title}</Text> : null}
       {children}
     </View>
   );
 }
 
-export function Row({ label, value, last }: { label: string; value?: React.ReactNode; last?: boolean }) {
+export function Row({
+  label,
+  value,
+  last,
+  dark,
+}: {
+  label: string;
+  value?: React.ReactNode;
+  last?: boolean;
+  dark?: boolean;
+}) {
   return (
-    <View style={[ui.row, last && { borderBottomWidth: 0 }]}>
-      <Text style={ui.rowLabel}>{label}</Text>
+    <View style={[ui.row, dark && { borderBottomColor: DARK.border }, last && { borderBottomWidth: 0 }]}>
+      <Text style={[ui.rowLabel, dark && { color: DARK.secondary }]}>{label}</Text>
       {typeof value === 'string' || typeof value === 'number' ? (
-        <Text style={ui.rowValue}>{value}</Text>
+        <Text style={[ui.rowValue, dark && { color: DARK.text }]}>{value}</Text>
       ) : (
         value
       )}
@@ -77,6 +117,7 @@ export const ui = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  headerDark: { backgroundColor: DARK.card, borderBottomWidth: 1, borderBottomColor: DARK.border },
   back: { marginRight: 12, paddingVertical: 4, paddingRight: 8 },
   backText: { color: '#fff', fontSize: 22, fontWeight: '600' },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
@@ -88,6 +129,7 @@ export const ui = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
+  cardDark: { backgroundColor: DARK.card },
   cardTitle: {
     fontSize: 11,
     fontWeight: '600',

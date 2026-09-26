@@ -32,6 +32,7 @@ export default function LiveMap({
   follow = 'driver',
   height,
   onRoute,
+  dark,
 }: {
   driver: MapPoint | null;
   pickup: MapPoint | null;
@@ -43,6 +44,8 @@ export default function LiveMap({
   /** Sans hauteur, la carte occupe toute la place disponible. */
   height?: number;
   onRoute?: (route: RouteInfo | null) => void;
+  /** Fond de carte assombri, pour l'écran de course au thème sombre. */
+  dark?: boolean;
 }) {
   const web = useRef<WebView>(null);
   const [ready, setReady] = useState(false);
@@ -51,9 +54,9 @@ export default function LiveMap({
 
   useEffect(() => {
     if (!ready) return;
-    const data = JSON.stringify({ driver, pickup, dropoff, target, follow });
+    const data = JSON.stringify({ driver, pickup, dropoff, target, follow, dark: !!dark });
     web.current?.injectJavaScript(`window.maj && window.maj(${data}); true;`);
-  }, [ready, driver?.lat, driver?.lng, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, target, follow]);
+  }, [ready, driver?.lat, driver?.lng, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, target, follow, dark]);
 
   const onMessage = (e: WebViewMessageEvent) => {
     try {
@@ -65,7 +68,7 @@ export default function LiveMap({
   };
 
   return (
-    <View style={[styles.box, height ? { height } : { flex: 1 }]}>
+    <View style={[styles.box, dark && styles.boxDark, height ? { height } : { flex: 1 }]}>
       <WebView
         ref={web}
         source={{ html: HTML, baseUrl: 'https://zupone.com/' }}
@@ -75,7 +78,7 @@ export default function LiveMap({
         javaScriptEnabled
         domStorageEnabled
         scrollEnabled={false}
-        style={styles.web}
+        style={[styles.web, dark && styles.boxDark]}
       />
     </View>
   );
@@ -84,6 +87,7 @@ export default function LiveMap({
 const styles = StyleSheet.create({
   box: { borderRadius: 10, overflow: 'hidden', backgroundColor: '#e5e3df' },
   web: { flex: 1, backgroundColor: '#e5e3df' },
+  boxDark: { backgroundColor: '#1b1d20' },
 });
 
 const HTML = `<!DOCTYPE html>
@@ -94,6 +98,12 @@ const HTML = `<!DOCTYPE html>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #e5e3df; }
+  /* Thème sombre : les tuiles OpenStreetMap inversées, les couleurs remises
+     dans le bon sens. Les repères et l'itinéraire, eux, gardent leurs couleurs. */
+  body.dark, body.dark #map { background: #1b1d20; }
+  body.dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9); }
+  body.dark .leaflet-control-attribution { background: rgba(0,0,0,.6); color: #aaa; }
+  body.dark .leaflet-control-attribution a { color: #8ab4f8; }
   .pin { display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%;
          border:3px solid #fff; font-size:16px; box-shadow:0 1px 4px rgba(0,0,0,.45); }
   #recentrer { position:absolute; right:10px; bottom:24px; z-index:1000; display:none; background:#007AFF; color:#fff;
@@ -179,6 +189,7 @@ const HTML = `<!DOCTYPE html>
   window.maj = function (d) {
     var targetChanged = d.target !== state.target;
     state = d;
+    document.body.classList.toggle('dark', !!d.dark);
     place('driver', d.driver); place('pickup', d.pickup); place('dropoff', d.dropoff);
     if (targetChanged) framed = false;
     frame();

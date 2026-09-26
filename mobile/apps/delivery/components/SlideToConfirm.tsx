@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Animated, PanResponder, StyleSheet, Text, View } from 'react-native';
-import { COLORS } from './ui';
+import { COLORS, DARK } from './ui';
 
 const KNOB = 52;
 const PADDING = 4;
@@ -15,12 +15,15 @@ export default function SlideToConfirm({
   disabled,
   loading,
   color = COLORS.success,
+  dark,
 }: {
   label: string;
   onConfirm: () => void;
   disabled?: boolean;
   loading?: boolean;
   color?: string;
+  /** Sur l'écran de course, au thème sombre. */
+  dark?: boolean;
 }) {
   const [width, setWidth] = useState(0);
   const x = useRef(new Animated.Value(0)).current;
@@ -53,13 +56,16 @@ export default function SlideToConfirm({
 
   return (
     <View
-      style={[styles.track, { backgroundColor: disabled ? '#ddd' : color }]}
+      style={[styles.track, { backgroundColor: disabled ? (dark ? DARK.raised : '#ddd') : color }]}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
     >
-      <Animated.Text style={[styles.label, disabled && { color: '#888' }, { opacity: textOpacity }]} numberOfLines={1}>
+      <Animated.Text style={[styles.label, disabled && { color: dark ? DARK.muted : '#888' }, { opacity: textOpacity }]} numberOfLines={1}>
         {label}
       </Animated.Text>
-      <Animated.View style={[styles.knob, { transform: [{ translateX: x }] }]} {...responder.panHandlers}>
+      <Animated.View
+        style={[styles.knob, dark && disabled && { backgroundColor: DARK.card }, { transform: [{ translateX: x }] }]}
+        {...responder.panHandlers}
+      >
         {loading ? <ActivityIndicator color={color} /> : <Text style={[styles.arrow, { color: disabled ? '#aaa' : color }]}>»</Text>}
       </Animated.View>
     </View>
