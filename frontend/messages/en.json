@@ -73,7 +73,9 @@
       "driverSupport": "Driver chat",
       "reviews": "Reported reviews",
       "monitoring": "Monitoring"
-    }
+    },
+    "openMenu": "Open menu",
+    "toggleSidebar": "Collapse or expand the menu"
   },
   "superownerDashboard": {
     "loading": "Loading...",

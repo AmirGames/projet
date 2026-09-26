@@ -73,7 +73,9 @@
       "driverSupport": "Chat livreurs",
       "reviews": "Avis signalés",
       "monitoring": "Surveillance"
-    }
+    },
+    "openMenu": "Ouvrir le menu",
+    "toggleSidebar": "Replier ou déplier le menu"
   },
   "superownerDashboard": {
     "loading": "Chargement...",
