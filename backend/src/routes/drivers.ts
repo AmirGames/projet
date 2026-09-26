@@ -19,7 +19,7 @@ import { DriverPayoutService } from "../services/driver-payout.service";
 import { DeliveryProofService, exigerAttenteTerminee, finAttente } from "../services/delivery-proof.service";
 import { FileUploadService } from "../services/file-upload.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
-import { DriverActivityService, FiltreHistorique } from "../services/driver-activity.service";
+import { bilanCourse, DriverActivityService, FiltreHistorique } from "../services/driver-activity.service";
 import { DriverAvailabilityService } from "../services/driver-availability.service";
 import { Notifier, enArrierePlan } from "../services/notifier.service";
 import { DriverSupportService, LONGUEUR_MAX } from "../services/driver-support.service";
@@ -722,7 +722,7 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
 
     // Seul le livreur de la course (ou celui à qui elle est proposée) la lit :
     // elle porte le nom, le téléphone et l'adresse du client.
-    await courseDuLivreur(req, deliveryId);
+    const { livreur } = await courseDuLivreur(req, deliveryId);
 
     const delivery = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
@@ -732,7 +732,12 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
             items: { include: { product: true } },
             store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
           }
-        }
+        },
+        offers: {
+          where: { driverId: livreur.id, status: "ACCEPTED" },
+          select: { payout: true, distanceKm: true, respondedAt: true },
+          take: 1,
+        },
       }
     });
 
@@ -772,6 +777,12 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
         // Le livreur doit savoir qu'un code lui sera demandé, sans jamais le
         // lire : c'est le client qui le détient.
         ...DeliveryProofService.etatDeLaPreuve(delivery),
+        // Course livrée par lui : ce qu'elle lui a rapporté, en distance et
+        // en temps, pour l'écran de fin de course.
+        bilan:
+          delivery.status === "DELIVERED" && delivery.driverId === livreur.id
+            ? bilanCourse(delivery, delivery.offers[0])
+            : null,
       }
     });
   } catch (err) {

@@ -53,6 +53,8 @@ export default function DeliveryApp() {
   const [activeDeliveries, setActiveDeliveries] = useState<Delivery[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [openDeliveryId, setOpenDeliveryId] = useState<string | null>(null);
+  // La dernière course suivie dans l'onglet « Course en cours ».
+  const [lastCourseId, setLastCourseId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [togglingOnline, setTogglingOnline] = useState(false);
   const [answeringOfferId, setAnsweringOfferId] = useState<string | null>(null);
@@ -264,6 +266,13 @@ export default function DeliveryApp() {
   const visibleDeliveries = activeDeliveries
     .map((d) => withPendingSteps(d, outbox.pending))
     .filter((d) => d.status !== 'DELIVERED');
+
+  const activeId = visibleDeliveries[0]?.id ?? null;
+  useEffect(() => {
+    if (tab === 'course' && activeId) setLastCourseId(activeId);
+    // Ailleurs que sur l'onglet, une course finie n'a plus à y revenir.
+    if (tab !== 'course' && !activeId) setLastCourseId(null);
+  }, [tab, activeId]);
 
   // Les étapes faites sans réseau partent au lancement, au retour dans
   // l'application et à la reconnexion (le retour du réseau, lui, est suivi
@@ -565,6 +574,7 @@ export default function DeliveryApp() {
           onBack={() => setOpenDeliveryId(null)}
           onChanged={() => loadAll(token)}
           onTrackingChange={setTracking}
+          todayEarnings={earnings?.today ?? null}
         />
         {safetyCheck}
       </SafeAreaView>
@@ -572,6 +582,10 @@ export default function DeliveryApp() {
   }
 
   const currentDelivery = visibleDeliveries[0];
+  // L'onglet « Course en cours » reste sur la course qui vient de se
+  // terminer : sans cela, elle disparaissait avec sa remise, et l'écran de
+  // fin avec elle.
+  const courseTabId = currentDelivery?.id ?? lastCourseId;
   const headerSubtitle = (
     <View style={styles.subtitleRow}>
       <View style={[styles.liveDot, { backgroundColor: online && connected ? '#7CFC8A' : '#FFB3B3' }]} />
@@ -620,17 +634,21 @@ export default function DeliveryApp() {
     }
     if (tab === 'account') return <AccountScreen token={token} onBack={back} onDriverLoaded={onDriverLoaded} />;
     if (tab === 'course') {
-      if (currentDelivery) {
+      if (courseTabId) {
         return (
           <DeliveryScreen
-            key={currentDelivery.id}
-            deliveryId={currentDelivery.id}
+            key={courseTabId}
+            deliveryId={courseTabId}
             token={token}
             position={position}
             navigationApp={prefs.navigationApp}
-            onBack={back}
+            onBack={() => {
+              setLastCourseId(null);
+              back();
+            }}
             onChanged={() => loadAll(token)}
             onTrackingChange={setTracking}
+            todayEarnings={earnings?.today ?? null}
           />
         );
       }

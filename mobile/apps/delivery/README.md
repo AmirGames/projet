@@ -22,6 +22,11 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
   SMS, puis **attente de 6 minutes** que le client voit sur son suivi, et
   seulement ensuite **dépôt en lieu sûr** avec photo et endroit, envoyés au
   client ; annulation avec motif.
+- **Fin de course** : ce que la course a rapporté, la distance, la durée, les
+  heures (acceptée, récupérée, livrée), la façon dont elle a été remise et les
+  gains du jour ; retour à l'accueil au bout de 20 s (ou tout de suite), sauf
+  si le livreur touche l'écran. Depuis l'historique, le même récapitulatif,
+  sans retour automatique.
 - **Proposition de course plein écran** : trajet complet sur la carte, montant
   garanti, durée et distance totales, bouton « Accepter » qui se vide avec le
   temps de réponse.

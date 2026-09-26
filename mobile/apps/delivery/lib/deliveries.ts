@@ -82,6 +82,18 @@ export interface Delivery {
   attenteFinLe?: string | null;
   /** L'heure du serveur à la lecture. */
   maintenant?: string | null;
+  /** Course livrée par ce livreur : ce qu'elle lui a rapporté (écran de fin). */
+  bilan?: DeliveryReport | null;
+}
+
+export interface DeliveryReport {
+  payout: number;
+  distanceKm: number | null;
+  acceptedAt: string | null;
+  pickedUpAt: string | null;
+  deliveredAt: string | null;
+  durationMin: number | null;
+  proofType: 'CODE' | 'PHOTO' | string | null;
 }
 
 export const DELIVERY_STATUS: Record<string, { label: string; color: string }> = {

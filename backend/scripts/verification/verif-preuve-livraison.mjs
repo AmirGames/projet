@@ -169,6 +169,13 @@ const compteurRemis = await sqlScalaire(
 );
 check('le compteur d’essais est remis à zéro', compteurRemis === '0', compteurRemis);
 
+titre('Le livreur lit ce que la course lui a rapporté');
+const finie = (await j(await get(`/api/drivers/deliveries/${courseId}`, D)))?.data;
+check('le bilan est là', finie?.bilan != null, JSON.stringify(finie?.bilan));
+check('avec le gain', typeof finie?.bilan?.payout === 'number' && finie.bilan.payout > 0, JSON.stringify(finie?.bilan));
+check('la durée', typeof finie?.bilan?.durationMin === 'number', JSON.stringify(finie?.bilan));
+check('et la preuve', finie?.bilan?.proofType === 'CODE', finie?.bilan?.proofType);
+
 titre('Le client sait comment sa commande a été remise');
 const suivi = await j(await get(`/api/orders/${orderId}`));
 check('la preuve lui est dite', suivi?.preuveDeLivraison === 'CODE', suivi?.preuveDeLivraison);
@@ -378,6 +385,8 @@ const horsReseau = await courseAuSeuil();
 await sqlExec(
   `UPDATE "OrderDelivery" SET "assignedAt" = now() - interval '30 minutes' WHERE id = '${horsReseau.courseId}'`
 );
+const pasFinie = (await j(await get(`/api/drivers/deliveries/${horsReseau.courseId}`, D)))?.data;
+check('pas de bilan avant la remise', pasFinie?.bilan === null, JSON.stringify(pasFinie?.bilan));
 const ilYA10Min = new Date(Date.now() - 10 * 60_000);
 const tardive = await patch(
   `/api/drivers/deliveries/${horsReseau.courseId}`,

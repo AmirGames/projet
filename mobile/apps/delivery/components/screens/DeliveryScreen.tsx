@@ -36,6 +36,7 @@ import { useRealtimeEvent } from '../../lib/realtime';
 import type { Prefs } from '../../lib/session';
 import type { Position, Tracking } from '../../lib/useDriverLocation';
 import SlideToConfirm from '../SlideToConfirm';
+import CompletionSummary from '../CompletionSummary';
 import LiveMap, { RouteInfo } from '../LiveMap';
 import { Card, COLORS, ErrorBox, isDarkTheme, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
@@ -59,6 +60,7 @@ export default function DeliveryScreen({
   onBack,
   onChanged,
   onTrackingChange,
+  todayEarnings,
 }: {
   deliveryId: string;
   token: string;
@@ -68,6 +70,8 @@ export default function DeliveryScreen({
   onChanged: () => void;
   /** La prochaine étape et la carte en plein écran décident de la précision du GPS. */
   onTrackingChange: (tracking: Tracking) => void;
+  /** Gains du jour, affichés à la fin de la course. */
+  todayEarnings: number | null;
 }) {
   const [serverDelivery, setDelivery] = useState<Delivery | null>(null);
   // Affichée depuis le téléphone, faute de réseau : peut dater un peu.
@@ -78,6 +82,10 @@ export default function DeliveryScreen({
   const delivery = serverDelivery && withPendingSteps(serverDelivery, outbox.pending);
   const pendingHere = outbox.pending.filter((p) => p.deliveryId === deliveryId);
   const rejectedHere = outbox.rejected.filter((r) => r.deliveryId === deliveryId);
+  // La course était-elle en cours à l'ouverture de l'écran ? Terminée ici,
+  // l'écran de fin ramène seul à l'accueil ; ouverte depuis l'historique, non.
+  const activeOnOpen = useRef<boolean | null>(null);
+  if (delivery && activeOnOpen.current == null) activeOnOpen.current = delivery.status !== 'DELIVERED';
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -426,6 +434,22 @@ export default function DeliveryScreen({
     );
   }
 
+  // Course livrée : l'écran de fin, avec ce qu'elle a rapporté.
+  if (delivery.status === 'DELIVERED') {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.raised }}>
+        <ScreenHeader title={`Course ${shortId(delivery.orderId)}`} subtitle="Livrée" onBack={onBack} />
+        <CompletionSummary
+          delivery={delivery}
+          pending={pendingHere.length > 0}
+          todayEarnings={todayEarnings}
+          autoReturn={activeOnOpen.current === true}
+          onBack={onBack}
+        />
+      </View>
+    );
+  }
+
   const status = deliveryStatus(delivery.status);
   const towardCustomer = step >= 2;
 
@@ -488,19 +512,6 @@ export default function DeliveryScreen({
           </View>
         ) : null}
 
-        {delivery.status === 'DELIVERED' && (
-          <View style={[styles.banner, { backgroundColor: COLORS.successBg, borderLeftColor: COLORS.success }]}>
-            <Text style={styles.bannerTitle}>✅ Course terminée</Text>
-            <Text style={styles.bannerText}>
-              {pendingHere.length > 0
-                ? 'Merci ! La remise part dès le retour du réseau ; vous serez de nouveau disponible à ce moment-là.'
-                : 'Merci ! Vous êtes de nouveau disponible pour la course suivante.'}
-            </Text>
-            <TouchableOpacity style={styles.primaryButton} onPress={onBack}>
-              <Text style={styles.primaryButtonText}>Retour à l’accueil</Text>
-            </TouchableOpacity>
-          </View>
-        )}
         {delivery.status === 'FAILED' && (
           <View style={[styles.banner, { backgroundColor: COLORS.dangerBg, borderLeftColor: COLORS.danger }]}>
             <Text style={styles.bannerTitle}>Course annulée</Text>

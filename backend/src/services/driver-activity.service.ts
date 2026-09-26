@@ -1,4 +1,5 @@
 import { db } from "./db";
+import type { Prisma } from "@prisma/client";
 
 /**
  * L'activité d'un livreur : l'historique de ses courses et les chiffres qui
@@ -36,6 +37,36 @@ function coursesDuLivreur(driverId: string) {
 function minutesEntre(debut?: Date | null, fin?: Date | null) {
   if (!debut || !fin) return null;
   return Math.max(0, Math.round((fin.getTime() - debut.getTime()) / 60000));
+}
+
+type CoursePourBilan = {
+  status: string;
+  driverPayout?: Prisma.Decimal | number | null;
+  distanceKm?: number | null;
+  assignedAt?: Date | null;
+  pickupTime?: Date | null;
+  deliveryTime?: Date | null;
+  proofType?: string | null;
+};
+type OffreAcceptee = { payout?: Prisma.Decimal | number | null; distanceKm?: number | null; respondedAt?: Date | null };
+
+/**
+ * Ce que la course a rapporté au livreur et ce qu'elle lui a pris : la
+ * même lecture pour l'historique et pour l'écran de fin de course. On paie
+ * ce qui a été annoncé à l'attribution (driverPayout, à défaut l'offre
+ * acceptée), jamais les frais facturés au client.
+ */
+export function bilanCourse(c: CoursePourBilan, offre?: OffreAcceptee | null) {
+  const acceptee = c.assignedAt ?? offre?.respondedAt ?? null;
+  return {
+    distanceKm: c.distanceKm ?? offre?.distanceKm ?? null,
+    payout: c.status === "DELIVERED" ? Number(c.driverPayout ?? offre?.payout ?? 0) : 0,
+    acceptedAt: acceptee,
+    pickedUpAt: c.pickupTime ?? null,
+    deliveredAt: c.deliveryTime ?? null,
+    durationMin: minutesEntre(acceptee, c.deliveryTime),
+    proofType: c.proofType ?? null,
+  };
 }
 
 export class DriverActivityService {
@@ -128,13 +159,7 @@ export class DriverActivityService {
         // La ville suffit dans un historique : l'adresse exacte d'un client
         // n'a plus à rester sous les yeux une fois la course finie.
         deliveryCity: [c.order?.deliveryPostal, c.order?.deliveryCity].filter(Boolean).join(" "),
-        distanceKm: c.distanceKm ?? offre?.distanceKm ?? null,
-        payout: aMoi && c.status === "DELIVERED" ? Number(c.driverPayout ?? offre?.payout ?? 0) : 0,
-        acceptedAt: c.assignedAt ?? offre?.respondedAt ?? null,
-        pickedUpAt: c.pickupTime,
-        deliveredAt: c.deliveryTime,
-        durationMin: minutesEntre(c.assignedAt, c.deliveryTime),
-        proofType: c.proofType,
+        ...bilanCourse(aMoi ? c : { ...c, status: "CANCELLED" }, offre),
         rating: c.rating ? { note: c.rating.note, commentaire: c.rating.commentaire } : null,
         createdAt: c.createdAt,
       };
