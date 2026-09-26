@@ -642,6 +642,7 @@ export default function DeliveryApp() {
           pushInfo={pushSetup ? (pushSetup.status === 'enabled' ? undefined : pushSetup.reason) : 'Vérification…'}
           gps={gps}
           background={background}
+          email={email}
           onBack={back}
         />
       );

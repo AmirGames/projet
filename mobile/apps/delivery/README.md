@@ -96,6 +96,12 @@ Les notifications push, la localisation et l'appareil photo demandent une
 `npx eas-cli@latest build --profile development`) : Expo Go ne reçoit pas les
 push. Le projet EAS doit être configuré (`npx eas-cli@latest init`).
 
+## Publier
+
+Tout est décrit dans [PUBLICATION.md](PUBLICATION.md) : configuration EAS
+(`eas.json`), comptes Apple et Google, notifications push, builds, fiches
+et déclarations des stores.
+
 ## Organisation
 
 ```

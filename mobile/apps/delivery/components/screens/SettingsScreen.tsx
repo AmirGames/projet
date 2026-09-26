@@ -1,7 +1,7 @@
 import React from 'react';
 import { Linking, Platform, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
-import { API_URL } from '../../lib/api';
+import { API_URL, DPO_EMAIL, SITE_URL } from '../../lib/api';
 import type { Prefs } from '../../lib/session';
 import type { BackgroundState, GpsState } from '../../lib/useDriverLocation';
 import { Card, COLORS, isDarkTheme, Row, ScreenHeader, themedStyles, ui } from '../ui';
@@ -43,6 +43,7 @@ export default function SettingsScreen({
   pushInfo,
   gps,
   background,
+  email,
   onBack,
 }: {
   prefs: Prefs;
@@ -52,6 +53,8 @@ export default function SettingsScreen({
   pushInfo?: string;
   gps: GpsState;
   background: BackgroundState;
+  /** Le compte connecté : il accompagne une demande de suppression. */
+  email?: string;
   onBack: () => void;
 }) {
   return (
@@ -149,6 +152,29 @@ export default function SettingsScreen({
           <Row label="Version" value={Constants.expoConfig?.version || '1.0.0'} />
           <Row label="Serveur" value={API_URL} last />
         </Card>
+
+        {/* Les stores exigent la politique de confidentialité dans
+            l'application, et une voie pour supprimer son compte. */}
+        <Card title="Vos données">
+          <TouchableOpacity style={styles.linkRow} onPress={() => Linking.openURL(`${SITE_URL}/confidentialite`)}>
+            <Text style={styles.linkText}>Politique de confidentialité</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.linkRow} onPress={() => Linking.openURL(`${SITE_URL}/conditions-livreurs`)}>
+            <Text style={styles.linkText}>Conditions des livreurs</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.linkRow, { borderBottomWidth: 0 }]}
+            onPress={() =>
+              Linking.openURL(
+                `mailto:${DPO_EMAIL}?subject=${encodeURIComponent('Suppression de mon compte livreur')}&body=${encodeURIComponent(
+                  `Bonjour,\n\nJe souhaite la suppression de mon compte livreur Zupone${email ? ` (${email})` : ''} et des données qui s’y rattachent.\n`
+                )}`
+              ).catch(() => undefined)
+            }
+          >
+            <Text style={[styles.linkText, { color: COLORS.danger }]}>Demander la suppression de mon compte</Text>
+          </TouchableOpacity>
+        </Card>
       </ScrollView>
     </View>
   );
@@ -162,6 +188,8 @@ const styles = themedStyles(() => ({
   switchLabel: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
   test: { paddingVertical: 10, alignItems: 'center', backgroundColor: COLORS.raised, borderRadius: 8 },
   testText: { fontSize: 15, fontWeight: '600', color: COLORS.link },
+  linkRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  linkText: { fontSize: 15, fontWeight: '600', color: COLORS.link },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 14,

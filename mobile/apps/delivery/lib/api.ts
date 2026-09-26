@@ -15,12 +15,21 @@ import { reportReachable, reportUnreachable } from './network';
 function detectApiUrl() {
   const fromEnv = process.env.EXPO_PUBLIC_API_URL;
   if (fromEnv) return fromEnv.replace(/\/+$/, '');
+  // Une version publiée sans adresse de serveur ne joindrait que le téléphone
+  // lui-même : eas.json la fixe pour chaque profil de build.
+  if (!__DEV__) console.error('EXPO_PUBLIC_API_URL manquante : définissez-la dans eas.json');
   const devHost = Constants.expoConfig?.hostUri?.split(':')[0];
   if (devHost && devHost !== 'localhost' && devHost !== '127.0.0.1') return `http://${devHost}:3001`;
   return 'http://localhost:3001';
 }
 
 export const API_URL = detectApiUrl();
+
+/** Le site public : conditions, confidentialité (fixé par eas.json en production). */
+export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || 'https://zupone.com').replace(/\/+$/, '');
+
+/** Le délégué à la protection des données, comme sur la politique de confidentialité. */
+export const DPO_EMAIL = 'dpo@zupone.com';
 
 export class ApiError extends Error {
   constructor(message: string, public status: number) {
