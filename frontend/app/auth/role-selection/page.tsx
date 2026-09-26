@@ -6,6 +6,7 @@ import { telephoneInternational } from "@/lib/pays-infos";
 import { paysDuNavigateur } from "@/lib/pays-client";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { slugify } from "@/lib/slug";
 import { useTypesDeCommerce } from "@/lib/types-commerce";
 import Link from "next/link";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
@@ -29,16 +30,6 @@ interface Roles {
       role: string;
     }>;
   };
-}
-
-function slugify(value: string, trim = true): string {
-  const slug = value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/-{2,}/g, "-");
-  return trim ? slug.replace(/^-+|-+$/g, "") : slug.replace(/^-+/, "");
 }
 
 export default function RoleSelectionPage() {
