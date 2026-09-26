@@ -1,4 +1,25 @@
-export const API_URL = 'http://localhost:3001';
+import Constants from 'expo-constants';
+
+/**
+ * L'adresse du serveur.
+ *
+ * `localhost` désigne le téléphone lui-même, pas le PC : « Failed to connect
+ * to localhost/127.0.0.1:3001 ». Dans l'ordre :
+ *   1. EXPO_PUBLIC_API_URL, si elle est définie (production, autre machine) ;
+ *   2. en développement, le PC qui sert l'application (Metro) : le serveur
+ *      tourne sur la même machine, port 3001. Rien à changer d'un réseau Wi-Fi
+ *      à l'autre ;
+ *   3. localhost, pour le navigateur ou un `adb reverse tcp:3001 tcp:3001`.
+ */
+function detectApiUrl() {
+  const fromEnv = process.env.EXPO_PUBLIC_API_URL;
+  if (fromEnv) return fromEnv.replace(/\/+$/, '');
+  const devHost = Constants.expoConfig?.hostUri?.split(':')[0];
+  if (devHost && devHost !== 'localhost' && devHost !== '127.0.0.1') return `http://${devHost}:3001`;
+  return 'http://localhost:3001';
+}
+
+export const API_URL = detectApiUrl();
 
 export class ApiError extends Error {
   constructor(message: string, public status: number, public code?: string) {

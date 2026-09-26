@@ -56,7 +56,10 @@ npm install
 npx expo start
 ```
 
-L'adresse du serveur est dans `lib/api.ts` (`API_URL`).
+L'adresse du serveur se trouve toute seule en développement : c'est le PC qui
+sert l'application (Metro), port 3001. Pour une autre machine ou la
+production, définir `EXPO_PUBLIC_API_URL` (par exemple dans un fichier `.env` :
+`EXPO_PUBLIC_API_URL=https://api.zupone.com`). Voir `lib/api.ts`.
 
 Les notifications push, la localisation et l'appareil photo demandent une
 **build de développement** (`npx expo run:android` ou
