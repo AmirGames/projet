@@ -102,6 +102,25 @@ page.on('console', (m) => {
 });
 
 const texte = () => page.locator('body').innerText();
+
+/**
+ * Les paniers en cours, tels que l'accueil les rappelle.
+ *
+ * Le rappel « un panier vous attend ailleurs » a quitté la vitrine, où l'on
+ * compose la commande d'un seul commerce : le bouton « Paniers (n) » de
+ * l'accueil liste chaque panier, avec son commerce et son nombre d'articles.
+ */
+const paniersDeLAccueil = async () => {
+  await page.goto(`${SITE}/client`);
+  await page.waitForTimeout(3000);
+  // Deux boutons : celui de la barre mobile, masqué sur grand écran, et le bon.
+  const bouton = page.locator('button[aria-label^="Paniers ("]:visible').first();
+  await bouton.click();
+  await page.waitForTimeout(800);
+  // Seulement la liste déroulée : l'accueil montre aussi les commerces
+  // eux-mêmes, dont les noms s'y trouvent de toute façon.
+  return bouton.locator('xpath=..').innerText();
+};
 const ajouterAuPanier = (plat) =>
   page.locator(`button[aria-label="Ajouter ${plat} au panier"]`).first().click();
 
@@ -111,17 +130,18 @@ titre('Un panier chez le commerce 1');
 await page.goto(`${SITE}/store/${un.slug}`);
 await page.waitForTimeout(3500);
 
-// Le panier de la vitrine est un panneau replié : sans l'ouvrir, ses lignes ne
-// sont pas dans la page.
-await page.locator('button', { hasText: 'Panier' }).first().click();
-await page.waitForTimeout(1000);
-
 check('le menu du commerce 1 est là', (await texte()).includes(un.plat), (await texte()).slice(0, 300));
 
 await ajouterAuPanier(un.plat);
 await page.waitForTimeout(600);
 await ajouterAuPanier(un.plat);
 await page.waitForTimeout(800);
+
+// Le panier de la vitrine est un tiroir : sans l'ouvrir, ses lignes ne sont
+// pas dans la page. Ouvert, son voile couvre le menu — d'où l'ouverture
+// après les ajouts.
+await page.locator('button', { hasText: 'Panier' }).first().click();
+await page.waitForTimeout(1000);
 
 const chezUn = await texte();
 check('son plat est au panier', chezUn.includes(un.plat), chezUn.slice(0, 600));
@@ -142,21 +162,29 @@ check('le menu du commerce 2 est là', chezDeux.includes(deux.plat), chezDeux.sl
 // Le cœur du correctif.
 check('le panier du commerce 1 ne suit pas', !chezDeux.includes(un.plat), chezDeux.slice(0, 800));
 check('le panier y est vide', /Votre panier est vide/.test(chezDeux), chezDeux.slice(0, 800));
-check(
-  'mais le panier laissé ailleurs est rappelé',
-  /panier vous attend ailleurs/i.test(chezDeux),
-  chezDeux.slice(0, 900)
-);
-check('avec le nom du commerce', chezDeux.includes(un.nom), chezDeux.slice(0, 900));
-check('et son nombre d’articles', /2 articles/.test(chezDeux), chezDeux.slice(0, 900));
 
 titre('Le commerce 2 a son propre panier');
+// Le tiroir ouvert couvre le menu : on le referme, on ajoute, on le rouvre.
+await page.keyboard.press('Escape');
+await page.waitForTimeout(400);
 await ajouterAuPanier(deux.plat);
 await page.waitForTimeout(800);
+await page.locator('button', { hasText: 'Panier' }).first().click();
+await page.waitForTimeout(1000);
 
 const deuxRempli = await texte();
 check('son plat s’y ajoute', deuxRempli.includes(deux.plat), deuxRempli.slice(0, 700));
 check('sans ramener celui du commerce 1', !new RegExp(`${un.plat}\\s*\\n`).test(deuxRempli), deuxRempli.slice(0, 700));
+
+titre('L’accueil rappelle les deux paniers');
+const accueil = await paniersDeLAccueil();
+check('le panier du commerce 1 y est', accueil.includes(un.nom), accueil.slice(0, 900));
+check('celui du commerce 2 aussi', accueil.includes(deux.nom), accueil.slice(0, 900));
+check(
+  'avec leur nombre d’articles',
+  (await page.locator('button[aria-label="Paniers (2)"]:visible').count()) === 1,
+  accueil.slice(0, 900)
+);
 
 titre('Retour chez le commerce 1');
 await page.goto(`${SITE}/store/${un.slug}`);
@@ -170,11 +198,6 @@ await page.waitForTimeout(1000);
 const retour = await texte();
 check('son panier est retrouvé intact', retour.includes(un.plat), retour.slice(0, 700));
 check('la quantité est conservée', /\b2\b/.test(retour), retour.slice(0, 700));
-check(
-  'le panier du commerce 2 est signalé à son tour',
-  retour.includes(deux.nom),
-  retour.slice(0, 900)
-);
 
 titre('Vider un panier ne touche pas l’autre');
 // On retire les deux unités du commerce 1.
@@ -185,7 +208,10 @@ await page.waitForTimeout(800);
 
 const vide = await texte();
 check('le panier du commerce 1 est vide', /Votre panier est vide/.test(vide), vide.slice(0, 700));
-check('celui du commerce 2 est intact', vide.includes(deux.nom), vide.slice(0, 900));
+
+const accueilApres = await paniersDeLAccueil();
+check('celui du commerce 2 est intact', accueilApres.includes(deux.nom), accueilApres.slice(0, 900));
+check('celui du commerce 1 a quitté l’accueil', !accueilApres.includes(un.nom), accueilApres.slice(0, 900));
 
 // ===== La vitrine =====
 

@@ -18,12 +18,18 @@ npm i -D playwright
 npx playwright install chromium
 ```
 
-Puis, dans trois terminaux :
+Puis, dans quatre terminaux :
 
 ```bash
-# 1. L'API, sur une base de test
+# 0. Le faux service d'adresses (voir plus bas), sur le port 4599
 cd backend
-DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" PORT=3099 npm run dev
+node scripts/verification/faux-service-adresses.mjs
+
+# 1. L'API, sur une base de test, tournée vers ce faux service
+cd backend
+DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" \
+ADDRESS_API_URL=http://127.0.0.1:4599/ban/ PHOTON_API_URL=http://127.0.0.1:4599/photon/ \
+PORT=3099 npm run dev
 
 # 2. Le jeu de démonstration
 cd backend
@@ -123,21 +129,12 @@ Le parcours mot de passe ouvre un serveur SMTP minimal sur le port 1025 pour
 lire le message envoyé : le jeton n'existe en clair que dans ce lien, la base
 n'en garde qu'une empreinte. Laissez ce port libre pendant l'exécution.
 
-## La commande en invité
+## Le faux service d'adresses
 
-`verif:invite` a besoin d'un service d'adresses joignable : le client y tape son
-adresse sans passer par une suggestion, et c'est le serveur qui la situe. Le faux
-service du dépôt suffit, et évite de dépendre d'Internet.
-
-```bash
-# 1. le faux service, sur le port 4599
-cd backend
-node scripts/verification/faux-service-adresses.mjs &
-
-# 2. l'API, tournée vers lui
-ADDRESS_API_URL=http://127.0.0.1:4599/ban/ PORT=3099 npm run dev
-
-# 3. la vérification
-cd frontend
-VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
-```
+Plusieurs suites saisissent une adresse que le serveur doit situer :
+`verif-commande-invite`, `verif-zones-livraison`, `verif-courses-livreur`,
+`verif-carte-suivi`. Sans service d'adresses joignable, la commande n'est pas
+située, sa zone reste inconnue et la course n'est proposée à personne — les
+suites échouent sans que rien ne soit cassé. Le faux service du dépôt suffit,
+et évite de dépendre d'Internet : c'est le terminal 0 ci-dessus, et les deux
+variables `ADDRESS_API_URL` et `PHOTON_API_URL` de l'API.

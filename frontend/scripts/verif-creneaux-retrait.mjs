@@ -140,7 +140,9 @@ await page
 await page.waitForTimeout(1200);
 
 titre('Le retrait sur place');
-await page.locator('input[value="PICKUP"]').first().check().catch(() => undefined);
+// Le bouton radio est masqué (sr-only) : c'est son étiquette qu'on clique,
+// comme le client.
+await page.locator('label', { hasText: 'Retrait sur place' }).first().click();
 await page.waitForTimeout(2500);
 
 const champLibre = await page.locator('input[type="datetime-local"]').count();

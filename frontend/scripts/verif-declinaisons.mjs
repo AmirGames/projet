@@ -218,9 +218,15 @@ const panier = await page.locator('body').innerText();
 check('la ligne nomme la déclinaison', /Pâtes 4 fromages — Tagliatelle/.test(panier), panier.slice(0, 900));
 
 titre('Deux déclinaisons font deux lignes');
+// Le tiroir du panier ouvert couvre le menu : on le referme, on ajoute les
+// penne, on le rouvre.
+await page.keyboard.press('Escape');
+await page.waitForTimeout(400);
 await page.locator('[role="radio"]:has-text("Penne")').first().click();
 await page.waitForTimeout(400);
 await bouton.first().click();
+await page.waitForTimeout(800);
+await ouvrirPanier.click();
 await page.waitForTimeout(800);
 
 const deuxLignes = await page.locator('body').innerText();

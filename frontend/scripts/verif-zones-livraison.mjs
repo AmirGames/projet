@@ -218,7 +218,7 @@ await page.locator('button', { hasText: 'Passer la Commande' }).first().click();
 await page.waitForTimeout(1500);
 
 const tunnel = await texte();
-check('le tunnel de commande s’ouvre', /Mode de Livraison/i.test(tunnel), tunnel.slice(0, 400));
+check('le tunnel de commande s’ouvre', /Options de livraison/i.test(tunnel), tunnel.slice(0, 400));
 check(
   'les frais de service inventés ont disparu',
   !/Frais de service/.test(tunnel),
@@ -279,11 +279,18 @@ check(
 );
 
 titre('Le retrait reste possible partout');
-await page.locator('input[value="PICKUP"]').first().check().catch(() => undefined);
+// Le bouton radio est masqué (sr-only) : c'est son étiquette qu'on clique,
+// comme le client.
+await page.locator('label', { hasText: 'Retrait sur place' }).first().click();
 await page.waitForTimeout(2000);
+
+check('le retrait est choisi', await page.locator('input[value="PICKUP"]').first().isChecked(), 'toujours en livraison');
 
 const retrait = await texte();
 check('la livraison n’est plus facturée', /Retrait sur place/.test(retrait), retrait.slice(0, 900));
+
+// Sans les conditions générales de vente acceptées, le bouton reste grisé.
+await page.getByLabel(/conditions générales de vente/).check();
 
 const boutonRetrait = page.locator('button', { hasText: /Confirmer la Commande/ });
 check('la commande reste validable', !(await boutonRetrait.first().isDisabled()), 'bloquée à tort');
