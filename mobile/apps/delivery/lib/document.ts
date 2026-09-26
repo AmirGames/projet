@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import type * as DocumentPickerModule from 'expo-document-picker';
 
 /** Le plafond du serveur : au-delà, l'envoi serait refusé après le transfert. */
@@ -20,6 +21,17 @@ function documentPicker(): typeof DocumentPickerModule | null {
   return cached;
 }
 
+type FileSystemLegacy = typeof import('expo-file-system/legacy');
+
+function fileSystem(): FileSystemLegacy | null {
+  if (Platform.OS === 'web') return null;
+  try {
+    return require('expo-file-system/legacy') as FileSystemLegacy;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Choisit un PDF dans les fichiers du téléphone.
  *
@@ -36,7 +48,10 @@ export async function pickPdf(): Promise<{ uri: string; type: string; name: stri
 
   const result = await picker.getDocumentAsync({
     type: 'application/pdf',
-    copyToCacheDirectory: true,
+    // La copie du sélecteur atterrit hors du dossier que le module d'envoi a le
+    // droit de lire (« Location … isn't readable » dans Expo Go) : on la fait
+    // nous-mêmes, plus bas, à partir du lien content:// d'origine (Android).
+    copyToCacheDirectory: Platform.OS !== 'android',
     multiple: false,
   });
   if (result.canceled || !result.assets?.[0]) return null;
@@ -46,8 +61,16 @@ export async function pickPdf(): Promise<{ uri: string; type: string; name: stri
     throw new Error('Ce fichier dépasse 10 Mo.');
   }
 
+  let uri = asset.uri;
+  const FS = fileSystem();
+  if (FS?.cacheDirectory) {
+    const copie = `${FS.cacheDirectory}piece-${Date.now()}.pdf`;
+    await FS.copyAsync({ from: asset.uri, to: copie });
+    uri = copie;
+  }
+
   return {
-    uri: asset.uri,
+    uri,
     type: asset.mimeType || 'application/pdf',
     name: asset.name || 'document.pdf',
   };
