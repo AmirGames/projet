@@ -588,6 +588,7 @@ export default function DeliveryApp() {
           onTrackingChange={setTracking}
           todayEarnings={earnings?.today ?? null}
           otherActive={visibleDeliveries.filter((d) => d.id !== openDeliveryId).length}
+          otherPickups={visibleDeliveries.filter((d) => d.id !== openDeliveryId && d.status === 'ACCEPTED').length}
         />
         {safetyCheck}
       </SafeAreaView>
@@ -665,6 +666,7 @@ export default function DeliveryApp() {
             onTrackingChange={setTracking}
             todayEarnings={earnings?.today ?? null}
             otherActive={others}
+            otherPickups={visibleDeliveries.filter((d) => d.id !== courseTabId && d.status === 'ACCEPTED').length}
           />
         );
       }

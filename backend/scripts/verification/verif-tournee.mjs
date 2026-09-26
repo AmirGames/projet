@@ -227,6 +227,12 @@ const retraitAvantRemise = arrets.every(
   (a, i) => a.type === 'RETRAIT' || arrets.slice(0, i).some((b) => b.deliveryId === a.deliveryId && b.type === 'RETRAIT')
 );
 check('chaque commande est prise avant d’être remise', retraitAvantRemise, JSON.stringify(arrets.map((a) => `${a.type}:${a.deliveryId.slice(-4)}`)));
+const premiereRemise = arrets.findIndex((a) => a.type === 'REMISE');
+check(
+  'tous les retraits avant la première remise',
+  premiereRemise > 0 && arrets.slice(premiereRemise).every((a) => a.type === 'REMISE'),
+  JSON.stringify(arrets.map((a) => a.type))
+);
 check('la longueur de la tournée est donnée', typeof tournee?.km === 'number' && tournee.km > 0, JSON.stringify(tournee?.km));
 
 titre('Chaque client suit le livreur');

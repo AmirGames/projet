@@ -159,6 +159,8 @@ export default function DashboardScreen({
   const online = Boolean(driver?.isOnline);
   const firstName = driver?.name?.split(' ')[0];
   const gpsMessage = online ? GPS_MESSAGES[gps] : undefined;
+  // Une tournée : les clients restent masqués tant qu'une commande attend au commerce.
+  const retraitsRestants = activeDeliveries.filter((d) => d.status === 'ACCEPTED').length;
 
   return (
     <>
@@ -259,10 +261,14 @@ export default function DashboardScreen({
                 <View style={[styles.queueBar, { backgroundColor: deliveryStatus(d.status).color }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.queueTitle} numberOfLines={1}>
-                    {d.status === 'PICKED_UP' ? `📍 ${d.deliveryAddress}` : `🏪 ${d.pickupStore || d.pickupAddress}`}
+                    {d.status !== 'PICKED_UP'
+                      ? `🏪 ${d.pickupStore || d.pickupAddress}`
+                      : retraitsRestants > 0
+                        ? '✅ Récupérée · client affiché après les autres retraits'
+                        : `📍 ${d.deliveryAddress}`}
                   </Text>
                   <Text style={styles.queueMeta}>
-                    {shortId(d.orderId)} · {deliveryStatus(d.status).label}
+                    {shortId(d.orderId)} · {d.status === 'PICKED_UP' && retraitsRestants > 0 ? 'Récupérée' : deliveryStatus(d.status).label}
                   </Text>
                 </View>
                 <Text style={styles.link}>Ouvrir ›</Text>

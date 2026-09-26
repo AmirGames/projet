@@ -69,11 +69,16 @@ export default function TourneeScreen({
   // Ce que le téléphone sait d'avance sur le serveur : une commande prise
   // sans réseau n'a plus de retrait, une course livrée plus d'arrêt.
   const statut = new Map(deliveries.map((d) => [d.id, d.status]));
-  const visible = (stops || fallbackStops(deliveries)).filter((s) => {
+  const enCours = (stops || fallbackStops(deliveries)).filter((s) => {
     const st = statut.get(s.deliveryId);
     if (!st) return false;
     return !(s.type === 'RETRAIT' && st === 'PICKED_UP');
   });
+  // Les clients n'apparaissent qu'une fois toutes les commandes en main :
+  // d'abord tous les retraits, puis les remises.
+  const retraitsRestants = enCours.filter((s) => s.type === 'RETRAIT').length;
+  const visible = retraitsRestants > 0 ? enCours.filter((s) => s.type === 'RETRAIT') : enCours;
+  const remisesMasquees = enCours.length - visible.length;
   const next = visible[0];
 
   // Le GPS s'affine à l'approche du prochain arrêt.
@@ -139,7 +144,7 @@ export default function TourneeScreen({
           </View>
         )}
 
-        <Card title="Tous les arrêts">
+        <Card title={retraitsRestants > 0 ? 'Commandes à récupérer' : 'Tous les arrêts'}>
           {visible.map((s, i) => {
             const d = deliveries.find((x) => x.id === s.deliveryId);
             return (
@@ -166,6 +171,12 @@ export default function TourneeScreen({
               </TouchableOpacity>
             );
           })}
+          {remisesMasquees > 0 && (
+            <Text style={styles.hidden}>
+              🔒 {remisesMasquees} livraison{remisesMasquees > 1 ? 's' : ''} : les adresses des clients s’afficheront une
+              fois toutes les commandes récupérées.
+            </Text>
+          )}
         </Card>
       </ScrollView>
     </View>
@@ -221,4 +232,5 @@ const styles = themedStyles(() => ({
   rowMeta: { fontSize: 13, color: COLORS.secondary, marginTop: 2 },
   rowWaiting: { fontSize: 12, color: COLORS.warning, marginTop: 2, fontWeight: '600' },
   chevron: { fontSize: 22, color: COLORS.muted },
+  hidden: { fontSize: 13, color: COLORS.secondary, marginTop: 10 },
 }));

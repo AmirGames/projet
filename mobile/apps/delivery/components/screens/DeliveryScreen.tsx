@@ -62,6 +62,7 @@ export default function DeliveryScreen({
   onTrackingChange,
   todayEarnings,
   otherActive = 0,
+  otherPickups = 0,
 }: {
   deliveryId: string;
   token: string;
@@ -75,6 +76,12 @@ export default function DeliveryScreen({
   todayEarnings: number | null;
   /** Les autres courses en cours (tournée) : la fin de celle-ci mène à la suivante. */
   otherActive?: number;
+  /**
+   * Les autres commandes de la tournée encore au commerce. Tant qu'il en
+   * reste, une commande récupérée ne montre ni son client ni sa remise : le
+   * livreur va d'abord chercher les autres.
+   */
+  otherPickups?: number;
 }) {
   const [serverDelivery, setDelivery] = useState<Delivery | null>(null);
   // Affichée depuis le téléphone, faute de réseau : peut dater un peu.
@@ -268,9 +275,13 @@ export default function DeliveryScreen({
     previousStep.current = step;
   }, [step]);
 
+  // Récupérée, mais d'autres commandes de la tournée attendent encore au
+  // commerce : le client et la remise restent masqués jusque-là.
+  const waitingOthers = delivery?.status === 'PICKED_UP' && otherPickups > 0;
+
   // Le GPS s'affine à l'approche de l'étape et quand la carte est en plein
   // écran ; ailleurs, il économise la batterie.
-  const trackingTarget = finished ? null : delivery?.status === 'PICKED_UP' ? dropoff : pickup;
+  const trackingTarget = finished || waitingOthers ? null : delivery?.status === 'PICKED_UP' ? dropoff : pickup;
   const onTrackingRef = useRef(onTrackingChange);
   onTrackingRef.current = onTrackingChange;
   useEffect(() => {
@@ -308,12 +319,16 @@ export default function DeliveryScreen({
       await sendStatus('PICKED_UP');
       await load(true);
       onChanged();
-      navigate(true);
+      // D'autres commandes à prendre : retour à la tournée, vers le retrait
+      // suivant. Sinon, l'itinéraire part vers le client.
+      if (otherPickups > 0) onBack();
+      else navigate(true);
     } catch (e: any) {
       if (isNetworkError(e)) {
         // Sans réseau, la prise en charge est gardée et partira seule.
         await enqueueStep({ kind: 'pickup', deliveryId });
-        navigate(true);
+        if (otherPickups > 0) onBack();
+        else navigate(true);
       } else {
         setRefusal(e.message || "La prise en charge n'a pas pu être enregistrée");
       }
@@ -354,7 +369,7 @@ export default function DeliveryScreen({
 
   // Quatre chiffres saisis : le code se vérifie sans autre geste.
   useEffect(() => {
-    if (code.length === 4 && !photoMode && step === 2 && atCustomer && !updating) confirmHandover({ code });
+    if (code.length === 4 && !photoMode && step === 2 && atCustomer && !waitingOthers && !updating) confirmHandover({ code });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
@@ -461,7 +476,7 @@ export default function DeliveryScreen({
     <View style={{ flex: 1, backgroundColor: COLORS.raised }}>
       <ScreenHeader
         title={`Course ${shortId(delivery.orderId)}`}
-        subtitle={`${status.label}${position ? ' · GPS actif' : ''}`}
+        subtitle={`${waitingOthers ? 'Récupérée' : status.label}${position ? ' · GPS actif' : ''}`}
         onBack={onBack}
       />
       <ScrollView
@@ -523,7 +538,19 @@ export default function DeliveryScreen({
           </View>
         )}
 
-        {!finished && (
+        {waitingOthers && (
+          <Card title="✅ Commande récupérée">
+            <Text style={styles.help}>
+              Il vous reste {otherPickups} commande{otherPickups > 1 ? 's' : ''} à récupérer. L’adresse du client et la
+              remise s’afficheront une fois toutes les commandes de la tournée en main.
+            </Text>
+            <TouchableOpacity style={styles.primaryButton} onPress={onBack}>
+              <Text style={styles.primaryButtonText}>Voir la tournée</Text>
+            </TouchableOpacity>
+          </Card>
+        )}
+
+        {!finished && !waitingOthers && (
           <Card title={towardCustomer ? 'Vers le client' : 'Vers le commerce'}>
             <Text style={styles.place}>
               {towardCustomer ? `📍 ${delivery.deliveryAddress || 'Adresse du client'}` : `🏪 ${delivery.pickupStore || 'Commerce'}`}
@@ -604,7 +631,7 @@ export default function DeliveryScreen({
           </Card>
         )}
 
-        {step === 2 && !atCustomer && (
+        {step === 2 && !waitingOthers && !atCustomer && (
           <Card title="🚗 Allez chez le client">
             {toCustomer != null && toCustomer <= CUSTOMER_NEAR_M && (
               <Text style={styles.near}>🔔 Le client est prévenu de votre arrivée : il peut descendre.</Text>
@@ -622,7 +649,7 @@ export default function DeliveryScreen({
           </Card>
         )}
 
-        {step === 2 && atCustomer && (
+        {step === 2 && !waitingOthers && atCustomer && (
           <Card title="🤝 Remettez la commande">
             {refusal ? <Text style={styles.refusal}>{refusal}</Text> : null}
 
@@ -764,6 +791,11 @@ export default function DeliveryScreen({
           </Card>
         )}
 
+        {waitingOthers ? (
+          <Card title="Client">
+            <Text style={styles.help}>Affiché une fois toutes les commandes de la tournée récupérées.</Text>
+          </Card>
+        ) : (
         <Card title="Client">
           <Row label="Nom" value={delivery.customerName || '—'} />
           <Row label="Adresse" value={delivery.deliveryAddress || '—'} />
@@ -781,6 +813,7 @@ export default function DeliveryScreen({
             }
           />
         </Card>
+        )}
 
         <Card title="Commande">
           {(delivery.items || []).map((item, i) => (
@@ -832,7 +865,7 @@ export default function DeliveryScreen({
           </Card>
         )}
       </ScrollView>
-      <Modal visible={mapOpen && !finished} animationType="slide" onRequestClose={() => setMapOpen(false)}>
+      <Modal visible={mapOpen && !finished && !waitingOthers} animationType="slide" onRequestClose={() => setMapOpen(false)}>
         <View style={styles.fullMap}>
           <View style={styles.fullMapHeader}>
             <View style={{ flex: 1 }}>

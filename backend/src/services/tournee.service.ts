@@ -51,8 +51,10 @@ export interface Arret {
 }
 
 /**
- * Le meilleur ordre des arrêts, au plus proche d'abord, depuis le point de
- * départ : on ne remet jamais une commande qu'on n'a pas encore prise. À
+ * L'ordre des arrêts, au plus proche d'abord, depuis le point de départ :
+ * tous les retraits, puis toutes les remises. On ne remet jamais une
+ * commande qu'on n'a pas encore prise, et l'adresse des clients reste
+ * masquée tant qu'une commande de la tournée attend au commerce. À
  * trois courses (six arrêts au plus), c'est assez proche de l'optimal pour
  * la ville, et instantané.
  */
@@ -69,7 +71,10 @@ export function ordonner(depart: Point | null, courses: CourseTournee[]) {
   let km = 0;
 
   while (restants.length > 0) {
-    const possibles = restants.filter((a) => a.type === "RETRAIT" || recuperees.has(a.deliveryId));
+    // Tous les retraits d'abord : le livreur ne connaît l'adresse d'un client
+    // qu'une fois toutes les commandes de la tournée en main.
+    const retraits = restants.filter((a) => a.type === "RETRAIT");
+    const possibles = retraits.length > 0 ? retraits : restants.filter((a) => recuperees.has(a.deliveryId));
     // Sans point de départ (GPS inconnu), le premier arrêt possible ouvre la marche.
     const suivant = ici
       ? possibles.reduce((best, a) => (distanceKm(ici!, a.point) < distanceKm(ici!, best.point) ? a : best))
