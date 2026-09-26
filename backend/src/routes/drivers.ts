@@ -16,7 +16,7 @@ import {
   piecesAttendues,
 } from "../services/driver-approval.service";
 import { DriverPayoutService } from "../services/driver-payout.service";
-import { DeliveryProofService } from "../services/delivery-proof.service";
+import { DeliveryProofService, exigerAttenteTerminee, finAttente } from "../services/delivery-proof.service";
 import { FileUploadService } from "../services/file-upload.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
 import { DriverActivityService, FiltreHistorique } from "../services/driver-activity.service";
@@ -632,7 +632,7 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
             items: {
               include: { product: true }
             },
-            store: { select: { name: true, address: true, city: true } },
+            store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
           }
         }
       },
@@ -652,7 +652,17 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
       totalAmount: d.order?.totalAmount || 0,
       distance: d.distanceKm ?? undefined,
       estimatedTime: d.estimatedTime,
-      items: d.order?.items || []
+      items: d.order?.items || [],
+      // Les deux arrêts d'une course attribuée : l'application sait ainsi où
+      // l'immobilité est normale (attendre au commerce, chez le client).
+      ...(enAttente
+        ? {}
+        : {
+            pickupLat: d.pickupLat ?? d.order?.store?.latitude ?? null,
+            pickupLng: d.pickupLng ?? d.order?.store?.longitude ?? null,
+            latitude: d.deliveryLat ?? null,
+            longitude: d.deliveryLng ?? null,
+          }),
     }));
 
     res.json({
@@ -995,6 +1005,8 @@ router.post(
       if (course.status !== "PICKED_UP") {
         throw new ApiError(400, "La photo se prend au moment du dépôt", "NOT_PICKED_UP");
       }
+      // Le dépôt ne se photographie qu'au terme de l'attente du client.
+      exigerAttenteTerminee(course);
       if (!req.file) {
         throw new ApiError(400, "Aucune photo reçue", "NO_FILE");
       }
@@ -1010,6 +1022,57 @@ router.post(
       );
 
       res.status(201).json({ success: true, data: { photoUrl: url } });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * POST /drivers/deliveries/:id/attente - Le client ne répond pas : l'attente commence
+ *
+ * Le livreur est à la porte, il a appelé sans réponse. Six minutes commencent,
+ * que le client voit sur son suivi et reçoit par notification ; à leur terme
+ * seulement, le livreur peut déposer la commande en lieu sûr et la
+ * photographier. Relancer ne remet pas le compteur à zéro.
+ */
+router.post(
+  "/deliveries/:id/attente",
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const deliveryId = req.params.id as string;
+      const { livreur, course } = await courseDuLivreur(req, deliveryId);
+
+      if (course.driverId !== livreur.id) {
+        throw new ApiError(403, "Acceptez d'abord cette course", "NOT_ASSIGNED");
+      }
+      if (course.status !== "PICKED_UP") {
+        throw new ApiError(409, "L'attente commence une fois la commande récupérée, chez le client", "NOT_PICKED_UP");
+      }
+
+      // Une seule attente par course, même si le bouton est touché deux fois.
+      const lancee = await db.orderDelivery.updateMany({
+        where: { id: deliveryId, customerWaitStartedAt: null },
+        data: { customerWaitStartedAt: new Date() },
+      });
+      const aJour = await db.orderDelivery.findUniqueOrThrow({
+        where: { id: deliveryId },
+        select: { orderId: true, customerWaitStartedAt: true },
+      });
+      const fin = finAttente(aJour);
+
+      if (lancee.count > 0 && fin) {
+        // Le suivi du client affiche aussitôt le compte à rebours.
+        emitDeliveryUpdate(aJour.orderId, { status: "PICKED_UP", attenteFinLe: fin, maintenant: new Date() });
+        enArrierePlan(Notifier.attenteClient(aJour.orderId, fin));
+        logger.info("Customer wait started", { deliveryId, driverId: livreur.id });
+      }
+
+      res.json({
+        success: true,
+        data: { attenteDebutLe: aJour.customerWaitStartedAt, attenteFinLe: fin, maintenant: new Date() },
+      });
     } catch (err) {
       next(err);
     }
@@ -1139,6 +1202,10 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
         deliveryAddress: proposition.delivery.order?.deliveryAddress,
         deliveryCity: proposition.delivery.order?.deliveryCity,
         deliveryPostal: proposition.delivery.order?.deliveryPostal,
+        // Le point de livraison, à 50-100 m près tant que la course n'est pas
+        // acceptée : de quoi tracer le trajet sur la carte de la proposition.
+        deliveryLat: proposition.delivery.deliveryLatObfusquee,
+        deliveryLng: proposition.delivery.deliveryLngObfusquee,
         // Anciennes données (rétrocompatibilité)
         boutique: proposition.delivery.order?.store,
         adresse: proposition.delivery.order?.deliveryAddress,

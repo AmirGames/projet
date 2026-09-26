@@ -244,7 +244,9 @@ export default function CustomerApp() {
     },
     onDeliveryUpdate: (u) => {
       if (u.status) scheduleReload();
-      if (u.livreurProche && !viewingOrder(u.orderId)) {
+      if (u.attenteFinLe && !viewingOrder(u.orderId)) {
+        setBanner({ orderId: u.orderId, title: 'Votre livreur vous attend', message: 'Il est devant chez vous : descendez vite, il ne peut attendre que 6 minutes.' });
+      } else if (u.livreurProche && !viewingOrder(u.orderId)) {
         setBanner({ orderId: u.orderId, title: 'Votre livreur est bientôt là', message: 'Vous pouvez descendre devant la porte.' });
       }
     },

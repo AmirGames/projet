@@ -347,12 +347,24 @@ export class Notifier {
         customerPhone: true,
         customerName: true,
         store: { select: { name: true } },
-        delivery: { select: { deliveryCode: true, driver: { select: { name: true } } } },
+        delivery: {
+          select: {
+            deliveryCode: true,
+            proofType: true,
+            proofPhoto: true,
+            proofNote: true,
+            driver: { select: { name: true } },
+          },
+        },
       },
     });
     if (!commande) return;
 
     const boutique = commande.store?.name || "votre commerce";
+    // Déposée en lieu sûr faute de réponse : le client doit savoir où la
+    // retrouver, photo à l'appui.
+    const depot = commande.delivery?.proofType === "PHOTO" ? commande.delivery : null;
+    const lieu = depot?.proofNote ? ` Lieu : ${depot.proofNote}.` : "";
     const livreur = commande.delivery?.driver?.name?.split(" ")[0] || "Votre livreur";
     const lien = `${process.env.SITE_URL || process.env.FRONTEND_URL || ""}/client/orders/${orderId}`;
     const code = commande.delivery?.deliveryCode;
@@ -368,11 +380,17 @@ export class Notifier {
         texte: `${livreur} a récupéré votre commande et arrive.${code ? ` Donnez-lui le code ${code} à la remise.` : ""}`,
         sms: `Votre commande ${boutique} est en route.${code ? ` Code de remise : ${code}.` : ""} Suivi : ${lien}`,
       },
-      DELIVERED: {
-        sujet: "Commande livrée",
-        texte: `Votre commande ${boutique} a été livrée. Bon appétit !`,
-        sms: null as string | null,
-      },
+      DELIVERED: depot
+        ? {
+            sujet: "Commande déposée en lieu sûr",
+            texte: `Sans réponse de votre part, ${livreur} a déposé votre commande ${boutique} en lieu sûr.${lieu} La photo du dépôt est sur votre suivi${depot.proofPhoto ? ` : ${depot.proofPhoto}` : ""}.`,
+            sms: `Commande ${boutique} déposée en lieu sûr.${lieu} Photo et suivi : ${lien}` as string | null,
+          }
+        : {
+            sujet: "Commande livrée",
+            texte: `Votre commande ${boutique} a été livrée. Bon appétit !`,
+            sms: null as string | null,
+          },
     }[etape];
 
     await Promise.all([
@@ -382,6 +400,41 @@ export class Notifier {
         title: messages.sujet,
         body: messages.texte,
         data: { tag: `livraison-${etape.toLowerCase()}`, orderId },
+      }),
+    ]);
+  }
+
+  /**
+   * Le livreur est à la porte et le client ne répond pas.
+   *
+   * Prévenu par tous les canaux : c'est souvent un téléphone en silencieux ou
+   * une sonnette en panne. À l'heure dite, la commande sera déposée en lieu sûr.
+   */
+  static async attenteClient(orderId: string, fin: Date) {
+    const commande = await db.order.findUnique({
+      where: { id: orderId },
+      select: {
+        customerEmail: true,
+        customerPhone: true,
+        store: { select: { name: true } },
+        delivery: { select: { driver: { select: { name: true } } } },
+      },
+    });
+    if (!commande) return;
+
+    const livreur = commande.delivery?.driver?.name?.split(" ")[0] || "Votre livreur";
+    const heure = fin.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
+    const lien = `${process.env.SITE_URL || process.env.FRONTEND_URL || ""}/client/orders/${orderId}`;
+    const sujet = "Votre livreur vous attend";
+    const texte = `${livreur} est devant chez vous avec votre commande et n'arrive pas à vous joindre. Sans réponse d'ici ${heure} (6 minutes), il la déposera en lieu sûr.`;
+
+    await Promise.all([
+      this.email(commande.customerEmail, sujet, texte, lien),
+      this.sms(commande.customerPhone, `${texte} Suivi : ${lien}`),
+      this.pushClient(commande.customerEmail, {
+        title: sujet,
+        body: texte,
+        data: { tag: "livraison-attente", orderId },
       }),
     ]);
   }

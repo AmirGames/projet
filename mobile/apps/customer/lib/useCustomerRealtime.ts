@@ -18,6 +18,8 @@ export interface DeliveryUpdate {
   eta?: number;
   gpsLost?: boolean;
   livreurProche?: boolean;
+  /** Le livreur est à la porte et n'arrive pas à joindre le client. */
+  attenteFinLe?: string;
 }
 
 /**
@@ -83,6 +85,8 @@ export function useCustomerRealtime({
     socket.on('delivery-update', (u: DeliveryUpdate) => {
       // Le livreur est à 300 m : le téléphone vibre, même posé sur la table.
       if (u?.livreurProche) Vibration.vibrate([0, 300, 150, 300]);
+      // Le livreur attend devant la porte : plus insistant.
+      if (u?.attenteFinLe) Vibration.vibrate([0, 500, 200, 500, 200, 500]);
       callbacks.current.onDeliveryUpdate(u);
     });
     socket.on('notification', () => callbacks.current.onNotification());

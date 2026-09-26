@@ -1,3 +1,4 @@
+import { finAttente } from "./delivery-proof.service";
 import { db } from "./db";
 import { EmailService } from "./email.service";
 import { logger } from "../config/logger";
@@ -715,6 +716,7 @@ export class OrderService {
             proofPhoto: true,
             proofNote: true,
             nearCustomerNotifiedAt: true,
+            customerWaitStartedAt: true,
           },
         },
       },
@@ -736,6 +738,10 @@ export class OrderService {
       photoDepot: delivery?.proofType === "PHOTO" ? delivery.proofPhoto : null,
       noteDepot: delivery?.proofType === "PHOTO" ? delivery.proofNote : null,
       livreurProche: Boolean(delivery?.nearCustomerNotifiedAt),
+      // Le livreur attend à la porte : passé cette heure, la commande est
+      // déposée en lieu sûr.
+      attenteFinLe: delivery?.status === "PICKED_UP" && delivery ? finAttente(delivery) : null,
+      maintenant: new Date(),
     };
   }
 

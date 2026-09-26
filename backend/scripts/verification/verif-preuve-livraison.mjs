@@ -1,6 +1,6 @@
 // Une course ne se clôt pas sur un simple clic : il faut prouver la remise.
 
-import { inscription, declarerPrete,
+import { attenteClientEcoulee, inscription, declarerPrete,
   titre,
   check,
   j,
@@ -181,6 +181,24 @@ check('le code n’est plus affiché', suivi?.codeRemise === null, `${suivi?.cod
 titre('Quand le client est absent, la photo fait preuve');
 const absente = await courseAuSeuil();
 
+titre('Mais pas avant d’avoir attendu le client six minutes');
+const tropTot = await patch(
+  `/api/drivers/deliveries/${absente.courseId}`,
+  { status: 'DELIVERED', photoUrl: 'https://exemple.fr/depot.jpg' },
+  D
+);
+check('sans attente, le dépôt est refusé', tropTot.status === 409, `statut ${tropTot.status}`);
+
+const attente = await j(await post(`/api/drivers/deliveries/${absente.courseId}/attente`, {}, D));
+check('l’attente commence', Boolean(attente?.data?.attenteFinLe), JSON.stringify(attente));
+const pendantAttente = await patch(
+  `/api/drivers/deliveries/${absente.courseId}`,
+  { status: 'DELIVERED', photoUrl: 'https://exemple.fr/depot.jpg' },
+  D
+);
+check('pendant l’attente, le dépôt est refusé', pendantAttente.status === 409, `statut ${pendantAttente.status}`);
+await attenteClientEcoulee(absente.courseId);
+
 const photo = await patch(
   `/api/drivers/deliveries/${absente.courseId}`,
   {
@@ -263,6 +281,7 @@ check('aucun code n’est plus attendu', vuBloque?.data?.codeAttendu === false, 
 check('aucun essai ne reste', vuBloque?.data?.essaisRestants === 0, `${vuBloque?.data?.essaisRestants}`);
 
 titre('La photo reste la porte de sortie');
+await attenteClientEcoulee(troisieme.courseId);
 const secours = await patch(
   `/api/drivers/deliveries/${troisieme.courseId}`,
   { status: 'DELIVERED', photoUrl: 'https://exemple.fr/secours.jpg', note: 'Remis en main propre' },
@@ -329,6 +348,7 @@ check(
   (await j(refusSansCode))?.error
 );
 
+await attenteClientEcoulee(ancienne.courseId);
 const parPhoto = await patch(
   `/api/drivers/deliveries/${ancienne.courseId}`,
   { status: 'DELIVERED', photoUrl: 'https://exemple.fr/ancienne.jpg' },

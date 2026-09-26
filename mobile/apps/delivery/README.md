@@ -17,8 +17,17 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
   paramètres), prise en
   charge **déverrouillée à moins de 150 m du commerce** par un curseur à glisser
   (ou « le GPS ne me situe pas »), attente tant que la commande n'est pas prête,
-  **preuve de remise** par le code à quatre chiffres du client (vérifié seul) ou
-  par la **photo du dépôt**, appel du client, annulation avec motif.
+  **remise ouverte à l'arrivée chez le client** (moins de 150 m) : code à
+  quatre chiffres du client (vérifié seul) ; **client injoignable** : appel ou
+  SMS, puis **attente de 6 minutes** que le client voit sur son suivi, et
+  seulement ensuite **dépôt en lieu sûr** avec photo et endroit, envoyés au
+  client ; annulation avec motif.
+- **Proposition de course plein écran** : trajet complet sur la carte, montant
+  garanti, durée et distance totales, bouton « Accepter » qui se vide avec le
+  temps de réponse.
+- **« Tout va bien ? »** : immobile plus de 3 minutes en pleine course (hors
+  commerce et client), le livreur confirme ou appelle le 112 ; le support est
+  prévenu.
 - **Historique** des courses (filtres, gains et kilomètres cumulés).
 - **Revenus** : jour / semaine / mois, ce qui reste dû, ce qui attend le
   virement, ce qui a été versé, et les relevés.

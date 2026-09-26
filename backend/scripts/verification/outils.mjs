@@ -113,6 +113,16 @@ export async function sqlExec(requeteSql) {
   return base().$executeRawUnsafe(requeteSql);
 }
 
+/**
+ * Fait passer les six minutes d'attente du client injoignable : la photo du
+ * dépôt n'est acceptée qu'à leur terme, et une vérification ne les attend pas.
+ */
+export async function attenteClientEcoulee(courseId) {
+  return sqlExec(
+    `UPDATE "OrderDelivery" SET "customerWaitStartedAt" = NOW() - INTERVAL '7 minutes' WHERE id = '${courseId}'`
+  );
+}
+
 export async function fermerBase() {
   if (prisma) await prisma.$disconnect();
 }

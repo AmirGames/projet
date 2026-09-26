@@ -1076,6 +1076,13 @@ model OrderDelivery {
   /// rayon renverrait le même message.
   nearCustomerNotifiedAt DateTime?
 
+  /// Le livreur est à la porte, le client ne répond pas : l'attente commence.
+  ///
+  /// Six minutes, visibles des deux côtés. Ce n'est qu'à leur terme que le
+  /// livreur peut déposer la commande en lieu sûr et la photographier : sans
+  /// cette attente, un livreur pressé posait le sac et partait.
+  customerWaitStartedAt DateTime?
+
   /// Le relevé de versement qui paie cette course.
   ///
   /// Tant qu'il est vide, la course est due au livreur. C'est ce lien qui

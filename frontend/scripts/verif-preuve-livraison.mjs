@@ -18,7 +18,7 @@
 
 import { chromium } from 'playwright';
 import { validerLivreur, codeDeRemise, declarerPrete } from './outils-livreur.mjs';
-import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
+import { baseDeDonnees, inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -322,7 +322,19 @@ const seconde = await courseAuSeuil();
 
 await page.goto(`${SITE}/driver/deliveries/${seconde.courseId}`);
 await page.waitForTimeout(3000);
-await page.click('button:has-text("Le client est absent")');
+check('pas de photo avant l’attente du client', (await page.locator('#photo-depot').count()) === 0, 'déjà proposée');
+await page.click('button:has-text("Lancer l")');
+await page.waitForTimeout(1500);
+check('le compte à rebours s’affiche', /Attendez encore/.test(await page.locator('body').innerText()));
+
+// Les six minutes d'attente passent en base : la suite ne les attend pas.
+await baseDeDonnees().orderDelivery.update({
+  where: { id: seconde.courseId },
+  data: { customerWaitStartedAt: new Date(Date.now() - 7 * 60 * 1000) },
+});
+await page.reload();
+await page.waitForTimeout(3000);
+await page.click('button:has-text("Déposer la commande en lieu sûr")');
 await page.waitForTimeout(800);
 
 check('l’appareil photo est proposé', /Photographier le dépôt/.test(await page.locator('body').innerText()));

@@ -77,6 +77,10 @@ export interface Tracking {
   photoDepot?: string | null;
   noteDepot?: string | null;
   livreurProche?: boolean;
+  /** Le livreur attend à la porte : passé cette heure, dépôt en lieu sûr. */
+  attenteFinLe?: string | null;
+  /** L'heure du serveur à la lecture, pour corriger l'horloge du téléphone. */
+  maintenant?: string | null;
 }
 
 export const ORDER_STATUS: Record<string, { label: string; color: string; icon: string }> = {

@@ -36,9 +36,14 @@ export interface Offer {
   pickupStore?: string | null;
   pickupAddress?: string | null;
   pickupCity?: string | null;
+  pickupLat?: number | null;
+  pickupLng?: number | null;
   deliveryAddress?: string | null;
   deliveryCity?: string | null;
   deliveryPostal?: string | null;
+  /** Le point de livraison, à 50-100 m près tant que la course n'est pas acceptée. */
+  deliveryLat?: number | null;
+  deliveryLng?: number | null;
 }
 
 export interface DeliveryItem {
@@ -73,6 +78,10 @@ export interface Delivery {
   codeAttendu?: boolean;
   essaisRestants?: number;
   preuve?: string | null;
+  /** Le client ne répond pas : passé cette heure (du serveur), le dépôt est permis. */
+  attenteFinLe?: string | null;
+  /** L'heure du serveur à la lecture. */
+  maintenant?: string | null;
 }
 
 export const DELIVERY_STATUS: Record<string, { label: string; color: string }> = {
@@ -158,4 +167,15 @@ export async function openNavigation(
 export function callPhone(phone?: string | null) {
   if (!phone) return;
   Linking.openURL(`tel:${phone.replace(/[^\d+]/g, '')}`).catch(() => undefined);
+}
+
+/** Un SMS au client, déjà rédigé : le livreur n'a qu'à l'envoyer. */
+export function sendSms(phone?: string | null) {
+  if (!phone) return;
+  const body = encodeURIComponent(
+    'Bonjour, je suis votre livreur Zupone : je suis devant chez vous avec votre commande.'
+  );
+  // Android lit « ?body= », iOS « &body= ».
+  const separator = Platform.OS === 'ios' ? '&' : '?';
+  Linking.openURL(`sms:${phone.replace(/[^\d+]/g, '')}${separator}body=${body}`).catch(() => undefined);
 }

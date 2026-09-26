@@ -18,6 +18,7 @@ import { API_URL, apiFetch, formatEuros } from '../../lib/api';
 import {
   callPhone,
   Delivery,
+  sendSms,
   deliveryStatus,
   distanceM,
   formatDistance,
@@ -36,6 +37,8 @@ import { Card, COLORS, ErrorBox, isDarkTheme, Loading, Row, ScreenHeader, themed
 
 /** En deçà, le livreur est au commerce : la prise en charge se déverrouille. */
 const PICKUP_RADIUS_M = 150;
+/** En deçà, le livreur est chez le client : la remise s'ouvre. */
+const CUSTOMER_ARRIVAL_M = 150;
 /** En deçà, le serveur prévient le client de descendre. */
 const CUSTOMER_NEAR_M = 300;
 /** Au-delà, la position est trop floue pour décider de l'arrivée. */
@@ -70,6 +73,14 @@ export default function DeliveryScreen({
   const [refusal, setRefusal] = useState('');
   // Le GPS ne le situe pas au commerce alors qu'il y est : il le dit lui-même.
   const [arrivalDeclared, setArrivalDeclared] = useState(false);
+  // Même chose chez le client : la remise s'ouvre à l'arrivée.
+  const [customerArrivalDeclared, setCustomerArrivalDeclared] = useState(false);
+  // L'attente du client injoignable : fin à l'heure du serveur, et l'écart
+  // entre l'horloge du serveur et celle du téléphone.
+  const [waitEnd, setWaitEnd] = useState<number | null>(null);
+  const [clockOffset, setClockOffset] = useState(0);
+  const [startingWait, setStartingWait] = useState(false);
+  const [tick, setTick] = useState(() => Date.now());
   // La preuve de la remise : le code du client, ou la photo du dépôt.
   const [code, setCode] = useState('');
   const [photoMode, setPhotoMode] = useState(false);
@@ -92,8 +103,8 @@ export default function DeliveryScreen({
       try {
         const res = await apiFetch<{ data: Delivery }>(`/api/drivers/deliveries/${deliveryId}`, token);
         setDelivery(res.data);
-        // Code bloqué ou absent : la photo devient la seule preuve possible.
-        if (res.data.status === 'PICKED_UP' && res.data.codeAttendu === false) setPhotoMode(true);
+        if (res.data.maintenant) setClockOffset(new Date(res.data.maintenant).getTime() - Date.now());
+        setWaitEnd(res.data.attenteFinLe ? new Date(res.data.attenteFinLe).getTime() : null);
       } catch (e: any) {
         if (!silent) setError(e.message || 'Course introuvable');
       } finally {
@@ -141,6 +152,56 @@ export default function DeliveryScreen({
         : atStore
           ? 1
           : 0;
+
+  /**
+   * Arrivé chez le client : à moins de 150 m, ou déclaré quand le GPS ne sait
+   * pas le situer. La saisie du code ne sert à rien en route, elle s'ouvre là.
+   */
+  const atCustomer =
+    customerArrivalDeclared ||
+    waitEnd != null ||
+    !dropoff ||
+    (toCustomer != null && toCustomer <= CUSTOMER_ARRIVAL_M);
+
+  // Secondes d'attente restantes, à l'heure du serveur ; nul tant qu'elle n'a
+  // pas commencé.
+  const waitLeft = waitEnd == null ? null : Math.max(0, Math.ceil((waitEnd - (tick + clockOffset)) / 1000));
+  const waiting = waitLeft != null && waitLeft > 0;
+
+  useEffect(() => {
+    if (!waiting) return;
+    const id = setInterval(() => setTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [waiting]);
+
+  // Fin de l'attente : le téléphone vibre, le dépôt s'ouvre.
+  const wasWaiting = useRef(false);
+  useEffect(() => {
+    if (wasWaiting.current && !waiting && waitLeft === 0) Vibration.vibrate([0, 300, 150, 300]);
+    wasWaiting.current = waiting;
+  }, [waiting, waitLeft]);
+
+  const canConfirmDrop = Boolean(photoUrl) && note.trim().length >= 3;
+
+  /** Le client ne répond pas : l'attente de 6 minutes commence, et il est prévenu. */
+  const startWait = async () => {
+    setStartingWait(true);
+    setRefusal('');
+    try {
+      const res = await apiFetch<{ data: { attenteFinLe: string; maintenant: string } }>(
+        `/api/drivers/deliveries/${deliveryId}/attente`,
+        token,
+        { method: 'POST' }
+      );
+      setClockOffset(new Date(res.data.maintenant).getTime() - Date.now());
+      setTick(Date.now());
+      setWaitEnd(new Date(res.data.attenteFinLe).getTime());
+    } catch (e: any) {
+      setRefusal(e.message || "L'attente n'a pas pu commencer");
+    } finally {
+      setStartingWait(false);
+    }
+  };
 
   // Arrivé au commerce : le téléphone vibre.
   const previousStep = useRef(step);
@@ -211,7 +272,6 @@ export default function DeliveryScreen({
       setRefusal(e.message || "La remise n'a pas pu être confirmée");
       // Le champ se vide pour la saisie suivante.
       if (proof.code) setCode('');
-      if (/bloqué/i.test(e.message || '')) setPhotoMode(true);
       await load(true);
     } finally {
       setUpdating(false);
@@ -220,7 +280,7 @@ export default function DeliveryScreen({
 
   // Quatre chiffres saisis : le code se vérifie sans autre geste.
   useEffect(() => {
-    if (code.length === 4 && !photoMode && step === 2 && !updating) confirmHandover({ code });
+    if (code.length === 4 && !photoMode && step === 2 && atCustomer && !updating) confirmHandover({ code });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
@@ -318,8 +378,10 @@ export default function DeliveryScreen({
       >
         <Card title="Étapes">
           {STEPS.map((label, i) => {
-            const done = i < step;
-            const current = i === step && !finished;
+            // Chez le client, c'est la remise qui est en cours.
+            const shown = step === 2 && atCustomer ? 3 : step;
+            const done = i < shown;
+            const current = i === shown && !finished;
             return (
               <View key={label} style={styles.stepRow}>
                 <View style={[styles.stepCircle, done && styles.stepDone, current && styles.stepCurrent]}>
@@ -418,13 +480,29 @@ export default function DeliveryScreen({
           </Card>
         )}
 
-        {step === 2 && (
-          <Card title="🤝 Remettez la commande">
-            {refusal ? <Text style={styles.refusal}>{refusal}</Text> : null}
+        {step === 2 && !atCustomer && (
+          <Card title="🚗 Allez chez le client">
             {toCustomer != null && toCustomer <= CUSTOMER_NEAR_M && (
               <Text style={styles.near}>🔔 Le client est prévenu de votre arrivée : il peut descendre.</Text>
             )}
-            {!photoMode ? (
+            <Text style={styles.help}>
+              {toCustomer != null
+                ? `Encore ${formatDistance(toCustomer)} : la remise s’ouvrira à votre arrivée.`
+                : 'Recherche de votre position… La remise s’ouvrira à votre arrivée.'}
+            </Text>
+            {gpsUncertain && (
+              <TouchableOpacity style={styles.linkButton} onPress={() => setCustomerArrivalDeclared(true)}>
+                <Text style={styles.linkButtonText}>Le GPS ne me situe pas : je suis chez le client</Text>
+              </TouchableOpacity>
+            )}
+          </Card>
+        )}
+
+        {step === 2 && atCustomer && (
+          <Card title="🤝 Remettez la commande">
+            {refusal ? <Text style={styles.refusal}>{refusal}</Text> : null}
+
+            {!photoMode && delivery.codeAttendu && (
               <>
                 <Text style={styles.help}>Demandez au client son code à quatre chiffres.</Text>
                 <View style={styles.codeRow}>
@@ -448,13 +526,64 @@ export default function DeliveryScreen({
                     {delivery.essaisRestants > 1 ? 's' : ''}
                   </Text>
                 )}
-                <TouchableOpacity style={styles.linkButton} onPress={() => setPhotoMode(true)}>
-                  <Text style={styles.linkButtonText}>Le client est absent : photographier le dépôt</Text>
-                </TouchableOpacity>
               </>
-            ) : (
+            )}
+
+            {!photoMode && (
+              <View style={styles.absent}>
+                <Text style={styles.absentTitle}>Le client ne répond pas ?</Text>
+                <View style={styles.contactRow}>
+                  <TouchableOpacity
+                    style={styles.contactButton}
+                    disabled={!delivery.customerPhone}
+                    onPress={() => callPhone(delivery.customerPhone)}
+                  >
+                    <Text style={styles.contactText}>📞 Appeler</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.contactButton}
+                    disabled={!delivery.customerPhone}
+                    onPress={() => sendSms(delivery.customerPhone)}
+                  >
+                    <Text style={styles.contactText}>💬 SMS</Text>
+                  </TouchableOpacity>
+                </View>
+                {waitLeft == null ? (
+                  <>
+                    <Text style={styles.muted}>
+                      Sans réponse, lancez l’attente : le client est prévenu et voit le compte à rebours. Au bout de 6
+                      minutes, vous pourrez déposer la commande en lieu sûr.
+                    </Text>
+                    <TouchableOpacity style={styles.waitButton} onPress={startWait} disabled={startingWait}>
+                      {startingWait ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <Text style={styles.waitButtonText}>⏱ Lancer l’attente (6 min)</Text>
+                      )}
+                    </TouchableOpacity>
+                  </>
+                ) : waitLeft > 0 ? (
+                  <View style={styles.waitBox}>
+                    <Text style={styles.waitLabel}>Le client est prévenu. Attendez encore</Text>
+                    <Text style={styles.waitTimer}>
+                      {Math.floor(waitLeft / 60)}:{String(waitLeft % 60).padStart(2, '0')}
+                    </Text>
+                    <Text style={styles.muted}>Recontactez-le entre-temps. S’il arrive, saisissez son code.</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity style={styles.waitButton} onPress={() => setPhotoMode(true)}>
+                    <Text style={styles.waitButtonText}>📦 Déposer la commande en lieu sûr</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {photoMode && (
               <>
-                <Text style={styles.help}>Photographiez la commande déposée : le client la verra sur son suivi.</Text>
+                <Text style={styles.help}>
+                  Déposez la commande en lieu sûr, photographiez-la et dites où elle est : le client reçoit la photo et
+                  l’endroit.
+                </Text>
                 {photoUri ? <Image source={{ uri: photoUri }} style={styles.photo} /> : null}
                 {uploading ? (
                   <Text style={styles.photoStatus}>Envoi de la photo…</Text>
@@ -481,25 +610,25 @@ export default function DeliveryScreen({
                   style={styles.noteInput}
                   value={note}
                   onChangeText={setNote}
-                  placeholder="Où l’avez-vous déposée ? (facultatif)"
+                  placeholder="Où est-elle ? (porte, gardien, boîte…)"
                   placeholderTextColor={COLORS.muted}
                   maxLength={200}
                 />
                 <TouchableOpacity
-                  style={[styles.primaryButton, (!photoUrl || updating) && { opacity: 0.5 }]}
-                  disabled={!photoUrl || updating}
-                  onPress={() => confirmHandover({ photoUrl, ...(note.trim() ? { note: note.trim() } : {}) })}
+                  style={[styles.primaryButton, (!canConfirmDrop || updating) && { opacity: 0.5 }]}
+                  disabled={!canConfirmDrop || updating}
+                  onPress={() => confirmHandover({ photoUrl, note: note.trim() })}
                 >
                   {updating ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Confirmer le dépôt</Text>}
                 </TouchableOpacity>
-                {!photoUrl && !uploading && !photoError && (
-                  <Text style={styles.photoHint}>Prenez la photo du dépôt pour pouvoir confirmer.</Text>
+                {!canConfirmDrop && !uploading && !photoError && (
+                  <Text style={styles.photoHint}>
+                    {photoUrl ? 'Indiquez où vous avez déposé la commande.' : 'Prenez la photo du dépôt pour pouvoir confirmer.'}
+                  </Text>
                 )}
-                {delivery.codeAttendu && (
-                  <TouchableOpacity style={styles.linkButton} onPress={() => setPhotoMode(false)}>
-                    <Text style={styles.linkButtonText}>Le client est là : saisir son code</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity style={styles.linkButton} onPress={() => setPhotoMode(false)}>
+                  <Text style={styles.linkButtonText}>Le client est finalement là : revenir au code</Text>
+                </TouchableOpacity>
               </>
             )}
           </Card>
@@ -691,16 +820,27 @@ const styles = themedStyles(() => ({
   codeRow: { flexDirection: 'row', alignItems: 'center' },
   codeInput: {
     flex: 1,
+    minWidth: 0,
     backgroundColor: COLORS.raised,
     borderRadius: 10,
     paddingVertical: 14,
     fontSize: 32,
     fontWeight: '700',
-    letterSpacing: 16,
+    letterSpacing: 12,
     textAlign: 'center',
     color: COLORS.text,
   },
   attempts: { fontSize: 13, color: COLORS.warning, fontWeight: '600', marginTop: 6 },
+  absent: { marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: COLORS.border },
+  absentTitle: { fontSize: 15, fontWeight: '700', color: COLORS.text, marginBottom: 10 },
+  contactRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  contactButton: { flex: 1, backgroundColor: COLORS.raised, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  contactText: { color: COLORS.link, fontWeight: '700', fontSize: 15 },
+  waitButton: { backgroundColor: COLORS.primary, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 10 },
+  waitButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  waitBox: { backgroundColor: COLORS.warningBg, borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 4 },
+  waitLabel: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
+  waitTimer: { color: COLORS.warning, fontSize: 40, fontWeight: '800', marginVertical: 4, fontVariant: ['tabular-nums'] },
   photoStatus: { fontSize: 13, fontWeight: '600', color: COLORS.secondary, marginBottom: 10, textAlign: 'center' },
   photoErrorBox: { backgroundColor: COLORS.dangerBg, borderRadius: 10, padding: 12, marginBottom: 10 },
   photoErrorText: { color: COLORS.danger, fontSize: 14, fontWeight: '600' },

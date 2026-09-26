@@ -6,6 +6,7 @@
 //     chiffre du commerçant : ils lui sont réclamés avec la commission.
 
 import {
+  attenteClientEcoulee,
   declarerPrete,
   API,
   inscription,
@@ -180,6 +181,10 @@ const autre = await j(
 );
 const intrus = await envoyerPhoto(PIXEL, 'image/png', autre.accessToken);
 check('un autre livreur ne dépose rien', intrus.status === 403, `statut ${intrus.status}`);
+
+const avantAttente = await envoyerPhoto(PIXEL, 'image/png');
+check('pas de photo avant l’attente du client', avantAttente.status === 409, `statut ${avantAttente.status}`);
+await attenteClientEcoulee(courseId);
 
 const envoi = await envoyerPhoto(PIXEL, 'image/png');
 const photoUrl = (await j(envoi))?.data?.photoUrl;

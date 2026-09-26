@@ -1,7 +1,25 @@
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import type * as ManipulatorModule from 'expo-image-manipulator';
 
 /** Assez pour lire une étiquette ou une pièce d'identité, sans plus. */
 const MAX_SIDE = 1600;
+
+/**
+ * Le module est chargé à la demande : une application compilée avant son
+ * ajout ne l'a pas, et l'importer en tête de fichier faisait planter tout
+ * l'écran de course (« Cannot find native module 'ExpoImageManipulator' »).
+ * Sans lui, la photo part simplement sans être réduite.
+ */
+let cached: typeof ManipulatorModule | null | undefined;
+function manipulator(): typeof ManipulatorModule | null {
+  if (cached !== undefined) return cached;
+  try {
+    cached = require('expo-image-manipulator') as typeof ManipulatorModule;
+  } catch (e) {
+    console.warn('expo-image-manipulator indisponible : recompilez l’application (expo run:android)', e);
+    cached = null;
+  }
+  return cached;
+}
 
 /**
  * Réduit une photo avant l'envoi.
@@ -15,17 +33,20 @@ const MAX_SIDE = 1600;
  * lent qu'aucun envoi.
  */
 export async function reducePhoto(photo: { uri: string; width?: number; height?: number }) {
+  const original = { uri: photo.uri, type: 'image/jpeg' as const, name: 'photo.jpg' };
+  const M = manipulator();
+  if (!M) return original;
   try {
-    const context = ImageManipulator.manipulate(photo.uri);
+    const context = M.ImageManipulator.manipulate(photo.uri);
     const { width = 0, height = 0 } = photo;
     if (Math.max(width, height) > MAX_SIDE) {
       context.resize(width >= height ? { width: MAX_SIDE } : { height: MAX_SIDE });
     }
     const image = await context.renderAsync();
-    const result = await image.saveAsync({ compress: 0.7, format: SaveFormat.JPEG });
-    return { uri: result.uri, type: 'image/jpeg' as const, name: 'photo.jpg' };
+    const result = await image.saveAsync({ compress: 0.7, format: M.SaveFormat.JPEG });
+    return { ...original, uri: result.uri };
   } catch (e) {
     console.warn('Réduction de la photo impossible', e);
-    return { uri: photo.uri, type: 'image/jpeg' as const, name: 'photo.jpg' };
+    return original;
   }
 }

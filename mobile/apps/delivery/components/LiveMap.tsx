@@ -33,12 +33,16 @@ export default function LiveMap({
   height,
   onRoute,
   dark,
+  bottomInset = 0,
 }: {
   driver: MapPoint | null;
   pickup: MapPoint | null;
   dropoff: MapPoint | null;
-  /** La prochaine étape : l'itinéraire y mène. */
-  target: 'pickup' | 'dropoff' | null;
+  /**
+   * La prochaine étape : l'itinéraire y mène. « tour » trace la course entière
+   * (livreur, commerce, client), pour une proposition.
+   */
+  target: 'pickup' | 'dropoff' | 'tour' | null;
   /** « driver » centre sur le livreur, « overview » garde tous les points en vue. */
   follow?: 'driver' | 'overview';
   /** Sans hauteur, la carte occupe toute la place disponible. */
@@ -46,6 +50,8 @@ export default function LiveMap({
   onRoute?: (route: RouteInfo | null) => void;
   /** Fond de carte assombri, pour l'écran de course au thème sombre. */
   dark?: boolean;
+  /** Hauteur couverte par un panneau en bas de la carte : le cadrage l'évite. */
+  bottomInset?: number;
 }) {
   const web = useRef<WebView>(null);
   const [ready, setReady] = useState(false);
@@ -54,9 +60,9 @@ export default function LiveMap({
 
   useEffect(() => {
     if (!ready) return;
-    const data = JSON.stringify({ driver, pickup, dropoff, target, follow, dark: !!dark });
+    const data = JSON.stringify({ driver, pickup, dropoff, target, follow, dark: !!dark, bottomInset });
     web.current?.injectJavaScript(`window.maj && window.maj(${data}); true;`);
-  }, [ready, driver?.lat, driver?.lng, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, target, follow, dark]);
+  }, [ready, driver?.lat, driver?.lng, pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, target, follow, dark, bottomInset]);
 
   const onMessage = (e: WebViewMessageEvent) => {
     try {
@@ -154,11 +160,12 @@ const HTML = `<!DOCTYPE html>
   }
   function frame() {
     if (!following) return;
-    var goal = state.target ? state[state.target] : null;
+    var goal = state.target && state.target !== 'tour' ? state[state.target] : null;
     if (state.follow === 'driver' && state.driver && framed) { map.panTo(ll(state.driver)); return; }
     var pts = state.follow === 'driver' && state.driver && goal ? [state.driver, goal] : points();
     if (pts.length === 1) map.setView(ll(pts[0]), 16);
-    else if (pts.length > 1) map.fitBounds(pts.map(ll), { padding: [40, 40], maxZoom: 17 });
+    else if (pts.length > 1) map.fitBounds(pts.map(ll), {
+      paddingTopLeft: [40, 60], paddingBottomRight: [40, 40 + (state.bottomInset || 0)], maxZoom: 17 });
     framed = pts.length > 0;
   }
   function straight(from, to) {
@@ -166,7 +173,32 @@ const HTML = `<!DOCTYPE html>
     line = L.polyline([ll(from), ll(to)], { color: '#007AFF', weight: 4, opacity: 0.7, dashArray: '8 8' }).addTo(map);
     send({ type: 'route', route: { distanceM: dist(from, to) * 1.3, durationS: dist(from, to) * 1.3 / 8 } });
   }
+  function tour() {
+    var pts = [state.driver, state.pickup, state.dropoff].filter(Boolean);
+    if (pts.length < 2) { if (line) { map.removeLayer(line); line = null; } send({ type: 'route', route: null }); return; }
+    var key = 'tour:' + pts.map(function (p) { return p.lat + ',' + p.lng; }).join(';');
+    if (key === lastRoute.key) return;
+    lastRoute = { key: key, from: pts[0], at: Date.now() };
+    var droit = function () {
+      if (line) map.removeLayer(line);
+      line = L.polyline(pts.map(ll), { color: '#007AFF', weight: 5, opacity: 0.7, dashArray: '8 8' }).addTo(map);
+      var m = 0; for (var i = 1; i < pts.length; i++) m += dist(pts[i - 1], pts[i]) * 1.3;
+      send({ type: 'route', route: { distanceM: m, durationS: m / 8 } });
+    };
+    var url = 'https://router.project-osrm.org/route/v1/driving/' +
+      pts.map(function (p) { return p.lng + ',' + p.lat; }).join(';') + '?overview=full&geometries=geojson';
+    fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+      var best = data && data.routes && data.routes[0];
+      if (!best) { droit(); return; }
+      if (line) map.removeLayer(line);
+      line = L.polyline(best.geometry.coordinates.map(function (c) { return [c[1], c[0]]; }),
+        { color: '#1F2328', weight: 6, opacity: 0.8 }).addTo(map);
+      if (document.body.classList.contains('dark')) line.setStyle({ color: '#E6E8EB' });
+      send({ type: 'route', route: { distanceM: best.distance, durationS: best.duration } });
+    }).catch(droit);
+  }
   function route() {
+    if (state.target === 'tour') { tour(); return; }
     var to = state.target ? state[state.target] : null;
     var from = state.driver || (state.target === 'dropoff' ? state.pickup : null);
     if (!from || !to) { if (line) { map.removeLayer(line); line = null; } send({ type: 'route', route: null }); return; }

@@ -95,10 +95,14 @@ export default function OrderScreen({
       if (u.location) next.position = { ...u.location, misAJourLe: new Date().toISOString() };
       if (typeof u.gpsLost === 'boolean') next.gpsPerdu = u.gpsLost;
       if (u.livreurProche) next.livreurProche = true;
+      if (u.attenteFinLe) next.attenteFinLe = u.attenteFinLe;
       if (u.status) next.status = u.status;
       return next;
     });
-    if (u.livreurProche) setToast({ title: 'Votre livreur est bientôt là', message: 'Vous pouvez descendre devant la porte.' });
+    if (u.attenteFinLe) {
+      setToast({ title: 'Votre livreur vous attend', message: 'Il est devant chez vous : descendez vite.' });
+      load();
+    } else if (u.livreurProche) setToast({ title: 'Votre livreur est bientôt là', message: 'Vous pouvez descendre devant la porte.' });
     if (u.status) load();
   });
   useRealtimeEvent('reconnecte', load);
@@ -188,7 +192,10 @@ export default function OrderScreen({
 
         {delivery && tracking && !rejected && (
           <Card title="Livraison">
-            {tracking.livreurProche && tracking.status === 'PICKED_UP' && (
+            {tracking.attenteFinLe && tracking.status === 'PICKED_UP' && (
+              <WaitCountdown key={tracking.attenteFinLe} finLe={tracking.attenteFinLe} maintenant={tracking.maintenant} />
+            )}
+            {tracking.livreurProche && tracking.status === 'PICKED_UP' && !tracking.attenteFinLe && (
               <View style={styles.near}>
                 <Text style={styles.nearText}>🛵 Votre livreur est bientôt là : vous pouvez descendre.</Text>
               </View>
@@ -290,6 +297,41 @@ export default function OrderScreen({
   );
 }
 
+/**
+ * Le livreur est à la porte et n'arrive pas à joindre le client : six minutes
+ * de compte à rebours, après quoi la commande est déposée en lieu sûr.
+ * L'heure du serveur corrige celle du téléphone.
+ */
+function WaitCountdown({ finLe, maintenant }: { finLe: string; maintenant?: string | null }) {
+  const [offset] = useState(() => (maintenant ? new Date(maintenant).getTime() - Date.now() : 0));
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const left = Math.max(0, new Date(finLe).getTime() - (now + offset));
+  const min = Math.floor(left / 60000);
+  const sec = Math.floor((left % 60000) / 1000);
+  return (
+    <View style={styles.wait}>
+      <Text style={styles.waitTitle}>🔔 Votre livreur est devant chez vous</Text>
+      {left > 0 ? (
+        <>
+          <Text style={styles.waitTimer}>
+            {min}:{String(sec).padStart(2, '0')}
+          </Text>
+          <Text style={styles.waitText}>
+            Il n'arrive pas à vous joindre. Descendez ou appelez-le : passé ce délai, il déposera votre commande en
+            lieu sûr et vous enverra la photo.
+          </Text>
+        </>
+      ) : (
+        <Text style={styles.waitText}>Le délai est écoulé : il dépose votre commande en lieu sûr. La photo s'affichera ici.</Text>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   toast: { backgroundColor: '#1B5E20', borderRadius: 10, padding: 12, marginBottom: 12 },
   toastTitle: { color: '#fff', fontWeight: '700', fontSize: 15 },
@@ -315,6 +357,10 @@ const styles = StyleSheet.create({
   reason: { fontSize: 14, color: COLORS.danger, fontWeight: '600' },
   help: { fontSize: 13, color: '#666', marginTop: 4 },
   near: { backgroundColor: '#E8F5E9', borderRadius: 8, padding: 10, marginBottom: 6 },
+  wait: { backgroundColor: '#FFF4E5', borderLeftWidth: 4, borderLeftColor: '#F59E0B', borderRadius: 8, padding: 12, marginBottom: 8 },
+  waitTitle: { fontSize: 15, fontWeight: '700', color: '#7A4B00' },
+  waitTimer: { fontSize: 34, fontWeight: '800', color: '#7A4B00', marginVertical: 2, fontVariant: ['tabular-nums'] },
+  waitText: { fontSize: 13, color: '#7A4B00' },
   nearText: { color: '#1B5E20', fontWeight: '700' },
   driver: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 12 },
   avatar: {

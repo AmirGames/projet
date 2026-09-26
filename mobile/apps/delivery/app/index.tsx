@@ -2,14 +2,16 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, ApiError, apiFetch, formatEuros, setUnauthorizedHandler } from '../lib/api';
+import { API_URL, ApiError, apiFetch, setUnauthorizedHandler } from '../lib/api';
 import { clearSession, DEFAULT_PREFS, loadPrefs, loadSession, Prefs, savePrefs, saveSession, Session } from '../lib/session';
-import { Delivery, Driver, formatKm, Offer } from '../lib/deliveries';
+import { Delivery, Driver, Offer } from '../lib/deliveries';
 import { useDriverAlerts } from '../lib/useDriverAlerts';
 import { DutyMode, Tracking, useDriverLocation } from '../lib/useDriverLocation';
 import { useRealtimeEvent } from '../lib/realtime';
 import { onDriverNotificationTap, PushDriverData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
 import { applyTheme, COLORS, themedStyles } from '../components/ui';
+import SafetyCheck from '../components/SafetyCheck';
+import OfferSheet from '../components/OfferSheet';
 import DashboardScreen, { EarningsSummary } from '../components/screens/DashboardScreen';
 import DeliveryScreen from '../components/screens/DeliveryScreen';
 import HistoryScreen from '../components/screens/HistoryScreen';
@@ -48,7 +50,6 @@ export default function DeliveryApp() {
   const [refreshing, setRefreshing] = useState(false);
   const [openDeliveryId, setOpenDeliveryId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
-  const [banner, setBanner] = useState<Offer | null>(null);
   const [togglingOnline, setTogglingOnline] = useState(false);
   const [answeringOfferId, setAnsweringOfferId] = useState<string | null>(null);
   const [pushSetup, setPushSetup] = useState<PushSetup | null>(null);
@@ -133,7 +134,6 @@ export default function DeliveryApp() {
     setOpenDeliveryId(null);
     setTab('dashboard');
     setMenuOpen(false);
-    setBanner(null);
     setUnreadCount(0);
     setSupportUnread(0);
   }, []);
@@ -231,10 +231,6 @@ export default function DeliveryApp() {
     return () => clearTimeout(id);
   }, [offers]);
 
-  useEffect(() => {
-    if (banner && !offers.some((o) => o.id === banner.id)) setBanner(null);
-  }, [offers, banner]);
-
   // Un même changement arrive souvent par plusieurs événements : un seul
   // rechargement suffit.
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -248,8 +244,8 @@ export default function DeliveryApp() {
     soundEnabled: prefs.soundEnabled,
     pendingOffers: offers.length,
     onOffer: (offer) => {
+      // Elle s'affiche en plein écran, par-dessus l'écran en cours.
       setOffers((list) => (list.some((o) => o.id === offer.id) ? list : [...list, offer]));
-      if (tabRef.current !== 'dashboard') setBanner(offer);
     },
     onChanged: scheduleReload,
     onNotification: () => {
@@ -281,7 +277,6 @@ export default function DeliveryApp() {
   });
 
   const openDelivery = (deliveryId: string) => {
-    setBanner(null);
     setMenuOpen(false);
     setOpenDeliveryId(deliveryId);
   };
@@ -375,7 +370,6 @@ export default function DeliveryApp() {
         method: 'POST',
       });
       setOffers((list) => list.filter((o) => o.id !== offer.id));
-      setBanner(null);
       if (answer === 'accept') {
         await loadAll(token);
         // Direction la course : adresse de retrait et itinéraire.
@@ -459,6 +453,15 @@ export default function DeliveryApp() {
     );
   }
 
+  // « Tout va bien ? » : veille sur le livreur tant qu'une course est en cours.
+  const safetyCheck = (
+    <>
+      <SafetyCheck token={token} delivery={activeDeliveries[0] ?? null} position={position} />
+      {/* Une course proposée passe devant tout le reste, comme un appel. */}
+      <OfferSheet offers={offers} position={position} answeringOfferId={answeringOfferId} onAnswer={answerOffer} />
+    </>
+  );
+
   // Delivery Detail Screen
   if (openDeliveryId) {
     return (
@@ -474,6 +477,7 @@ export default function DeliveryApp() {
           onChanged={() => loadAll(token)}
           onTrackingChange={setTracking}
         />
+        {safetyCheck}
       </SafeAreaView>
     );
   }
@@ -575,15 +579,12 @@ export default function DeliveryApp() {
         token={token}
         driver={driver}
         earnings={earnings}
-        offers={offers}
         activeDeliveries={activeDeliveries}
         gps={gps}
         refreshing={refreshing}
         onRefresh={refresh}
         togglingOnline={togglingOnline}
         onToggleOnline={toggleOnline}
-        answeringOfferId={answeringOfferId}
-        onAnswerOffer={answerOffer}
         onOpenDelivery={(d) => openDelivery(d.id)}
         onDriverChange={patchDriver}
         onSeeEarnings={() => setTab('earnings')}
@@ -644,27 +645,7 @@ export default function DeliveryApp() {
         </View>
       </View>
 
-      {banner && (
-        <TouchableOpacity
-          style={styles.banner}
-          activeOpacity={0.9}
-          onPress={() => {
-            setBanner(null);
-            setTab('dashboard');
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>🔔 Nouvelle course · {formatEuros(banner.payout)}</Text>
-            <Text style={styles.bannerText} numberOfLines={1}>
-              {banner.pickupStore || 'Commerce'} · livraison {formatKm(banner.distanceKm)}
-            </Text>
-          </View>
-          <Text style={styles.bannerAction}>Voir ›</Text>
-          <TouchableOpacity onPress={() => setBanner(null)} hitSlop={10}>
-            <Text style={styles.bannerClose}>✕</Text>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      )}
+      {safetyCheck}
 
       {/* Menu Drawer */}
       {menuOpen && (
@@ -765,45 +746,6 @@ const styles = themedStyles(() => ({
     color: '#fff',
     fontSize: 11,
     fontWeight: '700',
-  },
-  banner: {
-    position: 'absolute',
-    top: 56,
-    left: 12,
-    right: 12,
-    backgroundColor: '#1B5E20',
-    borderRadius: 12,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    zIndex: 500,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-  },
-  bannerTitle: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  bannerText: {
-    color: '#fff',
-    opacity: 0.9,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  bannerAction: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  bannerClose: {
-    color: '#fff',
-    fontSize: 16,
-    opacity: 0.8,
   },
   container: {
     flex: 1,

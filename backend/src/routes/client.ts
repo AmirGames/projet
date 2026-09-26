@@ -1,3 +1,4 @@
+import { finAttente } from "../services/delivery-proof.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { fraisDeServiceEnVigueur } from "../services/delivery-mode.service";
@@ -783,6 +784,10 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         noteDepot: course.proofType === "PHOTO" ? course.proofNote : null,
         // Le livreur est à moins de 300 m : il peut descendre.
         livreurProche: Boolean(course.nearCustomerNotifiedAt),
+        // Le livreur est à la porte et n'arrive pas à le joindre : passé cette
+        // heure, la commande est déposée en lieu sûr.
+        attenteFinLe: course.status === "PICKED_UP" ? finAttente(course) : null,
+        maintenant: new Date(),
       },
     });
   } catch (err) {

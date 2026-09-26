@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { AttenteLivreur } from '@/components/AttenteLivreur';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
 import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
 import { useParametreAdresse } from '@/lib/navigateur';
@@ -54,6 +55,9 @@ interface Order {
   photoDepot?: string | null;
   noteDepot?: string | null;
   livreurProche?: boolean;
+  /** Le livreur attend à la porte : passé cette heure, dépôt en lieu sûr. */
+  attenteFinLe?: string | null;
+  maintenant?: string | null;
   /** L'heure à laquelle la commande sera prête, annoncée à l'acceptation. */
   estimatedReadyAt?: string | null;
   rejectionReason?: string | null;
@@ -416,7 +420,13 @@ export default function TrackOrderPage() {
                   changé de mains. Une commande suivie sans compte n'a pas
                   d'autre endroit pour le lire. */}
               {/* Prévenu à 300 m : le temps de descendre, le livreur est là. */}
-              {order.codeRemise && order.livreurProche && (
+              {order.codeRemise && order.attenteFinLe && (
+                <div className="mt-4">
+                  <AttenteLivreur key={order.attenteFinLe} finLe={order.attenteFinLe} maintenant={order.maintenant} />
+                </div>
+              )}
+
+              {order.codeRemise && order.livreurProche && !order.attenteFinLe && (
                 <div role="status" className="mt-4 rounded-lg border border-green-700/60 bg-green-900/30 px-4 py-3">
                   <p className="font-semibold text-green-200">Votre livreur est bientôt là</p>
                   <p className="text-sm text-green-300/90">

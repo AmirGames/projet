@@ -12,6 +12,7 @@ import { AnnulerCourse } from '@/components/AnnulerCourse';
 import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
 import { GlisserPourValider } from '@/components/GlisserPourValider';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { AttenteDepotLivreur } from '@/components/AttenteDepotLivreur';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -93,6 +94,9 @@ interface Delivery {
   codeAttendu?: boolean;
   essaisRestants?: number;
   preuve?: string | null;
+  /** Le client ne répond pas : passé cette heure (du serveur), le dépôt est permis. */
+  attenteFinLe?: string | null;
+  maintenant?: string | null;
 }
 
 export default function DeliveryTrackingPage() {
@@ -322,7 +326,6 @@ export default function DeliveryTrackingPage() {
       // Le champ se vide pour la saisie suivante, qui se vérifiera d'elle-même.
       if (preuve.code) setCode('');
       // Code bloqué : la photo devient la seule issue, autant y basculer.
-      if (lu?.code === 'CODE_LOCKED' || /bloqué/.test(lu?.error || '')) setModePhoto(true);
       await loadDeliveryData();
     } catch (err) {
       setRefus('Erreur lors de la confirmation de la remise');
@@ -688,13 +691,12 @@ export default function DeliveryTrackingPage() {
                             {delivery.essaisRestants > 1 ? 's' : ''}
                           </p>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => setModePhoto(true)}
-                          className="block text-sm text-orange-400 hover:underline"
-                        >
-                          Le client est absent : photographier le dépôt
-                        </button>
+                        <AttenteDepotLivreur
+                          deliveryId={delivery.id}
+                          finLe={delivery.attenteFinLe}
+                          maintenant={delivery.maintenant}
+                          surDepot={() => setModePhoto(true)}
+                        />
                       </>
                     ) : (
                       <>

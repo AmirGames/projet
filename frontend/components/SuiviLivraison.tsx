@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Bike, Clock, MapPin, Navigation, Store } from 'lucide-react';
 import { Etoiles, NoterLivreur, type MaNote } from '@/components/NoterLivreur';
+import { AttenteLivreur } from '@/components/AttenteLivreur';
 
 // Leaflet touche `window` dès son chargement : il ne peut pas être rendu côté
 // serveur.
@@ -50,6 +51,10 @@ export interface Course {
   noteDepot?: string | null;
   /** Le livreur est à moins de 300 m : le client peut descendre. */
   livreurProche?: boolean;
+  /** Le livreur attend à la porte : passé cette heure, dépôt en lieu sûr. */
+  attenteFinLe?: string | null;
+  /** L'heure du serveur à la lecture, pour corriger l'horloge du téléphone. */
+  maintenant?: string | null;
   /** La note que ce client a déjà donnée à cette course, s'il l'a donnée. */
   maNote?: MaNote | null;
 }
@@ -184,8 +189,13 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
         </div>
       )}
 
+      {/* Le livreur est à la porte et n'arrive pas à le joindre. */}
+      {!livree && course.status === 'PICKED_UP' && course.attenteFinLe && (
+        <AttenteLivreur key={course.attenteFinLe} finLe={course.attenteFinLe} maintenant={course.maintenant} />
+      )}
+
       {/* Prévenu à 300 m : le temps de descendre, le livreur est là. */}
-      {!livree && course.status === 'PICKED_UP' && course.livreurProche && (
+      {!livree && course.status === 'PICKED_UP' && course.livreurProche && !course.attenteFinLe && (
         <div role="status" className="rounded-lg border border-green-700/60 bg-green-900/30 px-4 py-3">
           <p className="font-semibold text-green-200">Votre livreur est bientôt là</p>
           <p className="text-sm text-green-300/90">

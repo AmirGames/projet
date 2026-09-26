@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
-import { Delivery, deliveryStatus, Driver, formatKm, Offer, shortId } from '../../lib/deliveries';
+import { Delivery, deliveryStatus, Driver, shortId } from '../../lib/deliveries';
 import type { GpsState } from '../../lib/useDriverLocation';
 import { COLORS, themedStyles } from '../ui';
 
@@ -33,62 +33,6 @@ const GPS_MESSAGES: Partial<Record<GpsState, { text: string; color: () => string
   denied: { text: 'Localisation refusée : autorisez-la dans les réglages du téléphone pour recevoir des courses.', color: () => COLORS.danger },
   error: { text: 'Signal GPS indisponible : vérifiez que la localisation est activée.', color: () => COLORS.danger },
 };
-
-function OfferCard({
-  offer,
-  now,
-  busy,
-  onAnswer,
-}: {
-  offer: Offer;
-  now: number;
-  busy: boolean;
-  onAnswer: (offer: Offer, answer: 'accept' | 'decline') => void;
-}) {
-  const remaining = Math.max(0, Math.ceil((new Date(offer.expiresAt).getTime() - now) / 1000));
-  const pickup = [offer.pickupAddress, offer.pickupCity].filter(Boolean).join(', ');
-  const dropoff = [offer.deliveryAddress, [offer.deliveryPostal, offer.deliveryCity].filter(Boolean).join(' ')]
-    .filter(Boolean)
-    .join(', ');
-
-  return (
-    <View style={styles.offer}>
-      <View style={styles.offerHeader}>
-        <Text style={styles.offerTitle}>🔔 Nouvelle course</Text>
-        <Text style={[styles.offerTimer, remaining <= 10 && { color: COLORS.danger }]}>⏱ {remaining} s</Text>
-      </View>
-      <Text style={styles.offerPayout}>{formatEuros(offer.payout)}</Text>
-      <View style={styles.offerStops}>
-        <Text style={styles.offerStop} numberOfLines={2}>
-          🏪 <Text style={styles.offerStopStrong}>{offer.pickupStore || 'Commerce'}</Text>
-          {pickup ? ` · ${pickup}` : ''}
-        </Text>
-        <Text style={styles.offerStop} numberOfLines={2}>
-          📍 {dropoff || 'Adresse communiquée à l’acceptation'}
-        </Text>
-      </View>
-      <Text style={styles.offerMeta}>
-        Jusqu’au commerce {formatKm(offer.approcheKm)} · Livraison {formatKm(offer.distanceKm)}
-      </Text>
-      <View style={styles.offerActions}>
-        <TouchableOpacity
-          style={[styles.offerButton, styles.decline]}
-          disabled={busy}
-          onPress={() => onAnswer(offer, 'decline')}
-        >
-          <Text style={styles.declineText}>Refuser</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.offerButton, styles.accept, busy && { opacity: 0.7 }]}
-          disabled={busy}
-          onPress={() => onAnswer(offer, 'accept')}
-        >
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.acceptText}>Accepter</Text>}
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
 
 function PauseCard({
   token,
@@ -169,15 +113,12 @@ export default function DashboardScreen({
   token,
   driver,
   earnings,
-  offers,
   activeDeliveries,
   gps,
   refreshing,
   onRefresh,
   togglingOnline,
   onToggleOnline,
-  answeringOfferId,
-  onAnswerOffer,
   onOpenDelivery,
   onDriverChange,
   onSeeEarnings,
@@ -187,15 +128,12 @@ export default function DashboardScreen({
   token: string;
   driver: Driver | null;
   earnings: EarningsSummary | null;
-  offers: Offer[];
   activeDeliveries: Delivery[];
   gps: GpsState;
   refreshing: boolean;
   onRefresh: () => void;
   togglingOnline: boolean;
   onToggleOnline: (online: boolean) => void;
-  answeringOfferId: string | null;
-  onAnswerOffer: (offer: Offer, answer: 'accept' | 'decline') => void;
   onOpenDelivery: (delivery: Delivery) => void;
   onDriverChange: (patch: Partial<Driver>) => void;
   onSeeEarnings: () => void;
@@ -206,7 +144,7 @@ export default function DashboardScreen({
   // redessiner l'écran chaque seconde use la batterie pour rien.
   const [now, setNow] = useState(() => Date.now());
   const pauseEnd = driver?.pausedUntil ? new Date(driver.pausedUntil).getTime() : 0;
-  const ticking = offers.length > 0 || pauseEnd > Date.now();
+  const ticking = pauseEnd > Date.now();
   useEffect(() => {
     if (!ticking) return;
     setNow(Date.now());
@@ -215,7 +153,6 @@ export default function DashboardScreen({
   }, [ticking]);
 
   const dateLabel = new Date(now).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  const liveOffers = offers.filter((o) => new Date(o.expiresAt).getTime() > now);
   const approved = driver?.status === 'ACTIVE';
   const online = Boolean(driver?.isOnline);
   const firstName = driver?.name?.split(' ')[0];
@@ -288,15 +225,6 @@ export default function DashboardScreen({
           </View>
         )}
 
-        {liveOffers.map((offer) => (
-          <OfferCard
-            key={offer.id}
-            offer={offer}
-            now={now}
-            busy={answeringOfferId === offer.id}
-            onAnswer={onAnswerOffer}
-          />
-        ))}
 
         {activeDeliveries.length > 0 && (
           <View style={styles.card}>
@@ -391,28 +319,6 @@ const styles = themedStyles(() => ({
     borderLeftWidth: 4,
   },
   gpsText: { fontSize: 13, color: COLORS.text },
-  offer: {
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: COLORS.success,
-  },
-  offerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  offerTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-  offerTimer: { fontSize: 15, fontWeight: '700', color: COLORS.warning },
-  offerPayout: { fontSize: 36, fontWeight: '700', color: COLORS.successText, marginVertical: 4, letterSpacing: -0.5 },
-  offerStops: { gap: 4, marginBottom: 6 },
-  offerStop: { fontSize: 14, color: COLORS.secondary },
-  offerStopStrong: { fontWeight: '700', color: COLORS.text },
-  offerMeta: { fontSize: 12, color: COLORS.muted, marginBottom: 12 },
-  offerActions: { flexDirection: 'row', gap: 10 },
-  offerButton: { flex: 1, borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  decline: { backgroundColor: COLORS.raised },
-  declineText: { color: COLORS.danger, fontWeight: '700', fontSize: 15 },
-  accept: { backgroundColor: COLORS.success, flex: 2 },
-  acceptText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   hero: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 12 },
   heroLabel: { fontSize: 13, color: COLORS.secondary },
   heroValue: { fontSize: 44, fontWeight: '600', color: COLORS.text, marginVertical: 2, letterSpacing: -1 },
