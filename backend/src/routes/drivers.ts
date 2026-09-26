@@ -1366,6 +1366,9 @@ router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    // Helmet réserve les réponses à la même origine : le back-office, servi sur
+    // un autre port, ne pouvait pas afficher la pièce dans une balise <img>.
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
     // Determine content type
     const ext = fullPath.split(".").pop()?.toLowerCase();
