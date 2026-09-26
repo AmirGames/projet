@@ -1,6 +1,7 @@
 'use client';
 
 import { signalerErreur } from '@/lib/erreurs';
+import { slugify } from '@/lib/slug';
 import { useState, useEffect } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
 import { paysDuNavigateur } from '@/lib/pays-client';
@@ -156,7 +157,9 @@ export default function MerchantOnboardPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === 'storeSlug' ? slugify(value, false) : value,
+      // Génère automatiquement le slug à partir du nom de la boutique
+      ...(name === 'storeName' ? { storeSlug: slugify(value) } : {}),
     }));
   };
 
