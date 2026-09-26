@@ -22,8 +22,8 @@ interface Documents {
 }
 
 const DOC_STATUS: Record<string, { label: string; color: string }> = {
-  PENDING: { label: '⏳ En examen', color: '#B26A00' },
-  APPROVED: { label: '✓ Validée', color: COLORS.success },
+  PENDING: { label: '⏳ En examen', color: COLORS.warning },
+  APPROVED: { label: '✓ Validée', color: COLORS.successText },
   REJECTED: { label: '✗ Refusée', color: COLORS.danger },
   EXPIRED: { label: '⚠ Expirée', color: COLORS.danger },
 };
@@ -139,7 +139,7 @@ export default function AccountScreen({
             </View>
             <Text style={styles.name}>{displayName}</Text>
             <Text style={styles.email}>{driver?.email}</Text>
-            <Text style={[styles.status, { color: driver?.status === 'ACTIVE' ? COLORS.success : '#B26A00' }]}>
+            <Text style={[styles.status, { color: driver?.status === 'ACTIVE' ? COLORS.successText : COLORS.warning }]}>
               {DRIVER_STATUS_LABELS[driver?.status || ''] || driver?.status}
             </Text>
           </View>
@@ -182,7 +182,7 @@ export default function AccountScreen({
                     </View>
                     {canUpload &&
                       (uploading === piece.type ? (
-                        <ActivityIndicator color={COLORS.primary} />
+                        <ActivityIndicator color={COLORS.link} />
                       ) : (
                         <TouchableOpacity
                           style={styles.docButton}
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   email: { fontSize: 14, color: COLORS.muted, marginTop: 2 },
   status: { fontSize: 13, fontWeight: '700', marginTop: 8 },
-  help: { fontSize: 13, color: '#666', marginBottom: 6 },
+  help: { fontSize: 13, color: COLORS.secondary, marginBottom: 6 },
   reason: { fontSize: 13, color: COLORS.danger, marginBottom: 6 },
   doc: {
     flexDirection: 'row',
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   },
   docName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   docStatus: { fontSize: 12, fontWeight: '600', marginTop: 2 },
-  docNote: { fontSize: 12, color: '#666', marginTop: 2 },
+  docNote: { fontSize: 12, color: COLORS.secondary, marginTop: 2 },
   docButton: { backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
   docButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
 });

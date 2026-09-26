@@ -31,7 +31,7 @@ import type { Prefs } from '../../lib/session';
 import type { Position, Tracking } from '../../lib/useDriverLocation';
 import SlideToConfirm from '../SlideToConfirm';
 import LiveMap, { RouteInfo } from '../LiveMap';
-import { Card, DARK, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
+import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
 
 /** En deçà, le livreur est au commerce : la prise en charge se déverrouille. */
 const PICKUP_RADIUS_M = 150;
@@ -275,16 +275,16 @@ export default function DeliveryScreen({
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: DARK.bg }}>
-        <ScreenHeader dark title="Course" onBack={onBack} />
+      <View style={{ flex: 1, backgroundColor: COLORS.raised }}>
+        <ScreenHeader title="Course" onBack={onBack} />
         <Loading />
       </View>
     );
   }
   if (error || !delivery) {
     return (
-      <View style={{ flex: 1, backgroundColor: DARK.bg }}>
-        <ScreenHeader dark title="Course" onBack={onBack} />
+      <View style={{ flex: 1, backgroundColor: COLORS.raised }}>
+        <ScreenHeader title="Course" onBack={onBack} />
         <ErrorBox message={error || 'Course introuvable'} onRetry={() => load()} />
       </View>
     );
@@ -294,8 +294,8 @@ export default function DeliveryScreen({
   const towardCustomer = step >= 2;
 
   return (
-    <View style={{ flex: 1, backgroundColor: DARK.bg }}>
-      <ScreenHeader dark
+    <View style={{ flex: 1, backgroundColor: COLORS.raised }}>
+      <ScreenHeader
         title={`Course ${shortId(delivery.orderId)}`}
         subtitle={`${status.label}${position ? ' · GPS actif' : ''}`}
         onBack={onBack}
@@ -304,7 +304,7 @@ export default function DeliveryScreen({
         contentContainerStyle={ui.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}
       >
-        <Card dark title="Étapes">
+        <Card title="Étapes">
           {STEPS.map((label, i) => {
             const done = i < step;
             const current = i === step && !finished;
@@ -313,14 +313,14 @@ export default function DeliveryScreen({
                 <View style={[styles.stepCircle, done && styles.stepDone, current && styles.stepCurrent]}>
                   <Text style={[styles.stepNumber, (done || current) && { color: '#fff' }]}>{done ? '✓' : i + 1}</Text>
                 </View>
-                <Text style={[styles.stepLabel, !(done || current) && { color: DARK.muted }]}>{label}</Text>
+                <Text style={[styles.stepLabel, !(done || current) && { color: COLORS.muted }]}>{label}</Text>
               </View>
             );
           })}
         </Card>
 
         {delivery.status === 'DELIVERED' && (
-          <View style={[styles.banner, { backgroundColor: '#0F2A18', borderLeftColor: DARK.success }]}>
+          <View style={[styles.banner, { backgroundColor: COLORS.successBg, borderLeftColor: COLORS.success }]}>
             <Text style={styles.bannerTitle}>✅ Course terminée</Text>
             <Text style={styles.bannerText}>Merci ! Vous êtes de nouveau disponible pour la course suivante.</Text>
             <TouchableOpacity style={styles.primaryButton} onPress={onBack}>
@@ -329,14 +329,14 @@ export default function DeliveryScreen({
           </View>
         )}
         {delivery.status === 'FAILED' && (
-          <View style={[styles.banner, { backgroundColor: '#2E1412', borderLeftColor: DARK.danger }]}>
+          <View style={[styles.banner, { backgroundColor: COLORS.dangerBg, borderLeftColor: COLORS.danger }]}>
             <Text style={styles.bannerTitle}>Course annulée</Text>
             <Text style={styles.bannerText}>Cette course n’est plus à vous.</Text>
           </View>
         )}
 
         {!finished && (
-          <Card dark title={towardCustomer ? 'Vers le client' : 'Vers le commerce'}>
+          <Card title={towardCustomer ? 'Vers le client' : 'Vers le commerce'}>
             <Text style={styles.place}>
               {towardCustomer ? `📍 ${delivery.deliveryAddress || 'Adresse du client'}` : `🏪 ${delivery.pickupStore || 'Commerce'}`}
             </Text>
@@ -373,13 +373,13 @@ export default function DeliveryScreen({
         {refusal ? <Text style={styles.refusal}>{refusal}</Text> : null}
 
         {step === 0 && (
-          <Card dark title="📍 Allez au commerce">
+          <Card title="📍 Allez au commerce">
             <Text style={styles.help}>
               {toPickup != null
                 ? `Encore ${formatDistance(toPickup)} : la prise en charge s’ouvrira à votre arrivée.`
                 : 'Recherche de votre position… La prise en charge s’ouvrira à votre arrivée.'}
             </Text>
-            <SlideToConfirm dark label="Arrivez au commerce pour déverrouiller" onConfirm={() => undefined} disabled />
+            <SlideToConfirm label="Arrivez au commerce pour déverrouiller" onConfirm={() => undefined} disabled />
             {gpsUncertain && (
               <TouchableOpacity style={styles.linkButton} onPress={() => setArrivalDeclared(true)}>
                 <Text style={styles.linkButtonText}>Le GPS ne me situe pas : je suis bien au commerce</Text>
@@ -389,17 +389,17 @@ export default function DeliveryScreen({
         )}
 
         {step === 1 && (
-          <Card dark title="📦 Prenez en charge la commande">
+          <Card title="📦 Prenez en charge la commande">
             <Text style={styles.help}>
               {orderReady
                 ? 'Vérifiez la commande, puis glissez pour la prendre en charge. Le GPS partira aussitôt vers le client.'
                 : 'La commande est encore en préparation. Vous pourrez la prendre dès que le commerçant la déclarera prête.'}
             </Text>
             {orderReady ? (
-              <SlideToConfirm dark label="Glisser pour prendre en charge" onConfirm={takeOrder} loading={updating} />
+              <SlideToConfirm label="Glisser pour prendre en charge" onConfirm={takeOrder} loading={updating} />
             ) : (
               <View style={styles.waiting}>
-                <ActivityIndicator color={DARK.link} />
+                <ActivityIndicator color={COLORS.link} />
                 <Text style={styles.waitingText}>En préparation…</Text>
               </View>
             )}
@@ -407,7 +407,7 @@ export default function DeliveryScreen({
         )}
 
         {step === 2 && (
-          <Card dark title="🤝 Remettez la commande">
+          <Card title="🤝 Remettez la commande">
             {toCustomer != null && toCustomer <= CUSTOMER_NEAR_M && (
               <Text style={styles.near}>🔔 Le client est prévenu de votre arrivée : il peut descendre.</Text>
             )}
@@ -422,11 +422,11 @@ export default function DeliveryScreen({
                     keyboardType="number-pad"
                     maxLength={4}
                     placeholder="0000"
-                    placeholderTextColor={DARK.muted}
+                    placeholderTextColor={COLORS.muted}
                     editable={!updating}
                     textContentType="oneTimeCode"
                   />
-                  {updating && <ActivityIndicator color={DARK.link} style={{ marginLeft: 12 }} />}
+                  {updating && <ActivityIndicator color={COLORS.link} style={{ marginLeft: 12 }} />}
                 </View>
                 <Text style={styles.muted}>Le code se vérifie tout seul dès le quatrième chiffre.</Text>
                 {delivery.essaisRestants != null && delivery.essaisRestants < 5 && (
@@ -445,7 +445,7 @@ export default function DeliveryScreen({
                 {photoUri ? <Image source={{ uri: photoUri }} style={styles.photo} /> : null}
                 <TouchableOpacity style={styles.secondaryButton} onPress={takePhoto} disabled={uploading || updating}>
                   {uploading ? (
-                    <ActivityIndicator color={DARK.link} />
+                    <ActivityIndicator color={COLORS.link} />
                   ) : (
                     <Text style={styles.secondaryButtonText}>📷 {photoUri ? 'Reprendre la photo' : 'Prendre la photo'}</Text>
                   )}
@@ -455,7 +455,7 @@ export default function DeliveryScreen({
                   value={note}
                   onChangeText={setNote}
                   placeholder="Où l’avez-vous déposée ? (facultatif)"
-                  placeholderTextColor={DARK.muted}
+                  placeholderTextColor={COLORS.muted}
                   maxLength={200}
                 />
                 <TouchableOpacity
@@ -475,16 +475,16 @@ export default function DeliveryScreen({
           </Card>
         )}
 
-        <Card dark title="Client">
-          <Row dark label="Nom" value={delivery.customerName || '—'} />
-          <Row dark label="Adresse" value={delivery.deliveryAddress || '—'} />
-          <Row dark
+        <Card title="Client">
+          <Row label="Nom" value={delivery.customerName || '—'} />
+          <Row label="Adresse" value={delivery.deliveryAddress || '—'} />
+          <Row
             label="Téléphone"
             last
             value={
               delivery.customerPhone && !finished ? (
                 <TouchableOpacity onPress={() => callPhone(delivery.customerPhone)}>
-                  <Text style={[ui.rowValue, { color: DARK.link }]}>📞 {delivery.customerPhone}</Text>
+                  <Text style={[ui.rowValue, { color: COLORS.link }]}>📞 {delivery.customerPhone}</Text>
                 </TouchableOpacity>
               ) : (
                 delivery.customerPhone || '—'
@@ -493,16 +493,16 @@ export default function DeliveryScreen({
           />
         </Card>
 
-        <Card dark title="Commande">
+        <Card title="Commande">
           {(delivery.items || []).map((item, i) => (
-            <Row dark key={item.id || i} label={itemName(item)} value={`×${item.quantity}`} />
+            <Row key={item.id || i} label={itemName(item)} value={`×${item.quantity}`} />
           ))}
-          <Row dark label="Distance" value={formatKm(delivery.distance)} />
-          <Row dark label="Montant de la commande" value={formatEuros(delivery.totalAmount)} last />
+          <Row label="Distance" value={formatKm(delivery.distance)} />
+          <Row label="Montant de la commande" value={formatEuros(delivery.totalAmount)} last />
         </Card>
 
         {delivery.status === 'ACCEPTED' && (
-          <Card dark title="Un imprévu ?">
+          <Card title="Un imprévu ?">
             {!cancelOpen ? (
               <TouchableOpacity onPress={() => setCancelOpen(true)}>
                 <Text style={styles.cancelLink}>Annuler cette course</Text>
@@ -526,7 +526,7 @@ export default function DeliveryScreen({
                     value={cancelOther}
                     onChangeText={setCancelOther}
                     placeholder="Précisez la raison"
-                    placeholderTextColor={DARK.muted}
+                    placeholderTextColor={COLORS.muted}
                     maxLength={200}
                   />
                 )}
@@ -595,9 +595,9 @@ function formatDuration(seconds: number) {
 
 const styles = StyleSheet.create({
   mapPreview: { marginTop: 10 },
-  fullMap: { flex: 1, backgroundColor: DARK.bg },
+  fullMap: { flex: 1, backgroundColor: COLORS.raised },
   fullMapHeader: {
-    backgroundColor: DARK.card,
+    backgroundColor: COLORS.card,
     paddingHorizontal: 16,
     paddingTop: 44,
     paddingBottom: 12,
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
     left: 12,
     right: 12,
     bottom: 28,
-    backgroundColor: DARK.success,
+    backgroundColor: COLORS.success,
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',
@@ -625,28 +625,28 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: DARK.raised,
+    backgroundColor: COLORS.raised,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  stepDone: { backgroundColor: DARK.success },
-  stepCurrent: { backgroundColor: DARK.primary },
-  stepNumber: { fontWeight: '700', color: DARK.muted },
-  stepLabel: { fontSize: 15, fontWeight: '600', color: DARK.text },
+  stepDone: { backgroundColor: COLORS.success },
+  stepCurrent: { backgroundColor: COLORS.primary },
+  stepNumber: { fontWeight: '700', color: COLORS.muted },
+  stepLabel: { fontSize: 15, fontWeight: '600', color: COLORS.text },
   banner: { borderRadius: 10, padding: 14, marginBottom: 12, borderLeftWidth: 4 },
-  bannerTitle: { fontSize: 16, fontWeight: '700', color: DARK.text },
-  bannerText: { fontSize: 13, color: DARK.secondary, marginTop: 4 },
-  place: { fontSize: 16, fontWeight: '700', color: DARK.text },
-  address: { fontSize: 14, color: DARK.secondary, marginTop: 2 },
-  distance: { fontSize: 13, color: DARK.link, fontWeight: '600', marginTop: 6 },
-  navButton: { backgroundColor: DARK.primary, borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 12 },
+  bannerTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
+  bannerText: { fontSize: 13, color: COLORS.secondary, marginTop: 4 },
+  place: { fontSize: 16, fontWeight: '700', color: COLORS.text },
+  address: { fontSize: 14, color: COLORS.secondary, marginTop: 2 },
+  distance: { fontSize: 13, color: COLORS.link, fontWeight: '600', marginTop: 6 },
+  navButton: { backgroundColor: COLORS.primary, borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 12 },
   navButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  help: { fontSize: 14, color: DARK.secondary, marginBottom: 12, lineHeight: 20 },
-  muted: { fontSize: 12, color: DARK.muted, marginTop: 6 },
+  help: { fontSize: 14, color: COLORS.secondary, marginBottom: 12, lineHeight: 20 },
+  muted: { fontSize: 12, color: COLORS.muted, marginTop: 6 },
   refusal: {
-    backgroundColor: '#2E1412',
-    color: DARK.danger,
+    backgroundColor: COLORS.dangerBg,
+    color: COLORS.danger,
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
@@ -654,60 +654,60 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   linkButton: { paddingVertical: 12, alignItems: 'center' },
-  linkButtonText: { color: DARK.link, fontWeight: '600', fontSize: 14, textAlign: 'center' },
+  linkButtonText: { color: COLORS.link, fontWeight: '600', fontSize: 14, textAlign: 'center' },
   waiting: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, gap: 10 },
-  waitingText: { fontSize: 15, color: DARK.secondary, fontWeight: '600' },
-  near: { backgroundColor: '#0F2A18', color: '#7EE2A0', borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 13 },
+  waitingText: { fontSize: 15, color: COLORS.secondary, fontWeight: '600' },
+  near: { backgroundColor: COLORS.successBg, color: '#7EE2A0', borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 13 },
   codeRow: { flexDirection: 'row', alignItems: 'center' },
   codeInput: {
     flex: 1,
-    backgroundColor: DARK.raised,
+    backgroundColor: COLORS.raised,
     borderRadius: 10,
     paddingVertical: 14,
     fontSize: 32,
     fontWeight: '700',
     letterSpacing: 16,
     textAlign: 'center',
-    color: DARK.text,
+    color: COLORS.text,
   },
-  attempts: { fontSize: 13, color: DARK.warning, fontWeight: '600', marginTop: 6 },
-  photo: { width: '100%', height: 220, borderRadius: 10, marginBottom: 10, backgroundColor: DARK.raised },
+  attempts: { fontSize: 13, color: COLORS.warning, fontWeight: '600', marginTop: 6 },
+  photo: { width: '100%', height: 220, borderRadius: 10, marginBottom: 10, backgroundColor: COLORS.raised },
   secondaryButton: {
     borderWidth: 1,
-    borderColor: DARK.link,
+    borderColor: COLORS.link,
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
     marginBottom: 10,
   },
-  secondaryButtonText: { color: DARK.link, fontWeight: '700', fontSize: 15 },
+  secondaryButtonText: { color: COLORS.link, fontWeight: '700', fontSize: 15 },
   noteInput: {
-    backgroundColor: DARK.raised,
+    backgroundColor: COLORS.raised,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: DARK.text,
+    color: COLORS.text,
     marginBottom: 10,
   },
-  primaryButton: { backgroundColor: DARK.success, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+  primaryButton: { backgroundColor: COLORS.success, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   primaryButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  cancelLink: { color: DARK.danger, fontWeight: '600', fontSize: 15, paddingVertical: 4 },
+  cancelLink: { color: COLORS.danger, fontWeight: '600', fontSize: 15, paddingVertical: 4 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: DARK.border,
-    backgroundColor: DARK.raised,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.raised,
   },
   chipActive: { backgroundColor: '#C62828', borderColor: '#C62828' },
-  chipText: { fontSize: 13, color: DARK.text },
+  chipText: { fontSize: 13, color: COLORS.text },
   chipTextActive: { color: '#fff', fontWeight: '600' },
   cancelActions: { flexDirection: 'row', gap: 10 },
-  cancelKeep: { flex: 1, backgroundColor: DARK.raised, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  cancelKeepText: { color: DARK.text, fontWeight: '600' },
+  cancelKeep: { flex: 1, backgroundColor: COLORS.raised, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  cancelKeepText: { color: COLORS.text, fontWeight: '600' },
   cancelConfirm: { flex: 1, backgroundColor: '#C62828', borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
   cancelConfirmText: { color: '#fff', fontWeight: '700' },
 });

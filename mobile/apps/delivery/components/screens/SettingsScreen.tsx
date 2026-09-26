@@ -15,8 +15,8 @@ const NAVIGATION_APPS: { key: Prefs['navigationApp']; label: string }[] = [
 
 const GPS_LABELS: Record<GpsState, { text: string; color: string }> = {
   off: { text: 'Inactif (hors ligne)', color: COLORS.muted },
-  searching: { text: 'Recherche…', color: '#B26A00' },
-  ok: { text: '✓ Position transmise', color: COLORS.success },
+  searching: { text: 'Recherche…', color: COLORS.warning },
+  ok: { text: '✓ Position transmise', color: COLORS.successText },
   denied: { text: '✗ Autorisation refusée', color: COLORS.danger },
   error: { text: '✗ Signal indisponible', color: COLORS.danger },
 };
@@ -51,7 +51,7 @@ export default function SettingsScreen({
             <Switch
               value={prefs.soundEnabled}
               onValueChange={(soundEnabled) => onChangePrefs({ soundEnabled })}
-              trackColor={{ true: COLORS.success, false: '#ccc' }}
+              trackColor={{ true: COLORS.success, false: COLORS.raised }}
             />
           </View>
           <TouchableOpacity style={styles.test} onPress={onTestSound} disabled={!prefs.soundEnabled}>
@@ -59,7 +59,7 @@ export default function SettingsScreen({
           </TouchableOpacity>
           <View style={styles.statusRow}>
             <Text style={styles.switchLabel}>Notifications app fermée</Text>
-            <Text style={[styles.status, { color: pushEnabled ? COLORS.success : COLORS.danger }]}>
+            <Text style={[styles.status, { color: pushEnabled ? COLORS.successText : COLORS.danger }]}>
               {pushEnabled ? '✓ Activées' : '✗ Inactives'}
             </Text>
           </View>
@@ -111,13 +111,13 @@ export default function SettingsScreen({
 }
 
 const styles = StyleSheet.create({
-  help: { fontSize: 13, color: '#666', marginBottom: 10 },
+  help: { fontSize: 13, color: COLORS.secondary, marginBottom: 10 },
   switchRow: { flexDirection: 'row', alignItems: 'center' },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, marginBottom: 6 },
   status: { fontSize: 14, fontWeight: '700' },
   switchLabel: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
-  test: { paddingVertical: 10, alignItems: 'center', backgroundColor: COLORS.bg, borderRadius: 8 },
-  testText: { fontSize: 15, fontWeight: '600', color: COLORS.primary },
+  test: { paddingVertical: 10, alignItems: 'center', backgroundColor: COLORS.raised, borderRadius: 8 },
+  testText: { fontSize: 15, fontWeight: '600', color: COLORS.link },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 14,
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.raised,
   },
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   chipText: { fontSize: 14, color: COLORS.text },

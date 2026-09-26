@@ -85,6 +85,6 @@ const styles = StyleSheet.create({
   itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   itemStars: { fontSize: 16, color: '#F5A623' },
   itemDate: { fontSize: 12, color: COLORS.muted },
-  comment: { fontSize: 14, color: '#444', marginTop: 6, lineHeight: 20 },
+  comment: { fontSize: 14, color: COLORS.text, marginTop: 6, lineHeight: 20 },
   empty: { textAlign: 'center', color: COLORS.muted, marginTop: 24, paddingHorizontal: 24 },
 });

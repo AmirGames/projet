@@ -120,7 +120,7 @@ export default function EarningsScreen({ token, onBack }: { token: string; onBac
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={styles.statementAmount}>{formatEuros(r.amount)}</Text>
-                    <Text style={[styles.statementStatus, { color: r.status === 'PAID' ? COLORS.success : '#B26A00' }]}>
+                    <Text style={[styles.statementStatus, { color: r.status === 'PAID' ? COLORS.successText : COLORS.warning }]}>
                       {r.status === 'PAID' ? '✓ Payé' : '⏳ En attente'}
                     </Text>
                   </View>
@@ -151,11 +151,11 @@ export default function EarningsScreen({ token, onBack }: { token: string; onBac
 
 const styles = StyleSheet.create({
   hero: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 12 },
-  heroLabel: { fontSize: 13, color: '#57606A' },
-  heroValue: { fontSize: 44, fontWeight: '600', color: '#1F2328', letterSpacing: -1, marginVertical: 2 },
+  heroLabel: { fontSize: 13, color: COLORS.secondary },
+  heroValue: { fontSize: 44, fontWeight: '600', color: COLORS.text, letterSpacing: -1, marginVertical: 2 },
   periods: { flexDirection: 'row', marginTop: 10, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 10 },
   period: { flex: 1, alignItems: 'center' },
-  periodValue: { fontSize: 16, fontWeight: '700', color: '#1F2328' },
+  periodValue: { fontSize: 16, fontWeight: '700', color: COLORS.text },
   periodLabel: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
   statement: {
     flexDirection: 'row',

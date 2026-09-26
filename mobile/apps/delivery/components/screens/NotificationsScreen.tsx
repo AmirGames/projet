@@ -111,12 +111,12 @@ export default function NotificationsScreen({
 const styles = StyleSheet.create({
   list: { padding: 12, paddingBottom: 24 },
   markAll: { alignSelf: 'flex-end', paddingVertical: 6, marginBottom: 6 },
-  markAllText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
+  markAllText: { color: COLORS.link, fontWeight: '600', fontSize: 14 },
   item: { backgroundColor: COLORS.card, borderRadius: 10, padding: 12, marginBottom: 8, flexDirection: 'row' },
-  itemUnread: { backgroundColor: '#EAF3FF' },
+  itemUnread: { backgroundColor: COLORS.infoBg },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary, marginTop: 6, marginRight: 10 },
   title: { fontSize: 15, color: COLORS.text },
-  message: { fontSize: 13, color: '#555', marginTop: 3, lineHeight: 18 },
+  message: { fontSize: 13, color: COLORS.secondary, marginTop: 3, lineHeight: 18 },
   time: { fontSize: 12, color: COLORS.muted, marginTop: 6 },
   empty: { textAlign: 'center', color: COLORS.muted, marginTop: 40 },
 });

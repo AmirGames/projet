@@ -145,7 +145,7 @@ export default function SupportScreen({
               value={text}
               onChangeText={setText}
               placeholder="Votre message…"
-              placeholderTextColor="#999"
+              placeholderTextColor={COLORS.muted}
               multiline
               maxLength={MAX_LENGTH}
             />
@@ -167,13 +167,13 @@ const styles = StyleSheet.create({
   list: { padding: 12, paddingBottom: 16, flexGrow: 1 },
   emptyBox: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-  emptyText: { fontSize: 13, color: '#666', marginTop: 4, marginBottom: 10 },
-  topic: { backgroundColor: COLORS.bg, borderRadius: 8, padding: 12, marginBottom: 8 },
-  topicText: { fontSize: 14, color: COLORS.primary, fontWeight: '600' },
+  emptyText: { fontSize: 13, color: COLORS.secondary, marginTop: 4, marginBottom: 10 },
+  topic: { backgroundColor: COLORS.raised, borderRadius: 8, padding: 12, marginBottom: 8 },
+  topicText: { fontSize: 14, color: COLORS.link, fontWeight: '600' },
   bubble: { maxWidth: '82%', borderRadius: 14, padding: 10, marginBottom: 8 },
   mine: { alignSelf: 'flex-end', backgroundColor: COLORS.primary, borderBottomRightRadius: 4 },
   theirs: { alignSelf: 'flex-start', backgroundColor: COLORS.card, borderBottomLeftRadius: 4 },
-  author: { fontSize: 11, fontWeight: '700', color: COLORS.primary, marginBottom: 2 },
+  author: { fontSize: 11, fontWeight: '700', color: COLORS.link, marginBottom: 2 },
   body: { fontSize: 15, color: COLORS.text, lineHeight: 20 },
   time: { fontSize: 10, color: COLORS.muted, marginTop: 4, alignSelf: 'flex-end' },
   error: { color: COLORS.danger, fontSize: 13, paddingHorizontal: 12, paddingBottom: 6 },
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     maxHeight: 120,
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.raised,
     borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 10,

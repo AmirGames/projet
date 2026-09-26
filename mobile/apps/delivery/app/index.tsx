@@ -9,7 +9,7 @@ import { useDriverAlerts } from '../lib/useDriverAlerts';
 import { DutyMode, Tracking, useDriverLocation } from '../lib/useDriverLocation';
 import { useRealtimeEvent } from '../lib/realtime';
 import { onDriverNotificationTap, PushDriverData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
-import { COLORS, DARK } from '../components/ui';
+import { COLORS } from '../components/ui';
 import DashboardScreen, { EarningsSummary } from '../components/screens/DashboardScreen';
 import DeliveryScreen from '../components/screens/DeliveryScreen';
 import HistoryScreen from '../components/screens/HistoryScreen';
@@ -421,7 +421,7 @@ export default function DeliveryApp() {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor="#999"
+            placeholderTextColor={COLORS.muted}
             value={email}
             onChangeText={setEmail}
             editable={!loading}
@@ -432,7 +432,7 @@ export default function DeliveryApp() {
           <TextInput
             style={styles.input}
             placeholder="Mot de passe"
-            placeholderTextColor="#999"
+            placeholderTextColor={COLORS.muted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -456,7 +456,7 @@ export default function DeliveryApp() {
   // Delivery Detail Screen
   if (openDeliveryId) {
     return (
-      <SafeAreaView style={[styles.container, styles.containerDark]} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <StatusBar style="light" />
         <DeliveryScreen
           key={openDeliveryId}
@@ -586,17 +586,14 @@ export default function DeliveryApp() {
     );
   };
 
-  // L'écran de course est au thème sombre, jusque sous la barre d'état.
-  const courseDark = tab === 'course' && Boolean(currentDelivery);
-
   return (
-    <SafeAreaView style={[styles.container, courseDark && styles.containerDark]} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar style="light" />
 
-      <View style={[styles.dashboardContainer, courseDark && styles.containerDark]}>
+      <View style={styles.dashboardContainer}>
         {renderTabContent()}
 
-        <View style={[styles.bottomTabBar, courseDark && styles.bottomTabBarDark]}>
+        <View style={styles.bottomTabBar}>
           <TouchableOpacity style={styles.tabButton} onPress={() => setMenuOpen(true)}>
             <View>
               <Text style={styles.tabIcon}>☰</Text>
@@ -804,15 +801,8 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.bg,
     position: 'relative',
-  },
-  containerDark: {
-    backgroundColor: DARK.bg,
-  },
-  bottomTabBarDark: {
-    backgroundColor: DARK.card,
-    borderTopColor: DARK.border,
   },
   menuOverlay: {
     position: 'absolute',
@@ -829,7 +819,7 @@ const styles = StyleSheet.create({
   },
   menuDrawer: {
     width: '70%',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     paddingTop: 20,
     paddingBottom: 20,
   },
@@ -840,44 +830,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: COLORS.border,
   },
   menuTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.text,
   },
   closeButton: {
     fontSize: 24,
-    color: '#666',
+    color: COLORS.secondary,
     fontWeight: 'bold',
   },
   menuItem: {
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.border,
   },
   menuItemText: {
     fontSize: 16,
-    color: '#333',
+    color: COLORS.text,
     fontWeight: '500',
   },
   driverBlock: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: COLORS.border,
   },
   driverBlockLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#999',
+    color: COLORS.muted,
     textTransform: 'uppercase',
     marginBottom: 6,
   },
   driverCurrent: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.raised,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -885,10 +875,10 @@ const styles = StyleSheet.create({
   driverName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.text,
   },
   menuItemActive: {
-    backgroundColor: '#EAF3FF',
+    backgroundColor: COLORS.infoBg,
   },
   menuItemLogout: {
     marginTop: 8,
@@ -906,10 +896,12 @@ const styles = StyleSheet.create({
   },
   dashboardContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.bg,
   },
   header: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.card,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
     paddingHorizontal: 16,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -923,8 +915,7 @@ const styles = StyleSheet.create({
   },
   headerEmail: {
     fontSize: 11,
-    color: '#fff',
-    opacity: 0.8,
+    color: COLORS.secondary,
     marginTop: 2,
   },
   emptyContainer: {
@@ -940,11 +931,11 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
+    color: COLORS.muted,
   },
   emptyHint: {
     fontSize: 13,
-    color: '#999',
+    color: COLORS.muted,
     marginTop: 6,
     textAlign: 'center',
   },
@@ -968,22 +959,21 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 18,
-    color: '#fff',
+    color: COLORS.link,
     marginBottom: 40,
     textAlign: 'center',
-    opacity: 0.9,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.raised,
     borderRadius: 10,
     paddingHorizontal: 15,
     paddingVertical: 12,
     marginBottom: 15,
     fontSize: 16,
-    color: '#333',
+    color: COLORS.text,
   },
   loginButton: {
-    backgroundColor: '#0055CC',
+    backgroundColor: COLORS.primary,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -999,16 +989,15 @@ const styles = StyleSheet.create({
   },
   signupHint: {
     marginTop: 20,
-    color: '#fff',
+    color: COLORS.secondary,
     fontSize: 14,
-    opacity: 0.85,
     textAlign: 'center',
   },
   bottomTabBar: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#fff',
+    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.card,
     paddingBottom: 8,
   },
   tabButton: {
@@ -1018,19 +1007,20 @@ const styles = StyleSheet.create({
   },
   tabButtonActive: {
     borderBottomWidth: 2,
-    borderBottomColor: COLORS.primary,
+    borderBottomColor: COLORS.link,
   },
   tabIcon: {
     fontSize: 24,
     marginBottom: 4,
+    color: COLORS.text,
   },
   tabLabel: {
     fontSize: 11,
-    color: '#999',
+    color: COLORS.muted,
     fontWeight: '500',
   },
   tabLabelActive: {
-    color: COLORS.primary,
+    color: COLORS.link,
     fontWeight: '600',
   },
 });

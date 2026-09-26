@@ -122,7 +122,7 @@ export default function HistoryScreen({
             ) : null
           }
           ListEmptyComponent={<Text style={styles.empty}>Aucune course</Text>}
-          ListFooterComponent={loadingMore ? <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 12 }} /> : null}
+          ListFooterComponent={loadingMore ? <ActivityIndicator color={COLORS.link} style={{ marginVertical: 12 }} /> : null}
           renderItem={({ item }) => {
             const st = deliveryStatus(item.status);
             const date = new Date(item.deliveredAt || item.createdAt);
@@ -183,8 +183,8 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 14, fontWeight: 'bold', color: COLORS.text },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   badgeText: { color: '#fff', fontSize: 10, fontWeight: '600' },
-  line: { fontSize: 13, color: '#555' },
+  line: { fontSize: 13, color: COLORS.secondary },
   meta: { fontSize: 12, color: COLORS.muted, marginTop: 4 },
-  payout: { fontSize: 15, fontWeight: '600', color: COLORS.primary, marginTop: 6 },
+  payout: { fontSize: 15, fontWeight: '600', color: COLORS.link, marginTop: 6 },
   empty: { textAlign: 'center', color: COLORS.muted, marginTop: 40 },
 });
