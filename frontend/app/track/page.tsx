@@ -442,7 +442,6 @@ export default function TrackOrderPage() {
 
               {order.photoDepot && (
                 <div className="mt-3 space-y-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={order.photoDepot}
                     alt="Photo du dépôt de votre commande"

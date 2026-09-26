@@ -710,7 +710,6 @@ export default function DeliveryTrackingPage() {
 
                         {photoUrl ? (
                           <div className="space-y-2">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={photoUrl}
                               alt="Photo du dépôt"

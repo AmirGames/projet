@@ -127,7 +127,6 @@ export default function FavoritesPage() {
                     }`}
                   >
                     {store.settings?.logo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={store.settings.logo}
                         alt={store.name}

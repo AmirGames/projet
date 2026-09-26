@@ -1258,7 +1258,6 @@ function EnTeteBoutique({ boutique, adresse }: { boutique: BoutiqueCommandee; ad
   return (
     <>
       {boutique.logo ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={boutique.logo}
           alt=""

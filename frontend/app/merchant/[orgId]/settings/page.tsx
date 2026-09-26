@@ -420,7 +420,6 @@ export default function StoreSettings() {
                       }`}
                     >
                       {logo ? (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={logo} alt="Logo de la boutique" className="h-full w-full object-contain" />
                       ) : (
                         <span className="text-2xl font-bold text-white opacity-50">

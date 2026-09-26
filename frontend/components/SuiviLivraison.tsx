@@ -206,7 +206,6 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
           son repas. */}
       {livree && course.photoDepot && (
         <div className="space-y-1">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={course.photoDepot}
             alt="Photo du dépôt de votre commande"

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { filtrePays } from '@/i18n/regions';
 import { useRegion } from '@/lib/region-context';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { MapPin, Star, Clock, TrendingUp, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
@@ -72,6 +73,7 @@ export default function ClientHomePage() {
   // Les familles de cuisine (Pizzas, Sushis…), et celle que le client a choisie.
   const [familles, setFamilles] = useState<Famille[]>([]);
   const [familleChoisie, setFamilleChoisie] = useState<string | null>(null);
+  const router = useRouter();
   // Les commerces mis en favoris par le client connecté.
   const [favoris, setFavoris] = useState<Set<string>>(new Set());
 
@@ -93,7 +95,7 @@ export default function ClientHomePage() {
     e.stopPropagation();
     const token = localStorage.getItem('accessToken');
     if (!token) {
-      window.location.href = '/login';
+      router.push('/login');
       return;
     }
     const estFavori = favoris.has(storeId);
@@ -356,7 +358,6 @@ export default function ClientHomePage() {
                         }`}
                       >
                         {store.settings?.logo ? (
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={store.settings.logo}
                             alt={store.name}

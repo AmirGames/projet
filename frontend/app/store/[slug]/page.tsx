@@ -535,7 +535,6 @@ export default function StorefrontPage() {
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               {store.settings?.logo && (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={store.settings.logo}
                   alt={store.name}
