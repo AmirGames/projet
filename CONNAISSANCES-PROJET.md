@@ -312,7 +312,7 @@ commerçant passe par l'écran de choix d'espace
 # API
 cd backend
 createdb zupone_test
-DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
+DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
@@ -359,8 +359,13 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 **Base et Prisma**
 - Une base fraîche **n'a aucune ligne `SystemConfig`** : passer par
   `PUT /api/admin/config` (qui la crée), jamais par un `UPDATE` direct.
-- Après tout changement de schéma, **`npx prisma db push` est obligatoire côté
-  Windows** — sans lui, les écritures échouent en silence.
+- Le schéma vit dans des **migrations** : une base neuve se crée par
+  `npx prisma migrate deploy` (migration de référence `0001_initial_schema`),
+  et tout changement de `schema.prisma` s'accompagne d'une migration créée par
+  `npx prisma migrate dev --name <nom>`, committée avec lui. Plus de `db push`
+  (y compris sous Windows) : il laisserait la base en avance sur l'historique.
+- Une base créée avant la remise à plat des migrations s'aligne une fois par
+  `npx prisma migrate resolve --applied 0001_initial_schema`.
 
 **Scripts de vérification**
 - `sqlScalaire()` ne renvoie que **la première colonne**. Jamais

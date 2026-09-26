@@ -28,7 +28,7 @@ npm run verif -- livreur
 createdb saas_test
 
 # 2. Le schéma
-DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" npx prisma db push
+DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" npx prisma migrate deploy
 
 # 3. L'API sur un port à part
 DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" PORT=3099 npm run dev

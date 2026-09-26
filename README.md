@@ -154,7 +154,7 @@ emporter ou à livrer.
 | | |
 |---|---|
 | **Frontend** | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS |
-| **Backend** | Express, TypeScript, Prisma |
+| **Backend** | Express 5, TypeScript, Prisma 7 (adaptateur `@prisma/adapter-pg`) |
 | **Base de données** | PostgreSQL |
 | **Temps réel** | Socket.IO (disponibilité des plats, notifications, suivi de livraison) |
 | **Authentification** | JWT (jeton d'accès + jeton de renouvellement) |
@@ -168,8 +168,8 @@ emporter ou à livrer.
 Un seul dépôt, deux applications :
 
 ```
-backend/    API REST — 38 routeurs, 52 services, 48 modèles Prisma
-frontend/   Next.js — 132 pages
+backend/    API REST — 42 fichiers de routes, 72 services, 53 modèles Prisma
+frontend/   Next.js — 142 pages
 ```
 
 ## Démarrer
@@ -193,16 +193,23 @@ createdb zupone_dev
 cd backend
 npm install
 cp .env.example .env     # puis renseignez DATABASE_URL et les deux secrets JWT
-npx prisma db push
+npx prisma migrate deploy
 npm run dev              # http://localhost:3001
 ```
 
-Une base créée avant la validation des commerces : `db push` ajoute la colonne
-`approvedAt` vide, et tous les commerces existants se retrouveraient en attente
-de validation. Considérez-les validés une fois pour toutes :
+L'historique des migrations tient en une seule migration de référence,
+`0001_initial_schema`, qui crée tout le schéma sur une base vide. Chaque
+changement de schéma ajoute ensuite sa propre migration
+(`npx prisma migrate dev --name <nom>`), à committer avec le schéma.
+
+Une base créée **avant** cette remise à plat (par `db push` ou par
+l'ancienne chaîne de migrations) a déjà toutes les tables : il suffit, une
+fois, d'enregistrer la migration de référence comme appliquée, après avoir
+vérifié qu'il ne manque rien :
 
 ```bash
-psql "$DATABASE_URL" -c 'UPDATE "Organization" SET "approvedAt" = NOW() WHERE "approvedAt" IS NULL;'
+npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+npx prisma migrate resolve --applied 0001_initial_schema
 ```
 
 ### 3. Le site
@@ -250,7 +257,7 @@ HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 # API : 1574 contrôles, 48 suites
 cd backend
 createdb zupone_test
-DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
+DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
@@ -305,7 +312,11 @@ Par honnêteté, ce qui manque encore :
   garde la commande sans compte). Leurs cartes s'appuient sur les serveurs
   publics d'OpenStreetMap et d'OSRM, à remplacer par un service payant ou
   hébergé avant l'ouverture au public.
-- **Prisma 5.22 → 7**, à faire une fois le reste stabilisé.
+- **Next.js 14 → 16** : la branche 14 n'est plus maintenue par Vercel et ne
+  reçoit plus de correctifs de sécurité. À faire avant l'ouverture au public,
+  sur une branche dédiée (`upgrade/next-16`), en passant par la 15 (React 19)
+  puis la 16, avec build, lint, vérification des types et tests de bout en
+  bout à chaque étape — jamais par un simple `npm update`.
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.
 
