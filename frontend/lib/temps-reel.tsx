@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { io, type Socket } from 'socket.io-client';
 import { useAuth } from '@/lib/auth-context';
 
@@ -155,8 +156,7 @@ export function useTempsReel<T = any>(
   rappel: (donnees: T) => void,
   actif = true
 ) {
-  const rappelRef = useRef(rappel);
-  rappelRef.current = rappel;
+  const rappelRef = useDerniereValeur(rappel);
 
   useEffect(() => {
     if (!actif) return;
@@ -168,7 +168,7 @@ export function useTempsReel<T = any>(
     return () => {
       connexion.off(evenement, ecouteur);
     };
-  }, [evenement, actif]);
+  }, [evenement, actif, rappelRef]);
 }
 
 /** Suit un salon tant que l'écran est ouvert (voir `suivreSalon`). */
@@ -241,8 +241,7 @@ export function useDonneesModifiees(
   options: OptionsModifications = {}
 ) {
   const { storeId, orgId, id, delaiMs = 300, actif = true } = options;
-  const relireRef = useRef(relire);
-  relireRef.current = relire;
+  const relireRef = useDerniereValeur(relire);
 
   const liste = Array.isArray(ressources) ? ressources : [ressources];
   const cle = liste.join('|');
@@ -290,7 +289,7 @@ export function useDonneesModifiees(
       connexion.off('donnees-modifiees', surModification);
       connexion.off('connect', surConnexion);
     };
-  }, [cle, storeId, orgId, id, delaiMs, actif]);
+  }, [cle, storeId, orgId, id, delaiMs, actif, relireRef]);
 }
 
 /**

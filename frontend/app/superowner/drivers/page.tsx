@@ -8,7 +8,8 @@
  * une course dans la minute.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { Bike, Car, Check, Eye, ExternalLink, Truck, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -120,8 +121,7 @@ export default function LivreursPage() {
 
   // Un livreur qui s'inscrit ou dépose une pièce, validé par un collègue :
   // la file suit, et le dossier ouvert avec elle.
-  const dossierOuvert = useRef<string | null>(null);
-  dossierOuvert.current = dossier?.driver.id ?? null;
+  const dossierOuvert = useDerniereValeur<string | null>(dossier?.driver.id ?? null);
 
   useDonneesModifiees('drivers', async (modification) => {
     charger(true);

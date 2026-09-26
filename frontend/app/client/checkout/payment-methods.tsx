@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { CreditCard, Plus, Trash2 } from 'lucide-react';
+import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -22,8 +23,7 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   // Gardé dans une ref : un onSelect recréé à chaque rendu du parent ne doit pas relancer le chargement.
-  const onSelectRef = useRef(onSelect);
-  onSelectRef.current = onSelect;
+  const onSelectRef = useDerniereValeur(onSelect);
 
   const fetchPaymentMethods = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
@@ -48,7 +48,7 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [onSelectRef]);
 
   useEffect(() => {
     fetchPaymentMethods();
