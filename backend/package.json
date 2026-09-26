@@ -5,6 +5,7 @@
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
+    "predev": "prisma migrate deploy && prisma generate",
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate && tsc",
     "start": "node dist/server.js",
