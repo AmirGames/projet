@@ -2383,6 +2383,40 @@ router.get(
   }
 );
 
+// PATCH /superowner/organizations/:orgId/documents/:documentId/expiry - Corriger l'échéance d'une pièce
+router.patch(
+  "/organizations/:orgId/documents/:documentId/expiry",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const schema = z.object({
+        expiryDate: z.string().min(1, "Donnez une date d'expiration"),
+      });
+      const body = schema.parse(req.body);
+
+      const { avant, piece } = await MerchantProfileService.changerEcheance(
+        req.params.orgId as string,
+        req.params.documentId as string,
+        body.expiryDate
+      );
+
+      await db.systemAuditLog.create({
+        data: {
+          adminId: req.userId as string,
+          action: "UPDATE_MERCHANT_DOCUMENT_EXPIRY",
+          target: req.params.orgId as string,
+          changes: { type: piece.type, avant, apres: piece.expiryDate } as any,
+        },
+      });
+
+      res.json({ success: true, document: piece });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // PATCH /superowner/organizations/:orgId/documents/:documentId - Statuer sur une pièce
 router.patch(
   "/organizations/:orgId/documents/:documentId",
