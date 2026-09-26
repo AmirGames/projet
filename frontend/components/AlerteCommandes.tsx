@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { BellRing, Bike, Volume2, X } from 'lucide-react';
-import { useCurrentStore } from '@/lib/current-store';
+import { memoriserBoutique, useCurrentStore } from '@/lib/current-store';
 import { EVENEMENT_COMMANDES_CHANGEES, delaiRestant } from '@/lib/reponse-commande';
 import { useDonneesModifiees, useTempsReel } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -19,6 +20,7 @@ interface CommandeEnAttente {
   id: string;
   customerName: string;
   echeance?: string;
+  store?: { id: string; name: string };
 }
 
 /** Deux notes courtes, assez fortes pour s'entendre en cuisine. */
@@ -49,33 +51,43 @@ function sonner(contexte: AudioContext) {
  * commerçant, et un bandeau mène à la commande. Sans cela, le commerçant ne
  * voyait une commande qu'en rechargeant la page.
  */
-export function AlerteCommandes({ orgId }: { orgId: string }) {
-  const { storeId } = useCurrentStore();
+export function AlerteCommandes({
+  orgId,
+  toutesBoutiques = false,
+}: {
+  orgId: string;
+  /** Au niveau du choix du commerce (/merchant), aucune boutique n'est ouverte : on veille sur toutes. */
+  toutesBoutiques?: boolean;
+}) {
+  const { storeId: boutiqueCourante } = useCurrentStore();
+  const storeId = toutesBoutiques ? null : boutiqueCourante;
+  const actif = toutesBoutiques ? Boolean(orgId) : Boolean(storeId);
   const [enAttente, setEnAttente] = useState<CommandeEnAttente[]>([]);
   const [sonBloque, setSonBloque] = useState(false);
   const [maintenant, setMaintenant] = useState(() => Date.now());
   const contexteRef = useRef<AudioContext | null>(null);
+  const router = useRouter();
 
   const charger = useCallback(async () => {
-    if (!storeId) return;
+    if (toutesBoutiques ? !orgId : !storeId) return;
 
     const jeton = localStorage.getItem('accessToken');
     if (!jeton) return;
 
     try {
-      const reponse = await fetch(
-        `${API_URL}/api/order-management/${storeId}?status=PENDING&take=20`,
-        { headers: { Authorization: `Bearer ${jeton}` } }
-      );
+      const adresse = toutesBoutiques
+        ? `${API_URL}/api/orders?orgId=${orgId}&status=PENDING&limit=20`
+        : `${API_URL}/api/order-management/${storeId}?status=PENDING&take=20`;
+      const reponse = await fetch(adresse, { headers: { Authorization: `Bearer ${jeton}` } });
       if (!reponse.ok) return;
 
       const donnees = await reponse.json();
-      setEnAttente(donnees.data || []);
+      setEnAttente((toutesBoutiques ? donnees.orders : donnees.data) || []);
       setMaintenant(Date.now());
     } catch {
       // Hors ligne : on garde l'état connu, la relecture suivante corrigera.
     }
-  }, [storeId]);
+  }, [storeId, orgId, toutesBoutiques]);
 
   // Au chargement, puis régulièrement, puis à chaque action faite ici.
   useEffectChargement(() => {
@@ -94,25 +106,25 @@ export function AlerteCommandes({ orgId }: { orgId: string }) {
 
   // En direct : une commande arrive, ou un collègue y a répondu.
   const surEvenement = (donnees: { storeId?: string }) => {
-    if (donnees?.storeId && donnees.storeId !== storeId) return;
+    if (storeId && donnees?.storeId && donnees.storeId !== storeId) return;
     // Les écrans de commandes ouverts se relisent aussi.
     window.dispatchEvent(new Event(EVENEMENT_COMMANDES_CHANGEES));
   };
 
-  useTempsReel('commande-nouvelle', surEvenement, Boolean(storeId));
-  useTempsReel('commande-traitee', surEvenement, Boolean(storeId));
+  useTempsReel('commande-nouvelle', surEvenement, actif);
+  useTempsReel('commande-traitee', surEvenement, actif);
 
   // Un livreur a accepté une commande en préparation : il arrive au commerce.
   const [livreursTrouves, setLivreursTrouves] = useState<{ orderId: string; livreur: string; numero: string }[]>([]);
   useTempsReel(
     'livreur-trouve',
     (donnees: { orderId: string; storeId?: string; livreur: string; numero: string }) => {
-      if (donnees?.storeId && donnees.storeId !== storeId) return;
+      if (storeId && donnees?.storeId && donnees.storeId !== storeId) return;
       setLivreursTrouves((liste) => [...liste.filter((l) => l.orderId !== donnees.orderId), donnees]);
       window.dispatchEvent(new Event(EVENEMENT_COMMANDES_CHANGEES));
       if (contexteRef.current && contexteRef.current.state === 'running') sonner(contexteRef.current);
     },
-    Boolean(storeId)
+    actif
   );
 
   // Le message s'efface de lui-même : il annonce, il n'attend pas de réponse.
@@ -145,8 +157,8 @@ export function AlerteCommandes({ orgId }: { orgId: string }) {
   // Toute autre écriture sur les commandes de la boutique (annulée, modifiée,
   // livrée) : la liste d'attente peut avoir changé.
   useDonneesModifiees(['orders', 'order-management'], charger, {
-    storeId,
-    actif: Boolean(storeId),
+    ...(toutesBoutiques ? { orgId } : { storeId }),
+    actif,
   });
 
   // La sonnerie, tant qu'il reste une commande à accepter.
@@ -227,7 +239,7 @@ export function AlerteCommandes({ orgId }: { orgId: string }) {
           </p>
           <p className="text-yellow-100/80 truncate">
             {enAttente
-              .map((c) => `${c.customerName}${c.echeance ? ` (${delaiRestant(c.echeance, maintenant)})` : ''}`)
+                .map((c) => `${c.customerName}${toutesBoutiques && c.store ? ` — ${c.store.name}` : ''}${c.echeance ? ` (${delaiRestant(c.echeance, maintenant)})` : ''}`)
               .join(' · ')}
           </p>
         </div>
@@ -239,12 +251,27 @@ export function AlerteCommandes({ orgId }: { orgId: string }) {
             <Volume2 size={16} /> Activer la sonnerie
           </button>
         )}
+        {toutesBoutiques ? (
+          enAttente[0]?.store && (
+            <button
+              type="button"
+              onClick={() => {
+                memoriserBoutique(orgId, enAttente[0].store!.id);
+                router.push(`/merchant/${orgId}/orders?filtre=PENDING`);
+              }}
+              className="rounded-lg bg-green-600 hover:bg-green-500 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Voir les commandes
+            </button>
+          )
+        ) : (
         <Link
           href={`/merchant/${orgId}/orders?filtre=PENDING`}
           className="rounded-lg bg-green-600 hover:bg-green-500 px-4 py-2 text-sm font-semibold text-white"
         >
           Voir les commandes
         </Link>
+        )}
       </div>
     </div>
     </>
