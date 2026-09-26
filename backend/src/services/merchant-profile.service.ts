@@ -345,7 +345,13 @@ export class MerchantProfileService {
   /** Dépose une pièce via upload de fichier. */
   static async deposerFichier(
     orgId: string,
-    piece: { type: TypeDocumentCommercant; file: Buffer; filename: string; expiryDate?: string | null }
+    piece: {
+      type: TypeDocumentCommercant;
+      file: Buffer;
+      filename: string;
+      mimeType?: string;
+      expiryDate?: string | null;
+    }
   ) {
     const expire = piece.expiryDate ? new Date(piece.expiryDate) : null;
 
@@ -365,7 +371,10 @@ export class MerchantProfileService {
     const { url } = await FileUploadService.uploadDocument(
       piece.file,
       `merchant-${orgId}-${piece.type}-${Date.now()}`,
-      "merchants"
+      "merchants",
+      // Sans lui, l'extension se déduisait d'un nom qui n'en a pas : chaque
+      // pièce était enregistrée en .bin, et ne s'affichait nulle part.
+      piece.mimeType
     );
 
     const valeurs = {

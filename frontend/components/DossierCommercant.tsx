@@ -12,7 +12,8 @@
  */
 
 import { useCallback, useState } from 'react';
-import { AlertTriangle, BadgeCheck, Check, Clock, FileText, Upload, X } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Check, Clock, Eye, FileText, Upload, X } from 'lucide-react';
+import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -80,6 +81,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState('');
   const [motif, setMotif] = useState<Record<string, string>>({});
+  const [apercu, setApercu] = useState<{ documentUrl: string; libelle: string } | null>(null);
   const [afficherFormulaire, setAfficherFormulaire] = useState(false);
   const [typePiece, setTypePiece] = useState('');
   const [fichier, setFichier] = useState<File | null>(null);
@@ -400,14 +402,24 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                       {piece.reviewNote && (
                         <p className="text-xs text-red-300 mt-1">{piece.reviewNote}</p>
                       )}
-                      <a
-                        href={piece.documentUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-orange-400 hover:underline break-all"
-                      >
-                        {piece.fileName || piece.documentUrl}
-                      </a>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <button
+                          type="button"
+                          onClick={() => setApercu(piece)}
+                          className="flex items-center gap-1 text-xs text-blue-400 hover:underline"
+                        >
+                          <Eye size={12} />
+                          Aperçu
+                        </button>
+                        <a
+                          href={piece.documentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-orange-400 hover:underline break-all"
+                        >
+                          {piece.fileName || piece.documentUrl}
+                        </a>
+                      </div>
                     </div>
                     <Icone size={18} className={`flex-shrink-0 ${marque.classe}`} />
                   </div>
@@ -443,6 +455,14 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
           </ul>
         )}
       </div>
+
+      {apercu && (
+        <DocumentPreviewModal
+          documentUrl={apercu.documentUrl}
+          libelle={apercu.libelle}
+          onClose={() => setApercu(null)}
+        />
+      )}
     </div>
   );
 }
