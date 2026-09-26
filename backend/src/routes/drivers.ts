@@ -7,7 +7,8 @@ import { uploadMiddleware } from "../middleware/file-upload";
 import { limiterInscriptions } from "../middleware/throttle";
 import { logger } from "../config/logger";
 import { emitDeliveryUpdate } from "../config/socket";
-import { DispatchService } from "../services/dispatch.service";
+import { DispatchService, STATUTS_EN_COURSE } from "../services/dispatch.service";
+import { ordonner, versCourseTournee } from "../services/tournee.service";
 import { AuthService } from "../services/auth.service";
 import {
   DriverApprovalService,
@@ -952,11 +953,11 @@ router.patch(
           data: {
             totalDeliveries: { increment: 1 },
             totalEarnings: { increment: remuneration },
-            currentOrderId: null,
-            // Le livreur redevient disponible pour la course suivante.
-            isAvailable: true,
           },
         });
+        // Le livreur redevient disponible pour la course suivante, sauf s'il
+        // lui en reste d'autres dans sa tournée.
+        await DispatchService.liberer(livreur.id);
 
         // Notifier le client que la commande est livrée avec succès
         const order = await db.order.findUnique({
@@ -997,10 +998,7 @@ router.patch(
       // Une course abandonnée doit libérer le livreur, sans quoi il ne reçoit
       // plus rien.
       if (status === "FAILED" && course.status !== "FAILED") {
-        await db.driver.update({
-          where: { id: livreur.id },
-          data: { currentOrderId: null, isAvailable: true },
-        });
+        await DispatchService.liberer(livreur.id);
       }
 
       emitDeliveryUpdate(delivery.orderId, {
@@ -1235,6 +1233,10 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
         })(),
         payout: Number(proposition.payout || 0),
         expiresAt: proposition.expiresAt,
+        // Plusieurs courses : proposées ensemble (même batchId, un seul
+        // « Accepter » pour tout le lot), ou ajoutée à la course en cours.
+        batchId: proposition.batchId,
+        ajout: proposition.ajout,
         // Nouvelles données
         pickupStore: proposition.delivery.order?.store?.name,
         pickupAddress: proposition.delivery.order?.store?.address,
@@ -1260,6 +1262,67 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
   }
 });
 
+/**
+ * GET /drivers/tournee - Les arrêts du livreur, dans l'ordre
+ *
+ * Avec plusieurs courses, l'ordre des retraits et des remises ne va pas de
+ * soi : le serveur le calcule depuis la position du livreur (voir
+ * tournee.service.ts), un retrait toujours avant sa remise.
+ */
+router.get("/tournee", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const courses = await db.orderDelivery.findMany({
+      where: { driverId: livreur.id, status: { in: STATUTS_EN_COURSE } },
+      include: {
+        order: {
+          select: {
+            status: true,
+            customerName: true,
+            deliveryAddress: true,
+            deliveryPostal: true,
+            deliveryCity: true,
+            store: { select: { name: true, address: true, city: true } },
+          },
+        },
+      },
+      orderBy: { assignedAt: "asc" },
+    });
+
+    const depart = { latitude: livreur.latitude, longitude: livreur.longitude };
+    const { arrets, km } = ordonner(
+      estUnPoint(depart) ? depart : null,
+      courses.map(versCourseTournee)
+    );
+    const parId = new Map(courses.map((c) => [c.id, c]));
+
+    res.json({
+      success: true,
+      data: {
+        km: Number(km.toFixed(2)),
+        arrets: arrets.map((a) => {
+          const c = parId.get(a.deliveryId)!;
+          const retrait = a.type === "RETRAIT";
+          return {
+            deliveryId: c.id,
+            orderId: c.orderId,
+            type: a.type,
+            statutCourse: c.status,
+            // Au commerce : la commande n'est à prendre qu'une fois prête.
+            commandePrete: c.order?.status === "READY",
+            nom: retrait ? c.order?.store?.name || "Commerce" : c.order?.customerName || "Client",
+            adresse: retrait ? adresseRetrait(c.order?.store) : adresseLivraison(c.order),
+            lat: a.point.latitude ?? null,
+            lng: a.point.longitude ?? null,
+          };
+        }),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /drivers/offers/:id/accept - Accepter une course proposée
 router.post(
   "/offers/:id/accept",
@@ -1269,7 +1332,11 @@ router.post(
       const livreur = await livreurConnecte(req);
       const course = await DispatchService.accepter(req.params.id as string, livreur.id);
 
-      res.json({ success: true, message: "Course acceptée", data: course });
+      res.json({
+        success: true,
+        message: course.lot.length > 1 ? `${course.lot.length} courses acceptées` : "Course acceptée",
+        data: course,
+      });
     } catch (err) {
       next(err);
     }
@@ -1332,14 +1399,8 @@ router.patch(
         },
       });
 
-      // Libérer le livreur
-      await db.driver.update({
-        where: { id: livreur.id },
-        data: {
-          currentOrderId: null,
-          isAvailable: true,
-        },
-      });
+      // Libérer le livreur, s'il n'a pas d'autre course dans sa tournée.
+      await DispatchService.liberer(livreur.id);
 
       // Remettre la commande en READY pour permettre au restaurant de proposer à un autre livreur
       const order = await db.order.update({

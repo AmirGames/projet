@@ -1179,6 +1179,13 @@ model DeliveryOffer {
   /// de quelques sollicitations : au-delà, ce serait du harcèlement.
   attempts    Int       @default(1)
 
+  /// Courses proposées ensemble au même livreur (un lot) : elles s'acceptent
+  /// ou se refusent d'un seul geste. Vide pour une course seule, ou ajoutée
+  /// à une tournée déjà commencée.
+  batchId     String?
+  /// Proposée à un livreur déjà en course, sur son trajet (« + 1 course »).
+  ajout       Boolean   @default(false)
+
   delivery    OrderDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
   driver      Driver        @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
@@ -1189,6 +1196,7 @@ model DeliveryOffer {
   @@unique([deliveryId, driverId])
   @@index([driverId, status])
   @@index([status, expiresAt])
+  @@index([batchId])
 }
 
 // ============================================================================
