@@ -19,15 +19,18 @@ const tx: any = {
   paymentMethod: { createMany: jest.fn() },
 };
 const db: any = {
+  membership: { findFirst: jest.fn() },
   store: { findFirst: jest.fn(), findUnique: jest.fn(), delete: jest.fn(async () => ({})) },
   $transaction: jest.fn(async (fn: any) => fn(tx)),
 };
 const create: any = jest.fn();
 const verifierCreationBoutique: any = jest.fn();
+const compteDuJeton: any = jest.fn();
 
 jest.mock("../db", () => ({ db }));
 jest.mock("../store.service", () => ({ StoreService: { create } }));
 jest.mock("../plan.service", () => ({ PlanService: { verifierCreationBoutique } }));
+jest.mock("../../middleware/auth", () => ({ compteDuJeton }));
 jest.mock("../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
@@ -76,11 +79,13 @@ describe("Dupliquer une boutique", () => {
     jest.clearAllMocks();
     n = 0;
     db.store.findFirst.mockResolvedValue(modele);
+    compteDuJeton.mockResolvedValue({ isSuperOwner: false, isSystemAdmin: false });
+    db.membership.findFirst.mockResolvedValue({ id: "m-1" });
     create.mockResolvedValue({ id: "store-2", slug: "night-shop-02" });
   });
 
   it("recopie le catalogue sous le nouveau nom, la nouvelle adresse et le nouveau téléphone", async () => {
-    await StoreDuplicationService.duplicate("src", {
+    await StoreDuplicationService.duplicate("user-1", "src", {
       name: "Night Shop 02",
       slug: "night-shop-02",
       address: "2 rue B",
@@ -109,7 +114,17 @@ describe("Dupliquer une boutique", () => {
   it("efface la boutique à moitié copiée si la copie échoue", async () => {
     tx.category.create.mockRejectedValueOnce(new Error("boom"));
 
-    await expect(StoreDuplicationService.duplicate("src", { name: "X2", slug: "x2" })).rejects.toThrow("boom");
+    await expect(StoreDuplicationService.duplicate("user-1", "src", { name: "X2", slug: "x2" })).rejects.toThrow("boom");
     expect(db.store.delete).toHaveBeenCalledWith({ where: { id: "store-2" } });
+  });
+
+  it("refuse de copier la boutique d'un autre commerçant", async () => {
+    db.membership.findFirst.mockResolvedValue(null);
+
+    await expect(
+      StoreDuplicationService.duplicate("intrus", "src", { name: "Copie", slug: "copie" })
+    ).rejects.toMatchObject({ statusCode: 403 });
+    expect(db.membership.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: "intrus", orgId: "org-1" } }));
+    expect(create).not.toHaveBeenCalled();
   });
 });

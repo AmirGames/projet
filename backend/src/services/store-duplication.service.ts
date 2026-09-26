@@ -3,6 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { StoreService } from "./store.service";
 import { PlanService } from "./plan.service";
+import { compteDuJeton } from "../middleware/auth";
 
 /**
  * Ouvrir une boutique de plus sur le modèle d'une autre.
@@ -32,7 +33,7 @@ export interface DuplicationBoutique {
 }
 
 export class StoreDuplicationService {
-  static async duplicate(sourceId: string, data: DuplicationBoutique) {
+  static async duplicate(userId: string, sourceId: string, data: DuplicationBoutique) {
     const source = await db.store.findFirst({
       where: { id: sourceId, deletedAt: null },
       include: {
@@ -52,6 +53,20 @@ export class StoreDuplicationService {
 
     if (!source) {
       throw new ApiError(404, "Boutique modèle introuvable", "STORE_NOT_FOUND");
+    }
+
+    // Le cloisonnement filtre déjà les boutiques des autres, mais une copie
+    // de catalogue ne doit pas dépendre d'un seul verrou : la route vérifie
+    // elle-même que l'appelant est membre de l'organisation propriétaire.
+    const compte = await compteDuJeton(userId);
+    if (!compte?.isSuperOwner && !compte?.isSystemAdmin) {
+      const membre = await db.membership.findFirst({
+        where: { userId, orgId: source.orgId },
+        select: { id: true },
+      });
+      if (!membre) {
+        throw new ApiError(403, "Cette boutique appartient à un autre commerçant", "CROSS_TENANT_DENIED");
+      }
     }
 
     // Le nombre de boutiques dépend de la formule souscrite.

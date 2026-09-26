@@ -112,7 +112,7 @@ router.post("/:id/duplicate", authMiddleware, checkOrgStatus, async (req: Reques
     const id = req.params.id as string;
     const body = duplicateStoreSchema.parse(req.body);
 
-    const store = await StoreDuplicationService.duplicate(id, body);
+    const store = await StoreDuplicationService.duplicate(req.userId as string, id, body);
 
     res.status(201).json({ message: "Boutique dupliquée", store });
   } catch (err) {
