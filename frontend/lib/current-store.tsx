@@ -1,6 +1,6 @@
 'use client';
 
-import { signalerErreur } from '@/lib/erreurs';
+import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -19,6 +19,7 @@ interface CurrentStoreValue {
   currentStore: MerchantStore | null;
   storeId: string;
   loading: boolean;
+  error: string | null;
   selectStore: (storeId: string) => void;
   refresh: () => Promise<void>;
 }
@@ -53,17 +54,27 @@ export function CurrentStoreProvider({
   const [stores, setStores] = useState<MerchantStore[]>([]);
   const [storeId, setStoreId] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!orgId) return;
 
     try {
+      setError(null);
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/stores/org/${orgId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        if (response.status >= 500) {
+          setError('Erreur serveur : impossible de charger les boutiques.');
+        } else {
+          setError('Erreur : impossible de charger les boutiques.');
+        }
+        signalerErreur('Failed to load stores:', response.status);
+        return;
+      }
 
       const list: MerchantStore[] = await response.json();
       setStores(list);
@@ -74,6 +85,11 @@ export function CurrentStoreProvider({
       setStoreId(valid ? (remembered as string) : list[0]?.id || '');
     } catch (error) {
       signalerErreur('Error loading stores:', error);
+      if (estErreurReseau(error)) {
+        setError('Erreur réseau : impossible de charger les boutiques.');
+      } else {
+        setError('Erreur : impossible de charger les boutiques.');
+      }
     } finally {
       setLoading(false);
     }
@@ -104,10 +120,11 @@ export function CurrentStoreProvider({
       currentStore: stores.find((s) => s.id === storeId) || null,
       storeId,
       loading,
+      error,
       selectStore,
       refresh: load,
     }),
-    [stores, storeId, loading, selectStore, load]
+    [stores, storeId, loading, error, selectStore, load]
   );
 
   return <CurrentStoreContext.Provider value={value}>{children}</CurrentStoreContext.Provider>;
