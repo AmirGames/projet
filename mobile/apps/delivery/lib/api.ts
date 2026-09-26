@@ -1,4 +1,18 @@
-export const API_URL = 'http://192.168.0.80:3001';
+// Configuration de l'URL API selon l'environnement
+// En production : utiliser le domaine de production
+// En développement : utiliser localhost ou l'IP locale
+const getApiUrl = (): string => {
+  // Si une variable d'environnement est définie, l'utiliser
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // Sinon, utiliser localhost par défaut pour le développement
+  // Les développeurs peuvent ajouter EXPO_PUBLIC_API_URL=http://192.168.0.80:3001 dans .env.local
+  return 'http://localhost:3001';
+};
+
+export const API_URL = getApiUrl();
 
 export class ApiError extends Error {
   constructor(message: string, public status: number) {
