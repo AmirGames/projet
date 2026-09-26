@@ -103,6 +103,11 @@ export interface Delivery {
   codeAttendu?: boolean;
   essaisRestants?: number;
   preuve?: string | null;
+  /**
+   * Tournée : le client n'est pas encore révélé. RETRAITS : d'autres
+   * commandes attendent au commerce ; ORDRE : une autre remise passe avant.
+   */
+  masque?: 'RETRAITS' | 'ORDRE' | null;
   /** Le client ne répond pas : passé cette heure (du serveur), le dépôt est permis. */
   attenteFinLe?: string | null;
   /** L'heure du serveur à la lecture. */

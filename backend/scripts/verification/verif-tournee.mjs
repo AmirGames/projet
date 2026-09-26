@@ -222,17 +222,18 @@ check('la course attend un livreur libre', c5.propose === false, JSON.stringify(
 titre('Les arrêts de la tournée, dans l’ordre');
 const tournee = (await j(await get('/api/drivers/tournee', deux.jeton)))?.data;
 const arrets = tournee?.arrets || [];
-check('six arrêts : trois retraits, trois remises', arrets.length === 6, JSON.stringify(arrets.map((a) => a.type)));
-const retraitAvantRemise = arrets.every(
-  (a, i) => a.type === 'RETRAIT' || arrets.slice(0, i).some((b) => b.deliveryId === a.deliveryId && b.type === 'RETRAIT')
-);
-check('chaque commande est prise avant d’être remise', retraitAvantRemise, JSON.stringify(arrets.map((a) => `${a.type}:${a.deliveryId.slice(-4)}`)));
-const premiereRemise = arrets.findIndex((a) => a.type === 'REMISE');
+check('seules les trois commandes à récupérer s’affichent', arrets.length === 3 && arrets.every((a) => a.type === 'RETRAIT'),
+  JSON.stringify(arrets.map((a) => a.type)));
+check('les trois livraisons sont masquées', tournee?.remisesMasquees === 3, JSON.stringify(tournee?.remisesMasquees));
+const detailAvant = (await j(await get(`/api/drivers/deliveries/${c1.deliveryId}`, deux.jeton)))?.data;
 check(
-  'tous les retraits avant la première remise',
-  premiereRemise > 0 && arrets.slice(premiereRemise).every((a) => a.type === 'REMISE'),
-  JSON.stringify(arrets.map((a) => a.type))
+  'le détail d’une course ne donne pas son client',
+  detailAvant?.masque === 'RETRAITS' && !detailAvant?.deliveryAddress && !detailAvant?.customerPhone && detailAvant?.latitude == null,
+  JSON.stringify({ masque: detailAvant?.masque, adresse: detailAvant?.deliveryAddress, tel: detailAvant?.customerPhone })
 );
+const liste = (await j(await get('/api/drivers/deliveries?status=ACTIVE', deux.jeton)))?.data || [];
+check('la liste non plus', liste.length === 3 && liste.every((d) => d.masque === 'RETRAITS' && !d.deliveryAddress),
+  JSON.stringify(liste.map((d) => [d.masque, d.deliveryAddress])));
 check('la longueur de la tournée est donnée', typeof tournee?.km === 'number' && tournee.km > 0, JSON.stringify(tournee?.km));
 
 titre('Chaque client suit le livreur');
@@ -245,27 +246,28 @@ check('la position arrive sur les trois courses', suivies === '3', suivies);
 
 // ===== Le livreur libéré à la dernière remise =====
 
-titre('Une remise ne libère pas un livreur qui a encore des courses');
-async function livrer(course, livreur, jeton) {
+async function preparer(course, jeton) {
   // Déjà acceptée : il reste à la passer en préparation, puis prête.
   for (const status of ['PREPARING', 'READY']) {
     await patch(`/api/order-management/${course.storeId}/${course.orderId}/status`, { status }, jeton);
   }
-  await patch(`/api/drivers/deliveries/${course.deliveryId}`, { status: 'PICKED_UP' }, livreur.jeton);
-  return patch(
-    `/api/drivers/deliveries/${course.deliveryId}`,
-    { status: 'DELIVERED', code: await codeDeRemise(course.deliveryId) },
-    livreur.jeton
-  );
 }
-const premiere = await livrer({ ...c1, storeId: boutiqueA.storeId }, deux, T);
-check('la première remise passe', premiere.status === 200, `statut ${premiere.status}`);
-check(
-  'il reste occupé',
-  (await champ(`SELECT "isAvailable" FROM "Driver" WHERE email = '${deux.email}'`)) === 'false'
-);
-const courante = await champ(`SELECT "currentOrderId" FROM "Driver" WHERE email = '${deux.email}'`);
-check('sa course en cours est une de celles qui restent', [c2.deliveryId, c3.deliveryId].includes(courante), courante);
+const prendre = (course) => patch(`/api/drivers/deliveries/${course.deliveryId}`, { status: 'PICKED_UP' }, deux.jeton);
+const remettre = async (course) =>
+  patch(`/api/drivers/deliveries/${course.deliveryId}`, { status: 'DELIVERED', code: await codeDeRemise(course.deliveryId) }, deux.jeton);
+const detail = async (course) => (await j(await get(`/api/drivers/deliveries/${course.deliveryId}`, deux.jeton)))?.data;
+const k1 = { ...c1, storeId: boutiqueA.storeId };
+const k2 = { ...c2, storeId: boutiqueA.storeId };
+const k3 = { ...c3, storeId: boutiqueB.storeId };
+
+titre('Tant qu’une commande attend au commerce, aucune remise');
+await preparer(k1, T);
+check('la première commande se récupère', (await prendre(k1)).status === 200);
+const tropTot = await remettre(k1);
+check('sa remise est refusée', tropTot.status === 409 && (await j(tropTot))?.code === 'TOURNEE_RETRAITS', `statut ${tropTot.status}`);
+check('son client reste masqué', (await detail(k1))?.masque === 'RETRAITS');
+const attenteTot = await post(`/api/drivers/deliveries/${k1.deliveryId}/attente`, null, deux.jeton);
+check('l’attente du client aussi', attenteTot.status === 409, `statut ${attenteTot.status}`);
 
 titre('Annuler une course de la tournée garde les autres');
 const annulation = await patch(`/api/drivers/deliveries/${c2.deliveryId}/cancel`, { reason: 'Problème véhicule' }, deux.jeton);
@@ -275,8 +277,41 @@ check(
   (await champ(`SELECT "isAvailable" FROM "Driver" WHERE email = '${deux.email}'`)) === 'false'
 );
 
+titre('Toutes les commandes en main : un seul client à la fois');
+await preparer(k3, TB);
+check('la dernière commande se récupère', (await prendre(k3)).status === 200);
+const apres = (await j(await get('/api/drivers/tournee', deux.jeton)))?.data;
+check(
+  'la tournée ne montre qu’une remise',
+  apres?.arrets?.length === 1 && apres.arrets[0].type === 'REMISE' && apres?.remisesMasquees === 1,
+  JSON.stringify(apres)
+);
+const courante = [k1, k3].find((k) => k.deliveryId === apres?.arrets?.[0]?.deliveryId);
+const suivante = courante === k1 ? k3 : k1;
+const vueCourante = await detail(courante);
+check('son client est donné', !vueCourante?.masque && !!vueCourante?.deliveryAddress && vueCourante?.latitude != null,
+  JSON.stringify({ masque: vueCourante?.masque, adresse: vueCourante?.deliveryAddress }));
+check('l’autre reste masqué', (await detail(suivante))?.masque === 'ORDRE');
+const horsTour = await remettre(suivante);
+check('livrer l’autre d’abord est refusé', horsTour.status === 409 && (await j(horsTour))?.code === 'TOURNEE_ORDRE', `statut ${horsTour.status}`);
+// L'ordre ne bouge pas quand le livreur se déplace.
+await patch('/api/drivers/location', { latitude: 44.849, longitude: -0.572 }, deux.jeton);
+const ensuite = (await j(await get('/api/drivers/tournee', deux.jeton)))?.data;
+check('l’ordre reste le même en route', ensuite?.arrets?.[0]?.deliveryId === courante?.deliveryId, JSON.stringify(ensuite?.arrets));
+
+titre('Une remise ne libère pas un livreur qui a encore des courses');
+check('la remise à son tour passe', (await remettre(courante)).status === 200);
+check(
+  'il reste occupé',
+  (await champ(`SELECT "isAvailable" FROM "Driver" WHERE email = '${deux.email}'`)) === 'false'
+);
+const vueSuivante = await detail(suivante);
+check('le client suivant apparaît', !vueSuivante?.masque && !!vueSuivante?.deliveryAddress, JSON.stringify(vueSuivante?.masque));
+const courant = await champ(`SELECT "currentOrderId" FROM "Driver" WHERE email = '${deux.email}'`);
+check('sa course en cours est celle qui reste', courant === suivante.deliveryId, courant);
+
 titre('La dernière remise le libère');
-const derniere = await livrer({ ...c3, storeId: boutiqueB.storeId }, deux, TB);
+const derniere = await remettre(suivante);
 check('la dernière remise passe', derniere.status === 200, `statut ${derniere.status}`);
 check(
   'il redevient disponible',

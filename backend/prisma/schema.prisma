@@ -1106,6 +1106,11 @@ model OrderDelivery {
   payout          DriverPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
   rating          DriverRating?
 
+  /// Tournée : le rang de cette remise, figé une fois toutes les commandes
+  /// récupérées. Seule la plus petite se montre et se remet ; les suivantes
+  /// attendent. Remis à zéro à chaque nouveau retrait.
+  ordreRemise     Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

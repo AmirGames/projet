@@ -277,7 +277,11 @@ export default function DeliveryScreen({
 
   // Récupérée, mais d'autres commandes de la tournée attendent encore au
   // commerce : le client et la remise restent masqués jusque-là.
-  const waitingOthers = delivery?.status === 'PICKED_UP' && otherPickups > 0;
+  // Le serveur le dit (masque) ; sans réseau, le téléphone le déduit des
+  // autres courses encore au commerce.
+  const hiddenReason: 'RETRAITS' | 'ORDRE' | null =
+    otherPickups > 0 ? 'RETRAITS' : (delivery?.masque ?? null);
+  const waitingOthers = delivery?.status === 'PICKED_UP' && hiddenReason != null;
 
   // Le GPS s'affine à l'approche de l'étape et quand la carte est en plein
   // écran ; ailleurs, il économise la batterie.
@@ -541,8 +545,11 @@ export default function DeliveryScreen({
         {waitingOthers && (
           <Card title="✅ Commande récupérée">
             <Text style={styles.help}>
-              Il vous reste {otherPickups} commande{otherPickups > 1 ? 's' : ''} à récupérer. L’adresse du client et la
-              remise s’afficheront une fois toutes les commandes de la tournée en main.
+              {hiddenReason === 'RETRAITS'
+                ? otherPickups > 0
+                  ? `Il vous reste ${otherPickups} commande${otherPickups > 1 ? 's' : ''} à récupérer. L’adresse du client et la remise s’afficheront une fois toutes les commandes de la tournée en main.`
+                  : 'Récupérez d’abord les autres commandes de la tournée. L’adresse du client et la remise s’afficheront ensuite.'
+                : 'Livrez d’abord la commande en cours de votre tournée : le client de celle-ci s’affichera juste après.'}
             </Text>
             <TouchableOpacity style={styles.primaryButton} onPress={onBack}>
               <Text style={styles.primaryButtonText}>Voir la tournée</Text>
@@ -791,9 +798,13 @@ export default function DeliveryScreen({
           </Card>
         )}
 
-        {waitingOthers ? (
+        {waitingOthers || delivery.masque ? (
           <Card title="Client">
-            <Text style={styles.help}>Affiché une fois toutes les commandes de la tournée récupérées.</Text>
+            <Text style={styles.help}>
+              {hiddenReason === 'ORDRE'
+                ? 'Affiché à son tour, une fois la livraison en cours terminée.'
+                : 'Affiché une fois toutes les commandes de la tournée récupérées.'}
+            </Text>
           </Card>
         ) : (
         <Card title="Client">

@@ -263,12 +263,14 @@ export default function DashboardScreen({
                   <Text style={styles.queueTitle} numberOfLines={1}>
                     {d.status !== 'PICKED_UP'
                       ? `🏪 ${d.pickupStore || d.pickupAddress}`
-                      : retraitsRestants > 0
+                      : retraitsRestants > 0 || d.masque === 'RETRAITS'
                         ? '✅ Récupérée · client affiché après les autres retraits'
-                        : `📍 ${d.deliveryAddress}`}
+                        : d.masque === 'ORDRE'
+                          ? '✅ Récupérée · client affiché à son tour'
+                          : `📍 ${d.deliveryAddress}`}
                   </Text>
                   <Text style={styles.queueMeta}>
-                    {shortId(d.orderId)} · {d.status === 'PICKED_UP' && retraitsRestants > 0 ? 'Récupérée' : deliveryStatus(d.status).label}
+                    {shortId(d.orderId)} · {d.status === 'PICKED_UP' && (retraitsRestants > 0 || d.masque) ? 'Récupérée' : deliveryStatus(d.status).label}
                   </Text>
                 </View>
                 <Text style={styles.link}>Ouvrir ›</Text>

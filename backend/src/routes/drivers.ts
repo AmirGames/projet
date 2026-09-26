@@ -69,6 +69,24 @@ function adresseRetrait(store?: { name?: string | null; address?: string | null;
   return [store.address, store.city].filter(Boolean).join(", ") || store.name || "";
 }
 
+/**
+ * Tournée : le client d'une course masquée (d'autres commandes attendent au
+ * commerce, ou une autre remise passe avant) ne sort pas du serveur. Le
+ * livreur ne découvre l'adresse suivante qu'une fois la précédente livrée.
+ */
+function masquerClient<T extends Record<string, unknown>>(course: T, raison: "RETRAITS" | "ORDRE" | null): T {
+  if (!raison) return { ...course, masque: null };
+  return {
+    ...course,
+    masque: raison,
+    customerName: null,
+    customerPhone: null,
+    deliveryAddress: null,
+    latitude: null,
+    longitude: null,
+  };
+}
+
 function adresseLivraison(order?: { deliveryAddress?: string | null; deliveryPostal?: string | null; deliveryCity?: string | null } | null) {
   if (!order) return "";
   const ville = [order.deliveryPostal, order.deliveryCity].filter(Boolean).join(" ");
@@ -643,7 +661,10 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
       orderBy: { createdAt: "desc" }
     });
 
-    const formatted = deliveries.map((d: any) => ({
+    // Les courses du livreur : celles de sa tournée qui ne sont pas encore
+    // à leur tour ne montrent pas leur client.
+    const etat = enAttente ? null : await DispatchService.etatTournee(livreur.id);
+    const formatted = deliveries.map((d: any) => masquerClient({
       id: d.id,
       orderId: d.orderId,
       status: d.status,
@@ -666,7 +687,7 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
             latitude: d.deliveryLat ?? null,
             longitude: d.deliveryLng ?? null,
           }),
-    }));
+    }, etat && STATUTS_EN_COURSE.includes(d.status) ? DispatchService.masquage(etat, d.id) : null));
 
     res.json({
       success: true,
@@ -755,9 +776,14 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
     const destLat = attribuee ? delivery.deliveryLat : delivery.deliveryLatObfusquee;
     const destLng = attribuee ? delivery.deliveryLng : delivery.deliveryLngObfusquee;
 
+    const raison =
+      delivery.driverId === livreur.id && STATUTS_EN_COURSE.includes(delivery.status)
+        ? DispatchService.masquage(await DispatchService.etatTournee(livreur.id), delivery.id)
+        : null;
+
     res.json({
       success: true,
-      data: {
+      data: masquerClient({
         id: delivery.id,
         orderId: delivery.orderId,
         status: delivery.status,
@@ -786,7 +812,7 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
           delivery.status === "DELIVERED" && delivery.driverId === livreur.id
             ? bilanCourse(delivery, delivery.offers[0])
             : null,
-      }
+      }, raison),
     });
   } catch (err) {
     next(err);
@@ -919,6 +945,8 @@ router.patch(
        * le prouve ; à défaut, la photo du dépôt.
        */
       if (status === "DELIVERED" && course.status !== "DELIVERED") {
+        // Tournée : on ne remet qu'à son tour, toutes les commandes en main.
+        await DispatchService.exigerTourAtteint(livreur.id, deliveryId);
         await DeliveryProofService.verifier(deliveryId, {
           code: req.body?.code,
           photoUrl: req.body?.photoUrl,
@@ -936,6 +964,15 @@ router.patch(
         },
         include: { order: { select: { feesAmount: true } } }
       });
+
+      // Un retrait de plus : l'ordre des remises se recalcule, depuis le
+      // dernier commerce, une fois toutes les commandes en main.
+      if (status === "PICKED_UP" && course.status !== "PICKED_UP") {
+        await db.orderDelivery.updateMany({
+          where: { driverId: livreur.id, status: { in: STATUTS_EN_COURSE } },
+          data: { ordreRemise: null },
+        });
+      }
 
       // Une course livrée alimente les compteurs du livreur. On paie ce qui a
       // été annoncé à l'attribution, pas les frais facturés au client : une
@@ -1047,6 +1084,7 @@ router.post(
       if (course.status !== "PICKED_UP") {
         throw new ApiError(400, "La photo se prend au moment du dépôt", "NOT_PICKED_UP");
       }
+      await DispatchService.exigerTourAtteint(livreur.id, deliveryId);
       // Le dépôt ne se photographie qu'au terme de l'attente du client.
       exigerAttenteTerminee(course);
       if (!req.file) {
@@ -1092,6 +1130,8 @@ router.post(
       if (course.status !== "PICKED_UP") {
         throw new ApiError(409, "L'attente commence une fois la commande récupérée, chez le client", "NOT_PICKED_UP");
       }
+      // Tournée : on n'attend un client qu'à son tour.
+      await DispatchService.exigerTourAtteint(livreur.id, deliveryId);
 
       // Une seule attente par course, même si le bouton est touché deux fois.
       const lancee = await db.orderDelivery.updateMany({
@@ -1292,16 +1332,27 @@ router.get("/tournee", authMiddleware, async (req: Request, res: Response, next:
     });
 
     const depart = { latitude: livreur.latitude, longitude: livreur.longitude };
-    const { arrets, km } = ordonner(
+    const { arrets: tous, km } = ordonner(
       estUnPoint(depart) ? depart : null,
       courses.map(versCourseTournee)
     );
     const parId = new Map(courses.map((c) => [c.id, c]));
 
+    // Ce que le livreur voit : les commandes à récupérer d'abord ; ensuite
+    // une seule remise, celle dont c'est le tour (ordre figé au dernier
+    // retrait). Les autres clients restent masqués.
+    const etat = await DispatchService.etatTournee(livreur.id);
+    const arrets =
+      etat.retraitsRestants > 0
+        ? tous.filter((a) => a.type === "RETRAIT")
+        : tous.filter((a) => a.type === "REMISE" && a.deliveryId === etat.remiseCourante);
+    const remisesMasquees = courses.length - (etat.retraitsRestants > 0 ? 0 : arrets.length);
+
     res.json({
       success: true,
       data: {
         km: Number(km.toFixed(2)),
+        remisesMasquees,
         arrets: arrets.map((a) => {
           const c = parId.get(a.deliveryId)!;
           const retrait = a.type === "RETRAIT";

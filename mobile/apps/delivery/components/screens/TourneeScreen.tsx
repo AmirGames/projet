@@ -40,12 +40,15 @@ export default function TourneeScreen({
   onTrackingChange: (tracking: Tracking) => void;
 }) {
   const [stops, setStops] = useState<Stop[] | null>(null);
+  // Les livraisons que le serveur garde pour plus tard.
+  const [masked, setMasked] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await apiFetch<{ data: { arrets: Stop[] } }>('/api/drivers/tournee', token);
+      const res = await apiFetch<{ data: { arrets: Stop[]; remisesMasquees?: number } }>('/api/drivers/tournee', token);
       setStops(res.data.arrets);
+      setMasked(res.data.remisesMasquees ?? 0);
       writeJson('tournee', res.data.arrets);
     } catch (e) {
       if (isNetworkError(e)) {
@@ -76,9 +79,12 @@ export default function TourneeScreen({
   });
   // Les clients n'apparaissent qu'une fois toutes les commandes en main :
   // d'abord tous les retraits, puis les remises.
+  // Puis un seul client à la fois : le suivant n'apparaît qu'une fois le
+  // précédent livré (le serveur en décide, et refuse une remise hors tour).
   const retraitsRestants = enCours.filter((s) => s.type === 'RETRAIT').length;
-  const visible = retraitsRestants > 0 ? enCours.filter((s) => s.type === 'RETRAIT') : enCours;
-  const remisesMasquees = enCours.length - visible.length;
+  const visible =
+    retraitsRestants > 0 ? enCours.filter((s) => s.type === 'RETRAIT') : enCours.filter((s) => s.type === 'REMISE').slice(0, 1);
+  const remisesMasquees = retraitsRestants > 0 ? deliveries.length : Math.max(masked, deliveries.length - visible.length);
   const next = visible[0];
 
   // Le GPS s'affine à l'approche du prochain arrêt.
@@ -144,7 +150,7 @@ export default function TourneeScreen({
           </View>
         )}
 
-        <Card title={retraitsRestants > 0 ? 'Commandes à récupérer' : 'Tous les arrêts'}>
+        <Card title={retraitsRestants > 0 ? 'Commandes à récupérer' : 'Livraison en cours'}>
           {visible.map((s, i) => {
             const d = deliveries.find((x) => x.id === s.deliveryId);
             return (
@@ -171,10 +177,13 @@ export default function TourneeScreen({
               </TouchableOpacity>
             );
           })}
-          {remisesMasquees > 0 && (
+          {(remisesMasquees > 0 || visible.length === 0) && (
             <Text style={styles.hidden}>
-              🔒 {remisesMasquees} livraison{remisesMasquees > 1 ? 's' : ''} : les adresses des clients s’afficheront une
-              fois toutes les commandes récupérées.
+              {retraitsRestants > 0
+                ? `🔒 ${remisesMasquees} livraison${remisesMasquees > 1 ? 's' : ''} : les adresses des clients s’afficheront une fois toutes les commandes récupérées.`
+                : visible.length === 0
+                  ? '🔒 Le prochain client s’affichera dès le retour du réseau.'
+                  : `🔒 ${remisesMasquees} autre${remisesMasquees > 1 ? 's' : ''} livraison${remisesMasquees > 1 ? 's' : ''} : chaque client s’affiche une fois le précédent livré.`}
             </Text>
           )}
         </Card>

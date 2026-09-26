@@ -9,6 +9,7 @@ import { Notifier, enArrierePlan } from "./notifier.service";
 import { randomUUID } from "crypto";
 import {
   detourPourRejoindre,
+  ordonner,
   REGLES_TOURNEE_PAR_DEFAUT,
   ReglesTournee,
   versCourseTournee,
@@ -240,6 +241,83 @@ export class DispatchService {
       }))
       .filter((livreur) => livreur.distance <= reglages.maxRadiusKm)
       .sort((a, b) => a.distance - b.distance);
+  }
+
+  /**
+   * Où en est la tournée du livreur.
+   *
+   * Tant qu'une commande attend au commerce, aucun client n'est révélé ni
+   * livrable. Ensuite, un seul à la fois : l'ordre des remises est figé
+   * (ordreRemise) depuis la position du livreur au dernier retrait, pour
+   * qu'il ne change pas en route, et seule la première se montre.
+   */
+  static async etatTournee(driverId: string) {
+    const actives = await db.orderDelivery.findMany({
+      where: { driverId, status: { in: STATUTS_EN_COURSE } },
+      select: {
+        id: true,
+        status: true,
+        ordreRemise: true,
+        pickupLat: true,
+        pickupLng: true,
+        deliveryLat: true,
+        deliveryLng: true,
+      },
+    });
+    const retraitsRestants = actives.filter((c) => c.status === "ACCEPTED").length;
+    let remiseCourante: string | null = null;
+
+    if (actives.length > 0 && retraitsRestants === 0) {
+      const sansOrdre = actives.filter((c) => c.ordreRemise == null);
+      if (sansOrdre.length > 0) {
+        const livreur = await db.driver.findUnique({ where: { id: driverId }, select: { latitude: true, longitude: true } });
+        const depart = livreur && estUnPoint(livreur) ? (livreur as Point) : null;
+        const { arrets } = ordonner(depart, sansOrdre.map(versCourseTournee));
+        const base = Math.max(0, ...actives.map((c) => c.ordreRemise ?? 0));
+        await db.$transaction(
+          arrets.map((a, i) => db.orderDelivery.update({ where: { id: a.deliveryId }, data: { ordreRemise: base + i + 1 } }))
+        );
+        for (const [i, a] of arrets.entries()) {
+          const c = actives.find((x) => x.id === a.deliveryId);
+          if (c) c.ordreRemise = base + i + 1;
+        }
+      }
+      remiseCourante = [...actives].sort((a, b) => (a.ordreRemise ?? 0) - (b.ordreRemise ?? 0))[0].id;
+    }
+
+    return { courses: actives.length, retraitsRestants, remiseCourante, ordre: actives };
+  }
+
+  /**
+   * Le client de cette course est-il masqué au livreur ? RETRAITS : d'autres
+   * commandes attendent au commerce ; ORDRE : une autre remise passe avant.
+   * Une course seule n'est jamais masquée.
+   */
+  static masquage(
+    etat: { courses: number; retraitsRestants: number; remiseCourante: string | null },
+    deliveryId: string
+  ): "RETRAITS" | "ORDRE" | null {
+    if (etat.courses < 2) return null;
+    if (etat.retraitsRestants > 0) return "RETRAITS";
+    return deliveryId === etat.remiseCourante ? null : "ORDRE";
+  }
+
+  /** Refuse de révéler ou de clore une course masquée (voir masquage). */
+  static async exigerTourAtteint(driverId: string, deliveryId: string) {
+    const etat = await this.etatTournee(driverId);
+    const raison = this.masquage(etat, deliveryId);
+    if (raison === "RETRAITS") {
+      throw new ApiError(
+        409,
+        etat.retraitsRestants > 1
+          ? `Récupérez d'abord les ${etat.retraitsRestants} autres commandes de votre tournée.`
+          : "Récupérez d'abord l'autre commande de votre tournée.",
+        "TOURNEE_RETRAITS"
+      );
+    }
+    if (raison === "ORDRE") {
+      throw new ApiError(409, "Livrez d'abord la commande en cours de votre tournée.", "TOURNEE_ORDRE");
+    }
   }
 
   /** Les courses que le livreur a encore à faire, dans l'ordre où il les a prises. */
