@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { Delivery, deliveryStatus, Driver, formatKm, Offer, shortId } from '../../lib/deliveries';
 import type { GpsState } from '../../lib/useDriverLocation';
-import { COLORS } from '../ui';
+import { COLORS, themedStyles } from '../ui';
 
-const INK = { primary: '#1F2328', secondary: '#57606A', muted: '#8C959F' };
-const GRID = '#E6E8EB';
 
 const PAUSE_DURATIONS = [15, 30, 60];
 const PAUSE_REASONS = ['Repas', 'Pause café', 'Plein / recharge', 'Problème véhicule', 'Autre'];
@@ -29,10 +27,11 @@ function greeting(d: Date) {
   return 'Bonsoir';
 }
 
-const GPS_MESSAGES: Partial<Record<GpsState, { text: string; color: string }>> = {
-  searching: { text: 'Recherche de votre position…', color: '#FFA500' },
-  denied: { text: 'Localisation refusée : autorisez-la dans les réglages du téléphone pour recevoir des courses.', color: COLORS.danger },
-  error: { text: 'Signal GPS indisponible : vérifiez que la localisation est activée.', color: COLORS.danger },
+// Des fonctions : les couleurs suivent le thème en cours.
+const GPS_MESSAGES: Partial<Record<GpsState, { text: string; color: () => string }>> = {
+  searching: { text: 'Recherche de votre position…', color: () => COLORS.warning },
+  denied: { text: 'Localisation refusée : autorisez-la dans les réglages du téléphone pour recevoir des courses.', color: () => COLORS.danger },
+  error: { text: 'Signal GPS indisponible : vérifiez que la localisation est activée.', color: () => COLORS.danger },
 };
 
 function OfferCard({
@@ -255,7 +254,7 @@ export default function DashboardScreen({
 
         <View style={[styles.onlineCard, online && styles.onlineCardOn]}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.onlineTitle, online && { color: '#fff' }]}>{online ? '🟢 En ligne' : '⚪ Hors ligne'}</Text>
+            <Text style={[styles.onlineTitle, online && { color: '#FFFFFF' }]}>{online ? '🟢 En ligne' : '⚪ Hors ligne'}</Text>
             <Text style={[styles.onlineText, online && { color: '#fff', opacity: 0.9 }]}>
               {online
                 ? driver?.isAvailable
@@ -273,13 +272,13 @@ export default function DashboardScreen({
               value={online}
               onValueChange={onToggleOnline}
               disabled={!driver || (!approved && !online)}
-              trackColor={{ true: '#7CFC8A', false: '#ccc' }}
+              trackColor={{ true: '#7CFC8A', false: COLORS.raised }}
             />
           )}
         </View>
 
         {gpsMessage && (
-          <View style={[styles.gpsBanner, { borderLeftColor: gpsMessage.color }]}>
+          <View style={[styles.gpsBanner, { borderLeftColor: gpsMessage.color() }]}>
             <Text style={styles.gpsText}>📡 {gpsMessage.text}</Text>
           </View>
         )}
@@ -351,27 +350,27 @@ export default function DashboardScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   screen: { flex: 1 },
   content: { padding: 12, paddingBottom: 24 },
-  greeting: { fontSize: 15, fontWeight: '600', color: INK.primary, marginBottom: 12, marginTop: 4 },
-  date: { fontWeight: '400', color: INK.secondary },
-  muted: { fontSize: 12, color: INK.muted, marginTop: 2 },
+  greeting: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 12, marginTop: 4 },
+  date: { fontWeight: '400', color: COLORS.secondary },
+  muted: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
   alert: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF4E5',
+    backgroundColor: COLORS.warningBg,
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#FFA500',
+    borderLeftColor: COLORS.warning,
     gap: 12,
   },
   alertIcon: { fontSize: 24 },
-  alertTitle: { fontSize: 16, fontWeight: '700', color: INK.primary },
-  alertText: { fontSize: 13, color: INK.secondary, marginTop: 2 },
-  alertAction: { fontSize: 15, fontWeight: '700', color: COLORS.primary },
+  alertTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
+  alertText: { fontSize: 13, color: COLORS.secondary, marginTop: 2 },
+  alertAction: { fontSize: 15, fontWeight: '700', color: COLORS.link },
   onlineCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -382,8 +381,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   onlineCardOn: { backgroundColor: '#1B5E20' },
-  onlineTitle: { fontSize: 18, fontWeight: '700', color: INK.primary },
-  onlineText: { fontSize: 13, color: INK.secondary, marginTop: 2 },
+  onlineTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text },
+  onlineText: { fontSize: 13, color: COLORS.secondary, marginTop: 2 },
   gpsBanner: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
@@ -391,7 +390,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderLeftWidth: 4,
   },
-  gpsText: { fontSize: 13, color: INK.primary },
+  gpsText: { fontSize: 13, color: COLORS.text },
   offer: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
@@ -401,42 +400,42 @@ const styles = StyleSheet.create({
     borderColor: COLORS.success,
   },
   offerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  offerTitle: { fontSize: 16, fontWeight: '700', color: INK.primary },
-  offerTimer: { fontSize: 15, fontWeight: '700', color: '#FFA500' },
-  offerPayout: { fontSize: 36, fontWeight: '700', color: COLORS.success, marginVertical: 4, letterSpacing: -0.5 },
+  offerTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
+  offerTimer: { fontSize: 15, fontWeight: '700', color: COLORS.warning },
+  offerPayout: { fontSize: 36, fontWeight: '700', color: COLORS.successText, marginVertical: 4, letterSpacing: -0.5 },
   offerStops: { gap: 4, marginBottom: 6 },
-  offerStop: { fontSize: 14, color: INK.secondary },
-  offerStopStrong: { fontWeight: '700', color: INK.primary },
-  offerMeta: { fontSize: 12, color: INK.muted, marginBottom: 12 },
+  offerStop: { fontSize: 14, color: COLORS.secondary },
+  offerStopStrong: { fontWeight: '700', color: COLORS.text },
+  offerMeta: { fontSize: 12, color: COLORS.muted, marginBottom: 12 },
   offerActions: { flexDirection: 'row', gap: 10 },
   offerButton: { flex: 1, borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  decline: { backgroundColor: '#f0f0f0' },
+  decline: { backgroundColor: COLORS.raised },
   declineText: { color: COLORS.danger, fontWeight: '700', fontSize: 15 },
   accept: { backgroundColor: COLORS.success, flex: 2 },
   acceptText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   hero: { backgroundColor: COLORS.card, borderRadius: 12, padding: 16, marginBottom: 12 },
-  heroLabel: { fontSize: 13, color: INK.secondary },
-  heroValue: { fontSize: 44, fontWeight: '600', color: INK.primary, marginVertical: 2, letterSpacing: -1 },
+  heroLabel: { fontSize: 13, color: COLORS.secondary },
+  heroValue: { fontSize: 44, fontWeight: '600', color: COLORS.text, marginVertical: 2, letterSpacing: -1 },
   kpis: { flexDirection: 'row', gap: 12, marginBottom: 12 },
   kpi: { flex: 1, backgroundColor: COLORS.card, borderRadius: 12, padding: 14 },
-  kpiLabel: { fontSize: 13, color: INK.secondary },
-  kpiValue: { fontSize: 26, fontWeight: '600', color: INK.primary, marginVertical: 2 },
+  kpiLabel: { fontSize: 13, color: COLORS.secondary },
+  kpiValue: { fontSize: 26, fontWeight: '600', color: COLORS.text, marginVertical: 2 },
   card: { backgroundColor: COLORS.card, borderRadius: 12, padding: 14, marginBottom: 12 },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: INK.primary, marginBottom: 6 },
-  link: { fontSize: 14, fontWeight: '600', color: COLORS.primary },
+  cardTitle: { fontSize: 15, fontWeight: '700', color: COLORS.text, marginBottom: 6 },
+  link: { fontSize: 14, fontWeight: '600', color: COLORS.link },
   queueRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: GRID,
+    borderBottomColor: COLORS.border,
     gap: 10,
   },
   queueBar: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
-  queueTitle: { fontSize: 15, fontWeight: '600', color: INK.primary },
-  queueMeta: { fontSize: 12, color: INK.secondary, marginTop: 2 },
-  pauseActive: { borderLeftWidth: 4, borderLeftColor: '#FFA500' },
-  pauseTimer: { fontSize: 40, fontWeight: '600', color: INK.primary, marginVertical: 4 },
+  queueTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text },
+  queueMeta: { fontSize: 12, color: COLORS.secondary, marginTop: 2 },
+  pauseActive: { borderLeftWidth: 4, borderLeftColor: COLORS.warning },
+  pauseTimer: { fontSize: 40, fontWeight: '600', color: COLORS.text, marginVertical: 4 },
   primaryButton: { backgroundColor: COLORS.primary, borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 12 },
   primaryButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
@@ -446,12 +445,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.raised,
   },
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   chipText: { fontSize: 13, color: COLORS.text },
   chipTextActive: { color: '#fff', fontWeight: '600' },
   pauseDurations: { flexDirection: 'row', gap: 8 },
-  pauseButton: { flex: 1, backgroundColor: '#FFF4E5', borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  pauseButtonText: { fontSize: 15, fontWeight: '700', color: '#B26A00' },
-});
+  pauseButton: { flex: 1, backgroundColor: COLORS.warningBg, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  pauseButtonText: { fontSize: 15, fontWeight: '700', color: COLORS.warning },
+}));

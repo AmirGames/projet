@@ -108,30 +108,10 @@ router.post("/login", limiterConnexions, async (req: Request, res: Response, nex
     // Find user
     const user = await UserService.getUserByEmail(body.email);
 
-    // Une empreinte bcrypt commence toujours par $2. Des comptes ont été créés
-    // avec le mot de passe enregistré en clair : leur connexion échouait
-    // systématiquement. On les accepte une dernière fois, puis on remplace la
-    // valeur par une vraie empreinte — le mot de passe en clair disparaît de la
-    // base à la première connexion réussie.
-    const empreinteValide = user.passwordHash.startsWith("$2");
-
-    let isPasswordValid = empreinteValide
-      ? await AuthService.comparePassword(body.password, user.passwordHash)
-      : user.passwordHash === body.password;
-
-    if (isPasswordValid && !empreinteValide) {
-      const passwordHash = await AuthService.hashPassword(body.password);
-      await db.user.update({ where: { id: user.id }, data: { passwordHash } });
-
-      logger.warn("Mot de passe en clair converti en empreinte", { userId: user.id });
-
-      SecurityEventService.record({
-        action: "PASSWORD_REHASHED",
-        actor: user.email,
-        severity: "HIGH",
-        details: "Mot de passe stocké en clair, converti à la connexion",
-        });
-    }
+    // Seule une empreinte bcrypt est comparée : les anciens mots de passe en
+    // clair ont été convertis par la migration 0002, et la base refuse
+    // désormais toute autre valeur.
+    const isPasswordValid = await AuthService.comparePassword(body.password, user.passwordHash);
 
     if (!isPasswordValid) {
       SecurityEventService.record({

@@ -122,7 +122,7 @@ continue.
 | `audit-superowner.mjs` | Chaque fonctionnalité de l'espace superowner, et ses effets réels |
 | `verif-admin-final.mjs` | Journal d'accès, annonces, tickets, notifications |
 | `verif-adresses.mjs` | Les deux fournisseurs d'adresses, le filtre par pays et le repli |
-| `verif-admin-motdepasse.mjs` | Création d'administrateur et réparation des mots de passe en clair |
+| `verif-admin-motdepasse.mjs` | Création d'administrateur ; plus aucun mot de passe en clair accepté, ni en base ni à la connexion |
 | `verif-attribution.mjs` | Attribution des courses : position, proposition, refus, rémunération |
 | `verif-frais-service.mjs` | Frais de service : réglage, total du client, hors commission, chiffre et facture du commerçant, relevé de la plateforme |
 | `verif-parcours-livreur.mjs` | Alerte « bientôt là » à 300 m, photo du dépôt envoyée et vue du client, frais de livraison dus à la plateforme |

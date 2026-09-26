@@ -16,9 +16,14 @@ export interface Prefs {
    * une application de navigation extérieure.
    */
   navigationApp: 'zupone' | 'google' | 'waze' | 'apple';
+  /**
+   * Sombre par défaut : il économise la batterie des écrans OLED. « system »
+   * suit le mode clair ou sombre réglé sur le téléphone.
+   */
+  theme: 'dark' | 'light' | 'system';
 }
 
-export const DEFAULT_PREFS: Prefs = { soundEnabled: true, navigationApp: 'zupone' };
+export const DEFAULT_PREFS: Prefs = { soundEnabled: true, navigationApp: 'zupone', theme: 'dark' };
 
 /** Version des préférences : la 2 a amené la carte intégrée. */
 const PREFS_VERSION = 2;

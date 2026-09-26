@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { API_URL, apiFetch, formatEuros } from '../../lib/api';
 import { Driver, DRIVER_STATUS_LABELS, VEHICLE_LABELS } from '../../lib/deliveries';
-import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
+import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 interface Documents {
   status: string;
@@ -21,11 +21,12 @@ interface Documents {
   }[];
 }
 
-const DOC_STATUS: Record<string, { label: string; color: string }> = {
-  PENDING: { label: '⏳ En examen', color: '#B26A00' },
-  APPROVED: { label: '✓ Validée', color: COLORS.success },
-  REJECTED: { label: '✗ Refusée', color: COLORS.danger },
-  EXPIRED: { label: '⚠ Expirée', color: COLORS.danger },
+// Le ton plutôt que la couleur : elle suit le thème en cours.
+const DOC_STATUS: Record<string, { label: string; tone: 'warning' | 'successText' | 'danger' }> = {
+  PENDING: { label: '⏳ En examen', tone: 'warning' },
+  APPROVED: { label: '✓ Validée', tone: 'successText' },
+  REJECTED: { label: '✗ Refusée', tone: 'danger' },
+  EXPIRED: { label: '⚠ Expirée', tone: 'danger' },
 };
 
 export default function AccountScreen({
@@ -139,7 +140,7 @@ export default function AccountScreen({
             </View>
             <Text style={styles.name}>{displayName}</Text>
             <Text style={styles.email}>{driver?.email}</Text>
-            <Text style={[styles.status, { color: driver?.status === 'ACTIVE' ? COLORS.success : '#B26A00' }]}>
+            <Text style={[styles.status, { color: driver?.status === 'ACTIVE' ? COLORS.successText : COLORS.warning }]}>
               {DRIVER_STATUS_LABELS[driver?.status || ''] || driver?.status}
             </Text>
           </View>
@@ -168,7 +169,8 @@ export default function AccountScreen({
               </Text>
               {docs.piecesAttendues.map((piece, i) => {
                 const doc = docs.documents.find((d) => d.type === piece.type);
-                const st = doc ? DOC_STATUS[doc.status] || { label: doc.status, color: COLORS.muted } : null;
+                const known = doc ? DOC_STATUS[doc.status] : undefined;
+                const st = doc ? { label: known?.label || doc.status, color: known ? COLORS[known.tone] : COLORS.muted } : null;
                 const canUpload = !doc || doc.status === 'REJECTED' || doc.status === 'EXPIRED';
                 return (
                   <View key={piece.type} style={[styles.doc, i === docs.piecesAttendues.length - 1 && { borderBottomWidth: 0 }]}>
@@ -182,7 +184,7 @@ export default function AccountScreen({
                     </View>
                     {canUpload &&
                       (uploading === piece.type ? (
-                        <ActivityIndicator color={COLORS.primary} />
+                        <ActivityIndicator color={COLORS.link} />
                       ) : (
                         <TouchableOpacity
                           style={styles.docButton}
@@ -203,7 +205,7 @@ export default function AccountScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   profile: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
@@ -224,7 +226,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   email: { fontSize: 14, color: COLORS.muted, marginTop: 2 },
   status: { fontSize: 13, fontWeight: '700', marginTop: 8 },
-  help: { fontSize: 13, color: '#666', marginBottom: 6 },
+  help: { fontSize: 13, color: COLORS.secondary, marginBottom: 6 },
   reason: { fontSize: 13, color: COLORS.danger, marginBottom: 6 },
   doc: {
     flexDirection: 'row',
@@ -236,7 +238,7 @@ const styles = StyleSheet.create({
   },
   docName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   docStatus: { fontSize: 12, fontWeight: '600', marginTop: 2 },
-  docNote: { fontSize: 12, color: '#666', marginTop: 2 },
+  docNote: { fontSize: 12, color: COLORS.secondary, marginTop: 2 },
   docButton: { backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
   docButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-});
+}));

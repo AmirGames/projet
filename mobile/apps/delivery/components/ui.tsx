@@ -1,50 +1,111 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 
-export const COLORS = {
-  primary: '#007AFF',
-  bg: '#f5f5f5',
-  card: '#fff',
-  text: '#333',
-  muted: '#999',
-  border: '#eee',
-  danger: '#f44336',
-  success: '#4CAF50',
-};
+export type ThemeName = 'dark' | 'light';
 
 /**
- * Thème sombre de l'écran de course. Le noir pur éteint les pixels des écrans
- * OLED, la majorité des téléphones : c'est l'écran qui reste allumé le plus
- * longtemps, en plein trajet. Les contrastes restent lisibles en plein soleil.
+ * Thème sombre. Le noir pur éteint les pixels des écrans OLED, la majorité
+ * des téléphones : le livreur garde l'écran allumé des heures, souvent la
+ * nuit. Les contrastes restent lisibles en plein soleil.
  */
-export const DARK = {
+const DARK_COLORS = {
+  /** Fonds de boutons et d'accents, sous du texte blanc. */
   primary: '#0A6CD6',
+  /** Liens et textes d'accent. */
   link: '#4DA3FF',
   bg: '#000',
   card: '#15181C',
+  /** Champs, puces, boutons secondaires : un cran au-dessus des cartes. */
   raised: '#22262C',
   text: '#ECEEF1',
   secondary: '#B4BAC2',
   muted: '#8B939D',
   border: '#2A2F36',
   danger: '#FF6B61',
+  /** Fonds de boutons verts, sous du texte blanc. */
   success: '#23863F',
+  /** Vert des textes (montants, « validé »). */
+  successText: '#4ADE80',
   warning: '#F5B942',
+  /** Fonds teintés des bandeaux d'alerte, et leur texte. */
+  successBg: '#0F2A18',
+  successOnBg: '#7EE2A0',
+  dangerBg: '#2E1412',
+  warningBg: '#2E2410',
+  infoBg: '#0E2239',
+  /** En-têtes des écrans, et le texte posé dessus. */
+  header: '#15181C',
+  onHeader: '#FFFFFF',
+  /** Fond derrière la barre d'état et de l'écran de connexion. */
+  chrome: '#000',
+  loginButton: '#0A6CD6',
 };
 
-export function ScreenHeader({
-  title,
-  subtitle,
-  onBack,
-  dark,
-}: {
-  title: string;
-  subtitle?: string;
-  onBack?: () => void;
-  dark?: boolean;
-}) {
+/** Thème clair : les couleurs d'origine de l'application, en-têtes bleus. */
+const LIGHT_COLORS: typeof DARK_COLORS = {
+  primary: '#007AFF',
+  link: '#0066D6',
+  bg: '#f5f5f5',
+  card: '#fff',
+  raised: '#f0f1f3',
+  text: '#1F2328',
+  secondary: '#57606A',
+  muted: '#80878F',
+  border: '#e6e8eb',
+  danger: '#D93025',
+  success: '#2E7D32',
+  successText: '#1A7F37',
+  warning: '#B26A00',
+  successBg: '#E8F5E9',
+  successOnBg: '#1B5E20',
+  dangerBg: '#FDECEA',
+  warningBg: '#FFF4E5',
+  infoBg: '#EAF3FF',
+  header: '#007AFF',
+  onHeader: '#FFFFFF',
+  chrome: '#007AFF',
+  loginButton: '#0055CC',
+};
+
+/**
+ * Les couleurs du thème en cours. L'objet reste le même et change de
+ * contenu : les écrans le lisent à chaque rendu.
+ */
+export const COLORS = { ...DARK_COLORS };
+
+let currentTheme: ThemeName = 'dark';
+let themeVersion = 0;
+
+export function applyTheme(theme: ThemeName) {
+  if (theme === currentTheme) return;
+  currentTheme = theme;
+  themeVersion++;
+  Object.assign(COLORS, theme === 'dark' ? DARK_COLORS : LIGHT_COLORS);
+}
+
+export const isDarkTheme = () => currentTheme === 'dark';
+
+/**
+ * Comme StyleSheet.create, mais les styles sont recalculés quand le thème
+ * change : ils lisent COLORS au moment où on s'en sert, pas au chargement du
+ * fichier.
+ */
+export function themedStyles<T extends StyleSheet.NamedStyles<T>>(factory: () => T): T {
+  let cache: T | null = null;
+  let builtFor = -1;
+  const current = () => {
+    if (!cache || builtFor !== themeVersion) {
+      cache = StyleSheet.create(factory());
+      builtFor = themeVersion;
+    }
+    return cache;
+  };
+  return new Proxy({} as T, { get: (_target, key) => (current() as any)[key] });
+}
+
+export function ScreenHeader({ title, subtitle, onBack }: { title: string; subtitle?: string; onBack?: () => void }) {
   return (
-    <View style={[ui.header, dark && ui.headerDark]}>
+    <View style={ui.header}>
       {onBack && (
         <TouchableOpacity onPress={onBack} style={ui.back}>
           <Text style={ui.backText}>←</Text>
@@ -58,31 +119,21 @@ export function ScreenHeader({
   );
 }
 
-export function Card({ title, children, dark }: { title?: string; children: React.ReactNode; dark?: boolean }) {
+export function Card({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
-    <View style={[ui.card, dark && ui.cardDark]}>
-      {title ? <Text style={[ui.cardTitle, dark && { color: DARK.muted }]}>{title}</Text> : null}
+    <View style={ui.card}>
+      {title ? <Text style={ui.cardTitle}>{title}</Text> : null}
       {children}
     </View>
   );
 }
 
-export function Row({
-  label,
-  value,
-  last,
-  dark,
-}: {
-  label: string;
-  value?: React.ReactNode;
-  last?: boolean;
-  dark?: boolean;
-}) {
+export function Row({ label, value, last }: { label: string; value?: React.ReactNode; last?: boolean }) {
   return (
-    <View style={[ui.row, dark && { borderBottomColor: DARK.border }, last && { borderBottomWidth: 0 }]}>
-      <Text style={[ui.rowLabel, dark && { color: DARK.secondary }]}>{label}</Text>
+    <View style={[ui.row, last && { borderBottomWidth: 0 }]}>
+      <Text style={ui.rowLabel}>{label}</Text>
       {typeof value === 'string' || typeof value === 'number' ? (
-        <Text style={[ui.rowValue, dark && { color: DARK.text }]}>{value}</Text>
+        <Text style={ui.rowValue}>{value}</Text>
       ) : (
         value
       )}
@@ -93,7 +144,7 @@ export function Row({
 export function Loading() {
   return (
     <View style={ui.center}>
-      <ActivityIndicator color={COLORS.primary} size="large" />
+      <ActivityIndicator color={COLORS.link} size="large" />
     </View>
   );
 }
@@ -109,19 +160,20 @@ export function ErrorBox({ message, onRetry }: { message: string; onRetry: () =>
   );
 }
 
-export const ui = StyleSheet.create({
+export const ui = themedStyles(() => ({
   header: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.header,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
     paddingHorizontal: 16,
     paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  headerDark: { backgroundColor: DARK.card, borderBottomWidth: 1, borderBottomColor: DARK.border },
   back: { marginRight: 12, paddingVertical: 4, paddingRight: 8 },
-  backText: { color: '#fff', fontSize: 22, fontWeight: '600' },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
-  headerSubtitle: { fontSize: 11, color: '#fff', opacity: 0.8, marginTop: 2 },
+  backText: { color: COLORS.onHeader, fontSize: 22, fontWeight: '600' },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: COLORS.onHeader },
+  headerSubtitle: { fontSize: 11, color: COLORS.onHeader, opacity: 0.75, marginTop: 2 },
   content: { padding: 12, paddingBottom: 24 },
   card: {
     backgroundColor: COLORS.card,
@@ -129,7 +181,6 @@ export const ui = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
-  cardDark: { backgroundColor: DARK.card },
   cardTitle: {
     fontSize: 11,
     fontWeight: '600',
@@ -145,10 +196,10 @@ export const ui = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  rowLabel: { color: '#666', fontSize: 14, flex: 1 },
+  rowLabel: { color: COLORS.secondary, fontSize: 14, flex: 1 },
   rowValue: { color: COLORS.text, fontSize: 14, fontWeight: '600', textAlign: 'right', marginLeft: 10, flexShrink: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { color: COLORS.danger, fontSize: 14, textAlign: 'center', marginBottom: 12 },
   retry: { backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10 },
   retryText: { color: '#fff', fontWeight: '600' },
-});
+}));

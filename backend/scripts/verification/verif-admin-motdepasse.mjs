@@ -1,4 +1,4 @@
-// Vérifie la création d'admin et la réparation des mots de passe en clair.
+// Vérifie la création d'admin et l'interdiction des mots de passe en clair.
 
 import { inscription, check, j, uniq, post, sqlScalaire, sqlExec, terminer } from './outils.mjs';
 
@@ -17,29 +17,30 @@ check('le mot de passe n\'apparaît pas en base', !enBase.includes('MotDePasse12
 const connexion = await post('/api/auth/login', { email, password: 'MotDePasse123!' });
 check('cet admin peut se connecter (impossible auparavant)', connexion.status === 200, `status=${connexion.status} ${JSON.stringify(await j(connexion))?.slice(0, 120)}`);
 
-console.log('\n[Réparation d\'un compte existant en clair]');
-// On simule un compte créé avant la correction.
+console.log('\n[Aucun mot de passe en clair]');
+// La base refuse toute valeur qui n'est pas une empreinte bcrypt.
 const ancien = `ancien-${uniq}@t.fr`;
-await sqlExec(`INSERT INTO "User" (id, email, name, "passwordHash", "isSystemAdmin", status, "createdAt", "updatedAt") VALUES ('u-${uniq}', '${ancien}', 'Ancien Admin', 'MonMotDePasse', true, 'ACTIVE', NOW(), NOW())`);
-check('compte en clair présent', await sqlScalaire(`SELECT "passwordHash" FROM "User" WHERE email='${ancien}'`) === 'MonMotDePasse');
+let refus = '';
+try {
+  await sqlExec(`INSERT INTO "User" (id, email, name, "passwordHash", "isSystemAdmin", status, "createdAt", "updatedAt") VALUES ('u-${uniq}', '${ancien}', 'Ancien Admin', 'MonMotDePasse', true, 'ACTIVE', NOW(), NOW())`);
+} catch (err) {
+  refus = String(err?.message ?? err);
+}
+check('la base refuse un mot de passe en clair', refus.includes('User_passwordHash_bcrypt'), refus.slice(0, 150) || 'insertion acceptée');
+check('aucun compte en clair en base', await sqlScalaire(`SELECT COUNT(*) FROM "User" WHERE "passwordHash" NOT LIKE '$2%'`) === '0');
+
+// Un compte converti par la migration (empreinte $2a$ de pgcrypto) se connecte.
+await sqlExec(`INSERT INTO "User" (id, email, name, "passwordHash", "isSystemAdmin", status, "createdAt", "updatedAt") VALUES ('u-${uniq}', '${ancien}', 'Ancien Admin', crypt('MonMotDePasse', gen_salt('bf', 10)), true, 'ACTIVE', NOW(), NOW())`);
+
+const converti = await post('/api/auth/login', { email: ancien, password: 'MonMotDePasse' });
+check('un compte converti par la migration se connecte', converti.status === 200, `status=${converti.status} ${JSON.stringify(await j(converti))?.slice(0, 120)}`);
 
 const mauvais = await post('/api/auth/login', { email: ancien, password: 'PasLeBon' });
 check('un mauvais mot de passe reste refusé', mauvais.status === 401, `status=${mauvais.status}`);
 
-const reparation = await post('/api/auth/login', { email: ancien, password: 'MonMotDePasse' });
-check('connexion réussie', reparation.status === 200, `status=${reparation.status} ${JSON.stringify(await j(reparation))?.slice(0, 120)}`);
-
-const apres = await sqlScalaire(`SELECT "passwordHash" FROM "User" WHERE email='${ancien}'`);
-check('mot de passe converti en empreinte', apres.startsWith('$2'), apres.slice(0, 20));
-check('le clair a disparu de la base', apres !== 'MonMotDePasse');
-
-const seconde = await post('/api/auth/login', { email: ancien, password: 'MonMotDePasse' });
-check('la connexion fonctionne toujours après conversion', seconde.status === 200, `status=${seconde.status}`);
-
-const apresConversion = await post('/api/auth/login', { email: ancien, password: 'MonMotDePasse2' });
-check('un mauvais mot de passe reste refusé après conversion', apresConversion.status === 401, `status=${apresConversion.status}`);
-
-const evenement = await sqlScalaire(`SELECT action FROM "SecurityEvent" WHERE actor='${ancien}' AND action='PASSWORD_REHASHED'`);
-check('conversion tracée dans le journal de sécurité', evenement === 'PASSWORD_REHASHED', evenement);
+// Le contenu de la colonne n'est jamais un mot de passe : le saisir tel quel échoue.
+const empreinte = await sqlScalaire(`SELECT "passwordHash" FROM "User" WHERE email='${ancien}'`);
+const parEmpreinte = await post('/api/auth/login', { email: ancien, password: empreinte });
+check('l\'empreinte elle-même n\'ouvre pas le compte', parEmpreinte.status === 401, `status=${parEmpreinte.status}`);
 
 await terminer();

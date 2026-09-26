@@ -24,7 +24,7 @@ export interface PushDriverData {
 let cached: typeof NotificationsModule | null | undefined;
 function notifications(): typeof NotificationsModule | null {
   if (cached !== undefined) return cached;
-  if (isRunningInExpoGo()) {
+  if (isRunningInExpoGo() || Platform.OS === 'web') {
     cached = null;
     return cached;
   }

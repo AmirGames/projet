@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
-import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import { COLORS, ErrorBox, Loading, ScreenHeader, themedStyles } from '../ui';
 
 interface Ratings {
   moyenne: number | null;
@@ -75,7 +75,7 @@ export default function ReviewsScreen({ token, onBack }: { token: string; onBack
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   list: { padding: 12, paddingBottom: 24 },
   summary: { backgroundColor: COLORS.card, borderRadius: 12, padding: 20, alignItems: 'center', marginBottom: 12 },
   average: { fontSize: 48, fontWeight: '700', color: COLORS.text },
@@ -85,6 +85,6 @@ const styles = StyleSheet.create({
   itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   itemStars: { fontSize: 16, color: '#F5A623' },
   itemDate: { fontSize: 12, color: COLORS.muted },
-  comment: { fontSize: 14, color: '#444', marginTop: 6, lineHeight: 20 },
+  comment: { fontSize: 14, color: COLORS.text, marginTop: 6, lineHeight: 20 },
   empty: { textAlign: 'center', color: COLORS.muted, marginTop: 24, paddingHorizontal: 24 },
-});
+}));
