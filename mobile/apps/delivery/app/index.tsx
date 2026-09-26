@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL, ApiError, apiFetch, formatEuros, setUnauthorizedHandler } from '../lib/api';
@@ -57,6 +57,12 @@ export default function DeliveryApp() {
   const [supportUnread, setSupportUnread] = useState(0);
   const [notifRefreshKey, setNotifRefreshKey] = useState(0);
 
+  // Le thème s'applique ici, avant que les écrans ne se dessinent : un
+  // changement de réglage, ou du mode du téléphone quand l'app le suit, fait
+  // redessiner toute l'application avec les nouvelles couleurs.
+  const phoneScheme = useColorScheme();
+  applyTheme(prefs.theme === 'system' ? (phoneScheme === 'light' ? 'light' : 'dark') : prefs.theme);
+
   const token = session?.accessToken || '';
   const sessionRef = useRef(session);
   sessionRef.current = session;
@@ -65,9 +71,6 @@ export default function DeliveryApp() {
   const pushTokenRef = useRef<string | null>(null);
 
   const updatePrefs = (patch: Partial<Prefs>) => {
-    // Le thème change avant le rendu qui suit : tous les écrans affichés le
-    // relisent aussitôt.
-    if (patch.theme) applyTheme(patch.theme);
     setPrefs((p) => {
       const next = { ...p, ...patch };
       savePrefs(next);
@@ -139,7 +142,6 @@ export default function DeliveryApp() {
   useEffect(() => {
     (async () => {
       const [stored, storedPrefs] = await Promise.all([loadSession(), loadPrefs()]);
-      applyTheme(storedPrefs.theme);
       setPrefs(storedPrefs);
       if (stored?.refreshToken) {
         try {

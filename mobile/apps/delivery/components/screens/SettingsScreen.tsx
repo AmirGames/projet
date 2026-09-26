@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 import { API_URL } from '../../lib/api';
 import type { Prefs } from '../../lib/session';
 import type { GpsState } from '../../lib/useDriverLocation';
-import { Card, COLORS, Row, ScreenHeader, themedStyles, ui } from '../ui';
+import { Card, COLORS, isDarkTheme, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 const NAVIGATION_APPS: { key: Prefs['navigationApp']; label: string }[] = [
   { key: 'zupone', label: 'Carte Zupone' },
@@ -16,6 +16,7 @@ const NAVIGATION_APPS: { key: Prefs['navigationApp']; label: string }[] = [
 const THEMES: { key: Prefs['theme']; label: string }[] = [
   { key: 'dark', label: '🌙 Sombre' },
   { key: 'light', label: '☀️ Clair' },
+  { key: 'system', label: '📱 Comme le téléphone' },
 ];
 
 // Des fonctions : les couleurs suivent le thème en cours.
@@ -49,7 +50,10 @@ export default function SettingsScreen({
       <ScreenHeader title="Paramètres ⚙️" onBack={onBack} />
       <ScrollView contentContainerStyle={ui.content}>
         <Card title="Apparence">
-          <Text style={styles.help}>Le thème sombre fatigue moins les yeux la nuit et économise la batterie.</Text>
+          <Text style={styles.help}>
+            Le thème sombre fatigue moins les yeux la nuit et économise la batterie.
+            {prefs.theme === 'system' ? ` Le téléphone est en mode ${isDarkTheme() ? 'sombre' : 'clair'}.` : ''}
+          </Text>
           <View style={styles.chips}>
             {THEMES.map((t) => (
               <TouchableOpacity

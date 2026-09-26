@@ -23,7 +23,7 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
 - **Revenus** : jour / semaine / mois, ce qui reste dû, ce qui attend le
   virement, ce qui a été versé, et les relevés.
 - **Mes avis**, **Notifications**, **Support** (discussion en direct),
-  **Paramètres** (thème sombre ou clair, sonnerie, application de navigation, état du GPS et des push),
+  **Paramètres** (thème sombre, clair ou comme le téléphone, sonnerie, application de navigation, état du GPS et des push),
   **Mon compte** (profil, véhicule, **dossier** avec envoi des pièces depuis
   l'appareil photo ou la galerie).
 
