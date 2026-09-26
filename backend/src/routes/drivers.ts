@@ -1340,6 +1340,28 @@ router.patch(
   }
 );
 
+/**
+ * Le type d'une pièce enregistrée sans extension utile (.bin), lu dans ses
+ * premiers octets : les commerçants déposaient toutes leurs pièces en .bin, et
+ * le navigateur, à qui helmet interdit de deviner, refusait de les ouvrir.
+ */
+function typeLuDansLeFichier(chemin: string): string | null {
+  const debut = Buffer.alloc(12);
+  const fd = fs.openSync(chemin, "r");
+  try {
+    fs.readSync(fd, debut, 0, 12, 0);
+  } finally {
+    fs.closeSync(fd);
+  }
+  if (debut.subarray(0, 4).toString("latin1") === "%PDF") return "application/pdf";
+  if (debut[0] === 0x89 && debut.subarray(1, 4).toString("latin1") === "PNG") return "image/png";
+  if (debut[0] === 0xff && debut[1] === 0xd8 && debut[2] === 0xff) return "image/jpeg";
+  if (debut.subarray(0, 4).toString("latin1") === "RIFF" && debut.subarray(8, 12).toString("latin1") === "WEBP") {
+    return "image/webp";
+  }
+  return null;
+}
+
 // Serve document files with proper CORS headers for preview modal
 router.options(/^\/documents\/file\/(.+)$/, (_req: Request, res: Response) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -1377,6 +1399,7 @@ router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next
     else if (ext === "png") contentType = "image/png";
     else if (ext === "webp") contentType = "image/webp";
     else if (ext === "pdf") contentType = "application/pdf";
+    else contentType = typeLuDansLeFichier(fullPath) || contentType;
 
     res.setHeader("Content-Type", contentType);
     return res.sendFile(fullPath);
