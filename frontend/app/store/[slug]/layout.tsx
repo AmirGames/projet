@@ -10,11 +10,12 @@ const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL 
  * bruxelloise, jamais /fr-fr/store/x — sinon chaque vitrine compterait autant
  * de doublons que le site a de régions. Son nom sert de titre.
  */
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
   let boutique: { name?: string; countryCode?: string | null } | undefined;
 
   try {
-    const reponse = await fetch(`${API_URL}/api/stores/slug/${encodeURIComponent(params.slug)}`, {
+    const reponse = await fetch(`${API_URL}/api/stores/slug/${encodeURIComponent(slug)}`, {
       next: { revalidate: 300 },
     });
     if (reponse.ok) boutique = (await reponse.json()).store;

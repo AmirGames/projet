@@ -2,21 +2,23 @@ const createNextIntlPlugin = require("next-intl/plugin");
 
 // Pas de segment [locale] : déplacer les 80 et quelques pages dessous aurait
 // été un chantier à part entière. La locale se lit dans un cookie, ou dans la
-// région de l'adresse (/be-fr/…) que le middleware retire des pages
-// publiques avant de les servir — voir i18n/request.ts et middleware.ts.
+// région de l'adresse (/be-fr/…) que le proxy retire des pages
+// publiques avant de les servir — voir i18n/request.ts et proxy.ts.
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
+  // Le package-lock.json vide à la racine du dépôt ferait prendre `projet/`
+  // pour la racine de l'application.
+  outputFileTracingRoot: __dirname,
   images: {
-    domains: ["res.cloudinary.com", "localhost"],
     remotePatterns: [
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
       },
+      { hostname: "localhost" },
     ],
   },
   env: {

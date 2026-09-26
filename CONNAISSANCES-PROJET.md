@@ -56,7 +56,7 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 
 | | |
 |---|---|
-| **Frontend** | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS |
+| **Frontend** | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS |
 | **Backend** | Express, TypeScript, Prisma 5.22 |
 | **Base de données** | PostgreSQL |
 | **Temps réel** | Socket.IO — une connexion par onglet, annonce de chaque écriture (`donnees-modifiees`), Redis pour relier plusieurs instances |
@@ -450,7 +450,7 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 - Seules les pages publiques indexables portent le préfixe : accueil,
   `/restaurants`, `/restaurant/*`, `/store/*` (sauf `/store/new`), pages
   légales, pages « devenir ». Liste dans `frontend/i18n/chemins-regionaux.ts`.
-- **Aucune page n'est déplacée** : le middleware retire le préfixe, réécrit
+- **Aucune page n'est déplacée** : le proxy (`frontend/proxy.ts`) retire le préfixe, réécrit
   vers la page d'origine et transmet la région par l'en-tête
   `x-zupone-region`. Une page publique appelée sans préfixe est redirigée
   (307) vers la région du visiteur : cookie `ZUPONE_REGION`, sinon langue

@@ -14,7 +14,7 @@
  *   # puis, dans un autre terminal
  *   npm run verif:domaines
  *
- * Les domaines doivent être les mêmes des deux côtés : le middleware les lit
+ * Les domaines doivent être les mêmes des deux côtés : le proxy les lit
  * au démarrage du serveur, ce script les relit ici.
  */
 

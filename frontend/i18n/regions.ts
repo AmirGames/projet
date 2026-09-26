@@ -43,7 +43,7 @@ const REGION_PAR_LANGUE: Record<Langue, string> = {
 export const NOM_COOKIE_REGION = "ZUPONE_REGION";
 
 /**
- * En-tête posé par le middleware quand la page est demandée sous un
+ * En-tête posé par le proxy quand la page est demandée sous un
  * sous-répertoire de région : la langue et la région de l'adresse priment
  * sur les cookies pour ce rendu-là.
  */

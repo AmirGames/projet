@@ -1,5 +1,6 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Image as ImageIcon, Trash2, GripVertical } from "lucide-react";
 
@@ -17,11 +18,8 @@ interface MediaResponse {
   data: Media[];
 }
 
-export default function ProductMediaPage({
-  params,
-}: {
-  params: { orgId: string };
-}) {
+export default function ProductMediaPage() {
+  const params = useParams<{ orgId: string }>();
   const [productId, setProductId] = useState("");
   const [media, setMedia] = useState<Media[]>([]);
   const [loading, setLoading] = useState(false);

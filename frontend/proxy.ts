@@ -27,7 +27,7 @@ const UN_AN = 60 * 60 * 24 * 365;
 /**
  * Aiguille chaque requête vers le bon domaine.
  *
- * Trois domaines, un seul déploiement : le middleware lit l'hôte demandé et
+ * Trois domaines, un seul déploiement : le proxy lit l'hôte demandé et
  * décide si la page a le droit d'y être affichée. Une page commerçant appelée
  * depuis le domaine public est renvoyée vers le domaine professionnel, une
  * page livreur vers le domaine livreur — l'adresse visible reste cohérente
@@ -100,7 +100,7 @@ function rediriger(requete: NextRequest, chemin: string) {
   return NextResponse.redirect(url);
 }
 
-export function middleware(requete: NextRequest) {
+export function proxy(requete: NextRequest) {
   const chemin = requete.nextUrl.pathname;
   const espaceHote = CLOISONNEMENT_ACTIF
     ? espaceDuDomaine(requete.headers.get('host') || '')

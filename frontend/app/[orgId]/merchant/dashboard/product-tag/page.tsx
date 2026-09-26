@@ -1,5 +1,6 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { Tag, Plus, Trash2, Edit2 } from "lucide-react";
 import { useTranslations } from 'next-intl';
@@ -22,11 +23,8 @@ interface TagsResponse {
   take: number;
 }
 
-export default function ProductTagPage({
-  params,
-}: {
-  params: { orgId: string };
-}) {
+export default function ProductTagPage() {
+  const params = useParams<{ orgId: string }>();
   const t = useTranslations('common');
   const [tags, setTags] = useState<ProductTag[]>([]);
   const [loading, setLoading] = useState(true);

@@ -639,7 +639,7 @@ export default function ProductsPage() {
               <AlertCircle size={20} className="text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-orange-400 mb-2">
-                  {t('outOfStockProducts', { count: produitsEpuises.length, plural: produitsEpuises.length > 1 ? 's' : '' })}
+                  {t('outOfStockProducts', { count: produitsEpuises.length })}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {produitsEpuises.slice(0, 6).map((p) => (
