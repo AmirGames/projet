@@ -3,9 +3,10 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : les frais de service (0,25 € par commande, pour la
-plateforme), après le parcours du livreur et les frais de livraison dus à la
-plateforme.
+Dernière mise à jour : les favoris depuis l'accueil client (le cœur des cartes)
+et le logo des commerces sur la page Favoris, après le nettoyage des
+dépendances de hooks sur tout le frontend et les versions régionales déclarées
+aux moteurs de recherche.
 
 ---
 
@@ -91,6 +92,8 @@ scripts de vérification (voir §6).
 - Suivi de la commande : distance restante, durée estimée, position du livreur
 - **Code de remise** à quatre chiffres, donné au livreur à la porte
 - Retrouve une commande passée sans compte par son lien de suivi
+- **Favoris** : le cœur de chaque carte de l'accueil ajoute ou retire le
+  commerce ; la page Favoris montre son logo (ou son initiale à défaut)
 
 ### Le commerçant
 - Inscription, puis **validation du commerce par la plateforme** : pièces
@@ -670,6 +673,21 @@ sable**. Les suites navigateur ne les contrôlent donc pas — elles contrôlent
 que le navigateur dessine (anneaux, poignée, point) et ce que le serveur
 enregistre. Leurs filtres d'erreurs ignorent explicitement `tile.openstreetmap`
 et `net::ERR_`.
+
+**Favoris depuis l'accueil client.** Le cœur des cartes de `/client` était
+décoratif, et placé dans le lien de la carte : un clic ouvrait la boutique.
+Il appelle maintenant `POST` / `DELETE /api/client/me/favorites`, avec
+`preventDefault` + `stopPropagation`, met à jour l'affichage tout de suite et
+revient en arrière si le serveur refuse. Sans jeton, il renvoie vers `/login`.
+La page Favoris affiche `settings.logo` du commerce, comme l'accueil.
+
+**Dépendances des hooks.** Tout le frontend (client, livreur, commerçant,
+super-admin, superowner, composants) passe `react-hooks/exhaustive-deps` :
+les fonctions de chargement sont en `useCallback` et l'effet en dépend. Quand
+une dépendance est une prop recréée à chaque rendu du parent (un `onSelect`),
+elle va dans une `useRef` — sinon l'effet boucle. La règle
+`@next/next/no-img-element` est désactivée : les logos viennent d'URL
+quelconques, `next/image` ne convient pas.
 
 ### À faire ensuite
 

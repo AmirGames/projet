@@ -34,6 +34,9 @@ emporter ou à livrer.
 - Est prévenu **par courriel et par SMS** quand un livreur prend sa commande,
   quand elle part du commerce (avec le code de remise) et quand elle est livrée
 - Retrouve une commande passée sans compte par son lien de suivi
+- Garde ses **commerces favoris**, d'un clic sur le cœur de leur carte
+- Dispose d'un **délai de 10 s** pour annuler une commande avant son envoi, et
+  d'un bandeau « commande en cours » dans son espace
 - **Tout compte a un espace client**, commerçants et livreurs compris : ils
   commandent comme n'importe qui, et les commandes passées sans compte se
   rattachent au compte qui porte la même adresse électronique
@@ -128,12 +131,20 @@ emporter ou à livrer.
 - Journal des actions administratives et journal des accès
 - Sauvegardes, mode maintenance, clés d'API, webhooks
 - Support : tous les tickets, réponses, priorités
+- **Pages légales** (mentions, CGU, CGV, conditions commerçants et livreurs,
+  confidentialité, cookies) : chaque publication crée une version, et
+  l'acceptation des conditions est enregistrée à l'inscription et à la commande
 
 ### Partout
 - **Un seul compte, plusieurs espaces** : le logo en haut à gauche ouvre les
   autres espaces auxquels le compte a droit — client, commerçant, livreur,
   administration
-- Le site en **français et en anglais**, au choix en haut à droite
+- Le site en **français et en anglais**, et un **sélecteur de région**
+  (Belgique, France) : les pages publiques sont servies sous un
+  sous-répertoire de région, déclaré aux moteurs de recherche ; pays,
+  indicatif téléphonique et réglementation des pages « Devenir » suivent la région
+- Pages de présentation **Devenir livreur, commerçant, chauffeur** (le VTC est
+  annoncé « Bientôt disponible »)
 
 ## Pile technique
 
@@ -282,8 +293,9 @@ Par honnêteté, ce qui manque encore :
   d'attribution et paiement à la distance n'ont pas encore leur suite.
 - **Le stock par ingrédient** (une pizza consomme de la mozzarella). Aujourd'hui
   la disponibilité se bascule à la main, plat par plat.
-- **Les pages légales** : mentions légales, CGU, confidentialité, cookies.
-  Aucune n'existe, et elles sont exigées avant d'ouvrir au public.
+- **Le texte des pages légales** : les pages existent et se modifient depuis
+  l'espace superowner, mais le texte de départ garde des champs entre crochets
+  à remplir avant d'ouvrir au public.
 - **Les applications mobiles** (`mobile/apps/merchant`, `delivery`, `customer`)
   sont écrites mais pas encore publiées. Celle du livreur n'envoie sa position
   qu'au premier plan ; celle du client ne commande qu'avec un compte (le site
