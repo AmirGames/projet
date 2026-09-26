@@ -8,11 +8,11 @@ import { trouverRegion, type Region } from "./regions";
  * livreur, plateforme, compte client) et le tunnel de commande restent sans
  * préfixe — le cookie de région y suffit.
  *
- * Aucune page n'est déplacée : le middleware retire le préfixe et réécrit la
- * requête vers la page d'origine (voir middleware.ts).
+ * Aucune page n'est déplacée : le proxy retire le préfixe et réécrit la
+ * requête vers la page d'origine (voir proxy.ts).
  *
  * Fichier sans dépendance serveur ni navigateur : il est lu par le
- * middleware (edge), par le layout et par les liens côté client.
+ * proxy, par le layout et par les liens côté client.
  */
 const SEGMENTS_REGIONAUX = [
   "restaurants",

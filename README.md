@@ -153,7 +153,7 @@ emporter ou à livrer.
 
 | | |
 |---|---|
-| **Frontend** | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS |
+| **Frontend** | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS |
 | **Backend** | Express 5, TypeScript, Prisma 7 (adaptateur `@prisma/adapter-pg`) |
 | **Base de données** | PostgreSQL |
 | **Temps réel** | Socket.IO (disponibilité des plats, notifications, suivi de livraison) |
@@ -174,7 +174,7 @@ frontend/   Next.js — 142 pages
 
 ## Démarrer
 
-Il faut **Node 18 ou plus** et **PostgreSQL**.
+Il faut **Node 20.19 ou plus** (Prisma 7 et Next.js 16) et **PostgreSQL**.
 
 ```bash
 git clone https://github.com/AmirGames/projet.git
@@ -312,11 +312,6 @@ Par honnêteté, ce qui manque encore :
   garde la commande sans compte). Leurs cartes s'appuient sur les serveurs
   publics d'OpenStreetMap et d'OSRM, à remplacer par un service payant ou
   hébergé avant l'ouverture au public.
-- **Next.js 14 → 16** : la branche 14 n'est plus maintenue par Vercel et ne
-  reçoit plus de correctifs de sécurité. À faire avant l'ouverture au public,
-  sur une branche dédiée (`upgrade/next-16`), en passant par la 15 (React 19)
-  puis la 16, avec build, lint, vérification des types et tests de bout en
-  bout à chaque étape — jamais par un simple `npm update`.
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.
 

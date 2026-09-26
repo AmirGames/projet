@@ -9,7 +9,7 @@ import { useRegion } from '@/lib/region-context';
  * Remplaçant de next/link pour les pages publiques : un lien vers une page
  * régionale (/restaurants, /store/…, /cgu…) reçoit le préfixe de la région
  * en cours (/be-fr/restaurants), ce qui évite au visiteur un détour par la
- * redirection du middleware. Les autres liens passent inchangés.
+ * redirection du proxy. Les autres liens passent inchangés.
  */
 const LienRegional = forwardRef<HTMLAnchorElement, ComponentProps<typeof Link>>(function LienRegional(
   { href, ...props },
