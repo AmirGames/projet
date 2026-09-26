@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
-const API_URL = 'http://192.168.0.80:3001';
+const API_URL = 'http://localhost:3001';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
