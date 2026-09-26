@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Livrez les commandes des commerces de proximité, à votre rythme.',
 };
 
-export default function DevenirLivreurPage({ searchParams }: { searchParams: { pays?: string } }) {
-  const pays = paysDuVisiteur(searchParams.pays);
+export default async function DevenirLivreurPage({ searchParams }: { searchParams: Promise<{ pays?: string }> }) {
+  const pays = await paysDuVisiteur((await searchParams).pays);
   return <PageDevenir {...LIVREUR[pays]} pays={pays} chemin="/devenir-livreur" />;
 }

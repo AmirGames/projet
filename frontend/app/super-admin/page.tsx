@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Users, ShoppingCart, TrendingUp, AlertCircle } from 'lucide-react';
 
@@ -151,24 +152,24 @@ export default function SuperAdminDashboard() {
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
         <h2 className="text-lg font-bold mb-4">{t('quickActions')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <a
+          <Link
             href="/super-admin/merchants"
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
             {t('manageMerchants')}
-          </a>
-          <a
+          </Link>
+          <Link
             href="/super-admin/tickets"
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
             {t('viewSupport')}
-          </a>
-          <a
+          </Link>
+          <Link
             href="/super-admin/settings"
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
             {t('systemSettings')}
-          </a>
+          </Link>
         </div>
       </div>
     </div>

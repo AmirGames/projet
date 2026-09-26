@@ -1,5 +1,6 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { Bell, Trash2, Check } from "lucide-react";
 import { useTranslations } from 'next-intl';
@@ -24,11 +25,8 @@ interface NotificationsResponse {
   take: number;
 }
 
-export default function NotificationsPage({
-  params,
-}: {
-  params: { orgId: string };
-}) {
+export default function NotificationsPage() {
+  const params = useParams<{ orgId: string }>();
   const t = useTranslations('common');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);

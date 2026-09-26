@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Transportez des passagers avec Zupone — bientôt disponible.',
 };
 
-export default function DevenirChauffeurPage({ searchParams }: { searchParams: { pays?: string } }) {
-  const pays = paysDuVisiteur(searchParams.pays);
+export default async function DevenirChauffeurPage({ searchParams }: { searchParams: Promise<{ pays?: string }> }) {
+  const pays = await paysDuVisiteur((await searchParams).pays);
   return <PageDevenir {...CHAUFFEUR[pays]} pays={pays} chemin="/devenir-chauffeur" />;
 }
