@@ -139,10 +139,13 @@ emporter ou à livrer.
 - **Un seul compte, plusieurs espaces** : le logo en haut à gauche ouvre les
   autres espaces auxquels le compte a droit — client, commerçant, livreur,
   administration
-- Le site en **français et en anglais**, et un **sélecteur de région**
-  (Belgique, France) : les pages publiques sont servies sous un
-  sous-répertoire de région, déclaré aux moteurs de recherche ; pays,
-  indicatif téléphonique et réglementation des pages « Devenir » suivent la région
+- Le site en **français et en anglais**, choisis avec la région dans la
+  fenêtre « Langue et région » (France, Belgique, Suisse, Luxembourg, Canada,
+  Royaume-Uni, Irlande, États-Unis…) : les pages publiques sont servies sous
+  un sous-répertoire de région (`/be-fr/`, `/fr-fr/`…), déclaré aux moteurs de
+  recherche (hreflang, `sitemap.xml`). Le pays détecté — Belgique par défaut,
+  ou France — règle l'adresse, l'indicatif téléphonique (+32 / +33) et la
+  réglementation des pages « Devenir »
 - Pages de présentation **Devenir livreur, commerçant, chauffeur** (le VTC est
   annoncé « Bientôt disponible »)
 
