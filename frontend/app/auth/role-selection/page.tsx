@@ -31,6 +31,16 @@ interface Roles {
   };
 }
 
+function slugify(value: string, trim = true): string {
+  const slug = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-{2,}/g, "-");
+  return trim ? slug.replace(/^-+|-+$/g, "") : slug.replace(/^-+/, "");
+}
+
 export default function RoleSelectionPage() {
   const t = useTranslations('common');
   const router = useRouter();
@@ -308,6 +318,7 @@ export default function RoleSelectionPage() {
                     setMerchantFormData({
                       ...merchantFormData,
                       storeName: e.target.value,
+                      storeSlug: slugify(e.target.value),
                     })
                   }
                   className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -320,7 +331,7 @@ export default function RoleSelectionPage() {
                   onChange={(e) =>
                     setMerchantFormData({
                       ...merchantFormData,
-                      storeSlug: e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                      storeSlug: slugify(e.target.value, false),
                     })
                   }
                   className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
