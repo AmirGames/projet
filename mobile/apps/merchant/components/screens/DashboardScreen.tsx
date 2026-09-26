@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { formatEuros } from '../../lib/api';
-import { displayStatus, isPending, Order, statusColor } from '../../lib/orders';
+import { displayStatus, isPending, montantCommercant, Order, statusColor } from '../../lib/orders';
 import { COLORS } from '../ui';
 
 const EXCLUDED = ['REJECTED', 'CANCELLED'];
@@ -16,7 +16,7 @@ const BAR = COLORS.primary;
 const CHART_HEIGHT = 120;
 
 const upper = (s?: string) => (s || '').toUpperCase();
-const amount = (o: Order) => parseFloat(String(o.totalAmount)) || 0;
+const amount = (o: Order) => montantCommercant(o);
 const time = (o: Order) => (o.createdAt ? new Date(o.createdAt).getTime() : 0);
 
 function sinceLabel(iso?: string, now = Date.now()) {
@@ -277,7 +277,7 @@ export default function DashboardScreen({
                     {displayStatus(o).label} · {sinceLabel(o.createdAt, now.getTime())}
                   </Text>
                 </View>
-                <Text style={styles.queueAmount}>{formatEuros(o.totalAmount)}</Text>
+                <Text style={styles.queueAmount}>{formatEuros(montantCommercant(o))}</Text>
               </TouchableOpacity>
             ))
           )}

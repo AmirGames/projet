@@ -14,7 +14,7 @@ import {
   Save,
 } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
-import { euro } from '@/lib/format';
+import { euro, montantCommercant } from '@/lib/format';
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -23,6 +23,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface CommandeClient {
   id: string;
   totalAmount: number | string;
+  feesAmount?: number | string;
+  serviceFeeAmount?: number | string;
   status: string;
   createdAt: string;
 }
@@ -177,7 +179,7 @@ export default function FicheClientPage() {
   }
 
   const commandes = client.orders || [];
-  const totalDepense = commandes.reduce((somme, c) => somme + Number(c.totalAmount || 0), 0);
+  const totalDepense = commandes.reduce((somme, c) => somme + montantCommercant(c), 0);
 
   return (
     <div className="space-y-6">
@@ -293,7 +295,7 @@ export default function FicheClientPage() {
                     >
                       {commande.status}
                     </span>
-                    <span className="font-bold text-green-400">{euro(commande.totalAmount)}</span>
+                    <span className="font-bold text-green-400">{euro(montantCommercant(commande))}</span>
                   </div>
                 </Link>
               ))}

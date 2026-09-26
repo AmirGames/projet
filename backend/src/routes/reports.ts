@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { ReportsService } from "../services/reports.service";
+import { montantCommercant } from "../services/delivery-mode.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
@@ -122,7 +123,7 @@ router.get("/export/:type", authMiddleware, async (req: Request, res: Response, 
         Date: new Date(o.createdAt).toISOString().split("T")[0],
         Customer: o.customerName,
         Email: o.customerEmail,
-        Total: o.totalAmount,
+        Total: montantCommercant(o),
         Tax: o.taxAmount,
         Status: o.status,
         PaymentStatus: o.paymentStatus,

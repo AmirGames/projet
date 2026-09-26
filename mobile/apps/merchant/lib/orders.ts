@@ -6,6 +6,14 @@ export interface Order {
   customerPhone?: string;
   totalAmount: number | string;
   taxAmount?: number | string;
+  /** Livraison payée par le client : au commerçant (OWN) ou au livreur de la plateforme. */
+  feesAmount?: number | string;
+  /** Frais de service payés par le client : ils sont à la plateforme. */
+  serviceFeeAmount?: number | string;
+  /** Remise du code promo, accordée par le commerçant. */
+  discountAmount?: number | string;
+  promoCode?: string | null;
+  deliveryMode?: 'OWN' | 'PLATFORM' | null;
   deliveryType?: string;
   deliveryAddress?: string;
   deliveryCity?: string;
@@ -32,6 +40,25 @@ export interface OrderDelivery {
   pickupTime?: string | null;
   deliveryTime?: string | null;
   driver?: { name: string; phone?: string | null; vehicleType?: string | null } | null;
+}
+
+/**
+ * Ce que la commande rapporte au commerçant : ses articles, remise déduite.
+ *
+ * `totalAmount` est ce que le client a payé, livraison et frais de service
+ * compris : 15 € d'articles s'affichaient 20,25 €. La livraison, quand elle
+ * est au commerçant, se montre sur sa propre ligne.
+ */
+export function montantCommercant(order: {
+  totalAmount: number | string;
+  feesAmount?: number | string;
+  serviceFeeAmount?: number | string;
+}) {
+  const montant =
+    (parseFloat(String(order.totalAmount)) || 0) -
+    (parseFloat(String(order.feesAmount ?? 0)) || 0) -
+    (parseFloat(String(order.serviceFeeAmount ?? 0)) || 0);
+  return Math.max(0, Math.round(montant * 100) / 100);
 }
 
 const STATUS: Record<string, { label: string; color: string }> = {

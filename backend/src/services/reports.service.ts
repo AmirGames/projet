@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { montantCommercant, totalCommercant } from "./delivery-mode.service";
 import { TRANSMISE } from "../utils/commande-transmise";
 
 export interface ReportFilters {
@@ -48,7 +49,9 @@ export class ReportsService {
         orderBy: { createdAt: "desc" },
       });
 
-      const totalRevenue = orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+      // Le chiffre du commerçant : ses articles, sans la livraison ni les
+      // frais de service, qui ne lui reviennent pas.
+      const totalRevenue = totalCommercant(orders);
       const totalTax = orders.reduce((sum, o) => sum + Number(o.taxAmount || 0), 0);
       const totalFees = orders.reduce((sum, o) => sum + Number(o.feesAmount || 0), 0);
       const averageOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
@@ -105,6 +108,7 @@ export class ReportsService {
           totalAmount: true,
           taxAmount: true,
           feesAmount: true,
+          serviceFeeAmount: true,
         },
       });
 
@@ -115,7 +119,7 @@ export class ReportsService {
         if (!revenueByDate[date]) {
           revenueByDate[date] = { revenue: 0, tax: 0, fees: 0, count: 0 };
         }
-        revenueByDate[date].revenue += Number(order.totalAmount || 0);
+        revenueByDate[date].revenue += montantCommercant(order);
         revenueByDate[date].tax += Number(order.taxAmount || 0);
         revenueByDate[date].fees += Number(order.feesAmount || 0);
         revenueByDate[date].count += 1;
@@ -178,6 +182,8 @@ export class ReportsService {
           customerEmail: true,
           customerName: true,
           totalAmount: true,
+          feesAmount: true,
+          serviceFeeAmount: true,
           createdAt: true,
         },
       });
@@ -201,7 +207,7 @@ export class ReportsService {
             lastOrder: order.createdAt,
           };
         }
-        customerMap[email].totalSpent += Number(order.totalAmount || 0);
+        customerMap[email].totalSpent += montantCommercant(order);
         customerMap[email].orderCount += 1;
         if (order.createdAt > customerMap[email].lastOrder) {
           customerMap[email].lastOrder = order.createdAt;

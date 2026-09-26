@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_URL, apiFetch, formatEuros, setUnauthorizedHandler } from '../lib/api';
 import { clearSession, DEFAULT_PREFS, loadPrefs, loadSession, Prefs, savePrefs, saveSession, Session } from '../lib/session';
-import { displayStatus, isPending, isToday, Order } from '../lib/orders';
+import { displayStatus, isPending, isToday, montantCommercant, Order } from '../lib/orders';
 import { NewOrderEvent, useOrderAlerts } from '../lib/useOrderAlerts';
 import { useRealtimeEvent } from '../lib/realtime';
 import { onOrderNotificationTap, PushOrderData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
@@ -516,7 +516,7 @@ export default function MerchantApp() {
                 <Text style={styles.customerName}>
                   {item.customerName || 'Anonyme'}  ·  {item.deliveryType === 'DELIVERY' ? '🛵 Livraison' : '🛍️ Retrait'}
                 </Text>
-                <Text style={styles.orderTotal}>{formatEuros(item.totalAmount)}</Text>
+                <Text style={styles.orderTotal}>{formatEuros(montantCommercant(item))}</Text>
               </TouchableOpacity>
             )}
             contentContainerStyle={styles.listContent}
@@ -593,7 +593,7 @@ export default function MerchantApp() {
             <Text style={styles.bannerTitle}>🔔 Nouvelle commande</Text>
             <Text style={styles.bannerText} numberOfLines={1}>
               {banner.customerName || 'Client'} · {banner.deliveryType === 'DELIVERY' ? 'Livraison' : 'Retrait'}
-              {banner.totalAmount !== undefined ? ` · ${formatEuros(banner.totalAmount)}` : ''}
+              {banner.merchantAmount !== undefined ? ` · ${formatEuros(banner.merchantAmount)}` : ''}
               {banner.storeId !== storeId
                 ? ` · ${stores.find((s) => s.id === banner.storeId)?.name || 'autre boutique'}`
                 : ''}

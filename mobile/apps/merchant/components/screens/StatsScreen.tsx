@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
+import { montantCommercant } from '../../lib/orders';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
 
 type Period = 'today' | '7d' | '30d';
@@ -33,6 +34,8 @@ const DAY = 86_400_000;
 interface ReportOrder {
   status: string;
   totalAmount: number | string;
+  feesAmount?: number | string;
+  serviceFeeAmount?: number | string;
   createdAt: string;
 }
 
@@ -56,7 +59,7 @@ interface Bucket {
   count: number;
 }
 
-const amount = (o: ReportOrder) => parseFloat(String(o.totalAmount)) || 0;
+const amount = (o: ReportOrder) => montantCommercant(o);
 const valid = (list: ReportOrder[] = []) => list.filter((o) => !EXCLUDED.includes((o.status || '').toUpperCase()));
 
 function startOf(period: Period) {

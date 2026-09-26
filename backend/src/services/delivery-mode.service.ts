@@ -74,3 +74,30 @@ export function encaissePourLaPlateforme(commande: {
 }) {
   return fraisDusALaPlateforme(commande) + fraisDeServiceDus(commande);
 }
+
+/**
+ * Ce que la commande rapporte au commerçant : ses articles, remise déduite.
+ *
+ * `totalAmount` est ce que le client a payé : articles, livraison et frais de
+ * service compris. Affiché tel quel, une commande de 15 € d'articles arrivait
+ * chez le commerçant à 20,25 €, et son chiffre d'affaires comptait de l'argent
+ * qui n'était pas à lui. La livraison, quand elle lui revient, se montre à part.
+ */
+export function montantCommercant(commande: {
+  totalAmount: unknown;
+  feesAmount?: unknown;
+  serviceFeeAmount?: unknown;
+}) {
+  const montant =
+    Number(commande.totalAmount || 0) -
+    Number(commande.feesAmount || 0) -
+    Number(commande.serviceFeeAmount || 0);
+  return Math.max(0, Number(montant.toFixed(2)));
+}
+
+/** Somme des montants commerçant d'une liste de commandes, arrondie au centime. */
+export function totalCommercant(
+  commandes: { totalAmount: unknown; feesAmount?: unknown; serviceFeeAmount?: unknown }[]
+) {
+  return Number(commandes.reduce((somme, c) => somme + montantCommercant(c), 0).toFixed(2));
+}
