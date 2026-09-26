@@ -5,7 +5,7 @@ import { Settings, AlertTriangle } from "lucide-react";
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface SystemConfig {
   id: string;
@@ -32,7 +32,7 @@ export default function AdminSettingsPage() {
 
   const fetchConfig = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/admin/config`, {
+      const res = await fetch(`${API_URL}/admin/config`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
@@ -77,7 +77,7 @@ export default function AdminSettingsPage() {
   const saveConfig = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/config`, {
+      const res = await fetch(`${API_URL}/admin/config`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -12,7 +12,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Invoice {
   invoiceNumber: string;
@@ -63,7 +63,7 @@ export default function InvoicesPage() {
         take: itemsPerPage.toString(),
       });
 
-      const response = await fetch(`${API_URL}/api/invoices/${storeId}?${query}`, {
+      const response = await fetch(`${API_URL}/invoices/${storeId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -85,7 +85,7 @@ export default function InvoicesPage() {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/invoices/${storeId}/stats/revenue`, {
+      const response = await fetch(`${API_URL}/invoices/${storeId}/stats/revenue`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -111,7 +111,7 @@ export default function InvoicesPage() {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/invoices/${storeId}/${orderId}`, {
+      const response = await fetch(`${API_URL}/invoices/${storeId}/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

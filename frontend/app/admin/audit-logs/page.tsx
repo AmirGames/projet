@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { History } from "lucide-react";
 import { useEffectChargement } from "@/lib/use-effect-chargement";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface AuditLog {
   id: string;
@@ -40,7 +40,7 @@ export default function AuditLogsPage() {
         offset: offset.toString(),
       });
 
-      const res = await fetch(`${API_URL}/api/admin/audit-logs?${query}`, {
+      const res = await fetch(`${API_URL}/admin/audit-logs?${query}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },

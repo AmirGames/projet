@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Bell, BellOff, BellRing } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 type Etat = 'indisponible' | 'refuse' | 'inactif' | 'actif' | 'chargement';
 
@@ -90,7 +90,7 @@ export function ActiverNotifications() {
 
     try {
       const enregistrement = await serviceWorkerNotifications();
-      const config = await fetch(`${API_URL}/api/drivers/push/config`, {
+      const config = await fetch(`${API_URL}/drivers/push/config`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => r.json());
 
@@ -109,7 +109,7 @@ export function ActiverNotifications() {
           applicationServerKey: cleEnOctets(config.data.publicKey),
         }));
 
-      const res = await fetch(`${API_URL}/api/drivers/push/subscribe`, {
+      const res = await fetch(`${API_URL}/drivers/push/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(abonnement.toJSON()),
@@ -117,7 +117,7 @@ export function ActiverNotifications() {
 
       if (!res.ok) throw new Error();
 
-      await fetch(`${API_URL}/api/drivers/push/test`, {
+      await fetch(`${API_URL}/drivers/push/test`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -135,7 +135,7 @@ export function ActiverNotifications() {
     const abonnement = await enregistrement?.pushManager?.getSubscription().catch(() => null);
     await abonnement?.unsubscribe().catch(() => {});
     if (token) {
-      await fetch(`${API_URL}/api/drivers/push/subscribe`, {
+      await fetch(`${API_URL}/drivers/push/subscribe`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => {});

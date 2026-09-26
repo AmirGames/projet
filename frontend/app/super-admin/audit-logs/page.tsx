@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Search, Download, Filter } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface AuditLog {
   id: string;
@@ -25,7 +25,7 @@ export default function AuditLogsPage() {
   const fetchLogs = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/audit-logs`, {
+      const response = await fetch(`${API_URL}/admin/audit-logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

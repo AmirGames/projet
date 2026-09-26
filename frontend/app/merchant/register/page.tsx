@@ -14,7 +14,7 @@ import { usePays } from '@/lib/pays-client';
 import { PAYS } from '@/lib/pays-infos';
 
 import { useTranslations } from 'next-intl';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface FormData {
   businessName: string;
@@ -174,7 +174,7 @@ export default function MerchantRegisterPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/auth/merchant-register`, {
+      const response = await fetch(`${API_URL}/auth/merchant-register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

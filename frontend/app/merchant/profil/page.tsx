@@ -34,7 +34,7 @@ import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Piece {
   id: string;
@@ -174,7 +174,7 @@ export default function ProfilCommercantPage() {
     setOrgId(org);
 
     try {
-      const reponse = await fetch(`${API_URL}/api/merchant-profile/${org}`, {
+      const reponse = await fetch(`${API_URL}/merchant-profile/${org}`, {
         headers: { Authorization: `Bearer ${jeton}` },
       });
       const lu = await reponse.json();
@@ -210,7 +210,7 @@ export default function ProfilCommercantPage() {
       const corps: Record<string, string> = { ...reste };
       if (iban.trim()) corps.iban = iban.trim();
 
-      const reponse = await fetch(`${API_URL}/api/merchant-profile/${orgId}`, {
+      const reponse = await fetch(`${API_URL}/merchant-profile/${orgId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },
         body: JSON.stringify(corps),
@@ -258,7 +258,7 @@ export default function ProfilCommercantPage() {
           formData.append('expiryDate', piece.expiryDate);
         }
 
-        const reponse = await fetch(`${API_URL}/api/merchant-profile/${orgId}/documents/upload`, {
+        const reponse = await fetch(`${API_URL}/merchant-profile/${orgId}/documents/upload`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${jeton}` },
           body: formData,
@@ -270,7 +270,7 @@ export default function ProfilCommercantPage() {
           return;
         }
       } else {
-        const reponse = await fetch(`${API_URL}/api/merchant-profile/${orgId}/documents`, {
+        const reponse = await fetch(`${API_URL}/merchant-profile/${orgId}/documents`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },
           body: JSON.stringify({
@@ -300,7 +300,7 @@ export default function ProfilCommercantPage() {
   const retirer = async (documentId: string) => {
     try {
       const jeton = localStorage.getItem('accessToken');
-      await fetch(`${API_URL}/api/merchant-profile/${orgId}/documents/${documentId}`, {
+      await fetch(`${API_URL}/merchant-profile/${orgId}/documents/${documentId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${jeton}` },
       });

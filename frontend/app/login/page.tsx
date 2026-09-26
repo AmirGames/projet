@@ -56,7 +56,7 @@ export default function LoginPage() {
     setLienRenvoye(t("resending"));
 
     try {
-      const reponse = await fetch(`${API_URL}/api/auth/resend-verification`, {
+      const reponse = await fetch(`${API_URL}/auth/resend-verification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

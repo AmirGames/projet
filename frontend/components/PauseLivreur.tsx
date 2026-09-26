@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Coffee, Play } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 const DUREES = [15, 30, 60];
 const RAISONS = ['Repas', 'Pause café', 'Plein / recharge', 'Problème véhicule', 'Autre'];
@@ -53,7 +53,7 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
     setErreur('');
 
     try {
-      const res = await fetch(`${API_URL}/api/drivers/pause`, {
+      const res = await fetch(`${API_URL}/drivers/pause`, {
         method: methode,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: corps ? JSON.stringify(corps) : undefined,

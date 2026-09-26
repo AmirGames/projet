@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Key, Plus, Copy, Trash2 } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface ApiKey {
   id: string;
@@ -48,7 +48,7 @@ export default function ApiKeysPage() {
         offset: offset.toString(),
       });
 
-      const res = await fetch(`${API_URL}/api/superowner/api-keys?${query}`, {
+      const res = await fetch(`${API_URL}/superowner/api-keys?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -78,7 +78,7 @@ export default function ApiKeysPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/api/superowner/api-keys`, {
+      const res = await fetch(`${API_URL}/superowner/api-keys`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ export default function ApiKeysPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/api/superowner/api-keys/${keyId}/revoke`, {
+      const res = await fetch(`${API_URL}/superowner/api-keys/${keyId}/revoke`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

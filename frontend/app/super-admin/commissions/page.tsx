@@ -7,7 +7,7 @@ import { Search, Download, Filter } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Commission {
   id: string;
@@ -31,7 +31,7 @@ export default function CommissionsPage() {
   const fetchCommissions = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/commissions`, {
+      const response = await fetch(`${API_URL}/admin/commissions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

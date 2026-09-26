@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 type Etat = 'en-cours' | 'confirme' | 'echec';
 
@@ -25,7 +25,7 @@ function Confirmation() {
     }
 
     try {
-      const reponse = await fetch(`${API_URL}/api/auth/verify-email`, {
+      const reponse = await fetch(`${API_URL}/auth/verify-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jeton }),

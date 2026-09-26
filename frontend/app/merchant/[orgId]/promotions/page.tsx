@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Promotion {
   id: string;
@@ -57,7 +57,7 @@ export default function PromotionsPage() {
   const fetchPromotions = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/promotions?storeId=${storeId}`, {
+      const response = await fetch(`${API_URL}/promotions?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -118,7 +118,7 @@ export default function PromotionsPage() {
       };
 
       if (editingPromo) {
-        const response = await fetch(`${API_URL}/api/promotions/${editingPromo.id}`, {
+        const response = await fetch(`${API_URL}/promotions/${editingPromo.id}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -137,7 +137,7 @@ export default function PromotionsPage() {
           setMessage('❌ Erreur lors de la mise à jour');
         }
       } else {
-        const response = await fetch(`${API_URL}/api/promotions`, {
+        const response = await fetch(`${API_URL}/promotions`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -170,7 +170,7 @@ export default function PromotionsPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/promotions/${id}`, {
+      const response = await fetch(`${API_URL}/promotions/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -191,7 +191,7 @@ export default function PromotionsPage() {
   const handleToggleStatus = async (id: string) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/promotions/${id}/toggle`, {
+      const response = await fetch(`${API_URL}/promotions/${id}/toggle`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });

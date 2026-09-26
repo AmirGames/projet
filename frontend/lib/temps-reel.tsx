@@ -5,7 +5,7 @@ import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { io, type Socket } from 'socket.io-client';
 import { useAuth } from '@/lib/auth-context';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 /**
  * Une seule connexion en direct pour tout l'onglet.

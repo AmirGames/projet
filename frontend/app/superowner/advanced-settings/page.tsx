@@ -19,7 +19,7 @@ interface AdvancedSettings {
   };
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export default function AdvancedSettingsPage() {
   const t = useTranslations('superownerAdvancedSettings');
@@ -42,7 +42,7 @@ export default function AdvancedSettingsPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/api/superowner/advanced-settings`, {
+      const res = await fetch(`${API_URL}/superowner/advanced-settings`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -67,7 +67,7 @@ export default function AdvancedSettingsPage() {
     setSaving(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/api/superowner/advanced-settings`, {
+      const res = await fetch(`${API_URL}/superowner/advanced-settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

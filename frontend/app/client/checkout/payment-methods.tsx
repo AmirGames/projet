@@ -6,7 +6,7 @@ import { CreditCard, Plus, Trash2 } from 'lucide-react';
 import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface PaymentMethod {
   id: string;
@@ -32,7 +32,7 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_URL}/api/payment-methods`, {
+      const response = await fetch(`${API_URL}/payment-methods`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -61,7 +61,7 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
     if (!token) return;
 
     try {
-      await fetch(`${API_URL}/api/payment-methods/${methodId}`, {
+      await fetch(`${API_URL}/payment-methods/${methodId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

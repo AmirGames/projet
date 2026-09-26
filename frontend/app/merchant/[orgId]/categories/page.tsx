@@ -25,7 +25,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Category {
   id: string;
@@ -142,7 +142,7 @@ export default function CategoriesPage() {
     try {
       const token = localStorage.getItem('accessToken');
 
-      const categoriesResponse = await fetch(`${API_URL}/api/categories?storeId=${storeId}`, {
+      const categoriesResponse = await fetch(`${API_URL}/categories?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -189,7 +189,7 @@ export default function CategoriesPage() {
           displayOrder: index,
         }));
 
-        await fetch(`${API_URL}/api/categories/reorder`, {
+        await fetch(`${API_URL}/categories/reorder`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -222,7 +222,7 @@ export default function CategoriesPage() {
       const token = localStorage.getItem('accessToken');
 
       if (editingCategory) {
-        const response = await fetch(`${API_URL}/api/categories/${editingCategory.id}`, {
+        const response = await fetch(`${API_URL}/categories/${editingCategory.id}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -247,7 +247,7 @@ export default function CategoriesPage() {
           return;
         }
 
-        const response = await fetch(`${API_URL}/api/categories`, {
+        const response = await fetch(`${API_URL}/categories`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -284,7 +284,7 @@ export default function CategoriesPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/categories/${categoryId}`, {
+      const response = await fetch(`${API_URL}/categories/${categoryId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

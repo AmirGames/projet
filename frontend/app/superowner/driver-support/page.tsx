@@ -8,7 +8,7 @@ import { MessageCircle, Phone, Circle, Package, SatelliteDish } from 'lucide-rea
 import { FilSupport, type MessageSupport } from '@/components/FilSupport';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Conversation {
   driverId: string;
@@ -47,7 +47,7 @@ export default function DriverSupportPage() {
     const token = jeton();
     if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/api/superowner/driver-support`, {
+      const res = await fetch(`${API_URL}/superowner/driver-support`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const donnees = await res.json();
@@ -65,7 +65,7 @@ export default function DriverSupportPage() {
       setSelection(driverId);
       selectionRef.current = driverId;
       try {
-        const res = await fetch(`${API_URL}/api/superowner/driver-support/${driverId}`, {
+        const res = await fetch(`${API_URL}/superowner/driver-support/${driverId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const donnees = await res.json();
@@ -121,7 +121,7 @@ export default function DriverSupportPage() {
     const token = jeton();
     if (!token || !selection) return false;
     try {
-      const res = await fetch(`${API_URL}/api/superowner/driver-support/${selection}`, {
+      const res = await fetch(`${API_URL}/superowner/driver-support/${selection}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ body: texte }),

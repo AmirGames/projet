@@ -9,7 +9,7 @@ import { ArrowLeft, BarChart3, Store, ShoppingCart, Users, TrendingUp, AlertCirc
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface StatsData {
   merchants: { total: number; active: number; suspended: number };
@@ -37,7 +37,7 @@ export default function SuperOwnerDashboard() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/admin/stats`, {
+      const response = await fetch(`${API_URL}/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

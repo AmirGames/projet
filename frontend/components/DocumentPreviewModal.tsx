@@ -9,13 +9,13 @@ interface DocumentPreviewModalProps {
 }
 
 export function DocumentPreviewModal({ documentUrl, libelle, onClose }: DocumentPreviewModalProps) {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
   // Convert static upload URLs to API proxy route for proper CORS handling
   let fileUrl = documentUrl;
   if (documentUrl.includes('/uploads/')) {
     const uploadPath = documentUrl.split('/uploads/')[1];
-    fileUrl = `${API_URL}/api/drivers/documents/file/${uploadPath}`;
+    fileUrl = `${API_URL}/drivers/documents/file/${uploadPath}`;
   }
 
   const isPdf = fileUrl.toLowerCase().endsWith('.pdf');

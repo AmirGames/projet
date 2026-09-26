@@ -6,7 +6,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Search, Download, Filter, Clock } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface AccessLog {
   id: string;
@@ -34,7 +34,7 @@ export default function AccessLogsPage() {
   const fetchAccessLogs = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/access-logs`, {
+      const response = await fetch(`${API_URL}/admin/access-logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

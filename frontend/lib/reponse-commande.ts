@@ -5,7 +5,7 @@
  * du client, pour que tous disent la même chose.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 /** Les motifs que le commerçant peut choisir, tels qu'il les lit. */
 export const MOTIFS_DU_COMMERCANT = [
@@ -83,7 +83,7 @@ export function refuserCommande(storeId: string, orderId: string, motif: MotifDe
 /** Faire avancer une commande acceptée : en préparation, prête, remise. */
 export async function avancerCommande(storeId: string, orderId: string, status: string) {
   const jeton = localStorage.getItem('accessToken') || localStorage.getItem('token');
-  const reponse = await fetch(`${API_URL}/api/order-management/${storeId}/${orderId}/status`, {
+  const reponse = await fetch(`${API_URL}/order-management/${storeId}/${orderId}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },
     body: JSON.stringify({ status }),

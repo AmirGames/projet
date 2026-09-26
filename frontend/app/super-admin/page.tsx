@@ -10,7 +10,7 @@ import { Users, ShoppingCart, TrendingUp, AlertCircle } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Stats {
   merchants: { total: number; active: number; suspended: number };
@@ -30,7 +30,7 @@ export default function SuperAdminDashboard() {
   const fetchStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/stats`, {
+      const response = await fetch(`${API_URL}/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

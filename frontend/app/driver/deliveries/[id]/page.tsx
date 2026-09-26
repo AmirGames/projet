@@ -15,7 +15,7 @@ import { useDonneesModifiees } from '@/lib/temps-reel';
 import { AttenteDepotLivreur } from '@/components/AttenteDepotLivreur';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Leaflet touche `window` dès son chargement : pas de rendu côté serveur.
 const CarteTrajet = dynamic(() => import('@/components/CarteTrajet'), {
@@ -144,7 +144,7 @@ export default function DeliveryTrackingPage() {
       const token = localStorage.getItem('driverToken');
       if (!token || !deliveryId) return;
 
-      fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}/location`, {
+      fetch(`${API_URL}/drivers/deliveries/${deliveryId}/location`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ latitude, longitude }),
@@ -190,7 +190,7 @@ export default function DeliveryTrackingPage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}`, {
+      const response = await fetch(`${API_URL}/drivers/deliveries/${deliveryId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -261,7 +261,7 @@ export default function DeliveryTrackingPage() {
     const token = localStorage.getItem('driverToken');
     if (!token) return null;
 
-    return fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}`, {
+    return fetch(`${API_URL}/drivers/deliveries/${deliveryId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ status, ...(preuve || {}) }),
@@ -371,7 +371,7 @@ export default function DeliveryTrackingPage() {
       const formulaire = new FormData();
       formulaire.append('photo', photo, 'depot.jpg');
 
-      const reponse = await fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}/photo`, {
+      const reponse = await fetch(`${API_URL}/drivers/deliveries/${deliveryId}/photo`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formulaire,

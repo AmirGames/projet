@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from '@/components/LienRegional';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 /**
  * Ancienne vitrine par identifiant, devenue une simple redirection.
@@ -31,7 +31,7 @@ export default function AncienneVitrine() {
 
     (async () => {
       try {
-        const reponse = await fetch(`${API_URL}/api/client/stores/${id}`);
+        const reponse = await fetch(`${API_URL}/client/stores/${id}`);
 
         if (!reponse.ok) {
           setIntrouvable(true);

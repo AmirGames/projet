@@ -19,7 +19,7 @@ import {
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Store {
   id: string;
@@ -87,7 +87,7 @@ export default function ClientHomePage() {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
-    fetch(`${API_URL}/api/client/me/favorites`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_URL}/client/me/favorites`, { headers: { Authorization: `Bearer ${token}` } })
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) =>
         setFavoris(new Set((donnees?.data || []).map((f: { storeId: string }) => f.storeId))),
@@ -112,7 +112,7 @@ export default function ClientHomePage() {
     setFavoris(suivant);
     try {
       const reponse = await fetch(
-        estFavori ? `${API_URL}/api/client/me/favorites/${storeId}` : `${API_URL}/api/client/me/favorites`,
+        estFavori ? `${API_URL}/client/me/favorites/${storeId}` : `${API_URL}/client/me/favorites`,
         {
           method: estFavori ? 'DELETE' : 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -126,7 +126,7 @@ export default function ClientHomePage() {
   };
 
   useEffect(() => {
-    fetch(`${API_URL}/api/stores/types`)
+    fetch(`${API_URL}/stores/types`)
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => setFamilles(donnees?.data?.familles || []))
       .catch(() => undefined);
@@ -143,7 +143,7 @@ export default function ClientHomePage() {
       setLoading(true);
       // Les commerces du pays de la région choisie ; ceux « près de moi »
       // restent affaire de distance, frontière comprise.
-      const response = await fetch(`${API_URL}/api/client/stores${filtrePays(region)}`);
+      const response = await fetch(`${API_URL}/client/stores${filtrePays(region)}`);
       if (!response.ok) throw new Error('Failed to load stores');
 
       const data = await response.json();
@@ -159,7 +159,7 @@ export default function ClientHomePage() {
   const loadNearbyStores = useCallback(async (lat: number, lng: number) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/client/stores/nearby?latitude=${lat}&longitude=${lng}&maxDistance=10`);
+      const response = await fetch(`${API_URL}/client/stores/nearby?latitude=${lat}&longitude=${lng}&maxDistance=10`);
       if (!response.ok) throw new Error('Failed to load nearby stores');
 
       const data = await response.json();

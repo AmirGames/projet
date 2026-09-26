@@ -12,7 +12,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Customer {
   id: string;
@@ -62,7 +62,7 @@ export default function CustomersPage() {
         ...(search && { search }),
       });
 
-      const response = await fetch(`${API_URL}/api/customers/${storeId}?${query}`, {
+      const response = await fetch(`${API_URL}/customers/${storeId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -91,7 +91,7 @@ export default function CustomersPage() {
       setDeleting(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/customers/${storeId}/${customerId}`, {
+      const response = await fetch(`${API_URL}/customers/${storeId}/${customerId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -113,7 +113,7 @@ export default function CustomersPage() {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/customers/${storeId}/${customerId}/block`, {
+      const response = await fetch(`${API_URL}/customers/${storeId}/${customerId}/block`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

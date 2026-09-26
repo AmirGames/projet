@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { useTempsReel } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export interface StatutCompte {
   id: string;
@@ -52,7 +52,7 @@ export function useStatutCompte(orgId?: string | null) {
     }
 
     try {
-      const reponse = await fetch(`${API_URL}/api/support/compte/${orgId}`, {
+      const reponse = await fetch(`${API_URL}/support/compte/${orgId}`, {
         headers: { Authorization: `Bearer ${jeton}` },
       });
 

@@ -8,7 +8,7 @@ import { euro } from '@/lib/format';
 
 const cleStripe = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
 const stripePromise = cleStripe ? loadStripe(cleStripe) : null;
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface StripePaymentProps {
   orderId: string;
@@ -66,7 +66,7 @@ function StripePaymentForm({
 
     try {
       // Le serveur lit le montant sur la commande : seul son identifiant part.
-      const intentResponse = await fetch(`${API_URL}/api/payments/intent`, {
+      const intentResponse = await fetch(`${API_URL}/payments/intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId }),
@@ -98,7 +98,7 @@ function StripePaymentForm({
       } else if (result.paymentIntent?.status === 'succeeded') {
         // Le webhook fait foi, mais il peut arriver après : ce relevé transmet
         // la commande au commerçant sans l'attendre. Son échec n'y change rien.
-        await fetch(`${API_URL}/api/payments/confirm`, {
+        await fetch(`${API_URL}/payments/confirm`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ paymentIntentId: result.paymentIntent.id }),

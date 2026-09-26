@@ -16,7 +16,7 @@ import {
 } from '@/lib/paniers';
 import { lireAdresseLivraison, type AdresseLivraison } from '@/lib/adresseLivraison';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 /** Ce que le panier montre d'un commerce : l'adresse de sa vitrine et son logo. */
 interface FicheCommerce {
@@ -27,7 +27,7 @@ interface FicheCommerce {
 /** La fiche d'un commerce, retrouvée depuis son identifiant. */
 async function ficheDuCommerce(storeId: string): Promise<FicheCommerce | null> {
   try {
-    const reponse = await fetch(`${API_URL}/api/client/stores/${storeId}`);
+    const reponse = await fetch(`${API_URL}/client/stores/${storeId}`);
     if (!reponse.ok) return null;
     const donnees = await reponse.json();
     const slug = donnees?.data?.slug;

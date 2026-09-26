@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 /** Choix d'un nouveau mot de passe, depuis le lien reçu par courriel. */
 function Formulaire() {
@@ -33,7 +33,7 @@ function Formulaire() {
     setEnCours(true);
 
     try {
-      const reponse = await fetch(`${API_URL}/api/auth/reset-password`, {
+      const reponse = await fetch(`${API_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jeton, password: motDePasse }),

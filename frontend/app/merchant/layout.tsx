@@ -22,7 +22,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 /**
  * Cadre du choix du commerce.
@@ -71,8 +71,8 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
       setOrgId(org);
 
       const [reponseBoutiques, reponseQuota] = await Promise.all([
-        fetch(`${API_URL}/api/stores/org/${org}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/api/stores/org/${org}/quota`, {
+        fetch(`${API_URL}/stores/org/${org}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/stores/org/${org}/quota`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);

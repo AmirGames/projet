@@ -6,7 +6,7 @@ import { Search } from "lucide-react";
 import { useCurrentStore } from "@/lib/current-store";
 import { useTranslations } from 'next-intl';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface ProductSeo {
   id: string;
@@ -52,7 +52,7 @@ export default function ProductSeoPage() {
 
     const charger = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/products?storeId=${storeId}`, {
+        const res = await fetch(`${API_URL}/products?storeId=${storeId}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
         });
         if (!res.ok) return;
@@ -74,7 +74,7 @@ export default function ProductSeoPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/product-seo/${storeId}/${productId}`, {
+      const res = await fetch(`${API_URL}/product-seo/${storeId}/${productId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
@@ -101,7 +101,7 @@ export default function ProductSeoPage() {
   const updateSeo = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/product-seo/${storeId}/${productId}`, {
+      const res = await fetch(`${API_URL}/product-seo/${storeId}/${productId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

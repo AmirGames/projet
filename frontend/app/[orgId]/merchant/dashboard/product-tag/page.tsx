@@ -6,7 +6,7 @@ import { Tag, Plus, Trash2, Edit2 } from "lucide-react";
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface ProductTag {
   id: string;
@@ -52,7 +52,7 @@ export default function ProductTagPage() {
         take: take.toString(),
       });
 
-      const res = await fetch(`${API_URL}/api/product-tags/${storeId}?${query}`, {
+      const res = await fetch(`${API_URL}/product-tags/${storeId}?${query}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
@@ -145,7 +145,7 @@ export default function ProductTagPage() {
       return;
 
     try {
-      const res = await fetch(`${API_URL}/api/product-tags/${storeId}/${tagId}`, {
+      const res = await fetch(`${API_URL}/product-tags/${storeId}/${tagId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,

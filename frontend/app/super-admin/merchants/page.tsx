@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Edit2, Lock, Unlock, Clock } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Merchant {
   id: string;
@@ -32,7 +32,7 @@ export default function MerchantsPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const status = filter === 'ALL' ? '' : filter;
-      const url = new URL(`${API_URL}/api/admin/merchants`);
+      const url = new URL(`${API_URL}/admin/merchants`);
       if (status) url.searchParams.append('status', status);
 
       const response = await fetch(url.toString(), {
@@ -67,7 +67,7 @@ export default function MerchantsPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const action = suspending ? 'suspend' : 'unsuspend';
-      const response = await fetch(`${API_URL}/api/admin/merchants/${merchant.id}/${action}`, {
+      const response = await fetch(`${API_URL}/admin/merchants/${merchant.id}/${action}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

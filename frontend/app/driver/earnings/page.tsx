@@ -9,7 +9,7 @@ import { euro } from '@/lib/format';
 import { MesVersements } from '@/components/MesVersements';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 interface CourseRemuneree {
   id: string;
   orderId: string;
@@ -55,7 +55,7 @@ export default function RevenusLivreurPage() {
     }
 
     try {
-      const reponse = await fetch(`${API_URL}/api/drivers/earnings`, {
+      const reponse = await fetch(`${API_URL}/drivers/earnings`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

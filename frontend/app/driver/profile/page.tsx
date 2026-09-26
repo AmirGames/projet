@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { ArrowLeft, User, Mail, Phone, MapPin, FileText, Star } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Driver {
   id: string;
@@ -55,7 +55,7 @@ export default function DriverProfilePage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/drivers/me`, {
+      const response = await fetch(`${API_URL}/drivers/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -100,7 +100,7 @@ export default function DriverProfilePage() {
       setError('');
       setSuccess('');
 
-      const response = await fetch(`${API_URL}/api/drivers/me`, {
+      const response = await fetch(`${API_URL}/drivers/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

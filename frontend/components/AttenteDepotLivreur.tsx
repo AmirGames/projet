@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 /**
  * Le client ne répond pas : le livreur lance l'attente de six minutes, que le
@@ -42,7 +42,7 @@ export function AttenteDepotLivreur({
     setEnvoi(true);
     setErreur('');
     try {
-      const reponse = await fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}/attente`, {
+      const reponse = await fetch(`${API_URL}/drivers/deliveries/${deliveryId}/attente`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

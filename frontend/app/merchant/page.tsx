@@ -11,7 +11,7 @@ import { memoriserBoutique } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Store {
   id: string;
@@ -61,7 +61,7 @@ export default function MerchantDashboard() {
       setOrgId(org);
 
       // Le nombre de boutiques autorisées dépend de la formule souscrite.
-      const quotaRes = await fetch(`${API_URL}/api/stores/org/${org}/quota`, {
+      const quotaRes = await fetch(`${API_URL}/stores/org/${org}/quota`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -69,7 +69,7 @@ export default function MerchantDashboard() {
         setQuota(await quotaRes.json());
       }
 
-      const storesRes = await fetch(`${API_URL}/api/stores/org/${org}`, {
+      const storesRes = await fetch(`${API_URL}/stores/org/${org}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -82,7 +82,7 @@ export default function MerchantDashboard() {
 
       // Fetch recent orders
       const ordersRes = await fetch(
-        `${API_URL}/api/orders?orgId=${org}&limit=5`,
+        `${API_URL}/orders?orgId=${org}&limit=5`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

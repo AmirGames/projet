@@ -6,7 +6,7 @@ import { TrendingUp } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface AnalyticsData {
   period: string;
@@ -46,7 +46,7 @@ export default function AnalyticsDashboard() {
     if (!silencieux) setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/api/superowner/analytics?period=${timeRange}`, {
+      const res = await fetch(`${API_URL}/superowner/analytics?period=${timeRange}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

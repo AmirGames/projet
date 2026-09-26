@@ -22,7 +22,7 @@ const CarteZones = dynamic(() => import('@/components/CarteZones'), {
   ),
 });
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Sommet {
   latitude: number;
@@ -90,7 +90,7 @@ export default function DeliveryZonesPage() {
     if (!storeId) return;
 
     try {
-      const reponse = await fetch(`${API_URL}/api/stores/${storeId}`);
+      const reponse = await fetch(`${API_URL}/stores/${storeId}`);
       if (!reponse.ok) return;
 
       const lue = await reponse.json();
@@ -118,7 +118,7 @@ export default function DeliveryZonesPage() {
     const jeton = localStorage.getItem('accessToken') || localStorage.getItem('token');
     if (!storeId || !jeton) return;
 
-    fetch(`${API_URL}/api/store-settings/${storeId}`, { headers: { Authorization: `Bearer ${jeton}` } })
+    fetch(`${API_URL}/store-settings/${storeId}`, { headers: { Authorization: `Bearer ${jeton}` } })
       .then((r) => (r.ok ? r.json() : null))
       .then((lu) => {
         if (lu) setLivreursPlateforme(lu.settings?.delivery?.useOwnDelivery !== true);
@@ -137,7 +137,7 @@ export default function DeliveryZonesPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/api/stores/${storeId}`, {
+      const reponse = await fetch(`${API_URL}/stores/${storeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         // Six décimales : une dizaine de centimètres, largement au-delà de ce
@@ -179,7 +179,7 @@ export default function DeliveryZonesPage() {
 
     try {
       const reponse = await fetch(
-        `${API_URL}/api/addresses/search?q=${encodeURIComponent(texte)}`
+        `${API_URL}/addresses/search?q=${encodeURIComponent(texte)}`
       );
       const lue = await reponse.json().catch(() => null);
       const point = (lue?.suggestions || []).find(
@@ -202,7 +202,7 @@ export default function DeliveryZonesPage() {
   const fetchZones = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/delivery-zones?storeId=${storeId}`, {
+      const response = await fetch(`${API_URL}/delivery-zones?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -298,8 +298,8 @@ export default function DeliveryZonesPage() {
       }
 
       const url = editingZone
-        ? `${API_URL}/api/delivery-zones/${editingZone.id}`
-        : `${API_URL}/api/delivery-zones`;
+        ? `${API_URL}/delivery-zones/${editingZone.id}`
+        : `${API_URL}/delivery-zones`;
 
       const response = await fetch(url, {
         method: editingZone ? 'PUT' : 'POST',
@@ -335,7 +335,7 @@ export default function DeliveryZonesPage() {
     setSaving(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/delivery-zones/${id}`, {
+      const response = await fetch(`${API_URL}/delivery-zones/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

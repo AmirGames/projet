@@ -30,7 +30,7 @@ interface AuditResponse {
   };
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export default function SecurityAuditPage() {
   const t = useTranslations('superownerSecurityAudit');
@@ -53,7 +53,7 @@ export default function SecurityAuditPage() {
         offset: offset.toString(),
       });
 
-      const res = await fetch(`${API_URL}/api/superowner/security-audit?${query}`, {
+      const res = await fetch(`${API_URL}/superowner/security-audit?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

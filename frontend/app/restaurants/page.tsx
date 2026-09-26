@@ -25,7 +25,7 @@ interface Restaurant {
   isOpen: boolean;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export default function RestaurantsPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -38,7 +38,7 @@ export default function RestaurantsPage() {
   const fetchRestaurants = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/client/stores${filtrePays(region)}`, {
+      const res = await fetch(`${API_URL}/client/stores${filtrePays(region)}`, {
         headers: { 'Content-Type': 'application/json' },
       });
 

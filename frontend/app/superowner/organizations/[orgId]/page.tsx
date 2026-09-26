@@ -11,7 +11,7 @@ import { DossierCommercant } from '@/components/DossierCommercant';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface MerchantDetail {
   id: string;
@@ -67,7 +67,7 @@ export default function MerchantDetailPage() {
   const fetchMerchant = useCallback(async (silencieux = false) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}`, {
+      const response = await fetch(`${API_URL}/admin/merchants/${merchantId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -105,7 +105,7 @@ export default function MerchantDetailPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}`, {
+      const response = await fetch(`${API_URL}/admin/merchants/${merchantId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ export default function MerchantDetailPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/suspend`, {
+      const response = await fetch(`${API_URL}/admin/merchants/${merchantId}/suspend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +157,7 @@ export default function MerchantDetailPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/unsuspend`, {
+      const response = await fetch(`${API_URL}/admin/merchants/${merchantId}/unsuspend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -182,7 +182,7 @@ export default function MerchantDetailPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/close`, {
+      const response = await fetch(`${API_URL}/admin/merchants/${merchantId}/close`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ export default function MerchantDetailPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}/restore-from-backup`, {
+      const response = await fetch(`${API_URL}/admin/merchants/${merchantId}/restore-from-backup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

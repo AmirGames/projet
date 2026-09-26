@@ -11,7 +11,7 @@ import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import Link from 'next/link';
 
 import { useTranslations } from 'next-intl';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface FormData {
   businessName: string;
@@ -115,7 +115,7 @@ export default function MerchantOnboardPage() {
         throw new Error('Pas de token');
       }
 
-      const response = await fetch(`${API_URL}/api/auth/me/become-merchant`, {
+      const response = await fetch(`${API_URL}/auth/me/become-merchant`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

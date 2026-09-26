@@ -25,7 +25,7 @@ interface Declinaison {
   displayOrder: number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export function DeclinaisonsProduit({
   productId,
@@ -48,7 +48,7 @@ export function DeclinaisonsProduit({
 
   const charger = useCallback(async () => {
     try {
-      const reponse = await fetch(`${API_URL}/api/products/${productId}/variants`);
+      const reponse = await fetch(`${API_URL}/products/${productId}/variants`);
       if (!reponse.ok) return;
 
       const donnees = await reponse.json();

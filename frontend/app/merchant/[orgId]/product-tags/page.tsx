@@ -7,7 +7,7 @@ import { useCurrentStore } from "@/lib/current-store";
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface ProductTag {
   id: string;
@@ -52,7 +52,7 @@ export default function ProductTagPage() {
         take: take.toString(),
       });
 
-      const res = await fetch(`${API_URL}/api/product-tags/${storeId}?${query}`, {
+      const res = await fetch(`${API_URL}/product-tags/${storeId}?${query}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
@@ -118,8 +118,8 @@ export default function ProductTagPage() {
 
     try {
       const url = editingId
-        ? `${API_URL}/api/product-tags/${storeId}/${editingId}`
-        : `${API_URL}/api/product-tags/${storeId}`;
+        ? `${API_URL}/product-tags/${storeId}/${editingId}`
+        : `${API_URL}/product-tags/${storeId}`;
       const method = editingId ? "PATCH" : "POST";
 
       const res = await fetch(url, {
@@ -146,7 +146,7 @@ export default function ProductTagPage() {
       return;
 
     try {
-      const res = await fetch(`${API_URL}/api/product-tags/${storeId}/${tagId}`, {
+      const res = await fetch(`${API_URL}/product-tags/${storeId}/${tagId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,

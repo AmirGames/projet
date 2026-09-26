@@ -193,7 +193,7 @@ export default function DriverDashboard() {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_URL}/api/drivers/deliveries/${delivery.id}/accept`, {
+      const response = await fetch(`${API_URL}/drivers/deliveries/${delivery.id}/accept`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

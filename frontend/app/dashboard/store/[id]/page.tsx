@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 /**
  * Ancienne page de gestion d'une boutique, remplacée par l'espace commerçant.
@@ -22,7 +22,7 @@ export default function AncienneGestionBoutique() {
     const rediriger = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const reponse = await fetch(`${API_URL}/api/stores/${storeId}`, {
+        const reponse = await fetch(`${API_URL}/stores/${storeId}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
 

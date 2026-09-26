@@ -34,7 +34,7 @@ interface Configuration {
   serviceFee: number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export default function SystemConfigPage() {
   const t = useTranslations('superownerSystemConfig');
@@ -64,7 +64,7 @@ export default function SystemConfigPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/api/superowner/system-config`, {
+      const res = await fetch(`${API_URL}/superowner/system-config`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -110,7 +110,7 @@ export default function SystemConfigPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/api/superowner/system-config`, {
+      const res = await fetch(`${API_URL}/superowner/system-config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -153,7 +153,7 @@ export default function SystemConfigPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/api/superowner/api-keys`, {
+      const res = await fetch(`${API_URL}/superowner/api-keys`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: newKeyName }),

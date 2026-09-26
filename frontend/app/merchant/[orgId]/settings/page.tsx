@@ -10,7 +10,7 @@ import { useCurrentStore } from '@/lib/current-store';
 
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface StoreSettings {
   id: string;
@@ -126,7 +126,7 @@ export default function StoreSettings() {
     const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
     if (!orgId || !token) return;
 
-    fetch(`${API_URL}/api/plans/${orgId}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_URL}/plans/${orgId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => (r.ok ? r.json() : null))
       .then((lu) => {
         const quota = lu?.data?.quota;
@@ -141,7 +141,7 @@ export default function StoreSettings() {
   }, [orgId]);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/stores/types`)
+    fetch(`${API_URL}/stores/types`)
       .then((r) => r.json())
       .then((lu) => {
         setEtablissements(lu?.data?.etablissements || []);
@@ -158,7 +158,7 @@ export default function StoreSettings() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/store-settings/${storeId}`, {
+      const response = await fetch(`${API_URL}/store-settings/${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -227,7 +227,7 @@ export default function StoreSettings() {
       const corps = new FormData();
       corps.append('file', fichier);
 
-      const response = await fetch(`${API_URL}/api/store-settings/${storeId}/logo/upload`, {
+      const response = await fetch(`${API_URL}/store-settings/${storeId}/logo/upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: corps,
@@ -256,7 +256,7 @@ export default function StoreSettings() {
 
     try {
       setLogoEnCours(true);
-      const response = await fetch(`${API_URL}/api/store-settings/${storeId}/logo`, {
+      const response = await fetch(`${API_URL}/store-settings/${storeId}/logo`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -302,7 +302,7 @@ export default function StoreSettings() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/store-settings/${storeId}`, {
+      const response = await fetch(`${API_URL}/store-settings/${storeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

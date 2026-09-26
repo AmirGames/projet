@@ -10,7 +10,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Review {
   id: string;
@@ -55,7 +55,7 @@ export default function ReviewsPage() {
   const jeton = () => localStorage.getItem('accessToken') || localStorage.getItem('token');
 
   const compter = useCallback(async (token: string, f: 'signales' | 'retires') => {
-    const res = await fetch(`${API_URL}/api/reviews/${storeId}?take=1&filtre=${f}`, {
+    const res = await fetch(`${API_URL}/reviews/${storeId}?take=1&filtre=${f}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return res.ok ? (await res.json()).total || 0 : 0;
@@ -77,7 +77,7 @@ export default function ReviewsPage() {
         ...(filtre !== 'ALL' && { filtre }),
       });
 
-      const response = await fetch(`${API_URL}/api/reviews/${storeId}?${query}`, {
+      const response = await fetch(`${API_URL}/reviews/${storeId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -110,7 +110,7 @@ export default function ReviewsPage() {
     setEnvoi(true);
     setErreur('');
     try {
-      const response = await fetch(`${API_URL}/api/reviews/${storeId}/${reviewId}/report`, {
+      const response = await fetch(`${API_URL}/reviews/${storeId}/${reviewId}/report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton()}` },
         body: JSON.stringify({ reason: motif }),

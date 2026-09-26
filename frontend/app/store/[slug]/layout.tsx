@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   let boutique: { name?: string; countryCode?: string | null } | undefined;
 
   try {
-    const reponse = await fetch(`${API_URL}/api/stores/slug/${encodeURIComponent(slug)}`, {
+    const reponse = await fetch(`${API_URL}/stores/slug/${encodeURIComponent(slug)}`, {
       next: { revalidate: 300 },
     });
     if (reponse.ok) boutique = (await reponse.json()).store;

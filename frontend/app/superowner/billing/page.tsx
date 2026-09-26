@@ -86,7 +86,7 @@ interface BillingResponse {
   };
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export default function BillingPage() {
   const t = useTranslations('superownerBilling');
@@ -109,7 +109,7 @@ export default function BillingPage() {
         offset: offset.toString(),
       });
 
-      const res = await fetch(`${API_URL}/api/superowner/billing?${query}`, {
+      const res = await fetch(`${API_URL}/superowner/billing?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -156,7 +156,7 @@ export default function BillingPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const res = await fetch(
-        `${API_URL}/api/superowner/billing/${billing.id}?period=${billing.period}`,
+        `${API_URL}/superowner/billing/${billing.id}?period=${billing.period}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

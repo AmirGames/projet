@@ -16,7 +16,7 @@ import { euro } from '@/lib/format';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Releve {
   id: string;
@@ -55,7 +55,7 @@ export function MesVersements() {
   const charger = useCallback(async () => {
     try {
       const token = localStorage.getItem('driverToken') || localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/api/drivers/payouts`, {
+      const reponse = await fetch(`${API_URL}/drivers/payouts`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

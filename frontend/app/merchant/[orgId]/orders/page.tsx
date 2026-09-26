@@ -16,7 +16,7 @@ import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { useParametreAdresse } from '@/lib/navigateur';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface OrderItem {
   id: string;
@@ -134,7 +134,7 @@ export default function OrdersPage() {
         ...(filter !== 'ALL' && { status: filter }),
       });
 
-      const response = await fetch(`${API_URL}/api/order-management/${storeId}?${query}`, {
+      const response = await fetch(`${API_URL}/order-management/${storeId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -156,7 +156,7 @@ export default function OrdersPage() {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/order-management/${storeId}/stats/overview`, {
+      const response = await fetch(`${API_URL}/order-management/${storeId}/stats/overview`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -187,7 +187,7 @@ export default function OrdersPage() {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch(`${API_URL}/api/store-settings/${storeId}`, {
+      const response = await fetch(`${API_URL}/store-settings/${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -233,7 +233,7 @@ export default function OrdersPage() {
       if (!token) return;
 
       // Récupérer la commande pour obtenir le storeId
-      const orderResponse = await fetch(`${API_URL}/api/orders/${orderId}`, {
+      const orderResponse = await fetch(`${API_URL}/orders/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -250,7 +250,7 @@ export default function OrdersPage() {
 
       // Récupérer la liste des livreurs disponibles (rayon réglé par la plateforme)
       const response = await fetch(
-        `${API_URL}/api/drivers/available?storeId=${storeId}`,
+        `${API_URL}/drivers/available?storeId=${storeId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -283,7 +283,7 @@ export default function OrdersPage() {
 
       // Proposer la course au livreur sélectionné (ou au plus proche si aucun
       // n'est désigné, ou s'il n'est plus éligible).
-      const response = await fetch(`${API_URL}/api/orders/${orderId}/dispatch`, {
+      const response = await fetch(`${API_URL}/orders/${orderId}/dispatch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(driverId ? { driverId } : {}),

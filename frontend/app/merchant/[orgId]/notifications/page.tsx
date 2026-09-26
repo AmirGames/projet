@@ -8,7 +8,7 @@ import { useCurrentStore } from "@/lib/current-store";
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Notification {
   id: string;
@@ -52,7 +52,7 @@ export default function NotificationsPage() {
         ...(isRead !== undefined && { isRead: isRead.toString() }),
       });
 
-      const res = await fetch(`${API_URL}/api/notifications/${storeId}?${query}`, {
+      const res = await fetch(`${API_URL}/notifications/${storeId}?${query}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
@@ -72,7 +72,7 @@ export default function NotificationsPage() {
 
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/notifications/${storeId}/unread/count`, {
+      const res = await fetch(`${API_URL}/notifications/${storeId}/unread/count`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
@@ -96,7 +96,7 @@ export default function NotificationsPage() {
   const markAsRead = async (notificationId: string) => {
     try {
       const res = await fetch(
-        `${API_URL}/api/notifications/${storeId}/${notificationId}/read`,
+        `${API_URL}/notifications/${storeId}/${notificationId}/read`,
         {
           method: "PATCH",
           headers: {
@@ -115,7 +115,7 @@ export default function NotificationsPage() {
 
   const markAllAsRead = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/notifications/${storeId}/read-all`, {
+      const res = await fetch(`${API_URL}/notifications/${storeId}/read-all`, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -133,7 +133,7 @@ export default function NotificationsPage() {
   const deleteNotification = async (notificationId: string) => {
     try {
       const res = await fetch(
-        `${API_URL}/api/notifications/${storeId}/${notificationId}`,
+        `${API_URL}/notifications/${storeId}/${notificationId}`,
         {
           method: "DELETE",
           headers: {

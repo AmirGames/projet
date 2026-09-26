@@ -6,7 +6,7 @@ import { TicketConversation } from '@/components/TicketConversation';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Ticket {
   id: string;
@@ -38,7 +38,7 @@ export default function TicketsPage() {
   const fetchTickets = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const url = new URL(`${API_URL}/api/admin/tickets`);
+      const url = new URL(`${API_URL}/admin/tickets`);
       if (!showArchived) url.searchParams.append('status', statusFilter);
       url.searchParams.append('archived', String(showArchived));
 
@@ -82,7 +82,7 @@ export default function TicketsPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/api/admin/tickets/${selectedTicket.id}`, {
+      const response = await fetch(`${API_URL}/admin/tickets/${selectedTicket.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export default function TicketsPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const action = archive ? 'archive' : 'unarchive';
-      const response = await fetch(`${API_URL}/api/admin/tickets/${selectedTicket.id}/${action}`, {
+      const response = await fetch(`${API_URL}/admin/tickets/${selectedTicket.id}/${action}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

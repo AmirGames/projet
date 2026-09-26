@@ -30,7 +30,7 @@ import {
   type PanierBoutique,
 } from '@/lib/paniers';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export default function CheckoutPage() {
   const t = useTranslations('common');
@@ -90,7 +90,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!boutiqueRetenue) return;
 
-    fetch(`${API_URL}/api/client/stores/${boutiqueRetenue}`)
+    fetch(`${API_URL}/client/stores/${boutiqueRetenue}`)
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => {
         if (typeof donnees?.data?.isOpenNow === 'boolean') {

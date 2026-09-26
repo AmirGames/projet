@@ -16,7 +16,7 @@ import { AlertTriangle, BadgeCheck, Check, Clock, FileText, Upload, X } from 'lu
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Piece {
   id: string;
@@ -89,7 +89,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
   const charger = useCallback(async () => {
     try {
       const jeton = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/api/superowner/organizations/${orgId}/profile`, {
+      const reponse = await fetch(`${API_URL}/superowner/organizations/${orgId}/profile`, {
         headers: { Authorization: `Bearer ${jeton}` },
       });
 
@@ -118,7 +118,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     try {
       const jeton = localStorage.getItem('accessToken');
       const reponse = await fetch(
-        `${API_URL}/api/superowner/organizations/${orgId}/documents/${piece.id}`,
+        `${API_URL}/superowner/organizations/${orgId}/documents/${piece.id}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },
@@ -149,7 +149,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
 
     try {
       const jeton = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/api/superowner/organizations/${orgId}/approve`, {
+      const reponse = await fetch(`${API_URL}/superowner/organizations/${orgId}/approve`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${jeton}` },
       });
@@ -187,7 +187,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       formData.append('file', fichier);
 
       const reponse = await fetch(
-        `${API_URL}/api/merchant-profile/${orgId}/documents/upload`,
+        `${API_URL}/merchant-profile/${orgId}/documents/upload`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${jeton}` },

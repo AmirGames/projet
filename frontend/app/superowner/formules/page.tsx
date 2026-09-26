@@ -28,7 +28,7 @@ interface Formule {
   abonnes: number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export default function FormulesPage() {
   const t = useTranslations('superownerFormules');
@@ -43,7 +43,7 @@ export default function FormulesPage() {
     setChargement(true);
     try {
       const jeton = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/api/superowner/plans`, {
+      const reponse = await fetch(`${API_URL}/superowner/plans`, {
         headers: { Authorization: `Bearer ${jeton}` },
       });
 
@@ -86,7 +86,7 @@ export default function FormulesPage() {
 
     try {
       const jeton = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/api/superowner/plans/${code}`, {
+      const reponse = await fetch(`${API_URL}/superowner/plans/${code}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

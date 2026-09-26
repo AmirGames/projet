@@ -18,7 +18,7 @@ import {
 } from '@/lib/paniers';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Store {
   id: string;
@@ -111,7 +111,7 @@ export default function StorefrontPage() {
 
   useEffect(() => {
     let annule = false;
-    fetch(`${API_URL}/api/client/service-fee`)
+    fetch(`${API_URL}/client/service-fee`)
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => {
         if (!annule && donnees?.data) setFraisDeService(Number(donnees.data.frais) || 0);
@@ -157,7 +157,7 @@ export default function StorefrontPage() {
     if (requeteLivraison === null) return;
 
     let annule = false;
-    fetch(`${API_URL}/api/client/stores/${requeteLivraison}`)
+    fetch(`${API_URL}/client/stores/${requeteLivraison}`)
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => {
         if (!annule) setLivraison(donnees?.data || null);
@@ -311,7 +311,7 @@ export default function StorefrontPage() {
 
   const fetchStoreData = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/api/stores/slug/${slug}`);
+      const response = await fetch(`${API_URL}/stores/slug/${slug}`);
       if (response.ok) {
         const data = await response.json();
         setStore(data.store);
@@ -320,7 +320,7 @@ export default function StorefrontPage() {
         // si bien qu'un visiteur non connecté voyait la vitrine vide. Elle
         // renvoie en prime le menu déjà groupé par catégorie, dans l'ordre
         // voulu par le commerçant.
-        const menuResponse = await fetch(`${API_URL}/api/client/stores/${data.store.id}`);
+        const menuResponse = await fetch(`${API_URL}/client/stores/${data.store.id}`);
         if (menuResponse.ok) {
           const menuData = await menuResponse.json();
 

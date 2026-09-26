@@ -8,7 +8,7 @@ import { euro } from '@/lib/format';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 type Filtre = 'ALL' | 'ACTIVE' | 'DELIVERED' | 'CANCELLED';
 type Periode = 'all' | 'today' | 'week' | 'month';
@@ -111,7 +111,7 @@ export default function HistoriqueCoursesPage() {
     if (debut) params.set('depuis', debut.toISOString());
 
     try {
-      const res = await fetch(`${API_URL}/api/drivers/history?${params}`, {
+      const res = await fetch(`${API_URL}/drivers/history?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

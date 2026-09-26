@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Flag, Star } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Compte {
   email: string;
@@ -54,7 +54,7 @@ export default function AvisSignalesPage() {
     if (!token) return;
     setChargement(true);
     try {
-      const res = await fetch(`${API_URL}/api/superowner/review-reports?etat=${onglet}`, {
+      const res = await fetch(`${API_URL}/superowner/review-reports?etat=${onglet}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const donnees = await res.json();
@@ -78,7 +78,7 @@ export default function AvisSignalesPage() {
     if (!token) return;
     setEnCours(id);
     try {
-      const res = await fetch(`${API_URL}/api/superowner/review-reports/${id}/decision`, {
+      const res = await fetch(`${API_URL}/superowner/review-reports/${id}/decision`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ decision, note: notes[id] || undefined }),

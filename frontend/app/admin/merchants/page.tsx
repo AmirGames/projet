@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { Store } from "lucide-react";
 import { useEffectChargement } from "@/lib/use-effect-chargement";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface Merchant {
   id: string;
@@ -48,7 +48,7 @@ export default function MerchantsPage() {
         ...(filterStatus && { status: filterStatus }),
       });
 
-      const res = await fetch(`${API_URL}/api/admin/merchants?${query}`, {
+      const res = await fetch(`${API_URL}/admin/merchants?${query}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
