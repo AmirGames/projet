@@ -108,17 +108,31 @@ async function renvoyee(nom, hote, chemin, versDomaine, versChemin = chemin) {
 }
 
 // ===== Accueil propre à chaque domaine =====
+// Le titre de l'accueil commerçant est écrit en dur dans app/page.tsx. Un
+// texte des traductions ne distinguerait rien : next-intl envoie tout le
+// catalogue avec chaque page, sur tous les domaines.
+const TITRE_PRO = "Votre commerce, en ligne, sans intermédiaire encombrant";
+
 titre("Accueil");
-await servie("le domaine pro montre l'offre commerçant", PRO, "/", "Digitalisez votre commerce");
-await servie("le domaine public montre les commerces", PUBLIC, "/", "Commandes en Ligne");
+await servie("le domaine pro montre l'offre commerçant", PRO, "/", TITRE_PRO);
+
+// L'accueil public vit sous la région du visiteur (/fr-fr sans cookie ni
+// Accept-Language) ; la redirection reste sur le domaine public.
+const accueilPublic = await appeler(PUBLIC, "/");
+check(
+  "l'accueil public part sous la région du visiteur",
+  accueilPublic.statut === 307 && accueilPublic.destination === "/fr-fr",
+  `statut ${accueilPublic.statut} vers ${accueilPublic.destination}`
+);
+await servie("le domaine public montre les commerces", PUBLIC, "/fr-fr");
 check(
   "les deux accueils diffèrent",
-  !(await appeler(PRO, "/")).corps.includes("Commandes en Ligne")
+  !(await appeler(PUBLIC, "/fr-fr")).corps.includes(TITRE_PRO)
 );
 
 // ===== Pages professionnelles =====
 titre("Pages commerçant appelées d'ailleurs");
-for (const chemin of ["/merchant", "/superowner", "/dashboard", "/signup"]) {
+for (const chemin of ["/merchant", "/superowner", "/signup"]) {
   await renvoyee(`${chemin} depuis le public`, PUBLIC, chemin, PRO);
 }
 await renvoyee("/store/new depuis le public", PUBLIC, "/store/new", PRO);
@@ -140,8 +154,11 @@ await renvoyee("/driver/signup depuis le public", PUBLIC, "/driver/signup", LIVR
 
 // ===== Pages communes =====
 titre("Pages communes");
+// /dashboard aussi : c'est le sélecteur de rôles des comptes multi-rôles
+// (SEGMENTS_COMMUNS, lib/domaines.ts).
 for (const [nom, hote] of [["pro", PRO], ["public", PUBLIC], ["livreur", LIVREUR]]) {
   await servie(`/login servi par le domaine ${nom}`, hote, "/login");
+  await servie(`/dashboard servi par le domaine ${nom}`, hote, "/dashboard");
 }
 
 // ===== Paramètres et domaine inconnu =====
