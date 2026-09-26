@@ -57,6 +57,8 @@ export default function DashboardPage() {
             router.push('/merchant');
           } else if (isDriver) {
             router.push('/driver');
+          } else if (isCustomer) {
+            router.push('/client/orders');
           }
         }
         // Sinon, on affiche le choix
@@ -101,7 +103,9 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white mb-4">Aucun rôle trouvé</h1>
-          <p className="text-slate-400 mb-8">Aucun rôle n'est actif pour votre compte.</p>
+          <p className="text-slate-400 mb-8">
+            Aucun rôle n'est actif pour votre compte. Les rôles pris en charge sont : commerçant, livreur, client et super administrateur.
+          </p>
           <Link href="/" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition">
             Retour à l'accueil
           </Link>
@@ -111,7 +115,7 @@ export default function DashboardPage() {
   }
 
   // Redirection automatique si un seul rôle actif (sauf si superowner)
-  if (!isSuperOwner && activeRolesCount === 1 && !isCustomer) {
+  if (!isSuperOwner && activeRolesCount === 1) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
         <div className="text-center">
