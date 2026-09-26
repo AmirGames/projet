@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTempsReel } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -89,9 +90,11 @@ export function useNotifications() {
     setUnreadCount((prev) => prev + 1);
   });
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchNotifications();
+  }, [fetchNotifications]);
 
+  useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 

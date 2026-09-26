@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Order {
   id: string;
@@ -25,10 +26,6 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [newStatus, setNewStatus] = useState('');
 
-  useEffect(() => {
-    fetchOrder();
-  }, [orderId]);
-
   const fetchOrder = async () => {
     try {
       // Note: The API doesn't have a getOrder by ID endpoint
@@ -39,6 +36,10 @@ export default function OrderDetailPage() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchOrder();
+  }, [orderId]);
 
   const handleStatusUpdate = async () => {
     if (!newStatus) return;

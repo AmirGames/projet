@@ -1,11 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Bell, BellOff, BellRing } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type Etat = 'indisponible' | 'refuse' | 'inactif' | 'actif' | 'chargement';
+
+const sansAbonnement = () => () => {};
+
+/** Les notifications impossibles ici, ou refusées ; null sinon. */
+function constatDuNavigateur(): 'indisponible' | 'refuse' | null {
+  if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) return 'indisponible';
+  if (Notification.permission === 'denied') return 'refuse';
+  return null;
+}
 
 /** La clé VAPID arrive en base64 URL ; PushManager l'attend en octets. */
 function cleEnOctets(base64: string) {
@@ -50,18 +59,14 @@ export async function notifierSiCache(titre: string, corps: string, tag: string,
  * était affichée.
  */
 export function ActiverNotifications() {
-  const [etat, setEtat] = useState<Etat>('chargement');
+  // Ce que le navigateur interdit l'emporte sur l'état suivi ici.
+  const constat = useSyncExternalStore(sansAbonnement, constatDuNavigateur, () => null);
+  const [etatSuivi, setEtat] = useState<Etat>('chargement');
+  const etat = constat ?? etatSuivi;
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
-      setEtat('indisponible');
-      return;
-    }
-    if (Notification.permission === 'denied') {
-      setEtat('refuse');
-      return;
-    }
+    if (constatDuNavigateur()) return;
 
     (async () => {
       const enregistrement = await serviceWorkerNotifications();

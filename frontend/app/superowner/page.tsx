@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useTranslations } from 'next-intl';
 import { Users, DollarSign, AlertCircle, Server, Lock, ChevronRight } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import Link from 'next/link';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -37,15 +38,6 @@ export default function SuperOwnerDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
-
-  // Les chiffres portent sur toute la plateforme : n'importe quelle écriture
-  // peut les changer. Deux secondes suffisent pour qu'une rafale n'en
-  // provoque qu'une relecture.
-  useDonneesModifiees('*', () => fetchDashboardStats(), { delaiMs: 2000 });
-
   const fetchDashboardStats = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -62,6 +54,15 @@ export default function SuperOwnerDashboard() {
       setLoading(false);
     }
   };
+
+  // Les chiffres portent sur toute la plateforme : n'importe quelle écriture
+  // peut les changer. Deux secondes suffisent pour qu'une rafale n'en
+  // provoque qu'une relecture.
+  useDonneesModifiees('*', () => fetchDashboardStats(), { delaiMs: 2000 });
+
+  useEffectChargement(() => {
+    fetchDashboardStats();
+  }, []);
 
   if (loading) return <div className="text-center py-8">{t('loading')}</div>;
 

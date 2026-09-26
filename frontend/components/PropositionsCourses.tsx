@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { euro } from '@/lib/format';
 import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
 import { notifierSiCache } from '@/components/ActiverNotifications';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -103,13 +104,15 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
   }, []);
 
   // Relevé périodique des propositions (seulement si disponible).
-  useEffect(() => {
-    if (!isAvailable) {
-      setPropositions([]);
-      return;
-    }
+  if (!isAvailable && propositions.length > 0) setPropositions([]);
 
-    relever();
+  useEffectChargement(() => {
+    if (isAvailable) relever();
+  }, [isAvailable, relever]);
+
+  useEffect(() => {
+    if (!isAvailable) return;
+
     const minuteur = setInterval(relever, INTERVALLE_RELEVE_MS);
     return () => clearInterval(minuteur);
   }, [isAvailable, relever]);

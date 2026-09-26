@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Scale, Send, ExternalLink, History } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 /**
  * Les pages légales, modifiables sans mise en production.
@@ -92,7 +93,7 @@ export default function PagesLegalesPage() {
     }
   }, []);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

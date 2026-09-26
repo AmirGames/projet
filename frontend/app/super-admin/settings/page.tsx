@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { AVAILABLE_THEMES, applyTheme, getTheme, saveThemeToAPI, Theme } from '@/lib/theme-config';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -23,10 +24,6 @@ export default function SettingsPage() {
     driverOfferSeconds: 30,
     driverMaxRadiusKm: 8,
   });
-
-  useEffect(() => {
-    fetchConfig();
-  }, []);
 
   const fetchConfig = async () => {
     try {
@@ -58,6 +55,10 @@ export default function SettingsPage() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchConfig();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;

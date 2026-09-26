@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Trash2, Plus } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,10 +25,6 @@ export default function AdminManagementPage() {
     password: '',
   });
 
-  useEffect(() => {
-    fetchAdmins();
-  }, []);
-
   const fetchAdmins = async () => {
     try {
       // This would need a backend endpoint to fetch admins
@@ -39,6 +36,10 @@ export default function AdminManagementPage() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchAdmins();
+  }, []);
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Store } from "lucide-react";
+import { useEffectChargement } from "@/lib/use-effect-chargement";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -65,7 +66,7 @@ export default function MerchantsPage() {
     }
   }, [filterStatus, offset]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchMerchants();
   }, [limit, offset, filterStatus, fetchMerchants]);
 

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import type { Socket } from 'socket.io-client';
-import { connexionTempsReel, suivreSalon } from '@/lib/temps-reel';
+import { connexionTempsReel, suivreSalon, useConnexionTempsReel } from '@/lib/temps-reel';
+import { useStockageLocal } from '@/lib/navigateur';
 
 interface OrderUpdate {
   orderId: string;
@@ -35,12 +35,13 @@ export interface StatusNotification {
 }
 
 export function useOrderTracking(orderId: string) {
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [orderStatus, setOrderStatus] = useState<string>('');
   const [deliveryLocation, setDeliveryLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [eta, setEta] = useState<number | null>(null);
   const [gpsPerdu, setGpsPerdu] = useState<boolean | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  // Suivie tant qu'une commande est ouverte par un compte connecté.
+  const jetonPresent = Boolean(useStockageLocal('accessToken'));
+  const isConnected = useConnexionTempsReel(Boolean(orderId) && jetonPresent);
   const [notification, setNotification] = useState<StatusNotification | null>(null);
   const [livreurProche, setLivreurProche] = useState(false);
 
@@ -54,13 +55,6 @@ export function useOrderTracking(orderId: string) {
     // chaque (re)connexion, et quitté au départ de l'écran.
     const socketInstance = connexionTempsReel();
     const quitter = suivreSalon('order', orderId);
-
-    const surConnexion = () => setIsConnected(true);
-    const surDeconnexion = () => setIsConnected(false);
-
-    setIsConnected(socketInstance.connected);
-    socketInstance.on('connect', surConnexion);
-    socketInstance.on('disconnect', surDeconnexion);
 
     const surCommande = (data: OrderUpdate) => {
       if (data.orderId === orderId) {
@@ -126,12 +120,8 @@ export function useOrderTracking(orderId: string) {
     socketInstance.on('order-update', surCommande);
     socketInstance.on('delivery-update', surLivraison);
 
-    setSocket(socketInstance);
-
     // La connexion est partagée : on retire nos écouteurs, on ne la ferme pas.
     return () => {
-      socketInstance.off('connect', surConnexion);
-      socketInstance.off('disconnect', surDeconnexion);
       socketInstance.off('order-update', surCommande);
       socketInstance.off('delivery-update', surLivraison);
       quitter();
@@ -150,7 +140,6 @@ export function useOrderTracking(orderId: string) {
   }, []);
 
   return {
-    socket,
     orderStatus,
     deliveryLocation,
     eta,

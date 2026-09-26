@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -17,6 +17,7 @@ import {
   Store as StoreIcon,
   ExternalLink,
 } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -112,7 +113,7 @@ export default function MerchantDashboard() {
     }
   }, [orgId, storeId, router, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     // On attend la liste des boutiques pour ne pas charger deux fois :
     // une première fois sans portée, puis avec la boutique retenue.
     if (orgId && !storesLoading) fetchDashboardData();

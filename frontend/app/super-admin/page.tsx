@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Users, ShoppingCart, TrendingUp, AlertCircle } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -47,7 +48,7 @@ export default function SuperAdminDashboard() {
     }
   }, [router]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     const token = localStorage.getItem('accessToken');
     console.log("Super-admin page loaded, token exists:", !!token);
 

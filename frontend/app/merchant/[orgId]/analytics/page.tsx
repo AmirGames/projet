@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { TrendingUp, Calendar, DollarSign, ShoppingCart, Users, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { useCurrentStore } from '@/lib/current-store';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -106,7 +107,7 @@ export default function AnalyticsPage() {
     }
   }, [storeId, timeRange]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (storeId) {
       fetchAnalytics();
     }

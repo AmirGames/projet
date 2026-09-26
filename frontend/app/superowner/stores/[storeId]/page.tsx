@@ -13,7 +13,7 @@
  * client.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 // Leaflet touche à `window` dès son chargement : pas de rendu côté serveur.
 const CarteZones = dynamic(() => import('@/components/CarteZones'), {
@@ -168,7 +169,7 @@ export default function FicheBoutiquePage() {
     }
   }, [storeId, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Search, Download, Filter, Clock } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,10 +25,6 @@ export default function AccessLogsPage() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'SUCCESS' | 'FAILED' | 'DENIED'>('ALL');
   const [actionFilter, setActionFilter] = useState('');
 
-  useEffect(() => {
-    fetchAccessLogs();
-  }, []);
-
   const fetchAccessLogs = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -44,6 +41,10 @@ export default function AccessLogsPage() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchAccessLogs();
+  }, []);
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch =

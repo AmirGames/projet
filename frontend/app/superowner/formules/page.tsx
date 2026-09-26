@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Layers, Save, Plus, X, Users } from 'lucide-react';
 
 import { euro, parSemaine } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 /**
  * La grille tarifaire, réglable.
@@ -64,7 +65,7 @@ export default function FormulesPage() {
     }
   }, [t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Search, Eye, Mail } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Customer {
   id: string;
@@ -17,10 +18,6 @@ export default function AdminCustomers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
 
   const fetchCustomers = async () => {
     try {
@@ -56,6 +53,10 @@ export default function AdminCustomers() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchCustomers();
+  }, []);
 
   const filteredCustomers = customers.filter(c =>
     c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||

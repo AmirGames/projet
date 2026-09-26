@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface User {
   id: string;
@@ -117,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [API_URL]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     refreshAuth();
   }, [refreshAuth]);
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
+import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { io, type Socket } from 'socket.io-client';
 import { useAuth } from '@/lib/auth-context';
 
@@ -155,8 +156,7 @@ export function useTempsReel<T = any>(
   rappel: (donnees: T) => void,
   actif = true
 ) {
-  const rappelRef = useRef(rappel);
-  rappelRef.current = rappel;
+  const rappelRef = useDerniereValeur(rappel);
 
   useEffect(() => {
     if (!actif) return;
@@ -168,7 +168,7 @@ export function useTempsReel<T = any>(
     return () => {
       connexion.off(evenement, ecouteur);
     };
-  }, [evenement, actif]);
+  }, [evenement, actif, rappelRef]);
 }
 
 /** Suit un salon tant que l'écran est ouvert (voir `suivreSalon`). */
@@ -179,26 +179,29 @@ export function useSalon(type: 'store' | 'order', id: string | null | undefined)
   }, [type, id]);
 }
 
-/** La connexion en direct est-elle établie. */
-export function useConnexionTempsReel() {
-  const [connecte, setConnecte] = useState(false);
+function suivreConnexion(avertir: () => void) {
+  const connexion = connexionTempsReel();
+  connexion.on('connect', avertir);
+  connexion.on('disconnect', avertir);
+  return () => {
+    connexion.off('connect', avertir);
+    connexion.off('disconnect', avertir);
+  };
+}
 
-  useEffect(() => {
-    const connexion = connexionTempsReel();
-    const ouvert = () => setConnecte(true);
-    const ferme = () => setConnecte(false);
+const sansAbonnement = () => () => {};
 
-    setConnecte(connexion.connected);
-    connexion.on('connect', ouvert);
-    connexion.on('disconnect', ferme);
-
-    return () => {
-      connexion.off('connect', ouvert);
-      connexion.off('disconnect', ferme);
-    };
-  }, []);
-
-  return connecte;
+/**
+ * La connexion en direct est-elle établie. Inactif, le hook n'ouvre pas la
+ * connexion et répond non.
+ */
+export function useConnexionTempsReel(actif = true) {
+  return useSyncExternalStore(
+    actif ? suivreConnexion : sansAbonnement,
+    // Lue sans l'ouvrir : c'est l'abonnement qui l'ouvre, après le rendu.
+    () => actif && (socket?.connected ?? false),
+    () => false
+  );
 }
 
 /** Ce que le serveur annonce après chaque écriture réussie. */
@@ -241,8 +244,7 @@ export function useDonneesModifiees(
   options: OptionsModifications = {}
 ) {
   const { storeId, orgId, id, delaiMs = 300, actif = true } = options;
-  const relireRef = useRef(relire);
-  relireRef.current = relire;
+  const relireRef = useDerniereValeur(relire);
 
   const liste = Array.isArray(ressources) ? ressources : [ressources];
   const cle = liste.join('|');
@@ -290,7 +292,7 @@ export function useDonneesModifiees(
       connexion.off('donnees-modifiees', surModification);
       connexion.off('connect', surConnexion);
     };
-  }, [cle, storeId, orgId, id, delaiMs, actif]);
+  }, [cle, storeId, orgId, id, delaiMs, actif, relireRef]);
 }
 
 /**

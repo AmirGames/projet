@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { BarChart3, Calendar } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface FinancialReport {
   id: string;
@@ -62,7 +63,7 @@ export default function FinancialReportsPage() {
     }
   }, [offset, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchReports();
   }, [offset, fetchReports]);
 

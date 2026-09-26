@@ -2,13 +2,14 @@
 
 import { useTranslations } from 'next-intl';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
 import { DossierCommercant } from '@/components/DossierCommercant';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -61,13 +62,6 @@ export default function MerchantDetailPage() {
     }
   };
 
-  // Sa formule, son statut, ses boutiques, ses commandes : la fiche suit.
-  useDonneesModifiees(
-    ['organizations', 'merchant-profile', 'stores', 'orders', 'tickets'],
-    () => fetchMerchant(true),
-    { orgId: merchantId, delaiMs: 1000 }
-  );
-
   // silencieux : une relecture en direct ne touche pas à la formule en cours
   // de choix, et un échec passager ne renvoie pas à la liste.
   const fetchMerchant = useCallback(async (silencieux = false) => {
@@ -94,7 +88,14 @@ export default function MerchantDetailPage() {
     }
   }, [merchantId, router, t]);
 
-  useEffect(() => {
+  // Sa formule, son statut, ses boutiques, ses commandes : la fiche suit.
+  useDonneesModifiees(
+    ['organizations', 'merchant-profile', 'stores', 'orders', 'tickets'],
+    () => fetchMerchant(true),
+    { orgId: merchantId, delaiMs: 1000 }
+  );
+
+  useEffectChargement(() => {
     fetchMerchant();
   }, [merchantId, fetchMerchant]);
 

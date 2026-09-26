@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Tag, Plus, Trash2, Edit2 } from "lucide-react";
 
 import { useCurrentStore } from "@/lib/current-store";
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -69,7 +70,7 @@ export default function ProductTagPage() {
     }
   }, [skip, storeId, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (!storeId) return;
     fetchTags();
   }, [skip, storeId, fetchTags]);

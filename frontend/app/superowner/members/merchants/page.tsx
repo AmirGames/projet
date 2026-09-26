@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ShoppingCart, Search, Filter, Eye, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,10 +25,6 @@ export default function MerchantsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'closed'>('all');
 
-  useEffect(() => {
-    fetchMerchants();
-  }, []);
-
   const fetchMerchants = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -48,6 +45,10 @@ export default function MerchantsPage() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchMerchants();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

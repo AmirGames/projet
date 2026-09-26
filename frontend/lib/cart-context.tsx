@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useHydrate } from '@/lib/navigateur';
 
 export interface CartItem {
   id: string; // unique key for this item in cart
@@ -43,10 +44,12 @@ const CLE = 'zupone-panier-client';
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartStore[]>([]);
+  const hydrate = useHydrate();
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Load from localStorage on mount
-  useEffect(() => {
+  // Le panier enregistré, lu une fois dans le navigateur.
+  if (hydrate && !isHydrated) {
+    setIsHydrated(true);
     const savedCart = localStorage.getItem(CLE);
     if (savedCart) {
       try {
@@ -55,8 +58,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         console.error('Failed to parse cart from localStorage:', err);
       }
     }
-    setIsHydrated(true);
-  }, []);
+  }
 
   // Save to localStorage when cart changes
   useEffect(() => {

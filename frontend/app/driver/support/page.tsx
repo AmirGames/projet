@@ -6,6 +6,7 @@ import { connexionTempsReel } from '@/lib/temps-reel';
 import { LifeBuoy } from 'lucide-react';
 
 import { FilSupport, type MessageSupport } from '@/components/FilSupport';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -45,7 +46,7 @@ export default function SupportLivreurPage() {
     }
   }, [router]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

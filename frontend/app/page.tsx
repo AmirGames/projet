@@ -3,20 +3,13 @@
 import { PAGES_LEGALES } from '@/lib/editeur';
 import Link from '@/components/LienRegional';
 import { useAuth } from "@/lib/auth-context";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useEffectChargement } from "@/lib/use-effect-chargement";
 
 export default function Home() {
   const { user, isLoading } = useAuth();
   const [roles, setRoles] = useState<any>(null);
   const [rolesLoading, setRolesLoading] = useState(true);
-
-  useEffect(() => {
-    if (user && !isLoading) {
-      fetchRoles();
-    } else if (!user) {
-      setRolesLoading(false);
-    }
-  }, [user, isLoading]);
 
   const fetchRoles = async () => {
     try {
@@ -37,6 +30,14 @@ export default function Home() {
       setRolesLoading(false);
     }
   };
+
+  if (!user && rolesLoading) setRolesLoading(false);
+
+  useEffectChargement(() => {
+    if (user && !isLoading) {
+      fetchRoles();
+    }
+  }, [user, isLoading]);
 
   const isMerchant = roles?.merchant?.active ?? false;
   const isDriver = roles?.driver?.active ?? false;

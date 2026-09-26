@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Users, Plus, Trash2 } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -62,7 +63,7 @@ export default function UserManagementPage() {
     }
   }, [offset, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchAdmins();
   }, [offset, fetchAdmins]);
 

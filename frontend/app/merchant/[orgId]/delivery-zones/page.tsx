@@ -8,6 +8,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { useTranslations } from 'next-intl';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 // Leaflet touche à `window` dès son chargement : la carte ne peut pas être
 // rendue côté serveur.
@@ -105,17 +106,6 @@ export default function DeliveryZonesPage() {
       // La carte est un confort : son absence ne doit pas emporter la page.
     }
   }, [storeId]);
-
-  // Une zone dessinée par un collègue, l'adresse de la boutique déplacée :
-  // la carte suit.
-  useDonneesModifiees(
-    ['delivery-zones', 'stores'],
-    () => {
-      fetchZones();
-      chargerBoutique();
-    },
-    { storeId, actif: Boolean(storeId) }
-  );
 
   /**
    * Qui livre. Avec les livreurs de la plateforme, ces zones ne servent pas :
@@ -226,7 +216,18 @@ export default function DeliveryZonesPage() {
     }
   }, [storeId]);
 
-  useEffect(() => {
+  // Une zone dessinée par un collègue, l'adresse de la boutique déplacée :
+  // la carte suit.
+  useDonneesModifiees(
+    ['delivery-zones', 'stores'],
+    () => {
+      fetchZones();
+      chargerBoutique();
+    },
+    { storeId, actif: Boolean(storeId) }
+  );
+
+  useEffectChargement(() => {
     if (storeId) {
       fetchZones();
       chargerBoutique();

@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { useTranslations } from 'next-intl';
 import type { Circle, Polygon, Polyline, CircleMarker, Map as CarteLeaflet, Marker } from 'leaflet';
 
@@ -111,8 +112,7 @@ export function CarteZones({
 
   // Les rappels changent à chaque rendu : les garder dans une référence évite
   // de redéclarer les écouteurs de la carte à chaque frappe au clavier.
-  const rappels = useRef({ onPosition, onRayon, onSommet, dessin });
-  rappels.current = { onPosition, onRayon, onSommet, dessin };
+  const rappels = useDerniereValeur({ onPosition, onRayon, onSommet, dessin });
 
   // ===== La carte, une seule fois =====
   useEffect(() => {
@@ -193,7 +193,7 @@ export function CarteZones({
     }
 
     carte.current.setView([latitude, longitude], Math.max(carte.current.getZoom(), 12));
-  }, [prete, latitude, longitude, t]);
+  }, [prete, latitude, longitude, t, rappels]);
 
   // Le point n'est déplaçable que tant que la page le permet (onPosition) :
   // une boutique posée d'un clic devient fixe aussitôt. Sans cela, le point
@@ -350,7 +350,7 @@ export function CarteZones({
     } else {
       poignee.current.setLatLng(positionPoignee);
     }
-  }, [prete, latitude, longitude, zoneActive, t]);
+  }, [prete, latitude, longitude, zoneActive, t, rappels]);
 
   return (
     <div>

@@ -23,6 +23,9 @@ export function GlisserPourValider({ libelle, onValide, desactive, enCours }: Pr
   const depart = useRef<number | null>(null);
   const [decalage, setDecalage] = useState(0);
   const [glisse, setGlisse] = useState(false);
+  // La course du curseur, mesurée au début du geste : le rendu ne lit pas
+  // la largeur de la piste dans la ref.
+  const [longueur, setLongueur] = useState(0);
 
   const TAILLE_CURSEUR = 56;
   const course = () => Math.max(0, (piste.current?.clientWidth ?? 0) - TAILLE_CURSEUR - 8);
@@ -33,6 +36,7 @@ export function GlisserPourValider({ libelle, onValide, desactive, enCours }: Pr
     if (bloque) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     depart.current = e.clientX - decalage;
+    setLongueur(course());
     setGlisse(true);
   };
 
@@ -66,7 +70,7 @@ export function GlisserPourValider({ libelle, onValide, desactive, enCours }: Pr
     }
   };
 
-  const avancement = course() > 0 ? decalage / course() : 0;
+  const avancement = longueur > 0 ? decalage / longueur : 0;
 
   return (
     <div

@@ -1,16 +1,22 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { filtrePays } from '@/i18n/regions';
 import { useRegion } from '@/lib/region-context';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { MapPin, Star, Clock, TrendingUp, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
-import { lireAdresseLivraison, type AdresseLivraison } from '@/lib/adresseLivraison';
+import {
+  lireAdresseLivraison,
+  useAdresseLivraisonEnregistree,
+  type AdresseLivraison,
+} from '@/lib/adresseLivraison';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -64,14 +70,16 @@ export default function ClientHomePage() {
   const t = useTranslations('clientHome');
   const region = useRegion();
   const [stores, setStores] = useState<Store[]>([]);
-  const [filteredStores, setFilteredStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   // `undefined` tant que le navigateur n'a pas été lu.
-  const [adresse, setAdresse] = useState<AdresseLivraison | null | undefined>(undefined);
+  const adresseEnregistree = useAdresseLivraisonEnregistree();
+  const [adresseChoisie, setAdresse] = useState<AdresseLivraison | null | undefined>(undefined);
+  const adresse = adresseChoisie !== undefined ? adresseChoisie : adresseEnregistree;
   const [sortBy, setSortBy] = useState('rating');
   // Les familles de cuisine (Pizzas, Sushis…), et celle que le client a choisie.
   const [familles, setFamilles] = useState<Famille[]>([]);
   const [familleChoisie, setFamilleChoisie] = useState<string | null>(null);
+  const router = useRouter();
   // Les commerces mis en favoris par le client connecté.
   const [favoris, setFavoris] = useState<Set<string>>(new Set());
 
@@ -93,7 +101,7 @@ export default function ClientHomePage() {
     e.stopPropagation();
     const token = localStorage.getItem('accessToken');
     if (!token) {
-      window.location.href = '/login';
+      router.push('/login');
       return;
     }
     const estFavori = favoris.has(storeId);
@@ -177,13 +185,12 @@ export default function ClientHomePage() {
 
   // L'adresse enregistrée lors d'une visite précédente sert d'emblée ; sans
   // elle, on ouvre directement la saisie.
-  useEffect(() => {
-    const enregistree = lireAdresseLivraison();
-    setAdresse(enregistree);
-    chargerPour(enregistree);
-  }, [chargerPour]);
+  const stockageLu = adresseEnregistree !== undefined;
+  useEffectChargement(() => {
+    if (stockageLu) chargerPour(lireAdresseLivraison());
+  }, [stockageLu, chargerPour]);
 
-  useEffect(() => {
+  const filteredStores = useMemo(() => {
     // Copie : trier `stores` en place modifiait l'état sans que React le sache.
     const filtered = familleChoisie
       ? stores.filter((store) => store.famille === familleChoisie)
@@ -203,7 +210,7 @@ export default function ClientHomePage() {
       (a, b) => Number(b.livraison?.livrable !== false) - Number(a.livraison?.livrable !== false)
     );
 
-    setFilteredStores(filtered);
+    return filtered;
   }, [stores, sortBy, familleChoisie]);
 
   return (
@@ -356,7 +363,6 @@ export default function ClientHomePage() {
                         }`}
                       >
                         {store.settings?.logo ? (
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={store.settings.logo}
                             alt={store.name}

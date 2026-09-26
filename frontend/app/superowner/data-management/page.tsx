@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Database, Clock, Download, RotateCcw, Trash2 } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface DataStats {
   totalRecords: number;
@@ -57,7 +58,7 @@ export default function DataManagementPage() {
     }
   }, [t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchData();
   }, [fetchData]);
 

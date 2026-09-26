@@ -1,9 +1,10 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -46,7 +47,7 @@ function Confirmation() {
     }
   }, [jeton]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     confirmer();
   }, [confirmer]);
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Users, Search, Filter, Eye, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,10 +25,6 @@ export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'inactive'>('all');
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
   const fetchClients = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -48,6 +45,10 @@ export default function ClientsPage() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchClients();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

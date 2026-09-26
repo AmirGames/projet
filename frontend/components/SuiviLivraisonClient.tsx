@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import type { Map as CarteLeaflet, CircleMarker } from 'leaflet';
 import { MapPin, Clock, Truck, AlertCircle } from 'lucide-react';
 import L from 'leaflet';
@@ -76,8 +77,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
   const [error, setError] = useState('');
   const socketRef = useRef<Socket | null>(null);
   // La destination lue par le gestionnaire WebSocket, sans valeur figée.
-  const destinationRef = useRef<[number, number]>([delivery.deliveryLat, delivery.deliveryLng]);
-  destinationRef.current = [delivery.deliveryLat, delivery.deliveryLng];
+  const destinationRef = useDerniereValeur<[number, number]>([delivery.deliveryLat, delivery.deliveryLng]);
 
   // Initialiser la carte
   useEffect(() => {
@@ -262,7 +262,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
       socket.off('connect', surConnexion);
       quitter();
     };
-  }, [orderId]);
+  }, [orderId, destinationRef]);
 
   const distance =
     estUneCoordonnee(currentDelivery.driverLat) &&

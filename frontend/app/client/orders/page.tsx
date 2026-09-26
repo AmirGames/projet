@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -8,6 +8,7 @@ import { ArrowLeft, Clock, MapPin, ChevronRight } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Order {
@@ -49,9 +50,6 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
 
-  // Acceptée, en route, livrée : chaque étape apparaît sans recharger.
-  useDonneesModifiees('orders', () => loadOrders(true));
-
   // silencieux : une relecture en direct ne vide pas la liste le temps de la
   // réponse.
   const loadOrders = useCallback(async (silencieux = false) => {
@@ -78,7 +76,10 @@ export default function OrdersPage() {
     }
   }, [router]);
 
-  useEffect(() => {
+  // Acceptée, en route, livrée : chaque étape apparaît sans recharger.
+  useDonneesModifiees('orders', () => loadOrders(true));
+
+  useEffectChargement(() => {
     loadOrders();
   }, [loadOrders]);
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Analytics {
   totalRevenue: number;
@@ -84,7 +85,7 @@ export default function AdminAnalytics() {
     }
   }, []);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchAnalytics();
   }, [fetchAnalytics]);
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Search, Download, Filter } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -20,10 +21,6 @@ export default function AuditLogsPage() {
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
-
   const fetchLogs = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -40,6 +37,10 @@ export default function AuditLogsPage() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchLogs();
+  }, []);
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = log.admin.email.includes(search) || log.target.includes(search);

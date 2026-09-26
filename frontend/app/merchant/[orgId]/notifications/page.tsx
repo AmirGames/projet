@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Bell, Trash2, Check } from "lucide-react";
 
 import { useCurrentStore } from "@/lib/current-store";
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -85,7 +86,7 @@ export default function NotificationsPage() {
     }
   }, [storeId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (!storeId) return;
     fetchNotifications();
     fetchUnreadCount();

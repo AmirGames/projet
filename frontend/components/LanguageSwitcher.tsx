@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Globe, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NOM_COOKIE_LANGUE, type Langue } from '@/i18n/langues';
 import {
   NOM_COOKIE_REGION,
@@ -17,6 +17,10 @@ import { ajouterRegion, separerRegion } from '@/i18n/chemins-regionaux';
 import { useRegion } from '@/lib/region-context';
 
 const UN_AN = 60 * 60 * 24 * 365;
+
+function poserCookie(nom: string, valeur: string) {
+  document.cookie = `${nom}=${valeur};path=/;max-age=${UN_AN};samesite=lax`;
+}
 
 /**
  * Le sélecteur de région : le bouton affiche le pays en cours, et ouvre une
@@ -33,11 +37,14 @@ export function LanguageSwitcher() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const region = useRegion() ?? regionParDefaut(locale);
-  const [suggerees, setSuggerees] = useState<Region[]>([]);
+  // La fenêtre ne s'ouvre que dans le navigateur : navigator y existe.
+  const suggerees = useMemo(
+    () => (isOpen ? regionsSuggerees(region, navigator.languages ?? [navigator.language]) : []),
+    [isOpen, region]
+  );
 
   useEffect(() => {
     if (!isOpen) return;
-    setSuggerees(regionsSuggerees(region, navigator.languages ?? [navigator.language]));
 
     const fermerAuClavier = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsOpen(false);
@@ -52,8 +59,8 @@ export function LanguageSwitcher() {
   }, [isOpen, region]);
 
   const choisir = (choix: Region) => {
-    document.cookie = `${NOM_COOKIE_REGION}=${choix.code};path=/;max-age=${UN_AN};samesite=lax`;
-    document.cookie = `${NOM_COOKIE_LANGUE}=${choix.langue};path=/;max-age=${UN_AN};samesite=lax`;
+    poserCookie(NOM_COOKIE_REGION, choix.code);
+    poserCookie(NOM_COOKIE_LANGUE, choix.langue);
     setIsOpen(false);
 
     const { region: dansAdresse, reste } = separerRegion(window.location.pathname);

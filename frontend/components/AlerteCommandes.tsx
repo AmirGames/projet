@@ -6,6 +6,7 @@ import { BellRing, Bike, Volume2, X } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { EVENEMENT_COMMANDES_CHANGEES, delaiRestant } from '@/lib/reponse-commande';
 import { useDonneesModifiees, useTempsReel } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -77,8 +78,11 @@ export function AlerteCommandes({ orgId }: { orgId: string }) {
   }, [storeId]);
 
   // Au chargement, puis régulièrement, puis à chaque action faite ici.
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
+  }, [charger]);
+
+  useEffect(() => {
     const minuteur = setInterval(charger, RELECTURE_MS);
     window.addEventListener(EVENEMENT_COMMANDES_CHANGEES, charger);
 
