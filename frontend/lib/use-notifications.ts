@@ -1,4 +1,4 @@
-import { signalerErreur } from '@/lib/erreurs';
+import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
 import { useState, useEffect, useCallback } from 'react';
 import { useTempsReel } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -19,6 +19,7 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
@@ -26,6 +27,7 @@ export function useNotifications() {
 
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch(`${API_URL}/api/notifications?limit=20`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -34,9 +36,19 @@ export function useNotifications() {
         const data = await response.json();
         setNotifications(data.data);
         setUnreadCount(data.unreadCount);
+      } else if (response.status >= 500) {
+        setError('Erreur serveur : impossible de charger les notifications.');
+        signalerErreur('Server error fetching notifications:', response.status);
+      } else {
+        setError('Erreur : impossible de charger les notifications.');
       }
     } catch (err) {
       signalerErreur('Error fetching notifications:', err);
+      if (estErreurReseau(err)) {
+        setError('Erreur réseau : vérifiez votre connexion.');
+      } else {
+        setError('Erreur : impossible de charger les notifications.');
+      }
     } finally {
       setLoading(false);
     }
@@ -47,10 +59,14 @@ export function useNotifications() {
     if (!token) return;
 
     try {
-      await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (!response.ok && response.status >= 500) {
+        setError('Erreur serveur : impossible de marquer comme lu.');
+      }
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
@@ -58,6 +74,9 @@ export function useNotifications() {
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       signalerErreur('Error marking notification as read:', err);
+      if (estErreurReseau(err)) {
+        setError('Erreur réseau : impossible de marquer comme lu.');
+      }
     }
   }, []);
 
@@ -66,15 +85,22 @@ export function useNotifications() {
     if (!token) return;
 
     try {
-      await fetch(`${API_URL}/api/notifications/read-all`, {
+      const response = await fetch(`${API_URL}/api/notifications/read-all`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (!response.ok && response.status >= 500) {
+        setError('Erreur serveur : impossible de marquer tous comme lus.');
+      }
 
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
       signalerErreur('Error marking all as read:', err);
+      if (estErreurReseau(err)) {
+        setError('Erreur réseau : impossible de marquer tous comme lus.');
+      }
     }
   }, []);
 
@@ -110,6 +136,7 @@ export function useNotifications() {
     notifications,
     unreadCount,
     loading,
+    error,
     markAsRead,
     markAllAsRead,
     refetch: fetchNotifications,

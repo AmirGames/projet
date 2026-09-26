@@ -1,4 +1,4 @@
-import { signalerErreur } from '@/lib/erreurs';
+import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
 
 export interface Theme {
   id: string;
@@ -139,9 +139,16 @@ export const loadThemeFromAPI = async (apiUrl: string, token: string) => {
       const theme = getTheme(themeName);
       applyTheme(theme);
       return theme;
+    } else if (response.status >= 500) {
+      signalerErreur('Erreur serveur lors du chargement du thème:', response.status);
+    } else {
+      signalerErreur('Erreur lors du chargement du thème:', response.status);
     }
   } catch (error) {
     signalerErreur('Erreur lors du chargement du thème:', error);
+    if (estErreurReseau(error)) {
+      // Erreur réseau : utiliser le thème sauvegardé comme repli
+    }
   }
 
   return loadSavedTheme();
@@ -160,9 +167,16 @@ export const saveThemeToAPI = async (themeId: string, apiUrl: string, token: str
 
     if (response.ok) {
       return await response.json();
+    } else if (response.status >= 500) {
+      signalerErreur('Erreur serveur lors de la sauvegarde du thème:', response.status);
+    } else {
+      signalerErreur('Erreur lors de la sauvegarde du thème:', response.status);
     }
   } catch (error) {
     signalerErreur('Erreur lors de la sauvegarde du thème:', error);
+    if (!estErreurReseau(error)) {
+      // Log non-network errors
+    }
   }
 
   return null;
