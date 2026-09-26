@@ -1010,7 +1010,7 @@
     "confirmDelete": "Are you sure you want to delete this product?",
     "successProductDelete": "✅ Product deleted",
     "errorProductDelete": "❌ Error deleting product",
-    "outOfStockProducts": "{count} product{plural}out of stock{plural} — not visible for ordering",
+    "outOfStockProducts": "{count, plural, one {# product} other {# products}} out of stock — not visible for ordering",
     "restockButton": "Restock",
     "dragToReorder": "Drag to reorder",
     "autoSortDisabled": "Automatic sorting active — switch to \"Manual order\" to reorder manually",
