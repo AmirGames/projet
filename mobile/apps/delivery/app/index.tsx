@@ -18,6 +18,7 @@ import SafetyCheck from '../components/SafetyCheck';
 import OfferSheet from '../components/OfferSheet';
 import DashboardScreen, { EarningsSummary } from '../components/screens/DashboardScreen';
 import DeliveryScreen from '../components/screens/DeliveryScreen';
+import TourneeScreen from '../components/screens/TourneeScreen';
 import HistoryScreen from '../components/screens/HistoryScreen';
 import EarningsScreen from '../components/screens/EarningsScreen';
 import ReviewsScreen from '../components/screens/ReviewsScreen';
@@ -53,8 +54,10 @@ export default function DeliveryApp() {
   const [activeDeliveries, setActiveDeliveries] = useState<Delivery[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [openDeliveryId, setOpenDeliveryId] = useState<string | null>(null);
-  // La dernière course suivie dans l'onglet « Course en cours ».
-  const [lastCourseId, setLastCourseId] = useState<string | null>(null);
+  // La course ouverte dans l'onglet « Course en cours » : choisie dans la
+  // tournée, ou la seule en cours. Elle reste à l'écran une fois livrée,
+  // pour l'écran de fin.
+  const [courseSel, setCourseSel] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [togglingOnline, setTogglingOnline] = useState(false);
   const [answeringOfferId, setAnsweringOfferId] = useState<string | null>(null);
@@ -267,12 +270,12 @@ export default function DeliveryApp() {
     .map((d) => withPendingSteps(d, outbox.pending))
     .filter((d) => d.status !== 'DELIVERED');
 
-  const activeId = visibleDeliveries[0]?.id ?? null;
+  const singleId = visibleDeliveries.length === 1 ? visibleDeliveries[0].id : null;
   useEffect(() => {
-    if (tab === 'course' && activeId) setLastCourseId(activeId);
+    if (tab === 'course' && singleId && !courseSel) setCourseSel(singleId);
     // Ailleurs que sur l'onglet, une course finie n'a plus à y revenir.
-    if (tab !== 'course' && !activeId) setLastCourseId(null);
-  }, [tab, activeId]);
+    if (tab !== 'course') setCourseSel(null);
+  }, [tab, singleId]);
 
   // Les étapes faites sans réseau partent au lancement, au retour dans
   // l'application et à la reconnexion (le retour du réseau, lui, est suivi
@@ -451,12 +454,21 @@ export default function DeliveryApp() {
       const res = await apiFetch<{ data?: { id?: string } }>(`/api/drivers/offers/${offer.id}/${answer}`, token, {
         method: 'POST',
       });
-      setOffers((list) => list.filter((o) => o.id !== offer.id));
+      // Un lot se répond d'un geste : toutes ses courses quittent l'écran.
+      setOffers((list) => list.filter((o) => o.id !== offer.id && !(offer.batchId && o.batchId === offer.batchId)));
       if (answer === 'accept') {
         await loadAll(token);
-        // Direction la course : adresse de retrait et itinéraire.
-        const deliveryId = res.data?.id || offer.deliveryId;
-        if (deliveryId) openDelivery(deliveryId);
+        if (offer.batchId || offer.ajout || visibleDeliveries.length > 0) {
+          // Plusieurs courses : direction la tournée, dans l'ordre des arrêts.
+          setOpenDeliveryId(null);
+          setMenuOpen(false);
+          setCourseSel(null);
+          setTab('course');
+        } else {
+          // Direction la course : adresse de retrait et itinéraire.
+          const deliveryId = res.data?.id || offer.deliveryId;
+          if (deliveryId) openDelivery(deliveryId);
+        }
       }
     } catch (e: any) {
       Alert.alert('Course', errorMessage(e, "La réponse n'a pas été enregistrée"));
@@ -554,7 +566,7 @@ export default function DeliveryApp() {
   // « Tout va bien ? » : veille sur le livreur tant qu'une course est en cours.
   const safetyCheck = (
     <>
-      <SafetyCheck token={token} delivery={visibleDeliveries[0] ?? null} position={position} />
+      <SafetyCheck token={token} deliveries={visibleDeliveries} position={position} />
       {/* Une course proposée passe devant tout le reste, comme un appel. */}
       <OfferSheet offers={offers} position={position} answeringOfferId={answeringOfferId} onAnswer={answerOffer} />
     </>
@@ -575,6 +587,7 @@ export default function DeliveryApp() {
           onChanged={() => loadAll(token)}
           onTrackingChange={setTracking}
           todayEarnings={earnings?.today ?? null}
+          otherActive={visibleDeliveries.filter((d) => d.id !== openDeliveryId).length}
         />
         {safetyCheck}
       </SafeAreaView>
@@ -585,7 +598,7 @@ export default function DeliveryApp() {
   // L'onglet « Course en cours » reste sur la course qui vient de se
   // terminer : sans cela, elle disparaissait avec sa remise, et l'écran de
   // fin avec elle.
-  const courseTabId = currentDelivery?.id ?? lastCourseId;
+  const courseTabId = courseSel ?? singleId;
   const headerSubtitle = (
     <View style={styles.subtitleRow}>
       <View style={[styles.liveDot, { backgroundColor: online && connected ? '#7CFC8A' : '#FFB3B3' }]} />
@@ -634,6 +647,7 @@ export default function DeliveryApp() {
     }
     if (tab === 'account') return <AccountScreen token={token} onBack={back} onDriverLoaded={onDriverLoaded} />;
     if (tab === 'course') {
+      const others = visibleDeliveries.filter((d) => d.id !== courseTabId).length;
       if (courseTabId) {
         return (
           <DeliveryScreen
@@ -643,12 +657,26 @@ export default function DeliveryApp() {
             position={position}
             navigationApp={prefs.navigationApp}
             onBack={() => {
-              setLastCourseId(null);
-              back();
+              setCourseSel(null);
+              // Il reste des courses : retour à la tournée (ou à la suivante).
+              if (others === 0) back();
             }}
             onChanged={() => loadAll(token)}
             onTrackingChange={setTracking}
             todayEarnings={earnings?.today ?? null}
+            otherActive={others}
+          />
+        );
+      }
+      if (visibleDeliveries.length > 1) {
+        return (
+          <TourneeScreen
+            token={token}
+            deliveries={visibleDeliveries}
+            position={position}
+            navigationApp={prefs.navigationApp}
+            onOpenDelivery={setCourseSel}
+            onTrackingChange={setTracking}
           />
         );
       }
@@ -746,7 +774,7 @@ export default function DeliveryApp() {
               <Text style={styles.tabIcon}>🛵</Text>
               {currentDelivery && (
                 <View style={styles.tabBadge}>
-                  <Text style={styles.tabBadgeText}>1</Text>
+                  <Text style={styles.tabBadgeText}>{visibleDeliveries.length}</Text>
                 </View>
               )}
             </View>

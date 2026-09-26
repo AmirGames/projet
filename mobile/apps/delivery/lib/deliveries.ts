@@ -44,7 +44,27 @@ export interface Offer {
   /** Le point de livraison, à 50-100 m près tant que la course n'est pas acceptée. */
   deliveryLat?: number | null;
   deliveryLng?: number | null;
+  /** Courses proposées ensemble : un seul « Accepter » vaut pour tout le lot. */
+  batchId?: string | null;
+  /** Proposée pendant une course, sur le trajet (« +1 course »). */
+  ajout?: boolean;
 }
+
+/** Un arrêt de la tournée : un commerce où prendre, un client où remettre. */
+export interface Stop {
+  deliveryId: string;
+  orderId: string;
+  type: 'RETRAIT' | 'REMISE';
+  statutCourse: string;
+  commandePrete: boolean;
+  nom: string;
+  adresse: string;
+  lat: number | null;
+  lng: number | null;
+}
+
+/** Trois courses au plus à la fois (le serveur en décide, l'écran le dit). */
+export const MAX_COURSES = 3;
 
 export interface DeliveryItem {
   id?: string;

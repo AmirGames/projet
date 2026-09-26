@@ -32,6 +32,7 @@ export default function CompletionSummary({
   pending,
   todayEarnings,
   autoReturn,
+  remaining = 0,
   onBack,
 }: {
   delivery: Delivery;
@@ -41,6 +42,8 @@ export default function CompletionSummary({
   todayEarnings: number | null;
   /** Course terminée à l'instant : l'accueil revient seul. Pas depuis l'historique. */
   autoReturn: boolean;
+  /** Courses encore en cours (tournée) : le bouton mène à la suivante. */
+  remaining?: number;
   onBack: () => void;
 }) {
   const bilan = delivery.bilan;
@@ -126,7 +129,11 @@ export default function CompletionSummary({
 
       <TouchableOpacity style={styles.primaryButton} onPress={onBack}>
         <Text style={styles.primaryButtonText}>
-          {autoReturn ? 'Retour à l’accueil' : 'Retour'}
+          {!autoReturn
+            ? 'Retour'
+            : remaining > 0
+              ? `Course suivante · ${remaining} restante${remaining > 1 ? 's' : ''}`
+              : 'Retour à l’accueil'}
           {countdown != null ? ` (${countdown})` : ''}
         </Text>
       </TouchableOpacity>

@@ -20,18 +20,21 @@ const CHECK_EVERY_MS = 15_000;
  */
 export default function SafetyCheck({
   token,
-  delivery,
+  deliveries,
   position,
 }: {
   token: string;
-  /** La course en cours, ou rien. */
-  delivery: Delivery | null;
+  /** Les courses en cours (une tournée peut en compter trois). */
+  deliveries: Delivery[];
   position: Position | null;
 }) {
+  const delivery = deliveries[0] ?? null;
+  // Une clé stable : la surveillance ne repart pas à chaque rendu.
+  const key = deliveries.map((d) => `${d.id}:${d.status}`).join(',');
   const [open, setOpen] = useState(false);
   const anchor = useRef<{ lat: number; lng: number; since: number } | null>(null);
-  const state = useRef({ delivery, position, open });
-  state.current = { delivery, position, open };
+  const state = useRef({ deliveries, position, open });
+  state.current = { deliveries, position, open };
 
   // Chaque déplacement réel relance le compteur.
   useEffect(() => {
@@ -48,32 +51,31 @@ export default function SafetyCheck({
       anchor.current = null;
       setOpen(false);
     }
-  }, [delivery?.id]);
+  }, [key]);
 
   useEffect(() => {
     if (!delivery) return;
     const id = setInterval(() => {
-      const { delivery: d, position: p, open: shown } = state.current;
+      const { deliveries: list, position: p, open: shown } = state.current;
       const a = anchor.current;
-      if (!d || !p || !a || shown) return;
+      if (list.length === 0 || !p || !a || shown) return;
       if (Date.now() - a.since < STILL_AFTER_MS) return;
 
-      // Arrêt normal : au commerce avant la prise en charge, chez le client après.
-      const stop =
-        d.status === 'PICKED_UP'
-          ? d.latitude != null && d.longitude != null
-            ? { lat: d.latitude, lng: d.longitude }
-            : null
-          : d.pickupLat != null && d.pickupLng != null
-            ? { lat: d.pickupLat, lng: d.pickupLng }
-            : null;
-      if (stop && distanceM(p, stop) <= STOP_RADIUS_M) return;
+      // Arrêt normal : à un commerce avant la prise en charge, chez un client
+      // après — n'importe lequel de la tournée.
+      const stops = list.flatMap((d) => {
+        const pts: { lat: number; lng: number }[] = [];
+        if (d.pickupLat != null && d.pickupLng != null && d.status !== 'PICKED_UP') pts.push({ lat: d.pickupLat, lng: d.pickupLng });
+        if (d.latitude != null && d.longitude != null && d.status === 'PICKED_UP') pts.push({ lat: d.latitude, lng: d.longitude });
+        return pts;
+      });
+      if (stops.some((stop) => distanceM(p, stop) <= STOP_RADIUS_M)) return;
 
       setOpen(true);
       Vibration.vibrate([0, 600, 300, 600, 300, 600]);
     }, CHECK_EVERY_MS);
     return () => clearInterval(id);
-  }, [delivery?.id]);
+  }, [key]);
 
   const allGood = () => {
     // Trois nouvelles minutes avant de redemander.

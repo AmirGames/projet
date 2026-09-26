@@ -39,6 +39,9 @@ export default function OfferSheet({
 
   const live = offers.filter((o) => new Date(o.expiresAt).getTime() > now);
   const offer = live[0];
+  // Un lot s'affiche d'un bloc : même temps de réponse, un seul geste.
+  const group = offer?.batchId ? live.filter((o) => o.batchId === offer.batchId) : offer ? [offer] : [];
+  const others = live.length - group.length;
 
   useEffect(() => {
     if (!offer) return;
@@ -66,8 +69,12 @@ export default function OfferSheet({
     offer.deliveryLat != null && offer.deliveryLng != null ? { lat: offer.deliveryLat, lng: offer.deliveryLng } : null;
   const driver = position ? { lat: position.lat, lng: position.lng } : null;
 
-  // Durée et distance de toute la course : jusqu'au commerce, puis jusqu'au client.
-  const totalKm = (offer.approcheKm ?? 0) + (offer.distanceKm ?? 0);
+  // Durée et distance de toute la course : jusqu'au commerce, puis jusqu'au
+  // client. Pour un lot, une estimation : les clients sont proches les uns
+  // des autres, mais chaque trajet est compté en entier.
+  const totalKm = (offer.approcheKm ?? 0) + group.reduce((t, o) => t + (o.distanceKm ?? 0), 0);
+  const amount = group.reduce((t, o) => t + (Number(o.payout) || 0), 0);
+  const stores = [...new Set(group.map((o) => o.pickupStore || 'Commerce'))];
   const durationS = route?.durationS ?? (totalKm / CITY_SPEED_KMH) * 3600;
   const distanceM = route?.distanceM ?? totalKm * 1000;
 
@@ -93,14 +100,22 @@ export default function OfferSheet({
         <View style={styles.sheet}>
           <View style={styles.tags}>
             <View style={styles.tagMain}>
-              <Text style={styles.tagMainText}>🛵 Nouvelle course</Text>
+              <Text style={styles.tagMainText}>
+                {offer.ajout
+                  ? '➕ Course sur votre trajet'
+                  : group.length > 1
+                    ? `🛵 ${group.length} courses d’un coup`
+                    : '🛵 Nouvelle course'}
+              </Text>
             </View>
             <View style={styles.tagSoft}>
-              <Text style={styles.tagSoftText}>Rien que pour vous</Text>
+              <Text style={styles.tagSoftText}>
+                {offer.ajout ? 'En plus de votre course' : group.length > 1 ? 'Clients au même endroit' : 'Rien que pour vous'}
+              </Text>
             </View>
-            {live.length > 1 && (
+            {others > 0 && (
               <View style={styles.tagSoft}>
-                <Text style={styles.tagSoftText}>+{live.length - 1}</Text>
+                <Text style={styles.tagSoftText}>+{others}</Text>
               </View>
             )}
             <TouchableOpacity
@@ -114,9 +129,11 @@ export default function OfferSheet({
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.amount}>+ {formatEuros(offer.payout)}</Text>
+          <Text style={styles.amount}>+ {formatEuros(amount)}</Text>
           <View style={styles.guaranteed}>
-            <Text style={styles.guaranteedText}>Montant garanti</Text>
+            <Text style={styles.guaranteedText}>
+              {group.length > 1 ? `Montant garanti · ${group.length} courses payées chacune` : 'Montant garanti'}
+            </Text>
           </View>
 
           <View style={styles.divider} />
@@ -133,19 +150,27 @@ export default function OfferSheet({
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.stopName} numberOfLines={1}>
-                {offer.pickupStore || 'Commerce'}
+                {stores.join(' · ')}
               </Text>
-              {pickupLine ? (
+              {stores.length === 1 && pickupLine ? (
                 <Text style={styles.stopAddress} numberOfLines={1}>
                   {pickupLine}
                 </Text>
               ) : null}
               <Text style={[styles.stopName, { marginTop: 8 }]} numberOfLines={1}>
-                Livraison
+                {group.length > 1 ? `${group.length} livraisons` : 'Livraison'}
               </Text>
-              <Text style={styles.stopAddress} numberOfLines={1}>
-                {dropoffLine || 'Adresse exacte à l’acceptation'}
-              </Text>
+              {group.length > 1 ? (
+                group.map((o) => (
+                  <Text key={o.id} style={styles.stopAddress} numberOfLines={1}>
+                    {[o.deliveryAddress, o.deliveryCity].filter(Boolean).join(', ') || 'Adresse exacte à l’acceptation'}
+                  </Text>
+                ))
+              ) : (
+                <Text style={styles.stopAddress} numberOfLines={1}>
+                  {dropoffLine || 'Adresse exacte à l’acceptation'}
+                </Text>
+              )}
             </View>
           </View>
 
@@ -154,11 +179,15 @@ export default function OfferSheet({
             activeOpacity={0.85}
             onPress={() => onAnswer(offer, 'accept')}
             disabled={busy}
-            accessibilityLabel={`Accepter la course, ${Math.ceil(remaining / 1000)} secondes restantes`}
+            accessibilityLabel={`${group.length > 1 ? `Accepter les ${group.length} courses` : 'Accepter la course'}, ${Math.ceil(remaining / 1000)} secondes restantes`}
           >
             {/* Le vert foncé se retire à mesure que le temps de réponse file. */}
             <View style={[styles.acceptFill, { width: `${fraction * 100}%` }]} />
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.acceptText}>Accepter</Text>}
+            {busy ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.acceptText}>{group.length > 1 ? `Accepter les ${group.length}` : 'Accepter'}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>

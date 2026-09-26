@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, RefreshControl, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
-import { Delivery, deliveryStatus, Driver, shortId } from '../../lib/deliveries';
+import { Delivery, deliveryStatus, Driver, MAX_COURSES, shortId } from '../../lib/deliveries';
 import type { BackgroundState, GpsState } from '../../lib/useDriverLocation';
 import { COLORS, themedStyles } from '../ui';
 
@@ -199,7 +199,9 @@ export default function DashboardScreen({
                 ? driver?.isAvailable
                   ? 'Vous recevez les courses proches de vous.'
                   : activeDeliveries.length
-                    ? 'Course en cours : terminez-la pour en recevoir une autre.'
+                    ? activeDeliveries.length >= MAX_COURSES
+                      ? `${MAX_COURSES} courses en cours : terminez-en une pour en recevoir une autre.`
+                      : 'Course en cours : d’autres courses sur votre trajet peuvent s’y ajouter.'
                     : 'Aucune course ne vous est proposée pour le moment.'
                 : 'Passez en ligne pour recevoir des courses.'}
             </Text>
@@ -243,7 +245,9 @@ export default function DashboardScreen({
 
         {activeDeliveries.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Course en cours</Text>
+            <Text style={styles.cardTitle}>
+              {activeDeliveries.length > 1 ? `Tournée · ${activeDeliveries.length} courses` : 'Course en cours'}
+            </Text>
             {activeDeliveries.map((d, i, list) => (
               <TouchableOpacity
                 key={d.id}

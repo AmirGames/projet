@@ -27,6 +27,14 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
   gains du jour ; retour à l'accueil au bout de 20 s (ou tout de suite), sauf
   si le livreur touche l'écran. Depuis l'historique, le même récapitulatif,
   sans retour automatique.
+- **Jusqu'à 3 courses à la fois** : un **lot** de commandes qui vont au même
+  endroit (même commerce ou commerce sur le trajet, clients à moins de 2 km
+  les uns des autres ou sur le trajet) se propose d'un bloc, un seul
+  « Accepter » pour tout ; une course **« sur votre trajet »** peut s'ajouter
+  pendant une course. L'onglet « Course en cours » devient alors une
+  **tournée** : les arrêts dans l'ordre (le serveur le calcule, un retrait
+  avant sa remise), le prochain en tête ; chaque course se prend et se remet
+  comme une course seule, et l'écran de fin mène à la suivante.
 - **Proposition de course plein écran** : trajet complet sur la carte, montant
   garanti, durée et distance totales, bouton « Accepter » qui se vide avec le
   temps de réponse.
@@ -95,7 +103,7 @@ app/index.tsx              écran racine : session, onglets, tiroir, bandeau
 components/ui.tsx          en-tête, cartes, lignes, chargement (commun au commerçant)
 components/SlideToConfirm  curseur « glisser pour valider »
 components/LiveMap         carte de la course en direct (Leaflet dans une WebView)
-components/screens/        un fichier par écran
+components/screens/        un fichier par écran (TourneeScreen : plusieurs courses)
 lib/api.ts                 appels au serveur, format des montants
 lib/session.ts             session et préférences (SecureStore)
 lib/deliveries.ts          types, statuts, distances, lancement du GPS

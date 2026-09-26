@@ -61,6 +61,7 @@ export default function DeliveryScreen({
   onChanged,
   onTrackingChange,
   todayEarnings,
+  otherActive = 0,
 }: {
   deliveryId: string;
   token: string;
@@ -72,6 +73,8 @@ export default function DeliveryScreen({
   onTrackingChange: (tracking: Tracking) => void;
   /** Gains du jour, affichés à la fin de la course. */
   todayEarnings: number | null;
+  /** Les autres courses en cours (tournée) : la fin de celle-ci mène à la suivante. */
+  otherActive?: number;
 }) {
   const [serverDelivery, setDelivery] = useState<Delivery | null>(null);
   // Affichée depuis le téléphone, faute de réseau : peut dater un peu.
@@ -444,6 +447,7 @@ export default function DeliveryScreen({
           pending={pendingHere.length > 0}
           todayEarnings={todayEarnings}
           autoReturn={activeOnOpen.current === true}
+          remaining={otherActive}
           onBack={onBack}
         />
       </View>
