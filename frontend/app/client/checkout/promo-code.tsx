@@ -5,7 +5,7 @@ import { Tag, AlertCircle, Check } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface PromoCodeProps {
   /** La boutique qui accorde la remise : la route l'exige. */
@@ -38,7 +38,7 @@ export function PromoCode({ storeId, orderAmount, onApply }: PromoCodeProps) {
        * invalide ».
        */
       const response = await fetch(
-        `${API_URL}/promotions/validate?storeId=${storeId}`,
+        `${API_URL}/api/promotions/validate?storeId=${storeId}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -10,7 +10,7 @@ import { AlertCircle, CheckCircle, Loader, Bike, Car, Truck } from 'lucide-react
 import Link from 'next/link';
 
 import { useTranslations } from 'next-intl';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const VEHICULES = [
   { valeur: 'bike', libelle: 'Vélo', icone: Bike },
@@ -84,7 +84,7 @@ export default function DriverOnboardPage() {
         throw new Error('Pas de token');
       }
 
-      const response = await fetch(`${API_URL}/auth/me/become-driver`, {
+      const response = await fetch(`${API_URL}/api/auth/me/become-driver`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

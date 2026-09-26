@@ -36,7 +36,7 @@ interface Page {
 
 type Brouillon = { titre: string; contenu: string; version: string };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** Propose le numéro suivant : « 3 » → « 4 », « v2 » → « v3 », sinon la date du jour. */
 function versionSuivante(actuelle: string): string {
@@ -70,7 +70,7 @@ export default function PagesLegalesPage() {
   const charger = useCallback(async (garder?: string) => {
     setChargement(true);
     try {
-      const reponse = await fetch(`${API_URL}/superowner/pages-legales`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/pages-legales`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
       });
       const donnees = await reponse.json();
@@ -122,7 +122,7 @@ export default function PagesLegalesPage() {
     setErreur('');
     setMessage('');
     try {
-      const reponse = await fetch(`${API_URL}/superowner/pages-legales/${page.slug}`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/pages-legales/${page.slug}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

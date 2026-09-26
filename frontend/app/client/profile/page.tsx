@@ -10,7 +10,7 @@ import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Profil {
   name: string;
   email: string;
@@ -49,7 +49,7 @@ export default function ProfilClientPage() {
     }
 
     try {
-      const reponse = await fetch(`${API_URL}/client/me`, {
+      const reponse = await fetch(`${API_URL}/api/client/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -87,7 +87,7 @@ export default function ProfilClientPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/client/me`, {
+      const reponse = await fetch(`${API_URL}/api/client/me`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({

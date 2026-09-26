@@ -6,7 +6,7 @@ import { AlertCircle } from 'lucide-react';
 import { AVAILABLE_THEMES, applyTheme, getTheme, saveThemeToAPI, Theme } from '@/lib/theme-config';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ export default function SettingsPage() {
   const fetchConfig = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/admin/config`, {
+      const response = await fetch(`${API_URL}/api/admin/config`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -81,7 +81,7 @@ export default function SettingsPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/admin/config`, {
+      const response = await fetch(`${API_URL}/api/admin/config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

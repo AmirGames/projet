@@ -8,7 +8,7 @@ import { quitteLaPage } from './erreurs';
  * support. Elles apparaissent désormais dans la page Surveillance.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** Au-delà, une page en boucle d'erreurs se tait : dix exemples suffisent. */
 const ENVOIS_MAX_PAR_PAGE = 10;
@@ -53,7 +53,7 @@ export function signalerAuServeur(erreur: unknown, source?: string) {
   envois += 1;
 
   try {
-    fetch(`${API_URL}/monitoring/client-errors`, {
+    fetch(`${API_URL}/api/monitoring/client-errors`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // Part même si le visiteur quitte la page juste après.

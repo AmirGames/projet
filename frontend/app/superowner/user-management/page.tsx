@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Users, Plus, Trash2 } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Admin {
   id: string;
@@ -47,7 +47,7 @@ export default function UserManagementPage() {
         offset: offset.toString(),
       });
 
-      const res = await fetch(`${API_URL}/superowner/admins?${query}`, {
+      const res = await fetch(`${API_URL}/api/superowner/admins?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -77,7 +77,7 @@ export default function UserManagementPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/superowner/admins`, {
+      const res = await fetch(`${API_URL}/api/superowner/admins`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ export default function UserManagementPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/superowner/admins/${adminId}`, {
+      const res = await fetch(`${API_URL}/api/superowner/admins/${adminId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

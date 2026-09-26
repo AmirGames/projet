@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { useCurrentStore } from '@/lib/current-store';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
   id: string;
@@ -50,7 +50,7 @@ export default function AnalyticsPage() {
   const fetchAnalytics = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/orders?storeId=${storeId}`, {
+      const response = await fetch(`${API_URL}/api/orders?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

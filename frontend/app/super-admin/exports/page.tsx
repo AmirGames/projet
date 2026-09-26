@@ -4,7 +4,7 @@ import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { FileJson, FileText } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function ExportsPage() {
   const [loading, setLoading] = useState('');
@@ -16,19 +16,19 @@ export default function ExportsPage() {
       const token = localStorage.getItem('accessToken');
 
       if (type === 'merchants') {
-        const response = await fetch(`${API_URL}/admin/merchants?limit=10000`, {
+        const response = await fetch(`${API_URL}/api/admin/merchants?limit=10000`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
         downloadFile(data.merchants, `merchants-${new Date().toISOString().split('T')[0]}`, format);
       } else if (type === 'commissions') {
-        const response = await fetch(`${API_URL}/admin/commissions?limit=10000`, {
+        const response = await fetch(`${API_URL}/api/admin/commissions?limit=10000`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
         downloadFile(data.commissions, `commissions-${new Date().toISOString().split('T')[0]}`, format);
       } else if (type === 'stats') {
-        const response = await fetch(`${API_URL}/admin/stats`, {
+        const response = await fetch(`${API_URL}/api/admin/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();

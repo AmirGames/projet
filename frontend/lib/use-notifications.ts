@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTempsReel } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Notification {
   id: string;
@@ -28,7 +28,7 @@ export function useNotifications() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_URL}/notifications?limit=20`, {
+      const response = await fetch(`${API_URL}/api/notifications?limit=20`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -59,7 +59,7 @@ export function useNotifications() {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_URL}/notifications/${notificationId}/read`, {
+      const response = await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -85,7 +85,7 @@ export function useNotifications() {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_URL}/notifications/read-all`, {
+      const response = await fetch(`${API_URL}/api/notifications/read-all`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });

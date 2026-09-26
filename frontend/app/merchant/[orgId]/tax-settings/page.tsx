@@ -11,7 +11,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface TaxSetting {
   id: string;
@@ -68,11 +68,11 @@ export default function TaxSettingsPage() {
       if (!token) { router.push('/login'); return; }
 
       const [rTaxes, rCats, rProd] = await Promise.all([
-        fetch(`${API_URL}/tax-settings/${storeId}?skip=${page * itemsPerPage}&take=${itemsPerPage}`,
+        fetch(`${API_URL}/api/tax-settings/${storeId}?skip=${page * itemsPerPage}&take=${itemsPerPage}`,
           { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/categories/store/${storeId}`,
+        fetch(`${API_URL}/api/categories/store/${storeId}`,
           { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/products/store/${storeId}?take=200`,
+        fetch(`${API_URL}/api/products/store/${storeId}?take=200`,
           { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
@@ -157,8 +157,8 @@ export default function TaxSettingsPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const url = enEdition
-        ? `${API_URL}/tax-settings/${storeId}/${enEdition.id}`
-        : `${API_URL}/tax-settings/${storeId}`;
+        ? `${API_URL}/api/tax-settings/${storeId}/${enEdition.id}`
+        : `${API_URL}/api/tax-settings/${storeId}`;
 
       const reponse = await fetch(url, {
         method:  enEdition ? 'PATCH' : 'POST',
@@ -192,7 +192,7 @@ export default function TaxSettingsPage() {
     if (!confirm('Supprimer cette taxe ?')) return;
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-      const r = await fetch(`${API_URL}/tax-settings/${storeId}/${taxId}`, {
+      const r = await fetch(`${API_URL}/api/tax-settings/${storeId}/${taxId}`, {
         method:  'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

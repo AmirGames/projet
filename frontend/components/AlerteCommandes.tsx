@@ -8,7 +8,7 @@ import { EVENEMENT_COMMANDES_CHANGEES, delaiRestant } from '@/lib/reponse-comman
 import { useDonneesModifiees, useTempsReel } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** Filet de sécurité si la connexion en direct tombe. */
 const RELECTURE_MS = 30000;
@@ -64,7 +64,7 @@ export function AlerteCommandes({ orgId }: { orgId: string }) {
 
     try {
       const reponse = await fetch(
-        `${API_URL}/order-management/${storeId}?status=PENDING&take=20`,
+        `${API_URL}/api/order-management/${storeId}?status=PENDING&take=20`,
         { headers: { Authorization: `Bearer ${jeton}` } }
       );
       if (!reponse.ok) return;

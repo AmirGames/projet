@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Search } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface ProductSeo {
   id: string;
@@ -42,7 +42,7 @@ export default function ProductSeoPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/product-seo/${storeId}/${productId}`, {
+      const res = await fetch(`${API_URL}/api/product-seo/${storeId}/${productId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
@@ -69,7 +69,7 @@ export default function ProductSeoPage() {
   const updateSeo = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/product-seo/${storeId}/${productId}`, {
+      const res = await fetch(`${API_URL}/api/product-seo/${storeId}/${productId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

@@ -6,7 +6,7 @@ import { Image as ImageIcon, Trash2, GripVertical } from "lucide-react";
 import { useCurrentStore } from "@/lib/current-store";
 import { useTranslations } from 'next-intl';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Media {
   id: string;
@@ -49,7 +49,7 @@ export default function ProductMediaPage() {
 
     const charger = async () => {
       try {
-        const res = await fetch(`${API_URL}/products?storeId=${storeId}`, {
+        const res = await fetch(`${API_URL}/api/products?storeId=${storeId}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
         });
         if (!res.ok) return;
@@ -71,7 +71,7 @@ export default function ProductMediaPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/product-media/${storeId}/${productId}`, {
+      const res = await fetch(`${API_URL}/api/product-media/${storeId}/${productId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
@@ -95,7 +95,7 @@ export default function ProductMediaPage() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/product-media/${storeId}/${productId}`, {
+      const res = await fetch(`${API_URL}/api/product-media/${storeId}/${productId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -121,7 +121,7 @@ export default function ProductMediaPage() {
 
   const deleteMedia = async (mediaId: string) => {
     try {
-      const res = await fetch(`${API_URL}/product-media/${storeId}/${mediaId}`, {
+      const res = await fetch(`${API_URL}/api/product-media/${storeId}/${mediaId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -139,7 +139,7 @@ export default function ProductMediaPage() {
     const mediaOrder = newOrder.map((m) => m.id);
     try {
       const res = await fetch(
-        `${API_URL}/product-media/${storeId}/${productId}/reorder`,
+        `${API_URL}/api/product-media/${storeId}/${productId}/reorder`,
         {
           method: "PATCH",
           headers: {

@@ -43,7 +43,7 @@ const CarteZones = dynamic(() => import('@/components/CarteZones'), {
   ),
 });
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Zone {
   id: string;
@@ -150,7 +150,7 @@ export default function FicheBoutiquePage() {
     }
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/stores/${storeId}`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/stores/${storeId}`, {
         headers: { Authorization: `Bearer ${jeton()}` },
       });
 
@@ -225,7 +225,7 @@ export default function FicheBoutiquePage() {
     }
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/stores/${storeId}`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/stores/${storeId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton()}` },
         body: JSON.stringify(change),
@@ -252,7 +252,7 @@ export default function FicheBoutiquePage() {
     setBascule(true);
 
     try {
-      const reponse = await fetch(`${API_URL}/superowner/stores/${storeId}/ouverture`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/stores/${storeId}/ouverture`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton()}` },
         body: JSON.stringify({ ouvert, motif: ouvert ? undefined : motifFermeture }),

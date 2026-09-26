@@ -16,7 +16,7 @@
 import { useState } from 'react';
 import { Star } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export const NOTES = [1, 2, 3, 4, 5] as const;
 
@@ -68,7 +68,7 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
     setErreur('');
 
     try {
-      const reponse = await fetch(`${API_URL}/client/deliveries/${orderId}/rating`, {
+      const reponse = await fetch(`${API_URL}/api/client/deliveries/${orderId}/rating`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

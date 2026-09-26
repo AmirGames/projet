@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { AlertCircle, CheckCircle } from "lucide-react";
 import { useEffectChargement } from "@/lib/use-effect-chargement";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Ticket {
   id: string;
@@ -46,7 +46,7 @@ export default function TicketsPage() {
         ...(filterPriority && { priority: filterPriority }),
       });
 
-      const res = await fetch(`${API_URL}/admin/tickets?${query}`, {
+      const res = await fetch(`${API_URL}/api/admin/tickets?${query}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
@@ -73,7 +73,7 @@ export default function TicketsPage() {
     updates: { status?: string; priority?: string }
   ) => {
     try {
-      const res = await fetch(`${API_URL}/admin/tickets/${ticketId}`, {
+      const res = await fetch(`${API_URL}/api/admin/tickets/${ticketId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

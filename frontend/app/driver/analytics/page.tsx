@@ -8,7 +8,7 @@ import { euro } from '@/lib/format';
 import { GraphiqueColonnes, type Colonne } from '@/components/GraphiqueColonnes';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type Jours = 7 | 30 | 90;
 
@@ -93,7 +93,7 @@ export default function AnalyticsLivreurPage() {
     setChargement(true);
     setErreur('');
     try {
-      const res = await fetch(`${API_URL}/drivers/analytics?jours=${jours}`, {
+      const res = await fetch(`${API_URL}/api/drivers/analytics?jours=${jours}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {

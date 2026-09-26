@@ -14,7 +14,7 @@ import { AlertCircle, Check, Clock, FileText, Upload, X } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Piece {
   id: string;
@@ -84,7 +84,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
   const charger = useCallback(async () => {
     try {
       const token = localStorage.getItem('driverToken');
-      const reponse = await fetch(`${API_URL}/drivers/documents`, {
+      const reponse = await fetch(`${API_URL}/api/drivers/documents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -141,13 +141,13 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
           formData.append('expiryDate', formulaire.expiryDate);
         }
 
-        reponse = await fetch(`${API_URL}/drivers/documents/upload`, {
+        reponse = await fetch(`${API_URL}/api/drivers/documents/upload`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
         });
       } else {
-        reponse = await fetch(`${API_URL}/drivers/documents`, {
+        reponse = await fetch(`${API_URL}/api/drivers/documents`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({

@@ -10,7 +10,7 @@ import { euro } from '@/lib/format';
 import Link from 'next/link';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface DashboardStats {
   totalRevenue: number;
@@ -42,7 +42,7 @@ export default function SuperOwnerDashboard() {
   const fetchDashboardStats = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/superowner/dashboard`, {
+      const response = await fetch(`${API_URL}/api/superowner/dashboard`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

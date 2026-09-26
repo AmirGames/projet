@@ -10,7 +10,7 @@ import { ArrowLeft, Star, MapPin, Heart, Trash2 } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface FavoriteStore {
   id: string;
@@ -48,7 +48,7 @@ export default function FavoritesPage() {
 
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/client/me/favorites`, {
+      const response = await fetch(`${API_URL}/api/client/me/favorites`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -73,7 +73,7 @@ export default function FavoritesPage() {
     if (!token) return;
 
     try {
-      await fetch(`${API_URL}/client/me/favorites/${storeId}`, {
+      await fetch(`${API_URL}/api/client/me/favorites/${storeId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });

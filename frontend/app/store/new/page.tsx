@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { espaceDAccueilLocal } from '@/lib/espace-utilisateur';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function CreateStorePage() {
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function CreateStorePage() {
   const [cuisines, setCuisines] = useState<{ code: string; libelle: string }[]>([]);
 
   useEffect(() => {
-    fetch(`${API_URL}/stores/types`)
+    fetch(`${API_URL}/api/stores/types`)
       .then((r) => r.json())
       .then((lu) => {
         setEtablissements(lu?.data?.etablissements || []);
@@ -65,7 +65,7 @@ export default function CreateStorePage() {
       if (!token) return;
 
       try {
-        const res = await fetch(`${API_URL}/auth/me`, {
+        const res = await fetch(`${API_URL}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
@@ -123,7 +123,7 @@ export default function CreateStorePage() {
         return;
       }
 
-      const meRes = await fetch(`${API_URL}/auth/me`, {
+      const meRes = await fetch(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -140,7 +140,7 @@ export default function CreateStorePage() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/stores`, {
+      const response = await fetch(`${API_URL}/api/stores`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

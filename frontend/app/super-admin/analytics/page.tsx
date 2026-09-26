@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Commission {
   id: string;
@@ -32,7 +32,7 @@ export default function AnalyticsPage() {
   const fetchCommissions = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const url = new URL(`${API_URL}/admin/commissions`);
+      const url = new URL(`${API_URL}/api/admin/commissions`);
 
       const response = await fetch(url.toString(), {
         headers: { Authorization: `Bearer ${token}` },

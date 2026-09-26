@@ -7,7 +7,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type StaffRole = 'MANAGER' | 'CASHIER' | 'KITCHEN' | 'DELIVERY' | 'SUPPORT';
 type StaffStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
@@ -68,7 +68,7 @@ export default function StaffPage() {
   const fetchStaff = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/staff?storeId=${storeId}`, {
+      const response = await fetch(`${API_URL}/api/staff?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -117,8 +117,8 @@ export default function StaffPage() {
       };
 
       const url = editingStaff
-        ? `${API_URL}/staff/${editingStaff.id}`
-        : `${API_URL}/staff`;
+        ? `${API_URL}/api/staff/${editingStaff.id}`
+        : `${API_URL}/api/staff`;
 
       const response = await fetch(url, {
         method: editingStaff ? 'PUT' : 'POST',
@@ -148,7 +148,7 @@ export default function StaffPage() {
     setSaving(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/staff/${id}`, {
+      const response = await fetch(`${API_URL}/api/staff/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -169,7 +169,7 @@ export default function StaffPage() {
     setSaving(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/staff/${id}/status`, {
+      const response = await fetch(`${API_URL}/api/staff/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

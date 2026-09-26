@@ -28,7 +28,7 @@ import { DeclinaisonsProduit } from '@/components/DeclinaisonsProduit';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Product {
   id: string;
@@ -255,7 +255,7 @@ export default function ProductsPage() {
 
       for (const product of productList) {
         try {
-          const response = await fetch(`${API_URL}/reviews/${storeId}/${product.id}/stats`, {
+          const response = await fetch(`${API_URL}/api/reviews/${storeId}/${product.id}/stats`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
@@ -277,7 +277,7 @@ export default function ProductsPage() {
   const fetchCategories = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/categories?storeId=${storeId}`, {
+      const response = await fetch(`${API_URL}/api/categories?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -293,7 +293,7 @@ export default function ProductsPage() {
   const fetchProducts = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/products?storeId=${storeId}`, {
+      const response = await fetch(`${API_URL}/api/products?storeId=${storeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -350,7 +350,7 @@ export default function ProductsPage() {
           displayOrder: index,
         }));
 
-        await fetch(`${API_URL}/products/reorder`, {
+        await fetch(`${API_URL}/api/products/reorder`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -384,7 +384,7 @@ export default function ProductsPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/categories/${categoryId}`, {
+      const response = await fetch(`${API_URL}/api/categories/${categoryId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ sortMode }),
@@ -421,7 +421,7 @@ export default function ProductsPage() {
       const token = localStorage.getItem('accessToken');
 
       if (editingProduct) {
-        const response = await fetch(`${API_URL}/products/${editingProduct.id}`, {
+        const response = await fetch(`${API_URL}/api/products/${editingProduct.id}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -468,7 +468,7 @@ export default function ProductsPage() {
           payload.categoryId = formData.categoryId;
         }
 
-        const response = await fetch(`${API_URL}/products`, {
+        const response = await fetch(`${API_URL}/api/products`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -501,7 +501,7 @@ export default function ProductsPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/products/${productId}`, {
+      const response = await fetch(`${API_URL}/api/products/${productId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -561,7 +561,7 @@ export default function ProductsPage() {
   const basculerDisponibilite = async (product: Product) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/products/${product.id}/availability`, {
+      const response = await fetch(`${API_URL}/api/products/${product.id}/availability`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ isAvailable: !product.isAvailable, storeId }),

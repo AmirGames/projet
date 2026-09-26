@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export type Espace = 'client' | 'driver' | 'merchant' | 'admin' | 'super-admin' | 'superowner';
 
@@ -40,7 +40,7 @@ const rolesParJeton = new Map<string, Promise<RolesCompte | null>>();
 function chargerRoles(jeton: string): Promise<RolesCompte | null> {
   let promesse = rolesParJeton.get(jeton);
   if (!promesse) {
-    promesse = fetch(`${API_URL}/auth/me/roles`, {
+    promesse = fetch(`${API_URL}/api/auth/me/roles`, {
       headers: { Authorization: `Bearer ${jeton}` },
     })
       .then((reponse) => (reponse.ok ? reponse.json() : null))

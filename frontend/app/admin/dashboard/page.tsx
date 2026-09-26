@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface AdminStats {
   totalUsers: number;
@@ -34,7 +34,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/admin/stats`, {
+      const response = await fetch(`${API_URL}/api/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

@@ -12,7 +12,7 @@ import { usePays } from '@/lib/pays-client';
 import { PAYS } from '@/lib/pays-infos';
 
 import { useTranslations } from 'next-intl';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const VEHICULES = [
   { valeur: 'bike', libelle: 'Vélo', icone: Bike },
@@ -57,7 +57,7 @@ export default function InscriptionLivreurPage() {
     setEnvoi(true);
 
     try {
-      const reponse = await fetch(`${API_URL}/drivers/register`, {
+      const reponse = await fetch(`${API_URL}/api/drivers/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

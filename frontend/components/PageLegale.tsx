@@ -12,7 +12,7 @@ async function lirePage(slug: string): Promise<Page | null> {
   try {
     // Sans cache : une version publiée depuis l'espace superowner doit
     // s'afficher tout de suite.
-    const reponse = await fetch(`${API_URL}/pages-legales/${slug}`, { cache: 'no-store' });
+    const reponse = await fetch(`${API_URL}/api/pages-legales/${slug}`, { cache: 'no-store' });
     if (!reponse.ok) return null;
     return (await reponse.json()).data;
   } catch {

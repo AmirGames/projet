@@ -215,7 +215,7 @@ export const totalDuPanier = (lignes: LignePanier[]) =>
 // Synchronisation avec le serveur, pour un client connecté
 // ---------------------------------------------------------------------------
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** Un panier tel que le serveur le garde et l'annonce (« panier-modifie »). */
 export interface PanierDistant {
@@ -261,7 +261,7 @@ function envoyerAuServeur(storeId: string) {
       if (!jeton) return;
       const panier = lireMagasin()[storeId];
 
-      fetch(`${API_URL}/client/me/paniers/${storeId}`, {
+      fetch(`${API_URL}/api/client/me/paniers/${storeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },
         body: JSON.stringify({
@@ -346,7 +346,7 @@ export async function synchroniserPaniers() {
 
   let distants: PanierDistant[];
   try {
-    const reponse = await fetch(`${API_URL}/client/me/paniers`, {
+    const reponse = await fetch(`${API_URL}/api/client/me/paniers`, {
       headers: { Authorization: `Bearer ${jeton}` },
     });
     if (!reponse.ok) return;

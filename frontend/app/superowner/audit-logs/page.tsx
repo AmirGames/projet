@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Shield, AlertCircle } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface AuditLog {
   id: string;
@@ -65,7 +65,7 @@ export default function AuditLogsPage() {
         query.append('status', filterStatus);
       }
 
-      const res = await fetch(`${API_URL}/superowner/audit-logs?${query}`, {
+      const res = await fetch(`${API_URL}/api/superowner/audit-logs?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

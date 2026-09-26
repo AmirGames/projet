@@ -8,7 +8,7 @@ import { TicketConversation } from '@/components/TicketConversation';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** L'état du ticket, en français : la base le stocke en anglais. */
 const LIBELLES_STATUT: Record<string, string> = {
@@ -54,7 +54,7 @@ export default function SupportPage() {
     if (!silencieux) setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/support/tickets?orgId=${orgId}&archived=${showArchived}`, {
+      const response = await fetch(`${API_URL}/api/support/tickets?orgId=${orgId}&archived=${showArchived}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -82,7 +82,7 @@ export default function SupportPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/support/tickets`, {
+      const response = await fetch(`${API_URL}/api/support/tickets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

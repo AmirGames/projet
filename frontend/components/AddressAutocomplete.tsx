@@ -6,7 +6,7 @@ import { MapPin } from 'lucide-react';
 import { paysDuNavigateur, devinerPaysNavigateur } from '@/lib/pays-client';
 import { paysValide } from '@/lib/pays-infos';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export interface AdresseChoisie {
   label: string;
@@ -158,7 +158,7 @@ export function AddressAutocomplete({
 
     try {
       const reponse = await fetch(
-        `${API_URL}/addresses/search?q=${encodeURIComponent(requete)}${parametresIndice(indice.current)}`
+        `${API_URL}/api/addresses/search?q=${encodeURIComponent(requete)}${parametresIndice(indice.current)}`
       );
 
       if (!reponse.ok) {

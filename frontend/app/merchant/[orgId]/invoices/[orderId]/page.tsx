@@ -9,7 +9,7 @@ import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface LigneFacture {
   description: string;
@@ -76,7 +76,7 @@ export default function FacturePage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/invoices/${storeId}/${orderId}`, {
+      const reponse = await fetch(`${API_URL}/api/invoices/${storeId}/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

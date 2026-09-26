@@ -31,7 +31,7 @@ interface Controle {
   pointsObtenus: number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** Vert au-dessus de 90, orange au-dessus de 60, rouge en dessous. */
 const teinteTexte = (score: number) =>
@@ -64,7 +64,7 @@ export default function SanteSystemePage() {
     setChargement(true);
     try {
       const jeton = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/superowner/system-health`, {
+      const reponse = await fetch(`${API_URL}/api/superowner/system-health`, {
         headers: { Authorization: `Bearer ${jeton}` },
       });
 

@@ -37,7 +37,7 @@ interface OrganizationsResponse {
   };
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function OrganizationsPage() {
   const t = useTranslations('superownerOrganizations');
@@ -65,7 +65,7 @@ export default function OrganizationsPage() {
         ...(aValider ? { validation: 'attente' } : {}),
       });
 
-      const res = await fetch(`${API_URL}/superowner/organizations?${query}`, {
+      const res = await fetch(`${API_URL}/api/superowner/organizations?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -91,7 +91,7 @@ export default function OrganizationsPage() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/superowner/organizations/${org.id}/tier`, {
+      const res = await fetch(`${API_URL}/api/superowner/organizations/${org.id}/tier`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ tier }),
@@ -128,7 +128,7 @@ export default function OrganizationsPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const res = await fetch(
-        `${API_URL}/superowner/organizations/${promo.org.id}/commission-promo`,
+        `${API_URL}/api/superowner/organizations/${promo.org.id}/commission-promo`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -180,7 +180,7 @@ export default function OrganizationsPage() {
     try {
       const token = localStorage.getItem('accessToken');
       const res = await fetch(
-        `${API_URL}/superowner/organizations/${org.id}/${operation}`,
+        `${API_URL}/api/superowner/organizations/${org.id}/${operation}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
