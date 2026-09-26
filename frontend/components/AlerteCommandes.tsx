@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BellRing, Bike, Volume2, X } from 'lucide-react';
-import { memoriserBoutique, useCurrentStore } from '@/lib/current-store';
+import { memoriserBoutique, useCurrentStoreOptionnel } from '@/lib/current-store';
 import { EVENEMENT_COMMANDES_CHANGEES, delaiRestant } from '@/lib/reponse-commande';
 import { useDonneesModifiees, useTempsReel } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -59,7 +59,7 @@ export function AlerteCommandes({
   /** Au niveau du choix du commerce (/merchant), aucune boutique n'est ouverte : on veille sur toutes. */
   toutesBoutiques?: boolean;
 }) {
-  const { storeId: boutiqueCourante } = useCurrentStore();
+  const boutiqueCourante = useCurrentStoreOptionnel()?.storeId ?? null;
   const storeId = toutesBoutiques ? null : boutiqueCourante;
   const actif = toutesBoutiques ? Boolean(orgId) : Boolean(storeId);
   const [enAttente, setEnAttente] = useState<CommandeEnAttente[]>([]);
