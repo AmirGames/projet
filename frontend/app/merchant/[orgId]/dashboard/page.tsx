@@ -18,6 +18,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { montantCommercant } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -89,9 +90,9 @@ export default function MerchantDashboard() {
       const productsData = productsRes.ok ? await productsRes.json() : { pagination: { total: 0 } };
       const orders = ordersData.orders || [];
 
-      // totalAmount est un Decimal en euros : aucune conversion de centimes.
+      // Ses articles seulement : ni la livraison ni les frais de service.
       const totalRevenue = orders.reduce(
-        (sum: number, o: any) => sum + Number(o.totalAmount || 0),
+        (sum: number, o: any) => sum + montantCommercant(o),
         0
       );
       const customerKeys = new Set(

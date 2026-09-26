@@ -7,12 +7,15 @@ import { useTranslations } from 'next-intl';
 
 import { useCurrentStore } from '@/lib/current-store';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { montantCommercant } from '@/lib/format';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
   id: string;
   totalAmount: number | string;
+  feesAmount?: number | string;
+  serviceFeeAmount?: number | string;
   status: string;
   createdAt: string;
 }
@@ -66,8 +69,8 @@ export default function AnalyticsPage() {
         const ordersInRange = orders.filter(o => new Date(o.createdAt) >= startDate);
         const ordersThisMonth = orders.filter(o => new Date(o.createdAt) >= thisMonthStart);
 
-        const totalRevenue = orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
-        const revenueThisMonth = ordersThisMonth.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+        const totalRevenue = orders.reduce((sum, o) => sum + montantCommercant(o), 0);
+        const revenueThisMonth = ordersThisMonth.reduce((sum, o) => sum + montantCommercant(o), 0);
 
         const statusBreakdown = [
           { status: 'PENDING', count: orders.filter(o => o.status === 'PENDING').length },
@@ -80,7 +83,7 @@ export default function AnalyticsPage() {
         const dailyData: { [key: string]: number } = {};
         ordersInRange.forEach(order => {
           const date = new Date(order.createdAt).toLocaleDateString('fr-FR');
-          dailyData[date] = (dailyData[date] || 0) + Number(order.totalAmount || 0);
+          dailyData[date] = (dailyData[date] || 0) + montantCommercant(order);
         });
 
         const dailyRevenue = Object.entries(dailyData).map(([date, revenue]) => ({

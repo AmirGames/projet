@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { totalCommercant } from "./delivery-mode.service";
 import { ApiError } from "../middleware/errorHandler";
 
 export class InvoiceService {
@@ -115,12 +116,20 @@ export class InvoiceService {
 
     const subtotal  = parseFloat(order.items.reduce((s, i) => s + parseFloat(i.total.toString()), 0).toFixed(2));
     const taxTotal  = parseFloat(recapTva.reduce((s, r) => s + r.taxe, 0).toFixed(2));
-    const fees      = parseFloat(order.feesAmount.toString());
+    // Livrée par un livreur de la plateforme, la course n'est pas au
+    // commerçant : il ne la facture pas. Il ne facture la livraison que
+    // lorsqu'il l'assure lui-même.
+    const livraisonPlateforme = order.deliveryMode === "PLATFORM";
+    const fees      = livraisonPlateforme ? 0 : parseFloat(order.feesAmount.toString());
     const discount  = parseFloat(order.discountAmount.toString());
     // Les frais de service sont à la plateforme, pas au commerçant : sa
     // facture ne porte que ce qu'il a vendu.
     const total     = Number(
-      (parseFloat(order.totalAmount.toString()) - parseFloat(order.serviceFeeAmount.toString())).toFixed(2)
+      (
+        parseFloat(order.totalAmount.toString()) -
+        parseFloat(order.serviceFeeAmount.toString()) -
+        (livraisonPlateforme ? parseFloat(order.feesAmount.toString()) : 0)
+      ).toFixed(2)
     );
 
     // ── Stockage ─────────────────────────────────────────────────────────────
@@ -244,23 +253,23 @@ export class InvoiceService {
         paymentStatus: "SUCCEEDED",
       },
       select: {
-        totalAmount: true,
-        taxAmount:   true,
-        feesAmount:  true,
-        createdAt:   true,
-        status:      true,
+        totalAmount:      true,
+        taxAmount:        true,
+        feesAmount:       true,
+        serviceFeeAmount: true,
+        createdAt:        true,
+        status:           true,
       },
     });
 
     return {
-      totalRevenue:        orders.reduce((s, o) => s + parseFloat(o.totalAmount.toString()), 0),
+      // Les articles vendus : ni la livraison ni les frais de service.
+      totalRevenue:        totalCommercant(orders),
       totalTax:            orders.reduce((s, o) => s + parseFloat(o.taxAmount.toString()),   0),
       totalFees:           orders.reduce((s, o) => s + parseFloat(o.feesAmount.toString()),  0),
-      netRevenue:          orders.reduce((s, o) => s + parseFloat(o.totalAmount.toString()) - parseFloat(o.feesAmount.toString()), 0),
+      netRevenue:          totalCommercant(orders),
       invoiceCount:        orders.length,
-      averageInvoiceAmount: orders.length > 0
-        ? orders.reduce((s, o) => s + parseFloat(o.totalAmount.toString()), 0) / orders.length
-        : 0,
+      averageInvoiceAmount: orders.length > 0 ? totalCommercant(orders) / orders.length : 0,
     };
   }
 }

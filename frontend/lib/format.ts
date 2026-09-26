@@ -29,3 +29,24 @@ export function sommeEuros<T>(lignes: T[], champ: (ligne: T) => number | string 
 export function parSemaine(prixMensuel: number | string | null | undefined) {
   return (Number(prixMensuel || 0) * 12) / 52;
 }
+
+type Montants = {
+  totalAmount: number | string | null | undefined;
+  feesAmount?: number | string | null;
+  serviceFeeAmount?: number | string | null;
+};
+
+/**
+ * Ce que la commande rapporte au commerçant : ses articles, remise déduite.
+ *
+ * `totalAmount` est ce que le client a payé, livraison et frais de service
+ * compris : 15 € d'articles s'affichaient 20,25 € chez le commerçant. La
+ * livraison, quand elle est à lui, se montre sur sa propre ligne.
+ */
+export function montantCommercant(commande: Montants) {
+  const montant =
+    Number(commande.totalAmount || 0) -
+    Number(commande.feesAmount || 0) -
+    Number(commande.serviceFeeAmount || 0);
+  return Math.max(0, Number(montant.toFixed(2)));
+}

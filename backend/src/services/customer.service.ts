@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { totalCommercant } from "./delivery-mode.service";
 import { ApiError } from "../middleware/errorHandler";
 
 /**
@@ -80,7 +81,7 @@ export class CustomerService {
           // pas sur l'ensemble des commerces où le client a commandé.
           orders: {
             where: { storeId, deletedAt: null },
-            select: { totalAmount: true, createdAt: true },
+            select: { totalAmount: true, feesAmount: true, serviceFeeAmount: true, createdAt: true },
           },
         },
       }),
@@ -91,7 +92,8 @@ export class CustomerService {
       data: customers.map(({ orders, ...client }) => ({
         ...client,
         totalOrders: orders.length,
-        totalSpent: orders.reduce((somme, o) => somme + Number(o.totalAmount), 0),
+        // Ce que le client a dépensé en articles chez ce commerçant.
+        totalSpent: totalCommercant(orders),
         lastOrderDate:
           orders.length > 0
             ? orders.reduce((recente, o) => (o.createdAt > recente ? o.createdAt : recente), orders[0].createdAt)
@@ -111,7 +113,14 @@ export class CustomerService {
       include: {
         orders: {
           where: { storeId, deletedAt: null },
-          select: { id: true, totalAmount: true, status: true, createdAt: true },
+          select: {
+            id: true,
+            totalAmount: true,
+            feesAmount: true,
+            serviceFeeAmount: true,
+            status: true,
+            createdAt: true,
+          },
           orderBy: { createdAt: "desc" },
           take: 10,
         },

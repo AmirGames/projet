@@ -16,7 +16,7 @@ import { apiFetch, formatEuros } from '../../lib/api';
 import { useRealtimeEvent } from '../../lib/realtime';
 import { Card, COLORS, Row, ScreenHeader, ui } from '../ui';
 import { PREPARATION_CHOICES } from './SettingsScreen';
-import { deliveryStep, displayStatus, itemsByCategory, Order } from '../../lib/orders';
+import { deliveryStep, displayStatus, itemsByCategory, montantCommercant, Order } from '../../lib/orders';
 
 const REJECT_REASONS: { code: string; label: string }[] = [
   { code: 'TOO_BUSY', label: 'Trop de commandes en cours' },
@@ -123,6 +123,9 @@ export default function OrderDetailScreen({
   };
 
   const isPickup = order.deliveryType !== 'DELIVERY';
+  const remise = parseFloat(String(order.discountAmount ?? 0)) || 0;
+  // Il livre lui-même : la livraison est à lui, sur sa propre ligne.
+  const livraisonPourLui = order.deliveryMode !== 'PLATFORM' && (parseFloat(String(order.feesAmount ?? 0)) || 0) > 0;
   const shown = displayStatus(order);
   const step = deliveryStep(order);
   const categories = itemsByCategory(order.items);
@@ -189,9 +192,21 @@ export default function OrderDetailScreen({
           </Card>
         )}
 
-        <Card title="Total">
-          <Row label="TVA" value={formatEuros(order.taxAmount)} />
-          <Row label="Total" value={formatEuros(order.totalAmount)} last />
+        {/* Ce que la commande rapporte au commerçant : ses articles, remise
+            déduite. Le total payé par le client, livraison et frais de service
+            compris, passait pour son montant. */}
+        <Card title="Montant">
+          {remise > 0 && (
+            <Row
+              label={`Remise${order.promoCode ? ` (${order.promoCode})` : ''}`}
+              value={`−${formatEuros(remise)}`}
+            />
+          )}
+          <Row label="TVA incluse" value={formatEuros(order.taxAmount)} />
+          <Row label="Montant de la commande" value={formatEuros(montantCommercant(order))} last={!livraisonPourLui} />
+          {livraisonPourLui && (
+            <Row label="+ Livraison (pour vous)" value={formatEuros(order.feesAmount)} last />
+          )}
         </Card>
 
         <Card title="Note interne">

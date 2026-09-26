@@ -10,7 +10,7 @@ import { Store, ShoppingCart, TrendingUp, Copy } from 'lucide-react';
 import DupliquerBoutique from '@/components/DupliquerBoutique';
 
 import { memoriserBoutique } from '@/lib/current-store';
-import { euro } from '@/lib/format';
+import { euro, montantCommercant } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -27,6 +27,8 @@ interface Order {
   id: string;
   status: string;
   totalAmount: number;
+  feesAmount?: number | string;
+  serviceFeeAmount?: number | string;
   createdAt: string;
 }
 
@@ -313,7 +315,7 @@ export default function MerchantDashboard() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-white font-bold">{Number(order.totalAmount).toFixed(2)} €</p>
+                    <p className="text-white font-bold">{euro(montantCommercant(order))}</p>
                     <div
                       className={`text-xs px-2 py-1 rounded mt-2 ${
                         order.status === 'DELIVERED'

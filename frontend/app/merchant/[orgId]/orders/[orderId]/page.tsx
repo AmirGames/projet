@@ -15,7 +15,7 @@ import {
   Printer,
 } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
-import { euro } from '@/lib/format';
+import { euro, montantCommercant } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
 import { ReponseCommande } from '@/components/ReponseCommande';
 import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
@@ -61,6 +61,9 @@ interface Commande {
   deliveryMode?: 'OWN' | 'PLATFORM' | null;
   /** Les frais de service payés par le client : ils sont à la plateforme. */
   serviceFeeAmount?: number | string;
+  /** La remise du code promo : c'est le commerçant qui l'accorde. */
+  discountAmount?: number | string;
+  promoCode?: string | null;
   notes?: string | null;
   createdAt: string;
   items?: LigneCommande[];
@@ -301,38 +304,53 @@ export default function DetailCommandePage() {
               <span>Sous-total</span>
               <span>{euro(sousTotal)}</span>
             </div>
-            {Number(commande.feesAmount) > 0 && (
+            {Number(commande.discountAmount) > 0 && (
               <div className="flex justify-between text-gray-400">
-                <span>Frais de livraison</span>
+                <span>Remise{commande.promoCode ? ` (${commande.promoCode})` : ''}</span>
+                <span>−{euro(commande.discountAmount)}</span>
+              </div>
+            )}
+            {/* Ce que la commande lui rapporte : ses articles, remise déduite.
+                Le total payé par le client (livraison et frais de service
+                compris) passait pour son montant : 15 € d'articles
+                s'affichaient 20,25 €. */}
+            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-700">
+              <span>Montant de la commande</span>
+              <span className="text-green-400">{euro(montantCommercant(commande))}</span>
+            </div>
+            {/* Il livre lui-même : la livraison est à lui, sur sa propre ligne. */}
+            {commande.deliveryMode !== 'PLATFORM' && Number(commande.feesAmount) > 0 && (
+              <div className="flex justify-between text-gray-400">
+                <span>+ Frais de livraison (pour vous)</span>
                 <span>{euro(commande.feesAmount)}</span>
               </div>
             )}
-            {Number(commande.serviceFeeAmount) > 0 && (
-              <div className="flex justify-between text-gray-400">
-                <span>Frais de service (plateforme)</span>
-                <span>{euro(commande.serviceFeeAmount)}</span>
+
+            {/* Ce qui ne lui revient pas : pour information seulement. */}
+            {(Number(commande.serviceFeeAmount) > 0 ||
+              (commande.deliveryMode === 'PLATFORM' && Number(commande.feesAmount) > 0)) && (
+              <div className="pt-2 border-t border-gray-700 space-y-1 text-xs text-gray-500">
+                <div className="flex justify-between">
+                  <span>Payé par le client</span>
+                  <span>{euro(commande.totalAmount)}</span>
+                </div>
+                {commande.deliveryMode === 'PLATFORM' && Number(commande.feesAmount) > 0 && (
+                  <div className="flex justify-between">
+                    <span>dont livraison (livreur de la plateforme)</span>
+                    <span>{euro(commande.feesAmount)}</span>
+                  </div>
+                )}
+                {Number(commande.serviceFeeAmount) > 0 && (
+                  <div className="flex justify-between">
+                    <span>dont frais de service (plateforme)</span>
+                    <span>{euro(commande.serviceFeeAmount)}</span>
+                  </div>
+                )}
+                <p className="text-amber-300">
+                  Ces sommes ne vous reviennent pas : elles sont reportées sur votre relevé du mois,
+                  avec la commission.
+                </p>
               </div>
-            )}
-            {/* Livrée par la plateforme : le client a payé la livraison au
-                commerçant, mais elle revient au livreur. Le dire ici plutôt
-                que de laisser croire que cette somme est à lui. */}
-            {commande.deliveryMode === 'PLATFORM' && Number(commande.feesAmount) > 0 && (
-              <p className="text-xs text-amber-300">
-                Livraison assurée par un livreur de la plateforme : ces frais sont encaissés pour
-                son compte et reportés sur votre relevé du mois, avec la commission.
-              </p>
-            )}
-            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-700">
-              <span>Total TTC</span>
-              <span className="text-green-400">{euro(commande.totalAmount)}</span>
-            </div>
-            {/* Payés par le client avec la commande, mais pas au commerçant :
-                la plateforme les lui réclame sur le relevé du mois. */}
-            {Number(commande.serviceFeeAmount) > 0 && (
-              <p className="text-xs text-amber-300">
-                Les frais de service reviennent à la plateforme : ils sont reportés sur votre relevé
-                du mois, avec la commission.
-              </p>
             )}
 
             {/* La TVA est comprise dans le prix : elle s'extrait du total, elle
@@ -342,7 +360,7 @@ export default function DetailCommandePage() {
               <div className="pt-2 border-t border-gray-700 space-y-1 text-gray-400">
                 <div className="flex justify-between">
                   <span>Total HT</span>
-                  <span>{euro(Number(commande.totalAmount) - Number(commande.taxAmount))}</span>
+                  <span>{euro(montantCommercant(commande) - Number(commande.taxAmount))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>

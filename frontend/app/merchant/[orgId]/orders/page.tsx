@@ -12,7 +12,7 @@ import { ReponseCommande } from '@/components/ReponseCommande';
 import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 
-import { euro } from '@/lib/format';
+import { euro, montantCommercant } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { useParametreAdresse } from '@/lib/navigateur';
 
@@ -34,6 +34,8 @@ interface Order {
   customerName: string;
   customerEmail: string;
   totalAmount: number;
+  feesAmount?: number | string;
+  serviceFeeAmount?: number | string;
   status: string;
   paymentStatus: string;
   deliveryType: string;
@@ -447,7 +449,11 @@ export default function OrdersPage() {
                           <span className="font-semibold text-gray-300">{order.items.length}</span> {order.items.length > 1 ? t('orderItems_plural') : t('orderItems_singular')}
                         </p>
                         <p className="text-gray-400">
-                          {t('orderAmount')} <span className="text-green-400 font-bold">{euro(order.totalAmount)}</span>
+                          {t('orderAmount')} <span className="text-green-400 font-bold">{euro(montantCommercant(order))}</span>
+                          {/* Il livre lui-même : la livraison est à lui, mais à part. */}
+                          {order.deliveryMode === 'OWN' && Number(order.feesAmount) > 0 && (
+                            <span className="text-xs"> + {euro(order.feesAmount)} de livraison</span>
+                          )}
                         </p>
                         <p className="text-gray-400 text-xs mt-2">
                           {new Date(order.createdAt).toLocaleDateString('fr-FR', {
