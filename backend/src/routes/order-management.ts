@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { OrderManagementService } from "../services/order-management.service";
+import { OrderAcceptanceService, MOTIFS_DU_COMMERCANT } from "../services/order-acceptance.service";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 
@@ -8,6 +9,15 @@ const router = Router();
 
 const updateStatusSchema = z.object({
   status: z.enum(["PENDING", "ACCEPTED", "PREPARING", "REJECTED", "READY", "COMPLETED"]),
+});
+
+const acceptSchema = z.object({
+  preparationMinutes: z.number().int().min(1).max(240),
+});
+
+const rejectSchema = z.object({
+  motif: z.enum(MOTIFS_DU_COMMERCANT),
+  note: z.string().max(300).optional(),
 });
 
 const addNoteSchema = z.object({
@@ -83,6 +93,40 @@ router.patch("/:storeId/:orderId/status", authMiddleware, async (req: Request, r
       message: "Order status updated",
       order,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /orders/:storeId/:orderId/accept - Accepter, avec le temps de préparation
+router.post("/:storeId/:orderId/accept", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const storeId = req.params.storeId as string;
+    const orderId = req.params.orderId as string;
+    const body = acceptSchema.parse(req.body);
+
+    logger.info("Accepting order", { storeId, orderId, preparationMinutes: body.preparationMinutes });
+
+    const order = await OrderAcceptanceService.accepter(storeId, orderId, body.preparationMinutes);
+
+    res.json({ message: "Commande acceptée", order });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /orders/:storeId/:orderId/reject - Refuser, avec un motif
+router.post("/:storeId/:orderId/reject", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const storeId = req.params.storeId as string;
+    const orderId = req.params.orderId as string;
+    const body = rejectSchema.parse(req.body);
+
+    logger.info("Rejecting order", { storeId, orderId, motif: body.motif });
+
+    const order = await OrderAcceptanceService.refuser(storeId, orderId, body.motif, body.note);
+
+    res.json({ message: "Commande refusée", order });
   } catch (err) {
     next(err);
   }

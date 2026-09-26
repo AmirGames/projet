@@ -1,7 +1,8 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Trash2, Send, Plus, X } from 'lucide-react';
 import Link from 'next/link';
@@ -122,13 +123,7 @@ export default function MarketingPage() {
     }
   };
 
-  useEffect(() => {
-    if (storeId) {
-      fetchCampaigns();
-    }
-  }, [storeId, filter, page]);
-
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
@@ -154,11 +149,17 @@ export default function MarketingPage() {
       setCampaigns(data.data || []);
       setTotal(data.total || 0);
     } catch (error) {
-      console.error('Error fetching campaigns:', error);
+      signalerErreur('Error fetching campaigns:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, page, router, storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchCampaigns();
+    }
+  }, [storeId, filter, page, fetchCampaigns]);
 
   const handleDeleteCampaign = async (campaignId: string) => {
     try {
@@ -171,7 +172,7 @@ export default function MarketingPage() {
       if (!response.ok) throw new Error('Failed to delete campaign');
       setCampaigns(campaigns.filter(c => c.id !== campaignId));
     } catch (error) {
-      console.error('Error deleting campaign:', error);
+      signalerErreur('Error deleting campaign:', error);
     }
   };
 

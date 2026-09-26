@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus, Edit2, Trash2, Search, MapPin, Crosshair } from 'lucide-react';
@@ -7,6 +8,8 @@ import { useCurrentStore } from '@/lib/current-store';
 
 import { euro } from '@/lib/format';
 import { useTranslations } from 'next-intl';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 // Leaflet touche à `window` dès son chargement : la carte ne peut pas être
 // rendue côté serveur.
@@ -105,13 +108,6 @@ export default function DeliveryZonesPage() {
     }
   }, [storeId]);
 
-  useEffect(() => {
-    if (storeId) {
-      fetchZones();
-      chargerBoutique();
-    }
-  }, [storeId, chargerBoutique]);
-
   /**
    * Qui livre. Avec les livreurs de la plateforme, ces zones ne servent pas :
    * le rayon et les frais sont ceux de la plateforme.
@@ -203,7 +199,7 @@ export default function DeliveryZonesPage() {
     }
   };
 
-  const fetchZones = async () => {
+  const fetchZones = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/delivery-zones?storeId=${storeId}`, {
@@ -215,11 +211,29 @@ export default function DeliveryZonesPage() {
         setZones(data.zones || []);
       }
     } catch (error) {
-      console.error('Error fetching delivery zones:', error);
+      signalerErreur('Error fetching delivery zones:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
+
+  // Une zone dessinée par un collègue, l'adresse de la boutique déplacée :
+  // la carte suit.
+  useDonneesModifiees(
+    ['delivery-zones', 'stores'],
+    () => {
+      fetchZones();
+      chargerBoutique();
+    },
+    { storeId, actif: Boolean(storeId) }
+  );
+
+  useEffectChargement(() => {
+    if (storeId) {
+      fetchZones();
+      chargerBoutique();
+    }
+  }, [storeId, chargerBoutique, fetchZones]);
 
   const handleSaveZone = async () => {
     setFormError('');
@@ -308,7 +322,7 @@ export default function DeliveryZonesPage() {
         setFormError(donnees?.error || t('saveError'));
       }
     } catch (error) {
-      console.error('Error saving delivery zone:', error);
+      signalerErreur('Error saving delivery zone:', error);
       setFormError(t('serverError'));
     } finally {
       setSaving(false);
@@ -330,7 +344,7 @@ export default function DeliveryZonesPage() {
         await fetchZones();
       }
     } catch (error) {
-      console.error('Error deleting delivery zone:', error);
+      signalerErreur('Error deleting delivery zone:', error);
     } finally {
       setSaving(false);
     }
@@ -447,8 +461,8 @@ export default function DeliveryZonesPage() {
 
           {boutique?.latitude != null && (
             <p className="text-sm text-slate-400 mb-3">
-              Position fixée d'après l'adresse de la boutique. Pour la corriger, contactez le
-              support depuis vos réglages.
+              Position fixée d'après l'adresse de la boutique. Elle suit l'adresse : pour la
+              corriger, modifiez l'adresse dans vos réglages.
             </p>
           )}
 
@@ -491,6 +505,9 @@ export default function DeliveryZonesPage() {
                 {formError}
               </div>
             )}
+            {/* L'explication accompagne le formulaire : c'est en réglant une
+                zone qu'on se demande laquelle s'appliquera. */}
+            <p className="text-xs text-slate-400 mb-4">{t('zonesExplanation')}</p>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div>
                 <label htmlFor="zone-nom" className="text-slate-300 text-sm block mb-2">

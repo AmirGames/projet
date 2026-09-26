@@ -10,6 +10,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -47,12 +48,12 @@ const MDP = 'Password123!';
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` },
 });
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` },
 });
@@ -76,6 +77,7 @@ const boutique = await appeler('/api/stores', {
   },
 });
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
+await ouvrirToutLeJour(appeler, storeId, T);
 
 const plat = await appeler('/api/products', {
   method: 'POST',
@@ -216,9 +218,15 @@ const panier = await page.locator('body').innerText();
 check('la ligne nomme la déclinaison', /Pâtes 4 fromages — Tagliatelle/.test(panier), panier.slice(0, 900));
 
 titre('Deux déclinaisons font deux lignes');
+// Le tiroir du panier ouvert couvre le menu : on le referme, on ajoute les
+// penne, on le rouvre.
+await page.keyboard.press('Escape');
+await page.waitForTimeout(400);
 await page.locator('[role="radio"]:has-text("Penne")').first().click();
 await page.waitForTimeout(400);
 await bouton.first().click();
+await page.waitForTimeout(800);
+await ouvrirPanier.click();
 await page.waitForTimeout(800);
 
 const deuxLignes = await page.locator('body').innerText();

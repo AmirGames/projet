@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState } from 'react';
 import { Trash2, Plus } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,21 +26,21 @@ export default function AdminManagementPage() {
     password: '',
   });
 
-  useEffect(() => {
-    fetchAdmins();
-  }, []);
-
   const fetchAdmins = async () => {
     try {
       // This would need a backend endpoint to fetch admins
       // For now, we'll show a placeholder
       setAdmins([]);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchAdmins();
+  }, []);
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +62,7 @@ export default function AdminManagementPage() {
       setTimeout(() => setMessage(''), 3000);
       fetchAdmins();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       setMessage('❌ Erreur lors de la création');
       setTimeout(() => setMessage(''), 3000);
     }

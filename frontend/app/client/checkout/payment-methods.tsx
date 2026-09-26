@@ -1,7 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { CreditCard, Plus, Trash2 } from 'lucide-react';
+import { useDerniereValeur } from '@/lib/use-derniere-valeur';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -21,12 +24,10 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
+  // Gardé dans une ref : un onSelect recréé à chaque rendu du parent ne doit pas relancer le chargement.
+  const onSelectRef = useDerniereValeur(onSelect);
 
-  useEffect(() => {
-    fetchPaymentMethods();
-  }, []);
-
-  const fetchPaymentMethods = async () => {
+  const fetchPaymentMethods = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
@@ -41,15 +42,19 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
         const defaultMethod = data.data.find((m: PaymentMethod) => m.isDefault);
         if (defaultMethod) {
           setSelected(defaultMethod.id);
-          onSelect(defaultMethod.id);
+          onSelectRef.current(defaultMethod.id);
         }
       }
     } catch (err) {
-      console.error('Error fetching payment methods:', err);
+      signalerErreur('Error fetching payment methods:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [onSelectRef]);
+
+  useEffectChargement(() => {
+    fetchPaymentMethods();
+  }, [fetchPaymentMethods]);
 
   const handleDelete = async (methodId: string) => {
     const token = localStorage.getItem('accessToken');
@@ -64,7 +69,7 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
       setMethods((prev) => prev.filter((m) => m.id !== methodId));
       if (selected === methodId) setSelected(null);
     } catch (err) {
-      console.error('Error deleting payment method:', err);
+      signalerErreur('Error deleting payment method:', err);
     }
   };
 

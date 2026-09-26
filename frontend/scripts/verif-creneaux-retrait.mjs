@@ -12,6 +12,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -48,12 +49,12 @@ const uniq = Date.now().toString(36);
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` },
 });
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` },
 });
@@ -79,13 +80,21 @@ const boutique = await appeler('/api/stores', {
 
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
 
-// Ouverture à 11 h, fermeture à 14 h, tous les jours : une plage étroite et
-// facile à contrôler.
+// Une plage étroite, tous les jours, qui englobe l'heure du lancement : la
+// boutique doit être ouverte pour qu'on y commande — la vitrine et le serveur
+// refusent une boutique fermée —, et la plage doit rester assez courte pour
+// que « aucune heure hors ouverture » veuille dire quelque chose. Elle
+// commence une heure avant maintenant et dure quatre heures, dans la journée.
+const heureDuLancement = new Date().getHours();
+const OUVERTURE = Math.max(0, heureDuLancement - 1) * 60;
+const FERMETURE = Math.min(OUVERTURE + 4 * 60, 23 * 60 + 59);
+const enHeure = (minutes) =>
+  `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 for (const jour of ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']) {
   await appeler(`/api/store-hours/${storeId}/day/${jour}`, {
     method: 'PUT',
     jeton: T,
-    corps: { open: '11:00', close: '14:00', closed: false },
+    corps: { open: enHeure(OUVERTURE), close: enHeure(FERMETURE), closed: false },
   });
 }
 
@@ -131,7 +140,9 @@ await page
 await page.waitForTimeout(1200);
 
 titre('Le retrait sur place');
-await page.locator('input[value="PICKUP"]').first().check().catch(() => undefined);
+// Le bouton radio est masqué (sr-only) : c'est son étiquette qu'on clique,
+// comme le client.
+await page.locator('label', { hasText: 'Retrait sur place' }).first().click();
 await page.waitForTimeout(2500);
 
 const champLibre = await page.locator('input[type="datetime-local"]').count();
@@ -152,7 +163,7 @@ check('des créneaux sont listés', reels.length > 0, JSON.stringify(heures.slic
 const horsHoraires = reels.filter((h) => {
   const instant = new Date(h.valeur);
   const minutes = instant.getHours() * 60 + instant.getMinutes();
-  return minutes < 11 * 60 || minutes >= 14 * 60;
+  return minutes < OUVERTURE || minutes >= FERMETURE;
 });
 
 check(

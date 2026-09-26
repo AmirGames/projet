@@ -1,17 +1,17 @@
 // Passe en revue chaque fonctionnalité de l'espace superowner.
 
-import { titre, check, j, uniq, post, get, put, patch, del, terminer, API } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, put, patch, del, terminer, API } from './outils.mjs';
 
-const sup = await j(await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
+const sup = await j(await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const T = sup.accessToken;
-const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
+const m = await j(await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const orgId = m.organization.id;
 const b = await j(await post('/api/stores', {
   orgId, name: `Bou ${uniq}`, slug: `bou-${uniq}`, address: '1 rue', city: 'Lyon', postalCode: '69001', phone: '0400000000',
 }, m.accessToken));
 const storeId = b.store?.id || b.id;
 await post('/api/products', { storeId, name: 'Pain', price: 2, stock: 5, status: 'ACTIVE' }, m.accessToken);
-await post('/api/orders', { storeId, customerName: 'C', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000', deliveryType: 'PICKUP', totalAmount: 40 });
+await post('/api/orders', { conditionsAcceptees: true, storeId, customerName: 'C', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000', deliveryType: 'PICKUP', totalAmount: 40 });
 
 const lire = async (nom, chemin, verif) => {
   const r = await get(chemin, T);

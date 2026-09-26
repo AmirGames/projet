@@ -307,7 +307,7 @@ export class VariantService {
   private static pousserAuxVisiteurs(storeId: string, productId: string) {
     this.lister(productId)
       .then((variantes) => {
-        emitStoreEvent(storeId, "produit-declinaisons", { productId, variantes });
+        emitStoreEvent(storeId, "produit-declinaisons", { productId, storeId, variantes });
       })
       .catch(() => undefined);
   }

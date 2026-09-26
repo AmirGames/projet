@@ -100,9 +100,12 @@ apiBan.kill();
 // ===== Photon, couverture mondiale =====
 
 titre('Photon (monde entier)');
+// Sans filtre explicite, l'API lirait celui du .env — fr,be dans
+// .env.example — et la Suisse disparaîtrait d'une recherche « monde entier ».
 const apiPhoton = await demarrerApi(4611, {
   ADDRESS_PROVIDER: 'photon',
   PHOTON_API_URL: faux.urlPhoton,
+  ADDRESS_COUNTRIES: '',
 });
 
 const monde = await chercher(4611, 'rue neuve bruxelles');

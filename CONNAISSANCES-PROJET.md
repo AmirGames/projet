@@ -3,7 +3,10 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : la note du livreur, donnée par le client.
+Dernière mise à jour : les favoris depuis l'accueil client (le cœur des cartes)
+et le logo des commerces sur la page Favoris, après le nettoyage des
+dépendances de hooks sur tout le frontend et les versions régionales déclarées
+aux moteurs de recherche.
 
 ---
 
@@ -42,10 +45,6 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 
 ### Ce qui est volontairement reporté
 
-- **Le paiement en ligne** (webhooks Stripe, remboursements) — « tant que le
-  reste n'est pas fait ».
-- **La migration Prisma 5.22 → 7** — « on termine tout le site et après on fait
-  une migration ».
 - **Le stock par ingrédient** (une pizza consomme de la mozzarella), abandonné
   au profit du simple bouton disponible / épuisé.
 
@@ -55,18 +54,18 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 
 | | |
 |---|---|
-| **Frontend** | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS |
-| **Backend** | Express, TypeScript, Prisma 5.22 |
+| **Frontend** | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS |
+| **Backend** | Express 5, TypeScript, Prisma 7.10 (adaptateur `@prisma/adapter-pg`) |
 | **Base de données** | PostgreSQL |
-| **Temps réel** | Socket.IO — disponibilité des plats, notifications, suivi de livraison |
+| **Temps réel** | Socket.IO — une connexion par onglet, annonce de chaque écriture (`donnees-modifiees`), Redis pour relier plusieurs instances |
 | **Authentification** | JWT (jeton d'accès + jeton de renouvellement) |
 | **Courriel** | SMTP via nodemailer, Mailpit en développement |
 | **Adresses** | BAN pour la France + Photon pour la Belgique (`ADDRESS_PROVIDER=ban+photon`) |
-| **Paiement** | Stripe — intention de paiement seulement |
+| **Paiement** | Stripe — intention liée à la commande, webhook signé, remboursement au refus |
 
 ```
-backend/    API REST — 37 routeurs, 43 services, 43 modèles Prisma
-frontend/   Next.js — 82 pages
+backend/    API REST — 40 fichiers de routes, 61 services (hors tests), 53 modèles Prisma
+frontend/   Next.js — 142 pages
 ```
 
 **Le premier compte inscrit devient la plateforme** (superowner). Tous les
@@ -85,10 +84,14 @@ scripts de vérification (voir §6).
 - **Commande sans compte** : coordonnées, adresse de livraison avec suggestions,
   ou créneau de retrait tenu aux horaires réels
 - Frais de livraison et minimum de commande annoncés **avant** de valider
+- **Frais de service** de la plateforme (0,25 € par défaut, réglables dans
+  Configuration système) ajoutés à chaque commande, annoncés au tunnel
 - Code promo et choix du moyen de paiement au tunnel
 - Suivi de la commande : distance restante, durée estimée, position du livreur
 - **Code de remise** à quatre chiffres, donné au livreur à la porte
 - Retrouve une commande passée sans compte par son lien de suivi
+- **Favoris** : le cœur de chaque carte de l'accueil ajoute ou retire le
+  commerce ; la page Favoris montre son logo (ou son initiale à défaut)
 
 ### Le commerçant
 - Inscription, puis **validation du commerce par la plateforme** : pièces
@@ -125,7 +128,13 @@ scripts de vérification (voir §6).
 - Acceptation, refus, étapes de la course, rémunération calculée
 - **Sait s'il est payé** : ce qui reste dû, ce qui est arrêté et attend le
   virement, ce qui est arrivé, et le détail de chaque relevé
-- **Prouve la remise** : le code du client, ou la photo du dépôt en son absence
+- **La prise en charge se déverrouille au commerce** : à moins de 150 m, un
+  curseur « glisser pour prendre en charge » apparaît (repli déclaré quand le GPS
+  ne le situe pas), et le GPS part aussitôt vers le client
+- **Le client est prévenu à 300 m** qu'il peut descendre : une seule fois, et
+  seulement une fois la commande récupérée (`OrderDelivery.nearCustomerNotifiedAt`)
+- **Prouve la remise** : le code du client, vérifié seul au quatrième chiffre,
+  ou la photo du dépôt prise avec l'appareil du téléphone, que le client voit
 - **Est noté par ses clients**, et lit leurs remarques sur son tableau de bord
 
 ### La plateforme (superowner)
@@ -136,9 +145,13 @@ scripts de vérification (voir §6).
 - **Qui livre** (réglage boutique « J'utilise ma propre livraison ») :
   coché, zones et frais du commerçant, taux de base, pas de livreur plateforme ;
   non coché, rayon et barème de Configuration système (base + km × distance
-  boutique → client), frais encaissés par la plateforme et reversés tels quels
-  au livreur, taux majoré calculé hors frais. Le mode est figé sur la commande
-  (`Order.deliveryMode`)
+  boutique → client), frais reversés tels quels au livreur, taux majoré calculé
+  hors frais. Le mode est figé sur la commande (`Order.deliveryMode`).
+  **Tant que le paiement en ligne n'est pas branché, le client paie le
+  commerçant, frais compris** : le commerçant encaisse ces frais pour le compte
+  de la plateforme, ils sortent de son chiffre d'affaires et lui sont réclamés
+  avec la commission du mois (`fraisDusALaPlateforme`, commandes livrées
+  seulement)
 - Facturation : commission du mois par commerçant, avec le détail par commande
 - **Boutiques** : une fiche par commerce, avec la correction des seuls champs
   dont la plateforme répond (voir la règle ci-dessous)
@@ -262,10 +275,34 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 39 | **1281** |
-| **Navigateur** (`frontend/scripts/`) | 24 | **607** |
+| **API** (`backend/scripts/verification/`) | 48 | **1566** |
+| **Navigateur** (`frontend/scripts/`) | 27 | **716** |
 
-Tout est vert au dernier passage complet.
+Tout est vert au dernier passage complet (24 septembre).
+
+Trois réglages rendent les suites indépendantes des nouveautés du produit :
+- la remise à zéro pose une configuration aux **frais de service nuls**
+  (`reinitialiser.mjs`) : sans cela, chaque total relu au centime prendrait
+  0,25 € de plus. `verif-frais-service` les remet ;
+- les commerces qu'elles créent sont **validés d'office** en base (la
+  validation elle-même se vérifie dans `verif-validation-commerce`) ;
+- leurs boutiques sont **ouvertes toute la journée**
+  (`ouvrirToutLeJour()`, `scripts/inscription.mjs`) : la vitrine refuse
+  une boutique fermée, et une suite lancée à 7 h échouait. Les suites des
+  zones cochent en plus « J'utilise ma propre livraison ».
+
+Les suites navigateur ont besoin de `DATABASE_URL` (même base que l'API),
+pour valider leurs commerces.
+
+`verif-domaines` n'a pas tourné : il demande un site construit avec les
+trois domaines.
+
+Depuis la refonte d'identité, `/auth/signup` ne crée plus d'organisation.
+Les suites s'inscrivent par `inscription()` (API, `outils.mjs`) et
+`inscriptionVia()` (navigateur, `scripts/inscription.mjs`), qui ajoutent
+l'organisation par `POST /api/organizations` ; après la connexion, un
+commerçant passe par l'écran de choix d'espace
+(`entrerEspaceCommercant()`, `scripts/connexion.mjs`).
 
 ### Lancer
 
@@ -273,7 +310,7 @@ Tout est vert au dernier passage complet.
 # API
 cd backend
 createdb zupone_test
-DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
+DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
@@ -320,8 +357,13 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 **Base et Prisma**
 - Une base fraîche **n'a aucune ligne `SystemConfig`** : passer par
   `PUT /api/admin/config` (qui la crée), jamais par un `UPDATE` direct.
-- Après tout changement de schéma, **`npx prisma db push` est obligatoire côté
-  Windows** — sans lui, les écritures échouent en silence.
+- Le schéma vit dans des **migrations** : une base neuve se crée par
+  `npx prisma migrate deploy` (migration de référence `0001_initial_schema`),
+  et tout changement de `schema.prisma` s'accompagne d'une migration créée par
+  `npx prisma migrate dev --name <nom>`, committée avec lui. Plus de `db push`
+  (y compris sous Windows) : il laisserait la base en avance sur l'historique.
+- Une base créée avant la remise à plat des migrations s'aligne une fois par
+  `npx prisma migrate resolve --applied 0001_initial_schema`.
 
 **Scripts de vérification**
 - `sqlScalaire()` ne renvoie que **la première colonne**. Jamais
@@ -351,10 +393,85 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
   qui persiste le panier partait avant celui qui le relit, et écrasait le panier
   gardé du dernier passage. Un garde (`panierLu`) ordonne les deux.
 
+**Temps réel**
+- **Une seule connexion par onglet** : `frontend/lib/temps-reel.tsx`. Ne jamais
+  rappeler `io(...)` dans un composant — passer par `useTempsReel`,
+  `useSalon`, `useDonneesModifiees` ou `connexionTempsReel()`. Et ne jamais
+  la fermer (`disconnect`) au démontage : retirer seulement ses écouteurs,
+  **avec la fonction** (`off(evenement, ecouteur)`), sinon on retire aussi
+  ceux des autres écrans.
+- **Toute écriture réussie est annoncée** par `middleware/diffusion.ts` :
+  `donnees-modifiees { ressource, action, storeId?, orgId?, id? }`, où
+  `ressource` est le premier segment après `/api/` (`products`, `orders`,
+  `order-management`…). Aux membres de l'organisation, à la plateforme, à
+  l'auteur, aux suiveurs de la commande, et aux visiteurs de la vitrine pour
+  les ressources publiques. L'annonce ne porte aucune donnée : l'écran relit
+  l'API. Une route qui écrit sans que ce soit utile à relayer (la position du
+  livreur, un calcul) va dans `IGNOREES`.
+- Pour qu'un écran suive : `useDonneesModifiees('orders', charger, { storeId })`.
+- **Les commandes sont annoncées depuis la base** (`services/db.ts`, middleware
+  Prisma) : toute écriture sur `Order` ou `OrderDelivery`, même d'une tâche de
+  fond ou de l'espace livreur, part en `ressource: 'orders'` vers le
+  commerçant, la plateforme, le client, le livreur et les suiveurs de la
+  commande. Les écritures d'une même commande sont regroupées (150 ms). La
+  position GPS seule (`driverLat`, `driverLng`…) n'est pas annoncée.
+- Pour toute autre donnée écrite par une tâche de fond (hors requête HTTP),
+  le relais ne voit rien : l'annoncer avec `signalerModification()`.
+- Une page qui se relit en direct ne doit pas se remplacer par
+  « Chargement… » : lui passer un chargement `silencieux`.
+- **Le nom de la famille et le propriétaire** d'une route se règlent dans
+  `ROUTES` et `LOCALISATEURS` (`middleware/diffusion.ts`) : sans entrée, la
+  famille est le premier segment après `/api/` (`superowner` ne dirait rien à
+  l'écran des tickets). Les tickets remontent à leur organisation, un livreur
+  ou un versement à l'e-mail du livreur.
+- Pages branchées :
+  - commandes : commerçant (liste, fiche, tableau de bord), client (liste,
+    fiche), livreur (accueil, historique, course), plateforme (tableau de
+    bord, fiche boutique) — `verif-commandes-direct` ;
+  - catalogue du commerçant (produits, catégories, horaires, zones,
+    promotions) et vitrine, dont le panier se remet d'accord avec le menu
+    (plat retiré ou épuisé sorti, nouveau prix repris) ;
+  - tickets (support du commerçant, tickets de la plateforme et du
+    super-admin, conversation ouverte) ;
+  - plateforme : commerçants (liste, fiche, dossier), livreurs (file et
+    dossier ouvert), versements, statistiques, boutiques ; côté livreur, son
+    dossier et ses versements — `verif-catalogue-support-direct`.
+- `/admin/orders` et `/admin/orders/[id]` ne sont pas branchées : ce sont des
+  brouillons (boutique codée en dur, fiche qui ne charge rien).
+
 **La vitrine (`/store/<slug>`)**
 - Son panier est un **panneau replié** : un script qui veut lire ses lignes doit
   d'abord cliquer sur « Panier ».
 - Elle titre ses catégories en `h2` et ses plats en `h3`, dans des `<section>`.
+
+**Les régions (`/be-fr/`, `/fr-fr/`, `/gb-en/`…)**
+- Seules les pages publiques indexables portent le préfixe : accueil,
+  `/restaurants`, `/restaurant/*`, `/store/*` (sauf `/store/new`), pages
+  légales, pages « devenir ». Liste dans `frontend/i18n/chemins-regionaux.ts`.
+- **Aucune page n'est déplacée** : le proxy (`frontend/proxy.ts`) retire le préfixe, réécrit
+  vers la page d'origine et transmet la région par l'en-tête
+  `x-zupone-region`. Une page publique appelée sans préfixe est redirigée
+  (307) vers la région du visiteur : cookie `ZUPONE_REGION`, sinon langue
+  choisie, sinon `Accept-Language`, sinon `fr-fr`.
+- Un script de vérification qui ouvre `/restaurants` atterrit donc sur
+  `/fr-fr/restaurants` : comparer les adresses sans le préfixe.
+- Sur les pages publiques, importer `Link` depuis `@/components/LienRegional`
+  plutôt que `next/link`, pour éviter un détour par la redirection.
+- `usePathname()` renvoie l'adresse visible, préfixe compris.
+- **Chaque boutique a un pays** (`Store.countryCode`, « fr », « be »…), déduit
+  de son adresse à chaque changement (`paysDeLAdresse` : le texte d'abord, le
+  géocodage ensuite). `GET /api/client/stores?pays=be` ne liste que les
+  boutiques belges **et celles dont le pays est inconnu** — une boutique de
+  trop plutôt qu'un commerce introuvable. `/stores/nearby` ne filtre pas : la
+  distance prime, frontière comprise.
+- Les boutiques d'avant ce champ : la migration donne `fr` aux codes postaux à
+  cinq chiffres ; les autres restent vides jusqu'à leur prochain changement
+  d'adresse ou leur prochaine commande sans position.
+- **SEO** (`frontend/lib/seo-regional.ts`) : chaque page régionale porte une
+  balise `canonical` et des `hreflang` (fr-BE, en-GB…, plus `x-default` vers
+  l'adresse sans préfixe). La vitrine ne les déclare que dans les régions du
+  pays de son commerce, et sa canonique y renvoie. `/sitemap.xml` et
+  `/robots.txt` sont générés (`app/sitemap.ts`, `app/robots.ts`).
 
 ---
 
@@ -377,6 +494,37 @@ Deux invariants à ne jamais casser :
   que paie un client. Tout autre champ est refusé explicitement, chaque
   correction part au journal avec son avant et son après, et le commerçant est
   prévenu.
+- **Tout se paie par Stripe, sauf les espèces.** Une commande qui n'est pas en
+  `CASH` — y compris sans moyen de paiement choisi — n'arrive au commerçant
+  qu'encaissée, dès que `ENABLE_STRIPE` est vrai avec une clé. Elle naît
+  avec `Order.submittedAt` vide : absente de ses listes, de ses chiffres, de
+  l'acceptation, et sans délai de réponse. L'encaissement (webhook ou
+  `/confirm`) la lui transmet une seule fois, sonnerie comprise, et son délai
+  court de là. Toute requête côté commerçant filtre avec `TRANSMISE`
+  (`backend/src/utils/commande-transmise.ts`). Jamais payée au bout de trente
+  minutes, elle est retirée (`deletedAt`) et son intention annulée.
+- **Une commande n'est « payée » que sur la parole de Stripe.** Le montant de
+  l'intention est lu sur la commande, jamais dans la requête. Le webhook
+  (`POST /api/payments/webhook`, monté avant le lecteur JSON pour vérifier la
+  signature sur le corps brut) passe `paymentStatus` à `SUCCEEDED`, `FAILED`
+  ou `REFUNDED` ; `/api/payments/confirm` relit aussi Stripe pour ne pas
+  attendre le webhook. Un refus rembourse de lui-même (clé d'idempotence
+  `remboursement-<orderId>`), ou annule l'intention si rien n'est encore payé ;
+  un paiement arrivé après le refus repart aussitôt. Le reste — commande déjà
+  prise par un livreur, litige — passe par le support :
+  `POST /api/superowner/orders/:id/refund`. Un remboursement que Stripe
+  n'arrive pas à faire (`refund.failed`) remet la commande en `SUCCEEDED`.
+- **Les frais de service ne sont jamais au commerçant.** Figés sur la
+  commande (`Order.serviceFeeAmount`), ils sortent de l'assiette de sa
+  commission, de son chiffre et de sa facture, et lui sont réclamés sur le
+  relevé du mois pour toute commande terminée (`serviceFeesDue`). Changer le
+  réglage ne réécrit pas les commandes passées.
+- **Les frais d'une course de la plateforme ne sont pas au commerçant.** Il
+  les encaisse pour elle tant que le paiement en ligne n'existe pas : ils
+  sortent de son chiffre et figurent sur son relevé du mois, avec la
+  commission (`deliveryFeesDue`, `totalDue`). `amount` reste la seule
+  commission. Le jour où Stripe Connect sera branché, le partage se fera au
+  paiement et ce relevé n'aura plus de frais à réclamer.
 - **Le code de remise appartient au client, jamais au livreur.** Aucune route
   côté livreur ne le rend ; il sait seulement qu'un code est attendu et combien
   d'essais lui restent. Cinq essais ratés le bloquent, et la photo du dépôt
@@ -529,26 +677,52 @@ que le navigateur dessine (anneaux, poignée, point) et ce que le serveur
 enregistre. Leurs filtres d'erreurs ignorent explicitement `tile.openstreetmap`
 et `net::ERR_`.
 
+**Favoris depuis l'accueil client.** Le cœur des cartes de `/client` était
+décoratif, et placé dans le lien de la carte : un clic ouvrait la boutique.
+Il appelle maintenant `POST` / `DELETE /api/client/me/favorites`, avec
+`preventDefault` + `stopPropagation`, met à jour l'affichage tout de suite et
+revient en arrière si le serveur refuse. Sans jeton, il renvoie vers `/login`.
+La page Favoris affiche `settings.logo` du commerce, comme l'accueil.
+
+**Dépendances des hooks.** Tout le frontend (client, livreur, commerçant,
+super-admin, superowner, composants) passe `react-hooks/exhaustive-deps` :
+les fonctions de chargement sont en `useCallback` et l'effet en dépend. Quand
+une dépendance est une prop recréée à chaque rendu du parent (un `onSelect`),
+elle va dans une `useRef` — sinon l'effet boucle. La règle
+`@next/next/no-img-element` est désactivée : les logos viennent d'URL
+quelconques, `next/image` ne convient pas.
+
 ### À faire ensuite
 
-Le carnet ci-dessous — le plus gros morceau étant le paiement en ligne, reporté
-volontairement.
+Le carnet ci-dessous.
 
 ### Le reste du carnet
 
-- **Le paiement en ligne.** L'intention de paiement est créée chez Stripe, mais
-  le webhook qui confirme l'encaissement et le remboursement ne sont pas
-  écrits : une commande reste en paiement « en attente ». *Reporté
-  volontairement.*
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
 - **Se servir de la note à l'attribution** : elle est écrite et lue, mais le
   dispatch départage toujours à la distance seule.
-- **Prisma 5.22 → 7.10**, une fois le reste stabilisé. *Reporté volontairement.*
+- **Prisma 7 → 8**, rien d'urgent : le projet est sur Prisma 7.10, toujours
+  maintenu, et Prisma 8 n'en est qu'aux versions candidates. À planifier quand
+  il sera stable.
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.
 
 ---
+
+**Pages légales et acceptation des conditions.** Mentions légales, CGU, CGV,
+conditions commerçants et livreurs, confidentialité et cookies s'affichent sous
+`frontend/app/(legal)` mais leur texte vient de l'API (`/api/pages-legales`).
+Il se modifie dans l'espace superowner, **Pages légales** : chaque publication
+crée une version (`PageLegaleVersion`) qui n'est plus jamais réécrite ; tant
+qu'aucune n'est publiée, le texte de départ de
+`backend/src/contenus/pages-legales.defaut.ts` est servi (champs entre crochets à
+remplir avant l'ouverture). Les quatre points d'entrée — `/auth/signup`,
+`/auth/merchant-register`, `/drivers/register`, `POST /orders` — exigent
+`conditionsAcceptees: true` et enregistrent la preuve dans
+`AcceptationConditions`, avec la version en vigueur de chaque document
+(« cgu@v2 cgv@2026-09-25 … »). Tout script qui appelle ces routes doit
+envoyer le champ.
 
 ## 9. Conventions d'écriture
 

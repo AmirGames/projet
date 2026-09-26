@@ -2,7 +2,7 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitWebhook } from "./webhook.service";
-import { emitNotification } from "../config/socket";
+import { emitNotification, emitOrgEvent } from "../config/socket";
 
 export type TicketAuthorRole = "MERCHANT" | "ADMIN";
 
@@ -74,6 +74,13 @@ export class TicketMessageService {
     }
 
     await this.notifyCounterpart(ticket, params.authorRole, author.email);
+
+    // La conversation s'affiche en direct chez tous les membres du commerce.
+    void emitOrgEvent(ticket.orgId, "ticket-message", {
+      ticketId: ticket.id,
+      message,
+      status: ticket.status === "RESOLVED" ? "IN_PROGRESS" : ticket.status,
+    });
 
     emitWebhook("ticket.message", {
       ticketId: ticket.id,
@@ -284,6 +291,8 @@ export class TicketMessageService {
     });
 
     logger.info("Ticket status changed", { ticketId, statut, archive: clos });
+
+    void emitOrgEvent(misAJour.orgId, "ticket-maj", { ticketId, status: misAJour.status });
 
     return { ticket: misAJour, precedent: ticket.status };
   }

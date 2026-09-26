@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,11 +26,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -61,11 +59,15 @@ export default function AdminDashboard() {
       });
       setLoading(false);
     } catch (err) {
-      console.error('Error:', err);
+      signalerErreur('Error:', err);
       setError('Erreur lors du chargement');
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffectChargement(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
 
   if (loading) {

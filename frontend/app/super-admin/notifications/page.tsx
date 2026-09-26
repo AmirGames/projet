@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState } from 'react';
 import { Bell, Search, Trash2, Settings, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -34,10 +36,6 @@ export default function NotificationsPage() {
     targetAudience: 'ADMIN',
   });
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -49,11 +47,15 @@ export default function NotificationsPage() {
       const data = await response.json();
       setNotifications(data.notifications || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchNotifications();
+  }, []);
 
   const handleSendNotification = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +71,7 @@ export default function NotificationsPage() {
       setShowForm(false);
       fetchNotifications();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     }
   };
 
@@ -82,7 +84,7 @@ export default function NotificationsPage() {
       });
       fetchNotifications();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     }
   };
 
@@ -95,7 +97,7 @@ export default function NotificationsPage() {
       });
       fetchNotifications();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     }
   };
 

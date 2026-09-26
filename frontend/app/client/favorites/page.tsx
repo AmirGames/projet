@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, Star, MapPin, Heart, Trash2 } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -21,10 +23,12 @@ interface FavoriteStore {
     description?: string;
     address?: string;
     city?: string;
-    rating?: number;
+    /** Moyenne des avis publiés, null tant que personne n'a noté. */
+    rating?: number | null;
     totalRatings?: number;
     deliveryCost?: number;
     distance?: number;
+    settings?: { logo?: string | null } | null;
   };
 }
 
@@ -35,11 +39,7 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadFavorites();
-  }, []);
-
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -57,12 +57,16 @@ export default function FavoritesPage() {
         setFavorites(data.data || []);
       }
     } catch (err) {
-      console.error('Error loading favorites:', err);
+      signalerErreur('Error loading favorites:', err);
       setError(t('loadingError'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [router, t]);
+
+  useEffectChargement(() => {
+    loadFavorites();
+  }, [loadFavorites]);
 
   const removeFavorite = async (storeId: string) => {
     const token = localStorage.getItem('accessToken');
@@ -76,7 +80,7 @@ export default function FavoritesPage() {
 
       setFavorites(favorites.filter(fav => fav.storeId !== storeId));
     } catch (err) {
-      console.error('Error removing favorite:', err);
+      signalerErreur('Error removing favorite:', err);
     }
   };
 
@@ -118,13 +122,25 @@ export default function FavoritesPage() {
               const store = favorite.store;
               return (
                 <div key={favorite.id} className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition">
-                  {/* Store Image Placeholder */}
-                  <div className="bg-gradient-to-r from-orange-500 to-red-500 h-40 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-white text-4xl font-bold opacity-50">
-                        {store.name.charAt(0)}
+                  {/* Le logo du commerce, comme sur l'accueil ; à défaut, son initiale. */}
+                  <div
+                    className={`relative h-40 flex items-center justify-center ${
+                      store.settings?.logo ? 'bg-white' : 'bg-gradient-to-r from-orange-500 to-red-500'
+                    }`}
+                  >
+                    {store.settings?.logo ? (
+                      <img
+                        src={store.settings.logo}
+                        alt={store.name}
+                        className="absolute inset-0 h-full w-full object-contain p-3"
+                      />
+                    ) : (
+                      <div className="text-center">
+                        <div className="text-white text-4xl font-bold opacity-50">
+                          {store.name.charAt(0)}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   <div className="p-4">
@@ -146,11 +162,19 @@ export default function FavoritesPage() {
 
                     {/* Rating & Reviews */}
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="flex items-center gap-1">
-                        <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                        <span className="text-white font-semibold">{store.rating || 4.5}</span>
-                      </div>
-                      <span className="text-gray-500 text-sm">({store.totalRatings || 0} avis)</span>
+                      {store.totalRatings && store.rating != null ? (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                            <span className="text-white font-semibold">
+                              {Number(store.rating).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 text-sm">({store.totalRatings} avis)</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-500 text-sm">Pas encore d&apos;avis</span>
+                      )}
                     </div>
 
                     {/* Location & Delivery */}

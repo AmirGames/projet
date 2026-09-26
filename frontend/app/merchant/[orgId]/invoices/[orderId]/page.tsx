@@ -1,12 +1,13 @@
 'use client';
 
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -95,7 +96,7 @@ export default function FacturePage() {
     }
   }, [storeId, orderId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (!boutiqueEnCours) charger();
   }, [boutiqueEnCours, charger]);
 

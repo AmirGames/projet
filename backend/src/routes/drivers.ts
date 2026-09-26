@@ -1,12 +1,14 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../services/db";
+import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { uploadMiddleware } from "../middleware/file-upload";
 import { limiterInscriptions } from "../middleware/throttle";
 import { logger } from "../config/logger";
 import { emitDeliveryUpdate } from "../config/socket";
-import { DispatchService } from "../services/dispatch.service";
+import { DispatchService, STATUTS_EN_COURSE } from "../services/dispatch.service";
+import { ordonner, versCourseTournee } from "../services/tournee.service";
 import { AuthService } from "../services/auth.service";
 import {
   DriverApprovalService,
@@ -15,9 +17,10 @@ import {
   piecesAttendues,
 } from "../services/driver-approval.service";
 import { DriverPayoutService } from "../services/driver-payout.service";
-import { DeliveryProofService } from "../services/delivery-proof.service";
+import { DeliveryProofService, exigerAttenteTerminee, finAttente } from "../services/delivery-proof.service";
+import { FileUploadService } from "../services/file-upload.service";
 import { notesDuLivreur } from "../services/driver-rating.service";
-import { DriverActivityService, FiltreHistorique } from "../services/driver-activity.service";
+import { bilanCourse, DriverActivityService, FiltreHistorique } from "../services/driver-activity.service";
 import { DriverAvailabilityService } from "../services/driver-availability.service";
 import { Notifier, enArrierePlan } from "../services/notifier.service";
 import { DriverSupportService, LONGUEUR_MAX } from "../services/driver-support.service";
@@ -66,6 +69,24 @@ function adresseRetrait(store?: { name?: string | null; address?: string | null;
   return [store.address, store.city].filter(Boolean).join(", ") || store.name || "";
 }
 
+/**
+ * Tournée : le client d'une course masquée (d'autres commandes attendent au
+ * commerce, ou une autre remise passe avant) ne sort pas du serveur. Le
+ * livreur ne découvre l'adresse suivante qu'une fois la précédente livrée.
+ */
+function masquerClient<T extends Record<string, unknown>>(course: T, raison: "RETRAITS" | "ORDRE" | null): T {
+  if (!raison) return { ...course, masque: null };
+  return {
+    ...course,
+    masque: raison,
+    customerName: null,
+    customerPhone: null,
+    deliveryAddress: null,
+    latitude: null,
+    longitude: null,
+  };
+}
+
 function adresseLivraison(order?: { deliveryAddress?: string | null; deliveryPostal?: string | null; deliveryCity?: string | null } | null) {
   if (!order) return "";
   const ville = [order.deliveryPostal, order.deliveryCity].filter(Boolean).join(" ");
@@ -79,6 +100,7 @@ const inscriptionSchema = z.object({
   phone: z.string().min(9, "Téléphone invalide"),
   vehicleType: z.enum(["car", "scooter", "bike"]),
   vehiclePlate: z.string().optional(),
+  ...champAcceptation,
 });
 
 // POST /drivers/register - Inscription d'un livreur
@@ -99,6 +121,12 @@ router.post("/register", limiterInscriptions, async (req: Request, res: Response
 
     const utilisateur = await db.user.create({
       data: { email: body.email, name: body.name, passwordHash },
+    });
+
+    await enregistrerAcceptation(req, {
+      email: utilisateur.email,
+      userId: utilisateur.id,
+      documents: ["cgu", "conditions-livreurs", "confidentialite"],
     });
 
     const livreur = await db.driver.create({
@@ -416,6 +444,8 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         // l'attribution en a fait. L'application a besoin des deux.
         isOnline: driver.isOnline,
         isAvailable: driver.isAvailable,
+        // Combien de courses à la fois la plateforme autorise (tournée).
+        maxCourses: (await DispatchService.reglages()).tournee.maxCourses,
         latitude: driver.latitude,
         longitude: driver.longitude,
         lastLocationUpdate: driver.lastLocationUpdate,
@@ -623,7 +653,7 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
             items: {
               include: { product: true }
             },
-            store: { select: { name: true, address: true, city: true } },
+            store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
           }
         }
       },
@@ -631,7 +661,10 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
       orderBy: { createdAt: "desc" }
     });
 
-    const formatted = deliveries.map((d: any) => ({
+    // Les courses du livreur : celles de sa tournée qui ne sont pas encore
+    // à leur tour ne montrent pas leur client.
+    const etat = enAttente ? null : await DispatchService.etatTournee(livreur.id);
+    const formatted = deliveries.map((d: any) => masquerClient({
       id: d.id,
       orderId: d.orderId,
       status: d.status,
@@ -643,8 +676,18 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
       totalAmount: d.order?.totalAmount || 0,
       distance: d.distanceKm ?? undefined,
       estimatedTime: d.estimatedTime,
-      items: d.order?.items || []
-    }));
+      items: d.order?.items || [],
+      // Les deux arrêts d'une course attribuée : l'application sait ainsi où
+      // l'immobilité est normale (attendre au commerce, chez le client).
+      ...(enAttente
+        ? {}
+        : {
+            pickupLat: d.pickupLat ?? d.order?.store?.latitude ?? null,
+            pickupLng: d.pickupLng ?? d.order?.store?.longitude ?? null,
+            latitude: d.deliveryLat ?? null,
+            longitude: d.deliveryLng ?? null,
+          }),
+    }, etat && STATUTS_EN_COURSE.includes(d.status) ? DispatchService.masquage(etat, d.id) : null));
 
     res.json({
       success: true,
@@ -703,7 +746,7 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
 
     // Seul le livreur de la course (ou celui à qui elle est proposée) la lit :
     // elle porte le nom, le téléphone et l'adresse du client.
-    await courseDuLivreur(req, deliveryId);
+    const { livreur } = await courseDuLivreur(req, deliveryId);
 
     const delivery = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
@@ -713,7 +756,12 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
             items: { include: { product: true } },
             store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
           }
-        }
+        },
+        offers: {
+          where: { driverId: livreur.id, status: "ACCEPTED" },
+          select: { payout: true, distanceKm: true, respondedAt: true },
+          take: 1,
+        },
       }
     });
 
@@ -728,12 +776,20 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
     const destLat = attribuee ? delivery.deliveryLat : delivery.deliveryLatObfusquee;
     const destLng = attribuee ? delivery.deliveryLng : delivery.deliveryLngObfusquee;
 
+    const raison =
+      delivery.driverId === livreur.id && STATUTS_EN_COURSE.includes(delivery.status)
+        ? DispatchService.masquage(await DispatchService.etatTournee(livreur.id), delivery.id)
+        : null;
+
     res.json({
       success: true,
-      data: {
+      data: masquerClient({
         id: delivery.id,
         orderId: delivery.orderId,
         status: delivery.status,
+        // Le livreur arrive pendant la préparation : il ne prend la commande
+        // qu'une fois que le commerçant l'a déclarée prête.
+        orderStatus: delivery.order?.status,
         pickupStore: delivery.order?.store?.name || "",
         pickupAddress: adresseRetrait(delivery.order?.store),
         deliveryAddress: adresseLivraison(delivery.order),
@@ -750,7 +806,13 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
         // Le livreur doit savoir qu'un code lui sera demandé, sans jamais le
         // lire : c'est le client qui le détient.
         ...DeliveryProofService.etatDeLaPreuve(delivery),
-      }
+        // Course livrée par lui : ce qu'elle lui a rapporté, en distance et
+        // en temps, pour l'écran de fin de course.
+        bilan:
+          delivery.status === "DELIVERED" && delivery.driverId === livreur.id
+            ? bilanCourse(delivery, delivery.offers[0])
+            : null,
+      }, raison),
     });
   } catch (err) {
     next(err);
@@ -825,6 +887,57 @@ router.patch(
       }
 
       /**
+       * Une course terminée ne revient pas en arrière.
+       *
+       * L'application renvoie au retour du réseau les étapes faites sans lui ;
+       * une prise en charge partie en double après la remise ne doit pas
+       * rouvrir une course livrée.
+       */
+      if ((course.status === "DELIVERED" || course.status === "FAILED") && status !== course.status) {
+        throw new ApiError(409, "Cette course est déjà terminée", "DELIVERY_FINISHED");
+      }
+
+      /**
+       * L'heure où l'étape a vraiment eu lieu.
+       *
+       * Faite sans réseau, elle n'arrive qu'au retour de celui-ci, parfois
+       * vingt minutes plus tard : l'historique et les statistiques doivent
+       * garder l'heure réelle. Retenue seulement si elle est plausible (dans
+       * les six dernières heures, pas dans le futur, pas avant l'attribution) ;
+       * sinon, l'heure de réception.
+       */
+      const maintenant = new Date();
+      const declaree = typeof req.body?.effectueLe === "string" ? new Date(req.body.effectueLe) : null;
+      const effectueLe =
+        declaree &&
+        !Number.isNaN(declaree.getTime()) &&
+        declaree.getTime() <= maintenant.getTime() + 60_000 &&
+        declaree.getTime() >= maintenant.getTime() - 6 * 3600_000 &&
+        (!course.assignedAt || declaree.getTime() >= course.assignedAt.getTime())
+          ? new Date(Math.min(declaree.getTime(), maintenant.getTime()))
+          : maintenant;
+
+      /**
+       * La commande ne quitte le commerce qu'une fois prête.
+       *
+       * Le livreur est appelé dès « En préparation » pour avoir le temps
+       * d'arriver : il attend alors que le commerçant la déclare prête.
+       */
+      if (status === "PICKED_UP" && course.status !== "PICKED_UP") {
+        const commande = await db.order.findUnique({
+          where: { id: course.orderId },
+          select: { status: true },
+        });
+        if (commande && commande.status !== "READY") {
+          throw new ApiError(
+            409,
+            "La commande est encore en préparation : attendez que le commerçant la déclare prête.",
+            "ORDER_NOT_READY"
+          );
+        }
+      }
+
+      /**
        * Clore une course demande une preuve.
        *
        * Elle passait à DELIVERED sur simple clic : rien ne distinguait un repas
@@ -832,6 +945,8 @@ router.patch(
        * le prouve ; à défaut, la photo du dépôt.
        */
       if (status === "DELIVERED" && course.status !== "DELIVERED") {
+        // Tournée : on ne remet qu'à son tour, toutes les commandes en main.
+        await DispatchService.exigerTourAtteint(livreur.id, deliveryId);
         await DeliveryProofService.verifier(deliveryId, {
           code: req.body?.code,
           photoUrl: req.body?.photoUrl,
@@ -843,12 +958,21 @@ router.patch(
         where: { id: deliveryId },
         data: {
           status: status as any,
-          ...(status === "DELIVERED" && { deliveryTime: new Date() }),
+          ...(status === "DELIVERED" && course.status !== "DELIVERED" && { deliveryTime: effectueLe }),
           // L'heure de récupération sert à l'historique et aux statistiques.
-          ...(status === "PICKED_UP" && course.status !== "PICKED_UP" && { pickupTime: new Date() })
+          ...(status === "PICKED_UP" && course.status !== "PICKED_UP" && { pickupTime: effectueLe })
         },
         include: { order: { select: { feesAmount: true } } }
       });
+
+      // Un retrait de plus : l'ordre des remises se recalcule, depuis le
+      // dernier commerce, une fois toutes les commandes en main.
+      if (status === "PICKED_UP" && course.status !== "PICKED_UP") {
+        await db.orderDelivery.updateMany({
+          where: { driverId: livreur.id, status: { in: STATUTS_EN_COURSE } },
+          data: { ordreRemise: null },
+        });
+      }
 
       // Une course livrée alimente les compteurs du livreur. On paie ce qui a
       // été annoncé à l'attribution, pas les frais facturés au client : une
@@ -868,11 +992,11 @@ router.patch(
           data: {
             totalDeliveries: { increment: 1 },
             totalEarnings: { increment: remuneration },
-            currentOrderId: null,
-            // Le livreur redevient disponible pour la course suivante.
-            isAvailable: true,
           },
         });
+        // Le livreur redevient disponible pour la course suivante, sauf s'il
+        // lui en reste d'autres dans sa tournée.
+        await DispatchService.liberer(livreur.id);
 
         // Notifier le client que la commande est livrée avec succès
         const order = await db.order.findUnique({
@@ -913,10 +1037,7 @@ router.patch(
       // Une course abandonnée doit libérer le livreur, sans quoi il ne reçoit
       // plus rien.
       if (status === "FAILED" && course.status !== "FAILED") {
-        await db.driver.update({
-          where: { id: livreur.id },
-          data: { currentOrderId: null, isAvailable: true },
-        });
+        await DispatchService.liberer(livreur.id);
       }
 
       emitDeliveryUpdate(delivery.orderId, {
@@ -933,6 +1054,106 @@ router.patch(
         success: true,
         message: "Delivery updated",
         data: delivery
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * POST /drivers/deliveries/:id/photo - La photo du dépôt, prise sur place
+ *
+ * Le livreur devait coller un lien vers une photo hébergée ailleurs : personne
+ * ne le faisait. La photo part maintenant de l'appareil du téléphone et reste
+ * chez nous, où le client la voit. Elle n'est retenue comme preuve qu'à la
+ * clôture de la course (PATCH /deliveries/:id avec `photoUrl`).
+ */
+router.post(
+  "/deliveries/:id/photo",
+  authMiddleware,
+  uploadMiddleware.single("photo"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const deliveryId = req.params.id as string;
+      const { livreur, course } = await courseDuLivreur(req, deliveryId);
+
+      if (course.driverId !== livreur.id) {
+        throw new ApiError(403, "Acceptez d'abord cette course", "NOT_ASSIGNED");
+      }
+      if (course.status !== "PICKED_UP") {
+        throw new ApiError(400, "La photo se prend au moment du dépôt", "NOT_PICKED_UP");
+      }
+      await DispatchService.exigerTourAtteint(livreur.id, deliveryId);
+      // Le dépôt ne se photographie qu'au terme de l'attente du client.
+      exigerAttenteTerminee(course);
+      if (!req.file) {
+        throw new ApiError(400, "Aucune photo reçue", "NO_FILE");
+      }
+      if (!req.file.mimetype.startsWith("image/")) {
+        throw new ApiError(400, "Le dépôt se prouve par une photo", "INVALID_FILE_TYPE");
+      }
+
+      const { url } = await FileUploadService.uploadDocument(
+        req.file.buffer,
+        req.file.originalname || "depot.jpg",
+        "deliveries",
+        req.file.mimetype
+      );
+
+      res.status(201).json({ success: true, data: { photoUrl: url } });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * POST /drivers/deliveries/:id/attente - Le client ne répond pas : l'attente commence
+ *
+ * Le livreur est à la porte, il a appelé sans réponse. Six minutes commencent,
+ * que le client voit sur son suivi et reçoit par notification ; à leur terme
+ * seulement, le livreur peut déposer la commande en lieu sûr et la
+ * photographier. Relancer ne remet pas le compteur à zéro.
+ */
+router.post(
+  "/deliveries/:id/attente",
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const deliveryId = req.params.id as string;
+      const { livreur, course } = await courseDuLivreur(req, deliveryId);
+
+      if (course.driverId !== livreur.id) {
+        throw new ApiError(403, "Acceptez d'abord cette course", "NOT_ASSIGNED");
+      }
+      if (course.status !== "PICKED_UP") {
+        throw new ApiError(409, "L'attente commence une fois la commande récupérée, chez le client", "NOT_PICKED_UP");
+      }
+      // Tournée : on n'attend un client qu'à son tour.
+      await DispatchService.exigerTourAtteint(livreur.id, deliveryId);
+
+      // Une seule attente par course, même si le bouton est touché deux fois.
+      const lancee = await db.orderDelivery.updateMany({
+        where: { id: deliveryId, customerWaitStartedAt: null },
+        data: { customerWaitStartedAt: new Date() },
+      });
+      const aJour = await db.orderDelivery.findUniqueOrThrow({
+        where: { id: deliveryId },
+        select: { orderId: true, customerWaitStartedAt: true },
+      });
+      const fin = finAttente(aJour);
+
+      if (lancee.count > 0 && fin) {
+        // Le suivi du client affiche aussitôt le compte à rebours.
+        emitDeliveryUpdate(aJour.orderId, { status: "PICKED_UP", attenteFinLe: fin, maintenant: new Date() });
+        enArrierePlan(Notifier.attenteClient(aJour.orderId, fin));
+        logger.info("Customer wait started", { deliveryId, driverId: livreur.id });
+      }
+
+      res.json({
+        success: true,
+        data: { attenteDebutLe: aJour.customerWaitStartedAt, attenteFinLe: fin, maintenant: new Date() },
       });
     } catch (err) {
       next(err);
@@ -1054,6 +1275,10 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
         })(),
         payout: Number(proposition.payout || 0),
         expiresAt: proposition.expiresAt,
+        // Plusieurs courses : proposées ensemble (même batchId, un seul
+        // « Accepter » pour tout le lot), ou ajoutée à la course en cours.
+        batchId: proposition.batchId,
+        ajout: proposition.ajout,
         // Nouvelles données
         pickupStore: proposition.delivery.order?.store?.name,
         pickupAddress: proposition.delivery.order?.store?.address,
@@ -1063,12 +1288,88 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
         deliveryAddress: proposition.delivery.order?.deliveryAddress,
         deliveryCity: proposition.delivery.order?.deliveryCity,
         deliveryPostal: proposition.delivery.order?.deliveryPostal,
+        // Le point de livraison, à 50-100 m près tant que la course n'est pas
+        // acceptée : de quoi tracer le trajet sur la carte de la proposition.
+        deliveryLat: proposition.delivery.deliveryLatObfusquee,
+        deliveryLng: proposition.delivery.deliveryLngObfusquee,
         // Anciennes données (rétrocompatibilité)
         boutique: proposition.delivery.order?.store,
         adresse: proposition.delivery.order?.deliveryAddress,
         ville: proposition.delivery.order?.deliveryCity,
         codePostal: proposition.delivery.order?.deliveryPostal,
       })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /drivers/tournee - Les arrêts du livreur, dans l'ordre
+ *
+ * Avec plusieurs courses, l'ordre des retraits et des remises ne va pas de
+ * soi : le serveur le calcule depuis la position du livreur (voir
+ * tournee.service.ts), un retrait toujours avant sa remise.
+ */
+router.get("/tournee", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const courses = await db.orderDelivery.findMany({
+      where: { driverId: livreur.id, status: { in: STATUTS_EN_COURSE } },
+      include: {
+        order: {
+          select: {
+            status: true,
+            customerName: true,
+            deliveryAddress: true,
+            deliveryPostal: true,
+            deliveryCity: true,
+            store: { select: { name: true, address: true, city: true } },
+          },
+        },
+      },
+      orderBy: { assignedAt: "asc" },
+    });
+
+    const depart = { latitude: livreur.latitude, longitude: livreur.longitude };
+    const { arrets: tous, km } = ordonner(
+      estUnPoint(depart) ? depart : null,
+      courses.map(versCourseTournee)
+    );
+    const parId = new Map(courses.map((c) => [c.id, c]));
+
+    // Ce que le livreur voit : les commandes à récupérer d'abord ; ensuite
+    // une seule remise, celle dont c'est le tour (ordre figé au dernier
+    // retrait). Les autres clients restent masqués.
+    const etat = await DispatchService.etatTournee(livreur.id);
+    const arrets =
+      etat.retraitsRestants > 0
+        ? tous.filter((a) => a.type === "RETRAIT")
+        : tous.filter((a) => a.type === "REMISE" && a.deliveryId === etat.remiseCourante);
+    const remisesMasquees = courses.length - (etat.retraitsRestants > 0 ? 0 : arrets.length);
+
+    res.json({
+      success: true,
+      data: {
+        km: Number(km.toFixed(2)),
+        remisesMasquees,
+        arrets: arrets.map((a) => {
+          const c = parId.get(a.deliveryId)!;
+          const retrait = a.type === "RETRAIT";
+          return {
+            deliveryId: c.id,
+            orderId: c.orderId,
+            type: a.type,
+            statutCourse: c.status,
+            // Au commerce : la commande n'est à prendre qu'une fois prête.
+            commandePrete: c.order?.status === "READY",
+            nom: retrait ? c.order?.store?.name || "Commerce" : c.order?.customerName || "Client",
+            adresse: retrait ? adresseRetrait(c.order?.store) : adresseLivraison(c.order),
+            lat: a.point.latitude ?? null,
+            lng: a.point.longitude ?? null,
+          };
+        }),
+      },
     });
   } catch (err) {
     next(err);
@@ -1084,7 +1385,11 @@ router.post(
       const livreur = await livreurConnecte(req);
       const course = await DispatchService.accepter(req.params.id as string, livreur.id);
 
-      res.json({ success: true, message: "Course acceptée", data: course });
+      res.json({
+        success: true,
+        message: course.lot.length > 1 ? `${course.lot.length} courses acceptées` : "Course acceptée",
+        data: course,
+      });
     } catch (err) {
       next(err);
     }
@@ -1147,14 +1452,8 @@ router.patch(
         },
       });
 
-      // Libérer le livreur
-      await db.driver.update({
-        where: { id: livreur.id },
-        data: {
-          currentOrderId: null,
-          isAvailable: true,
-        },
-      });
+      // Libérer le livreur, s'il n'a pas d'autre course dans sa tournée.
+      await DispatchService.liberer(livreur.id);
 
       // Remettre la commande en READY pour permettre au restaurant de proposer à un autre livreur
       const order = await db.order.update({
@@ -1197,6 +1496,28 @@ router.patch(
   }
 );
 
+/**
+ * Le type d'une pièce enregistrée sans extension utile (.bin), lu dans ses
+ * premiers octets : les commerçants déposaient toutes leurs pièces en .bin, et
+ * le navigateur, à qui helmet interdit de deviner, refusait de les ouvrir.
+ */
+function typeLuDansLeFichier(chemin: string): string | null {
+  const debut = Buffer.alloc(12);
+  const fd = fs.openSync(chemin, "r");
+  try {
+    fs.readSync(fd, debut, 0, 12, 0);
+  } finally {
+    fs.closeSync(fd);
+  }
+  if (debut.subarray(0, 4).toString("latin1") === "%PDF") return "application/pdf";
+  if (debut[0] === 0x89 && debut.subarray(1, 4).toString("latin1") === "PNG") return "image/png";
+  if (debut[0] === 0xff && debut[1] === 0xd8 && debut[2] === 0xff) return "image/jpeg";
+  if (debut.subarray(0, 4).toString("latin1") === "RIFF" && debut.subarray(8, 12).toString("latin1") === "WEBP") {
+    return "image/webp";
+  }
+  return null;
+}
+
 // Serve document files with proper CORS headers for preview modal
 router.options(/^\/documents\/file\/(.+)$/, (_req: Request, res: Response) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -1223,6 +1544,9 @@ router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    // Helmet réserve les réponses à la même origine : le back-office, servi sur
+    // un autre port, ne pouvait pas afficher la pièce dans une balise <img>.
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
     // Determine content type
     const ext = fullPath.split(".").pop()?.toLowerCase();
@@ -1231,6 +1555,7 @@ router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next
     else if (ext === "png") contentType = "image/png";
     else if (ext === "webp") contentType = "image/webp";
     else if (ext === "pdf") contentType = "application/pdf";
+    else contentType = typeLuDansLeFichier(fullPath) || contentType;
 
     res.setHeader("Content-Type", contentType);
     return res.sendFile(fullPath);

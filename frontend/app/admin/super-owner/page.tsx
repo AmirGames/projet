@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, BarChart3, Store, ShoppingCart, Users, TrendingUp, AlertCircle, Package } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -27,11 +29,7 @@ export default function SuperOwnerDashboard() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
@@ -54,11 +52,15 @@ export default function SuperOwnerDashboard() {
       const data = await response.json();
       setStats(data);
     } catch (err) {
-      console.error('Error loading stats:', err);
+      signalerErreur('Error loading stats:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffectChargement(() => {
+    loadStats();
+  }, [loadStats]);
 
   if (loading) {
     return (

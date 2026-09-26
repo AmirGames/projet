@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -175,7 +176,7 @@ export default function CreateStorePage() {
       router.push(espaceDAccueilLocal());
     } catch (err) {
       setError('Erreur de connexion');
-      console.error(err);
+      signalerErreur(err);
     } finally {
       setLoading(false);
     }

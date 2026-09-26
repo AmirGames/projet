@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Users, Search, Filter, Eye, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,10 +26,6 @@ export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'inactive'>('all');
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
   const fetchClients = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -37,13 +35,21 @@ export default function ClientsPage() {
 
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      setClients(data.clients || []);
+      // L'API renvoie les statuts de la base, en majuscules (ACTIVE) ; l'écran
+      // — couleurs, filtre, libellés — les attend en minuscules.
+      setClients(
+        (data.clients || []).map((ligne: any) => ({ ...ligne, status: String(ligne.status || '').toLowerCase() }))
+      );
     } catch (error) {
-      console.error('Error:', error);
+      signalerErreur('Error:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchClients();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -137,7 +143,7 @@ export default function ClientsPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('name')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('email')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('joinDate')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('status')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('statusColumn')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('actions')}</th>
                 </tr>
               </thead>
@@ -150,7 +156,7 @@ export default function ClientsPage() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(client.status)}`}>
                         {getStatusIcon(client.status)}
-                        {t(`status.${client.status}`)}
+                        {t.has(`status.${client.status}`) ? t(`status.${client.status}`) : client.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">

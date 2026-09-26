@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useCallback, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -16,9 +17,11 @@ import {
 } from 'lucide-react';
 
 import { memoriserBoutique } from '@/lib/current-store';
+import { AlerteCommandes } from '@/components/AlerteCommandes';
 import { NotificationBell } from '@/components/NotificationBell';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -85,11 +88,11 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
         setFormule(quota.tier ? { code: quota.tier, libelle: quota.tierLabel || quota.tier } : null);
       }
     } catch (error) {
-      console.error('Chargement des boutiques impossible', error);
+      signalerErreur('Chargement des boutiques impossible', error);
     }
   }, []);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (auNiveauDuChoix) charger();
   }, [auNiveauDuChoix, charger]);
 
@@ -245,6 +248,10 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             <LanguageSwitcher />
           </div>
         </header>
+
+        {/* Une commande peut tomber pendant qu'on choisit sa boutique : sans
+            cela, elle ne sonnait qu'une fois une boutique ouverte. */}
+        {orgId && <AlerteCommandes orgId={orgId} toutesBoutiques />}
 
         <main className="flex-1 p-6 overflow-auto">{children}</main>
       </div>

@@ -1,9 +1,11 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Navbar from './Navbar';
+import SynchroPaniers from './SynchroPaniers';
 import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -57,13 +59,13 @@ export default function RootLayoutContent({
           loadSavedTheme();
         }
       } catch (error) {
-        console.error(t('themeError'), error);
+        signalerErreur(t('themeError'), error);
         loadSavedTheme();
       }
     };
 
     initializeTheme();
-  }, [API_URL]);
+  }, [t]);
 
   // Masquer la navbar sur :
   // - la page d'accueil (qui a son propre header)
@@ -77,6 +79,7 @@ export default function RootLayoutContent({
 
   return (
     <>
+      <SynchroPaniers />
       {!hideNavbar && <Navbar />}
       {children}
     </>

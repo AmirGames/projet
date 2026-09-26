@@ -8,12 +8,15 @@
  * une course dans la minute.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { Bike, Car, Check, Eye, ExternalLink, Truck, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -85,12 +88,20 @@ export default function LivreursPage() {
   const [dossier, setDossier] = useState<Dossier | null>(null);
   const [motif, setMotif] = useState('');
   const [previewPiece, setPreviewPiece] = useState<Piece | null>(null);
+  // La date en cours de modification, par pièce (format AAAA-MM-JJ).
+  const [echeance, setEcheance] = useState<Record<string, string>>({});
+  // Demain : une date du jour serait déjà passée pour le serveur (minuit UTC).
+  const [dateMin, setDateMin] = useState('');
 
   const jeton = () => localStorage.getItem('accessToken');
 
-  const charger = useCallback(async () => {
-    setChargement(true);
-    setErreur('');
+  // silencieux : une relecture en direct garde la page affichée.
+  const charger = useCallback(async (silencieux = false) => {
+    // Une relecture en direct ne doit pas effacer le refus qu'on vient d'afficher.
+    if (!silencieux) {
+      setChargement(true);
+      setErreur('');
+    }
 
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/drivers?status=${filtre}`, {
@@ -109,9 +120,29 @@ export default function LivreursPage() {
     }
   }, [filtre, t, tCommon]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
+
+  // Un livreur qui s'inscrit ou dépose une pièce, validé par un collègue :
+  // la file suit, et le dossier ouvert avec elle.
+  const dossierOuvert = useDerniereValeur<string | null>(dossier?.driver.id ?? null);
+
+  useDonneesModifiees('drivers', async (modification) => {
+    charger(true);
+
+    const id = dossierOuvert.current;
+    if (!id || (modification?.id && modification.id !== id)) return;
+
+    try {
+      const reponse = await fetch(`${API_URL}/api/superowner/drivers/${id}`, {
+        headers: { Authorization: `Bearer ${jeton()}` },
+      });
+      if (reponse.ok && dossierOuvert.current === id) setDossier(await reponse.json());
+    } catch {
+      // Le dossier affiché reste celui d'avant ; la relecture suivante corrigera.
+    }
+  });
 
   const ouvrirDossier = async (livreur: Livreur) => {
     if (dossier?.driver.id === livreur.id) {
@@ -133,7 +164,7 @@ export default function LivreursPage() {
   };
 
   /** Chaque geste recharge la liste et le dossier : l'écran suit l'état réel. */
-  const agir = async (chemin: string, corps?: unknown) => {
+  const agir = async (chemin: string, corps?: unknown): Promise<boolean> => {
     setErreur('');
 
     try {
@@ -147,7 +178,7 @@ export default function LivreursPage() {
 
       if (!reponse.ok) {
         setErreur(lu?.error || t('actionFailed'));
-        return;
+        return false;
       }
 
       const id = chemin.split('/')[0];
@@ -157,8 +188,19 @@ export default function LivreursPage() {
 
       if (rafraichi.ok) setDossier(await rafraichi.json());
       await charger();
+      return true;
     } catch {
       setErreur(t('connectionError'));
+      return false;
+    }
+  };
+
+  const changerEcheance = async (livreurId: string, piece: Piece) => {
+    const date = echeance[piece.id];
+    if (!date) return;
+
+    if (await agir(`${livreurId}/documents/${piece.id}/expiry`, { expiryDate: date })) {
+      setEcheance(({ [piece.id]: _, ...reste }) => reste);
     }
   };
 
@@ -280,7 +322,8 @@ export default function LivreursPage() {
                         {livreur.vehiclePlate ? ` · ${livreur.vehiclePlate}` : ''}
                       </span>
                       <span>
-                        {livreur.piecesValidees}/{livreur.piecesAttendues} {t('piecesLabel')}
+                        {/* « 0/4 pièces validées » : l'accord suit le nombre attendu. */}
+                        {livreur.piecesValidees}/{livreur.piecesAttendues} {t('piecesLabel', { count: livreur.piecesAttendues })}
                         {livreur.piecesAttendues > 1 ? 's' : ''}
                       </span>
                       <span>
@@ -337,7 +380,46 @@ export default function LivreursPage() {
                               {piece.expiryDate && (
                                 <p className="text-xs text-gray-500">
                                   {t('expiresOn')} {new Date(piece.expiryDate).toLocaleDateString('fr-FR')}
+                                  {echeance[piece.id] === undefined && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setDateMin(new Date(Date.now() + 86_400_000).toISOString().slice(0, 10));
+                                        setEcheance({ ...echeance, [piece.id]: piece.expiryDate!.slice(0, 10) });
+                                      }}
+                                      className="ml-2 text-blue-400 hover:underline"
+                                    >
+                                      {t('editExpiry')}
+                                    </button>
+                                  )}
                                 </p>
+                              )}
+                              {echeance[piece.id] !== undefined && (
+                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                  <input
+                                    type="date"
+                                    value={echeance[piece.id]}
+                                    min={dateMin}
+                                    onChange={(e) => setEcheance({ ...echeance, [piece.id]: e.target.value })}
+                                    aria-label={`${t('newExpiryDate')} — ${piece.libelle}`}
+                                    className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => changerEcheance(livreur.id, piece)}
+                                    disabled={!echeance[piece.id]}
+                                    className="px-2 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded text-xs"
+                                  >
+                                    {t('saveExpiry')}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEcheance(({ [piece.id]: _, ...reste }) => reste)}
+                                    className="px-2 py-1 text-gray-400 hover:text-white text-xs"
+                                  >
+                                    {t('cancelExpiry')}
+                                  </button>
+                                </div>
                               )}
                               {piece.reviewNote && (
                                 <p className="text-xs text-red-300">{piece.reviewNote}</p>

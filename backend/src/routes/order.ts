@@ -6,6 +6,7 @@ import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { emitOrderUpdate } from "../config/socket";
 import { db } from "../services/db";
+import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
 
 import { DispatchService } from "../services/dispatch.service";
 
@@ -89,20 +90,27 @@ const createOrderSchema = z.object({
       })
     )
     .optional(),
+  ...champAcceptation,
 });
 
 const updateOrderStatusSchema = z.object({
-  status: z.enum(["PENDING", "ACCEPTED", "REJECTED", "READY", "COMPLETED"]),
+  status: z.enum(["PENDING", "ACCEPTED", "PREPARING", "REJECTED", "READY", "COMPLETED"]),
 });
 
 // POST /orders - Create order (public, for guest checkout)
 router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const body = createOrderSchema.parse(req.body);
+    const { conditionsAcceptees: _accepte, ...body } = createOrderSchema.parse(req.body);
 
     logger.info("Creating order", { customerName: body.customerName, storeId: body.storeId });
 
     const order = await OrderService.create(body);
+
+    await enregistrerAcceptation(req, {
+      email: body.customerEmail,
+      orderId: order.id,
+      documents: ["cgv", "confidentialite"],
+    });
 
     res.status(201).json({
       message: "Commande créée",
@@ -226,9 +234,10 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: 
 /**
  * POST /orders/:id/dispatch - Chercher un livreur pour cette commande
  *
- * Déclenché par le commerçant quand la commande est prête. Crée la course si
- * elle n'existe pas encore, puis la propose au livreur disponible le plus
- * proche.
+ * La recherche part d'elle-même quand la commande passe « En préparation ».
+ * Cette route reste pour le commerçant qui veut la relancer ou choisir un
+ * livreur précis. Crée la course si elle n'existe pas encore, puis la propose
+ * au livreur disponible le plus proche.
  *
  * Relançable : si personne n'était en ligne au premier essai, le commerçant
  * rappelle cette route plus tard sans rien dupliquer.

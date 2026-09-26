@@ -1,9 +1,18 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
+import { slugify } from '@/lib/slug';
 import { useState, FormEvent, useEffect } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
+import AcceptationConditions from '@/components/AcceptationConditions';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { useTypesDeCommerce } from '@/lib/types-commerce';
 import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { SelecteurPays } from '@/components/SelecteurPays';
+import { usePays } from '@/lib/pays-client';
+import { PAYS } from '@/lib/pays-infos';
 
 import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -14,6 +23,7 @@ interface FormData {
   password: string;
   confirmPassword: string;
   businessType: string;
+  cuisineType: string;
   phone: string;
   address: string;
   city: string;
@@ -33,10 +43,13 @@ export default function MerchantRegisterPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [successMessage, setSuccessMessage] = useState('');
   const [apiError, setApiError] = useState('');
+  const { etablissements, cuisines } = useTypesDeCommerce();
+  const [pays, setPays] = usePays();
 
   // Rediriger vers onboard si connecté
   useEffect(() => {
@@ -50,7 +63,8 @@ export default function MerchantRegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    businessType: 'RESTAURANT',
+    businessType: 'restaurant',
+    cuisineType: '',
     phone: '',
     address: '',
     city: '',
@@ -98,6 +112,8 @@ export default function MerchantRegisterPage() {
 
     if (!formData.postalCode.trim()) {
       newErrors.postalCode = 'Le code postal est requis';
+    } else if (!PAYS[pays].codePostal.test(formData.postalCode.trim())) {
+      newErrors.postalCode = `Code postal invalide pour la ${PAYS[pays].nom} (ex. ${PAYS[pays].exempleCodePostal})`;
     }
 
     if (!formData.description.trim()) {
@@ -122,21 +138,10 @@ export default function MerchantRegisterPage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: name === 'storeSlug' ? slugify(value, false) : value,
+      // Génère automatiquement le slug à partir du nom de la boutique
+      ...(name === 'storeName' ? { storeSlug: slugify(value) } : {}),
     }));
-
-    // Auto-generate storeSlug from storeName
-    if (name === 'storeName') {
-      const slug = value
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '');
-      setFormData(prev => ({
-        ...prev,
-        storeSlug: slug,
-      }));
-    }
 
     // Clear error for this field
     if (errors[name]) {
@@ -165,14 +170,21 @@ export default function MerchantRegisterPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          conditionsAcceptees,
           businessName: formData.businessName,
           email: formData.email,
           password: formData.password,
           businessType: formData.businessType,
-          phone: formData.phone,
+          // Une cuisine n'a de sens qu'en restauration.
+          cuisineType:
+            formData.businessType === 'restaurant' && formData.cuisineType
+              ? formData.cuisineType
+              : null,
+          phone: telephoneInternational(formData.phone, pays),
           address: formData.address,
           city: formData.city,
           postalCode: formData.postalCode,
+          country: pays,
           website: formData.website || null,
           description: formData.description,
           storeName: formData.storeName,
@@ -206,7 +218,7 @@ export default function MerchantRegisterPage() {
       }, 2000);
     } catch (error) {
       setApiError('Une erreur est survenue. Veuillez réessayer.');
-      console.error('Registration error:', error);
+      signalerErreur('Registration error:', error);
     } finally {
       setLoading(false);
     }
@@ -281,14 +293,36 @@ export default function MerchantRegisterPage() {
                     onChange={handleChange}
                     className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
                   >
-                    <option value="RESTAURANT">Restaurant</option>
-                    <option value="CAFE">Café</option>
-                    <option value="BAKERY">Boulangerie</option>
-                    <option value="SHOP">Boutique</option>
-                    <option value="GROCERY">Épicerie</option>
-                    <option value="OTHER">Autre</option>
+                    {etablissements.map((genre) => (
+                      <option key={genre.code} value={genre.code}>
+                        {genre.libelle}
+                      </option>
+                    ))}
                   </select>
                 </div>
+
+                {/* Une épicerie n'a pas de cuisine : le champ n'apparaît que
+                    là où il a un sens. */}
+                {formData.businessType === 'restaurant' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Type de cuisine
+                    </label>
+                    <select
+                      name="cuisineType"
+                      value={formData.cuisineType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    >
+                      <option value="">Non précisé</option>
+                      {cuisines.map((cuisine) => (
+                        <option key={cuisine.code} value={cuisine.code}>
+                          {cuisine.libelle}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -319,7 +353,7 @@ export default function MerchantRegisterPage() {
                     className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
                       errors.phone ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    placeholder="+33 6 12 34 56 78"
+                    placeholder={PAYS[pays].exempleTelephone}
                   />
                   {errors.phone && <p className="text-red-400 text-sm mt-1">{errors.phone}</p>}
                 </div>
@@ -366,18 +400,36 @@ export default function MerchantRegisterPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
+                  <label htmlFor="pays" className="block text-sm font-medium text-gray-300 mb-2">
+                    Pays *
+                  </label>
+                  <SelecteurPays
+                    pays={pays}
+                    onChange={setPays}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Adresse *
                   </label>
-                  <input
-                    type="text"
-                    name="address"
+                  <AddressAutocomplete
                     value={formData.address}
-                    onChange={handleChange}
+                    onChange={(valeur) => setFormData((prev) => ({ ...prev, address: valeur }))}
+                    onSelect={(adresse) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        address: adresse.street,
+                        city: adresse.city || prev.city,
+                        postalCode: adresse.postalCode || prev.postalCode,
+                      }))
+                    }
                     className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
                       errors.address ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    placeholder="123 Rue de la Paix"
+                    placeholder={PAYS[pays].exempleRue}
+                    pays={pays}
                   />
                   {errors.address && <p className="text-red-400 text-sm mt-1">{errors.address}</p>}
                 </div>
@@ -394,7 +446,7 @@ export default function MerchantRegisterPage() {
                     className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
                       errors.city ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    placeholder="Paris"
+                    placeholder={PAYS[pays].exempleVille}
                   />
                   {errors.city && <p className="text-red-400 text-sm mt-1">{errors.city}</p>}
                 </div>
@@ -411,7 +463,7 @@ export default function MerchantRegisterPage() {
                     className={`w-full px-4 py-2 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-red-500 ${
                       errors.postalCode ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    placeholder="75001"
+                    placeholder={PAYS[pays].exempleCodePostal}
                   />
                   {errors.postalCode && <p className="text-red-400 text-sm mt-1">{errors.postalCode}</p>}
                 </div>
@@ -519,10 +571,19 @@ export default function MerchantRegisterPage() {
               </p>
             </div>
 
+            <AcceptationConditions
+              coche={conditionsAcceptees}
+              onChange={setConditionsAcceptees}
+              documents={[
+                { href: '/cgu', libelle: 'les conditions générales d’utilisation' },
+                { href: '/conditions-commercants', libelle: 'les conditions générales commerçants' },
+              ]}
+            />
+
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !conditionsAcceptees}
               className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               {loading ? (

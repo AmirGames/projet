@@ -1,14 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Clock, CheckCircle, AlertCircle, Package, Eye, Truck } from 'lucide-react';
 import Link from 'next/link';
 
 import { useCurrentStore } from '@/lib/current-store';
+import { ReponseCommande } from '@/components/ReponseCommande';
+import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useParametreAdresse } from '@/lib/navigateur';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -35,6 +41,20 @@ interface Order {
   deliveryMode?: 'OWN' | 'PLATFORM' | null;
   items: OrderItem[];
   createdAt: string;
+  customerPhone?: string | null;
+  pickupTime?: string | null;
+  /** L'heure limite pour répondre, tant que la commande est en attente. */
+  echeance?: string | null;
+  estimatedReadyAt?: string | null;
+  preparationMinutes?: number | null;
+  rejectionReason?: string | null;
+  rejectionNote?: string | null;
+  /** La course, créée dès que la commande passe « En préparation ». */
+  delivery?: {
+    status: string;
+    driverId?: string | null;
+    driver?: { name?: string | null; phone?: string | null } | null;
+  } | null;
 }
 
 type OrderStatus = 'PENDING' | 'ACCEPTED' | 'PREPARING' | 'REJECTED' | 'READY' | 'COMPLETED';
@@ -65,7 +85,7 @@ function expliquerAbsence(
   if (!d) return null;
   if (d.total === 0) return "Aucun livreur n'est inscrit sur la plateforme.";
   if (d.actifs === 0) return `${d.total} livreur(s) inscrit(s), mais aucun dossier validé (statut ACTIVE) par la plateforme.`;
-  if (d.enLigne === 0) return `${d.actifs} livreur(s) validé(s), mais aucun n'est en ligne. Le livreur doit activer « En ligne » dans son espace.`;
+  if (d.enLigne === 0) return `Aucun livreur n'est en ligne. Le livreur doit activer « En ligne » dans son espace.`;
   if (d.libres === 0) return `${d.enLigne} livreur(s) en ligne, mais tous sont déjà en course.`;
   if (d.localises === 0) return `${d.libres} livreur(s) en ligne, mais aucun n'envoie sa position (localisation refusée ou signal GPS perdu). Le livreur doit garder l'application ouverte avec la localisation autorisée.`;
   if (d.plusProcheKm != null) return `Le livreur le plus proche est à ${d.plusProcheKm.toFixed(1)} km, au-delà du rayon de ${rayon ?? '?'} km.`;
@@ -81,11 +101,14 @@ export default function OrdersPage() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<OrderStatus | 'ALL'>('ALL');
+  // Le bandeau des nouvelles commandes mène ici, filtré sur celles à accepter
+  // (?filtre=PENDING) ; un filtre choisi dans la page l'emporte.
+  const filtreAdresse = useParametreAdresse('filtre') === 'PENDING' ? 'PENDING' : 'ALL';
+  const [filtreChoisi, setFilter] = useState<OrderStatus | 'ALL' | null>(null);
+  const filter = filtreChoisi ?? filtreAdresse;
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<any>(null);
-  const [updating, setUpdating] = useState<string | null>(null);
   const [useOwnDelivery, setUseOwnDelivery] = useState(false);
   const [showDeliveryModal, setShowDeliveryModal] = useState<string | null>(null);
   const [availableDeliveryMen, setAvailableDeliveryMen] = useState<any[]>([]);
@@ -95,15 +118,7 @@ export default function OrdersPage() {
 
   const itemsPerPage = 20;
 
-  useEffect(() => {
-    if (storeId) {
-      fetchOrders();
-      fetchStats();
-      fetchDeliverySettings();
-    }
-  }, [storeId, filter, page]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
@@ -131,13 +146,13 @@ export default function OrdersPage() {
       setOrders(data.data || []);
       setTotal(data.total || 0);
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      signalerErreur('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, page, router, storeId]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
@@ -152,39 +167,22 @@ export default function OrdersPage() {
       const data = await response.json();
       setStats(data);
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      signalerErreur('Error fetching stats:', error);
     }
-  };
+  }, [storeId]);
 
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    try {
-      setUpdating(orderId);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-
-      const response = await fetch(`${API_URL}/api/order-management/${storeId}/${orderId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update order status');
-      }
-
-      const data = await response.json();
-      setOrders(orders.map(o => o.id === orderId ? data.order : o));
+  // Ailleurs aussi : un collègue, le livreur, le client, une annulation
+  // automatique. La liste suit sans qu'on recharge.
+  useDonneesModifiees(
+    'orders',
+    () => {
+      fetchOrders();
       fetchStats();
-    } catch (error) {
-      console.error('Error updating order status:', error);
-    } finally {
-      setUpdating(null);
-    }
-  };
+    },
+    { storeId, actif: Boolean(storeId) }
+  );
 
-  const fetchDeliverySettings = async () => {
+  const fetchDeliverySettings = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       if (!token) return;
@@ -200,9 +198,30 @@ export default function OrdersPage() {
       const delivery = settings.delivery || {};
       setUseOwnDelivery(delivery.useOwnDelivery || false);
     } catch (error) {
-      console.error('Error fetching delivery settings:', error);
+      signalerErreur('Error fetching delivery settings:', error);
     }
-  };
+  }, [storeId]);
+
+  useEffectChargement(() => {
+    if (storeId) {
+      fetchOrders();
+      fetchStats();
+      fetchDeliverySettings();
+    }
+  }, [storeId, fetchOrders, fetchStats, fetchDeliverySettings]);
+
+  // Une commande arrive, ou quelqu'un y répond : la liste se relit seule.
+  useEffect(() => {
+    if (!storeId) return;
+
+    const relire = () => {
+      fetchOrders();
+      fetchStats();
+    };
+
+    window.addEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
+    return () => window.removeEventListener(EVENEMENT_COMMANDES_CHANGEES, relire);
+  }, [storeId, fetchOrders, fetchStats]);
 
   const handleCallDelivery = async (orderId: string) => {
     try {
@@ -248,7 +267,7 @@ export default function OrdersPage() {
         setDriversDiagnostic(expliquerAbsence(data.diagnostic, data.radiusKm));
       }
     } catch (error) {
-      console.error('Error fetching available drivers:', error);
+      signalerErreur('Error fetching available drivers:', error);
       setAvailableDeliveryMen([]);
       setDriversDiagnostic(error instanceof Error ? error.message : String(error));
     } finally {
@@ -287,7 +306,7 @@ export default function OrdersPage() {
       setShowDeliveryModal(null);
       fetchOrders();
     } catch (error) {
-      console.error('Error selecting driver:', error);
+      signalerErreur('Error selecting driver:', error);
       setDispatchMessage({ ok: false, text: 'Serveur injoignable.' });
     }
   };
@@ -356,6 +375,18 @@ export default function OrdersPage() {
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
               <p className="text-gray-400 text-xs mb-1">{t('statsRevenue')}</p>
               <p className="text-2xl font-bold">{euro(stats.totalRevenue, 0)}</p>
+              {/* Ce que le commerçant a encaissé pour les livreurs de la
+                  plateforme : hors de son chiffre, à reverser avec la commission. */}
+              {stats.platformDeliveryFees > 0 && (
+                <p className="text-xs text-amber-300 mt-1">
+                  hors {euro(stats.platformDeliveryFees)} de livraison à reverser
+                </p>
+              )}
+              {stats.platformServiceFees > 0 && (
+                <p className="text-xs text-amber-300 mt-1">
+                  hors {euro(stats.platformServiceFees)} de frais de service à reverser
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -390,7 +421,12 @@ export default function OrdersPage() {
             orders.map((order) => {
               const StatusIcon = statusIcons[order.status];
               return (
-                <div key={order.id} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                <div
+                  key={order.id}
+                  className={`bg-gray-800 border rounded-lg p-6 ${
+                    order.status === 'PENDING' ? 'border-yellow-500/70' : 'border-gray-700'
+                  }`}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Order Info */}
                     <div>
@@ -432,41 +468,51 @@ export default function OrdersPage() {
                           <Eye size={14} className="inline mr-1" />
                           {t('orderDetails')}
                         </Link>
-                        {/* Un livreur de la plateforme ne s'appelle que pour une commande
-                            qui lui est destinée : celui qui livre lui-même n'en a pas. */}
+                        {/* Le livreur de la plateforme est cherché dès « En préparation ».
+                            Le bouton ne reste que pour choisir un livreur précis tant
+                            que personne n'a accepté. */}
                         {order.deliveryType === 'DELIVERY' &&
                           (order.deliveryMode ? order.deliveryMode === 'PLATFORM' : !useOwnDelivery) &&
-                          order.status === 'READY' && (
-                          <button
-                            onClick={() => handleCallDelivery(order.id)}
-                            className="px-3 py-1 bg-amber-600/20 text-amber-400 rounded text-xs font-medium hover:bg-amber-600/30 transition-colors"
-                          >
-                            <Truck size={14} className="inline mr-1" />
-                            Appeler un livreur
-                          </button>
+                          (order.status === 'PREPARING' || order.status === 'READY') && (
+                          order.delivery?.driverId ? (
+                            <span className="px-3 py-1 bg-green-600/20 text-green-400 rounded text-xs font-medium">
+                              <Truck size={14} className="inline mr-1" />
+                              {order.delivery.status === 'PICKED_UP'
+                                ? `En route avec ${order.delivery.driver?.name?.split(' ')[0] || 'le livreur'}`
+                                : `Livreur trouvé : ${order.delivery.driver?.name?.split(' ')[0] || 'en route'}`}
+                            </span>
+                          ) : (
+                            <>
+                              <span className="px-3 py-1 bg-amber-600/20 text-amber-400 rounded text-xs font-medium">
+                                🔎 Recherche d&apos;un livreur…
+                              </span>
+                              <button
+                                onClick={() => handleCallDelivery(order.id)}
+                                className="px-3 py-1 bg-gray-700 text-gray-300 rounded text-xs font-medium hover:bg-gray-600 transition-colors"
+                              >
+                                Choisir un livreur
+                              </button>
+                            </>
+                          )
                         )}
                       </div>
                     </div>
 
-                    {/* Status Change */}
+                    {/* Répondre à la commande, puis la faire avancer. */}
                     <div>
-                      <p className="text-sm font-semibold text-gray-300 mb-3">{t('statusChange')}</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(['ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'REJECTED'] as const).map(status => (
-                          <button
-                            key={status}
-                            onClick={() => handleStatusChange(order.id, status)}
-                            disabled={updating === order.id || order.status === status}
-                            className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
-                              order.status === status
-                                ? 'bg-gray-600/50 text-gray-400 border border-gray-600 cursor-default'
-                                : `${statusColors[status]} border hover:opacity-80`
-                            }`}
-                          >
-                            {updating === order.id ? '...' : t(`statusLabel.${status}`)}
-                          </button>
-                        ))}
-                      </div>
+                      <p className="text-sm font-semibold text-gray-300 mb-3">
+                        {order.status === 'PENDING' ? 'Nouvelle commande' : t('statusChange')}
+                      </p>
+                      {storeId && (
+                        <ReponseCommande
+                          storeId={storeId}
+                          commande={order}
+                          surChangement={() => {
+                            fetchOrders();
+                            fetchStats();
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

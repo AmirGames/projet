@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Send } from 'lucide-react';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -53,12 +55,23 @@ export function TicketConversation({ basePath, ticketId, viewerRole, readOnly, o
     } finally {
       setLoading(false);
     }
-  }, [basePath, ticketId]);
+  }, [basePath, ticketId, t]);
 
-  useEffect(() => {
+  // Un autre ticket : la conversation affichée n'est plus la bonne.
+  const conversation = `${basePath}/${ticketId}`;
+  const [conversationVue, setConversationVue] = useState(conversation);
+  if (conversation !== conversationVue) {
+    setConversationVue(conversation);
     setLoading(true);
+  }
+
+  useEffectChargement(() => {
     fetchMessages();
   }, [fetchMessages]);
+
+  // La réponse de l'autre côté arrive sans recharger : le support pour le
+  // commerçant, le commerçant pour le support.
+  useDonneesModifiees('tickets', fetchMessages, { id: ticketId });
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();

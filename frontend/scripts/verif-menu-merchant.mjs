@@ -12,6 +12,7 @@
  */
 
 import { chromium } from 'playwright';
+import { entrerEspaceCommercant } from './connexion.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 
@@ -28,7 +29,7 @@ await page.goto(`${SITE}/login`);
 await page.fill('input[type="email"]', 'marchand@demo.fr');
 await page.fill('input[type="password"]', 'Password123!');
 await page.click('button[type="submit"]');
-await page.waitForURL('**/merchant', { timeout: 15000 });
+await entrerEspaceCommercant(page);
 check('la connexion mène au choix du commerce', page.url().endsWith('/merchant'), page.url());
 
 await page.waitForTimeout(2500);

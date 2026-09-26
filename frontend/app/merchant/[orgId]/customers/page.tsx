@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Search, Mail, Phone, Trash2, Lock, Eye } from 'lucide-react';
@@ -9,6 +10,7 @@ import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -44,13 +46,7 @@ export default function CustomersPage() {
 
   const itemsPerPage = 20;
 
-  useEffect(() => {
-    if (storeId) {
-      fetchCustomers();
-    }
-  }, [storeId, search, page]);
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
@@ -78,11 +74,17 @@ export default function CustomersPage() {
       setCustomers(data.data || []);
       setTotal(data.total || 0);
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      signalerErreur('Error fetching customers:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, router, search, storeId]);
+
+  useEffectChargement(() => {
+    if (storeId) {
+      fetchCustomers();
+    }
+  }, [storeId, search, page, fetchCustomers]);
 
   const handleDelete = async (customerId: string) => {
     try {
@@ -101,7 +103,7 @@ export default function CustomersPage() {
       setCustomers(customers.filter(c => c.id !== customerId));
       setShowDeleteModal(null);
     } catch (error) {
-      console.error('Error deleting customer:', error);
+      signalerErreur('Error deleting customer:', error);
     } finally {
       setDeleting(false);
     }
@@ -123,7 +125,7 @@ export default function CustomersPage() {
       const updatedCustomer = await response.json();
       setCustomers(customers.map(c => c.id === customerId ? updatedCustomer.customer : c));
     } catch (error) {
-      console.error('Error blocking customer:', error);
+      signalerErreur('Error blocking customer:', error);
     }
   };
 

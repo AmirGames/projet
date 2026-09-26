@@ -1,6 +1,6 @@
 // Une course ne se clôt pas sur un simple clic : il faut prouver la remise.
 
-import {
+import { attenteClientEcoulee, inscription, declarerPrete,
   titre,
   check,
   j,
@@ -18,12 +18,12 @@ import {
 const MDP = 'Password123!';
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
 );
 const TP = plateforme.accessToken;
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 
@@ -52,7 +52,7 @@ const produit = await j(
 const productId = produit.product?.id || produit.id;
 
 const livreur = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: `d-${uniq}@t.fr`,
     password: MDP,
@@ -70,7 +70,7 @@ await patch('/api/drivers/location', { latitude: 45.764, longitude: 4.8357 }, D)
 /** Une course acceptée et récupérée, prête à être remise. */
 async function courseAuSeuil() {
   const commande = await j(
-    await post('/api/orders', {
+    await post('/api/orders', { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
       customerEmail: `c-${uniq}@t.fr`,
@@ -91,6 +91,7 @@ async function courseAuSeuil() {
   const courseId = attribution?.data?.deliveryId;
 
   await patch(`/api/drivers/deliveries/${courseId}/accept`, null, D);
+  await declarerPrete(storeId, orderId, T);
   await patch(`/api/drivers/deliveries/${courseId}`, { status: 'PICKED_UP' }, D);
 
   return { orderId, courseId };
@@ -168,6 +169,13 @@ const compteurRemis = await sqlScalaire(
 );
 check('le compteur d’essais est remis à zéro', compteurRemis === '0', compteurRemis);
 
+titre('Le livreur lit ce que la course lui a rapporté');
+const finie = (await j(await get(`/api/drivers/deliveries/${courseId}`, D)))?.data;
+check('le bilan est là', finie?.bilan != null, JSON.stringify(finie?.bilan));
+check('avec le gain', typeof finie?.bilan?.payout === 'number' && finie.bilan.payout > 0, JSON.stringify(finie?.bilan));
+check('la durée', typeof finie?.bilan?.durationMin === 'number', JSON.stringify(finie?.bilan));
+check('et la preuve', finie?.bilan?.proofType === 'CODE', finie?.bilan?.proofType);
+
 titre('Le client sait comment sa commande a été remise');
 const suivi = await j(await get(`/api/orders/${orderId}`));
 check('la preuve lui est dite', suivi?.preuveDeLivraison === 'CODE', suivi?.preuveDeLivraison);
@@ -179,6 +187,24 @@ check('le code n’est plus affiché', suivi?.codeRemise === null, `${suivi?.cod
 
 titre('Quand le client est absent, la photo fait preuve');
 const absente = await courseAuSeuil();
+
+titre('Mais pas avant d’avoir attendu le client six minutes');
+const tropTot = await patch(
+  `/api/drivers/deliveries/${absente.courseId}`,
+  { status: 'DELIVERED', photoUrl: 'https://exemple.fr/depot.jpg' },
+  D
+);
+check('sans attente, le dépôt est refusé', tropTot.status === 409, `statut ${tropTot.status}`);
+
+const attente = await j(await post(`/api/drivers/deliveries/${absente.courseId}/attente`, {}, D));
+check('l’attente commence', Boolean(attente?.data?.attenteFinLe), JSON.stringify(attente));
+const pendantAttente = await patch(
+  `/api/drivers/deliveries/${absente.courseId}`,
+  { status: 'DELIVERED', photoUrl: 'https://exemple.fr/depot.jpg' },
+  D
+);
+check('pendant l’attente, le dépôt est refusé', pendantAttente.status === 409, `statut ${pendantAttente.status}`);
+await attenteClientEcoulee(absente.courseId);
 
 const photo = await patch(
   `/api/drivers/deliveries/${absente.courseId}`,
@@ -262,6 +288,7 @@ check('aucun code n’est plus attendu', vuBloque?.data?.codeAttendu === false, 
 check('aucun essai ne reste', vuBloque?.data?.essaisRestants === 0, `${vuBloque?.data?.essaisRestants}`);
 
 titre('La photo reste la porte de sortie');
+await attenteClientEcoulee(troisieme.courseId);
 const secours = await patch(
   `/api/drivers/deliveries/${troisieme.courseId}`,
   { status: 'DELIVERED', photoUrl: 'https://exemple.fr/secours.jpg', note: 'Remis en main propre' },
@@ -279,7 +306,7 @@ check(
 
 titre('Les étapes précédentes n’en demandent pas');
 const quatrieme = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
     customerEmail: `c4-${uniq}@t.fr`,
@@ -299,6 +326,7 @@ const courseQuatre = (await j(await post(`/api/orders/${orderQuatre}/dispatch`, 
   ?.deliveryId;
 
 await patch(`/api/drivers/deliveries/${courseQuatre}/accept`, null, D);
+await declarerPrete(storeId, orderQuatre, T);
 const recuperee = await patch(`/api/drivers/deliveries/${courseQuatre}`, { status: 'PICKED_UP' }, D);
 check('le retrait passe sans preuve', recuperee.status === 200, `statut ${recuperee.status}`);
 
@@ -327,6 +355,7 @@ check(
   (await j(refusSansCode))?.error
 );
 
+await attenteClientEcoulee(ancienne.courseId);
 const parPhoto = await patch(
   `/api/drivers/deliveries/${ancienne.courseId}`,
   { status: 'DELIVERED', photoUrl: 'https://exemple.fr/ancienne.jpg' },
@@ -334,9 +363,66 @@ const parPhoto = await patch(
 );
 check('la photo la clôt', parPhoto.status === 200, `statut ${parPhoto.status}`);
 
+// ===== Les étapes envoyées au retour du réseau =====
+
+titre('Une remise renvoyée ne change rien');
+// L'application renvoie une étape dont la réponse s'est perdue.
+const livreeLe = await sqlScalaire(`SELECT "deliveryTime" FROM "OrderDelivery" WHERE id = '${courseId}'`);
+const renvoi = await patch(`/api/drivers/deliveries/${courseId}`, { status: 'DELIVERED', code }, D);
+check('le renvoi passe', renvoi.status === 200, `statut ${renvoi.status}`);
+const livreeApres = await sqlScalaire(`SELECT "deliveryTime" FROM "OrderDelivery" WHERE id = '${courseId}'`);
+check('l’heure de remise ne bouge pas', livreeApres === livreeLe, `${livreeLe} → ${livreeApres}`);
+
+titre('Une course livrée ne revient pas en arrière');
+const retour = await patch(`/api/drivers/deliveries/${courseId}`, { status: 'PICKED_UP' }, D);
+check('une prise en charge après la remise est refusée', retour.status === 409, `statut ${retour.status}`);
+const toujours = await sqlScalaire(`SELECT status FROM "OrderDelivery" WHERE id = '${courseId}'`);
+check('la course reste livrée', toujours === 'DELIVERED', toujours);
+
+titre('Une étape faite sans réseau garde son heure');
+const horsReseau = await courseAuSeuil();
+// Attribuée il y a une demi-heure, remise il y a dix minutes, envoyée maintenant.
+await sqlExec(
+  `UPDATE "OrderDelivery" SET "assignedAt" = now() - interval '30 minutes' WHERE id = '${horsReseau.courseId}'`
+);
+const pasFinie = (await j(await get(`/api/drivers/deliveries/${horsReseau.courseId}`, D)))?.data;
+check('pas de bilan avant la remise', pasFinie?.bilan === null, JSON.stringify(pasFinie?.bilan));
+const ilYA10Min = new Date(Date.now() - 10 * 60_000);
+const tardive = await patch(
+  `/api/drivers/deliveries/${horsReseau.courseId}`,
+  { status: 'DELIVERED', code: await codeDeRemise(horsReseau.courseId), effectueLe: ilYA10Min.toISOString() },
+  D
+);
+check('la remise différée passe', tardive.status === 200, `statut ${tardive.status}`);
+const heureRetenue = await sqlScalaire(
+  `SELECT extract(epoch FROM "deliveryTime") * 1000 FROM "OrderDelivery" WHERE id = '${horsReseau.courseId}'`
+);
+check(
+  'l’heure retenue est celle de la remise, pas de l’envoi',
+  Math.abs(Number(heureRetenue) - ilYA10Min.getTime()) < 2000,
+  `${new Date(Number(heureRetenue)).toISOString()} au lieu de ${ilYA10Min.toISOString()}`
+);
+
+titre('Une heure invraisemblable est ignorée');
+const future = await courseAuSeuil();
+const demain = new Date(Date.now() + 24 * 3600_000);
+await patch(
+  `/api/drivers/deliveries/${future.courseId}`,
+  { status: 'DELIVERED', code: await codeDeRemise(future.courseId), effectueLe: demain.toISOString() },
+  D
+);
+const heureFuture = await sqlScalaire(
+  `SELECT extract(epoch FROM "deliveryTime") * 1000 FROM "OrderDelivery" WHERE id = '${future.courseId}'`
+);
+check(
+  'une heure dans le futur laisse place à l’heure de réception',
+  Math.abs(Number(heureFuture) - Date.now()) < 60_000,
+  new Date(Number(heureFuture)).toISOString()
+);
+
 titre('La course d’un autre livreur reste hors de portée');
 const autre = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Sami ${uniq}`,
     email: `d2-${uniq}@t.fr`,
     password: MDP,

@@ -26,6 +26,43 @@ import { logger } from "../config/logger";
 
 export const ESSAIS_MAX = 5;
 
+/** Ce que le livreur attend un client injoignable avant de déposer la commande. */
+export const ATTENTE_CLIENT_MS = 6 * 60 * 1000;
+
+/** La fin de l'attente du client, si elle a commencé. */
+export function finAttente(course: { customerWaitStartedAt: Date | null }) {
+  return course.customerWaitStartedAt
+    ? new Date(course.customerWaitStartedAt.getTime() + ATTENTE_CLIENT_MS)
+    : null;
+}
+
+/**
+ * La photo du dépôt n'est permise qu'au terme de l'attente.
+ *
+ * C'est le serveur qui compte, pas le téléphone : une horloge de téléphone se
+ * règle à la main.
+ */
+export function exigerAttenteTerminee(course: { customerWaitStartedAt: Date | null }, maintenant = new Date()) {
+  const fin = finAttente(course);
+  if (!fin) {
+    throw new ApiError(
+      409,
+      "Le client ne répond pas ? Appelez-le, puis lancez l'attente de 6 minutes avant de déposer la commande.",
+      "WAIT_NOT_STARTED"
+    );
+  }
+  const reste = fin.getTime() - maintenant.getTime();
+  if (reste > 0) {
+    const minutes = Math.floor(reste / 60000);
+    const secondes = Math.ceil((reste % 60000) / 1000);
+    throw new ApiError(
+      409,
+      `Le client peut encore descendre : attendez ${minutes ? `${minutes} min ` : ""}${secondes} s avant de déposer la commande.`,
+      "WAIT_NOT_OVER"
+    );
+  }
+}
+
 export const TYPES_PREUVE = ["CODE", "PHOTO"] as const;
 export type TypePreuve = (typeof TYPES_PREUVE)[number];
 
@@ -52,7 +89,7 @@ export class DeliveryProofService {
   ): Promise<TypePreuve> {
     const course = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
-      select: { id: true, deliveryCode: true, codeAttempts: true },
+      select: { id: true, deliveryCode: true, codeAttempts: true, customerWaitStartedAt: true },
     });
 
     if (!course) {
@@ -69,7 +106,7 @@ export class DeliveryProofService {
       if (bloque) {
         throw new ApiError(
           400,
-          `Code bloqué après ${ESSAIS_MAX} essais : photographiez le dépôt`,
+          `Code bloqué après ${ESSAIS_MAX} essais : lancez l'attente du client, puis déposez la commande en lieu sûr`,
           "CODE_LOCKED"
         );
       }
@@ -92,7 +129,7 @@ export class DeliveryProofService {
             ? `Code incorrect — ${restants} essai${restants > 1 ? "s" : ""} restant${
                 restants > 1 ? "s" : ""
               }`
-            : `Code incorrect — code bloqué, photographiez le dépôt`,
+            : `Code incorrect — code bloqué : lancez l'attente du client, puis déposez la commande en lieu sûr`,
           "WRONG_CODE"
         );
       }
@@ -114,6 +151,9 @@ export class DeliveryProofService {
       if (!/^https?:\/\//i.test(photo)) {
         throw new ApiError(400, "Donnez un lien vers la photo du dépôt", "INVALID_PHOTO");
       }
+
+      // Le dépôt se photographie quand le client n'est pas venu, pas avant.
+      exigerAttenteTerminee(course);
 
       await db.orderDelivery.update({
         where: { id: deliveryId },
@@ -149,6 +189,7 @@ export class DeliveryProofService {
     proofType: string | null;
     proofPhoto: string | null;
     proofAt: Date | null;
+    customerWaitStartedAt?: Date | null;
   }) {
     return {
       // Jamais le code lui-même : c'est le client qui le détient, et un livreur
@@ -160,6 +201,11 @@ export class DeliveryProofService {
       preuve: course.proofType,
       photo: course.proofPhoto,
       prouveeLe: course.proofAt,
+      // L'attente du client injoignable : l'heure du serveur fait foi, le
+      // téléphone s'en sert pour son compte à rebours.
+      attenteDebutLe: course.customerWaitStartedAt ?? null,
+      attenteFinLe: finAttente({ customerWaitStartedAt: course.customerWaitStartedAt ?? null }),
+      maintenant: new Date(),
     };
   }
 }

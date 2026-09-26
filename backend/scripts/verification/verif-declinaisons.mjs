@@ -1,7 +1,7 @@
 // Les déclinaisons d'un plat — penne, spaghetti, tagliatelle — et le prix
 // d'une ligne de commande, désormais calculé par le serveur.
 
-import {
+import { inscription,
   titre,
   check,
   j,
@@ -15,10 +15,10 @@ import {
   sqlScalaire,
 } from './outils.mjs';
 
-await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
+await inscription({ email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 
@@ -179,7 +179,7 @@ check(
 // ===== Commander =====
 
 const commander = (variantId, prixAnnonce, total) =>
-  post('/api/orders', {
+  post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `C ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
@@ -248,7 +248,7 @@ const totalFacture = await sqlScalaire(`SELECT "totalAmount" FROM "Order" WHERE 
 check('le total suit les lignes', Number(totalFacture) === 16.5, totalFacture);
 
 const deuxArticles = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `C ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
@@ -269,7 +269,7 @@ check('plusieurs lignes sont bien totalisées', Number(totalDeux) === 34, `${tot
 check(
   'une quantité fantaisiste est refusée',
   (
-    await post('/api/orders', {
+    await post('/api/orders', { conditionsAcceptees: true,
       storeId,
       customerName: `C ${uniq}`,
       customerEmail: `c-${uniq}@t.fr`,
@@ -322,7 +322,7 @@ check('les commandes passées sont intactes', Number(historique) >= 1, historiqu
 
 titre('Un autre commerçant ne touche à rien');
 const intrus = await j(
-  await post('/api/auth/signup', { email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
+  await inscription({ email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
 );
 const TX = intrus.accessToken;
 

@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { AVAILABLE_THEMES, applyTheme, getTheme, saveThemeToAPI, Theme } from '@/lib/theme-config';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -23,10 +25,6 @@ export default function SettingsPage() {
     driverOfferSeconds: 30,
     driverMaxRadiusKm: 8,
   });
-
-  useEffect(() => {
-    fetchConfig();
-  }, []);
 
   const fetchConfig = async () => {
     try {
@@ -53,11 +51,15 @@ export default function SettingsPage() {
       // Apply saved theme
       applyTheme(getTheme(data.selectedTheme || 'dark'));
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchConfig();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -103,7 +105,7 @@ export default function SettingsPage() {
       setTimeout(() => setMessage(''), 3000);
       fetchConfig();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       setMessage('❌ Erreur lors de la sauvegarde');
       setTimeout(() => setMessage(''), 3000);
     } finally {
@@ -123,7 +125,7 @@ export default function SettingsPage() {
 
       applyTheme(getTheme(themeId));
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     }
   };
 

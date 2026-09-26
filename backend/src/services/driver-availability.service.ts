@@ -185,7 +185,14 @@ export class DriverAvailabilityService {
       );
 
       if (livreur.currentOrderId) {
-        await this.prevenirGpsPerduPendantCourse(livreur.currentOrderId, livreur.name, livreur.lastLocationUpdate);
+        // Tous les clients d'une tournée regardent la même pastille figée.
+        const courses = await db.orderDelivery.findMany({
+          where: { driverId: livreur.id, status: { in: ["ACCEPTED", "PICKED_UP"] } },
+          select: { id: true },
+        });
+        for (const { id } of courses) {
+          await this.prevenirGpsPerduPendantCourse(id, livreur.name, livreur.lastLocationUpdate);
+        }
       }
 
       logger.warn("Signal GPS perdu", { driverId: livreur.id, enCourse: Boolean(livreur.currentOrderId) });
@@ -258,11 +265,11 @@ export class DriverAvailabilityService {
     await db.driver.update({ where: { id: driverId }, data: { gpsLostAt: null } });
 
     if (deliveryId) {
-      const course = await db.orderDelivery.findUnique({
-        where: { id: deliveryId },
+      const courses = await db.orderDelivery.findMany({
+        where: { driverId, status: { in: ["ACCEPTED", "PICKED_UP"] } },
         select: { orderId: true },
       });
-      if (course) emitDeliveryUpdate(course.orderId, { gpsLost: false });
+      for (const course of courses) emitDeliveryUpdate(course.orderId, { gpsLost: false });
     }
 
     const email = await emailDuLivreur(driverId);

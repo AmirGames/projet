@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Archive, ArchiveRestore, MessageCircle } from 'lucide-react';
 import { TicketConversation } from '@/components/TicketConversation';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -33,11 +35,7 @@ export default function TicketsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchTickets();
-  }, [statusFilter, showArchived]);
-
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const url = new URL(`${API_URL}/api/admin/tickets`);
@@ -62,7 +60,14 @@ export default function TicketsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showArchived, statusFilter]);
+
+  // Un ticket ouvert ou une réponse, ailleurs : la liste suit.
+  useDonneesModifiees('tickets', () => fetchTickets());
+
+  useEffectChargement(() => {
+    fetchTickets();
+  }, [statusFilter, showArchived, fetchTickets]);
 
   const selectTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);

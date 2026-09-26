@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { io } from 'socket.io-client';
+import { connexionTempsReel } from '@/lib/temps-reel';
 import { LifeBuoy } from 'lucide-react';
 
 import { FilSupport, type MessageSupport } from '@/components/FilSupport';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -45,7 +46,7 @@ export default function SupportLivreurPage() {
     }
   }, [router]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 
@@ -54,9 +55,9 @@ export default function SupportLivreurPage() {
     const token = jeton();
     if (!token) return;
 
-    const socket = io(API_URL, { auth: { token }, transports: ['websocket', 'polling'] });
+    const socket = connexionTempsReel();
 
-    socket.on('support-message', (message: MessageSupport) => {
+    const surMessage = (message: MessageSupport) => {
       setMessages((liste) => (liste.some((m) => m.id === message.id) ? liste : [...liste, message]));
       if (message.sender === 'SUPPORT') {
         fetch(`${API_URL}/api/drivers/support/read`, {
@@ -64,17 +65,22 @@ export default function SupportLivreurPage() {
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => {});
       }
-    });
+    };
 
     // Le support a lu : les coches passent au double.
-    socket.on('support-lu', () => {
+    const surLu = () => {
       setMessages((liste) =>
         liste.map((m) => (m.sender === 'DRIVER' && !m.readAt ? { ...m, readAt: new Date().toISOString() } : m))
       );
-    });
+    };
 
+    socket.on('support-message', surMessage);
+    socket.on('support-lu', surLu);
+
+    // La connexion est partagée : on retire nos écouteurs, on ne la ferme pas.
     return () => {
-      socket.disconnect();
+      socket.off('support-message', surMessage);
+      socket.off('support-lu', surLu);
     };
   }, []);
 

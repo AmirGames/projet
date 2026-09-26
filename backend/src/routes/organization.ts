@@ -10,7 +10,6 @@ const router = Router();
 const createOrgSchema = z.object({
   name: z.string().min(2, "Nom minimum 2 caractères"),
   slug: z.string().min(2, "Slug minimum 2 caractères").regex(/^[a-z0-9-]+$/),
-  userId: z.string().optional(),
 });
 
 const updateOrgSchema = z.object({
@@ -22,7 +21,10 @@ const updateOrgSchema = z.object({
 router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = createOrgSchema.parse(req.body);
-    const userId = body.userId || "user-123";
+    // L'organisation revient toujours à l'appelant. La route prenait le
+    // compte dans le corps : n'importe quel compte connecté pouvait en faire
+    // administrateur un autre, à son insu.
+    const userId = req.userId as string;
 
     logger.info("Creating organization", { name: body.name, slug: body.slug });
 

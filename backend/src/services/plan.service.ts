@@ -90,6 +90,20 @@ function listeDeTextes(valeur: unknown): string[] {
     .filter((element) => element.length > 0);
 }
 
+/**
+ * La promo « zéro commission » court-elle ?
+ *
+ * Elle s'arrête d'elle-même à sa date de fin : personne n'a à penser à la
+ * retirer.
+ */
+export function promoSansCommissionActive(
+  organisation: { commissionFreeActive: boolean; commissionFreeUntil: Date | null } | null | undefined,
+  maintenant = new Date()
+) {
+  if (!organisation?.commissionFreeActive) return false;
+  return !organisation.commissionFreeUntil || organisation.commissionFreeUntil > maintenant;
+}
+
 export class PlanService {
   /**
    * La grille complète, ordonnée.
@@ -272,7 +286,7 @@ export class PlanService {
   static async quotaBoutiques(orgId: string) {
     const organisation = await db.organization.findUnique({
       where: { id: orgId },
-      select: { id: true, tier: true },
+      select: { id: true, tier: true, commissionFreeActive: true, commissionFreeUntil: true },
     });
 
     if (!organisation) {
@@ -299,6 +313,11 @@ export class PlanService {
       tierCommission: formule.commission,
       tierPlatformDeliveryCommission: formule.commissionLivreursPlateforme,
       tierFeatures: formule.avantages,
+      // La promo offerte par la plateforme : 0 % tant qu'elle court.
+      commissionFree: promoSansCommissionActive(organisation),
+      commissionFreeUntil: promoSansCommissionActive(organisation)
+        ? organisation.commissionFreeUntil
+        : null,
       used: utilisees,
       max: maximum,
       remaining: Math.max(0, maximum - utilisees),

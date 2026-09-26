@@ -9,7 +9,7 @@ import { BackupService } from "../services/backup.service";
 import { SecurityEventService } from "../services/security-event.service";
 import { invalidateMaintenanceCache } from "../middleware/maintenance";
 import { MerchantClosureService } from "../services/merchant-closure.service";
-import { PlanService } from "../services/plan.service";
+import { PlanService, promoSansCommissionActive } from "../services/plan.service";
 import {
   DriverApprovalService,
   libelleDuDocument,
@@ -24,6 +24,9 @@ import { StoreSupportService, libelleDuChamp } from "../services/store-support.s
 import { MerchantProfileService } from "../services/merchant-profile.service";
 import { MerchantApprovalService } from "../services/merchant-approval.service";
 import { SystemHealthService } from "../services/system-health.service";
+import { Vigie } from "../services/vigie.service";
+import { Disponibilite } from "../services/disponibilite.service";
+import { ReviewModerationService } from "../services/review-moderation.service";
 
 const LIBELLES_STATUT: Record<string, string> = {
   OPEN: "rouvert",
@@ -40,7 +43,10 @@ const LIBELLES_PRIORITE: Record<string, string> = {
 };
 import { TicketMessageService } from "../services/ticket-message.service";
 import { logger } from "../config/logger";
+import { PagesLegalesService } from "../services/pages-legales.service";
+import { paymentService } from "../services/payment.service";
 import { DriverSupportService, LONGUEUR_MAX } from "../services/driver-support.service";
+import { fraisDusALaPlateforme, fraisDeServiceDus } from "../services/delivery-mode.service";
 
 const router = Router();
 
@@ -148,6 +154,35 @@ router.get("/system-health", authMiddleware, isSuperOwner, async (_req: Request,
   }
 });
 
+// GET /superowner/monitoring - Le site en fonctionnement, en direct
+//
+// Trafic, erreurs, temps de réponse, processus, dépendances, tâches de fond
+// et incidents ouverts : ce que la santé, tirée de la base, ne voit pas.
+router.get("/monitoring", authMiddleware, isSuperOwner, (_req: Request, res: Response) => {
+  res.json({ success: true, data: Vigie.instantane() });
+});
+
+// GET /superowner/uptime - La disponibilité dans la durée : 24 h, 7, 30 et 90 jours
+router.get("/uptime", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await Disponibilite.bilan() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/monitoring/releve - Relever tout de suite, sans attendre la vigie
+router.post("/monitoring/releve", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    // La disponibilité d'abord : la vigie lit son état pour ses alertes.
+    await Disponibilite.passer();
+    await Vigie.passer();
+    res.json({ success: true, data: Vigie.instantane() });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ============================================================================
 // ORGANIZATIONS
 // ============================================================================
@@ -201,6 +236,13 @@ router.get("/organizations", authMiddleware, isSuperOwner, async (req: Request, 
           createdAt: org.createdAt,
           approvedAt: org.approvedAt,
           activeUsers: org._count.memberships,
+          // La promo « zéro commission » : réglée, et en cours ou non.
+          commissionFree: {
+            active: org.commissionFreeActive,
+            until: org.commissionFreeUntil,
+            note: org.commissionFreeNote,
+            enCours: promoSansCommissionActive(org),
+          },
           revenue: Number(
             commandes.reduce((somme, c) => somme + Number(c.totalAmount), 0).toFixed(2)
           ),
@@ -266,9 +308,14 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
               where: { storeId: { in: storeIds }, createdAt: { gte: debutMois } },
               select: {
                 totalAmount: true,
+                feesAmount: true,
+                serviceFeeAmount: true,
+                status: true,
+                deliveryMode: true,
                 commissionPercent: true,
                 commissionAmount: true,
                 tierAtOrder: true,
+                commissionWaived: true,
                 // commissionFrozen n'existe en base qu'après la migration
                 // add_tax_per_item_and_invoice_seq. On le traite en mémoire.
               },
@@ -303,6 +350,8 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
           // commissionFrozen n'est pas en base tant que la migration n'est pas
           // appliquée. On considère que commissionAmount > 0 signifie qu'il est figé.
           if (Number(c.commissionAmount) > 0) return somme + Number(c.commissionAmount);
+          // Passée pendant une promo « zéro commission » : rien à facturer.
+          if (c.commissionWaived) return somme;
 
           // Ancienne commande : tierAtOrder contient le code du plan qui
           // valait ce jour-là ; tauxParFormule le convertit en taux.
@@ -324,6 +373,12 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
           ),
         ].sort((a: number, b: number) => a - b);
 
+        // Les frais des courses faites par les livreurs de la plateforme : le
+        // client les a payés au commerçant, ils reviennent à la plateforme.
+        const fraisLivraison = commandes.reduce((somme, c) => somme + fraisDusALaPlateforme(c), 0);
+        // Les frais de service payés par ses clients : à la plateforme aussi.
+        const fraisService = commandes.reduce((somme, c) => somme + fraisDeServiceDus(c), 0);
+
         const dejaFacture = org.commissionHistory.length > 0;
 
         return {
@@ -331,7 +386,17 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
           organization: org.name,
           tier: org.tier,
           amount: Number(commission.toFixed(2)),
-          status: dejaFacture ? "PAID" : commission > 0 ? "PENDING" : "PAID",
+          // Frais de livraison encaissés par le commerçant pour la plateforme.
+          deliveryFeesDue: Number(fraisLivraison.toFixed(2)),
+          // Frais de service encaissés par le commerçant pour la plateforme.
+          serviceFeesDue: Number(fraisService.toFixed(2)),
+          // Ce que le commerçant doit au total : commission et frais.
+          totalDue: Number((commission + fraisLivraison + fraisService).toFixed(2)),
+          status: dejaFacture
+            ? "PAID"
+            : commission + fraisLivraison + fraisService > 0
+              ? "PENDING"
+              : "PAID",
           period: periode,
           nextBillingDate: prochaineEcheance,
           createdAt: org.createdAt,
@@ -357,6 +422,8 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
         pendingAmount: Number(
           lignes.filter((l) => l.status === "PENDING").reduce((s, l) => s + l.amount, 0).toFixed(2)
         ),
+        deliveryFeesDue: Number(lignes.reduce((s, l) => s + l.deliveryFeesDue, 0).toFixed(2)),
+        serviceFeesDue: Number(lignes.reduce((s, l) => s + l.serviceFeesDue, 0).toFixed(2)),
         activeSubscriptions: organisations.filter((o) => o.status === "ACTIVE").length,
       },
       pagination: { total: lignes.length, limit, offset },
@@ -440,11 +507,13 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
             totalAmount: true,
             discountAmount: true,
             feesAmount: true,
+            serviceFeeAmount: true,
             status: true,
             paymentStatus: true,
             customerName: true,
             commissionPercent: true,
             commissionAmount: true,
+            commissionWaived: true,
             deliveryMode: true,
           },
           orderBy: { createdAt: "desc" },
@@ -456,7 +525,8 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
       // La commission figée à la commande fait foi — son taux dépend de la
       // formule d'alors et de qui livrait. Les commandes antérieures au figeage
       // retombent sur le taux du jour.
-      const figee = Number(commande.commissionAmount) > 0;
+      // Une commande passée pendant une promo est figée à 0.
+      const figee = Number(commande.commissionAmount) > 0 || commande.commissionWaived;
 
       return {
         id: commande.id,
@@ -471,6 +541,10 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
         livraison: Number(commande.feesAmount),
         // OWN : frais gardés par le commerçant. PLATFORM : reversés au livreur.
         modeLivraison: commande.deliveryMode,
+        // La part de ces frais que le commerçant a encaissée pour la plateforme.
+        livraisonDue: fraisDusALaPlateforme(commande),
+        // Les frais de service que le client a payés, à la plateforme.
+        serviceDu: fraisDeServiceDus(commande),
         tauxCommission: figee ? Number(commande.commissionPercent) : taux,
         // Ce que la plateforme prélève sur cette commande.
         commission: figee
@@ -525,6 +599,13 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
         // Somme des parts, et non pourcentage du total : les arrondis par
         // commande doivent correspondre à ce que la ligne affiche.
         commission: Number(lignes.reduce((somme, ligne) => somme + ligne.commission, 0).toFixed(2)),
+        deliveryFees: Number(lignes.reduce((somme, ligne) => somme + ligne.livraisonDue, 0).toFixed(2)),
+        serviceFees: Number(lignes.reduce((somme, ligne) => somme + ligne.serviceDu, 0).toFixed(2)),
+        totalDue: Number(
+          lignes
+            .reduce((somme, ligne) => somme + ligne.commission + ligne.livraisonDue + ligne.serviceDu, 0)
+            .toFixed(2)
+        ),
       },
     });
   } catch (err) {
@@ -644,8 +725,12 @@ router.get("/system-config", authMiddleware, isSuperOwner, async (_req: Request,
         maintenanceMessage: config.maintenanceMessage || "",
         driverMaxRadiusKm: config.driverMaxRadiusKm,
         driverOfferSeconds: config.driverOfferSeconds,
+        driverMaxCourses: config.driverMaxCourses,
+        driverGroupClientKm: config.driverGroupClientKm,
+        driverGroupDetourKm: config.driverGroupDetourKm,
         driverBaseFee: Number(config.driverBaseFee),
         driverPerKmFee: Number(config.driverPerKmFee),
+        serviceFee: Number(config.serviceFee),
       },
     });
   } catch (err) {
@@ -1077,11 +1162,12 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
             storeId: { in: storeIds },
             createdAt: { gte: debutMois },
           },
-          select: { id: true, totalAmount: true, commissionAmount: true },
+          select: { id: true, totalAmount: true, commissionAmount: true, commissionWaived: true },
         });
 
+        // Les commandes offertes par une promo restent à 0.
         const nonFigees = toutesCommandes.filter(
-          (c) => Number(c.commissionAmount) === 0
+          (c) => Number(c.commissionAmount) === 0 && !c.commissionWaived
         );
 
         const taux = Number(ancienTaux.commissionPercent);
@@ -1116,6 +1202,72 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
     res.json({
       message: `Formule passée en ${formuleCible.libelle}`,
       organization: { id: organisation.id, tier: organisation.tier },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * PATCH /superowner/organizations/:orgId/commission-promo
+ *
+ * Offre (ou retire) la promo « zéro commission » à un commerçant. Seules les
+ * commandes passées pendant la promo en profitent : celles d'avant gardent
+ * leur commission.
+ */
+router.patch("/organizations/:orgId/commission-promo", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+    const schema = z.object({
+      active: z.boolean(),
+      // Date de fin incluse (AAAA-MM-JJ). Absente : jusqu'à nouvel ordre.
+      until: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/, "Date de fin invalide")
+        .nullable()
+        .optional(),
+      note: z.string().max(200).nullable().optional(),
+    });
+    const body = schema.parse(req.body);
+
+    const existante = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { commissionFreeActive: true, commissionFreeUntil: true },
+    });
+
+    if (!existante) {
+      throw new ApiError(404, "Commerçant introuvable", "ORG_NOT_FOUND");
+    }
+
+    // La date de fin est incluse : la promo court jusqu'au soir de ce jour.
+    const fin = body.active && body.until ? new Date(`${body.until}T23:59:59.999`) : null;
+
+    if (fin && fin <= new Date()) {
+      throw new ApiError(400, "La date de fin est déjà passée", "PROMO_END_IN_PAST");
+    }
+
+    const organisation = await db.organization.update({
+      where: { id: orgId },
+      data: {
+        commissionFreeActive: body.active,
+        commissionFreeUntil: fin,
+        commissionFreeNote: body.active ? body.note?.trim() || null : null,
+      },
+    });
+
+    await journaliser(req, body.active ? "COMMISSION_PROMO_GRANTED" : "COMMISSION_PROMO_REMOVED", orgId, {
+      avant: existante,
+      apres: { active: body.active, until: fin, note: organisation.commissionFreeNote },
+    });
+
+    res.json({
+      message: body.active ? "Promo zéro commission activée" : "Promo zéro commission retirée",
+      commissionFree: {
+        active: organisation.commissionFreeActive,
+        until: organisation.commissionFreeUntil,
+        note: organisation.commissionFreeNote,
+        enCours: promoSansCommissionActive(organisation),
+      },
     });
   } catch (err) {
     next(err);
@@ -1179,8 +1331,15 @@ router.put("/system-config", authMiddleware, isSuperOwner, async (req: Request, 
       // Attribution des courses aux livreurs
       driverMaxRadiusKm: z.number().min(1).max(50).optional(),
       driverOfferSeconds: z.number().int().min(10).max(600).optional(),
+      // Plusieurs courses à la fois : combien au plus (1 = jamais), clients
+      // « au même endroit », détour accepté.
+      driverMaxCourses: z.number().int().min(1).max(5).optional(),
+      driverGroupClientKm: z.number().min(0.1).max(10).optional(),
+      driverGroupDetourKm: z.number().min(0).max(10).optional(),
       driverBaseFee: z.number().min(0).optional(),
       driverPerKmFee: z.number().min(0).optional(),
+      // Frais de service ajoutés à chaque commande, pour la plateforme.
+      serviceFee: z.number().min(0).max(50).optional(),
     });
     const body = schema.parse(req.body);
 
@@ -1215,8 +1374,12 @@ router.put("/system-config", authMiddleware, isSuperOwner, async (req: Request, 
         maintenanceMessage: misAJour.maintenanceMessage || "",
         driverMaxRadiusKm: misAJour.driverMaxRadiusKm,
         driverOfferSeconds: misAJour.driverOfferSeconds,
+        driverMaxCourses: misAJour.driverMaxCourses,
+        driverGroupClientKm: misAJour.driverGroupClientKm,
+        driverGroupDetourKm: misAJour.driverGroupDetourKm,
         driverBaseFee: Number(misAJour.driverBaseFee),
         driverPerKmFee: Number(misAJour.driverPerKmFee),
+        serviceFee: Number(misAJour.serviceFee),
       },
     });
   } catch (err) {
@@ -1829,6 +1992,40 @@ router.get("/drivers/:driverId", authMiddleware, isSuperOwner, async (req: Reque
   }
 });
 
+// PATCH /superowner/drivers/:driverId/documents/:documentId/expiry - Corriger l'échéance d'une pièce
+router.patch(
+  "/drivers/:driverId/documents/:documentId/expiry",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const schema = z.object({
+        expiryDate: z.string().min(1, "Donnez une date d'expiration"),
+      });
+      const body = schema.parse(req.body);
+
+      const { avant, piece } = await DriverApprovalService.changerEcheance(
+        req.params.driverId as string,
+        req.params.documentId as string,
+        body.expiryDate
+      );
+
+      await db.systemAuditLog.create({
+        data: {
+          adminId: req.userId as string,
+          action: "UPDATE_DRIVER_DOCUMENT_EXPIRY",
+          target: req.params.driverId as string,
+          changes: { type: piece.type, avant, apres: piece.expiryDate } as any,
+        },
+      });
+
+      res.json({ success: true, document: piece });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // PATCH /superowner/drivers/:driverId/documents/:documentId - Statuer sur une pièce
 router.patch(
   "/drivers/:driverId/documents/:documentId",
@@ -2225,6 +2422,40 @@ router.get(
         success: true,
         data: await MerchantProfileService.dossier(req.params.orgId as string),
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PATCH /superowner/organizations/:orgId/documents/:documentId/expiry - Corriger l'échéance d'une pièce
+router.patch(
+  "/organizations/:orgId/documents/:documentId/expiry",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const schema = z.object({
+        expiryDate: z.string().min(1, "Donnez une date d'expiration"),
+      });
+      const body = schema.parse(req.body);
+
+      const { avant, piece } = await MerchantProfileService.changerEcheance(
+        req.params.orgId as string,
+        req.params.documentId as string,
+        body.expiryDate
+      );
+
+      await db.systemAuditLog.create({
+        data: {
+          adminId: req.userId as string,
+          action: "UPDATE_MERCHANT_DOCUMENT_EXPIRY",
+          target: req.params.orgId as string,
+          changes: { type: piece.type, avant, apres: piece.expiryDate } as any,
+        },
+      });
+
+      res.json({ success: true, document: piece });
     } catch (err) {
       next(err);
     }
@@ -2697,6 +2928,133 @@ router.post("/driver-support/:driverId", authMiddleware, isSuperOwner, async (re
       authorId: (req as any).userId,
     });
     res.status(201).json({ success: true, data: message });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ============================================================================
+// AVIS SIGNALÉS
+// ============================================================================
+
+// GET /superowner/review-reports?etat=EN_ATTENTE|TRAITES - Les avis signalés
+router.get("/review-reports", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const etat = req.query.etat === "TRAITES" ? "TRAITES" : "EN_ATTENTE";
+    const skip = parseInt((req.query.skip as string) || "0") || 0;
+    const take = Math.min(parseInt((req.query.take as string) || "50") || 50, 100);
+
+    res.json(await ReviewModerationService.lister(etat, skip, take));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/review-reports/:reportId/decision - Conserver ou retirer l'avis
+router.post(
+  "/review-reports/:reportId/decision",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const body = z
+        .object({
+          decision: z.enum(["KEPT", "REMOVED"]),
+          note: z.string().max(1000).optional(),
+        })
+        .parse(req.body);
+
+      const signalement = await ReviewModerationService.decider(
+        req.params.reportId as string,
+        body.decision,
+        body.note,
+        req.userId as string
+      );
+
+      res.json({ success: true, signalement });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /superowner/orders/:id/refund - Rembourser une commande annulée par le support
+//
+// Le refus par le commerçant rembourse de lui-même. Ce qui reste passe par le
+// support : une commande qu'un livreur a déjà prise, un litige après la
+// remise. Le remboursement est total ; Stripe ne le refait pas s'il est rejoué.
+router.post("/orders/:id/refund", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { raison } = z.object({ raison: z.string().trim().min(3).max(300) }).parse(req.body);
+    const orderId = req.params.id as string;
+
+    const commande = await db.order.findUnique({ where: { id: orderId }, select: { paymentStatus: true } });
+    if (!commande) throw new ApiError(404, "Commande introuvable", "ORDER_NOT_FOUND");
+    if (commande.paymentStatus === "REFUNDED") {
+      throw new ApiError(409, "Cette commande est déjà remboursée.", "ORDER_ALREADY_REFUNDED");
+    }
+    if (commande.paymentStatus !== "SUCCEEDED") {
+      throw new ApiError(400, "Cette commande n'a pas été payée en ligne.", "ORDER_NOT_PAID");
+    }
+
+    const remboursement = await paymentService.rembourserCommande(orderId, raison);
+
+    SecurityEventService.record({
+      action: "ORDER_REFUNDED",
+      actor: (req as any).actorEmail || "inconnu",
+      target: orderId,
+      severity: "MEDIUM",
+      details: `Remboursement de ${(remboursement?.amount ?? 0) / 100} € : ${raison}`,
+    });
+
+    res.json({
+      success: true,
+      refundId: remboursement?.id,
+      amount: (remboursement?.amount ?? 0) / 100,
+      status: remboursement?.status,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+// ============================================================================
+// PAGES LÉGALES
+// ============================================================================
+
+// GET /superowner/pages-legales - Pages en vigueur et historique des versions
+router.get("/pages-legales", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const pages = await PagesLegalesService.toutes();
+    const data = await Promise.all(
+      pages.map(async (page) => ({ ...page, historique: await PagesLegalesService.historique(page.slug) }))
+    );
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const publicationPageLegaleSchema = z.object({
+  titre: z.string().trim().min(1, "Titre requis").max(200),
+  contenu: z.string().trim().min(1, "Le texte ne peut pas être vide").max(100_000),
+  version: z
+    .string()
+    .trim()
+    .min(1, "Version requise")
+    .max(40)
+    .regex(/^[\w.\-]+$/, "Lettres, chiffres, points, tirets uniquement"),
+});
+
+// POST /superowner/pages-legales/:slug - Publier une nouvelle version
+router.post("/pages-legales/:slug", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = publicationPageLegaleSchema.parse(req.body);
+    const slug = req.params.slug as string;
+    const publiee = await PagesLegalesService.publier(slug, body, (req as any).actorEmail);
+    await journaliser(req, "PAGE_LEGALE_PUBLIEE", slug, { version: publiee.version, titre: publiee.titre });
+    res.status(201).json({ data: publiee });
   } catch (err) {
     next(err);
   }

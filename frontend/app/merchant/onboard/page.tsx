@@ -1,9 +1,14 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
+import { slugify } from '@/lib/slug';
 import { useState, useEffect } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
+import { paysDuNavigateur } from '@/lib/pays-client';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import Link from 'next/link';
 
 import { useTranslations } from 'next-intl';
@@ -117,7 +122,10 @@ export default function MerchantOnboardPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          phone: telephoneInternational(formData.phone, paysDuNavigateur()),
+        }),
       });
 
       const data = await response.json();
@@ -139,7 +147,7 @@ export default function MerchantOnboardPage() {
       }, 1500);
     } catch (error) {
       setApiError(t('connectionError'));
-      console.error('Error:', error);
+      signalerErreur('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -149,7 +157,9 @@ export default function MerchantOnboardPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === 'storeSlug' ? slugify(value, false) : value,
+      // Génère automatiquement le slug à partir du nom de la boutique
+      ...(name === 'storeName' ? { storeSlug: slugify(value) } : {}),
     }));
   };
 
@@ -280,11 +290,17 @@ export default function MerchantOnboardPage() {
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Adresse *
                 </label>
-                <input
-                  type="text"
-                  name="address"
+                <AddressAutocomplete
                   value={formData.address}
-                  onChange={handleChange}
+                  onChange={(valeur) => setFormData((prev) => ({ ...prev, address: valeur }))}
+                  onSelect={(adresse) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      address: adresse.street,
+                      city: adresse.city || prev.city,
+                      postalCode: adresse.postalCode || prev.postalCode,
+                    }))
+                  }
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                 />
                 {errors.address && <p className="text-red-400 text-sm mt-1">{errors.address}</p>}

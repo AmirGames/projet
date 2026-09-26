@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { FileJson, FileText } from 'lucide-react';
 
@@ -37,7 +38,7 @@ export default function ExportsPage() {
       setMessage('✅ Fichier exporté avec succès!');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       setMessage("❌ Erreur lors de l\'export");
       setTimeout(() => setMessage(''), 3000);
     } finally {

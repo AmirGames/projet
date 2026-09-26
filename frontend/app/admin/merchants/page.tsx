@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Store } from "lucide-react";
+import { useEffectChargement } from "@/lib/use-effect-chargement";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -38,11 +39,7 @@ export default function MerchantsPage() {
   const [filterStatus, setFilterStatus] = useState("");
   const limit = 20;
 
-  useEffect(() => {
-    fetchMerchants();
-  }, [limit, offset, filterStatus]);
-
-  const fetchMerchants = async () => {
+  const fetchMerchants = useCallback(async () => {
     setLoading(true);
     try {
       const query = new URLSearchParams({
@@ -67,7 +64,11 @@ export default function MerchantsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus, offset]);
+
+  useEffectChargement(() => {
+    fetchMerchants();
+  }, [limit, offset, filterStatus, fetchMerchants]);
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Search } from "lucide-react";
 
@@ -16,11 +17,8 @@ interface ProductSeo {
   ogDescription?: string;
 }
 
-export default function ProductSeoPage({
-  params,
-}: {
-  params: { orgId: string };
-}) {
+export default function ProductSeoPage() {
+  const params = useParams<{ orgId: string }>();
   const [productId, setProductId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

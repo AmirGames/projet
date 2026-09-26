@@ -6,7 +6,9 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { euro } from '@/lib/format';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+const cleStripe = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+const stripePromise = cleStripe ? loadStripe(cleStripe) : null;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface StripePaymentProps {
   orderId: string;
@@ -14,18 +16,46 @@ interface StripePaymentProps {
   customerEmail: string;
   customerName: string;
   onPaymentComplete: (success: boolean) => void;
+  /**
+   * Appelé au clic sur « Payer », carte complète : le parent laisse au client
+   * quelques secondes pour se raviser, puis appelle `payer`.
+   */
+  demanderConfirmation?: (payer: () => void) => void;
 }
 
-function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPaymentComplete }: StripePaymentProps) {
+function StripePaymentForm({
+  orderId,
+  amount,
+  customerEmail,
+  customerName,
+  onPaymentComplete,
+  demanderConfirmation,
+}: StripePaymentProps) {
   const t = useTranslations('stripePayment');
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Stripe dit ce qui manque (code postal, date…) : autant le montrer avant le
+  // délai de repentir plutôt qu'après.
+  const [carteErreur, setCarteErreur] = useState('');
+  const [carteComplete, setCarteComplete] = useState(false);
 
-  const handlePayment = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!demanderConfirmation) {
+      void handlePayment();
+      return;
+    }
+    if (!carteComplete) {
+      setError(carteErreur || 'Veuillez compléter les informations de la carte.');
+      return;
+    }
+    setError('');
+    demanderConfirmation(() => void handlePayment());
+  };
 
+  const handlePayment = async () => {
     if (!stripe || !elements) {
       setError(t('stripeNotLoaded'));
       return;
@@ -35,19 +65,11 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
     setError('');
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-      // Create payment intent
+      // Le serveur lit le montant sur la commande : seul son identifiant part.
       const intentResponse = await fetch(`${API_URL}/api/payments/intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId,
-          storeId: 'default', // Could be extracted from order details
-          amount,
-          customerEmail,
-          customerName,
-        }),
+        body: JSON.stringify({ orderId }),
       });
 
       if (!intentResponse.ok) {
@@ -74,6 +96,13 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
         setError(result.error.message || t('paymentFailed'));
         onPaymentComplete(false);
       } else if (result.paymentIntent?.status === 'succeeded') {
+        // Le webhook fait foi, mais il peut arriver après : ce relevé transmet
+        // la commande au commerçant sans l'attendre. Son échec n'y change rien.
+        await fetch(`${API_URL}/api/payments/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentIntentId: result.paymentIntent.id }),
+        }).catch(() => undefined);
         onPaymentComplete(true);
       }
     } catch (err) {
@@ -85,9 +114,13 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
   };
 
   return (
-    <form onSubmit={handlePayment} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="bg-gray-700 p-4 rounded-lg">
         <CardElement
+          onChange={(ev) => {
+            setCarteComplete(ev.complete);
+            setCarteErreur(ev.error?.message || '');
+          }}
           options={{
             style: {
               base: {
@@ -119,6 +152,14 @@ function StripePaymentForm({ orderId, amount, customerEmail, customerName, onPay
 }
 
 export function StripePayment(props: StripePaymentProps) {
+  if (!stripePromise) {
+    return (
+      <p className="text-red-400 text-sm">
+        Le paiement par carte n&apos;est pas configuré (clé publique Stripe manquante).
+      </p>
+    );
+  }
+
   return (
     <Elements stripe={stripePromise}>
       <StripePaymentForm {...props} />

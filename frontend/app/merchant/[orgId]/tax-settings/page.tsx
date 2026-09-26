@@ -1,13 +1,15 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Trash2, Edit2, Plus, X, Info } from 'lucide-react';
 import Link from 'next/link';
 
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -90,13 +92,13 @@ export default function TaxSettingsPage() {
         setProduits(Array.isArray(d) ? d : d.products || d.data || []);
       }
     } catch (err) {
-      console.error(err);
+      signalerErreur(err);
     } finally {
       setLoading(false);
     }
   }, [storeId, page, router]);
 
-  useEffect(() => { charger(); }, [charger]);
+  useEffectChargement(() => { charger(); }, [charger]);
 
   /* ── Modale ─────────────────────────────────────────────────────────────── */
 
@@ -196,7 +198,7 @@ export default function TaxSettingsPage() {
       });
       if (r.ok) setTaxes(taxes.filter(t => t.id !== taxId));
     } catch (err) {
-      console.error(err);
+      signalerErreur(err);
     }
   };
 

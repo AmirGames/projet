@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { BarChart3, Calendar } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface FinancialReport {
   id: string;
@@ -37,11 +38,7 @@ export default function FinancialReportsPage() {
   const [total, setTotal] = useState(0);
   const limit = 20;
 
-  useEffect(() => {
-    fetchReports();
-  }, [offset]);
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -64,7 +61,11 @@ export default function FinancialReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [offset, t]);
+
+  useEffectChargement(() => {
+    fetchReports();
+  }, [offset, fetchReports]);
 
   const localeFormat = locale === 'en' ? 'en-US' : 'fr-FR';
 

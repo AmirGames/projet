@@ -3,6 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
 import { FileUploadService } from "./file-upload.service";
+import { notifierPlateforme } from "./notification.service";
 
 /**
  * Le profil du commerçant : son identité de facturation, son propriétaire, son
@@ -337,15 +338,36 @@ export class MerchantProfileService {
       expiryReminderAt: null,
     };
 
-    return existante
-      ? db.organizationDocument.update({ where: { id: existante.id }, data: valeurs })
-      : db.organizationDocument.create({ data: { orgId, type: piece.type, ...valeurs } });
+    const deposee = existante
+      ? await db.organizationDocument.update({ where: { id: existante.id }, data: valeurs })
+      : await db.organizationDocument.create({ data: { orgId, type: piece.type, ...valeurs } });
+
+    await this.signalerDepot(orgId, piece.type);
+
+    return deposee;
+  }
+
+  /** Prévient la plateforme qu'une pièce attend son examen. */
+  private static async signalerDepot(orgId: string, type: TypeDocumentCommercant) {
+    const org = await db.organization.findUnique({ where: { id: orgId }, select: { name: true } }).catch(() => null);
+
+    await notifierPlateforme(
+      `Nouveau document — ${org?.name || "commerce"}`,
+      `${libelleDuDocumentCommercant(type)} a été mis en ligne et attend votre validation.`,
+      `/superowner/organizations/${orgId}`
+    );
   }
 
   /** Dépose une pièce via upload de fichier. */
   static async deposerFichier(
     orgId: string,
-    piece: { type: TypeDocumentCommercant; file: Buffer; filename: string; expiryDate?: string | null }
+    piece: {
+      type: TypeDocumentCommercant;
+      file: Buffer;
+      filename: string;
+      mimeType?: string;
+      expiryDate?: string | null;
+    }
   ) {
     const expire = piece.expiryDate ? new Date(piece.expiryDate) : null;
 
@@ -365,7 +387,10 @@ export class MerchantProfileService {
     const { url } = await FileUploadService.uploadDocument(
       piece.file,
       `merchant-${orgId}-${piece.type}-${Date.now()}`,
-      "merchants"
+      "merchants",
+      // Sans lui, l'extension se déduisait d'un nom qui n'en a pas : chaque
+      // pièce était enregistrée en .bin, et ne s'affichait nulle part.
+      piece.mimeType
     );
 
     const valeurs = {
@@ -385,6 +410,8 @@ export class MerchantProfileService {
 
     logger.info("Merchant document uploaded", { orgId, type: piece.type });
 
+    await this.signalerDepot(orgId, piece.type);
+
     return deposee;
   }
 
@@ -399,6 +426,50 @@ export class MerchantProfileService {
     await db.organizationDocument.delete({ where: { id: documentId } });
 
     return piece;
+  }
+
+  /**
+   * La plateforme corrige l'échéance d'une pièce.
+   *
+   * Une date mal saisie au dépôt faisait expirer — ou garder valide — une pièce
+   * à tort, sans autre recours que de la faire redéposer.
+   *
+   * Une pièce déjà expirée qui reçoit une date future n'est pas revalidée
+   * d'office : elle repart en examen.
+   */
+  static async changerEcheance(orgId: string, documentId: string, expiryDate: string) {
+    const piece = await db.organizationDocument.findUnique({ where: { id: documentId } });
+
+    if (!piece || piece.orgId !== orgId) {
+      throw new ApiError(404, "Document introuvable", "DOCUMENT_NOT_FOUND");
+    }
+
+    const echeance = new Date(expiryDate);
+
+    if (Number.isNaN(echeance.getTime())) {
+      throw new ApiError(400, "Date d'expiration invalide", "INVALID_EXPIRY_DATE");
+    }
+
+    if (echeance.getTime() < Date.now()) {
+      throw new ApiError(400, "Cette date est déjà passée", "DOCUMENT_EXPIRED");
+    }
+
+    const modifiee = await db.organizationDocument.update({
+      where: { id: documentId },
+      data: {
+        expiryDate: echeance,
+        // Le rappel envoyé portait sur l'ancienne date.
+        expiryReminderAt: null,
+        ...(piece.status === "EXPIRED" ? { status: "PENDING" } : {}),
+      },
+    });
+
+    await this.prevenirLeCommercant(
+      orgId,
+      `${libelleDuDocumentCommercant(piece.type)} : la date d'expiration a été changée au ${echeance.toLocaleDateString("fr-FR")}.`
+    );
+
+    return { avant: piece.expiryDate, piece: modifiee };
   }
 
   /**

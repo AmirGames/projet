@@ -1,5 +1,7 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { createClient } from 'redis';
 import { logger } from './logger';
 import { verifyToken } from '../middleware/auth';
 import { AuthenticatedSocket } from '../types/socket';
@@ -11,6 +13,12 @@ const salonUtilisateur = (email: string) => `user-${email.toLowerCase()}`;
 
 /** Salon de l'équipe support de la plateforme (chat livreurs). */
 const SALON_SUPPORT = 'support-livreurs';
+
+/**
+ * Salon de toute l'équipe de la plateforme : ses tableaux de bord portent sur
+ * l'ensemble des commerçants, ils se tiennent donc à jour de tout.
+ */
+const SALON_PLATEFORME = 'plateforme';
 
 /** Salon public d'une boutique : disponibilité des produits, horaires. */
 const salonBoutique = (storeId: string) => `store-${storeId}`;
@@ -161,7 +169,7 @@ export function initializeSocket(httpServer: HTTPServer) {
           // L'équipe de la plateforme reçoit les messages des livreurs en
           // direct, sur n'importe quel écran.
           if (utilisateur.isSuperOwner || utilisateur.isSystemAdmin) {
-            socket.join(SALON_SUPPORT);
+            socket.join([SALON_SUPPORT, SALON_PLATEFORME]);
           }
         }
       } catch (err) {
@@ -174,6 +182,98 @@ export function initializeSocket(httpServer: HTTPServer) {
   });
 
   return io;
+}
+
+/** Ce qu'il en est de Redis, pour la surveillance. */
+let redisEtat: { configure: boolean; relie: boolean; pret: () => boolean } = {
+  configure: false,
+  relie: false,
+  pret: () => false,
+};
+
+export function etatTempsReel() {
+  return {
+    connexions: io ? io.engine.clientsCount : 0,
+    redis: {
+      configure: redisEtat.configure,
+      relie: redisEtat.relie,
+      pret: redisEtat.relie && redisEtat.pret(),
+    },
+  };
+}
+
+/** Au-delà, on renonce à Redis et on reste sur une seule instance. */
+const DELAI_CONNEXION_REDIS_MS = 5000;
+
+/**
+ * Relie les instances du serveur entre elles, par Redis.
+ *
+ * Sans cela, chaque instance ne connaît que ses propres connexions : un
+ * événement émis sur l'une n'arrive pas aux navigateurs branchés sur l'autre,
+ * et le temps réel ne marche plus qu'une fois sur deux dès qu'on en lance
+ * plusieurs. Avec une seule instance (le développement), Redis est facultatif :
+ * sans REDIS_URL, ou si Redis ne répond pas, on reste en mémoire.
+ */
+export async function brancherRedis(url = process.env.REDIS_URL) {
+  if (!io) return false;
+
+  if (!url) {
+    logger.info('Temps réel : une seule instance (REDIS_URL absent)');
+    return false;
+  }
+
+  const emetteur = createClient({
+    url,
+    socket: { reconnectStrategy: (tentatives) => Math.min(tentatives * 500, 5000) },
+  });
+  const recepteur = emetteur.duplicate();
+
+  // Sans écouteur, une erreur de Redis ferait tomber tout le serveur. Pendant
+  // la première tentative, chaque essai raté en produirait une : le bilan
+  // dit une fois ce qu'il en est.
+  let relie = false;
+  const signaler = (err: unknown) => {
+    if (!relie) return;
+    logger.error('Temps réel : incident Redis', {
+      error: err instanceof Error ? err.message : err,
+    });
+  };
+  emetteur.on('error', signaler);
+  recepteur.on('error', signaler);
+
+  let minuteur: NodeJS.Timeout | undefined;
+
+  try {
+    await Promise.race([
+      Promise.all([emetteur.connect(), recepteur.connect()]),
+      new Promise((_, rejeter) => {
+        minuteur = setTimeout(
+          () => rejeter(new Error('Redis ne répond pas')),
+          DELAI_CONNEXION_REDIS_MS
+        );
+      }),
+    ]);
+
+    io.adapter(createAdapter(emetteur, recepteur));
+    relie = true;
+    redisEtat = {
+      configure: true,
+      relie: true,
+      pret: () => emetteur.isReady && recepteur.isReady,
+    };
+    logger.info('Temps réel : instances reliées par Redis');
+    return true;
+  } catch (err) {
+    emetteur.destroy();
+    recepteur.destroy();
+    redisEtat = { configure: true, relie: false, pret: () => false };
+    logger.warn('Temps réel : Redis injoignable, on reste sur une seule instance', {
+      error: err instanceof Error ? err.message : err,
+    });
+    return false;
+  } finally {
+    clearTimeout(minuteur);
+  }
 }
 
 /**
@@ -189,12 +289,16 @@ export function emitNotification(recipientEmail: string, notification: unknown) 
 }
 
 export function emitOrderUpdate(orderId: string, status: string, data?: any) {
+  if (!io) return;
+
   io.to(`order-${orderId}`).emit('order-update', {
     orderId,
     status,
     timestamp: new Date().toISOString(),
     ...data,
   });
+
+  void prevenirLaBoutique(orderId, { status });
 }
 
 export function emitDeliveryUpdate(orderId: string, data: any) {
@@ -205,6 +309,29 @@ export function emitDeliveryUpdate(orderId: string, data: any) {
     timestamp: new Date().toISOString(),
     ...data,
   });
+
+  void prevenirLaBoutique(orderId, { deliveryStatus: data?.status });
+}
+
+/**
+ * Toute évolution d'une commande prévient aussi l'équipe de la boutique.
+ *
+ * Sans cela, une commande livrée, annulée ou avancée depuis un autre écran
+ * restait figée sur les autres appareils du commerçant jusqu'au
+ * rafraîchissement suivant.
+ */
+async function prevenirLaBoutique(orderId: string, donnees: Record<string, unknown>) {
+  try {
+    const commande = await db.order.findUnique({ where: { id: orderId }, select: { storeId: true } });
+    if (commande) {
+      await emitMerchantEvent(commande.storeId, 'commande-maj', { orderId, storeId: commande.storeId, ...donnees });
+    }
+  } catch (err) {
+    logger.error("Impossible de prévenir la boutique d'une commande", {
+      orderId,
+      error: err instanceof Error ? err.message : err,
+    });
+  }
 }
 
 /**
@@ -217,6 +344,59 @@ export function emitStoreEvent(storeId: string, evenement: string, donnees: unkn
   if (!io || !storeId) return;
 
   io.to(salonBoutique(storeId)).emit(evenement, donnees);
+}
+
+/**
+ * Pousse un événement à l'équipe d'une boutique : ses commandes.
+ *
+ * Le salon public de la boutique ne convient pas — n'importe quel visiteur de
+ * la vitrine y est, et une commande porte un nom et un téléphone. On passe
+ * donc par le salon nominatif de chaque membre de l'organisation.
+ */
+export async function emitMerchantEvent(storeId: string, evenement: string, donnees: unknown) {
+  if (!io || !storeId) return;
+
+  try {
+    const boutique = await db.store.findUnique({ where: { id: storeId }, select: { orgId: true } });
+    if (!boutique) return;
+
+    const membres = await db.membership.findMany({
+      where: { orgId: boutique.orgId },
+      select: { user: { select: { email: true } } },
+    });
+
+    for (const membre of membres) {
+      io.to(salonUtilisateur(membre.user.email)).emit(evenement, donnees);
+    }
+  } catch (err) {
+    logger.error("Impossible de prévenir l'équipe de la boutique", {
+      storeId,
+      evenement,
+      error: err instanceof Error ? err.message : err,
+    });
+  }
+}
+
+/** Pousse un événement à tous les membres d'une organisation. */
+export async function emitOrgEvent(orgId: string, evenement: string, donnees: unknown) {
+  if (!io || !orgId) return;
+
+  try {
+    const membres = await db.membership.findMany({
+      where: { orgId },
+      select: { user: { select: { email: true } } },
+    });
+
+    for (const membre of membres) {
+      io.to(salonUtilisateur(membre.user.email)).emit(evenement, donnees);
+    }
+  } catch (err) {
+    logger.error("Impossible de prévenir l'organisation", {
+      orgId,
+      evenement,
+      error: err instanceof Error ? err.message : err,
+    });
+  }
 }
 
 /**
@@ -266,9 +446,102 @@ export function emitDriverEvent(email: string, evenement: string, donnees: unkno
   io.to(salonUtilisateur(email)).emit(evenement, donnees);
 }
 
+/**
+ * Pousse un événement à tous les appareils connectés d'un compte : ses
+ * onglets du site comme ses téléphones (un panier modifié ailleurs, par
+ * exemple).
+ */
+export function emitUserEvent(email: string, evenement: string, donnees: unknown) {
+  if (!io || !email) return;
+
+  io.to(salonUtilisateur(email)).emit(evenement, donnees);
+}
+
 /** Pousse un événement à l'équipe support (superowners et admins système). */
 export function emitSupportEvent(evenement: string, donnees: unknown) {
   if (!io) return;
 
   io.to(SALON_SUPPORT).emit(evenement, donnees);
+}
+
+/** Ce qu'un écran doit savoir pour décider s'il se relit. */
+export interface Modification {
+  /** La famille de données : `orders`, `products`, `store-hours`… */
+  ressource: string;
+  action: 'creation' | 'modification' | 'suppression';
+  /** L'identifiant de la donnée touchée, quand il est connu. */
+  id?: string;
+  storeId?: string;
+  orgId?: string;
+}
+
+/** Les destinataires d'une modification. */
+export interface Destinataires {
+  /** Toute l'équipe de ces organisations. */
+  orgIds?: string[];
+  /** Les visiteurs de ces vitrines : seulement pour ce qui y est public. */
+  boutiquesPubliques?: string[];
+  /** Ceux qui suivent ces commandes (déjà autorisés à y entrer). */
+  commandes?: string[];
+  /** Ces comptes, par leur e-mail. */
+  emails?: string[];
+  /** L'équipe de la plateforme. */
+  plateforme?: boolean;
+}
+
+/**
+ * Prévient les écrans ouverts qu'une donnée a changé.
+ *
+ * L'événement ne porte aucune donnée, seulement ce qui a changé et où : chaque
+ * écran se relit ensuite par l'API, qui applique ses propres droits. On peut
+ * donc le diffuser largement sans rien divulguer.
+ *
+ * Tous les salons sont visés en un seul envoi : un compte présent dans
+ * plusieurs (un superowner membre d'une organisation) ne le reçoit qu'une fois.
+ */
+export async function signalerModification(modification: Modification, destinataires: Destinataires) {
+  if (!io) return;
+
+  try {
+    const salons = new Set<string>();
+
+    for (const email of destinataires.emails || []) {
+      if (email) salons.add(salonUtilisateur(email));
+    }
+    for (const orderId of destinataires.commandes || []) {
+      salons.add(`order-${orderId}`);
+    }
+    if (destinataires.plateforme) salons.add(SALON_PLATEFORME);
+
+    const orgIds = [...new Set((destinataires.orgIds || []).filter(Boolean))];
+    if (orgIds.length > 0) {
+      const membres = await db.membership.findMany({
+        where: { orgId: { in: orgIds } },
+        select: { user: { select: { email: true } } },
+      });
+      for (const membre of membres) salons.add(salonUtilisateur(membre.user.email));
+    }
+
+    const evenement = { ...modification, horodatage: new Date().toISOString() };
+
+    if (salons.size > 0) {
+      io.to([...salons]).emit('donnees-modifiees', evenement);
+    }
+
+    // La vitrine ne reçoit que le nom de la famille et la boutique : ni
+    // l'identifiant ni l'organisation ne la regardent.
+    for (const storeId of new Set(destinataires.boutiquesPubliques || [])) {
+      io.to(salonBoutique(storeId)).emit('donnees-modifiees', {
+        ressource: modification.ressource,
+        action: modification.action,
+        storeId,
+        horodatage: evenement.horodatage,
+      });
+    }
+  } catch (err) {
+    logger.error('Impossible de diffuser une modification', {
+      ressource: modification.ressource,
+      error: err instanceof Error ? err.message : err,
+    });
+  }
 }

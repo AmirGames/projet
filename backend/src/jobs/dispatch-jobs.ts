@@ -1,5 +1,6 @@
 import { DispatchService } from "../services/dispatch.service";
 import { logger } from "../config/logger";
+import { Surveillance } from "../services/surveillance.service";
 
 /**
  * Relance des courses dont la proposition a expiré.
@@ -22,6 +23,8 @@ export class DispatchJobs {
   static start() {
     if (minuteur) return;
 
+    Surveillance.declarerTache("dispatch", "Relance des courses", INTERVALLE_MS);
+
     minuteur = setInterval(async () => {
       // Un balayage lent ne doit pas se chevaucher avec le suivant : deux
       // passes simultanées proposeraient la même course deux fois.
@@ -29,7 +32,9 @@ export class DispatchJobs {
       enCours = true;
 
       try {
-        const nombre = await DispatchService.balayerPropositionsExpirees();
+        const nombre = await Surveillance.executerTache("dispatch", () =>
+          DispatchService.balayerPropositionsExpirees()
+        );
 
         if (nombre > 0) {
           logger.info("Propositions de course expirées, relancées", { nombre });

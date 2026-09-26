@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Download, Eye } from 'lucide-react';
@@ -9,6 +10,7 @@ import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -46,14 +48,7 @@ export default function InvoicesPage() {
 
   const itemsPerPage = 20;
 
-  useEffect(() => {
-    if (storeId) {
-      fetchInvoices();
-      fetchStats();
-    }
-  }, [storeId, page, filter]);
-
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
@@ -80,13 +75,13 @@ export default function InvoicesPage() {
       setInvoices(data.data || []);
       setTotal(data.total || 0);
     } catch (error) {
-      console.error('Error fetching invoices:', error);
+      signalerErreur('Error fetching invoices:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, router, storeId]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
@@ -101,9 +96,16 @@ export default function InvoicesPage() {
       const data = await response.json();
       setStats(data);
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      signalerErreur('Error fetching stats:', error);
     }
-  };
+  }, [storeId]);
+
+  useEffectChargement(() => {
+    if (storeId) {
+      fetchInvoices();
+      fetchStats();
+    }
+  }, [storeId, page, filter, fetchInvoices, fetchStats]);
 
   const handleDownloadInvoice = async (orderId: string, invoiceNumber: string) => {
     try {
@@ -130,7 +132,7 @@ export default function InvoicesPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Error downloading invoice:', error);
+      signalerErreur('Error downloading invoice:', error);
     }
   };
 

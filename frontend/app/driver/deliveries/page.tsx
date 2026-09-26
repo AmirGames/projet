@@ -1,10 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Clock, Package, CheckCircle, AlertCircle, Star, Navigation } from 'lucide-react';
 import { euro } from '@/lib/format';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -93,14 +95,15 @@ export default function HistoriqueCoursesPage() {
   const [loading, setLoading] = useState(true);
   const [erreur, setErreur] = useState('');
 
-  const charger = useCallback(async () => {
+  // silencieux : une relecture en direct ne remplace pas la liste par la roue.
+  const charger = useCallback(async (silencieux = false) => {
     const token = localStorage.getItem('driverToken');
     if (!token) {
       router.push('/driver/login');
       return;
     }
 
-    setLoading(true);
+    if (!silencieux) setLoading(true);
     setErreur('');
 
     const params = new URLSearchParams({ filtre, page: String(page), parPage: '20' });
@@ -131,9 +134,12 @@ export default function HistoriqueCoursesPage() {
     }
   }, [filtre, periode, page, router]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
+
+  // Une course livrée, annulée ou payée s'inscrit dans l'historique aussitôt.
+  useDonneesModifiees(['orders', 'drivers'], () => charger(true));
 
   const changerFiltre = (f: Filtre) => {
     setFiltre(f);

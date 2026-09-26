@@ -1,10 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
+import { paysDuNavigateur } from '@/lib/pays-client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, User, Mail, Phone, MapPin, FileText, Star } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -43,11 +47,7 @@ export default function DriverProfilePage() {
     address: '',
   });
 
-  useEffect(() => {
-    loadDriverData();
-  }, []);
-
-  const loadDriverData = async () => {
+  const loadDriverData = useCallback(async () => {
     const token = localStorage.getItem('driverToken');
     if (!token) {
       router.push('/driver/login');
@@ -72,12 +72,16 @@ export default function DriverProfilePage() {
         router.push('/driver/login');
       }
     } catch (err) {
-      console.error('Error loading driver data:', err);
+      signalerErreur('Error loading driver data:', err);
       setError('Erreur lors du chargement du profil');
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffectChargement(() => {
+    loadDriverData();
+  }, [loadDriverData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -102,7 +106,10 @@ export default function DriverProfilePage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          phone: formData.phone ? telephoneInternational(formData.phone, paysDuNavigateur()) : formData.phone,
+        })
       });
 
       if (response.ok) {
@@ -114,7 +121,7 @@ export default function DriverProfilePage() {
         setError(data.error || 'Erreur lors de la mise à jour');
       }
     } catch (err) {
-      console.error('Error updating profile:', err);
+      signalerErreur('Error updating profile:', err);
       setError('Erreur de connexion');
     }
   };

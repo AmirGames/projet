@@ -10,6 +10,7 @@
  * Windows, macOS et Linux.
  */
 
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 /**
@@ -36,7 +37,7 @@ export async function reinitialiser() {
     );
   }
 
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
   try {
     const tables = await prisma.$queryRaw`
@@ -48,6 +49,16 @@ export async function reinitialiser() {
 
     const liste = tables.map((t) => `"public"."${t.tablename}"`).join(", ");
     await prisma.$executeRawUnsafe(`TRUNCATE ${liste} RESTART IDENTITY CASCADE`);
+
+    // Sans configuration, la plateforme applique ses frais de service par
+    // défaut (0,25 €) à chaque commande : toutes les suites qui relisent un
+    // total au centime près échoueraient sans que rien ne soit cassé. On les
+    // coupe ici ; verif-frais-service les remet et vérifie qu'ils s'appliquent.
+    // Le plafond reste nul, comme sans configuration : la ligne par défaut en
+    // poserait un à 9 999,99 € que les suites n'attendent pas.
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "SystemConfig" (id, "serviceFee", "maxOrderAmount", "updatedAt") VALUES ('verif', 0, 0, now())`
+    );
 
     return tables.length;
   } finally {

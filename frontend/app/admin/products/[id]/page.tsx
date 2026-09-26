@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 export default function ProductDetailPage() {
   const router = useRouter();
@@ -20,20 +22,20 @@ export default function ProductDetailPage() {
     sku: '',
   });
 
-  useEffect(() => {
-    fetchProduct();
-  }, [productId]);
-
   const fetchProduct = async () => {
     try {
       // Note: The API doesn't have a getProduct by ID endpoint, so we'll show a placeholder
       // In production, you'd implement GET /api/products/:id
       setLoading(false);
     } catch (error) {
-      console.error('Erreur chargement produit:', error);
+      signalerErreur('Erreur chargement produit:', error);
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchProduct();
+  }, [productId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -49,7 +51,7 @@ export default function ProductDetailPage() {
       // In production, you'd implement PUT /api/products/:id
       router.push('/admin/products');
     } catch (error) {
-      console.error('Erreur mise à jour produit:', error);
+      signalerErreur('Erreur mise à jour produit:', error);
     } finally {
       setSaving(false);
     }
@@ -61,7 +63,7 @@ export default function ProductDetailPage() {
         await apiClient.deleteProduct(productId);
         router.push('/admin/products');
       } catch (error) {
-        console.error('Erreur suppression produit:', error);
+        signalerErreur('Erreur suppression produit:', error);
       }
     }
   };

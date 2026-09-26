@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Order {
   id: string;
@@ -19,10 +21,6 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('ALL');
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
   const fetchOrders = async () => {
     try {
       const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
@@ -30,11 +28,15 @@ export default function AdminOrders() {
       const data = await apiClient.getOrders(storeId, token);
       setOrders(Array.isArray(data) ? data : data.orders || []);
     } catch (error) {
-      console.error('Erreur chargement commandes:', error);
+      signalerErreur('Erreur chargement commandes:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchOrders();
+  }, []);
 
   const filteredOrders = filterStatus === 'ALL' 
     ? orders 

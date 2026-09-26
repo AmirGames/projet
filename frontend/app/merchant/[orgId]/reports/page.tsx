@@ -1,10 +1,12 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Download, TrendingUp, DollarSign, ShoppingCart, Users } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -64,14 +66,8 @@ export default function ReportsPage() {
   const [endDate, setEndDate] = useState('');
 
 
-  useEffect(() => {
-    if (storeId) {
-      fetchAllReports();
-    }
-  }, [storeId, startDate, endDate]);
 
-
-  const fetchAllReports = async () => {
+  const fetchAllReports = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -100,11 +96,17 @@ export default function ReportsPage() {
         setCustomers(data.customers || []);
       }
     } catch (error) {
-      console.error('Error fetching reports:', error);
+      signalerErreur('Error fetching reports:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [endDate, startDate, storeId]);
+
+  useEffectChargement(() => {
+    if (storeId) {
+      fetchAllReports();
+    }
+  }, [storeId, startDate, endDate, fetchAllReports]);
 
   const handleExport = async (type: string) => {
     setExporting(true);
@@ -130,7 +132,7 @@ export default function ReportsPage() {
         document.body.removeChild(a);
       }
     } catch (error) {
-      console.error('Error exporting report:', error);
+      signalerErreur('Error exporting report:', error);
     } finally {
       setExporting(false);
     }

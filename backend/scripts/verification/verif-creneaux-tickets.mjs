@@ -1,7 +1,7 @@
 // Les créneaux de retrait proposés au client, et l'alerte de la plateforme
 // quand un commerçant ouvre un ticket.
 
-import {
+import { inscription,
   titre,
   check,
   j,
@@ -16,7 +16,7 @@ import {
 // ===== Le décor =====
 
 const plateforme = await j(
-  await post('/api/auth/signup', {
+  await inscription({
     email: `p-${uniq}@t.fr`,
     password: 'Password123!',
     name: `P ${uniq}`,
@@ -25,7 +25,7 @@ const plateforme = await j(
 const TP = plateforme.accessToken;
 
 const commercant = await j(
-  await post('/api/auth/signup', {
+  await inscription({
     email: `m-${uniq}@t.fr`,
     password: 'Password123!',
     name: `M ${uniq}`,
@@ -131,7 +131,7 @@ const HORAIRES_FERMES = Object.fromEntries(
 // la deuxième création échouait silencieusement, faisant passer le contrôle
 // pour un succès.
 const autreCommercant = await j(
-  await post('/api/auth/signup', {
+  await inscription({
     email: `f-${uniq}@t.fr`,
     password: 'Password123!',
     name: `F ${uniq}`,

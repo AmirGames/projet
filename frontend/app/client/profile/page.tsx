@@ -1,11 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
+import { paysDuNavigateur } from '@/lib/pays-client';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { User, Mail, ShoppingBag, Wallet, Save } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Profil {
@@ -73,7 +76,7 @@ export default function ProfilClientPage() {
     }
   }, [router, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 
@@ -89,7 +92,7 @@ export default function ProfilClientPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           name: formulaire.name,
-          phone: formulaire.phone || undefined,
+          phone: formulaire.phone ? telephoneInternational(formulaire.phone, paysDuNavigateur()) : undefined,
           address: formulaire.address,
           city: formulaire.city,
           postalCode: formulaire.postalCode,

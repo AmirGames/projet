@@ -1,0 +1,205 @@
+import React from 'react';
+import { Linking, Platform, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
+import Constants from 'expo-constants';
+import { API_URL, DPO_EMAIL, SITE_URL } from '../../lib/api';
+import type { Prefs } from '../../lib/session';
+import type { BackgroundState, GpsState } from '../../lib/useDriverLocation';
+import { Card, COLORS, isDarkTheme, Row, ScreenHeader, themedStyles, ui } from '../ui';
+
+const NAVIGATION_APPS: { key: Prefs['navigationApp']; label: string }[] = [
+  { key: 'zupone', label: 'Carte Zupone' },
+  { key: 'google', label: 'Google Maps' },
+  { key: 'waze', label: 'Waze' },
+  ...(Platform.OS === 'ios' ? [{ key: 'apple' as const, label: 'Plans' }] : []),
+];
+
+const THEMES: { key: Prefs['theme']; label: string }[] = [
+  { key: 'dark', label: '🌙 Sombre' },
+  { key: 'light', label: '☀️ Clair' },
+  { key: 'system', label: '📱 Comme le téléphone' },
+];
+
+// Des fonctions : les couleurs suivent le thème en cours.
+const GPS_LABELS: Record<GpsState, { text: string; color: () => string }> = {
+  off: { text: 'Inactif (hors ligne)', color: () => COLORS.muted },
+  searching: { text: 'Recherche…', color: () => COLORS.warning },
+  ok: { text: '✓ Position transmise', color: () => COLORS.successText },
+  denied: { text: '✗ Autorisation refusée', color: () => COLORS.danger },
+  error: { text: '✗ Signal indisponible', color: () => COLORS.danger },
+};
+
+const BACKGROUND_LABELS: Record<BackgroundState, { text: string; color: () => string }> = {
+  off: { text: 'Inactif (hors ligne)', color: () => COLORS.muted },
+  on: { text: '✓ Oui', color: () => COLORS.successText },
+  denied: { text: '✗ Application ouverte seulement', color: () => COLORS.danger },
+  unavailable: { text: 'Indisponible ici', color: () => COLORS.muted },
+};
+
+export default function SettingsScreen({
+  prefs,
+  onChangePrefs,
+  onTestSound,
+  pushEnabled,
+  pushInfo,
+  gps,
+  background,
+  email,
+  onBack,
+}: {
+  prefs: Prefs;
+  onChangePrefs: (patch: Partial<Prefs>) => void;
+  onTestSound: () => void;
+  pushEnabled: boolean;
+  pushInfo?: string;
+  gps: GpsState;
+  background: BackgroundState;
+  /** Le compte connecté : il accompagne une demande de suppression. */
+  email?: string;
+  onBack: () => void;
+}) {
+  return (
+    <View style={{ flex: 1 }}>
+      <ScreenHeader title="Paramètres ⚙️" onBack={onBack} />
+      <ScrollView contentContainerStyle={ui.content}>
+        <Card title="Apparence">
+          <Text style={styles.help}>
+            Le thème sombre fatigue moins les yeux la nuit et économise la batterie.
+            {prefs.theme === 'system' ? ` Le téléphone est en mode ${isDarkTheme() ? 'sombre' : 'clair'}.` : ''}
+          </Text>
+          <View style={styles.chips}>
+            {THEMES.map((t) => (
+              <TouchableOpacity
+                key={t.key}
+                style={[styles.chip, prefs.theme === t.key && styles.chipActive]}
+                onPress={() => onChangePrefs({ theme: t.key })}
+              >
+                <Text style={[styles.chipText, prefs.theme === t.key && styles.chipTextActive]}>{t.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Card>
+
+        <Card title="Courses proposées">
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={styles.switchLabel}>Sonnerie et vibration</Text>
+              <Text style={styles.help}>Sonne à chaque course proposée, puis toutes les 5 s tant qu'elle attend votre réponse.</Text>
+            </View>
+            <Switch
+              value={prefs.soundEnabled}
+              onValueChange={(soundEnabled) => onChangePrefs({ soundEnabled })}
+              trackColor={{ true: COLORS.success, false: COLORS.raised }}
+            />
+          </View>
+          <TouchableOpacity style={styles.test} onPress={onTestSound} disabled={!prefs.soundEnabled}>
+            <Text style={[styles.testText, !prefs.soundEnabled && { color: COLORS.muted }]}>🔔 Tester la sonnerie</Text>
+          </TouchableOpacity>
+          <View style={styles.statusRow}>
+            <Text style={styles.switchLabel}>Notifications app fermée</Text>
+            <Text style={[styles.status, { color: pushEnabled ? COLORS.successText : COLORS.danger }]}>
+              {pushEnabled ? '✓ Activées' : '✗ Inactives'}
+            </Text>
+          </View>
+          {!pushEnabled && pushInfo ? <Text style={styles.help}>{pushInfo}</Text> : null}
+        </Card>
+
+        <Card title="Navigation">
+          <Text style={styles.help}>
+            « Itinéraire » ouvre la carte de l’application, qui vous suit en direct. Choisissez une autre application
+            pour être guidé par elle à la place.
+          </Text>
+          <View style={styles.chips}>
+            {NAVIGATION_APPS.map((app) => (
+              <TouchableOpacity
+                key={app.key}
+                style={[styles.chip, prefs.navigationApp === app.key && styles.chipActive]}
+                onPress={() => onChangePrefs({ navigationApp: app.key })}
+              >
+                <Text style={[styles.chipText, prefs.navigationApp === app.key && styles.chipTextActive]}>{app.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Card>
+
+        <Card title="Localisation">
+          <View style={styles.statusRow}>
+            <Text style={styles.switchLabel}>GPS</Text>
+            <Text style={[styles.status, { color: GPS_LABELS[gps].color() }]}>{GPS_LABELS[gps].text}</Text>
+          </View>
+          <View style={styles.statusRow}>
+            <Text style={styles.switchLabel}>Écran verrouillé</Text>
+            <Text style={[styles.status, { color: BACKGROUND_LABELS[background].color() }]}>
+              {BACKGROUND_LABELS[background].text}
+            </Text>
+          </View>
+          <Text style={styles.help}>
+            Votre position n'est transmise que lorsque vous êtes en ligne ou sur une course.{' '}
+            {background === 'unavailable'
+              ? 'Cette version de l’application ne la transmet qu’à l’écran : gardez-la ouverte pendant vos courses.'
+              : `Avec la localisation « Toujours autoriser », elle continue téléphone rangé${
+                  Platform.OS === 'android' ? ' (une notification Zupone le signale)' : ''
+                }.`}
+          </Text>
+          {(gps === 'denied' || background === 'denied') && (
+            <TouchableOpacity style={styles.test} onPress={() => Linking.openSettings()}>
+              <Text style={styles.testText}>Ouvrir les réglages du téléphone</Text>
+            </TouchableOpacity>
+          )}
+        </Card>
+
+        <Card title="À propos">
+          <Row label="Application" value="Zupone Livreur" />
+          <Row label="Version" value={Constants.expoConfig?.version || '1.0.0'} />
+          <Row label="Serveur" value={API_URL} last />
+        </Card>
+
+        {/* Les stores exigent la politique de confidentialité dans
+            l'application, et une voie pour supprimer son compte. */}
+        <Card title="Vos données">
+          <TouchableOpacity style={styles.linkRow} onPress={() => Linking.openURL(`${SITE_URL}/confidentialite`)}>
+            <Text style={styles.linkText}>Politique de confidentialité</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.linkRow} onPress={() => Linking.openURL(`${SITE_URL}/conditions-livreurs`)}>
+            <Text style={styles.linkText}>Conditions des livreurs</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.linkRow, { borderBottomWidth: 0 }]}
+            onPress={() =>
+              Linking.openURL(
+                `mailto:${DPO_EMAIL}?subject=${encodeURIComponent('Suppression de mon compte livreur')}&body=${encodeURIComponent(
+                  `Bonjour,\n\nJe souhaite la suppression de mon compte livreur Zupone${email ? ` (${email})` : ''} et des données qui s’y rattachent.\n`
+                )}`
+              ).catch(() => undefined)
+            }
+          >
+            <Text style={[styles.linkText, { color: COLORS.danger }]}>Demander la suppression de mon compte</Text>
+          </TouchableOpacity>
+        </Card>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = themedStyles(() => ({
+  help: { fontSize: 13, color: COLORS.secondary, marginBottom: 10 },
+  switchRow: { flexDirection: 'row', alignItems: 'center' },
+  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, marginBottom: 6 },
+  status: { fontSize: 14, fontWeight: '700' },
+  switchLabel: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
+  test: { paddingVertical: 10, alignItems: 'center', backgroundColor: COLORS.raised, borderRadius: 8 },
+  testText: { fontSize: 15, fontWeight: '600', color: COLORS.link },
+  linkRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  linkText: { fontSize: 15, fontWeight: '600', color: COLORS.link },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.raised,
+  },
+  chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  chipText: { fontSize: 14, color: COLORS.text },
+  chipTextActive: { color: '#fff', fontWeight: '600' },
+}));

@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 /**
  * Commander en tant qu'invité : coordonnées, mode de livraison, adresse.
  *
@@ -10,17 +11,44 @@
  * pouvoir dire où livrer, et la commande partait sans adresse, sans frais de
  * zone et sans le détail du panier.
  *
- * Le formulaire vit donc ici, une fois, et les deux pages l'affichent : en
- * fenêtre sur la vitrine, à plat sur la page dédiée.
+ * Le formulaire vit donc ici, une fois, et s'affiche sur la page `/checkout`,
+ * où mènent la vitrine comme les paniers de l'accueil. Il y prend la forme
+ * d'une page de paiement en deux colonnes : les détails de la livraison, le
+ * mode et le moyen de paiement à gauche ; la boutique, le panier, le code
+ * promo et le total à droite.
+ *
+ * Il s'ouvrait auparavant en fenêtre par-dessus la vitrine, un long formulaire
+ * à faire défiler dans une boîte de quelques centimètres de haut.
  */
 
 import { useEffect, useState } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { telephoneInternational } from '@/lib/pays-infos';
+import { paysDuNavigateur } from '@/lib/pays-client';
+import {
+  AlertCircle,
+  Bike,
+  CalendarClock,
+  ChevronDown,
+  ChevronRight,
+  CreditCard,
+  MapPin,
+  MessageSquare,
+  ShoppingCart,
+  Store as IconeBoutique,
+  Tag,
+  User,
+} from 'lucide-react';
+import Link from '@/components/LienRegional';
+import { useRouter } from 'next/navigation';
 
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
-import { totalDuPanier, type LignePanier } from '@/lib/paniers';
+import { useAdresseLivraisonEnregistree } from '@/lib/adresseLivraison';
+import { cleDeLigne, nombreDArticles, totalDuPanier, type LignePanier } from '@/lib/paniers';
 import { useAuth } from '@/lib/auth-context';
+import { StripePayment } from '@/components/stripe-payment';
+import { DelaiAnnulation } from '@/components/DelaiAnnulation';
+import AcceptationConditions from '@/components/AcceptationConditions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -47,24 +75,37 @@ export interface CommandePassee {
   numero: string;
 }
 
+/** Ce que la page sait de la boutique : l'essentiel suffit à commander. */
+export interface BoutiqueCommandee {
+  id: string;
+  name: string;
+  slug?: string | null;
+  address?: string | null;
+  city?: string | null;
+  logo?: string | null;
+}
+
 interface Props {
-  boutique: { id: string; name: string };
+  boutique: BoutiqueCommandee;
   lignes: LignePanier[];
   /** La commande est passée : au parent de vider le panier et de l'annoncer. */
   surCommandePassee: (commande: CommandePassee) => void;
-  /** Renoncer. Sans ce rappel, le bouton « Annuler » n'est pas proposé. */
-  surAnnulation?: () => void;
-  /** En fenêtre par-dessus le menu, ou à plat sur une page à elle. */
-  disposition?: 'modale' | 'page';
+  /**
+   * La boutique est-elle dans ses horaires en ce moment.
+   *
+   * Fermée, elle prend encore des retraits sur un créneau à venir, mais pas de
+   * livraison : celle-ci part tout de suite, et personne ne la préparerait.
+   */
+  ouverteMaintenant?: boolean;
 }
 
 export function TunnelCommande({
   boutique,
   lignes,
   surCommandePassee,
-  surAnnulation,
-  disposition = 'modale',
+  ouverteMaintenant,
 }: Props) {
+  const livraisonFermee = ouverteMaintenant === false;
   const { user } = useAuth();
   const [livraison, setLivraison] = useState<Livraison | null>(null);
   // Créneaux réellement proposables, déduits des horaires de la boutique.
@@ -72,7 +113,23 @@ export function TunnelCommande({
     { date: string; libelle: string; creneaux: { valeur: string; libelle: string }[] }[]
   >([]);
   const [submitting, setSubmitting] = useState(false);
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+  const router = useRouter();
+  /**
+   * Ce qui partira au commerçant une fois le délai de repentir écoulé.
+   *
+   * Tant qu'il court, rien n'est transmis : « Retour » ramène à la boutique,
+   * le panier intact, pour y ajouter le dessert oublié.
+   */
+  const [enAttente, setEnAttente] = useState<{ partir: () => void } | null>(null);
+  /**
+   * La commande attend le paiement en ligne.
+   *
+   * Elle n'est pas encore partie au commerçant : elle ne lui parvient qu'une
+   * fois l'encaissement confirmé. Le panier est gardé jusque-là.
+   */
+  const [aPayer, setAPayer] = useState<(CommandePassee & { montant: number }) | null>(null);
   /**
    * Les moyens de paiement du commerçant.
    *
@@ -87,11 +144,24 @@ export function TunnelCommande({
   const [codeEnCours, setCodeEnCours] = useState(false);
   const [codeRefuse, setCodeRefuse] = useState('');
 
+  /**
+   * Les blocs repliés derrière leur bouton « Modifier ».
+   *
+   * Ils s'ouvrent tant qu'il manque quelque chose : un invité voit d'emblée
+   * les champs à remplir, un client connecté ne voit que le résumé de ce que
+   * son profil a déjà rempli.
+   */
+  const [contactOuvert, setContactOuvert] = useState(true);
+  const [adresseOuverte, setAdresseOuverte] = useState(true);
+  const [notesOuvertes, setNotesOuvertes] = useState(false);
+  const [panierDeplie, setPanierDeplie] = useState(false);
+  const [promoOuverte, setPromoOuverte] = useState(false);
+
   const [checkoutForm, setCheckoutForm] = useState({
     customerName: '',
     customerEmail: '',
     customerPhone: '',
-    deliveryType: 'DELIVERY' as 'PICKUP' | 'DELIVERY',
+    deliveryType: (livraisonFermee ? 'PICKUP' : 'DELIVERY') as 'PICKUP' | 'DELIVERY',
     deliveryAddress: '',
     deliveryCity: '',
     // L'API l'accepte depuis toujours, aucun écran ne le demandait : la
@@ -103,6 +173,42 @@ export function TunnelCommande({
     pickupTime: '',
     notes: '',
   });
+
+  // L'état d'ouverture peut arriver après le premier affichage : on bascule
+  // alors sur le retrait, seul mode possible.
+  const [fermetureVue, setFermetureVue] = useState(false);
+  if (livraisonFermee !== fermetureVue) {
+    setFermetureVue(livraisonFermee);
+    if (livraisonFermee) {
+      setCheckoutForm((formulaire) =>
+        formulaire.deliveryType === 'PICKUP' ? formulaire : { ...formulaire, deliveryType: 'PICKUP' }
+      );
+    }
+  }
+
+  // L'adresse retenue sur l'accueil pré-remplit la livraison, une fois lue
+  // dans le navigateur.
+  const retenue = useAdresseLivraisonEnregistree();
+  const [retenueAppliquee, setRetenueAppliquee] = useState(false);
+  if (retenue !== undefined && !retenueAppliquee) {
+    setRetenueAppliquee(true);
+    if (retenue?.street) {
+      if (retenue.city) setAdresseOuverte(false);
+
+      setCheckoutForm((formulaire) =>
+        formulaire.deliveryAddress
+          ? formulaire
+          : {
+              ...formulaire,
+              deliveryAddress: retenue.street,
+              deliveryCity: retenue.city,
+              deliveryPostal: retenue.postalCode,
+              deliveryLat: retenue.latitude ?? undefined,
+              deliveryLng: retenue.longitude ?? undefined,
+            }
+      );
+    }
+  }
 
   // Charger les informations du profil utilisateur si connecté.
   useEffect(() => {
@@ -121,14 +227,19 @@ export function TunnelCommande({
         if (annule || !donnees?.data) return;
 
         const profil = donnees.data;
+        if (profil.name && profil.email && profil.phone) setContactOuvert(false);
+        if (profil.address && profil.city) setAdresseOuverte(false);
         setCheckoutForm((formulaire) => ({
           ...formulaire,
           customerName: profil.name || formulaire.customerName,
           customerEmail: profil.email || formulaire.customerEmail,
           customerPhone: profil.phone || formulaire.customerPhone,
-          deliveryAddress: profil.address || formulaire.deliveryAddress,
-          deliveryCity: profil.city || formulaire.deliveryCity,
-          deliveryPostal: profil.postalCode || formulaire.deliveryPostal,
+          // L'adresse choisie sur l'accueil prime sur celle du profil.
+          deliveryAddress: formulaire.deliveryAddress || profil.address || '',
+          deliveryCity: formulaire.deliveryAddress ? formulaire.deliveryCity : profil.city || formulaire.deliveryCity,
+          deliveryPostal: formulaire.deliveryAddress
+            ? formulaire.deliveryPostal
+            : profil.postalCode || formulaire.deliveryPostal,
         }));
       })
       .catch(() => undefined);
@@ -139,31 +250,31 @@ export function TunnelCommande({
   }, [user]);
 
   // Les conditions de livraison se lisent dès que l'adresse est retenue.
-  useEffect(() => {
-    if (!boutique.id || checkoutForm.deliveryType !== 'DELIVERY') {
-      setLivraison(null);
-      return;
-    }
-
-    const { deliveryLat, deliveryLng, deliveryAddress, deliveryCity, deliveryPostal } = checkoutForm;
-    let annule = false;
-
-    const situee = deliveryLat !== undefined && deliveryLng !== undefined;
+  // Seuls ces champs comptent : le reste du formulaire ne relance rien.
+  const { deliveryType, deliveryLat, deliveryLng, deliveryAddress, deliveryCity, deliveryPostal } = checkoutForm;
+  const situee = deliveryLat !== undefined && deliveryLng !== undefined;
+  // La requête des conditions de livraison, null sans adresse exploitable.
+  const requeteLivraison = (() => {
+    if (!boutique.id || deliveryType !== 'DELIVERY') return null;
     // À défaut de suggestion retenue, le serveur situe l'adresse écrite.
     const ecrite = [deliveryAddress, deliveryPostal, deliveryCity].filter(Boolean).join(' ');
-
-    if (!situee && ecrite.trim().length < 3) {
-      setLivraison(null);
-      return;
-    }
-
+    if (!situee && ecrite.trim().length < 3) return null;
     const parametres = situee
       ? `?lat=${deliveryLat}&lng=${deliveryLng}`
       : `?adresse=${encodeURIComponent(ecrite)}`;
+    return `${boutique.id}/zone-livraison${parametres}`;
+  })();
+
+  if (requeteLivraison === null && livraison !== null) setLivraison(null);
+
+  useEffect(() => {
+    if (requeteLivraison === null) return;
+
+    let annule = false;
 
     // Sans temporisation, chaque frappe interrogerait le service d'adresses.
     const minuteur = setTimeout(() => {
-      fetch(`${API_URL}/api/client/stores/${boutique.id}/zone-livraison${parametres}`)
+      fetch(`${API_URL}/api/client/stores/${requeteLivraison}`)
         .then((reponse) => (reponse.ok ? reponse.json() : null))
         .then((donnees) => {
           if (!annule && donnees) setLivraison(donnees.data || null);
@@ -175,15 +286,7 @@ export function TunnelCommande({
       annule = true;
       clearTimeout(minuteur);
     };
-  }, [
-    boutique.id,
-    checkoutForm.deliveryType,
-    checkoutForm.deliveryLat,
-    checkoutForm.deliveryLng,
-    checkoutForm.deliveryAddress,
-    checkoutForm.deliveryCity,
-    checkoutForm.deliveryPostal,
-  ]);
+  }, [requeteLivraison, situee]);
 
   // Un champ d'heure libre laissait choisir 9 h alors que la boutique ouvre à
   // 11 h : la commande partait et personne n'était là pour la remettre.
@@ -228,6 +331,23 @@ export function TunnelCommande({
     };
   }, [boutique.id]);
 
+  // Les frais de service de la plateforme, annoncés avant de valider : le
+  // serveur les ajoute de toute façon.
+  const [fraisDeService, setFraisDeService] = useState(0);
+
+  useEffect(() => {
+    let annule = false;
+    fetch(`${API_URL}/api/client/service-fee`)
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((donnees) => {
+        if (!annule && donnees?.data) setFraisDeService(Number(donnees.data.frais) || 0);
+      })
+      .catch(() => undefined);
+    return () => {
+      annule = true;
+    };
+  }, []);
+
   const sousTotal = totalDuPanier(lignes);
 
   /**
@@ -239,7 +359,7 @@ export function TunnelCommande({
   const fraisDeLivraison =
     checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable ? livraison.frais : 0;
   const montantRemise = remise?.montant ?? 0;
-  const total = Math.max(0, sousTotal + fraisDeLivraison - montantRemise);
+  const total = Math.max(0, sousTotal + fraisDeLivraison + fraisDeService - montantRemise);
 
   /** Le panier atteint-il le minimum de la zone. */
   const sousLeMinimum =
@@ -309,6 +429,7 @@ export function TunnelCommande({
 
     if (!checkoutForm.customerName || !checkoutForm.customerEmail || !checkoutForm.customerPhone) {
       setCheckoutError('Veuillez remplir tous les champs obligatoires');
+      setContactOuvert(true);
       return;
     }
 
@@ -317,6 +438,7 @@ export function TunnelCommande({
       (!checkoutForm.deliveryAddress || !checkoutForm.deliveryCity)
     ) {
       setCheckoutError("Veuillez remplir l'adresse de livraison");
+      setAdresseOuverte(true);
       return;
     }
 
@@ -330,14 +452,28 @@ export function TunnelCommande({
       return;
     }
 
+    // Payée en espèces, la commande part au commerçant dès sa création : le
+    // délai se place avant. Payée en ligne, elle n'attend que l'encaissement :
+    // le délai se place au clic sur « Payer ».
+    const moyen = moyens.find((m) => m.id === moyenChoisi);
+    if (moyen?.type === 'CASH') {
+      setEnAttente({ partir: () => void envoyer() });
+      return;
+    }
+
+    await envoyer();
+  };
+
+  const envoyer = async () => {
     setSubmitting(true);
 
     try {
       const orderData = {
+        conditionsAcceptees,
         storeId: boutique.id,
         customerName: checkoutForm.customerName,
         customerEmail: checkoutForm.customerEmail,
-        customerPhone: checkoutForm.customerPhone,
+        customerPhone: telephoneInternational(checkoutForm.customerPhone, paysDuNavigateur()),
         deliveryType: checkoutForm.deliveryType,
         deliveryAddress: checkoutForm.deliveryAddress || undefined,
         deliveryCity: checkoutForm.deliveryCity || undefined,
@@ -381,241 +517,496 @@ export function TunnelCommande({
 
       const recue = await response.json();
       const id = recue.order?.id || recue.id;
+      const commande = { id, numero: String(id).slice(-8).toUpperCase() };
 
-      surCommandePassee({ id, numero: String(id).slice(-8).toUpperCase() });
+      if (recue.order?.paiementEnLigne) {
+        setAPayer({ ...commande, montant: Number(recue.order.totalAmount) });
+        return;
+      }
+
+      surCommandePassee(commande);
     } catch (error) {
-      console.error('Checkout error:', error);
+      signalerErreur('Checkout error:', error);
       setCheckoutError('Erreur de connexion. Veuillez réessayer.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const enFenetre = disposition === 'modale';
   const champ =
-    'w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500';
+    'w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-red-500';
+  const carte = 'bg-gray-800 border border-gray-700 rounded-2xl';
+  const boutonModifier =
+    'shrink-0 rounded-full bg-gray-700 hover:bg-gray-600 px-4 py-2 text-sm font-semibold transition-colors';
+
+  const enLivraison = checkoutForm.deliveryType === 'DELIVERY';
+  const articles = nombreDArticles(lignes);
+  const adresseBoutique = [boutique.address, boutique.city].filter(Boolean).join(', ');
+  const contactComplet = Boolean(
+    checkoutForm.customerName && checkoutForm.customerEmail && checkoutForm.customerPhone
+  );
+  const adresseComplete = Boolean(checkoutForm.deliveryAddress && checkoutForm.deliveryCity);
+
+  const alerte = checkoutError ? (
+    <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 flex gap-3">
+      <AlertCircle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
+      <p className="text-red-400 text-sm">{checkoutError}</p>
+    </div>
+  ) : null;
+
+  const libelleDuCreneau = (valeur: string) => {
+    for (const jour of creneaux) {
+      const trouve = jour.creneaux.find((c) => c.valeur === valeur);
+      if (trouve) return `${jour.libelle}, ${trouve.libelle}`;
+    }
+    return valeur;
+  };
+
+  const delai = enAttente ? (
+    <DelaiAnnulation
+      lieu={enLivraison ? checkoutForm.deliveryAddress || 'Livraison' : `Retrait chez ${boutique.name}`}
+      precisionLieu={
+        enLivraison
+          ? [checkoutForm.deliveryPostal, checkoutForm.deliveryCity].filter(Boolean).join(' ')
+          : adresseBoutique
+      }
+      horaire={
+        enLivraison
+          ? livraison?.zone?.deliveryMinutes
+            ? `Livraison : environ ${livraison.zone.deliveryMinutes} minutes`
+            : 'Livraison dès que possible'
+          : checkoutForm.pickupTime
+            ? `Retrait : ${libelleDuCreneau(checkoutForm.pickupTime)}`
+            : 'Retrait'
+      }
+      boutique={boutique.name}
+      lignes={lignes}
+      surPartir={() => {
+        const { partir } = enAttente;
+        setEnAttente(null);
+        partir();
+      }}
+      surRetour={() => {
+        setEnAttente(null);
+        if (boutique.slug) router.push(`/store/${boutique.slug}`);
+      }}
+    />
+  ) : null;
+
+  if (aPayer) {
+    return (
+      <div className={`${carte} max-w-xl mx-auto p-6 space-y-4`}>
+        {delai}
+        <h3 className="font-bold text-lg">Paiement en ligne</h3>
+        <p className="text-sm text-gray-400">
+          Commande n° {aPayer.numero} — {euro(aPayer.montant)}. Elle sera transmise à{' '}
+          {boutique.name} dès le paiement accepté.
+        </p>
+        <StripePayment
+          orderId={aPayer.id}
+          amount={aPayer.montant}
+          customerEmail={checkoutForm.customerEmail}
+          customerName={checkoutForm.customerName}
+          demanderConfirmation={(payer) => setEnAttente({ partir: payer })}
+          onPaymentComplete={(reussi) => {
+            if (reussi) surCommandePassee({ id: aPayer.id, numero: aPayer.numero });
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div
-        className={
-          enFenetre ? 'p-6 space-y-6 max-h-96 overflow-y-auto' : 'space-y-6'
-        }
-      >
-        {checkoutError && (
-          <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 flex gap-3">
-            <AlertCircle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
-            <p className="text-red-400 text-sm">{checkoutError}</p>
-          </div>
-        )}
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
+      {delai}
+      {/* ——— Colonne de gauche : où, comment, avec quoi ——— */}
+      <div className="space-y-6 min-w-0">
+        <section className={`${carte} p-6`}>
+          <h2 className="text-xl font-bold mb-2">
+            {enLivraison ? 'Détails de la livraison' : 'Détails du retrait'}
+          </h2>
 
-        <div className="space-y-4">
-          <h3 className="font-bold text-lg">Vos Informations</h3>
-          <div>
-            <label htmlFor="client-nom" className="text-sm text-gray-400 block mb-2">
-              Nom complet *
-            </label>
-            <input
-              id="client-nom"
-              type="text"
-              value={checkoutForm.customerName}
-              onChange={(e) => setCheckoutForm({ ...checkoutForm, customerName: e.target.value })}
-              className={champ}
-              placeholder="Jean Dupont"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="client-email" className="text-sm text-gray-400 block mb-2">
-              Email *
-            </label>
-            <input
-              id="client-email"
-              type="email"
-              value={checkoutForm.customerEmail}
-              onChange={(e) => setCheckoutForm({ ...checkoutForm, customerEmail: e.target.value })}
-              className={champ}
-              placeholder="jean@example.com"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="client-telephone" className="text-sm text-gray-400 block mb-2">
-              Téléphone *
-            </label>
-            <input
-              id="client-telephone"
-              type="tel"
-              value={checkoutForm.customerPhone}
-              onChange={(e) => setCheckoutForm({ ...checkoutForm, customerPhone: e.target.value })}
-              className={champ}
-              placeholder="+33 6 12 34 56 78"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="font-bold text-lg">Mode de Livraison</h3>
-          <div className="space-y-3">
-            <label className="flex items-center gap-3 p-3 bg-gray-700 rounded cursor-pointer hover:bg-gray-600 transition-colors">
-              <input
-                type="radio"
-                name="deliveryType"
-                value="DELIVERY"
-                checked={checkoutForm.deliveryType === 'DELIVERY'}
-                onChange={(e) =>
-                  setCheckoutForm({ ...checkoutForm, deliveryType: e.target.value as any })
-                }
-                className="w-4 h-4"
-              />
-              <div className="flex-1">
-                <p className="font-semibold">Livraison à domicile</p>
-                <p className="text-xs text-gray-400">Livraison à votre adresse</p>
-              </div>
-            </label>
-
-            <label className="flex items-center gap-3 p-3 bg-gray-700 rounded cursor-pointer hover:bg-gray-600 transition-colors">
-              <input
-                type="radio"
-                name="deliveryType"
-                value="PICKUP"
-                checked={checkoutForm.deliveryType === 'PICKUP'}
-                onChange={(e) =>
-                  setCheckoutForm({ ...checkoutForm, deliveryType: e.target.value as any })
-                }
-                className="w-4 h-4"
-              />
-              <div className="flex-1">
-                <p className="font-semibold">Retrait sur place</p>
-                <p className="text-xs text-gray-400">Récupérez votre commande à la boutique</p>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        {checkoutForm.deliveryType === 'DELIVERY' && (
-          <div className="space-y-4">
-            <h3 className="font-bold text-lg">Adresse de Livraison</h3>
-            <div>
-              <label htmlFor="livraison-adresse" className="text-sm text-gray-400 block mb-2">
-                Adresse *
-              </label>
-              <AddressAutocomplete
-                id="livraison-adresse"
-                value={checkoutForm.deliveryAddress}
-                onChange={(valeur) =>
-                  setCheckoutForm({
-                    ...checkoutForm,
-                    deliveryAddress: valeur,
-                    // Taper par-dessus une suggestion retenue rendrait ses
-                    // coordonnées fausses.
-                    deliveryLat: undefined,
-                    deliveryLng: undefined,
-                  })
-                }
-                onSelect={(adresse) =>
-                  setCheckoutForm({
-                    ...checkoutForm,
-                    deliveryAddress: adresse.street,
-                    deliveryCity: adresse.city || checkoutForm.deliveryCity,
-                    deliveryPostal: adresse.postalCode || checkoutForm.deliveryPostal,
-                    // Les coordonnées de l'adresse choisie étaient jetées : sans
-                    // elles, le suivi ne peut afficher ni distance restante ni
-                    // durée estimée.
-                    deliveryLat: adresse.latitude ?? undefined,
-                    deliveryLng: adresse.longitude ?? undefined,
-                  })
-                }
-                className={champ}
-                placeholder="123 rue de la Paix"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="sm:col-span-2">
-                <label htmlFor="livraison-ville" className="text-sm text-gray-400 block mb-2">
-                  Ville *
-                </label>
-                <input
-                  id="livraison-ville"
-                  type="text"
-                  value={checkoutForm.deliveryCity}
-                  onChange={(e) =>
-                    setCheckoutForm({ ...checkoutForm, deliveryCity: e.target.value })
-                  }
-                  className={champ}
-                  placeholder="Paris"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="livraison-code-postal" className="text-sm text-gray-400 block mb-2">
-                  Code postal
-                </label>
-                <input
-                  id="livraison-code-postal"
-                  type="text"
-                  inputMode="numeric"
-                  value={checkoutForm.deliveryPostal}
-                  onChange={(e) =>
-                    setCheckoutForm({ ...checkoutForm, deliveryPostal: e.target.value })
-                  }
-                  className={champ}
-                  placeholder="75002"
-                />
-              </div>
-            </div>
-
-            {/* Les conditions de la zone, dites avant de payer et non après. */}
-            {livraison && !livraison.forfaitBoutique && (
-              <div
-                role="status"
-                className={`rounded-lg px-3 py-2 text-sm border ${
-                  !livraison.livrable
-                    ? 'border-red-700/50 bg-red-900/20 text-red-200'
-                    : sousTotal < livraison.minimum
-                      ? 'border-amber-700/50 bg-amber-900/20 text-amber-200'
-                      : 'border-green-700/50 bg-green-900/20 text-green-200'
-                }`}
-              >
-                {!livraison.livrable ? (
-                  <p>{livraison.raison}</p>
-                ) : (
-                  <>
-                    <p className="font-semibold">
-                      Zone « {livraison.zone?.name} »
-                      {livraison.distanceKm !== null && ` — ${livraison.distanceKm} km`}
+          {/* L'adresse, ou la boutique où passer prendre la commande. */}
+          <div className="py-4 border-b border-gray-700">
+            {enLivraison ? (
+              <>
+                <div className="flex items-center gap-4">
+                  <MapPin size={22} className="text-gray-300 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold truncate">
+                      {checkoutForm.deliveryAddress || 'Adresse de livraison'}
                     </p>
-                    <p>
-                      Livraison {euro(livraison.frais)}
-                      {livraison.zone?.deliveryMinutes
-                        ? `, environ ${livraison.zone.deliveryMinutes} min`
-                        : ''}
-                      {livraison.minimum > 0 && ` — minimum ${euro(livraison.minimum)}`}
+                    <p className="text-sm text-gray-400 truncate">
+                      {adresseComplete
+                        ? [checkoutForm.deliveryPostal, checkoutForm.deliveryCity]
+                            .filter(Boolean)
+                            .join(' ')
+                        : 'Où devons-nous livrer ?'}
                     </p>
-                    {sousTotal < livraison.minimum && (
-                      <p className="mt-1">
-                        Il vous manque {euro(livraison.minimum - sousTotal)} pour atteindre le
-                        minimum de cette zone.
-                      </p>
+                  </div>
+                  {!adresseOuverte && (
+                    <button
+                      type="button"
+                      onClick={() => setAdresseOuverte(true)}
+                      className={boutonModifier}
+                    >
+                      Modifier
+                    </button>
+                  )}
+                </div>
+
+                {adresseOuverte && (
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <label
+                        htmlFor="livraison-adresse"
+                        className="text-sm text-gray-400 block mb-2"
+                      >
+                        Adresse *
+                      </label>
+                      <AddressAutocomplete
+                        id="livraison-adresse"
+                        value={checkoutForm.deliveryAddress}
+                        onChange={(valeur) =>
+                          setCheckoutForm({
+                            ...checkoutForm,
+                            deliveryAddress: valeur,
+                            // Taper par-dessus une suggestion retenue rendrait ses
+                            // coordonnées fausses.
+                            deliveryLat: undefined,
+                            deliveryLng: undefined,
+                          })
+                        }
+                        onSelect={(adresse) =>
+                          setCheckoutForm({
+                            ...checkoutForm,
+                            deliveryAddress: adresse.street,
+                            deliveryCity: adresse.city || checkoutForm.deliveryCity,
+                            deliveryPostal: adresse.postalCode || checkoutForm.deliveryPostal,
+                            // Les coordonnées de l'adresse choisie étaient jetées :
+                            // sans elles, le suivi ne peut afficher ni distance
+                            // restante ni durée estimée.
+                            deliveryLat: adresse.latitude ?? undefined,
+                            deliveryLng: adresse.longitude ?? undefined,
+                          })
+                        }
+                        className={champ}
+                        placeholder="123 rue de la Paix"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2">
+                        <label
+                          htmlFor="livraison-ville"
+                          className="text-sm text-gray-400 block mb-2"
+                        >
+                          Ville *
+                        </label>
+                        <input
+                          id="livraison-ville"
+                          type="text"
+                          value={checkoutForm.deliveryCity}
+                          onChange={(e) =>
+                            setCheckoutForm({ ...checkoutForm, deliveryCity: e.target.value })
+                          }
+                          className={champ}
+                          placeholder="Paris"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="livraison-code-postal"
+                          className="text-sm text-gray-400 block mb-2"
+                        >
+                          Code postal
+                        </label>
+                        <input
+                          id="livraison-code-postal"
+                          type="text"
+                          inputMode="numeric"
+                          value={checkoutForm.deliveryPostal}
+                          onChange={(e) =>
+                            setCheckoutForm({ ...checkoutForm, deliveryPostal: e.target.value })
+                          }
+                          className={champ}
+                          placeholder="75002"
+                        />
+                      </div>
+                    </div>
+
+                    {adresseComplete && (
+                      <button
+                        type="button"
+                        onClick={() => setAdresseOuverte(false)}
+                        className={boutonModifier}
+                      >
+                        Valider l&apos;adresse
+                      </button>
                     )}
-                  </>
+                  </div>
+                )}
+
+                {/* Les conditions de la zone, dites avant de payer et non après. */}
+                {livraison && !livraison.forfaitBoutique && (
+                  <div
+                    role="status"
+                    className={`mt-4 rounded-lg px-3 py-2 text-sm border ${
+                      !livraison.livrable
+                        ? 'border-red-700/50 bg-red-900/20 text-red-200'
+                        : sousTotal < livraison.minimum
+                          ? 'border-amber-700/50 bg-amber-900/20 text-amber-200'
+                          : 'border-green-700/50 bg-green-900/20 text-green-200'
+                    }`}
+                  >
+                    {!livraison.livrable ? (
+                      <p>{livraison.raison}</p>
+                    ) : (
+                      <>
+                        <p className="font-semibold">
+                          Zone « {livraison.zone?.name} »
+                          {livraison.distanceKm !== null && ` — ${livraison.distanceKm} km`}
+                        </p>
+                        <p>
+                          Livraison {euro(livraison.frais)}
+                          {livraison.zone?.deliveryMinutes
+                            ? `, environ ${livraison.zone.deliveryMinutes} min`
+                            : ''}
+                          {livraison.minimum > 0 && ` — minimum ${euro(livraison.minimum)}`}
+                        </p>
+                        {sousTotal < livraison.minimum && (
+                          <p className="mt-1">
+                            Il vous manque {euro(livraison.minimum - sousTotal)} pour atteindre
+                            le minimum de cette zone.
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center gap-4">
+                <IconeBoutique size={22} className="text-gray-300 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">Retrait chez {boutique.name}</p>
+                  <p className="text-sm text-gray-400 truncate">
+                    {adresseBoutique || 'À la boutique'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Les coordonnées du client. */}
+          <div className="py-4 border-b border-gray-700">
+            <div className="flex items-center gap-4">
+              <User size={22} className="text-gray-300 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold truncate">
+                  {checkoutForm.customerName || 'Vos informations'}
+                </p>
+                <p className="text-sm text-gray-400 truncate">
+                  {contactComplet
+                    ? `${checkoutForm.customerEmail} · ${checkoutForm.customerPhone}`
+                    : 'Nom, e-mail et téléphone pour vous tenir informé'}
+                </p>
+              </div>
+              {!contactOuvert && (
+                <button
+                  type="button"
+                  onClick={() => setContactOuvert(true)}
+                  className={boutonModifier}
+                >
+                  Modifier
+                </button>
+              )}
+            </div>
+
+            {contactOuvert && (
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label htmlFor="client-nom" className="text-sm text-gray-400 block mb-2">
+                    Nom complet *
+                  </label>
+                  <input
+                    id="client-nom"
+                    type="text"
+                    value={checkoutForm.customerName}
+                    onChange={(e) =>
+                      setCheckoutForm({ ...checkoutForm, customerName: e.target.value })
+                    }
+                    className={champ}
+                    placeholder="Jean Dupont"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="client-email" className="text-sm text-gray-400 block mb-2">
+                      Email *
+                    </label>
+                    <input
+                      id="client-email"
+                      type="email"
+                      value={checkoutForm.customerEmail}
+                      onChange={(e) =>
+                        setCheckoutForm({ ...checkoutForm, customerEmail: e.target.value })
+                      }
+                      className={champ}
+                      placeholder="jean@example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="client-telephone"
+                      className="text-sm text-gray-400 block mb-2"
+                    >
+                      Téléphone *
+                    </label>
+                    <input
+                      id="client-telephone"
+                      type="tel"
+                      value={checkoutForm.customerPhone}
+                      onChange={(e) =>
+                        setCheckoutForm({ ...checkoutForm, customerPhone: e.target.value })
+                      }
+                      className={champ}
+                      placeholder="+33 6 12 34 56 78"
+                    />
+                  </div>
+                </div>
+
+                {contactComplet && (
+                  <button
+                    type="button"
+                    onClick={() => setContactOuvert(false)}
+                    className={boutonModifier}
+                  >
+                    Valider
+                  </button>
                 )}
               </div>
             )}
           </div>
-        )}
 
-        {checkoutForm.deliveryType === 'PICKUP' && (
-          <div className="space-y-4">
-            <h3 className="font-bold text-lg">Heure de Retrait</h3>
-            <div>
+          {/* Les instructions : sonnette, étage, allergies. */}
+          <div className="pt-4">
+            <div className="flex items-center gap-4">
+              <MessageSquare size={22} className="text-gray-300 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold">Instructions</p>
+                <p className="text-sm text-gray-400 truncate">
+                  {checkoutForm.notes ||
+                    (enLivraison
+                      ? 'Étage, code d’entrée, allergies…'
+                      : 'Allergies, précisions pour la boutique…')}
+                </p>
+              </div>
+              {!notesOuvertes && (
+                <button
+                  type="button"
+                  onClick={() => setNotesOuvertes(true)}
+                  className={boutonModifier}
+                >
+                  {checkoutForm.notes ? 'Modifier' : 'Ajouter'}
+                </button>
+              )}
+            </div>
+
+            {notesOuvertes && (
+              <div className="mt-4 space-y-3">
+                <textarea
+                  aria-label="Instructions"
+                  value={checkoutForm.notes}
+                  onChange={(e) => setCheckoutForm({ ...checkoutForm, notes: e.target.value })}
+                  className={`${champ} h-20`}
+                  placeholder="Instructions spéciales, allergies, etc..."
+                />
+                <button
+                  type="button"
+                  onClick={() => setNotesOuvertes(false)}
+                  className={boutonModifier}
+                >
+                  Valider
+                </button>
+              </div>
+            )}
+          </div>
+
+          <h2 className="text-xl font-bold mt-8 mb-4">Options de livraison</h2>
+          <div className="space-y-3" role="radiogroup" aria-label="Mode de livraison">
+            <label
+              className={`flex items-center gap-4 rounded-xl border-2 px-5 py-4 transition-colors ${
+                enLivraison ? 'border-white bg-gray-700/40' : 'border-gray-700'
+              } ${
+                livraisonFermee
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'cursor-pointer hover:border-gray-500'
+              }`}
+            >
+              <input
+                type="radio"
+                name="deliveryType"
+                value="DELIVERY"
+                checked={enLivraison}
+                disabled={livraisonFermee}
+                onChange={() => setCheckoutForm({ ...checkoutForm, deliveryType: 'DELIVERY' })}
+                className="sr-only"
+              />
+              <Bike size={24} className="text-green-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold">Livraison</p>
+                <p className="text-sm text-gray-400">
+                  {livraisonFermee
+                    ? 'Indisponible : la boutique est fermée pour le moment'
+                    : livraison?.livrable && livraison.zone?.deliveryMinutes
+                      ? `Environ ${livraison.zone.deliveryMinutes} minutes · Livré chez vous`
+                      : 'Livré chez vous'}
+                </p>
+              </div>
+              {livraison?.livrable && (
+                <span className="text-sm text-gray-300 whitespace-nowrap">
+                  {livraison.frais > 0 ? `+${euro(livraison.frais)}` : 'Offerte'}
+                </span>
+              )}
+            </label>
+
+            <label
+              className={`flex items-center gap-4 rounded-xl border-2 px-5 py-4 cursor-pointer transition-colors hover:border-gray-500 ${
+                !enLivraison ? 'border-white bg-gray-700/40' : 'border-gray-700'
+              }`}
+            >
+              <input
+                type="radio"
+                name="deliveryType"
+                value="PICKUP"
+                checked={!enLivraison}
+                onChange={() => setCheckoutForm({ ...checkoutForm, deliveryType: 'PICKUP' })}
+                className="sr-only"
+              />
+              <CalendarClock size={24} className="text-gray-300 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold">Retrait sur place</p>
+                <p className="text-sm text-gray-400">
+                  Choisissez une heure et passez la récupérer
+                </p>
+              </div>
+            </label>
+          </div>
+
+          {/* Un champ d'heure libre laissait choisir une heure où la boutique
+              est fermée : seuls ses vrais créneaux sont proposés. */}
+          {!enLivraison && (
+            <div className="mt-4">
               <label htmlFor="creneau" className="text-sm text-gray-400 block mb-2">
-                Sélectionnez une heure *
+                Heure de retrait *
               </label>
 
               {creneaux.length === 0 ? (
-                <p className="text-sm text-amber-300 bg-amber-900/20 border border-amber-700/40 rounded px-3 py-2">
+                <p className="text-sm text-amber-300 bg-amber-900/20 border border-amber-700/40 rounded-lg px-3 py-2">
                   Aucun créneau de retrait disponible pour les prochains jours. Choisissez la
                   livraison, ou revenez plus tard.
                 </p>
@@ -639,19 +1030,21 @@ export function TunnelCommande({
                 </select>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </section>
 
         {/* Les moyens de paiement du commerçant. Ils existaient en base sans
             qu'aucun écran ne les montre au client. */}
         {moyens.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="font-bold text-lg">Moyen de Paiement</h3>
+          <section className={`${carte} p-6`}>
+            <h2 className="text-xl font-bold mb-4">Moyen de paiement</h2>
             <div className="space-y-3" role="radiogroup" aria-label="Moyen de paiement">
               {moyens.map((moyen) => (
                 <label
                   key={moyen.id}
-                  className="flex items-center gap-3 p-3 bg-gray-700 rounded cursor-pointer hover:bg-gray-600 transition-colors"
+                  className={`flex items-center gap-4 rounded-xl border-2 px-5 py-4 cursor-pointer transition-colors hover:border-gray-500 ${
+                    moyenChoisi === moyen.id ? 'border-white bg-gray-700/40' : 'border-gray-700'
+                  }`}
                 >
                   <input
                     type="radio"
@@ -659,18 +1052,78 @@ export function TunnelCommande({
                     value={moyen.id}
                     checked={moyenChoisi === moyen.id}
                     onChange={() => setMoyenChoisi(moyen.id)}
-                    className="w-4 h-4"
+                    className="sr-only"
                   />
+                  <CreditCard size={22} className="text-gray-300 shrink-0" />
                   <span className="flex-1 font-semibold">{moyen.name}</span>
                 </label>
               ))}
             </div>
+          </section>
+        )}
+      </div>
+
+      {/* ——— Colonne de droite : la boutique, le panier, le total ——— */}
+      <aside className={`${carte} overflow-hidden lg:sticky lg:top-6`}>
+        {/* La boutique : un clic ramène à son menu pour compléter le panier. */}
+        {boutique.slug ? (
+          <Link
+            href={`/store/${boutique.slug}`}
+            className="flex items-center gap-4 p-6 text-white hover:text-white hover:bg-gray-700/40 transition-colors"
+          >
+            <EnTeteBoutique boutique={boutique} adresse={adresseBoutique} />
+            <ChevronRight size={20} className="text-gray-400 shrink-0" />
+          </Link>
+        ) : (
+          <div className="flex items-center gap-4 p-6">
+            <EnTeteBoutique boutique={boutique} adresse={adresseBoutique} />
           </div>
         )}
 
-        {/* Le code promo : il n'y avait aucun champ pour le saisir. */}
-        <div className="space-y-4">
-          <h3 className="font-bold text-lg">Code Promo</h3>
+        {/* Le récapitulatif du panier, replié comme un reçu. */}
+        <div className="border-t-8 border-gray-900">
+          <button
+            type="button"
+            onClick={() => setPanierDeplie((deplie) => !deplie)}
+            aria-expanded={panierDeplie}
+            className="w-full flex items-center gap-4 px-6 py-5 hover:bg-gray-700/40 transition-colors text-left"
+          >
+            <ShoppingCart size={22} className="text-gray-300 shrink-0" />
+            <span className="flex-1 font-semibold">
+              Récapitulatif du panier ({articles} article{articles > 1 ? 's' : ''})
+            </span>
+            <ChevronDown
+              size={20}
+              className={`text-gray-400 transition-transform ${panierDeplie ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {panierDeplie && (
+            <ul className="px-6 pb-5 space-y-3">
+              {lignes.map((ligne) => (
+                <li
+                  key={cleDeLigne(ligne.productId, ligne.variantId)}
+                  className="flex justify-between gap-4 text-sm"
+                >
+                  <span className="min-w-0">
+                    <span className="text-gray-400">{ligne.quantity} × </span>
+                    {ligne.name}
+                    {/* Sans le nom de la déclinaison, deux lignes du même plat
+                        seraient indistinguables. */}
+                    {ligne.variantNom && (
+                      <span className="text-gray-400"> — {ligne.variantNom}</span>
+                    )}
+                  </span>
+                  <span className="whitespace-nowrap">{euro(ligne.price * ligne.quantity)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Le code promo, derrière son lien comme le reste des options. */}
+        <div className="border-t-8 border-gray-900 px-6 py-5">
+          <h3 className="text-lg font-bold mb-3">Promotion</h3>
 
           {remise ? (
             <div className="flex items-center justify-between gap-3 rounded-lg border border-green-700/50 bg-green-900/20 px-3 py-2 text-sm text-green-200">
@@ -685,107 +1138,138 @@ export function TunnelCommande({
                 Retirer
               </button>
             </div>
-          ) : (
+          ) : promoOuverte ? (
             <div className="flex gap-2">
               <input
                 id="code-promo"
                 type="text"
+                aria-label="Code promotionnel"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') appliquerLeCode();
+                }}
                 className={champ}
                 placeholder="BIENVENUE10"
+                autoFocus
               />
               <button
                 type="button"
                 onClick={appliquerLeCode}
                 disabled={codeEnCours || code.trim().length === 0}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors disabled:opacity-50 whitespace-nowrap"
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-colors disabled:opacity-50 whitespace-nowrap"
               >
                 {codeEnCours ? 'Vérification…' : 'Appliquer'}
               </button>
             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPromoOuverte(true)}
+              className="w-full flex items-center gap-4 text-left hover:text-white text-gray-200"
+            >
+              <Tag size={20} className="text-gray-300 shrink-0" />
+              <span className="flex-1 font-semibold">Ajouter un code promotionnel</span>
+              <ChevronRight size={20} className="text-gray-400" />
+            </button>
           )}
 
           {codeRefuse && (
-            <p role="status" className="text-sm text-amber-300">
+            <p role="status" className="mt-2 text-sm text-amber-300">
               {codeRefuse}
             </p>
           )}
         </div>
 
-        <div className="space-y-4">
-          <h3 className="font-bold text-lg">Notes (Optionnel)</h3>
-          <textarea
-            value={checkoutForm.notes}
-            onChange={(e) => setCheckoutForm({ ...checkoutForm, notes: e.target.value })}
-            className={`${champ} h-20`}
-            placeholder="Instructions spéciales, allergies, etc..."
-          />
-        </div>
-
-        <div className="bg-gray-700 rounded-lg p-4 space-y-2">
-          <h3 className="font-bold mb-3">Résumé de la Commande</h3>
-          <div className="flex justify-between text-sm">
+        {/* Le total, puis le bouton : on sait ce qu'on paie avant de cliquer. */}
+        <div className="border-t-8 border-gray-900 px-6 py-5 space-y-3">
+          <h3 className="text-lg font-bold">Total de la commande</h3>
+          <div className="flex justify-between text-gray-300">
             <span>Sous-total</span>
             <span>{euro(sousTotal)}</span>
           </div>
-          <div className="flex justify-between text-sm">
+          {fraisDeService > 0 && (
+            <div className="flex justify-between text-gray-300">
+              <span>Frais de service</span>
+              <span>{euro(fraisDeService)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-gray-300">
             <span>
               Livraison
-              {livraison?.zone ? ` — ${livraison.zone.name}` : ''}
+              {enLivraison && livraison?.zone ? ` — ${livraison.zone.name}` : ''}
             </span>
-            <span>
-              {checkoutForm.deliveryType === 'PICKUP' ? 'Retrait sur place' : euro(fraisDeLivraison)}
-            </span>
+            <span>{enLivraison ? euro(fraisDeLivraison) : 'Retrait sur place'}</span>
           </div>
           {remise && (
-            <div className="flex justify-between text-sm text-green-300">
+            <div className="flex justify-between text-green-300">
               <span>Remise — {remise.code}</span>
               <span>− {euro(remise.montant)}</span>
             </div>
           )}
-          <div className="flex justify-between font-bold text-lg border-t border-gray-600 pt-2">
+          <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-3">
             <span>Total</span>
-            <span className="text-red-400">{euro(total)}</span>
+            <span>{euro(total)}</span>
           </div>
-        </div>
-      </div>
 
-      <div
-        className={
-          enFenetre
-            ? 'border-t border-gray-700 p-6 flex gap-3'
-            : 'border-t border-gray-700 pt-6 mt-6 flex gap-3'
-        }
-      >
-        {surAnnulation && (
+          {alerte}
+
+          <AcceptationConditions
+            coche={conditionsAcceptees}
+            onChange={setConditionsAcceptees}
+            documents={[{ href: '/cgv', libelle: 'les conditions générales de vente' }]}
+          />
+
           <button
-            onClick={surAnnulation}
-            className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors"
+            onClick={commander}
+            // Hors zone ou sous le minimum, le serveur refuserait : autant le dire
+            // avant que le client valide.
+            disabled={
+              submitting ||
+              !conditionsAcceptees ||
+              sousLeMinimum ||
+              (enLivraison && livraison?.livrable === false)
+            }
+            className="w-full py-4 bg-red-600 hover:bg-red-700 rounded-xl text-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Annuler
+            {submitting
+              ? 'Traitement...'
+              : sousLeMinimum
+                ? `Minimum ${euro(livraison?.minimum ?? 0)}`
+                : enLivraison && livraison?.livrable === false
+                  ? 'Adresse non livrée'
+                  : 'Confirmer la Commande'}
           </button>
-        )}
-        <button
-          onClick={commander}
-          // Hors zone ou sous le minimum, le serveur refuserait : autant le dire
-          // avant que le client valide.
-          disabled={
-            submitting ||
-            sousLeMinimum ||
-            (checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable === false)
-          }
-          className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting
-            ? 'Traitement...'
-            : sousLeMinimum
-              ? `Minimum ${euro(livraison?.minimum ?? 0)}`
-              : checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable === false
-                ? 'Adresse non livrée'
-                : 'Confirmer la Commande'}
-        </button>
-      </div>
+
+          <p className="text-xs text-gray-500 leading-relaxed">
+            En confirmant, vous transmettez votre commande à {boutique.name}. Elle sera
+            préparée dès que la boutique l&apos;aura acceptée ; vous en serez averti par e-mail.
+          </p>
+        </div>
+      </aside>
     </div>
+  );
+}
+
+/** Le logo, le nom et l'adresse de la boutique, en tête du récapitulatif. */
+function EnTeteBoutique({ boutique, adresse }: { boutique: BoutiqueCommandee; adresse: string }) {
+  return (
+    <>
+      {boutique.logo ? (
+        <img
+          src={boutique.logo}
+          alt=""
+          className="w-14 h-14 rounded-full object-cover bg-gray-700 shrink-0"
+        />
+      ) : (
+        <span className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center text-xl font-bold shrink-0">
+          {boutique.name.charAt(0).toUpperCase()}
+        </span>
+      )}
+      <span className="flex-1 min-w-0">
+        <span className="block font-semibold text-lg truncate">{boutique.name}</span>
+        {adresse && <span className="block text-sm text-gray-400 truncate">{adresse}</span>}
+      </span>
+    </>
   );
 }

@@ -6,6 +6,36 @@ import { emitDeliveryUpdate, emitDriverEvent } from "../config/socket";
 import { genererCode } from "./delivery-proof.service";
 import { obfusquerAdresse } from "../utils/address-obfuscation";
 import { Notifier, enArrierePlan } from "./notifier.service";
+import { randomUUID } from "crypto";
+import {
+  detourPourRejoindre,
+  ordonner,
+  REGLES_TOURNEE_PAR_DEFAUT,
+  ReglesTournee,
+  versCourseTournee,
+} from "./tournee.service";
+
+/** Les statuts d'une course qu'un livreur a encore sur les bras. */
+export const STATUTS_EN_COURSE = ["ACCEPTED", "PICKED_UP"];
+
+/** Ce qu'il faut d'une course pour la proposer. */
+const COURSE_A_PROPOSER = {
+  offers: {
+    select: { driverId: true, status: true, attempts: true, expiresAt: true, respondedAt: true },
+  },
+  order: {
+    select: {
+      deliveryAddress: true,
+      deliveryCity: true,
+      deliveryPostal: true,
+      totalAmount: true,
+      feesAmount: true,
+      deliveryMode: true,
+      status: true,
+      store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
+    },
+  },
+} as const;
 
 /**
  * Attribution des courses aux livreurs.
@@ -21,6 +51,9 @@ import { Notifier, enArrierePlan } from "./notifier.service";
  * les dix livreurs du quartier laissaient passer la course, elle restait
  * bloquée, même relancée à la main.
  */
+
+/** En deçà, le client est prévenu que le livreur arrive et peut descendre. */
+export const RAYON_APPROCHE_KM = 0.3;
 
 /** Délai avant de reproposer une course à un livreur qui a refusé ou laissé expirer. */
 export const RELANCE_APRES_MS = 3 * 60000;
@@ -50,6 +83,8 @@ export interface Reglages {
   perKmFee: number;
   offerSeconds: number;
   maxRadiusKm: number;
+  /** Plusieurs courses à la fois : voir tournee.service.ts. */
+  tournee: ReglesTournee;
 }
 
 const REGLAGES_PAR_DEFAUT: Reglages = {
@@ -57,6 +92,7 @@ const REGLAGES_PAR_DEFAUT: Reglages = {
   perKmFee: 0.8,
   offerSeconds: 30,
   maxRadiusKm: 8,
+  tournee: REGLES_TOURNEE_PAR_DEFAUT,
 };
 
 export class DispatchService {
@@ -71,6 +107,11 @@ export class DispatchService {
       perKmFee: Number(config.driverPerKmFee),
       offerSeconds: config.driverOfferSeconds,
       maxRadiusKm: config.driverMaxRadiusKm,
+      tournee: {
+        maxCourses: config.driverMaxCourses,
+        rayonClientsKm: config.driverGroupClientKm,
+        detourMaxKm: config.driverGroupDetourKm,
+      },
     };
   }
 
@@ -203,7 +244,166 @@ export class DispatchService {
   }
 
   /**
+   * Où en est la tournée du livreur.
+   *
+   * Tant qu'une commande attend au commerce, aucun client n'est révélé ni
+   * livrable. Ensuite, un seul à la fois : l'ordre des remises est figé
+   * (ordreRemise) depuis la position du livreur au dernier retrait, pour
+   * qu'il ne change pas en route, et seule la première se montre.
+   */
+  static async etatTournee(driverId: string) {
+    const actives = await db.orderDelivery.findMany({
+      where: { driverId, status: { in: STATUTS_EN_COURSE } },
+      select: {
+        id: true,
+        status: true,
+        ordreRemise: true,
+        pickupLat: true,
+        pickupLng: true,
+        deliveryLat: true,
+        deliveryLng: true,
+      },
+    });
+    const retraitsRestants = actives.filter((c) => c.status === "ACCEPTED").length;
+    let remiseCourante: string | null = null;
+
+    if (actives.length > 0 && retraitsRestants === 0) {
+      const sansOrdre = actives.filter((c) => c.ordreRemise == null);
+      if (sansOrdre.length > 0) {
+        const livreur = await db.driver.findUnique({ where: { id: driverId }, select: { latitude: true, longitude: true } });
+        const depart = livreur && estUnPoint(livreur) ? (livreur as Point) : null;
+        const { arrets } = ordonner(depart, sansOrdre.map(versCourseTournee));
+        const base = Math.max(0, ...actives.map((c) => c.ordreRemise ?? 0));
+        await db.$transaction(
+          arrets.map((a, i) => db.orderDelivery.update({ where: { id: a.deliveryId }, data: { ordreRemise: base + i + 1 } }))
+        );
+        for (const [i, a] of arrets.entries()) {
+          const c = actives.find((x) => x.id === a.deliveryId);
+          if (c) c.ordreRemise = base + i + 1;
+        }
+      }
+      remiseCourante = [...actives].sort((a, b) => (a.ordreRemise ?? 0) - (b.ordreRemise ?? 0))[0].id;
+    }
+
+    return { courses: actives.length, retraitsRestants, remiseCourante, ordre: actives };
+  }
+
+  /**
+   * Le client de cette course est-il masqué au livreur ? RETRAITS : d'autres
+   * commandes attendent au commerce ; ORDRE : une autre remise passe avant.
+   * Une course seule n'est jamais masquée.
+   */
+  static masquage(
+    etat: { courses: number; retraitsRestants: number; remiseCourante: string | null },
+    deliveryId: string
+  ): "RETRAITS" | "ORDRE" | null {
+    if (etat.courses < 2) return null;
+    if (etat.retraitsRestants > 0) return "RETRAITS";
+    return deliveryId === etat.remiseCourante ? null : "ORDRE";
+  }
+
+  /** Refuse de révéler ou de clore une course masquée (voir masquage). */
+  static async exigerTourAtteint(driverId: string, deliveryId: string) {
+    const etat = await this.etatTournee(driverId);
+    const raison = this.masquage(etat, deliveryId);
+    if (raison === "RETRAITS") {
+      throw new ApiError(
+        409,
+        etat.retraitsRestants > 1
+          ? `Récupérez d'abord les ${etat.retraitsRestants} autres commandes de votre tournée.`
+          : "Récupérez d'abord l'autre commande de votre tournée.",
+        "TOURNEE_RETRAITS"
+      );
+    }
+    if (raison === "ORDRE") {
+      throw new ApiError(409, "Livrez d'abord la commande en cours de votre tournée.", "TOURNEE_ORDRE");
+    }
+  }
+
+  /** Les courses que le livreur a encore à faire, dans l'ordre où il les a prises. */
+  static coursesActives(driverId: string) {
+    return db.orderDelivery.findMany({
+      where: { driverId, status: { in: STATUTS_EN_COURSE } },
+      orderBy: { assignedAt: "asc" },
+    });
+  }
+
+  /**
+   * Une course du livreur se termine (livrée, abandonnée, annulée) : il
+   * redevient libre s'il n'en a plus d'autre. Avec une tournée, il garde les
+   * suivantes, et currentOrderId pointe sur l'une d'elles.
+   */
+  static async liberer(driverId: string) {
+    const restantes = await this.coursesActives(driverId);
+    await db.driver.update({
+      where: { id: driverId },
+      data: { currentOrderId: restantes[0]?.id ?? null, isAvailable: restantes.length === 0 },
+    });
+    return restantes.length;
+  }
+
+  /**
+   * Livreurs déjà en course sur le trajet de celle-ci, du plus petit détour
+   * au plus grand (voir tournee.service.ts). Un livreur qui a déjà une
+   * proposition en attente n'en reçoit pas une deuxième.
+   */
+  static async livreursEnTournee(course: {
+    id: string;
+    status: string;
+    pickupLat: number | null;
+    pickupLng: number | null;
+    deliveryLat: number | null;
+    deliveryLng: number | null;
+  }, regles: ReglesTournee) {
+    // Une course par livreur : pas de tournée.
+    if (regles.maxCourses <= 1) return [];
+    const nouvelle = versCourseTournee({ ...course, status: "ACCEPTED" });
+    if (!estUnPoint(nouvelle.retrait) || !estUnPoint(nouvelle.remise)) return [];
+
+    const livreurs = await db.driver.findMany({
+      where: {
+        status: "ACTIVE",
+        isOnline: true,
+        currentOrderId: { not: null },
+        OR: [{ pausedUntil: null }, { pausedUntil: { lte: new Date() } }],
+        gpsLostAt: null,
+        offers: { none: { status: "PENDING", expiresAt: { gt: new Date() } } },
+      },
+      select: {
+        id: true,
+        name: true,
+        latitude: true,
+        longitude: true,
+        email: true,
+        user: { select: { email: true } },
+        deliveries: {
+          where: { status: { in: STATUTS_EN_COURSE } },
+          select: { id: true, status: true, pickupLat: true, pickupLng: true, deliveryLat: true, deliveryLng: true },
+        },
+      },
+    });
+
+    return livreurs
+      .map((livreur) => {
+        const depart = estUnPoint(livreur) ? (livreur as Point) : null;
+        const detour = detourPourRejoindre(depart, livreur.deliveries.map(versCourseTournee), nouvelle, regles);
+        return {
+          ...livreur,
+          detour,
+          distance: depart ? distanceKm(depart, nouvelle.retrait) : 0,
+        };
+      })
+      .filter((l): l is typeof l & { detour: number } => l.detour != null)
+      .sort((a, b) => a.detour - b.detour);
+  }
+
+  /**
    * Propose la course au prochain livreur.
+   *
+   * Dans l'ordre : le livreur désigné par le commerçant ; un livreur déjà en
+   * course qui passe par là (« + 1 course sur votre trajet ») ; sinon le
+   * livreur libre le plus proche, avec, s'il y en a, les autres commandes
+   * qui attendent et vont au même endroit (un lot de trois au plus).
    *
    * Renvoie la proposition créée, ou null quand personne ne reste : au
    * commerçant de relancer plus tard, quand d'autres livreurs seront en ligne.
@@ -211,22 +411,7 @@ export class DispatchService {
   static async proposerAuSuivant(deliveryId: string, livreurPrefere?: string) {
     const course = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
-      include: {
-        offers: {
-          select: { driverId: true, status: true, attempts: true, expiresAt: true, respondedAt: true },
-        },
-        order: {
-          select: {
-            deliveryAddress: true,
-            deliveryCity: true,
-            deliveryPostal: true,
-            totalAmount: true,
-            feesAmount: true,
-            deliveryMode: true,
-            store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
-          },
-        },
-      },
+      include: COURSE_A_PROPOSER,
     });
 
     if (!course) {
@@ -263,15 +448,21 @@ export class DispatchService {
     // course avait expiré et ne pouvait plus lui être renvoyée.
     const prefere = livreurPrefere ? disponibles.find((c) => c.id === livreurPrefere) : undefined;
 
-    const sollicitations = new Map(course.offers.map((o) => [o.driverId, o]));
-    const candidats = disponibles.filter((c) => {
-      const offre = sollicitations.get(c.id);
+    const sollicitable = (c: { offers: Sollicitation[] }, driverId: string) => {
+      const offre = c.offers.find((o) => o.driverId === driverId);
       if (!offre) return true;
       const libre = libreA(offre, maintenant);
       return libre != null && libre <= maintenant;
-    });
+    };
+    const candidats = disponibles.filter((c) => sollicitable(course, c.id));
 
-    const choisi = prefere || candidats[0];
+    // Un livreur déjà en course passe par là : la course s'ajoute à sa
+    // tournée plutôt que de mobiliser un livreur de plus.
+    const enTournee = prefere
+      ? []
+      : (await this.livreursEnTournee(course, reglages.tournee)).filter((l) => sollicitable(course, l.id));
+
+    const choisi = prefere || enTournee[0] || candidats[0];
 
     if (!choisi) {
       logger.info("Aucun livreur disponible pour la course", {
@@ -280,6 +471,137 @@ export class DispatchService {
       });
       return null;
     }
+
+    const ajout = !prefere && choisi === enTournee[0];
+    const expiresAt = new Date(maintenant + reglages.offerSeconds * 1000);
+
+    // Un livreur libre : les autres commandes qui attendent et vont au même
+    // endroit partent avec celle-ci, en un lot.
+    const lot = ajout ? [course] : await this.composerLot(course, choisi.id, sollicitable, reglages.tournee);
+    const batchId = lot.length > 1 ? randomUUID() : null;
+
+    const propositions = [];
+    for (const c of lot) {
+      propositions.push(
+        await this.creerProposition(c, choisi, { maintenant, expiresAt, reglages, batchId, ajout })
+      );
+    }
+    const proposition = propositions[0];
+    const total = Number(propositions.reduce((t, p) => t + Number(p.payout ?? 0), 0).toFixed(2));
+    const approche = Number(choisi.distance.toFixed(2));
+    const trajets = propositions.reduce((t, p) => t + (p.distanceKm ?? 0), 0);
+    const euros = (n: number) => n.toFixed(2).replace(".", ",");
+
+    // L'onglet du livreur peut dormir en arrière-plan : la connexion temps
+    // réel ne suffit pas à le réveiller, une notification du système si. Un
+    // lot n'en fait qu'une : « Accepter » prend tout le lot.
+    enArrierePlan(
+      Notifier.pushLivreur(choisi.id, {
+        title: ajout
+          ? `+1 course sur votre trajet : ${euros(total)} €`
+          : lot.length > 1
+            ? `${lot.length} courses d'un coup : ${euros(total)} €`
+            : `Nouvelle course : ${euros(total)} €`,
+        body: ajout
+          ? `${course.order?.store?.name || "Commerce"}, livraison de ${trajets.toFixed(1).replace(".", ",")} km, à ajouter à votre course.`
+          : lot.length > 1
+            ? `${[...new Set(lot.map((c) => c.order?.store?.name).filter(Boolean))].join(", ") || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, ${lot.length} clients au même endroit. Répondez vite !`
+            : `${course.order?.store?.name || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, livraison de ${trajets.toFixed(1).replace(".", ",")} km. Répondez vite !`,
+        url: "/driver",
+        tag: "course-proposee",
+        offerId: proposition.id,
+      })
+    );
+
+    logger.info("Course proposée", {
+      deliveryId,
+      driverId: choisi.id,
+      approche,
+      trajet: trajets,
+      ...(ajout ? { ajout: true } : {}),
+      ...(batchId ? { lot: lot.map((c) => c.id) } : {}),
+    });
+
+    return proposition;
+  }
+
+  /**
+   * Les commandes qui attendent un livreur et vont au même endroit que
+   * celle-ci : même commerce ou commerce sur le trajet, clients proches (voir
+   * tournee.service.ts). La course elle-même d'abord, trois en tout au plus.
+   */
+  private static async composerLot<
+    C extends { id: string; status: string; pickupLat: number | null; pickupLng: number | null; deliveryLat: number | null; deliveryLng: number | null; offers: Sollicitation[] },
+  >(
+    course: C,
+    driverId: string,
+    sollicitable: (c: { offers: Sollicitation[] }, driverId: string) => boolean,
+    regles: ReglesTournee
+  ): Promise<C[]> {
+    const lot: C[] = [course];
+    if (regles.maxCourses <= 1) return lot;
+    const retrait = { latitude: course.pickupLat, longitude: course.pickupLng };
+    if (!estUnPoint(retrait)) return lot;
+
+    const enAttente = (await db.orderDelivery.findMany({
+      where: {
+        id: { not: course.id },
+        status: "PENDING",
+        driverId: null,
+        createdAt: { gt: new Date(Date.now() - RECHERCHE_MAX_MS) },
+        order: { status: { in: ["ACCEPTED", "PREPARING", "READY"] } },
+        offers: { none: { status: "PENDING", expiresAt: { gt: new Date() } } },
+        pickupLat: { not: null },
+        deliveryLat: { not: null },
+      },
+      include: COURSE_A_PROPOSER,
+      orderBy: { createdAt: "asc" },
+      take: 30,
+    })) as unknown as C[];
+
+    // À chaque tour, la commande qui rallonge le moins le lot.
+    let restantes = enAttente.filter((c) => sollicitable(c, driverId));
+    while (lot.length < regles.maxCourses && restantes.length > 0) {
+      const tournee = lot.map((c) => versCourseTournee({ ...c, status: "ACCEPTED" }));
+      const classees = restantes
+        .map((c) => ({
+          c,
+          detour: detourPourRejoindre(retrait as Point, tournee, versCourseTournee({ ...c, status: "ACCEPTED" }), regles),
+        }))
+        .filter((x): x is { c: C; detour: number } => x.detour != null)
+        .sort((a, b) => a.detour - b.detour);
+      if (classees.length === 0) break;
+      lot.push(classees[0].c);
+      restantes = restantes.filter((c) => c !== classees[0].c);
+    }
+    return lot;
+  }
+
+  /** Crée (ou rouvre) la proposition d'une course à un livreur, et la lui annonce. */
+  private static async creerProposition(
+    course: {
+      id: string;
+      pickupLat: number | null;
+      pickupLng: number | null;
+      deliveryLat: number | null;
+      deliveryLng: number | null;
+      deliveryLatObfusquee: number | null;
+      deliveryLngObfusquee: number | null;
+      order: {
+        deliveryAddress: string | null;
+        deliveryCity: string | null;
+        deliveryPostal: string | null;
+        feesAmount: unknown;
+        deliveryMode: string | null;
+        store: { name: string; address: string | null; city: string | null; latitude: number | null; longitude: number | null } | null;
+      } | null;
+    },
+    choisi: { id: string; distance: number; email: string; user: { email: string } | null },
+    options: { maintenant: number; expiresAt: Date; reglages: Reglages; batchId: string | null; ajout: boolean }
+  ) {
+    const { maintenant, expiresAt, reglages, batchId, ajout } = options;
+    const deliveryId = course.id;
+    const retrait = { latitude: course.pickupLat, longitude: course.pickupLng } as Point;
 
     // Le paiement se calcule sur le trajet commerce → client. Sans
     // coordonnées de livraison (adresse non géolocalisée), on retombe sur la
@@ -290,6 +612,7 @@ export class DispatchService {
       logger.warn("Course sans coordonnées de livraison : paiement sur la distance d'approche", { deliveryId });
     }
     const distancePayee = Number((trajet ?? choisi.distance).toFixed(2));
+    // Chemin jusqu'au commerce de cette course, depuis la dernière position.
     const approche = Number(choisi.distance.toFixed(2));
 
     /**
@@ -304,7 +627,6 @@ export class DispatchService {
       course.order?.deliveryMode === "PLATFORM"
         ? Number(Number(course.order.feesAmount).toFixed(2))
         : this.remuneration(distancePayee, reglages).payout;
-    const expiresAt = new Date(maintenant + reglages.offerSeconds * 1000);
 
     // Une ligne par livreur et par course : un nouveau tour la rouvre.
     const proposition = await db.deliveryOffer.upsert({
@@ -316,6 +638,8 @@ export class DispatchService {
         distanceKm: distancePayee,
         payout,
         expiresAt,
+        batchId,
+        ajout,
       },
       update: {
         status: "PENDING",
@@ -325,6 +649,8 @@ export class DispatchService {
         expiresAt,
         respondedAt: null,
         attempts: { increment: 1 },
+        batchId,
+        ajout,
       },
     });
 
@@ -353,20 +679,11 @@ export class DispatchService {
       deliveryLng: course.deliveryLngObfusquee,
       // Note pour clarifier
       obfuscationNote: "À ±50-100m pour votre confidentialité",
+      // Plusieurs courses : proposées ensemble (lot), ou ajoutées à une
+      // course déjà en route.
+      batchId,
+      ajout,
     });
-
-    // L'onglet du livreur peut dormir en arrière-plan : la connexion temps
-    // réel ne suffit pas à le réveiller, une notification du système si.
-    enArrierePlan(
-      Notifier.pushLivreur(choisi.id, {
-        title: `Nouvelle course : ${payout.toFixed(2).replace(".", ",")} €`,
-        body: `${course.order?.store?.name || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, livraison de ${distancePayee.toFixed(1).replace(".", ",")} km. Répondez vite !`,
-        url: "/driver",
-        tag: "course-proposee",
-      })
-    );
-
-    logger.info("Course proposée", { deliveryId, driverId: choisi.id, approche, trajet: distancePayee });
 
     return proposition;
   }
@@ -439,7 +756,12 @@ export class DispatchService {
     return relancees;
   }
 
-  /** Le livreur accepte : la course lui est attribuée, la rémunération figée. */
+  /**
+   * Le livreur accepte : la course lui est attribuée, la rémunération figée.
+   *
+   * Une proposition d'un lot emporte tout le lot. Une course ajoutée rejoint
+   * la tournée en cours. Jamais plus que le réglage de la plateforme à la fois.
+   */
   static async accepter(offerId: string, driverId: string) {
     const proposition = await db.deliveryOffer.findUnique({
       where: { id: offerId },
@@ -455,8 +777,10 @@ export class DispatchService {
     }
 
     if (proposition.expiresAt.getTime() < Date.now()) {
-      await db.deliveryOffer.update({
-        where: { id: offerId },
+      await db.deliveryOffer.updateMany({
+        where: proposition.batchId
+          ? { batchId: proposition.batchId, driverId, status: "PENDING" }
+          : { id: offerId },
         data: { status: "EXPIRED", respondedAt: new Date() },
       });
 
@@ -467,41 +791,94 @@ export class DispatchService {
       throw new ApiError(409, "Cette course a déjà un livreur", "ALREADY_ASSIGNED");
     }
 
+    // Le lot : la course acceptée d'abord, puis celles qui l'accompagnent et
+    // n'ont pas trouvé preneur entre-temps.
+    const compagnes = proposition.batchId
+      ? await db.deliveryOffer.findMany({
+          where: {
+            batchId: proposition.batchId,
+            driverId,
+            status: "PENDING",
+            id: { not: offerId },
+            expiresAt: { gt: new Date() },
+            delivery: { driverId: null },
+          },
+          include: { delivery: true },
+          orderBy: { offeredAt: "asc" },
+        })
+      : [];
+
+    const enCours = await db.orderDelivery.count({ where: { driverId, status: { in: STATUTS_EN_COURSE } } });
+    const { maxCourses } = (await this.reglages()).tournee;
+    const place = maxCourses - enCours;
+    if (place <= 0) {
+      throw new ApiError(
+        409,
+        enCours > 1
+          ? `Vous avez déjà ${enCours} courses en cours : terminez-en une d'abord.`
+          : "Vous avez déjà une course en cours : terminez-la d'abord.",
+        "TOO_MANY_DELIVERIES"
+      );
+    }
+    const acceptees = [proposition, ...compagnes].slice(0, place);
+    const laissees = [proposition, ...compagnes].slice(place);
+
+    const livreur = await db.driver.findUnique({ where: { id: driverId }, select: { currentOrderId: true } });
+    const maintenant = new Date();
+
     // Tout d'un bloc : sans cela, une course pourrait être attribuée sans que
-    // le livreur soit marqué occupé, et il recevrait une deuxième course.
-    const [, course] = await db.$transaction([
-      db.deliveryOffer.update({
-        where: { id: offerId },
-        data: { status: "ACCEPTED", respondedAt: new Date() },
-      }),
-      db.orderDelivery.update({
-        where: { id: proposition.deliveryId },
-        data: {
-          driverId,
-          status: "ACCEPTED",
-          assignedAt: new Date(),
-          distanceKm: proposition.distanceKm,
-          driverPayout: proposition.payout,
-        },
-      }),
+    // le livreur soit marqué occupé.
+    await db.$transaction([
+      ...acceptees.flatMap((offre) => [
+        db.deliveryOffer.update({
+          where: { id: offre.id },
+          data: { status: "ACCEPTED", respondedAt: maintenant },
+        }),
+        db.orderDelivery.update({
+          where: { id: offre.deliveryId },
+          data: {
+            driverId,
+            status: "ACCEPTED",
+            assignedAt: maintenant,
+            distanceKm: offre.distanceKm,
+            driverPayout: offre.payout,
+          },
+        }),
+        // Les propositions encore ouvertes pour cette course n'ont plus lieu d'être.
+        db.deliveryOffer.updateMany({
+          where: { deliveryId: offre.deliveryId, status: "PENDING", id: { not: offre.id } },
+          data: { status: "CANCELLED", respondedAt: maintenant },
+        }),
+      ]),
+      ...laissees.map((offre) =>
+        db.deliveryOffer.update({ where: { id: offre.id }, data: { status: "CANCELLED", respondedAt: maintenant } })
+      ),
       db.driver.update({
         where: { id: driverId },
-        data: { currentOrderId: proposition.deliveryId, isAvailable: false },
-      }),
-      // Les propositions encore ouvertes pour cette course n'ont plus lieu d'être.
-      db.deliveryOffer.updateMany({
-        where: { deliveryId: proposition.deliveryId, status: "PENDING", id: { not: offerId } },
-        data: { status: "CANCELLED", respondedAt: new Date() },
+        data: { currentOrderId: livreur?.currentOrderId ?? proposition.deliveryId, isAvailable: false },
       }),
     ]);
 
-    emitDeliveryUpdate(course.orderId, { driverId, status: "ACCEPTED" });
-    enArrierePlan(Notifier.etapeLivraisonClient(course.orderId, "ACCEPTED"));
+    for (const offre of acceptees) {
+      emitDeliveryUpdate(offre.delivery.orderId, { driverId, status: "ACCEPTED" });
+      enArrierePlan(Notifier.etapeLivraisonClient(offre.delivery.orderId, "ACCEPTED"));
+      // Le commerçant est prévenu qu'un livreur arrive, écran ouvert ou non.
+      enArrierePlan(Notifier.livreurTrouveBoutique(offre.delivery.orderId));
+    }
+    // Les courses du lot qui ne tenaient plus repartent chercher un livreur.
+    for (const offre of laissees) {
+      enArrierePlan(this.proposerAuSuivant(offre.deliveryId));
+    }
 
-    return course;
+    const course = await db.orderDelivery.findUniqueOrThrow({ where: { id: proposition.deliveryId } });
+    return Object.assign(course, { lot: acceptees.map((o) => o.deliveryId) });
   }
 
-  /** Le livreur refuse : la course part aussitôt au suivant. */
+  /**
+   * Le livreur refuse : la course part aussitôt au suivant. Refuser une
+   * course d'un lot refuse le lot entier ; chaque course repart de son côté
+   * (et peut former un autre lot avec le livreur suivant).
+   */
   static async refuser(offerId: string, driverId: string) {
     const proposition = await db.deliveryOffer.findUnique({ where: { id: offerId } });
 
@@ -513,13 +890,25 @@ export class DispatchService {
       throw new ApiError(409, "Cette proposition n'est plus ouverte", "OFFER_CLOSED");
     }
 
-    await db.deliveryOffer.update({
-      where: { id: offerId },
+    const lot = proposition.batchId
+      ? await db.deliveryOffer.findMany({
+          where: { batchId: proposition.batchId, driverId, status: "PENDING" },
+          select: { id: true, deliveryId: true },
+        })
+      : [{ id: offerId, deliveryId: proposition.deliveryId }];
+
+    await db.deliveryOffer.updateMany({
+      where: { id: { in: lot.map((o) => o.id) } },
       data: { status: "DECLINED", respondedAt: new Date() },
     });
 
     // Ne pas attendre le balayage : un refus est une réponse immédiate.
-    return this.proposerAuSuivant(proposition.deliveryId);
+    let suivante = null;
+    for (const offre of lot) {
+      const nouvelle = await this.proposerAuSuivant(offre.deliveryId);
+      if (offre.id === offerId) suivante = nouvelle;
+    }
+    return suivante;
   }
 
   /**
@@ -570,7 +959,7 @@ export class DispatchService {
         longitude: position.longitude,
         lastLocationUpdate: maintenant,
       },
-      select: { currentOrderId: true, gpsLostAt: true },
+      select: { currentOrderId: true, gpsLostAt: true, isOnline: true },
     });
 
     // Import tardif : le service de disponibilité dépend déjà de celui-ci.
@@ -579,23 +968,86 @@ export class DispatchService {
       await DriverAvailabilityService.signalRetabli(driverId, livreur.gpsLostAt, livreur.currentOrderId);
     }
 
-    if (!livreur.currentOrderId) return { suivie: false };
+    // enLigne : l'application qui envoie sa position téléphone rangé arrête
+    // de la suivre quand le livreur est passé hors ligne ailleurs (site,
+    // mise hors ligne automatique).
+    if (!livreur.currentOrderId) return { suivie: false, enLigne: livreur.isOnline };
 
-    const course = await db.orderDelivery.update({
-      where: { id: livreur.currentOrderId },
-      data: {
-        driverLat: position.latitude,
-        driverLng: position.longitude,
-        driverLocationAt: maintenant,
-      },
-      select: { orderId: true, status: true },
+    // Toutes ses courses : chaque client d'une tournée suit la même pastille.
+    const courses = await db.orderDelivery.findMany({
+      where: { driverId, status: { in: STATUTS_EN_COURSE } },
+      select: { id: true },
     });
 
-    emitDeliveryUpdate(course.orderId, {
-      status: course.status,
-      location: { latitude: position.latitude, longitude: position.longitude },
-    });
+    let premiere: string | null = null;
+    for (const { id } of courses) {
+      const course = await db.orderDelivery.update({
+        where: { id },
+        data: {
+          driverLat: position.latitude,
+          driverLng: position.longitude,
+          driverLocationAt: maintenant,
+        },
+        select: {
+          id: true,
+          orderId: true,
+          status: true,
+          deliveryLat: true,
+          deliveryLng: true,
+          nearCustomerNotifiedAt: true,
+        },
+      });
 
-    return { suivie: true, orderId: course.orderId };
+      emitDeliveryUpdate(course.orderId, {
+        status: course.status,
+        location: { latitude: position.latitude, longitude: position.longitude },
+      });
+
+      await this.prevenirSiProche(course, position);
+      premiere ??= course.orderId;
+    }
+
+    if (!premiere) return { suivie: false, enLigne: livreur.isOnline };
+    return { suivie: true, enLigne: livreur.isOnline, orderId: premiere };
+  }
+
+  /**
+   * Prévient le client que le livreur approche, pour qu'il descende.
+   *
+   * Une seule fois par course, dès la première position reçue à moins de
+   * RAYON_APPROCHE_KM de l'adresse, et seulement une fois la commande
+   * récupérée : un livreur qui passe devant chez le client en allant au
+   * commerce ne doit pas le faire descendre pour rien.
+   */
+  static async prevenirSiProche(
+    course: {
+      id: string;
+      orderId: string;
+      status: string;
+      deliveryLat: number | null;
+      deliveryLng: number | null;
+      nearCustomerNotifiedAt: Date | null;
+    },
+    position: Point
+  ) {
+    if (course.status !== "PICKED_UP" || course.nearCustomerNotifiedAt) return false;
+
+    const destination = { latitude: course.deliveryLat, longitude: course.deliveryLng };
+    if (!estUnPoint(destination)) return false;
+    if (distanceKm(position, destination) > RAYON_APPROCHE_KM) return false;
+
+    // La marque se pose sous condition : deux positions reçues coup sur coup
+    // ne doivent pas envoyer deux messages.
+    const pose = await db.orderDelivery.updateMany({
+      where: { id: course.id, nearCustomerNotifiedAt: null },
+      data: { nearCustomerNotifiedAt: new Date() },
+    });
+    if (pose.count === 0) return false;
+
+    emitDeliveryUpdate(course.orderId, { status: course.status, livreurProche: true });
+    enArrierePlan(Notifier.livreurProcheClient(course.orderId));
+
+    logger.info("Customer warned: driver is close", { orderId: course.orderId });
+    return true;
   }
 }

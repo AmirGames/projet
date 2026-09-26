@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Clock, MapPin, ChevronRight } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Order {
@@ -16,6 +19,8 @@ interface Order {
   deliveryAddress: string;
   createdAt: string;
   storeName?: string;
+  /** Avis jamais donné, ou vieux de plus de quinze jours. */
+  avisARedemander?: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -46,11 +51,9 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
 
-  useEffect(() => {
-    loadOrders();
-  }, []);
-
-  const loadOrders = async () => {
+  // silencieux : une relecture en direct ne vide pas la liste le temps de la
+  // réponse.
+  const loadOrders = useCallback(async (silencieux = false) => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -58,7 +61,7 @@ export default function OrdersPage() {
     }
 
     try {
-      setLoading(true);
+      if (!silencieux) setLoading(true);
       const response = await fetch(`${API_URL}/api/client/me/orders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -68,11 +71,18 @@ export default function OrdersPage() {
         setOrders(data.data || []);
       }
     } catch (err) {
-      console.error('Error loading orders:', err);
+      signalerErreur('Error loading orders:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  // Acceptée, en route, livrée : chaque étape apparaît sans recharger.
+  useDonneesModifiees('orders', () => loadOrders(true));
+
+  useEffectChargement(() => {
+    loadOrders();
+  }, [loadOrders]);
 
   const filteredOrders = orders.filter(order => {
     if (filter === 'active') {
@@ -181,6 +191,11 @@ export default function OrdersPage() {
                       >
                         {statusLabel}
                       </span>
+                      {order.avisARedemander && (
+                        <span className="px-3 py-1 rounded-full text-sm font-semibold bg-orange-900 text-orange-300 border border-orange-700">
+                          {t('reviewWanted')}
+                        </span>
+                      )}
                       <span className="text-gray-500 text-xs">
                         {order.storeName && `${order.storeName}`}
                       </span>

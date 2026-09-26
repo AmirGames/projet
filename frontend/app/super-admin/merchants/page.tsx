@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Edit2, Lock, Unlock, Clock } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -26,11 +28,7 @@ export default function MerchantsPage() {
   const [filter, setFilter] = useState('ALL');
   const [actionError, setActionError] = useState('');
 
-  useEffect(() => {
-    fetchMerchants();
-  }, [filter]);
-
-  const fetchMerchants = async () => {
+  const fetchMerchants = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const status = filter === 'ALL' ? '' : filter;
@@ -46,12 +44,16 @@ export default function MerchantsPage() {
       const data = await response.json();
       setMerchants(data.merchants || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       router.push('/login');
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, router]);
+
+  useEffectChargement(() => {
+    fetchMerchants();
+  }, [filter, fetchMerchants]);
 
   const handleToggleSuspension = async (merchant: Merchant) => {
     const suspending = merchant.status === 'ACTIVE';

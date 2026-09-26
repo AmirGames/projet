@@ -84,8 +84,9 @@ describe('Auth Routes Integration Tests', () => {
       // If REQUIRE_EMAIL_VERIFICATION=true, unverified emails should get 403
     });
 
-    it('should upgrade plaintext passwords to bcrypt', async () => {
-      // If old account has plaintext password, it should be hashed on first login
+    it('should never accept a plaintext passwordHash', async () => {
+      // Only bcrypt hashes are compared; the DB check constraint
+      // "User_passwordHash_bcrypt" rejects any other stored value
     });
   });
 

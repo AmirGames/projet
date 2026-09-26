@@ -3,16 +3,15 @@ import { z } from "zod";
 import { paymentService } from "../services/payment.service";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
+import { getEnv } from "../config/env";
 
 const router = Router();
 
+// Le montant n'est plus lu ici : il vient de la commande, en base. Les
+// identifiants de commande sont des cuid, pas des uuid — la validation
+// précédente refusait toutes les commandes.
 const createPaymentSchema = z.object({
-  orderId: z.string().uuid(),
-  storeId: z.string().uuid(),
-  amount: z.number().positive("Amount must be positive"),
-  customerEmail: z.string().email(),
-  customerName: z.string().min(2),
-  description: z.string().optional(),
+  orderId: z.string().min(1),
 });
 
 // POST /payments/intent - Create payment intent
@@ -24,15 +23,15 @@ router.post(
 
       logger.info("Creating payment intent", {
         orderId: body.orderId,
-        amount: body.amount,
       });
 
-      const result = await paymentService.createPaymentIntent(body.amount, body.customerEmail, body.orderId);
+      const result = await paymentService.createPaymentIntent(body.orderId);
 
       res.status(201).json({
         message: "Payment intent created",
-        clientSecret: (result as any).client_secret,
-        paymentIntentId: (result as any).id,
+        clientSecret: result.client_secret,
+        paymentIntentId: result.id,
+        amount: result.amount / 100,
       });
     } catch (err) {
       next(err);
@@ -57,8 +56,8 @@ router.post(
 
       res.json({
         message: "Payment confirmed",
-        success: (result as any).status === "succeeded",
-        status: (result as any).status,
+        success: result.status === "succeeded",
+        status: result.status,
       });
     } catch (err) {
       next(err);
@@ -84,8 +83,47 @@ router.get(
   }
 );
 
-// TODO: Implement refund endpoint when refundPayment method is added to paymentService
+/**
+ * GET /api/payments/config — le paiement en ligne est-il branché ?
+ *
+ * L'application mobile en a besoin avant de proposer un moyen de paiement :
+ * une commande payée en ligne n'arrive au commerçant qu'une fois encaissée,
+ * et sans clé publique l'application ne saurait pas l'encaisser. La clé
+ * publique n'a rien de secret : c'est celle que le navigateur reçoit aussi.
+ */
+router.get("/config", (_req: Request, res: Response) => {
+  const enLigne = getEnv().ENABLE_STRIPE && Boolean(process.env.STRIPE_SECRET_KEY);
+  res.json({
+    success: true,
+    data: {
+      enLigne,
+      publishableKey: enLigne ? process.env.STRIPE_PUBLISHABLE_KEY || null : null,
+    },
+  });
+});
 
-// TODO: Implement webhook endpoint when handleWebhook method is added to paymentService
+/**
+ * POST /api/payments/webhook — les événements Stripe.
+ *
+ * Monté dans app.ts avant le lecteur JSON : la signature se vérifie sur le
+ * corps brut, octet pour octet. Une erreur de traitement répond 500 pour que
+ * Stripe renvoie l'événement plus tard ; une signature invalide répond 400.
+ */
+export async function stripeWebhookHandler(req: Request, res: Response) {
+  try {
+    const evenement = await paymentService.handleWebhook(
+      req.body as Buffer,
+      req.get("stripe-signature") || undefined
+    );
+    res.json({ received: true, type: evenement.type });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      res.status(err.statusCode).json({ error: err.message, code: err.code });
+      return;
+    }
+    logger.error("Webhook Stripe : traitement échoué", { error: (err as Error).message });
+    res.status(500).json({ error: "Webhook processing failed" });
+  }
+}
 
 export default router;

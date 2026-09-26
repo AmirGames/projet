@@ -1,20 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 import { euro } from '@/lib/format';
-import { useTranslations } from 'next-intl';
+import { intituleDeLaLigne, type LigneAffichable } from '@/lib/ligne-commande';
+import { useLocale, useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface OrderItem {
+interface OrderItem extends LigneAffichable {
   id: string;
-  name: string;
+  productId: string;
   quantity: number;
-  price: number;
+  total: number | string;
 }
 
 interface Order {
@@ -22,8 +25,50 @@ interface Order {
   status: string;
   totalAmount: number;
   storeId?: string;
-  storeName?: string;
+  deliveryType?: 'DELIVERY' | 'PICKUP';
   items?: OrderItem[];
+}
+
+/** Un plat à noter : le serveur n'accepte qu'un avis par plat, pas par ligne. */
+interface ProduitANoter {
+  productId: string;
+  name: string;
+  quantity: number;
+  total: number;
+}
+
+/** Regroupe les lignes d'un même plat (plusieurs déclinaisons, par exemple). */
+function produitsANoter(items: OrderItem[]): ProduitANoter[] {
+  const parPlat = new Map<string, ProduitANoter>();
+  for (const item of items) {
+    const deja = parPlat.get(item.productId);
+    if (deja) {
+      deja.quantity += item.quantity;
+      deja.total += Number(item.total) || 0;
+    } else {
+      parPlat.set(item.productId, {
+        productId: item.productId,
+        name: intituleDeLaLigne(item).plat,
+        quantity: item.quantity,
+        total: Number(item.total) || 0,
+      });
+    }
+  }
+  return [...parPlat.values()];
+}
+
+/** Un avis déjà donné, qui pré-remplit le formulaire. */
+interface AvisDonne {
+  rating: number;
+  comment: string | null;
+  donneLe: string;
+  /** Retiré par la plateforme : il n'est plus publié. */
+  retire: boolean;
+}
+
+interface AvisDejaDonnes {
+  restaurant: AvisDonne | null;
+  produits: Record<string, AvisDonne>;
 }
 
 interface ReviewState {
@@ -34,11 +79,18 @@ interface ReviewState {
 
 export default function ReviewPage() {
   const t = useTranslations('clientOrders');
+  const locale = useLocale();
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
 
   const [order, setOrder] = useState<Order | null>(null);
+  const [produits, setProduits] = useState<ProduitANoter[]>([]);
+  // Le livreur ne se note que s'il y en a un, que la course est remise et
+  // qu'il ne l'a pas déjà été : une commande à emporter n'en a pas, et la
+  // note échouait à chaque fois en 404.
+  const [livreurANoter, setLivreurANoter] = useState(false);
+  const [dejaDonnes, setDejaDonnes] = useState<AvisDejaDonnes>({ restaurant: null, produits: {} });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -52,11 +104,7 @@ export default function ReviewPage() {
     products: {}
   });
 
-  useEffect(() => {
-    loadOrderData();
-  }, [orderId]);
-
-  const loadOrderData = async () => {
+  const loadOrderData = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -69,25 +117,58 @@ export default function ReviewPage() {
       });
 
       if (response.ok) {
+        // Cette route renvoie la commande directement, pas enveloppée dans
+        // « data » : la page lisait une propriété inexistante et affichait
+        // toujours « commande introuvable ».
         const data = await response.json();
-        setOrder(data.data);
+        const commande: Order = data.data ?? data;
+        setOrder(commande);
+
+        const plats = produitsANoter(commande.items ?? []);
+        setProduits(plats);
+
+        // Un seul avis par restaurant et par plat, que le client met à jour :
+        // le formulaire repart de ce qu'il avait dit.
+        let donnes: AvisDejaDonnes = { restaurant: null, produits: {} };
+        const avisResponse = await fetch(`${API_URL}/api/reviews/commande/${orderId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (avisResponse.ok) {
+          donnes = (await avisResponse.json()).data ?? donnes;
+          setDejaDonnes(donnes);
+        }
+
+        const depuis = (avis?: AvisDonne | null) =>
+          avis ? { rating: avis.rating, comment: avis.comment ?? '' } : { rating: 5, comment: '' };
 
         const initialProducts: Record<string, { rating: number; comment: string }> = {};
-        if (data.data.items) {
-          data.data.items.forEach((item: OrderItem) => {
-            initialProducts[item.id] = { rating: 5, comment: '' };
+        plats.forEach((plat) => {
+          initialProducts[plat.productId] = depuis(donnes.produits[plat.productId]);
+        });
+        setReviews(prev => ({ ...prev, restaurant: depuis(donnes.restaurant), products: initialProducts }));
+
+        if (commande.deliveryType !== 'PICKUP') {
+          const courseResponse = await fetch(`${API_URL}/api/client/deliveries/${orderId}`, {
+            headers: { Authorization: `Bearer ${token}` }
           });
+          if (courseResponse.ok) {
+            const course = (await courseResponse.json()).data;
+            setLivreurANoter(Boolean(course?.driver && course.status === 'DELIVERED' && !course.maNote));
+          }
         }
-        setReviews(prev => ({ ...prev, products: initialProducts }));
       }
 
       setLoading(false);
     } catch (err) {
-      console.error('Error loading order:', err);
+      signalerErreur('Error loading order:', err);
       setError(t('errorLoading'));
       setLoading(false);
     }
-  };
+  }, [orderId, router, t]);
+
+  useEffectChargement(() => {
+    loadOrderData();
+  }, [orderId, loadOrderData]);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,42 +201,43 @@ export default function ReviewPage() {
         })
       );
 
-      requests.push(
-        fetch(`${API_URL}/api/client/deliveries/${orderId}/rating`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            note: reviews.delivery.rating,
-            commentaire: reviews.delivery.comment
+      if (livreurANoter) {
+        requests.push(
+          fetch(`${API_URL}/api/client/deliveries/${orderId}/rating`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              note: reviews.delivery.rating,
+              commentaire: reviews.delivery.comment
+            })
           })
-        })
-      );
-
-      if (order?.items) {
-        order.items.forEach(item => {
-          const productReview = reviews.products[item.id];
-          if (productReview) {
-            requests.push(
-              fetch(`${API_URL}/api/reviews`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                  productId: item.id,
-                  rating: productReview.rating,
-                  comment: productReview.comment,
-                  type: 'PRODUCT'
-                })
-              })
-            );
-          }
-        });
+        );
       }
+
+      produits.forEach(plat => {
+        const productReview = reviews.products[plat.productId];
+        if (productReview) {
+          requests.push(
+            fetch(`${API_URL}/api/reviews`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                orderId,
+                productId: plat.productId,
+                rating: productReview.rating,
+                comment: productReview.comment,
+                type: 'PRODUCT'
+              })
+            })
+          );
+        }
+      });
 
       const responses = await Promise.all(requests);
       const allOk = responses.every(r => r.ok);
@@ -170,7 +252,7 @@ export default function ReviewPage() {
       }
     } catch (err) {
       setError(t('errorSubmitting'));
-      console.error('Error submitting review:', err);
+      signalerErreur('Error submitting review:', err);
     } finally {
       setSubmitting(false);
     }
@@ -211,6 +293,25 @@ export default function ReviewPage() {
       5: 'Excellent'
     };
     return texts[rating] || '';
+  };
+
+  // « Vous aviez mis 4★ en mars. Toujours d'accord ? » — l'année n'est
+  // précisée que si ce n'est pas l'année en cours.
+  const renderAvisPrecedent = (avis?: AvisDonne | null) => {
+    if (!avis) return null;
+    const date = new Date(avis.donneLe);
+    const dateAvis = date.toLocaleDateString(locale, {
+      month: 'long',
+      ...(date.getFullYear() !== new Date().getFullYear() && { year: 'numeric' }),
+    });
+    return (
+      <div className="mb-3">
+        <p className="text-orange-300 text-sm">
+          {t('previousReview', { note: avis.rating, date: dateAvis })}
+        </p>
+        {avis.retire && <p className="text-gray-400 text-xs mt-1">{t('previousRemoved')}</p>}
+      </div>
+    );
   };
 
   const renderStars = (rating: number, onRate: (r: number) => void) => (
@@ -288,17 +389,19 @@ export default function ReviewPage() {
                 >
                   {t('restaurantTab')}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('delivery')}
-                  className={`px-4 py-3 font-semibold transition ${
-                    activeTab === 'delivery'
-                      ? 'text-orange-500 border-b-2 border-orange-500'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {t('deliveryTab')}
-                </button>
+                {livreurANoter && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('delivery')}
+                    className={`px-4 py-3 font-semibold transition ${
+                      activeTab === 'delivery'
+                        ? 'text-orange-500 border-b-2 border-orange-500'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {t('deliveryTab')}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setActiveTab('products')}
@@ -317,6 +420,7 @@ export default function ReviewPage() {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-white font-semibold mb-4">{t('restaurantQuestion')}</label>
+                    {renderAvisPrecedent(dejaDonnes.restaurant)}
                     {renderStars(reviews.restaurant.rating, (r) =>
                       setReviews(prev => ({ ...prev, restaurant: { ...prev.restaurant, rating: r } }))
                     )}
@@ -342,7 +446,7 @@ export default function ReviewPage() {
               )}
 
               {/* Delivery Tab */}
-              {activeTab === 'delivery' && (
+              {activeTab === 'delivery' && livreurANoter && (
                 <div className="space-y-6">
                   <div>
                     <label className="block text-white font-semibold mb-4">{t('deliveryQuestion')}</label>
@@ -373,37 +477,38 @@ export default function ReviewPage() {
               {/* Products Tab */}
               {activeTab === 'products' && (
                 <div className="space-y-6">
-                  {order.items && order.items.length > 0 ? (
-                    order.items.map((item) => (
-                      <div key={item.id} className="bg-gray-700 rounded-lg p-4">
+                  {produits.length > 0 ? (
+                    produits.map((item) => (
+                      <div key={item.productId} className="bg-gray-700 rounded-lg p-4">
                         <div className="flex justify-between items-start mb-4">
                           <div>
                             <p className="text-white font-semibold">{item.name}</p>
-                            <p className="text-gray-400 text-sm">x{item.quantity} • {euro(item.price * item.quantity)}</p>
+                            <p className="text-gray-400 text-sm">x{item.quantity} • {euro(item.total)}</p>
                           </div>
                         </div>
 
                         <div className="mb-3">
-                          {renderStars(reviews.products[item.id]?.rating || 5, (r) =>
+                          {renderAvisPrecedent(dejaDonnes.produits[item.productId])}
+                          {renderStars(reviews.products[item.productId]?.rating || 5, (r) =>
                             setReviews(prev => ({
                               ...prev,
                               products: {
                                 ...prev.products,
-                                [item.id]: { ...prev.products[item.id], rating: r }
+                                [item.productId]: { ...prev.products[item.productId], rating: r }
                               }
                             }))
                           )}
-                          <p className="text-gray-400 text-sm mt-2">{getRatingText(reviews.products[item.id]?.rating || 5)}</p>
+                          <p className="text-gray-400 text-sm mt-2">{getRatingText(reviews.products[item.productId]?.rating || 5)}</p>
                         </div>
 
                         {!expressMode && (
                           <textarea
-                            value={reviews.products[item.id]?.comment || ''}
+                            value={reviews.products[item.productId]?.comment || ''}
                             onChange={(e) => setReviews(prev => ({
                               ...prev,
                               products: {
                                 ...prev.products,
-                                [item.id]: { ...prev.products[item.id], comment: e.target.value }
+                                [item.productId]: { ...prev.products[item.productId], comment: e.target.value }
                               }
                             }))}
                             placeholder={t('productPlaceholder')}

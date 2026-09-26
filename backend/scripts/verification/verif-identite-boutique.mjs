@@ -6,17 +6,17 @@
 // tenir trois commerces relevant de trois sociétés — donc de trois numéros de
 // TVA.
 
-import { titre, check, j, uniq, post, put, get, terminer, sqlScalaire } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, put, get, terminer, sqlScalaire } from './outils.mjs';
 
 const MDP = 'Password123!';
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
 );
 const TP = plateforme.accessToken;
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 const orgId = commercant.organization.id;
@@ -65,7 +65,7 @@ check('le type et la cuisine sont enregistrés', enBase === 'restaurant/pizza', 
 titre('Une épicerie n’a pas de cuisine');
 // Retenir « pizza » pour une épicerie brouillerait la recherche du client.
 const voisin = await j(
-  await post('/api/auth/signup', { email: `v-${uniq}@t.fr`, password: MDP, name: `V ${uniq}` })
+  await inscription({ email: `v-${uniq}@t.fr`, password: MDP, name: `V ${uniq}` })
 );
 const epicerie = await j(
   await post(
@@ -90,7 +90,7 @@ check('la cuisine est écartée', cuisineEpicerie === 'aucune', cuisineEpicerie)
 
 titre('Un genre inventé est refusé');
 const inventaire = await j(
-  await post('/api/auth/signup', { email: `x-${uniq}@t.fr`, password: MDP, name: `X ${uniq}` })
+  await inscription({ email: `x-${uniq}@t.fr`, password: MDP, name: `X ${uniq}` })
 );
 const inconnu = await post(
   '/api/stores',

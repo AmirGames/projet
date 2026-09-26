@@ -17,8 +17,12 @@ import {
 import { useCurrentStore } from '@/lib/current-store';
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
+import { ReponseCommande } from '@/components/ReponseCommande';
+import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface LigneCommande {
@@ -53,9 +57,18 @@ interface Commande {
   /** Le taux tel qu'il valait à la commande, et non celui réglé aujourd'hui. */
   taxRate?: number | string;
   feesAmount: number | string;
+  /** Qui livre : le commerçant (OWN) ou un livreur de la plateforme (PLATFORM). */
+  deliveryMode?: 'OWN' | 'PLATFORM' | null;
+  /** Les frais de service payés par le client : ils sont à la plateforme. */
+  serviceFeeAmount?: number | string;
   notes?: string | null;
   createdAt: string;
   items?: LigneCommande[];
+  echeance?: string | null;
+  estimatedReadyAt?: string | null;
+  preparationMinutes?: number | null;
+  rejectionReason?: string | null;
+  rejectionNote?: string | null;
 }
 
 const STATUTS: { valeur: string; libelle: string }[] = [
@@ -93,7 +106,8 @@ export default function DetailCommandePage() {
   const charger = useCallback(async () => {
     if (!storeId || !orderId) return;
 
-    setLoading(true);
+    // Pas de « Chargement… » à la relecture : la page ne doit pas clignoter à
+    // chaque commande qui arrive.
     setErreur('');
 
     try {
@@ -120,37 +134,19 @@ export default function DetailCommandePage() {
     }
   }, [storeId, orderId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (!boutiqueEnCours) charger();
   }, [boutiqueEnCours, charger]);
 
-  const changerStatut = async (statut: string) => {
-    setEnregistrement(true);
-    setMessage('');
+  // Un collègue a répondu, ou le délai de réponse a expiré : on relit.
+  useEffect(() => {
+    window.addEventListener(EVENEMENT_COMMANDES_CHANGEES, charger);
+    return () => window.removeEventListener(EVENEMENT_COMMANDES_CHANGEES, charger);
+  }, [charger]);
 
-    try {
-      const token = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/api/order-management/${storeId}/${orderId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: statut }),
-      });
-
-      const donnees = await reponse.json();
-
-      if (!reponse.ok) {
-        setMessage(`❌ ${donnees.error || 'Changement de statut impossible'}`);
-        return;
-      }
-
-      setMessage('✅ Statut mis à jour');
-      await charger();
-    } catch {
-      setMessage(t('connectionErrorFinal'));
-    } finally {
-      setEnregistrement(false);
-    }
-  };
+  // Le livreur la récupère, le client l'annule, un collègue ajoute une note :
+  // la fiche suit.
+  useDonneesModifiees('orders', charger, { id: orderId, actif: Boolean(storeId && orderId) });
 
   const ajouterNote = async () => {
     if (!note.trim()) return;
@@ -311,10 +307,33 @@ export default function DetailCommandePage() {
                 <span>{euro(commande.feesAmount)}</span>
               </div>
             )}
+            {Number(commande.serviceFeeAmount) > 0 && (
+              <div className="flex justify-between text-gray-400">
+                <span>Frais de service (plateforme)</span>
+                <span>{euro(commande.serviceFeeAmount)}</span>
+              </div>
+            )}
+            {/* Livrée par la plateforme : le client a payé la livraison au
+                commerçant, mais elle revient au livreur. Le dire ici plutôt
+                que de laisser croire que cette somme est à lui. */}
+            {commande.deliveryMode === 'PLATFORM' && Number(commande.feesAmount) > 0 && (
+              <p className="text-xs text-amber-300">
+                Livraison assurée par un livreur de la plateforme : ces frais sont encaissés pour
+                son compte et reportés sur votre relevé du mois, avec la commission.
+              </p>
+            )}
             <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-700">
               <span>Total TTC</span>
               <span className="text-green-400">{euro(commande.totalAmount)}</span>
             </div>
+            {/* Payés par le client avec la commande, mais pas au commerçant :
+                la plateforme les lui réclame sur le relevé du mois. */}
+            {Number(commande.serviceFeeAmount) > 0 && (
+              <p className="text-xs text-amber-300">
+                Les frais de service reviennent à la plateforme : ils sont reportés sur votre relevé
+                du mois, avec la commission.
+              </p>
+            )}
 
             {/* La TVA est comprise dans le prix : elle s'extrait du total, elle
                 ne s'y ajoute pas. Elle valait zéro sur toute commande, faute
@@ -378,23 +397,12 @@ export default function DetailCommandePage() {
           </div>
 
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <h2 className="text-lg font-bold mb-4">Changer le statut</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {STATUTS.map((statut) => (
-                <button
-                  key={statut.valeur}
-                  onClick={() => changerStatut(statut.valeur)}
-                  disabled={enregistrement || commande.status === statut.valeur}
-                  className={`px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-40 ${
-                    commande.status === statut.valeur
-                      ? 'bg-gray-600 text-white'
-                      : 'bg-gray-700 hover:bg-gray-600'
-                  }`}
-                >
-                  {statut.libelle}
-                </button>
-              ))}
-            </div>
+            <h2 className="text-lg font-bold mb-4">
+              {commande.status === 'PENDING' ? 'Accepter ou refuser' : 'Suivi de la commande'}
+            </h2>
+            {storeId && (
+              <ReponseCommande storeId={storeId} commande={commande} surChangement={charger} />
+            )}
           </div>
 
           <Link

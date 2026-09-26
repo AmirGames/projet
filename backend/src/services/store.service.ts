@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
-import { AddressService } from "./address.service";
+import { AddressService, paysDeLAdresse } from "./address.service";
 import { logger } from "../config/logger";
 
 export class StoreService {
@@ -18,6 +18,8 @@ export class StoreService {
     longitude?: number;
     businessType?: string;
     cuisineType?: string;
+    /** Réglages de départ : le site web saisi à l'inscription, par exemple. */
+    settings?: Record<string, unknown>;
   }) {
     /**
      * Une boutique naît située.
@@ -32,12 +34,14 @@ export class StoreService {
      * signale alors la boutique comme non située.
      */
     let { latitude, longitude } = data;
+    let countryCode = paysDeLAdresse(data);
 
     if (latitude == null || longitude == null) {
       const texte = [data.address, data.postalCode, data.city].filter(Boolean).join(" ");
 
       if (texte.trim().length >= 3) {
         const situation = await AddressService.situer(texte);
+        countryCode = paysDeLAdresse(data, situation.adresse);
 
         if (situation.point) {
           latitude = situation.point.latitude;
@@ -64,6 +68,7 @@ export class StoreService {
           address: data.address,
           city: data.city,
           postalCode: data.postalCode,
+          countryCode,
           phone: data.phone,
           email: data.email,
           description: data.description,
@@ -73,6 +78,7 @@ export class StoreService {
           // Une cuisine n'a de sens qu'en restauration : la retenir pour une
           // épicerie brouillerait la recherche du client.
           cuisineType: data.businessType === "restaurant" ? data.cuisineType : null,
+          ...(data.settings && { settings: data.settings as any }),
         },
         include: {
           products: true,
@@ -151,9 +157,40 @@ export class StoreService {
         }
       });
 
+      /**
+       * L'adresse change sans position posée à la main : la position suit.
+       * Une position fournie explicitement — la carte des zones — l'emporte.
+       */
+      let position: { latitude: number | null; longitude: number | null; pays: string | null } | null =
+        null;
+
+      if (
+        (data.address || data.city || data.postalCode) &&
+        data.latitude === undefined &&
+        data.longitude === undefined
+      ) {
+        const avant = await db.store.findUnique({
+          where: { id },
+          select: { address: true, city: true, postalCode: true },
+        });
+
+        if (avant) {
+          position = await AddressService.repositionner(avant, {
+            address: data.address || avant.address,
+            city: data.city || avant.city,
+            postalCode: data.postalCode || avant.postalCode,
+          });
+        }
+      }
+
       return await db.store.update({
         where: { id },
         data: {
+          ...(position && {
+            latitude: position.latitude,
+            longitude: position.longitude,
+            countryCode: position.pays,
+          }),
           ...(data.name && { name: data.name }),
           ...(data.slug && { slug: data.slug }),
           ...(data.address && { address: data.address }),

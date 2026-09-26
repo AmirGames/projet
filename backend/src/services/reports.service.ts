@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { TRANSMISE } from "../utils/commande-transmise";
 
 export interface ReportFilters {
   storeId?: string;
@@ -12,7 +13,7 @@ export interface ReportFilters {
 export class ReportsService {
   static async getSalesReport(filters: ReportFilters) {
     try {
-      const where: any = {};
+      const where: any = { ...TRANSMISE };
 
       if (filters.storeId) {
         where.storeId = filters.storeId;
@@ -79,7 +80,7 @@ export class ReportsService {
 
   static async getRevenueByDate(filters: ReportFilters) {
     try {
-      const where: any = {};
+      const where: any = { ...TRANSMISE };
 
       if (filters.storeId) {
         where.storeId = filters.storeId;
@@ -137,6 +138,7 @@ export class ReportsService {
         where: { storeId },
         include: {
           orderItems: {
+            where: { order: TRANSMISE },
             select: {
               quantity: true,
               price: true,
@@ -171,7 +173,7 @@ export class ReportsService {
   static async getCustomerAnalytics(storeId: string) {
     try {
       const orders = await db.order.findMany({
-        where: { storeId },
+        where: { storeId, ...TRANSMISE },
         select: {
           customerEmail: true,
           customerName: true,

@@ -1,10 +1,10 @@
 // Vérifie que les routes appelées par les pages commerçant répondent bien
 // quand on leur passe un storeId, et échouent avec un orgId (l'ancien bug).
 
-import { check, j, uniq, post, get, terminer } from './outils.mjs';
+import { inscription, check, j, uniq, post, get, terminer } from './outils.mjs';
 
-await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` });
-const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
+await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` });
+const m = await j(await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const orgId = m.organization.id, token = m.accessToken;
 
 const b = await j(await post('/api/stores', {
@@ -16,7 +16,7 @@ const storeId = b.store?.id || b.id;
 const p = await j(await post('/api/products', { storeId, name: 'Croissant', price: 2.5, stock: 20, status: 'ACTIVE' }, token));
 check('produit enregistré à 2.50', Number(p?.product?.price) === 2.5, JSON.stringify(p?.product?.price));
 
-await post('/api/orders', {
+await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000',
   deliveryType: 'PICKUP', totalAmount: 12.5,
 });
@@ -70,7 +70,7 @@ const ficheData = await j(fiche);
 check('la fiche liste ses commandes', (ficheData?.orders || []).length === 1, JSON.stringify(ficheData?.orders?.length));
 
 // Un autre commerçant ne doit pas voir ce client.
-const autre = await j(await post('/api/auth/signup', { email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` }));
+const autre = await j(await inscription({ email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` }));
 const autreToken = autre.accessToken;
 const autreBoutique = await j(await post('/api/stores', {
   orgId: autre.organization.id, name: `Autre ${uniq}`, slug: `autre-${uniq}`,

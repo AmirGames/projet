@@ -1,3 +1,4 @@
+import { finAttente } from "./delivery-proof.service";
 import { db } from "./db";
 import { EmailService } from "./email.service";
 import { logger } from "../config/logger";
@@ -7,7 +8,14 @@ import { DeliveryZoneService } from "./delivery-zone.service";
 import { PromotionService } from "./promotion.service";
 import { emitWebhook } from "./webhook.service";
 import { TaxService } from "./tax.service";
-import { ModeDeLivraison } from "./delivery-mode.service";
+import { ModeDeLivraison, fraisDeServiceEnVigueur } from "./delivery-mode.service";
+import { promoSansCommissionActive } from "./plan.service";
+import { StoreHoursService } from "./store-hours.service";
+import { emitMerchantEvent } from "../config/socket";
+import { Notifier, enArrierePlan } from "./notifier.service";
+import { OrderAcceptanceService, echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
+import { getEnv } from "../config/env";
+import { TRANSMISE, payeEnLigne } from "../utils/commande-transmise";
 
 export interface OrderData {
   storeId: string;
@@ -64,10 +72,18 @@ export class OrderService {
   ) {
     const boutique = await db.store.findUnique({
       where: { id: storeId },
-      select: { org: { select: { tier: true } } },
+      select: {
+        org: { select: { tier: true, commissionFreeActive: true, commissionFreeUntil: true } },
+      },
     });
 
     const tier = boutique?.org?.tier ?? null;
+
+    // La promo offerte par la plateforme passe avant la formule et le mode de
+    // livraison : rien n'est prélevé.
+    if (promoSansCommissionActive(boutique?.org)) {
+      return { tier, taux: 0, montant: 0, offerte: true };
+    }
 
     const formule = tier
       ? await db.planTier.findUnique({
@@ -96,6 +112,7 @@ export class OrderService {
       tier,
       taux,
       montant: Number(((montant * taux) / 100).toFixed(2)),
+      offerte: false,
     };
   }
 
@@ -136,7 +153,13 @@ export class OrderService {
        */
       const boutique = await db.store.findUnique({
         where: { id: data.storeId },
-        select: { isOpen: true, deletedAt: true, name: true, org: { select: { approvedAt: true } } },
+        select: {
+          isOpen: true,
+          operatingHours: true,
+          deletedAt: true,
+          name: true,
+          org: { select: { approvedAt: true } },
+        },
       });
 
       if (!boutique || boutique.deletedAt) {
@@ -158,6 +181,17 @@ export class OrderService {
           400,
           `« ${boutique.name} » est momentanément indisponible et n'accepte pas de commande.`,
           "STORE_CLOSED"
+        );
+      }
+
+      // Hors des horaires, le retrait reste possible : le client choisit un
+      // créneau à venir, proposé d'après ces mêmes horaires. La livraison, elle,
+      // part tout de suite — personne ne serait là pour la préparer.
+      if (data.deliveryType === "DELIVERY" && !StoreHoursService.isOpenNow(boutique)) {
+        throw new ApiError(
+          400,
+          `« ${boutique.name} » est fermée pour le moment : la livraison reprendra à l'ouverture. Le retrait sur un prochain créneau reste possible.`,
+          "STORE_CLOSED_FOR_DELIVERY"
         );
       }
 
@@ -278,7 +312,7 @@ export class OrderService {
       }
 
       /** Le moyen de paiement doit être celui de cette boutique, et actif. */
-      let moyenDePaiement: { id: string; name: string } | null = null;
+      let moyenDePaiement: { id: string; name: string; type: string } | null = null;
 
       if (data.paymentMethodId) {
         const propose = await db.paymentMethod.findFirst({
@@ -303,7 +337,7 @@ export class OrderService {
           );
         }
 
-        moyenDePaiement = { id: propose.id, name: propose.name };
+        moyenDePaiement = { id: propose.id, name: propose.name, type: propose.type };
       }
 
       /**
@@ -321,9 +355,18 @@ export class OrderService {
         }))
       );
 
+      /**
+       * Les frais de service de la plateforme, réglés dans sa configuration.
+       *
+       * Ajoutés au total du client, mais jamais au commerçant : ils sortent
+       * de l'assiette de sa commission et de son chiffre d'affaires.
+       */
+      const reglage = await db.systemConfig.findFirst({ select: { serviceFee: true } });
+      const fraisDeService = lignesTarifees.length > 0 ? fraisDeServiceEnVigueur(reglage) : 0;
+
       const totalCalcule = lignesTarifees.length > 0
         ? Number(
-            (totalDesLignes + taxe.aAjouter + fraisDeLivraison - remise).toFixed(2)
+            (totalDesLignes + taxe.aAjouter + fraisDeLivraison + fraisDeService - remise).toFixed(2)
           )
         : Number(data.totalAmount);
 
@@ -340,10 +383,13 @@ export class OrderService {
        * commerçant : ils transitent par la plateforme et vont au livreur. Ils
        * sortent donc de l'assiette de la commission.
        */
-      const assietteCommission =
-        modeLivraison === "PLATFORM"
-          ? Number((totalCalcule - fraisDeLivraison).toFixed(2))
-          : totalCalcule;
+      const assietteCommission = Number(
+        (
+          totalCalcule -
+          fraisDeService -
+          (modeLivraison === "PLATFORM" ? fraisDeLivraison : 0)
+        ).toFixed(2)
+      );
 
       const commission = await this.commissionDeLaBoutique(
         data.storeId,
@@ -382,9 +428,17 @@ export class OrderService {
         );
       }
 
+      // Payée en ligne (tout sauf les espèces), la commande attend l'encaissement avant de partir au
+      // commerçant : c'est le webhook Stripe qui la lui transmet.
+      const enLigne = payeEnLigne(
+        moyenDePaiement?.type,
+        getEnv().ENABLE_STRIPE && Boolean(process.env.STRIPE_SECRET_KEY)
+      );
+
       const order = await db.order.create({
         data: {
           storeId: data.storeId,
+          ...(enLigne ? { submittedAt: null } : {}),
           customerName: data.customerName,
           customerEmail: data.customerEmail,
           customerPhone: data.customerPhone,
@@ -397,6 +451,7 @@ export class OrderService {
           deliveryLng: data.deliveryLng,
           totalAmount: totalCalcule,
           feesAmount: fraisDeLivraison,
+          serviceFeeAmount: fraisDeService,
           promoCode: codePromo,
           discountAmount: remise,
           paymentMethodId: moyenDePaiement?.id,
@@ -408,6 +463,7 @@ export class OrderService {
           commissionPercent: commission.taux,
           commissionAmount: commission.montant,
           tierAtOrder: commission.tier,
+          commissionWaived: commission.offerte,
           deliveryMode: modeLivraison,
           status: "PENDING" as any,
           paymentStatus: "PENDING" as any,
@@ -434,28 +490,65 @@ export class OrderService {
         },
       });
 
-      try {
-        await EmailService.sendOrderConfirmation(order);
-      } catch (emailErr) {
-        logger.warn("Email notification failed, but order was created", { error: emailErr });
+      if (!enLigne) {
+        await this.annoncerAuCommercant(order);
       }
 
-      // L'événement était proposé à l'abonnement et n'était émis nulle part :
-      // une caisse branchée dessus n'a jamais vu passer une seule commande.
-      emitWebhook("order.created", {
-        orderId: order.id,
-        storeId: order.storeId,
-        status: order.status,
-        deliveryType: order.deliveryType,
-        totalAmount: Number(order.totalAmount),
-        customerName: order.customerName,
-        createdAt: order.createdAt,
-      });
-
-      return order;
+      return { ...order, paiementEnLigne: enLigne };
     } catch (error: any) {
       throw error;
     }
+  }
+
+  /**
+   * La commande parvient au commerçant : e-mail de confirmation au client,
+   * événement pour les caisses branchées, sonnerie et notification.
+   *
+   * Aussitôt passée pour un paiement sur place ; à l'encaissement pour un
+   * paiement en ligne (appelée par le webhook Stripe).
+   */
+  static async annoncerAuCommercant(order: any) {
+    try {
+      await EmailService.sendOrderConfirmation(order);
+    } catch (emailErr) {
+      logger.warn("Email notification failed, but order was created", { error: emailErr });
+    }
+
+    // L'événement était proposé à l'abonnement et n'était émis nulle part :
+    // une caisse branchée dessus n'a jamais vu passer une seule commande.
+    emitWebhook("order.created", {
+      orderId: order.id,
+      storeId: order.storeId,
+      status: order.status,
+      deliveryType: order.deliveryType,
+      totalAmount: Number(order.totalAmount),
+      customerName: order.customerName,
+      createdAt: order.createdAt,
+    });
+
+    // La boutique sonne : la commande attend d'être acceptée, et le temps
+    // pour répondre est compté.
+    emitMerchantEvent(order.storeId, "commande-nouvelle", {
+      orderId: order.id,
+      storeId: order.storeId,
+      customerName: order.customerName,
+      deliveryType: order.deliveryType,
+      totalAmount: Number(order.totalAmount),
+      echeance: echeanceDeReponse(order).toISOString(),
+    });
+
+    // Et le téléphone du commerçant, même application fermée.
+    enArrierePlan(
+      Notifier.pushEquipeBoutique(order.storeId, {
+        title: "🔔 Nouvelle commande",
+        body: `${order.customerName || "Un client"} · ${
+          order.deliveryType === "DELIVERY" ? "Livraison" : "Retrait"
+        } · ${Number(order.totalAmount).toFixed(2)} €`,
+        data: { type: "commande-nouvelle", orderId: order.id, storeId: order.storeId },
+        channelId: "new-orders",
+        sound: "new_order.wav",
+      })
+    );
   }
 
   static async getById(id: string) {
@@ -478,9 +571,19 @@ export class OrderService {
 
   static async getByStoreId(storeId: string, limit: number = 100, offset: number = 0) {
     return await db.order.findMany({
-      where: { storeId },
+      where: { storeId, ...TRANSMISE },
       include: {
-        items: { include: { product: true } },
+        items: { include: { product: { include: { category: { select: { name: true, displayOrder: true } } } } } },
+        delivery: {
+          select: {
+            status: true,
+            assignedAt: true,
+            pickupTime: true,
+            deliveryTime: true,
+            estimatedTime: true,
+            driver: { select: { name: true, phone: true, vehicleType: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       take: limit,
@@ -490,7 +593,7 @@ export class OrderService {
 
   static async getByStatus(storeId: string, status: string, limit: number = 50) {
     return await db.order.findMany({
-      where: { storeId, status: status as any },
+      where: { storeId, status: status as any, ...TRANSMISE },
       include: {
         items: { include: { product: true } },
       },
@@ -506,6 +609,12 @@ export class OrderService {
       // une préparation qui avance d'un renvoi du même état.
       const avant = await db.order.findUnique({ where: { id }, select: { status: true } });
 
+      if (!avant) {
+        throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
+      }
+
+      verifierTransition(avant.status, status);
+
       const commande = await db.order.update({
         where: { id },
         data: { status: status as any },
@@ -517,10 +626,12 @@ export class OrderService {
       emitWebhook("order.status_changed", {
         orderId: commande.id,
         storeId: commande.storeId,
-        previousStatus: avant?.status ?? null,
+        previousStatus: avant.status,
         status: commande.status,
         totalAmount: Number(commande.totalAmount),
       });
+
+      await OrderAcceptanceService.surAvancement(commande);
 
       return commande;
     } catch (error: any) {
@@ -573,7 +684,7 @@ export class OrderService {
   }
 
   static async countByStoreId(storeId: string) {
-    return await db.order.count({ where: { storeId } });
+    return await db.order.count({ where: { storeId, ...TRANSMISE } });
   }
 
   static async getRecentOrders(storeId: string, days: number = 7) {
@@ -582,6 +693,7 @@ export class OrderService {
       where: {
         storeId,
         createdAt: { gte: since },
+        ...TRANSMISE,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -596,7 +708,16 @@ export class OrderService {
         },
         payments: true,
         delivery: {
-          select: { status: true, deliveryCode: true, proofType: true, proofAt: true },
+          select: {
+            status: true,
+            deliveryCode: true,
+            proofType: true,
+            proofAt: true,
+            proofPhoto: true,
+            proofNote: true,
+            nearCustomerNotifiedAt: true,
+            customerWaitStartedAt: true,
+          },
         },
       },
     });
@@ -614,6 +735,13 @@ export class OrderService {
       codeRemise:
         delivery && delivery.status !== "DELIVERED" ? delivery.deliveryCode : null,
       preuveDeLivraison: delivery?.proofType ?? null,
+      photoDepot: delivery?.proofType === "PHOTO" ? delivery.proofPhoto : null,
+      noteDepot: delivery?.proofType === "PHOTO" ? delivery.proofNote : null,
+      livreurProche: Boolean(delivery?.nearCustomerNotifiedAt),
+      // Le livreur attend à la porte : passé cette heure, la commande est
+      // déposée en lieu sûr.
+      attenteFinLe: delivery?.status === "PICKED_UP" && delivery ? finAttente(delivery) : null,
+      maintenant: new Date(),
     };
   }
 
@@ -633,6 +761,7 @@ export class OrderService {
   static async getByOrgId(orgId: string, status?: string, limit: number = 100, offset: number = 0) {
     const whereClause: any = {
       store: { orgId },
+      ...TRANSMISE,
     };
 
     if (status && status !== "ALL") {
@@ -660,7 +789,7 @@ export class OrderService {
    * dur : les deux compteurs n'étaient jamais renseignés.
    */
   static async chiffreAffairesOrg(orgId: string, status?: string) {
-    const where: any = { store: { orgId }, deletedAt: null };
+    const where: any = { store: { orgId }, deletedAt: null, ...TRANSMISE };
     if (status && status !== "ALL") where.status = status;
 
     const somme = await db.order.aggregate({
@@ -678,6 +807,7 @@ export class OrderService {
   static async countByOrgId(orgId: string, status?: string) {
     const whereClause: any = {
       store: { orgId },
+      ...TRANSMISE,
     };
 
     if (status && status !== "ALL") {

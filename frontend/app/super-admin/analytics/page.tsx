@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -27,10 +29,6 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<CommissionData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchCommissions();
-  }, []);
-
   const fetchCommissions = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -45,11 +43,15 @@ export default function AnalyticsPage() {
       const fetchedData = await response.json();
       setData(fetchedData);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchCommissions();
+  }, []);
 
   if (loading) return <div className="text-center py-8">Chargement...</div>;
   if (!data) return <div className="text-center py-8 text-red-400">Erreur de chargement</div>;

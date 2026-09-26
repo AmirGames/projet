@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { AlertCircle, CheckCircle } from "lucide-react";
+import { useEffectChargement } from "@/lib/use-effect-chargement";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -35,11 +36,7 @@ export default function TicketsPage() {
   const [filterPriority, setFilterPriority] = useState("");
   const limit = 20;
 
-  useEffect(() => {
-    fetchTickets();
-  }, [limit, offset, filterStatus, filterPriority]);
-
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {
       const query = new URLSearchParams({
@@ -65,7 +62,11 @@ export default function TicketsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterPriority, filterStatus, offset]);
+
+  useEffectChargement(() => {
+    fetchTickets();
+  }, [limit, offset, filterStatus, filterPriority, fetchTickets]);
 
   const updateTicket = async (
     ticketId: string,

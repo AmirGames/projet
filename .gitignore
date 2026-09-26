@@ -45,3 +45,5 @@ md claude/
 
 # Sauvegardes produites par les vérifications
 backend/backups/
+mobile/apps/delivery/app.json
+/imagestest

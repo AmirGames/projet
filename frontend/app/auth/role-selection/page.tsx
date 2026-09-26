@@ -1,9 +1,15 @@
 "use client";
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect } from "react";
+import { telephoneInternational } from "@/lib/pays-infos";
+import { paysDuNavigateur } from "@/lib/pays-client";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { slugify } from "@/lib/slug";
+import { useTypesDeCommerce } from "@/lib/types-commerce";
 import Link from "next/link";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { useTranslations } from 'next-intl';
 
 interface Roles {
@@ -39,12 +45,14 @@ export default function RoleSelectionPage() {
     storeName: "",
     storeSlug: "",
     businessType: "",
+    cuisineType: "",
     phone: "",
     address: "",
     city: "",
     postalCode: "",
     description: "",
   });
+  const { etablissements, cuisines } = useTypesDeCommerce();
   const [driverFormData, setDriverFormData] = useState({
     name: "",
     email: "",
@@ -60,7 +68,7 @@ export default function RoleSelectionPage() {
         setRoles(data.roles);
       } catch (err) {
         setError("Erreur lors du chargement des rôles");
-        console.error(err);
+        signalerErreur(err);
       } finally {
         setLoading(false);
       }
@@ -74,7 +82,15 @@ export default function RoleSelectionPage() {
     setError("");
 
     try {
-      await api.becomeMerchant(merchantFormData);
+      await api.becomeMerchant({
+        ...merchantFormData,
+        phone: telephoneInternational(merchantFormData.phone, paysDuNavigateur()),
+        // Une cuisine n'a de sens qu'en restauration.
+        cuisineType:
+          merchantFormData.businessType === "restaurant" && merchantFormData.cuisineType
+            ? merchantFormData.cuisineType
+            : null,
+      });
       // Refresh roles
       const data = await api.getRoles();
       setRoles(data.roles);
@@ -84,6 +100,7 @@ export default function RoleSelectionPage() {
         storeName: "",
         storeSlug: "",
         businessType: "",
+        cuisineType: "",
         phone: "",
         address: "",
         city: "",
@@ -92,7 +109,7 @@ export default function RoleSelectionPage() {
       });
     } catch (err: any) {
       setError(err.message || "Erreur lors de la création du commerce");
-      console.error(err);
+      signalerErreur(err);
     }
   };
 
@@ -101,7 +118,10 @@ export default function RoleSelectionPage() {
     setError("");
 
     try {
-      await api.becomeDriver(driverFormData);
+      await api.becomeDriver({
+        ...driverFormData,
+        phone: telephoneInternational(driverFormData.phone, paysDuNavigateur()),
+      });
       // Refresh roles
       const data = await api.getRoles();
       setRoles(data.roles);
@@ -115,7 +135,7 @@ export default function RoleSelectionPage() {
       });
     } catch (err: any) {
       setError(err.message || "Erreur lors de la création du profil livreur");
-      console.error(err);
+      signalerErreur(err);
     }
   };
 
@@ -289,6 +309,7 @@ export default function RoleSelectionPage() {
                     setMerchantFormData({
                       ...merchantFormData,
                       storeName: e.target.value,
+                      storeSlug: slugify(e.target.value),
                     })
                   }
                   className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -301,7 +322,7 @@ export default function RoleSelectionPage() {
                   onChange={(e) =>
                     setMerchantFormData({
                       ...merchantFormData,
-                      storeSlug: e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                      storeSlug: slugify(e.target.value, false),
                     })
                   }
                   className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -319,13 +340,32 @@ export default function RoleSelectionPage() {
                   required
                 >
                   <option value="">Type d'entreprise</option>
-                  <option value="Restaurant">Restaurant</option>
-                  <option value="FastFood">Fast Food</option>
-                  <option value="Grocery">Épicerie</option>
-                  <option value="Pharmacy">Pharmacie</option>
-                  <option value="Shop">Boutique</option>
-                  <option value="Other">Autre</option>
+                  {etablissements.map((genre) => (
+                    <option key={genre.code} value={genre.code}>
+                      {genre.libelle}
+                    </option>
+                  ))}
                 </select>
+                {merchantFormData.businessType === "restaurant" && (
+                  <select
+                    aria-label="Type de cuisine"
+                    value={merchantFormData.cuisineType}
+                    onChange={(e) =>
+                      setMerchantFormData({
+                        ...merchantFormData,
+                        cuisineType: e.target.value,
+                      })
+                    }
+                    className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="">Type de cuisine (facultatif)</option>
+                    {cuisines.map((cuisine) => (
+                      <option key={cuisine.code} value={cuisine.code}>
+                        {cuisine.libelle}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <input
                   type="tel"
                   placeholder="Téléphone"
@@ -339,17 +379,21 @@ export default function RoleSelectionPage() {
                   className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
-                <input
-                  type="text"
+                <AddressAutocomplete
                   placeholder="Adresse"
                   value={merchantFormData.address}
-                  onChange={(e) =>
-                    setMerchantFormData({
-                      ...merchantFormData,
-                      address: e.target.value,
-                    })
+                  onChange={(valeur) =>
+                    setMerchantFormData((prev) => ({ ...prev, address: valeur }))
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  onSelect={(adresse) =>
+                    setMerchantFormData((prev) => ({
+                      ...prev,
+                      address: adresse.street,
+                      city: adresse.city || prev.city,
+                      postalCode: adresse.postalCode || prev.postalCode,
+                    }))
+                  }
+                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <input
@@ -460,10 +504,9 @@ export default function RoleSelectionPage() {
                   required
                 >
                   <option value="">Type de véhicule</option>
-                  <option value="Motorcycle">Moto</option>
-                  <option value="Car">Voiture</option>
-                  <option value="Bicycle">Vélo</option>
-                  <option value="Truck">Camion</option>
+                  <option value="scooter">Scooter / Moto</option>
+                  <option value="car">Voiture</option>
+                  <option value="bike">Vélo</option>
                 </select>
                 <input
                   type="text"

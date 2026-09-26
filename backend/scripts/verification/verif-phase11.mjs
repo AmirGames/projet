@@ -1,17 +1,17 @@
 // Vérifie les six points signalés par l'utilisateur.
 
-import { check, j, uniq, post, get, put, del, terminer, API } from './outils.mjs';
+import { inscription, check, j, uniq, post, get, put, del, terminer, API } from './outils.mjs';
 
 // ---------- Comptes ----------
 // Le premier inscrit devient superowner.
-const superRes = await post('/api/auth/signup', {
+const superRes = await inscription({
   email: `super-${uniq}@test.fr`, password: 'Password123!', name: `Super ${uniq}`,
 });
 const superData = await j(superRes);
 check('inscription superowner', superRes.status === 201, `status=${superRes.status} ${JSON.stringify(superData)}`);
 const superToken = superData?.accessToken || superData?.tokens?.accessToken;
 
-const marchandRes = await post('/api/auth/signup', {
+const marchandRes = await inscription({
   email: `marchand-${uniq}@test.fr`, password: 'Password123!', name: `Boulangerie ${uniq}`,
 });
 const marchandData = await j(marchandRes);
@@ -45,7 +45,7 @@ const prodB1 = await j(await post('/api/products', { storeId: idB, name: 'Pain B
 const prodB2 = await j(await post('/api/products', { storeId: idB, name: 'Pain B2', price: 4, stock: 10, status: 'ACTIVE' }, marchandToken));
 check('produits créés', !!(prodA?.product?.id && prodB1?.product?.id && prodB2?.product?.id));
 
-const cmd = async (storeId, montant, email) => j(await post('/api/orders', {
+const cmd = async (storeId, montant, email) => j(await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client Test', customerEmail: email, customerPhone: '0600000000',
   deliveryType: 'PICKUP', totalAmount: montant,
 }));

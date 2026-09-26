@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ChevronDown, ChevronUp, Layers, Plus, Save, Trash2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 /**
  * Les déclinaisons d'un plat, côté commerçant.
@@ -59,7 +60,7 @@ export function DeclinaisonsProduit({
     }
   }, [productId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 
@@ -202,7 +203,7 @@ export function DeclinaisonsProduit({
               />
               <button
                 type="button"
-                aria-label="Enregistrer l'intitulé"
+                aria-label="Enregistrer l’intitulé"
                 onClick={enregistrerLibelle}
                 disabled={chargement || libelleDuChoix === libelleEnregistre}
                 className={`px-3 rounded transition ${
@@ -210,7 +211,7 @@ export function DeclinaisonsProduit({
                     ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                     : 'bg-orange-600 hover:bg-orange-700'
                 }`}
-                title="Enregistrer l'intitulé"
+                title="Enregistrer l’intitulé"
               >
                 <Save size={16} />
               </button>

@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { TrendingUp } from 'lucide-react';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -39,12 +41,9 @@ export default function AnalyticsDashboard() {
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState<TimeRange>('30days');
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [timeRange]);
-
-  const fetchAnalytics = async () => {
-    setLoading(true);
+  // silencieux : une relecture en direct garde la page affichée.
+  const fetchAnalytics = useCallback(async (silencieux = false) => {
+    if (!silencieux) setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
       const res = await fetch(`${API_URL}/api/superowner/analytics?period=${timeRange}`, {
@@ -61,7 +60,15 @@ export default function AnalyticsDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t, timeRange]);
+
+  // Les chiffres portent sur toute la plateforme : relus au plus toutes les
+  // cinq secondes, quelle que soit l'activité.
+  useDonneesModifiees('*', () => fetchAnalytics(true), { delaiMs: 5000 });
+
+  useEffectChargement(() => {
+    fetchAnalytics();
+  }, [timeRange, fetchAnalytics]);
 
   const getGrowthColor = (growth: number) => {
     return growth >= 0 ? 'text-green-400' : 'text-red-400';

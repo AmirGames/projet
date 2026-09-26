@@ -1,5 +1,6 @@
 import { MerchantApprovalService } from "../services/merchant-approval.service";
 import { logger } from "../config/logger";
+import { Surveillance } from "../services/surveillance.service";
 
 /**
  * Surveillance périodique des dossiers commerçants.
@@ -18,7 +19,9 @@ async function passer() {
   enCours = true;
 
   try {
-    const bilan = await MerchantApprovalService.surveillerExpirations();
+    const bilan = await Surveillance.executerTache("pieces-commercants", () =>
+      MerchantApprovalService.surveillerExpirations()
+    );
     if (bilan.rappels > 0 || bilan.expirees > 0) {
       logger.info("Pièces commerçants surveillées", bilan);
     }
@@ -34,6 +37,8 @@ async function passer() {
 export class MerchantJobs {
   static start() {
     if (minuteur) return;
+
+    Surveillance.declarerTache("pieces-commercants", "Pièces des commerçants", INTERVALLE_MS);
 
     // Un premier passage au démarrage : un serveur relancé chaque nuit
     // n'atteindrait jamais la première heure.

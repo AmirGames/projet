@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import { useState, useCallback } from "react";
 import { Tag, Plus, Trash2, Edit2 } from "lucide-react";
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -22,11 +24,8 @@ interface TagsResponse {
   take: number;
 }
 
-export default function ProductTagPage({
-  params,
-}: {
-  params: { orgId: string };
-}) {
+export default function ProductTagPage() {
+  const params = useParams<{ orgId: string }>();
   const t = useTranslations('common');
   const [tags, setTags] = useState<ProductTag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,11 +44,7 @@ export default function ProductTagPage({
   const storeId = params.orgId;
   const take = 20;
 
-  useEffect(() => {
-    fetchTags();
-  }, [skip]);
-
-  const fetchTags = async () => {
+  const fetchTags = useCallback(async () => {
     setLoading(true);
     try {
       const query = new URLSearchParams({
@@ -73,7 +68,11 @@ export default function ProductTagPage({
     } finally {
       setLoading(false);
     }
-  };
+  }, [skip, storeId]);
+
+  useEffectChargement(() => {
+    fetchTags();
+  }, [skip, fetchTags]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

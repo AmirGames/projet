@@ -8,11 +8,13 @@
  * relevés d'une période, puis les marque versés.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Banknote, CalendarRange, Check, FileText, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -82,9 +84,13 @@ export default function VersementsPage() {
 
   const jeton = () => localStorage.getItem('accessToken');
 
-  const charger = useCallback(async () => {
-    setChargement(true);
-    setErreur('');
+  // silencieux : une relecture en direct garde la page affichée.
+  const charger = useCallback(async (silencieux = false) => {
+    // Une relecture en direct ne doit pas effacer le refus qu'on vient d'afficher.
+    if (!silencieux) {
+      setChargement(true);
+      setErreur('');
+    }
 
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/payouts?status=${filtre}`, {
@@ -116,9 +122,13 @@ export default function VersementsPage() {
     }
   }, [filtre, t, tCommon]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
+
+  // Une course livrée grossit ce qui est dû ; un versement payé ou annulé
+  // par un collègue change de colonne : la page suit.
+  useDonneesModifiees(['payouts', 'orders', 'drivers'], () => charger(true), { delaiMs: 1500 });
 
   const agir = async (chemin: string, corps?: unknown) => {
     setErreur('');

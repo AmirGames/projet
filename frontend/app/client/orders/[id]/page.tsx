@@ -1,28 +1,41 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Clock, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { SuiviLivraison, type Course } from '@/components/SuiviLivraison';
 import { useOrderTracking } from '@/lib/use-order-tracking';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
+import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
 
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
   id: string;
   status: string;
   totalAmount: number;
+  /** Les frais de service de la plateforme, compris dans le total. */
+  serviceFeeAmount?: number | string;
   /** La taxe figée à la commande, et le taux qui valait ce jour-là. */
   taxAmount?: number | string;
   taxRate?: number | string;
   deliveryAddress: string;
   createdAt: string;
   items?: any[];
+  deliveryType?: 'PICKUP' | 'DELIVERY';
+  pickupTime?: string | null;
+  /** L'heure à laquelle la commande sera prête, annoncée à l'acceptation. */
+  estimatedReadyAt?: string | null;
+  rejectionReason?: string | null;
+  rejectionNote?: string | null;
+  paymentStatus?: string;
 }
 
 // Le suivi distingue trois points : d'où part la commande, où elle va, et où
@@ -36,25 +49,36 @@ export default function OrderTrackingPage() {
   const router = useRouter();
   const orderId = params.id as string;
 
-  const { orderStatus, deliveryLocation, eta, gpsPerdu, isConnected, notification } = useOrderTracking(orderId);
+  const { orderStatus, deliveryLocation, eta, gpsPerdu, livreurProche, isConnected, notification } =
+    useOrderTracking(orderId);
 
   const [order, setOrder] = useState<Order | null>(null);
   const [delivery, setDelivery] = useState<OrderDelivery | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // null : pas encore su. Une commande terminée invite à donner son avis, ou
+  // à le revoir quand il a plus de quinze jours.
+  const [avis, setAvis] = useState<{ aRedemander: boolean; dejaDonne: boolean } | null>(null);
 
+  // Chargé à l'arrivée, et quand la commande passe « terminée » en direct.
   useEffect(() => {
-    loadOrderData();
-  }, [orderId]);
+    if (order?.status !== 'COMPLETED') return;
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
 
-  // Update order status when WebSocket status changes
-  useEffect(() => {
-    if (orderStatus && order) {
-      setOrder(prev => prev ? { ...prev, status: orderStatus } : null);
-    }
-  }, [orderStatus]);
+    fetch(`${API_URL}/api/reviews/commande/${orderId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((corps) => {
+        if (corps?.data) {
+          setAvis({ aRedemander: corps.data.aRedemander, dejaDonne: Boolean(corps.data.restaurant) });
+        }
+      })
+      .catch(() => {});
+  }, [order?.status, orderId]);
 
-  const loadOrderData = async () => {
+  const loadOrderData = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -87,11 +111,32 @@ export default function OrderTrackingPage() {
 
       setLoading(false);
     } catch (err) {
-      console.error('Error loading order:', err);
+      signalerErreur('Error loading order:', err);
       setError('Erreur lors du chargement de la commande');
       setLoading(false);
     }
-  };
+  }, [orderId, router]);
+
+  // Ce que le statut ne dit pas : un livreur attribué, une heure revue, un
+  // remboursement. La commande est relue à chaque écriture qui la touche.
+  useDonneesModifiees('orders', () => loadOrderData(), { id: orderId });
+
+  useEffectChargement(() => {
+    loadOrderData();
+  }, [orderId, loadOrderData]);
+
+
+  // Le statut change en direct : on relit la commande entière, pour l'heure
+  // annoncée à l'acceptation ou le motif d'un refus.
+  const [statutVu, setStatutVu] = useState(orderStatus);
+  if (orderStatus !== statutVu) {
+    setStatutVu(orderStatus);
+    if (orderStatus) setOrder(prev => prev ? { ...prev, status: orderStatus } : null);
+  }
+
+  useEffectChargement(() => {
+    if (orderStatus) loadOrderData();
+  }, [orderStatus, loadOrderData]);
 
   const getStatusInfo = (status: string) => {
     const statuses: Record<string, { label: string; color: string; icon: string }> = {
@@ -207,6 +252,24 @@ export default function OrderTrackingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
+            {avis?.aRedemander && (
+              <div className="bg-orange-900/40 border border-orange-700 rounded-lg p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="text-4xl">⭐</div>
+                <div className="flex-1">
+                  <p className="text-white font-bold text-lg">{t('reviewPromptTitle')}</p>
+                  <p className="text-orange-200 text-sm">
+                    {avis.dejaDonne ? t('reviewPromptUpdateText') : t('reviewPromptText')}
+                  </p>
+                </div>
+                <Link
+                  href={`/client/orders/${orderId}/review`}
+                  className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-5 py-3 rounded-lg text-center transition"
+                >
+                  {t('reviewPromptButton')}
+                </Link>
+              </div>
+            )}
+
             {/* Order Status */}
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-bold text-white mb-6">Statut de la commande</h2>
@@ -220,7 +283,45 @@ export default function OrderTrackingPage() {
                     <p className="text-white text-xl font-semibold">{statusInfo.label}</p>
                   </div>
                 </div>
+                {order.status === 'PENDING' && (
+                  <p className="text-sm text-yellow-300">
+                    Le restaurant doit confirmer votre commande. Vous serez prévenu dès qu&apos;il
+                    l&apos;aura acceptée.
+                  </p>
+                )}
+                {['ACCEPTED', 'PREPARING', 'READY'].includes(order.status) && order.estimatedReadyAt && (
+                  <p className="text-sm text-gray-200">
+                    {order.deliveryType === 'PICKUP' && order.pickupTime
+                      ? `Retrait prévu à ${heure(order.pickupTime)}`
+                      : `Prête vers ${heure(order.estimatedReadyAt)}`}
+                  </p>
+                )}
+                {order.status === 'REJECTED' && (
+                  <div className="text-sm text-red-300 space-y-1">
+                    <p>
+                      {MOTIFS_POUR_LE_CLIENT[order.rejectionReason || ''] ||
+                        'Le restaurant a refusé votre commande.'}
+                    </p>
+                    {order.rejectionNote && <p>« {order.rejectionNote} »</p>}
+                    {order.paymentStatus === 'REFUNDED' && (
+                      <p>Vous avez payé en ligne : vous êtes remboursé, sous 5 à 10 jours sur votre compte.</p>
+                    )}
+                    {order.paymentStatus === 'SUCCEEDED' && (
+                      <p>Vous avez payé en ligne : votre remboursement est en cours de traitement.</p>
+                    )}
+                  </div>
+                )}
               </div>
+
+              {/* Hors relance, l'avis reste modifiable à tout moment. */}
+              {avis && !avis.aRedemander && (
+                <Link
+                  href={`/client/orders/${orderId}/review`}
+                  className="inline-block mb-6 text-orange-400 hover:text-orange-300 text-sm font-semibold"
+                >
+                  ⭐ {avis.dejaDonne ? t('reviewEdit') : t('reviewPromptButton')}
+                </Link>
+              )}
 
               {/* Progress Bar */}
               <div className="mb-6">
@@ -258,7 +359,7 @@ export default function OrderTrackingPage() {
                 et un bouton « Appeler » qui n'appelait rien. */}
             {delivery && (
               <SuiviLivraison
-                course={delivery}
+                course={{ ...delivery, livreurProche: delivery.livreurProche || livreurProche }}
                 orderId={orderId}
                 positionDirecte={deliveryLocation}
                 gpsPerduDirect={gpsPerdu}
@@ -332,6 +433,11 @@ export default function OrderTrackingPage() {
                 <p className="text-white text-2xl font-bold">
                   {euro(order.totalAmount)}
                 </p>
+                {Number(order.serviceFeeAmount) > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    dont {euro(order.serviceFeeAmount)} de frais de service
+                  </p>
+                )}
                 {Number(order.taxAmount) > 0 && (
                   <div className="mt-2 space-y-1 text-sm text-gray-400">
                     <div className="flex justify-between">

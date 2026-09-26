@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Users, ShoppingCart, TrendingUp, AlertCircle } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,20 +27,7 @@ export default function SuperAdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    console.log("Super-admin page loaded, token exists:", !!token);
-
-    if (!token) {
-      console.log("No token, redirecting to login");
-      router.push('/login');
-      return;
-    }
-
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/admin/stats`, {
@@ -52,12 +42,25 @@ export default function SuperAdminDashboard() {
       const data = await response.json();
       setStats(data);
     } catch (error) {
-      console.error('Erreur chargement stats:', error);
+      signalerErreur('Erreur chargement stats:', error);
       router.push('/login');
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffectChargement(() => {
+    const token = localStorage.getItem('accessToken');
+    console.log("Super-admin page loaded, token exists:", !!token);
+
+    if (!token) {
+      console.log("No token, redirecting to login");
+      router.push('/login');
+      return;
+    }
+
+    fetchStats();
+  }, [router, fetchStats]);
 
   if (loading)
     return <div className="text-center py-8">{t('loading')}</div>;
@@ -151,24 +154,24 @@ export default function SuperAdminDashboard() {
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
         <h2 className="text-lg font-bold mb-4">{t('quickActions')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <a
+          <Link
             href="/super-admin/merchants"
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
             {t('manageMerchants')}
-          </a>
-          <a
+          </Link>
+          <Link
             href="/super-admin/tickets"
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
             {t('viewSupport')}
-          </a>
-          <a
+          </Link>
+          <Link
             href="/super-admin/settings"
             className="block p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-center font-medium"
           >
             {t('systemSettings')}
-          </a>
+          </Link>
         </div>
       </div>
     </div>

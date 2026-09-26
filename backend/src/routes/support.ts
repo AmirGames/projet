@@ -7,6 +7,7 @@ import { logger } from "../config/logger";
 import { TicketMessageService } from "../services/ticket-message.service";
 import { emitWebhook } from "../services/webhook.service";
 import { MerchantApprovalService } from "../services/merchant-approval.service";
+import { emitOrgEvent } from "../config/socket";
 
 const router = Router();
 
@@ -110,6 +111,9 @@ router.post("/tickets", authMiddleware, async (req: Request, res: Response, next
 
     // La plateforme doit savoir qu'un commerçant attend une réponse.
     await TicketMessageService.notifierOuvertureDeTicket(ticket.id);
+
+    // Les autres appareils du commerce voient la demande apparaître.
+    void emitOrgEvent(ticket.orgId, "ticket-maj", { ticketId: ticket.id, status: ticket.status });
 
     // Les réponses à un ticket étaient diffusées, son ouverture non : un outil
     // de support extérieur voyait la conversation commencer sans son début.

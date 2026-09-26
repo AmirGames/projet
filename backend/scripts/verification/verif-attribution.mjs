@@ -1,7 +1,7 @@
 // Attribution automatique des courses : position du livreur, proposition au
 // plus proche, refus, expiration, rémunération.
 
-import {
+import { inscription,
   titre,
   check,
   j,
@@ -23,12 +23,12 @@ const LOIN = { latitude: 45.79, longitude: 4.87 };     // ~4 km
 const TRES_LOIN = { latitude: 45.95, longitude: 5.3 };  // ~40 km, hors rayon
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` })
 );
 const S = plateforme.accessToken;
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 const orgId = commercant.organization.id;
@@ -66,7 +66,7 @@ check('la boutique a des coordonnées', coordonnees.startsWith('45.76'), coordon
 
 async function creerLivreur(prefixe, position, enLigne = true) {
   const compte = await j(
-    await post('/api/drivers/register', {
+    await post('/api/drivers/register', { conditionsAcceptees: true,
       name: `${prefixe} ${uniq}`,
       email: `${prefixe}-${uniq}@t.fr`,
       password: 'Password123!',
@@ -115,7 +115,7 @@ const horsLigne = await creerLivreur('horsligne', PRES, false);
 // ===== La commande =====
 
 const commande = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: 'Client Test',
     customerEmail: `c-${uniq}@t.fr`,
@@ -124,6 +124,10 @@ const commande = await j(
     deliveryAddress: '20 rue de la Ré',
     deliveryCity: 'Lyon',
     deliveryPostal: '69002',
+    // Adresse choisie dans les suggestions : le site envoie son point, qui
+    // fixe la distance et donc les frais d'une course de la plateforme.
+    deliveryLat: 45.7665,
+    deliveryLng: 4.8365,
     totalAmount: 12,
     feesAmount: 0,
     items: [{ productId, quantity: 1, price: 12 }],
@@ -174,10 +178,18 @@ check('celui qui a refusé n\'est pas resollicité', (apresRefusPres?.data || []
 check('le suivant reçoit la course', (apresRefusLoin?.data || []).length === 1, `n=${apresRefusLoin?.data?.length}`);
 
 const propositionLoin = apresRefusLoin.data[0];
+// Un livreur est payé sur la course elle-même, du commerce au client : deux
+// livreurs qui prennent la même course touchent la même chose. Son trajet
+// jusqu'au commerce lui est dit à part.
 check(
-  'sa rémunération tient compte de sa distance',
-  propositionLoin.payout > proposition.payout,
+  'sa rémunération est celle de la course, pas de sa distance',
+  propositionLoin.payout === proposition.payout,
   `loin=${propositionLoin.payout} pres=${proposition.payout}`
+);
+check(
+  'son trajet jusqu’au commerce est annoncé, plus long',
+  propositionLoin.approcheKm > proposition.approcheKm,
+  `loin=${propositionLoin.approcheKm} pres=${proposition.approcheKm}`
 );
 
 titre('Acceptation');
@@ -225,12 +237,12 @@ check('elle est enregistrée sur la course', positionCourse.startsWith('45.77'),
 
 // Le défaut corrigé : la position écrasait l'adresse du client.
 const adresseClient = await sqlScalaire(
-  `SELECT "deliveryLat" IS NULL FROM "OrderDelivery" WHERE id = '${deliveryId}'`
+  `SELECT "deliveryLat" FROM "OrderDelivery" WHERE id = '${deliveryId}'`
 );
 check(
   'elle n\'écrase pas l\'adresse de livraison du client',
-  adresseClient === 'true',
-  `deliveryLat vaut ${adresseClient === 'true' ? 'NULL' : 'la position du livreur'}`
+  adresseClient.startsWith('45.7665'),
+  `deliveryLat vaut ${adresseClient}`
 );
 
 titre('Livraison et rémunération');
@@ -262,7 +274,7 @@ check('il redevient disponible', redevenuLibre === 'true', redevenuLibre);
 titre('Expiration d\'une proposition');
 // Une deuxième commande, proposée puis laissée sans réponse.
 const commande2 = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: 'Client Deux',
     customerEmail: `c2-${uniq}@t.fr`,
@@ -271,6 +283,10 @@ const commande2 = await j(
     deliveryAddress: '5 rue Victor Hugo',
     deliveryCity: 'Lyon',
     deliveryPostal: '69002',
+    // Adresse choisie dans les suggestions : le site envoie son point, qui
+    // fixe la distance et donc les frais d'une course de la plateforme.
+    deliveryLat: 45.7665,
+    deliveryLng: 4.8365,
     totalAmount: 20,
     items: [{ productId, quantity: 1, price: 20 }],
   })
@@ -312,7 +328,7 @@ check(
 
 titre('Commande à emporter');
 const emporter = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: 'Client Trois',
     customerEmail: `c3-${uniq}@t.fr`,

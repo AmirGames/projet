@@ -28,7 +28,7 @@ npm run verif -- livreur
 createdb saas_test
 
 # 2. Le schéma
-DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" npx prisma db push
+DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" npx prisma migrate deploy
 
 # 3. L'API sur un port à part
 DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" PORT=3099 npm run dev
@@ -42,6 +42,50 @@ DATABASE_URL="postgresql://postgres:motdepasse@localhost:5432/saas_test" VERIF_A
 | `VERIF_API_URL` | Adresse de l'API visée | `http://localhost:3001` |
 | `DATABASE_URL` | Base visée — **elle sera vidée** | (obligatoire) |
 | `VERIF_AUTORISER_RESET` | `oui` pour lever le garde-fou du nom de base | (absent) |
+| `VERIF_API_URL_2` | Une seconde instance, reliée à la première par Redis : `verif-annonces-modifications` écrit sur l'une et écoute sur l'autre | (absent : une seule instance) |
+
+### Les réglages de l'API pour la suite complète
+
+Trois suites vérifient un comportement que la configuration de test
+(`.env.test`) coupe. Sans ces réglages, elles échouent — une dizaine de
+contrôles — alors que rien n'est cassé :
+
+| Variable | Où | Pourquoi | Suite concernée |
+|---|---|---|---|
+| `LOG_LEVEL=info` | API **et** vérifications | `.env.test` met `error`, ce qui masque les avertissements que la suite relit ; elle lance aussi sa propre API avec l'environnement des vérifications | `verif-journal` |
+| `ENABLE_EMAIL_VERIFICATION=true` | API | `.env.test` coupe le courriel de confirmation envoyé à l'inscription | `verif-compte-email` |
+| `WEBHOOK_RELANCES_MS=300,600,900` et `WEBHOOK_BALAYAGE_MS=200` | API | Les relances réelles s'espacent d'une minute à une demi-heure : la suite ne les verrait jamais | `verif-webhooks` |
+
+```bash
+# L'API
+PORT=3099 LOG_LEVEL=info ENABLE_EMAIL_VERIFICATION=true \
+  WEBHOOK_RELANCES_MS=300,600,900 WEBHOOK_BALAYAGE_MS=200 npm run dev
+
+# Les vérifications
+LOG_LEVEL=info VERIF_API_URL=http://localhost:3099 npm run verif
+```
+
+(`DATABASE_URL` est à ajouter aux deux commandes, comme plus haut.)
+
+### Le paiement, à part
+
+Avec Stripe actif, toute commande qui n'est pas payée en espèces attend
+l'encaissement avant de parvenir au commerçant. Les autres suites passent
+leurs commandes sans moyen de paiement : elles ont besoin de Stripe coupé,
+comme dans `.env.test`. `verif-paiement` a besoin du contraire, et se joue
+donc contre une API à elle :
+
+```bash
+# L'API, Stripe actif — aucune suite n'appelle Stripe pour de vrai
+PORT=3099 ENABLE_STRIPE=true STRIPE_SECRET_KEY=sk_test_factice \
+  STRIPE_WEBHOOK_SECRET=whsec_verification npm run dev
+
+# La suite : elle signe elle-même les événements du webhook
+STRIPE_WEBHOOK_SECRET=whsec_verification VERIF_API_URL=http://localhost:3099 \
+  npm run verif -- verif-paiement
+```
+
+Contre une API sans Stripe, elle s'arrête d'emblée et le dit.
 
 ## La base est vidée à chaque script
 
@@ -78,8 +122,10 @@ continue.
 | `audit-superowner.mjs` | Chaque fonctionnalité de l'espace superowner, et ses effets réels |
 | `verif-admin-final.mjs` | Journal d'accès, annonces, tickets, notifications |
 | `verif-adresses.mjs` | Les deux fournisseurs d'adresses, le filtre par pays et le repli |
-| `verif-admin-motdepasse.mjs` | Création d'administrateur et réparation des mots de passe en clair |
+| `verif-admin-motdepasse.mjs` | Création d'administrateur ; plus aucun mot de passe en clair accepté, ni en base ni à la connexion |
 | `verif-attribution.mjs` | Attribution des courses : position, proposition, refus, rémunération |
+| `verif-frais-service.mjs` | Frais de service : réglage, total du client, hors commission, chiffre et facture du commerçant, relevé de la plateforme |
+| `verif-parcours-livreur.mjs` | Alerte « bientôt là » à 300 m, photo du dépôt envoyée et vue du client, frais de livraison dus à la plateforme |
 | `verif-boutique-fermee.mjs` | Boutique fermée : visible, consultable, mais sans commande |
 | `verif-client.mjs` | Historique, suivi de livraison, avis, favoris |
 | `verif-cloisonnement.mjs` | Chacun chez soi : aucune route n'accepte la boutique d'un autre |
@@ -112,6 +158,7 @@ continue.
 | `verif-annonces.mjs` | Une annonce de la plateforme atteint le public visé, et lui seul |
 | `verif-horaires-plages.mjs` | Plusieurs services par jour, et la nuit qui déborde |
 | `verif-identite-boutique.mjs` | Genre du commerce, et l'identité sous laquelle la boutique facture |
+| `verif-inscription-boutique.mjs` | Boutiques créées à l'inscription : situées et genrées ; notes réelles des plats en vitrine |
 | `verif-journal.mjs` | Ce que le journal crie, et ce qu'il murmure (démarre sa propre API) |
 
 ## Ajouter une vérification

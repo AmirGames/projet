@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { Store, Bike, Crown, ShoppingCart } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -27,13 +29,9 @@ export default function DashboardPage() {
     }
   }, [user, isLoading, router]);
 
-  useEffect(() => {
-    if (user && !isLoading) {
-      fetchRoles();
-    }
-  }, [user, isLoading]);
+  const estSuperOwner = user?.isSuperOwner;
 
-  const fetchRoles = async () => {
+  const fetchRoles = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) return;
@@ -54,7 +52,7 @@ export default function DashboardPage() {
         const activeRoles = [isMerchant, isDriver, isCustomer].filter(Boolean).length;
 
         // Redirection automatique si un seul rôle (et pas superowner)
-        if (!user?.isSuperOwner && activeRoles === 1) {
+        if (!estSuperOwner && activeRoles === 1) {
           if (isMerchant) {
             router.push('/merchant');
           } else if (isDriver) {
@@ -64,11 +62,17 @@ export default function DashboardPage() {
         // Sinon, on affiche le choix
       }
     } catch (error) {
-      console.error('Failed to fetch roles:', error);
+      signalerErreur('Failed to fetch roles:', error);
     } finally {
       setRolesLoading(false);
     }
-  };
+  }, [router, estSuperOwner]);
+
+  useEffectChargement(() => {
+    if (user && !isLoading) {
+      fetchRoles();
+    }
+  }, [user, isLoading, fetchRoles]);
 
   const isMerchant = roles?.merchant?.active ?? false;
   const isDriver = roles?.driver?.active ?? false;

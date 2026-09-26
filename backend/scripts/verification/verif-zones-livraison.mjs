@@ -1,7 +1,7 @@
 // Les zones de livraison : des anneaux avec leurs frais et leur montant
 // minimum, réellement appliqués à la commande.
 
-import {
+import { inscription,
   titre,
   check,
   j,
@@ -14,10 +14,10 @@ import {
   sqlScalaire,
 } from './outils.mjs';
 
-await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
+await inscription({ email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` });
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 
@@ -42,6 +42,12 @@ const boutique = await j(
 );
 const storeId = boutique.store?.id || boutique.id;
 
+// Les zones sont celles du commerçant qui livre lui-même : avec les livreurs
+// de la plateforme, les frais suivent la distance et les zones ne jouent pas.
+// Le commerçant coche « J'utilise ma propre livraison » dans ses réglages.
+const propreLivraison = await put(`/api/store-settings/${storeId}`, { delivery: { useOwnDelivery: true } }, T);
+check('le commerçant livre lui-même', propreLivraison.status < 400, `statut ${propreLivraison.status}`);
+
 const produit = await j(
   await post('/api/products', { storeId, name: 'Margherita', price: 10, status: 'ACTIVE' }, T)
 );
@@ -54,7 +60,7 @@ const aKm = (km) => ({
 });
 
 const commander = (position, quantite) =>
-  post('/api/orders', {
+  post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `C ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
@@ -210,7 +216,7 @@ check('le total suit', Number(totalLoin) === 34.5, `${totalLoin} au lieu de 34.5
 
 titre('Des frais annoncés par le client sont ignorés');
 const tricherie = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `C ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
@@ -236,7 +242,7 @@ check('elle est refusée', horsZone.status === 400, `statut ${horsZone.status}`)
 check('le code le dit', corpsHorsZone?.code === 'DELIVERY_OUT_OF_ZONE', corpsHorsZone?.code);
 
 titre('Le retrait n’est pas concerné');
-const retrait = await post('/api/orders', {
+const retrait = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: `C ${uniq}`,
   customerEmail: `c-${uniq}@t.fr`,
@@ -296,7 +302,7 @@ check(
 
 titre('Un autre commerçant ne touche à rien');
 const intrus = await j(
-  await post('/api/auth/signup', { email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
+  await inscription({ email: `x-${uniq}@t.fr`, password: 'Password123!', name: `X ${uniq}` })
 );
 const TX = intrus.accessToken;
 

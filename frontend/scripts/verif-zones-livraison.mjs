@@ -10,6 +10,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -54,12 +55,12 @@ const aKm = (km) => ({
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` },
 });
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` },
 });
@@ -82,6 +83,15 @@ const boutique = await appeler('/api/stores', {
   },
 });
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
+await ouvrirToutLeJour(appeler, storeId, T);
+
+// Les zones sont celles d'un commerçant qui livre lui-même : avec les livreurs
+// de la plateforme, les frais suivent la distance et les zones ne jouent pas.
+await appeler(`/api/store-settings/${storeId}`, {
+  method: 'PUT',
+  jeton: T,
+  corps: { delivery: { useOwnDelivery: true } },
+});
 
 await appeler('/api/products', {
   method: 'POST',
@@ -123,7 +133,7 @@ await page.waitForTimeout(800);
 const formulaire = await texte();
 check(
   'le fonctionnement des anneaux est expliqué',
-  /anneaux autour de votre boutique/.test(formulaire),
+  /anneaux autour de la boutique/.test(formulaire) && /la plus petite qui s’applique/.test(formulaire),
   formulaire.slice(0, 900)
 );
 
@@ -208,7 +218,7 @@ await page.locator('button', { hasText: 'Passer la Commande' }).first().click();
 await page.waitForTimeout(1500);
 
 const tunnel = await texte();
-check('le tunnel de commande s’ouvre', /Mode de Livraison/i.test(tunnel), tunnel.slice(0, 400));
+check('le tunnel de commande s’ouvre', /Options de livraison/i.test(tunnel), tunnel.slice(0, 400));
 check(
   'les frais de service inventés ont disparu',
   !/Frais de service/.test(tunnel),
@@ -269,11 +279,18 @@ check(
 );
 
 titre('Le retrait reste possible partout');
-await page.locator('input[value="PICKUP"]').first().check().catch(() => undefined);
+// Le bouton radio est masqué (sr-only) : c'est son étiquette qu'on clique,
+// comme le client.
+await page.locator('label', { hasText: 'Retrait sur place' }).first().click();
 await page.waitForTimeout(2000);
+
+check('le retrait est choisi', await page.locator('input[value="PICKUP"]').first().isChecked(), 'toujours en livraison');
 
 const retrait = await texte();
 check('la livraison n’est plus facturée', /Retrait sur place/.test(retrait), retrait.slice(0, 900));
+
+// Sans les conditions générales de vente acceptées, le bouton reste grisé.
+await page.getByLabel(/conditions générales de vente/).check();
 
 const boutonRetrait = page.locator('button', { hasText: /Confirmer la Commande/ });
 check('la commande reste validable', !(await boutonRetrait.first().isDisabled()), 'bloquée à tort');

@@ -1,11 +1,16 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { AttenteLivreur } from '@/components/AttenteLivreur';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
+import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
+import { useParametreAdresse } from '@/lib/navigateur';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 // Leaflet touche `window` dès l'import : la carte ne se charge que côté navigateur.
 const SuiviLivraisonClient = dynamic(
@@ -26,7 +31,7 @@ interface OrderItem {
 
 interface Order {
   id: string;
-  status: 'PENDING' | 'ACCEPTED' | 'READY' | 'COMPLETED' | 'REJECTED';
+  status: 'PENDING' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'REJECTED';
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -35,6 +40,8 @@ interface Order {
   taxAmount?: number | string;
   taxRate?: number | string;
   feesAmount?: number | string;
+  /** Les frais de service de la plateforme, figés à la commande. */
+  serviceFeeAmount?: number | string;
   deliveryType: 'PICKUP' | 'DELIVERY';
   deliveryAddress?: string;
   deliveryCity?: string;
@@ -45,6 +52,17 @@ interface Order {
   /** Le code à donner au livreur à la porte. Nul une fois la course remise. */
   codeRemise?: string | null;
   preuveDeLivraison?: string | null;
+  photoDepot?: string | null;
+  noteDepot?: string | null;
+  livreurProche?: boolean;
+  /** Le livreur attend à la porte : passé cette heure, dépôt en lieu sûr. */
+  attenteFinLe?: string | null;
+  maintenant?: string | null;
+  /** L'heure à laquelle la commande sera prête, annoncée à l'acceptation. */
+  estimatedReadyAt?: string | null;
+  rejectionReason?: string | null;
+  rejectionNote?: string | null;
+  paymentStatus?: string;
 }
 
 interface Delivery {
@@ -62,6 +80,7 @@ interface Delivery {
 const statusSteps = [
   { status: 'PENDING', label: 'En Attente', icon: Clock, color: 'text-yellow-400' },
   { status: 'ACCEPTED', label: 'Acceptée', icon: CheckCircle, color: 'text-blue-400' },
+  { status: 'PREPARING', label: 'En préparation', icon: Clock, color: 'text-orange-400' },
   { status: 'READY', label: 'Prête', icon: Package, color: 'text-green-400' },
   { status: 'COMPLETED', label: 'Livrée', icon: Truck, color: 'text-purple-400' },
 ];
@@ -69,6 +88,7 @@ const statusSteps = [
 const statusColors: { [key: string]: string } = {
   PENDING: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50',
   ACCEPTED: 'bg-blue-600/20 text-blue-400 border-blue-600/50',
+  PREPARING: 'bg-orange-600/20 text-orange-400 border-orange-600/50',
   READY: 'bg-green-600/20 text-green-400 border-green-600/50',
   COMPLETED: 'bg-purple-600/20 text-purple-400 border-purple-600/50',
   REJECTED: 'bg-red-600/20 text-red-400 border-red-600/50',
@@ -85,6 +105,7 @@ export default function TrackOrderPage() {
   const rechercher = useCallback(async (valeur: string) => {
     setError('');
     setOrder(null);
+    setDelivery(null);
     setHasSearched(true);
     setLoading(true);
 
@@ -120,15 +141,18 @@ export default function TrackOrderPage() {
           );
           if (deliveryResponse.ok) {
             const deliveryData = await deliveryResponse.json();
-            setDelivery(deliveryData?.data || deliveryData);
+            // L'API répond `{ data: null }` tant qu'aucune course n'existe :
+            // retomber sur l'enveloppe donnait un objet sans coordonnées, et la
+            // carte plantait sur « Invalid LatLng (NaN, NaN) ».
+            setDelivery(deliveryData && 'data' in deliveryData ? deliveryData.data : deliveryData);
           }
         } catch (err) {
-          console.error('Error loading delivery:', err);
+          signalerErreur('Error loading delivery:', err);
           // Pas critique, on continue sans données de livraison
         }
       }
     } catch (err) {
-      console.error('Search error:', err);
+      signalerErreur('Search error:', err);
       setError('Erreur de connexion. Veuillez réessayer.');
     } finally {
       setLoading(false);
@@ -146,16 +170,39 @@ export default function TrackOrderPage() {
    * Un invité n'a pas d'historique : ce lien est son seul moyen de revenir sur
    * sa commande. La confirmation le lui donne, et la page le suit d'elle-même.
    *
-   * La requête est lue ici plutôt qu'avec `useSearchParams`, qui obligerait à
-   * envelopper la page d'une frontière Suspense pour se construire.
+   * La requête est lue sans `useSearchParams` (voir lib/navigateur.ts).
+   */
+  const demandee = useParametreAdresse('commande');
+  const [demandeeVue, setDemandeeVue] = useState<string | null>(null);
+  if (demandee && demandee !== demandeeVue) {
+    setDemandeeVue(demandee);
+    setSearchQuery(demandee);
+  }
+
+  useEffectChargement(() => {
+    if (demandee) rechercher(demandee);
+  }, [demandee, rechercher]);
+
+  /**
+   * Tant que la commande avance, la page se relit d'elle-même.
+   *
+   * Un client invité n'a pas de connexion en direct : sans cela, il ne voyait
+   * « acceptée » ou « annulée » qu'en rechargeant la page.
    */
   useEffect(() => {
-    const demandee = new URLSearchParams(window.location.search).get('commande');
-    if (!demandee) return;
+    if (!order?.id || ['COMPLETED', 'REJECTED'].includes(order.status)) return;
 
-    setSearchQuery(demandee);
-    rechercher(demandee);
-  }, [rechercher]);
+    const minuteur = setInterval(async () => {
+      try {
+        const reponse = await fetch(`${API_URL}/api/orders/${order.id}`);
+        if (reponse.ok) setOrder(await reponse.json());
+      } catch {
+        // Hors ligne : on réessaiera au prochain passage.
+      }
+    }, 20000);
+
+    return () => clearInterval(minuteur);
+  }, [order?.id, order?.status]);
 
   const getStatusIndex = (status: string) => {
     return statusSteps.findIndex(s => s.status === status);
@@ -219,11 +266,12 @@ export default function TrackOrderPage() {
                 <div className="text-right">
                   <p className="text-gray-400 text-sm mb-1">Statut Actuel</p>
                   <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold border ${statusColors[order.status]}`}>
-                    {order.status === 'PENDING' && '⏳ En Attente'}
+                    {order.status === 'PENDING' && '⏳ En attente de confirmation'}
                     {order.status === 'ACCEPTED' && '✅ Acceptée'}
+                    {order.status === 'PREPARING' && '👨‍🍳 En préparation'}
                     {order.status === 'READY' && '📦 Prête'}
                     {order.status === 'COMPLETED' && '✓ Livrée'}
-                    {order.status === 'REJECTED' && '❌ Rejetée'}
+                    {order.status === 'REJECTED' && '❌ Annulée'}
                   </span>
                 </div>
               </div>
@@ -267,8 +315,14 @@ export default function TrackOrderPage() {
                             {step.label}
                           </p>
                           <p className="text-sm text-gray-500 mt-1">
-                            {step.status === 'PENDING' && 'Votre commande a été reçue et est en attente de confirmation'}
-                            {step.status === 'ACCEPTED' && 'La boutique a accepté votre commande'}
+                            {step.status === 'PENDING' && 'Votre commande a été reçue et attend la confirmation du restaurant'}
+                            {step.status === 'ACCEPTED' &&
+                              (order.estimatedReadyAt
+                                ? order.deliveryType === 'PICKUP' && order.pickupTime
+                                  ? `La boutique a accepté votre commande : elle vous attendra à ${heure(order.pickupTime)}`
+                                  : `La boutique a accepté votre commande : prête vers ${heure(order.estimatedReadyAt)}`
+                                : 'La boutique a accepté votre commande')}
+                            {step.status === 'PREPARING' && 'Votre commande est en cuisine'}
                             {step.status === 'READY' && 'Votre commande est prête à être livrée/retirée'}
                             {step.status === 'COMPLETED' && 'Commande livrée avec succès'}
                           </p>
@@ -286,10 +340,24 @@ export default function TrackOrderPage() {
                 <div className="flex gap-4">
                   <AlertCircle size={24} className="text-red-400 flex-shrink-0" />
                   <div>
-                    <h3 className="text-lg font-bold text-red-400 mb-2">Commande Rejetée</h3>
+                    <h3 className="text-lg font-bold text-red-400 mb-2">Commande annulée</h3>
                     <p className="text-red-300">
-                      Désolé, votre commande a été rejetée par la boutique. Veuillez contacter le vendeur pour plus d'informations.
+                      {MOTIFS_POUR_LE_CLIENT[order.rejectionReason || ''] ||
+                        'Désolé, votre commande a été refusée par la boutique.'}
                     </p>
+                    {order.rejectionNote && (
+                      <p className="text-red-200 mt-2">« {order.rejectionNote} »</p>
+                    )}
+                    {order.paymentStatus === 'REFUNDED' && (
+                      <p className="text-red-200 mt-2">
+                        Vous avez payé en ligne : vous êtes remboursé, sous 5 à 10 jours sur votre compte.
+                      </p>
+                    )}
+                    {order.paymentStatus === 'SUCCEEDED' && (
+                      <p className="text-red-200 mt-2">
+                        Vous avez payé en ligne : votre remboursement est en cours de traitement.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -351,6 +419,22 @@ export default function TrackOrderPage() {
               {/* Le code de remise : c'est lui qui prouve que la commande a
                   changé de mains. Une commande suivie sans compte n'a pas
                   d'autre endroit pour le lire. */}
+              {/* Prévenu à 300 m : le temps de descendre, le livreur est là. */}
+              {order.codeRemise && order.attenteFinLe && (
+                <div className="mt-4">
+                  <AttenteLivreur key={order.attenteFinLe} finLe={order.attenteFinLe} maintenant={order.maintenant} />
+                </div>
+              )}
+
+              {order.codeRemise && order.livreurProche && !order.attenteFinLe && (
+                <div role="status" className="mt-4 rounded-lg border border-green-700/60 bg-green-900/30 px-4 py-3">
+                  <p className="font-semibold text-green-200">Votre livreur est bientôt là</p>
+                  <p className="text-sm text-green-300/90">
+                    Il arrive dans un instant : vous pouvez descendre devant la porte.
+                  </p>
+                </div>
+              )}
+
               {order.codeRemise && (
                 <div className="mt-4 rounded-lg border border-orange-700/50 bg-orange-900/20 px-4 py-3">
                   <p className="text-sm text-orange-200">Votre code de remise</p>
@@ -369,6 +453,19 @@ export default function TrackOrderPage() {
                     ? 'Remise confirmée par votre code.'
                     : 'Dépôt confirmé par photo, en votre absence.'}
                 </p>
+              )}
+
+              {order.photoDepot && (
+                <div className="mt-3 space-y-1">
+                  <img
+                    src={order.photoDepot}
+                    alt="Photo du dépôt de votre commande"
+                    className="w-full max-h-80 object-cover rounded-lg border border-gray-700"
+                  />
+                  {order.noteDepot && (
+                    <p className="text-sm text-gray-400">Déposée : {order.noteDepot}</p>
+                  )}
+                </div>
               )}
             </div>
 
@@ -427,6 +524,12 @@ export default function TrackOrderPage() {
                 <div className="flex justify-between items-center text-sm text-gray-400">
                   <span>Frais de livraison</span>
                   <span>{euro(order.feesAmount)}</span>
+                </div>
+              )}
+              {Number(order.serviceFeeAmount) > 0 && (
+                <div className="flex justify-between items-center text-sm text-gray-400">
+                  <span>Frais de service</span>
+                  <span>{euro(order.serviceFeeAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center text-lg font-bold">

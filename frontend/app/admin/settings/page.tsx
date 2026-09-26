@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState } from 'react';
 import { Save, AlertCircle } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface StoreSettings {
   name: string;
@@ -34,10 +36,6 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
   const fetchSettings = async () => {
     try {
       const storeId = localStorage.getItem('storeId');
@@ -59,11 +57,15 @@ export default function AdminSettings() {
         }));
       }
     } catch (error) {
-      console.error('Erreur chargement settings:', error);
+      signalerErreur('Erreur chargement settings:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchSettings();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -82,7 +84,7 @@ export default function AdminSettings() {
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      signalerErreur('Erreur lors de la sauvegarde:', error);
       setMessage('❌ Erreur lors de la sauvegarde');
       setTimeout(() => setMessage(''), 3000);
     } finally {

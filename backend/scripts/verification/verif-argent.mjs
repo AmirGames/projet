@@ -63,7 +63,7 @@ const produitId = produit.product?.id || produit.id;
 /** Passe une commande de `quantite` lasagnes, et rend la commande créée. */
 const commander = async (quantite = 1) =>
   j(
-    await post("/api/orders", {
+    await post("/api/orders", { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
       customerEmail: `c-${uniq}@t.fr`,

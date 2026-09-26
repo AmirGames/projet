@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ShoppingCart, Search, Filter, Eye, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -24,10 +26,6 @@ export default function MerchantsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'closed'>('all');
 
-  useEffect(() => {
-    fetchMerchants();
-  }, []);
-
   const fetchMerchants = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -37,13 +35,21 @@ export default function MerchantsPage() {
 
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      setMerchants(data.merchants || []);
+      // L'API renvoie les statuts de la base, en majuscules (ACTIVE) ; l'écran
+      // — couleurs, filtre, libellés — les attend en minuscules.
+      setMerchants(
+        (data.merchants || []).map((ligne: any) => ({ ...ligne, status: String(ligne.status || '').toLowerCase() }))
+      );
     } catch (error) {
-      console.error('Error:', error);
+      signalerErreur('Error:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchMerchants();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -135,7 +141,7 @@ export default function MerchantsPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('name')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('email')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('storeName')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('status')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('statusColumn')}</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('actions')}</th>
                 </tr>
               </thead>
@@ -148,7 +154,7 @@ export default function MerchantsPage() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(merchant.status)}`}>
                         {getStatusIcon(merchant.status)}
-                        {t(`status.${merchant.status}`)}
+                        {t.has(`status.${merchant.status}`) ? t(`status.${merchant.status}`) : merchant.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">

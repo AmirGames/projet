@@ -1,14 +1,14 @@
 // Une boutique fermée reste visible mais n'accepte plus de commande, et elle
 // situe son adresse toute seule.
 
-import { titre, check, j, uniq, post, get, patch, terminer, sqlScalaire, sqlExec } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, patch, terminer, sqlScalaire, sqlExec } from './outils.mjs';
 
 const MDP = 'Password123!';
 
-await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` });
+await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` });
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 
@@ -44,7 +44,7 @@ check(
   'absente de la liste'
 );
 
-const premiere = await post('/api/orders', {
+const premiere = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: `Client ${uniq}`,
   customerEmail: `c-${uniq}@t.fr`,
@@ -83,7 +83,7 @@ check(
 );
 
 titre('Mais on n’y commande plus');
-const refusee = await post('/api/orders', {
+const refusee = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: `Client ${uniq}`,
   customerEmail: `c2-${uniq}@t.fr`,
@@ -109,7 +109,7 @@ check('aucune commande n’a été enregistrée pendant la fermeture', commandes
 
 titre('Rouverte, elle reprend');
 await patch(`/api/store-hours/${storeId}/status`, { isOpen: true }, T);
-const reprise = await post('/api/orders', {
+const reprise = await post('/api/orders', { conditionsAcceptees: true,
   storeId,
   customerName: `Client ${uniq}`,
   customerEmail: `c3-${uniq}@t.fr`,

@@ -5,7 +5,7 @@
 // quel, que l'IBAN ne ressorte jamais entier, et qu'une pièce déposée puisse
 // vraiment être examinée.
 
-import {
+import { inscription,
   titre,
   check,
   j,
@@ -22,12 +22,12 @@ import {
 const MDP = 'Password123!';
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
 );
 const TP = plateforme.accessToken;
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 const orgId = commercant.organization.id;
@@ -152,7 +152,7 @@ check('un e-mail invalide est refusé', courrielFaux.status === 400, `statut ${c
 
 titre('Le profil du voisin reste hors de portée');
 const voisin = await j(
-  await post('/api/auth/signup', { email: `v-${uniq}@t.fr`, password: MDP, name: `V ${uniq}` })
+  await inscription({ email: `v-${uniq}@t.fr`, password: MDP, name: `V ${uniq}` })
 );
 const lectureVoisine = await get(`/api/merchant-profile/${orgId}`, voisin.accessToken);
 check('un autre commerçant ne le lit pas', lectureVoisine.status === 403, `statut ${lectureVoisine.status}`);

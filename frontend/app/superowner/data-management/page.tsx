@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Database, Clock, Download, RotateCcw, Trash2 } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface DataStats {
   totalRecords: number;
@@ -35,11 +36,7 @@ export default function DataManagementPage() {
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -59,7 +56,11 @@ export default function DataManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffectChargement(() => {
+    fetchData();
+  }, [fetchData]);
 
   const createBackup = async () => {
     setCreating(true);

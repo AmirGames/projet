@@ -1,6 +1,9 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect } from 'react';
+import { telephoneInternational } from '@/lib/pays-infos';
+import { paysDuNavigateur } from '@/lib/pays-client';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { AlertCircle, CheckCircle, Loader, Bike, Car, Truck } from 'lucide-react';
@@ -87,7 +90,10 @@ export default function DriverOnboardPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          phone: telephoneInternational(formData.phone, paysDuNavigateur()),
+        }),
       });
 
       const data = await response.json();
@@ -107,7 +113,7 @@ export default function DriverOnboardPage() {
       }, 1500);
     } catch (error) {
       setApiError(t('connectionError'));
-      console.error('Error:', error);
+      signalerErreur('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -139,7 +145,7 @@ export default function DriverOnboardPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">{t('heading')}</h1>
-              <p className="text-slate-400">{t('subtitle').replace('{email}', user?.email || '')}</p>
+              <p className="text-slate-400">{t('subtitle', { email: user?.email || '' })}</p>
             </div>
           </div>
         </div>

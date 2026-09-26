@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Zupone Merchant",
+    "slug": "zupone-merchant",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "zupone-merchant",
+    "updates": {
+      "enabled": false
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#007AFF",
+          "sounds": [
+            "./assets/sounds/new_order.wav"
+          ]
+        }
+      ]
+    ],
+    "android": {
+      "package": "com.amir_games.zuponemerchant"
+    }
+  }
+}

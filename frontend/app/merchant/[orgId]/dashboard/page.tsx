@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -16,6 +17,7 @@ import {
   Store as StoreIcon,
   ExternalLink,
 } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -56,7 +58,9 @@ export default function MerchantDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchDashboardData = useCallback(async () => {
+  // silencieux : une relecture en direct ne remplace pas la page par
+  // « Chargement… » à chaque commande qui arrive.
+  const fetchDashboardData = useCallback(async (silencieux = false) => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       router.push('/login');
@@ -69,7 +73,7 @@ export default function MerchantDashboard() {
     // boutique on retombe sur l'ensemble de l'organisation.
     const portee = storeId ? `storeId=${storeId}` : `orgId=${orgId}`;
 
-    setLoading(true);
+    if (!silencieux) setLoading(true);
     setError('');
 
     try {
@@ -107,13 +111,20 @@ export default function MerchantDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [orgId, storeId, router]);
+  }, [orgId, storeId, router, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     // On attend la liste des boutiques pour ne pas charger deux fois :
     // une première fois sans portée, puis avec la boutique retenue.
     if (orgId && !storesLoading) fetchDashboardData();
   }, [orgId, storesLoading, fetchDashboardData]);
+
+  // Les chiffres suivent les commandes et le catalogue en direct.
+  useDonneesModifiees(['orders', 'products', 'organizations'], () => fetchDashboardData(true), {
+    orgId,
+    storeId,
+    actif: Boolean(orgId && !storesLoading),
+  });
 
   if (loading) return <div className="text-center py-8">{t('loading')}</div>;
 

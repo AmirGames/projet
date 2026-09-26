@@ -3,6 +3,7 @@ import { z } from "zod";
 import { StoreHoursService } from "../services/store-hours.service";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
+import { emitMerchantEvent } from "../config/socket";
 
 const router = Router();
 
@@ -57,6 +58,7 @@ router.put("/:storeId/day/:day", authMiddleware, async (req: Request, res: Respo
     logger.info("Updating store day hours", { storeId, day });
 
     const result = await StoreHoursService.updateDay(storeId, day.toUpperCase(), body);
+    void emitMerchantEvent(storeId, "boutique-horaires", { storeId, operatingHours: result.operatingHours });
 
     res.json({
       message: "Day hours updated",
@@ -76,6 +78,7 @@ router.patch("/:storeId/day/:day/toggle", authMiddleware, async (req: Request, r
     logger.info("Toggling day status", { storeId, day });
 
     const result = await StoreHoursService.toggleDay(storeId, day.toUpperCase());
+    void emitMerchantEvent(storeId, "boutique-horaires", { storeId, operatingHours: result.operatingHours });
 
     res.json({
       message: "Day status toggled",
@@ -95,6 +98,7 @@ router.patch("/:storeId/status", authMiddleware, async (req: Request, res: Respo
     logger.info("Updating store status", { storeId, isOpen });
 
     const result = await StoreHoursService.setStoreStatus(storeId, isOpen);
+    void emitMerchantEvent(storeId, "boutique-statut", { storeId, isOpen: result.isOpen });
 
     res.json({
       message: isOpen ? "Store opened" : "Store closed",

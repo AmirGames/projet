@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Search, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -51,13 +54,7 @@ export default function PromotionsPage() {
     activeDays: [] as number[],
   });
 
-  useEffect(() => {
-    if (storeId) {
-      fetchPromotions();
-    }
-  }, [storeId]);
-
-  const fetchPromotions = async () => {
+  const fetchPromotions = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/promotions?storeId=${storeId}`, {
@@ -69,11 +66,25 @@ export default function PromotionsPage() {
         setPromotions(data.promotions || []);
       }
     } catch (error) {
-      console.error('Error fetching promotions:', error);
+      signalerErreur('Error fetching promotions:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
+
+  // Une promotion créée, suspendue ou utilisée (son compteur bouge) : la
+  // liste suit.
+  useDonneesModifiees(['promotions', 'orders'], () => fetchPromotions(), {
+    storeId,
+    delaiMs: 1000,
+    actif: Boolean(storeId),
+  });
+
+  useEffectChargement(() => {
+    if (storeId) {
+      fetchPromotions();
+    }
+  }, [storeId, fetchPromotions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,7 +158,7 @@ export default function PromotionsPage() {
         }
       }
     } catch (error) {
-      console.error('Error saving promotion:', error);
+      signalerErreur('Error saving promotion:', error);
       setMessage('❌ Erreur lors de la sauvegarde');
     }
   };
@@ -172,7 +183,7 @@ export default function PromotionsPage() {
         setMessage('❌ Erreur lors de la suppression');
       }
     } catch (error) {
-      console.error('Error deleting promotion:', error);
+      signalerErreur('Error deleting promotion:', error);
       setMessage('❌ Erreur lors de la suppression');
     }
   };
@@ -190,7 +201,7 @@ export default function PromotionsPage() {
         setPromotions(prev => prev.map(p => p.id === id ? updated.promotion : p));
       }
     } catch (error) {
-      console.error('Error toggling promotion:', error);
+      signalerErreur('Error toggling promotion:', error);
     }
   };
 

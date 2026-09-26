@@ -2,17 +2,17 @@
 // et la nouvelle liste des boutiques côté administration.
 // --- Plateforme : superowner + commerçant + boutique + commande livrable ---
 
-import { check, j, uniq, post, get, patch, sqlExec, terminer, API, validerLivreur, codeDeRemise } from './outils.mjs';
+import { inscription, check, j, uniq, post, get, patch, sqlExec, terminer, API, validerLivreur, codeDeRemise } from './outils.mjs';
 
-const sup = await j(await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
+const sup = await j(await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const superToken = sup.accessToken;
-const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
+const m = await j(await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const b = await j(await post('/api/stores', {
   orgId: m.organization.id, name: `Bou ${uniq}`, slug: `bou-${uniq}`,
   address: '1 rue', city: 'Lyon', postalCode: '69001', phone: '0400000000',
 }, m.accessToken));
 const storeId = b.store?.id || b.id;
-const commande = await j(await post('/api/orders', {
+const commande = await j(await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000',
   deliveryType: 'DELIVERY', deliveryAddress: '5 rue Test', deliveryCity: 'Lyon',
   totalAmount: 30, feesAmount: 4.5,
@@ -21,22 +21,22 @@ const orderId = commande?.order?.id;
 check('commande livrable créée', !!orderId, JSON.stringify(commande)?.slice(0, 150));
 
 console.log('\n[Inscription livreur]');
-const inscription = await post('/api/drivers/register', {
+const inscriptionLivreur = await post('/api/drivers/register', { conditionsAcceptees: true,
   name: `Livreur ${uniq}`, email: `d-${uniq}@t.fr`, password: 'Password123!',
   phone: '0611111111', vehicleType: 'scooter', vehiclePlate: 'AB-123-CD',
 });
-const livreur = await j(inscription);
-check('inscription 201', inscription.status === 201, `status=${inscription.status} ${JSON.stringify(livreur)}`);
+const livreur = await j(inscriptionLivreur);
+check('inscription 201', inscriptionLivreur.status === 201, `status=${inscriptionLivreur.status} ${JSON.stringify(livreur)}`);
 check('jeton renvoyé', !!livreur?.accessToken);
 const dToken = livreur?.accessToken;
 
-const doublon = await post('/api/drivers/register', {
+const doublon = await post('/api/drivers/register', { conditionsAcceptees: true,
   name: 'Doublon', email: `d-${uniq}@t.fr`, password: 'Password123!',
   phone: '0622222222', vehicleType: 'bike',
 });
 check('e-mail déjà pris refusé (409)', doublon.status === 409, `status=${doublon.status}`);
 
-const motDePasseCourt = await post('/api/drivers/register', {
+const motDePasseCourt = await post('/api/drivers/register', { conditionsAcceptees: true,
   name: 'Court', email: `court-${uniq}@t.fr`, password: 'abc', phone: '0633333333', vehicleType: 'bike',
 });
 check('mot de passe trop court refusé', motDePasseCourt.status === 400, `status=${motDePasseCourt.status}`);
@@ -83,7 +83,7 @@ const reAcceptation = await patch(`/api/drivers/deliveries/${courseId}/accept`, 
 check('double acceptation refusée (409)', reAcceptation.status === 409, `status=${reAcceptation.status}`);
 
 // Un second livreur ne doit pas pouvoir toucher à cette course.
-const autre = await j(await post('/api/drivers/register', {
+const autre = await j(await post('/api/drivers/register', { conditionsAcceptees: true,
   name: 'Autre', email: `d2-${uniq}@t.fr`, password: 'Password123!', phone: '0644444444', vehicleType: 'bike',
 }));
 // Clore une course demande la preuve de la remise : le code du client.

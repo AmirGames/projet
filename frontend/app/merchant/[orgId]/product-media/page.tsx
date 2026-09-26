@@ -35,6 +35,13 @@ export default function ProductMediaPage() {
 
   const { storeId } = useCurrentStore();
 
+  // Le produit choisi appartient à la boutique : il s'efface quand elle change.
+  const [boutiqueDuProduit, setBoutiqueDuProduit] = useState(storeId);
+  if (storeId !== boutiqueDuProduit) {
+    setBoutiqueDuProduit(storeId);
+    if (storeId) setProductId("");
+  }
+
   // Saisir un identifiant de produit à la main était impraticable : on propose
   // la liste des produits de la boutique sélectionnée.
   useEffect(() => {
@@ -54,7 +61,6 @@ export default function ProductMediaPage() {
     };
 
     charger();
-    setProductId("");
   }, [storeId]);
 
   const fetchMedia = async () => {

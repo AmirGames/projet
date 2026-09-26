@@ -14,7 +14,8 @@
  */
 
 import { chromium } from 'playwright';
-import { validerLivreur, codeDeRemise } from './outils-livreur.mjs';
+import { validerLivreur, codeDeRemise, declarerPrete } from './outils-livreur.mjs';
+import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -56,7 +57,7 @@ const appeler = async (chemin, options = {}) => {
 const emailPlateforme = `p-${uniq}@t.fr`;
 const emailLivreur = `livreur-${uniq}@t.fr`;
 
-const plateforme = await appeler('/api/auth/signup', {
+const plateforme = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: emailPlateforme, password: MDP, name: `Plateforme ${uniq}` },
 });
@@ -68,7 +69,7 @@ if (!TP) {
   process.exit(1);
 }
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` },
 });
@@ -89,6 +90,7 @@ const boutique = await appeler('/api/stores', {
   },
 });
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
+await ouvrirToutLeJour(appeler, storeId, T);
 
 const produit = await appeler('/api/products', {
   method: 'POST',
@@ -99,7 +101,7 @@ const productId = produit.donnees.product?.id || produit.donnees.id;
 
 const inscription = await appeler('/api/drivers/register', {
   method: 'POST',
-  corps: {
+  corps: { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: emailLivreur,
     password: MDP,
@@ -118,7 +120,7 @@ await appeler('/api/drivers/location', { method: 'PATCH', jeton: D, corps: POSIT
 async function courseLivree() {
   const commande = await appeler('/api/orders', {
     method: 'POST',
-    corps: {
+    corps: { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
       customerEmail: `c-${uniq}@t.fr`,
@@ -139,6 +141,7 @@ async function courseLivree() {
   const courseId = attribution.donnees?.data?.deliveryId;
 
   await appeler(`/api/drivers/deliveries/${courseId}/accept`, { method: 'PATCH', jeton: D });
+  await declarerPrete(API, storeId, orderId, T);
   await appeler(`/api/drivers/deliveries/${courseId}`, {
     method: 'PATCH',
     jeton: D,

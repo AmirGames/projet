@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Key, Plus, Copy, Trash2 } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -38,11 +39,7 @@ export default function ApiKeysPage() {
   const [formData, setFormData] = useState({ name: '' });
   const limit = 20;
 
-  useEffect(() => {
-    fetchApiKeys();
-  }, [offset]);
-
-  const fetchApiKeys = async () => {
+  const fetchApiKeys = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -65,7 +62,11 @@ export default function ApiKeysPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [offset, t]);
+
+  useEffectChargement(() => {
+    fetchApiKeys();
+  }, [offset, fetchApiKeys]);
 
   const handleCreateKey = async (e: React.FormEvent) => {
     e.preventDefault();

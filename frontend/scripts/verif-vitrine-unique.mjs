@@ -13,6 +13,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -50,12 +51,12 @@ const appeler = async (chemin, options = {}) => {
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `Plateforme ${uniq}` },
 });
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` },
 });
@@ -79,6 +80,7 @@ const boutique = await appeler('/api/stores', {
   },
 });
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
+await ouvrirToutLeJour(appeler, storeId, T);
 
 await appeler('/api/products', {
   method: 'POST',
@@ -96,7 +98,9 @@ const erreurs = [];
 page.on('console', (m) => {
   // Le script demande exprès un identifiant inconnu et l'ancienne maquette :
   // les 404 qui en résultent sont ce qu'on vérifie, pas un défaut de la page.
-  if (m.type() === 'error' && !/404/.test(m.text())) {
+  // « RSC payload » : un préchargement de Next interrompu par le changement
+  // de page — le navigateur retombe sur une navigation normale.
+  if (m.type() === 'error' && !/404|RSC payload/.test(m.text())) {
     erreurs.push(`${new URL(page.url()).pathname} : ${m.text()}`);
   }
 });
@@ -160,7 +164,13 @@ titre('L’accueil ne pointe plus vers la maquette');
 await page.goto(SITE);
 await page.waitForTimeout(2500);
 
-const liens = await page.locator('a[href]').evaluateAll((a) => a.map((l) => l.getAttribute('href')));
+// Les liens publics portent la région du visiteur (/fr-fr/restaurants) :
+// on la retire pour comparer les pages elles-mêmes.
+const sansRegion = (lien) => lien?.replace(/^\/[a-z]{2}-[a-z]{2}(?=\/|$)/, '') || lien;
+
+const liens = (await page.locator('a[href]').evaluateAll((a) => a.map((l) => l.getAttribute('href')))).map(
+  sansRegion
+);
 check('aucun lien vers /store nu', !liens.includes('/store'), JSON.stringify(liens.filter((l) => l?.startsWith('/store'))));
 check('il mène à la liste des commerces', liens.includes('/restaurants'), JSON.stringify(liens));
 
@@ -168,9 +178,9 @@ titre('La liste des commerces mène à la vitrine unique');
 await page.goto(`${SITE}/restaurants`);
 await page.waitForTimeout(3000);
 
-const liensListe = await page
-  .locator('a[href]')
-  .evaluateAll((a) => a.map((l) => l.getAttribute('href')));
+const liensListe = (
+  await page.locator('a[href]').evaluateAll((a) => a.map((l) => l.getAttribute('href')))
+).map(sansRegion);
 
 check(
   'elle pointe par adresse lisible',

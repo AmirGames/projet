@@ -65,6 +65,9 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
         return;
       }
 
+      // Faux positif : le compilateur croit `appeler` exécuté pendant le rendu
+      // parce que des boutons créés dans DUREES.map() l'appellent.
+      // eslint-disable-next-line react-hooks/purity
       setMaintenant(Date.now());
       surChangement({
         isAvailable: donnees.isAvailable,

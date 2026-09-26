@@ -21,6 +21,7 @@
 
 import { chromium } from 'playwright';
 import { validerLivreur, codeDeRemise } from './outils-livreur.mjs';
+import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -62,7 +63,7 @@ const emailClient = `client-${uniq}@t.fr`;
 
 // ===== Le décor =====
 
-const plateforme = await appeler('/api/auth/signup', {
+const plateforme = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` },
 });
@@ -75,7 +76,7 @@ if (!plateforme.donnees?.accessToken) {
 
 const P = plateforme.donnees.accessToken;
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` },
 });
@@ -96,6 +97,7 @@ const boutique = await appeler('/api/stores', {
   },
 });
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
+await ouvrirToutLeJour(appeler, storeId, T);
 
 const produit = await appeler('/api/products', {
   method: 'POST',
@@ -104,7 +106,7 @@ const produit = await appeler('/api/products', {
 });
 const productId = produit.donnees.product?.id || produit.donnees.id;
 
-const client = await appeler('/api/auth/signup', {
+const client = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: emailClient, password: MDP, name: `Client ${uniq}` },
 });
@@ -113,7 +115,7 @@ const C = client.donnees.accessToken;
 // Un seul livreur pour toutes les courses : c'est sa moyenne qu'on regarde.
 const livreur = await appeler('/api/drivers/register', {
   method: 'POST',
-  corps: {
+  corps: { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: `d-${uniq}@t.fr`,
     password: MDP,
@@ -132,7 +134,7 @@ await appeler('/api/drivers/location', { method: 'PATCH', jeton: D, corps: BOUTI
 const course = async ({ remettre }) => {
   const commande = await appeler('/api/orders', {
     method: 'POST',
-    corps: {
+    corps: { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
       customerEmail: emailClient,
@@ -230,7 +232,7 @@ for (const note of [0, 6, 3.5]) {
   check(`la note ${note} est refusée`, horsBareme.statut === 400, `statut ${horsBareme.statut}`);
 }
 
-const voisin = await appeler('/api/auth/signup', {
+const voisin = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `v-${uniq}@t.fr`, password: MDP, name: `Voisin ${uniq}` },
 });

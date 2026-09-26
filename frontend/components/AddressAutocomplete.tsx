@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { MapPin } from 'lucide-react';
+import { paysDuNavigateur, devinerPaysNavigateur } from '@/lib/pays-client';
+import { paysValide } from '@/lib/pays-infos';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -17,6 +19,77 @@ export interface AdresseChoisie {
   longitude: number | null;
 }
 
+/**
+ * Où se trouve, vraisemblablement, la personne qui tape.
+ *
+ * Sans cet indice, le serveur rend d'abord les adresses françaises : un client
+ * belge devait taper le nom de sa ville pour voir enfin la sienne.
+ */
+interface Indice {
+  pays?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+/**
+ * La position, seulement si la personne l'a déjà autorisée pour ce site.
+ *
+ * On ne déclenche jamais la demande d'autorisation pour un simple champ
+ * d'adresse : le pays suffit à mettre les bonnes adresses en tête.
+ */
+async function positionDejaAutorisee(): Promise<{ latitude: number; longitude: number } | null> {
+  try {
+    if (typeof navigator === 'undefined' || !navigator.geolocation || !navigator.permissions) {
+      return null;
+    }
+
+    const statut = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+    if (statut.state !== 'granted') return null;
+
+    return await new Promise((resoudre) => {
+      navigator.geolocation.getCurrentPosition(
+        (p) => resoudre({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
+        () => resoudre(null),
+        { enableHighAccuracy: false, maximumAge: 10 * 60 * 1000, timeout: 3000 }
+      );
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** Calculé une fois par page : le pays et la position ne bougent pas en tapant. */
+let indicePromis: Promise<Indice> | null = null;
+
+function obtenirIndice(): Promise<Indice> {
+  if (!indicePromis) {
+    // Un pays où la plateforme opère : celui qu'elle retient (choix, cookie,
+    // fuseau). Ailleurs (Luxembourg, Suisse…), le pays deviné tel quel.
+    const devine = devinerPaysNavigateur();
+    const pays = devine && !paysValide(devine) ? devine : paysDuNavigateur().toLowerCase();
+
+    indicePromis = positionDejaAutorisee().then((position) => ({
+      pays,
+      ...(position || {}),
+    }));
+  }
+
+  return indicePromis;
+}
+
+function parametresIndice(indice: Indice): string {
+  const parametres = new URLSearchParams();
+  if (indice.pays) parametres.set('country', indice.pays);
+  if (typeof indice.latitude === 'number' && typeof indice.longitude === 'number') {
+    // Deux décimales suffisent à orienter la recherche.
+    parametres.set('lat', indice.latitude.toFixed(2));
+    parametres.set('lon', indice.longitude.toFixed(2));
+  }
+
+  const texte = parametres.toString();
+  return texte ? `&${texte}` : '';
+}
+
 interface Props {
   value: string;
   onChange: (valeur: string) => void;
@@ -26,6 +99,11 @@ interface Props {
   className?: string;
   required?: boolean;
   id?: string;
+  /**
+   * Pays choisi dans le formulaire (« BE », « FR ») : ses adresses passent en
+   * tête. Sans lui, le pays est deviné.
+   */
+  pays?: string;
 }
 
 /**
@@ -42,6 +120,7 @@ export function AddressAutocomplete({
   className = '',
   required,
   id,
+  pays,
 }: Props) {
   const t = useTranslations('addressAutocomplete');
   const [suggestions, setSuggestions] = useState<AdresseChoisie[]>([]);
@@ -57,6 +136,17 @@ export function AddressAutocomplete({
   // Une sélection ne doit pas relancer une recherche sur le texte qu'elle vient
   // d'écrire dans le champ.
   const ignorerProchaineRecherche = useRef(false);
+  const indice = useRef<Indice>({});
+
+  useEffect(() => {
+    let actif = true;
+    obtenirIndice().then((trouve) => {
+      if (actif) indice.current = pays ? { ...trouve, pays: pays.toLowerCase() } : trouve;
+    });
+    return () => {
+      actif = false;
+    };
+  }, [pays]);
 
   const rechercher = useCallback(async (requete: string) => {
     if (requete.trim().length < 3) {
@@ -68,7 +158,7 @@ export function AddressAutocomplete({
 
     try {
       const reponse = await fetch(
-        `${API_URL}/api/addresses/search?q=${encodeURIComponent(requete)}`
+        `${API_URL}/api/addresses/search?q=${encodeURIComponent(requete)}${parametresIndice(indice.current)}`
       );
 
       if (!reponse.ok) {

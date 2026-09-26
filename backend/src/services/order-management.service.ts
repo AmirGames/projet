@@ -1,7 +1,9 @@
+import { encaissePourLaPlateforme, fraisDeServiceDus } from "./delivery-mode.service";
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { emitWebhook } from "./webhook.service";
-import { emitOrderUpdate, emitNotification } from "../config/socket";
+import { OrderAcceptanceService, echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
+import { TRANSMISE } from "../utils/commande-transmise";
 
 export interface OrderFilterOptions {
   skip?: number;
@@ -19,7 +21,7 @@ export class OrderManagementService {
       const skip = options?.skip || 0;
       const take = options?.take || 50;
 
-      const whereClause: any = { storeId };
+      const whereClause: any = { storeId, ...TRANSMISE };
       
       if (options?.status) {
         whereClause.status = options.status;
@@ -75,6 +77,15 @@ export class OrderManagementService {
               select: { name: true, email: true },
             },
             payments: true,
+            // La recherche du livreur part dès « En préparation » : la liste
+            // dit où elle en est.
+            delivery: {
+              select: {
+                status: true,
+                driverId: true,
+                driver: { select: { name: true, phone: true } },
+              },
+            },
           },
           orderBy: { createdAt: "desc" },
         }),
@@ -82,7 +93,12 @@ export class OrderManagementService {
       ]);
 
       return {
-        data: orders,
+        // L'heure limite de réponse, pour le compte à rebours à l'écran.
+        data: orders.map((commande) =>
+          commande.status === "PENDING"
+            ? { ...commande, echeance: echeanceDeReponse(commande) }
+            : commande
+        ),
         total,
         skip,
         take,
@@ -101,21 +117,32 @@ export class OrderManagementService {
             include: {
               // La catégorie distingue « 4 fromages » pâtes de « 4 fromages »
               // pizza, sur le ticket comme sur le détail.
-              product: { include: { category: { select: { name: true } } } },
+              product: { include: { category: { select: { name: true, displayOrder: true } } } },
               variant: true,
             },
           },
           customer: true,
           payments: true,
           store: true,
+          // Le commerçant suit le livreur : arrivée, récupération, livraison.
+          delivery: {
+            select: {
+              status: true,
+              assignedAt: true,
+              pickupTime: true,
+              deliveryTime: true,
+              estimatedTime: true,
+              driver: { select: { name: true, phone: true, vehicleType: true } },
+            },
+          },
         },
       });
 
-      if (!order || order.storeId !== storeId) {
+      if (!order || order.storeId !== storeId || !order.submittedAt) {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
 
-      return order;
+      return order.status === "PENDING" ? { ...order, echeance: echeanceDeReponse(order) } : order;
     } catch (error) {
       throw error;
     }
@@ -127,7 +154,7 @@ export class OrderManagementService {
         where: { id: orderId },
       });
 
-      if (!order || order.storeId !== storeId) {
+      if (!order || order.storeId !== storeId || !order.submittedAt) {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
 
@@ -135,6 +162,8 @@ export class OrderManagementService {
       if (!validStatuses.includes(status)) {
         throw new ApiError(400, "Invalid order status", "INVALID_STATUS");
       }
+
+      verifierTransition(order.status, status);
 
       // Vérification supplémentaire : si paiement en liquide (CASH), doit être PICKUP uniquement
       // Ceci ne devrait jamais arriver car la validation est faite à la création,
@@ -170,36 +199,18 @@ export class OrderManagementService {
         totalAmount: Number(updated.totalAmount),
       });
 
-      // Notifier le client des changements de statut via Socket.IO (temps réel)
-      emitOrderUpdate(updated.id, status, {
-        message: this.getMessageForStatus(status),
-        title: this.getTitleForStatus(status),
-      });
+      // Le client est prévenu à chaque étape ; par e-mail seulement quand il a
+      // quelque chose à faire — venir chercher sa commande.
+      await OrderAcceptanceService.prevenirLeClient(
+        updated,
+        this.getTitleForStatus(status),
+        this.getMessageForStatus(status, updated.deliveryType),
+        { email: status === "READY" && updated.deliveryType === "PICKUP" }
+      );
 
-      // Notifier le client des changements de statut via notification
-      if (updated.customer?.email) {
-        await db.notification.create({
-          data: {
-            storeId: updated.storeId,
-            type: "ORDER_PLACED",
-            title: this.getTitleForStatus(status),
-            message: this.getMessageForStatus(status),
-            recipientEmail: updated.customer.email,
-            link: `/client/orders/${updated.id}`,
-            relatedOrderId: updated.id,
-          },
-        });
-
-        // Notifier le client via Socket.IO aussi
-        emitNotification(updated.customer.email, {
-          type: "order_status_update",
-          orderId: updated.id,
-          status: status,
-          title: this.getTitleForStatus(status),
-          message: this.getMessageForStatus(status),
-          timestamp: new Date().toISOString(),
-        });
-      }
+      // En préparation : le livreur le plus proche est appelé tout de suite,
+      // pour arriver quand la commande sort de la cuisine.
+      await OrderAcceptanceService.surAvancement(updated);
 
       return updated;
     } catch (error) {
@@ -218,11 +229,14 @@ export class OrderManagementService {
     return titles[status] || "Mise à jour de commande";
   }
 
-  private static getMessageForStatus(status: string): string {
+  private static getMessageForStatus(status: string, deliveryType?: string): string {
     const messages: Record<string, string> = {
       ACCEPTED: "Votre commande a été acceptée. Elle est en cours de préparation.",
       PREPARING: "Votre commande est en cours de préparation à la cuisine.",
-      READY: "Votre commande est prête ! Elle est en attente de retrait ou de livraison.",
+      READY:
+        deliveryType === "PICKUP"
+          ? "Votre commande est prête ! Vous pouvez venir la retirer."
+          : "Votre commande est prête ! Elle attend son livreur.",
       COMPLETED: "Votre commande est complétée. Merci pour votre achat !",
       REJECTED: "Malheureusement, votre commande a été refusée. Veuillez nous contacter.",
     };
@@ -235,7 +249,7 @@ export class OrderManagementService {
         where: { id: orderId },
       });
 
-      if (!order || order.storeId !== storeId) {
+      if (!order || order.storeId !== storeId || !order.submittedAt) {
         throw new ApiError(404, "Order not found", "ORDER_NOT_FOUND");
       }
 
@@ -267,19 +281,33 @@ export class OrderManagementService {
         where: {
           storeId,
           createdAt: { gte: startDate },
+          ...TRANSMISE,
         },
         select: {
           id: true,
           status: true,
           totalAmount: true,
+          feesAmount: true,
+          serviceFeeAmount: true,
+          deliveryMode: true,
           createdAt: true,
           paymentStatus: true,
         },
       });
 
+      // Les frais d'une course faite par un livreur de la plateforme, et les
+      // frais de service, ne sont pas au commerçant : il les encaisse pour
+      // elle, qui les lui réclame avec la commission. Son chiffre d'affaires
+      // ne les compte plus.
+      const fraisPlateforme = orders.reduce((sum, o) => sum + encaissePourLaPlateforme(o), 0);
+      const fraisService = orders.reduce((sum, o) => sum + fraisDeServiceDus(o), 0);
+
       const stats = {
         totalOrders: orders.length,
-        totalRevenue: orders.reduce((sum, o) => sum + parseFloat(o.totalAmount.toString()), 0),
+        totalRevenue:
+          orders.reduce((sum, o) => sum + parseFloat(o.totalAmount.toString()), 0) - fraisPlateforme,
+        platformDeliveryFees: Number((fraisPlateforme - fraisService).toFixed(2)),
+        platformServiceFees: Number(fraisService.toFixed(2)),
         averageOrderValue: orders.length > 0 ? orders.reduce((sum, o) => sum + parseFloat(o.totalAmount.toString()), 0) / orders.length : 0,
         pending: orders.filter(o => o.status === "PENDING").length,
         accepted: orders.filter(o => o.status === "ACCEPTED").length,
@@ -308,6 +336,7 @@ export class OrderManagementService {
       const orders = await db.order.findMany({
         where: {
           storeId,
+          ...TRANSMISE,
           createdAt: {
             gte: today,
             lt: tomorrow,

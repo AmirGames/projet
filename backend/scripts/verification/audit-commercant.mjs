@@ -1,9 +1,9 @@
 // Passe en revue chaque fonctionnalité de l'espace commerçant.
 
-import { check, j, uniq, post, get, put, patch, del, terminer } from './outils.mjs';
+import { inscription, check, j, uniq, post, get, put, patch, del, terminer } from './outils.mjs';
 
-await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` });
-const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
+await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` });
+const m = await j(await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const T = m.accessToken, orgId = m.organization.id;
 const b = await j(await post('/api/stores', {
   orgId, name: `Bou ${uniq}`, slug: `bou-${uniq}`, address: '1 rue', city: 'Lyon', postalCode: '69001', phone: '0400000000',
@@ -75,11 +75,14 @@ const reglages = await put(`/api/store-settings/${storeId}`, { acceptsDelivery: 
 check('Paramètres de boutique — enregistrement', reglages.status < 300, `status=${reglages.status} ${JSON.stringify(await j(reglages))?.slice(0, 150)}`);
 
 console.log('\n=== VENTES ===');
-await post('/api/orders', { storeId, customerName: 'Client', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000', deliveryType: 'PICKUP', totalAmount: 25 });
+await post('/api/orders', { conditionsAcceptees: true, storeId, customerName: 'Client', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000', deliveryType: 'PICKUP', totalAmount: 25 });
 const cmds = await j(await get(`/api/order-management/${storeId}`, T));
 const cmdId = (cmds?.data || cmds?.orders || [])[0]?.id;
 check('Commande — visible côté commerçant', !!cmdId, JSON.stringify(cmds)?.slice(0, 150));
-check('Commande — changement de statut', (await patch(`/api/order-management/${storeId}/${cmdId}/status`, { status: 'ACCEPTED' }, T)).status < 300);
+// Accepter demande un temps de préparation : le changement de statut
+// générique ne le permet plus (0c49387).
+const acceptation = await post(`/api/order-management/${storeId}/${cmdId}/accept`, { preparationMinutes: 20 }, T);
+check('Commande — acceptation', acceptation.status < 300, `status=${acceptation.status} ${JSON.stringify(await j(acceptation))?.slice(0, 150)}`);
 check('Commande — note interne', (await post(`/api/order-management/${storeId}/${cmdId}/notes`, { notes: 'Sans sucre' }, T)).status < 300);
 check('Facture — génération', (await get(`/api/invoices/${storeId}/${cmdId}`, T)).status === 200);
 check('Clients — liste', (await get(`/api/customers/${storeId}`, T)).status === 200);

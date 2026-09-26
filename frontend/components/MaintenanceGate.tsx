@@ -28,22 +28,27 @@ export function MaintenanceGate() {
     const originel = window.fetch;
 
     window.fetch = async (...args) => {
-      const reponse = await originel(...args);
+      try {
+        const reponse = await originel(...args);
 
-      if (reponse.status === 503) {
-        // Le corps ne peut être lu qu'une fois : on travaille sur une copie
-        // pour que la page appelante reçoive sa réponse intacte.
-        try {
-          const donnees = await reponse.clone().json();
-          if (donnees?.code === 'MAINTENANCE_MODE') {
-            setMessage(donnees.error || 'Plateforme en maintenance.');
+        if (reponse.status === 503) {
+          // Le corps ne peut être lu qu'une fois : on travaille sur une copie
+          // pour que la page appelante reçoive sa réponse intacte.
+          try {
+            const donnees = await reponse.clone().json();
+            if (donnees?.code === 'MAINTENANCE_MODE') {
+              setMessage(donnees.error || 'Plateforme en maintenance.');
+            }
+          } catch {
+            // Un 503 sans corps JSON ne vient pas du mode maintenance.
           }
-        } catch {
-          // Un 503 sans corps JSON ne vient pas du mode maintenance.
         }
-      }
 
-      return reponse;
+        return reponse;
+      } catch (error) {
+        // Propager l'erreur au lieu de la laisser silencieuse
+        throw error;
+      }
     };
 
     return () => {

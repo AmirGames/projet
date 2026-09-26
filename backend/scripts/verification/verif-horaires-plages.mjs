@@ -5,14 +5,14 @@
 // fermeture à 1 h du matin était refusée à la saisie, alors que c'est
 // l'horaire normal d'un vendredi soir.
 
-import { titre, check, j, uniq, post, put, get, terminer, sqlScalaire } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, put, get, terminer, sqlScalaire } from './outils.mjs';
 
 const MDP = 'Password123!';
 
-await j(await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` }));
+await j(await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` }));
 
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 

@@ -6,9 +6,11 @@ import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, checkOrgStatus } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { PlanService } from "../services/plan.service";
+import { StoreDuplicationService } from "../services/store-duplication.service";
 import {
   TYPES_ETABLISSEMENT,
   TYPES_CUISINE,
+  FAMILLES_AFFICHEES,
   CODES_ETABLISSEMENT,
   CODES_CUISINE,
 } from "../services/store-type.service";
@@ -86,6 +88,45 @@ router.post("/", authMiddleware, checkOrgStatus, async (req: Request, res: Respo
   }
 });
 
+const duplicateStoreSchema = z.object({
+  name: z.string().min(2, "Nom minimum 2 caractères"),
+  slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  postalCode: z.string().optional(),
+  phone: z.string().optional(),
+  email: emailFacultatif,
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+});
+
+/**
+ * POST /stores/:id/duplicate - Ouvrir une boutique sur le modèle d'une autre.
+ *
+ * Catalogue, catégories, horaires, zones, taxes… sont recopiés ; seuls le nom,
+ * l'adresse et le téléphone sont nouveaux. Le cloisonnement vérifie déjà que
+ * la boutique modèle appartient à l'appelant.
+ */
+// `checkOrgStatus` retrouve l'organisation par le `storeId` du corps : la
+// boutique modèle n'est ici que dans le chemin.
+const boutiqueDuChemin = (req: Request, _res: Response, next: NextFunction) => {
+  req.body = { ...(req.body || {}), storeId: req.params.id };
+  next();
+};
+
+router.post("/:id/duplicate", authMiddleware, boutiqueDuChemin, checkOrgStatus, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const body = duplicateStoreSchema.parse(req.body);
+
+    const store = await StoreDuplicationService.duplicate(req.userId as string, id, body);
+
+    res.status(201).json({ message: "Boutique dupliquée", store });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /**
  * GET /stores/types - Les genres de commerce et de cuisine.
  *
@@ -99,7 +140,7 @@ router.post("/", authMiddleware, checkOrgStatus, async (req: Request, res: Respo
 router.get("/types", (_req: Request, res: Response) => {
   res.json({
     success: true,
-    data: { etablissements: TYPES_ETABLISSEMENT, cuisines: TYPES_CUISINE },
+    data: { etablissements: TYPES_ETABLISSEMENT, cuisines: TYPES_CUISINE, familles: FAMILLES_AFFICHEES },
   });
 });
 

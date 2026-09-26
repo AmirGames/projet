@@ -1,12 +1,19 @@
+import { finAttente } from "../services/delivery-proof.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { fraisDeServiceEnVigueur } from "../services/delivery-mode.service";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint } from "../utils/geo";
+import { boutiqueVisible, livreVraiment } from "../utils/visibilite-boutique";
 import { StoreHoursService } from "../services/store-hours.service";
+import { genreDuCommerce } from "../services/store-type.service";
 import { trierProduitsSelonCategorie } from "../services/category.service";
 import { DeliveryZoneService } from "../services/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";
+import { avisARedemander, avisRestaurantParCommerce } from "../services/avis-client.service";
+import { avecLaVraieNote } from "../services/review.service";
+import { CustomerCartService, panierSchema } from "../services/customer-cart.service";
 import {
   COMMENTAIRE_MAX,
   NOTE_MAX,
@@ -16,9 +23,21 @@ import {
 
 const router = Router();
 
+/** « be », « fr »… : le pays de la région du site, en deux lettres. */
+const paysDemande = (brut: unknown) =>
+  typeof brut === "string" && /^[a-z]{2}$/i.test(brut) ? brut.toLowerCase() : undefined;
+
 // GET /api/client/stores - Get all stores (public)
-router.get("/stores", async (_req: Request, res: Response, next: NextFunction) => {
+router.get("/stores", async (req: Request, res: Response, next: NextFunction) => {
   try {
+    /**
+     * `?pays=be` : les commerces de ce pays seulement — la région du site
+     * (/be-fr/…) décide de ce qu'on liste. Une boutique dont le pays n'est
+     * pas encore connu reste listée partout : mieux vaut une boutique de trop
+     * qu'un commerce devenu introuvable.
+     */
+    const pays = paysDemande(req.query.pays);
+
     const stores = await db.store.findMany({
       /**
        * Une boutique fermée reste dans la liste.
@@ -29,7 +48,11 @@ router.get("/stores", async (_req: Request, res: Response, next: NextFunction) =
        */
       // Un commerce pas encore validé ne se montre pas : il prépare sa
       // boutique, il ne vend pas encore.
-      where: { deletedAt: null, org: { status: "ACTIVE", approvedAt: { not: null } } },
+      where: {
+        deletedAt: null,
+        org: { status: "ACTIVE", approvedAt: { not: null } },
+        ...(pays && { OR: [{ countryCode: pays }, { countryCode: null }] }),
+      },
       include: {
         org: {
           select: { id: true, name: true, slug: true }
@@ -45,12 +68,14 @@ router.get("/stores", async (_req: Request, res: Response, next: NextFunction) =
     res.json({
       success: true,
       count: stores.length,
-      data: stores.map((store) => ({
+      data: (await avecLaVraieNote(stores)).map((store) => ({
         ...store,
         // Ce que disent à la fois le planning hebdomadaire et le bouton
         // rapide, croisés — pas juste le bouton, sinon un jour fermé dans les
         // horaires n'a jamais d'effet ici.
         isOpenNow: StoreHoursService.isOpenNow(store),
+        // La famille (Pizzas, Sushis…) pour filtrer, et le libellé précis.
+        ...genreDuCommerce(store),
       })),
     });
   } catch (err) {
@@ -69,7 +94,7 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
 
     const lat = parseFloat(latitude as string);
     const lng = parseFloat(longitude as string);
-    const maxDist = parseFloat(maxDistance as string);
+    const maxDist = parseFloat(maxDistance as string) || 5;
 
     // Récupérer tous les stores avec localisation
     const stores = await db.store.findMany({
@@ -91,35 +116,67 @@ router.get("/stores/nearby", async (req: Request, res: Response, next: NextFunct
       }
     });
 
-    // Calculer distance avec Haversine formula
-    const storesWithDistance = stores
-      .map(store => {
-        const R = 6371; // Earth radius in km
-        const dLat = (lat - (store.latitude || 0)) * (Math.PI / 180);
-        const dLng = (lng - (store.longitude || 0)) * (Math.PI / 180);
-        const a =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(lat * (Math.PI / 180)) *
-            Math.cos((store.latitude || 0) * (Math.PI / 180)) *
-            Math.sin(dLng / 2) *
-            Math.sin(dLng / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c;
+    // Au-delà, aucun commerce de quartier ne livre : on n'interroge même pas
+    // ses zones, pour ne pas calculer un verdict par boutique du pays.
+    const PORTEE_MAX_KM = Math.max(50, maxDist);
+
+    const proches = stores
+      .map((store) => ({
+        store,
+        distance: distanceKm(
+          { latitude: lat, longitude: lng },
+          { latitude: store.latitude as number, longitude: store.longitude as number }
+        ),
+      }))
+      .filter(({ distance }) => distance <= PORTEE_MAX_KM);
+
+    // `maxDistance` n'est plus un couperet : c'est le rayon où l'on montre
+    // aussi les boutiques qui ne livrent pas, pour un retrait sur place. Au
+    // delà, seules restent celles dont les zones couvrent vraiment l'adresse.
+    const evaluees = await Promise.all(
+      proches.map(async ({ store, distance }) => {
+        const verdict = await DeliveryZoneService.verdict(store.id, { latitude: lat, longitude: lng }).catch(
+          () => null
+        );
+        const livre = livreVraiment(verdict, distance, maxDist);
 
         return {
-          ...store,
-          distance: parseFloat(distance.toFixed(2)),
-          estimatedDeliveryTime: Math.ceil(distance * 5) + " min",
-          isOpenNow: StoreHoursService.isOpenNow(store),
+          visible: boutiqueVisible(verdict, distance, maxDist),
+          store: {
+            ...store,
+            distance: parseFloat(distance.toFixed(2)),
+            estimatedDeliveryTime: Math.ceil(distance * 5) + " min",
+            isOpenNow: StoreHoursService.isOpenNow(store),
+            // La famille (Pizzas, Sushis…) pour filtrer, et le libellé précis.
+            ...genreDuCommerce(store),
+            // Un calcul qui échoue ne prive pas le client de la boutique.
+            livraison: verdict
+              ? {
+                  livrable: livre,
+                  frais: verdict.frais,
+                  minimum: verdict.minimum,
+                  deliveryMinutes: verdict.zone?.deliveryMinutes ?? null,
+                }
+              : null,
+          },
         };
       })
-      .filter(store => store.distance <= maxDist)
-      .sort((a, b) => a.distance - b.distance);
+    );
+
+    // Celles qui livrent d'abord, puis les autres ; la plus proche en tête.
+    const avecLivraison = evaluees
+      .filter(({ visible }) => visible)
+      .map(({ store }) => store)
+      .sort(
+        (a, b) =>
+          Number(b.livraison?.livrable !== false) - Number(a.livraison?.livrable !== false) ||
+          a.distance - b.distance
+      );
 
     res.json({
       success: true,
-      count: storesWithDistance.length,
-      data: storesWithDistance
+      count: avecLivraison.length,
+      data: await avecLaVraieNote(avecLivraison)
     });
   } catch (err) {
     next(err);
@@ -162,9 +219,11 @@ router.get("/stores/search", async (req: Request, res: Response, next: NextFunct
     res.json({
       success: true,
       count: stores.length,
-      data: stores.map((store) => ({
+      data: (await avecLaVraieNote(stores)).map((store) => ({
         ...store,
         isOpenNow: StoreHoursService.isOpenNow(store),
+        // La famille (Pizzas, Sushis…) pour filtrer, et le libellé précis.
+        ...genreDuCommerce(store),
       })),
     });
   } catch (err) {
@@ -263,7 +322,10 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
           // départager deux produits laissés au même rang.
           orderBy: [{ displayOrder: "asc" }, { name: "asc" }]
         },
+        // Seuls les avis publiés : un avis retiré par la plateforme ne se
+        // montre plus.
         reviews: {
+          where: { status: "APPROVED" },
           take: 10,
           orderBy: { createdAt: "desc" },
           include: {
@@ -283,7 +345,39 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
       throw new ApiError(423, "Boutique temporairement fermée", "STORE_TEMPORARILY_CLOSED");
     }
 
-    const categorizedProducts = regrouperParCategorie(store.products);
+    /**
+     * Les vraies notes, calculées sur tous les avis publiés.
+     *
+     * La vitrine affichait en dur quatre étoiles et « 24 avis » sous chaque
+     * plat, même créé à l'instant : une note inventée, trompeuse pour le
+     * client et contraire aux règles sur les avis en ligne. Un plat sans avis
+     * n'affiche plus rien. La moyenne du commerce se calculait, elle, sur les
+     * dix derniers avis, plats et avis retirés compris.
+     */
+    const [notesParPlat, noteDuCommerce] = await Promise.all([
+      db.review.groupBy({
+        by: ["productId"],
+        where: { storeId: store.id, status: "APPROVED", productId: { not: null } },
+        _avg: { rating: true },
+        _count: { _all: true },
+      }),
+      db.review.aggregate({
+        where: { storeId: store.id, status: "APPROVED", productId: null },
+        _avg: { rating: true },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const noteDe = new Map(
+      notesParPlat.map((n) => [
+        n.productId,
+        { moyenne: Math.round((n._avg.rating ?? 0) * 10) / 10, nombre: n._count._all },
+      ])
+    );
+
+    const categorizedProducts = regrouperParCategorie(
+      store.products.map((produit: any) => ({ ...produit, note: noteDe.get(produit.id) ?? null }))
+    );
 
     res.json({
       success: true,
@@ -294,14 +388,10 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
         // mais un commerce pas encore validé n'est jamais ouvert.
         isOpenNow: !!store.org?.approvedAt && StoreHoursService.isOpenNow(store),
         enAttenteDeValidation: !store.org?.approvedAt,
+        ...genreDuCommerce(store),
         averageRating:
-          store.reviews.length > 0
-            ? (
-                store.reviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) /
-                store.reviews.length
-              ).toFixed(1)
-            : 0,
-        reviewCount: store.reviews.length
+          noteDuCommerce._count._all > 0 ? (noteDuCommerce._avg.rating ?? 0).toFixed(1) : 0,
+        reviewCount: noteDuCommerce._count._all
       }
     });
   } catch (err) {
@@ -368,6 +458,21 @@ router.get("/stores/:id/zones", async (req: Request, res: Response, next: NextFu
  * On ne rend que l'identifiant, le type et le nom : la configuration d'un moyen
  * de paiement contient les clés d'API du commerçant.
  */
+/**
+ * GET /api/client/service-fee - Les frais de service de la plateforme
+ *
+ * Annoncés au tunnel avant de valider : le serveur les ajoute de toute façon,
+ * et un total qui change entre l'écran et le ticket ne se pardonne pas.
+ */
+router.get("/service-fee", async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const config = await db.systemConfig.findFirst({ select: { serviceFee: true } });
+    res.json({ success: true, data: { frais: fraisDeServiceEnVigueur(config) } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/stores/:id/payment-methods", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const moyens = await db.paymentMethod.findMany({
@@ -552,6 +657,11 @@ router.get("/me/orders", authMiddleware, async (req: Request, res: Response, nex
       },
     });
 
+    const avisRestaurants = await avisRestaurantParCommerce(
+      client.id,
+      [...new Set(commandes.map((c) => c.storeId))]
+    );
+
     res.json({
       success: true,
       data: commandes.map((c) => ({
@@ -561,8 +671,12 @@ router.get("/me/orders", authMiddleware, async (req: Request, res: Response, nex
         deliveryType: c.deliveryType,
         totalAmount: Number(c.totalAmount),
         createdAt: c.createdAt,
+        estimatedReadyAt: c.estimatedReadyAt,
         store: c.store,
         deliveryStatus: c.delivery?.status || null,
+        // Le client est invité à donner son avis : jamais donné, ou vieux de
+        // plus de quinze jours et antérieur à cette commande.
+        avisARedemander: avisARedemander(c, avisRestaurants.get(c.storeId)),
         items: c.items.map((i) => ({
           name: i.product?.name || "Produit supprimé",
           quantity: i.quantity,
@@ -664,6 +778,16 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         codeRemise: course.status === "DELIVERED" ? null : course.deliveryCode,
         preuve: course.proofType,
         prouveeLe: course.proofAt,
+        // La photo du dépôt, quand le client était absent : c'est à lui
+        // qu'elle sert, pour retrouver son repas.
+        photoDepot: course.proofType === "PHOTO" ? course.proofPhoto : null,
+        noteDepot: course.proofType === "PHOTO" ? course.proofNote : null,
+        // Le livreur est à moins de 300 m : il peut descendre.
+        livreurProche: Boolean(course.nearCustomerNotifiedAt),
+        // Le livreur est à la porte et n'arrive pas à le joindre : passé cette
+        // heure, la commande est déposée en lieu sûr.
+        attenteFinLe: course.status === "PICKED_UP" ? finAttente(course) : null,
+        maintenant: new Date(),
       },
     });
   } catch (err) {
@@ -734,9 +858,11 @@ router.get("/me/favorites", authMiddleware, async (req: Request, res: Response, 
       }
     });
 
+    const favoris = customer?.favorites || [];
+    const notes = await avecLaVraieNote(favoris.map((f) => f.store));
     res.json({
       success: true,
-      data: customer?.favorites || []
+      data: favoris.map((f, i) => ({ ...f, store: notes[i] }))
     });
   } catch (err) {
     next(err);
@@ -801,6 +927,28 @@ router.delete("/me/favorites/:storeId", authMiddleware, async (req: Request, res
       success: true,
       message: "Supprimé des favoris"
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/client/me/paniers - Les paniers du compte, quel que soit l'appareil
+router.get("/me/paniers", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    res.json({ success: true, data: await CustomerCartService.lister(client.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/client/me/paniers/:storeId - Remplace le panier d'un commerce (vide : vidé)
+router.put("/me/paniers/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const client = await clientConnecte(req);
+    const recu = panierSchema.parse(req.body);
+    const panier = await CustomerCartService.enregistrer(client, req.params.storeId as string, recu);
+    res.json({ success: true, data: panier });
   } catch (err) {
     next(err);
   }

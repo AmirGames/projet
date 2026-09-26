@@ -20,6 +20,7 @@
  */
 
 import { chromium } from 'playwright';
+import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -63,12 +64,12 @@ const BOUTIQUE = { latitude: 45.764, longitude: 4.8357 };
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', {
+await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` },
 });
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` },
 });
@@ -89,6 +90,15 @@ const boutique = await appeler('/api/stores', {
   },
 });
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
+await ouvrirToutLeJour(appeler, storeId, T);
+
+// Les zones sont celles d'un commerçant qui livre lui-même : avec les livreurs
+// de la plateforme, les frais suivent la distance et aucune zone n'est dite.
+await appeler(`/api/store-settings/${storeId}`, {
+  method: 'PUT',
+  jeton: T,
+  corps: { delivery: { useOwnDelivery: true } },
+});
 
 const plat = `Lasagnes ${uniq}`;
 await appeler('/api/products', {
@@ -145,9 +155,14 @@ check(
   page.url()
 );
 
+// Le récapitulatif du panier est replié comme un reçu : on le déplie pour
+// lire ses lignes.
+await page.locator('button[aria-expanded]', { hasText: 'Récapitulatif du panier' }).first().click();
+await page.waitForTimeout(400);
+
 const commande = await texte();
 check('le nom du commerce est rappelé', commande.includes(`Trattoria ${uniq}`), commande.slice(0, 400));
-check('le panier est celui composé', commande.includes(plat), commande.slice(0, 400));
+check('le panier est celui composé', commande.includes(plat), commande.slice(0, 1200));
 check('les deux articles sont comptés', /28,00/.test(commande), commande.slice(0, 600));
 
 titre('Le champ d’adresse existe — c’est tout le sujet');
@@ -178,6 +193,9 @@ check('sa zone lui est annoncée', /Zone « Centre »/.test(zone), zone.slice(0,
 check('avec ses frais', /2,50/.test(zone), zone.slice(0, 900));
 check('et la durée annoncée', /25 min/.test(zone), zone.slice(0, 900));
 
+// Sans les conditions générales de vente acceptées, le bouton reste grisé.
+await page.getByLabel(/conditions générales de vente/).check();
+
 const bouton = page.locator('button', { hasText: /Confirmer la Commande/ });
 check('la commande est validable', !(await bouton.first().isDisabled()), 'bloquée à tort');
 
@@ -186,7 +204,9 @@ await bouton.first().click();
 await page.waitForTimeout(3500);
 
 const apres = await texte();
-check('la commande est confirmée', /Commande confirmée/i.test(apres), apres.slice(0, 500));
+// Le commerce doit encore l'accepter : la page dit « envoyée », pas
+// « confirmée ».
+check('la commande est envoyée', /Commande envoyée/i.test(apres), apres.slice(0, 500));
 check('un numéro lui est donné', /#[0-9A-Z]{8}/.test(apres), apres.slice(0, 500));
 check('un lien de suivi est proposé', /Suivre ma commande/.test(apres), apres.slice(0, 500));
 

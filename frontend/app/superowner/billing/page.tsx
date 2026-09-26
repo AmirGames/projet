@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { CreditCard } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface BillingData {
   id: string;
@@ -17,6 +18,12 @@ interface BillingData {
   revenue?: number;
   ordersCount?: number;
   commissionPercent?: number;
+  /** Frais de livraison encaissés par le commerçant pour la plateforme. */
+  deliveryFeesDue?: number;
+  /** Frais de service payés par ses clients, à reverser à la plateforme. */
+  serviceFeesDue?: number;
+  /** Commission et frais de livraison : tout ce que le commerçant doit. */
+  totalDue?: number;
 }
 
 interface LigneDetail {
@@ -30,6 +37,10 @@ interface LigneDetail {
   total: number;
   remise: number;
   livraison: number;
+  /** La part des frais de livraison qui revient à la plateforme. */
+  livraisonDue?: number;
+  /** Les frais de service de la commande, dus à la plateforme. */
+  serviceDu?: number;
   commission: number;
 }
 
@@ -51,7 +62,14 @@ interface DetailFacturation {
   commissionPercent: number;
   tierLabel: string;
   orders: LigneDetail[];
-  summary: { ordersCount: number; revenue: number; commission: number };
+  summary: {
+    ordersCount: number;
+    revenue: number;
+    commission: number;
+    deliveryFees?: number;
+    serviceFees?: number;
+    totalDue?: number;
+  };
 }
 
 interface BillingResponse {
@@ -82,11 +100,7 @@ export default function BillingPage() {
   const [detailEnCours, setDetailEnCours] = useState<string | null>(null);
   const limit = 20;
 
-  useEffect(() => {
-    fetchBillings();
-  }, [offset]);
-
-  const fetchBillings = async () => {
+  const fetchBillings = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -112,7 +126,11 @@ export default function BillingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [offset, t]);
+
+  useEffectChargement(() => {
+    fetchBillings();
+  }, [offset, fetchBillings]);
 
   const euro = (valeur: number) =>
     Number(valeur || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
@@ -261,6 +279,23 @@ export default function BillingPage() {
                         {billing.commissionPercent} % {t('colRevenue')}
                       </span>
                     )}
+                    {/* Les frais des courses faites par les livreurs de la
+                        plateforme : le client les a payés au commerçant. */}
+                    {(billing.deliveryFeesDue ?? 0) > 0 && (
+                      <span className="block text-xs text-amber-300">
+                        + {euro(billing.deliveryFeesDue ?? 0)} de livraison
+                      </span>
+                    )}
+                    {(billing.serviceFeesDue ?? 0) > 0 && (
+                      <span className="block text-xs text-amber-300">
+                        + {euro(billing.serviceFeesDue ?? 0)} de frais de service
+                      </span>
+                    )}
+                    {(billing.totalDue ?? 0) > billing.amount && (
+                      <span className="block text-xs font-semibold text-white">
+                        {euro(billing.totalDue ?? 0)} dus
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(billing.status)}`}>
@@ -318,6 +353,21 @@ export default function BillingPage() {
               <p className="font-bold text-green-400">
                 {t('commission')}: {euro(detail.summary.commission)}
               </p>
+              {(detail.summary.deliveryFees ?? 0) > 0 && (
+                <p className="text-amber-300">
+                  Livraisons de la plateforme : {euro(detail.summary.deliveryFees ?? 0)}
+                </p>
+              )}
+              {(detail.summary.serviceFees ?? 0) > 0 && (
+                <p className="text-amber-300">
+                  Frais de service : {euro(detail.summary.serviceFees ?? 0)}
+                </p>
+              )}
+              {(detail.summary.totalDue ?? 0) > detail.summary.commission && (
+                <p className="font-bold text-white">
+                  Total dû : {euro(detail.summary.totalDue ?? 0)}
+                </p>
+              )}
             </div>
           </div>
 
@@ -366,6 +416,16 @@ export default function BillingPage() {
                         {ligne.remise > 0 && (
                           <span className="block text-xs text-green-400">
                             − {euro(ligne.remise)} de {t('discount')}
+                          </span>
+                        )}
+                        {(ligne.livraisonDue ?? 0) > 0 && (
+                          <span className="block text-xs text-amber-300">
+                            dont {euro(ligne.livraisonDue ?? 0)} de livraison dus à la plateforme
+                          </span>
+                        )}
+                        {(ligne.serviceDu ?? 0) > 0 && (
+                          <span className="block text-xs text-amber-300">
+                            dont {euro(ligne.serviceDu ?? 0)} de frais de service
                           </span>
                         )}
                       </td>

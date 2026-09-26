@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface AuditEvent {
   id: string;
@@ -43,11 +44,7 @@ export default function SecurityAuditPage() {
   const [total, setTotal] = useState(0);
   const limit = 20;
 
-  useEffect(() => {
-    fetchEvents();
-  }, [offset]);
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
@@ -71,7 +68,11 @@ export default function SecurityAuditPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [offset, t]);
+
+  useEffectChargement(() => {
+    fetchEvents();
+  }, [offset, fetchEvents]);
 
   const getSeverityColor = (severity: string) => {
     const colors: { [key: string]: string } = {

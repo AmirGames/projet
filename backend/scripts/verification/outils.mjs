@@ -8,6 +8,7 @@
  * Adresse de l'API : VERIF_API_URL, sinon http://localhost:3001.
  */
 
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 export const API = process.env.VERIF_API_URL || "http://localhost:3001";
@@ -94,7 +95,7 @@ export const get = (chemin, jeton) =>
 let prisma = null;
 
 function base() {
-  if (!prisma) prisma = new PrismaClient();
+  if (!prisma) prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
   return prisma;
 }
 
@@ -112,16 +113,79 @@ export async function sqlExec(requeteSql) {
   return base().$executeRawUnsafe(requeteSql);
 }
 
+/**
+ * Fait passer les six minutes d'attente du client injoignable : la photo du
+ * dépôt n'est acceptée qu'à leur terme, et une vérification ne les attend pas.
+ */
+export async function attenteClientEcoulee(courseId) {
+  return sqlExec(
+    `UPDATE "OrderDelivery" SET "customerWaitStartedAt" = NOW() - INTERVAL '7 minutes' WHERE id = '${courseId}'`
+  );
+}
+
 export async function fermerBase() {
   if (prisma) await prisma.$disconnect();
 }
 
 // ===== Raccourcis métier =====
 
+let numeroOrganisation = 0;
+
+/**
+ * Inscription telle que les vérifications ont été écrites : un compte, et une
+ * organisation sans boutique dont il est administrateur.
+ *
+ * Avant la refonte d'identité, /auth/signup créait lui-même cette
+ * organisation ; il ne crée plus que le compte et sa fiche client, et le
+ * produit passe ensuite par /auth/me/become-merchant — qui ouvre aussi une
+ * boutique. Les suites créent leurs boutiques elles-mêmes, avec les
+ * coordonnées, horaires et formules qu'elles vérifient : une boutique
+ * imposée fausserait leurs comptes et mangerait le quota de la formule.
+ *
+ * Les deux passent par la vraie API : /auth/signup, puis /organizations, qui
+ * crée l'organisation au nom de l'appelant exactement comme le faisait
+ * l'ancienne inscription. La réponse garde le statut et le corps de
+ * l'inscription, augmentés de `organization` : `.status` et `j()` s'en
+ * servent comme avant.
+ */
+export async function inscription(corps) {
+  const reponse = await post("/api/auth/signup", { conditionsAcceptees: true, ...corps });
+  const donnees = await j(reponse);
+
+  if (!reponse.ok || !donnees?.accessToken) {
+    return new Response(JSON.stringify(donnees), { status: reponse.status });
+  }
+
+  const nom = corps.name?.length >= 2 ? corps.name : `Organisation ${uniq}`;
+  const creation = await post(
+    "/api/organizations",
+    { name: nom, slug: `org-${uniq}-${++numeroOrganisation}` },
+    donnees.accessToken
+  );
+  const org = (await j(creation))?.org;
+
+  if (!org?.id) {
+    throw new Error(`Organisation non créée pour ${corps.email} : statut ${creation.status}`);
+  }
+
+  // Un commerce attend désormais la validation de la plateforme avant de
+  // vendre. Les suites ont été écrites pour un commerce qui vend : il est
+  // validé d'office, comme la migration l'a fait pour les commerces existants.
+  // La validation elle-même se vérifie dans verif-validation-commerce.
+  await base().organization.update({ where: { id: org.id }, data: { approvedAt: new Date() } });
+
+  const corpsAugmente = {
+    ...donnees,
+    organization: { id: org.id, name: org.name, slug: org.slug },
+  };
+
+  return new Response(JSON.stringify(corpsAugmente), { status: reponse.status });
+}
+
 /** Crée un compte et renvoie sa réponse d'inscription complète. */
 export async function inscrire(prefixe) {
   return j(
-    await post("/api/auth/signup", {
+    await inscription({
       email: `${prefixe}-${uniq}@test.fr`,
       password: "Password123!",
       name: `${prefixe} ${uniq}`,
@@ -182,4 +246,23 @@ export async function validerLivreur(jetonLivreur, jetonPlateforme) {
   await post(`/api/superowner/drivers/${driverId}/approve`, {}, jetonPlateforme);
 
   return driverId;
+}
+
+/**
+ * Le commerçant accepte la commande, la prépare et la déclare prête.
+ *
+ * Le livreur ne peut emporter qu'une commande prête : les scripts qui
+ * vérifient la suite de la course passent par le vrai chemin du commerçant
+ * avant le retrait, plutôt que de forcer l'état en base.
+ */
+export async function declarerPrete(storeId, orderId, jetonCommercant) {
+  await post(
+    `/api/order-management/${storeId}/${orderId}/accept`,
+    { preparationMinutes: 15 },
+    jetonCommercant
+  );
+
+  for (const status of ["PREPARING", "READY"]) {
+    await patch(`/api/order-management/${storeId}/${orderId}/status`, { status }, jetonCommercant);
+  }
 }

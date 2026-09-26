@@ -13,7 +13,8 @@
  * client.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -30,6 +31,7 @@ import {
 } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 // Leaflet touche à `window` dès son chargement : pas de rendu côté serveur.
 const CarteZones = dynamic(() => import('@/components/CarteZones'), {
@@ -138,9 +140,14 @@ export default function FicheBoutiquePage() {
 
   const jeton = () => localStorage.getItem('accessToken');
 
-  const charger = useCallback(async () => {
-    setChargement(true);
-    setErreur('');
+  // silencieux : une relecture en direct ne remplace pas la fiche par la roue,
+  // et ne touche pas au message affiché — une commande arrivée pendant une
+  // correction effaçait le refus qu'on venait d'essuyer.
+  const charger = useCallback(async (silencieux = false) => {
+    if (!silencieux) {
+      setChargement(true);
+      setErreur('');
+    }
 
     try {
       const reponse = await fetch(`${API_URL}/api/superowner/stores/${storeId}`, {
@@ -156,15 +163,18 @@ export default function FicheBoutiquePage() {
       const lu = await reponse.json();
       setFiche(lu.store);
     } catch (err) {
-      setErreur(err instanceof Error ? err.message : t('unknownError'));
+      if (!silencieux) setErreur(err instanceof Error ? err.message : t('unknownError'));
     } finally {
       setChargement(false);
     }
   }, [storeId, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
+
+  // Ses commandes, son catalogue, ses horaires : la fiche suit la boutique.
+  useDonneesModifiees('*', () => charger(true), { storeId, delaiMs: 1000 });
 
   const ouvrirEdition = () => {
     if (!fiche) return;

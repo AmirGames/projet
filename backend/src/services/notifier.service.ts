@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { logger } from "../config/logger";
 import { EmailService } from "./email.service";
+import { emitMerchantEvent } from "../config/socket";
 
 /**
  * Notifications multicanales : e-mail, SMS, push navigateur.
@@ -45,6 +46,22 @@ const smsPret = Boolean(
   process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM
 );
 
+const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+
+export interface MessageExpo {
+  title: string;
+  body: string;
+  /** Lu par l'application au toucher de la notification. */
+  data?: Record<string, unknown>;
+  /** Canal Android : décide du son et de l'importance. */
+  channelId?: string;
+  sound?: string | null;
+  /** Durée pendant laquelle Expo retente l'envoi, en secondes. */
+  ttl?: number;
+  /** Catégorie déclarée par l'application : elle porte les boutons d'action. */
+  categoryId?: string;
+}
+
 export interface MessagePush {
   title: string;
   body: string;
@@ -52,13 +69,18 @@ export interface MessagePush {
   url?: string;
   /** Deux notifications de même tag se remplacent au lieu de s'empiler. */
   tag?: string;
+  /** Pour l'application livreur : la proposition, que « Accepter » accepte. */
+  offerId?: string;
 }
 
 /**
  * Numéro au format international (E.164), attendu par les fournisseurs SMS.
- * Les numéros français saisis en « 06 12 34 56 78 » deviennent « +33612345678 ».
+ *
+ * Les formulaires envoient déjà le numéro avec l'indicatif du pays choisi.
+ * L'indicatif par défaut ne sert qu'aux numéros nationaux enregistrés avant :
+ * « 0470 12 34 56 » devient « +32470123456 » (lancement en Belgique).
  */
-export function numeroInternational(numero: string, indicatif = process.env.SMS_DEFAULT_COUNTRY_CODE || "33") {
+export function numeroInternational(numero: string, indicatif = process.env.SMS_DEFAULT_COUNTRY_CODE || "32") {
   const chiffres = numero.replace(/[^\d+]/g, "");
   if (chiffres.startsWith("+")) return chiffres;
   if (chiffres.startsWith("00")) return `+${chiffres.slice(2)}`;
@@ -154,19 +176,108 @@ export class Notifier {
     }
   }
 
+  /**
+   * Push vers l'application mobile, par le service Expo.
+   *
+   * Les jetons refusés (application désinstallée, compte déconnecté) sont
+   * retirés : les garder ferait échouer chaque envoi suivant.
+   */
+  static async expoPush(tokens: string[], message: MessageExpo) {
+    const valides = [...new Set(tokens)].filter((t) => /^Expo(nent)?PushToken\[.+\]$/.test(t));
+    if (valides.length === 0) return 0;
+
+    let envoyes = 0;
+    for (let i = 0; i < valides.length; i += 100) {
+      const lot = valides.slice(i, i + 100);
+      try {
+        const reponse = await fetch(EXPO_PUSH_URL, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            ...(process.env.EXPO_ACCESS_TOKEN ? { Authorization: `Bearer ${process.env.EXPO_ACCESS_TOKEN}` } : {}),
+          },
+          body: JSON.stringify(
+            lot.map((to) => ({
+              to,
+              title: message.title,
+              body: message.body,
+              data: message.data || {},
+              sound: message.sound || "default",
+              channelId: message.channelId,
+              ...(message.categoryId ? { categoryId: message.categoryId } : {}),
+              priority: "high",
+              ttl: message.ttl ?? 600,
+            }))
+          ),
+        });
+
+        if (!reponse.ok) {
+          logger.warn("Push Expo refusé", { status: reponse.status, body: await reponse.text() });
+          continue;
+        }
+
+        const { data: tickets } = (await reponse.json()) as {
+          data?: { status: string; details?: { error?: string } }[];
+        };
+        const perimes: string[] = [];
+        (tickets || []).forEach((ticket, index) => {
+          if (ticket.status === "ok") envoyes++;
+          else if (ticket.details?.error === "DeviceNotRegistered") perimes.push(lot[index]);
+        });
+
+        if (perimes.length) {
+          await db.pushDevice.deleteMany({ where: { token: { in: perimes } } }).catch(() => {});
+        }
+      } catch (err) {
+        logger.warn("Envoi push Expo impossible", { error: err instanceof Error ? err.message : err });
+      }
+    }
+    return envoyes;
+  }
+
   // -------------------------------------------------------------------------
   // Destinataires
   // -------------------------------------------------------------------------
 
-  /** Pousse une notification au navigateur du livreur, s'il s'est abonné. */
+  /** Prévient sur leur téléphone tous les membres de l'équipe d'une boutique. */
+  static async pushEquipeBoutique(storeId: string, message: MessageExpo) {
+    const boutique = await db.store.findUnique({ where: { id: storeId }, select: { orgId: true } });
+    if (!boutique) return 0;
+
+    const appareils = await db.pushDevice.findMany({
+      where: { app: "merchant", user: { memberships: { some: { orgId: boutique.orgId } } } },
+      select: { token: true },
+    });
+
+    return this.expoPush(
+      appareils.map((a) => a.token),
+      message
+    );
+  }
+
+  /**
+   * Prévient le livreur : sur son navigateur s'il s'y est abonné, et sur les
+   * téléphones où l'application livreur est connectée à son compte.
+   */
   static async pushLivreur(driverId: string, message: MessagePush) {
     const livreur = await db.driver.findUnique({
       where: { id: driverId },
-      select: { pushSubscription: true },
+      select: { pushSubscription: true, userId: true },
     });
-    if (!livreur?.pushSubscription) return false;
+    if (!livreur) return false;
 
-    const resultat = await this.push(livreur.pushSubscription, message);
+    const [navigateur, mobile] = await Promise.all([
+      this.pushNavigateurLivreur(driverId, livreur.pushSubscription, message),
+      this.pushMobileLivreur(livreur.userId, message),
+    ]);
+    return navigateur || mobile > 0;
+  }
+
+  private static async pushNavigateurLivreur(driverId: string, abonnement: unknown, message: MessagePush) {
+    if (!abonnement) return false;
+
+    const resultat = await this.push(abonnement, message);
     if (resultat === "expire") {
       await db.driver
         .update({ where: { id: driverId }, data: { pushSubscription: Prisma.DbNull } })
@@ -174,6 +285,70 @@ export class Notifier {
       return false;
     }
     return resultat;
+  }
+
+  /**
+   * L'application livreur ouvre la course touchée : son identifiant voyage
+   * dans les données, lu sur le lien prévu pour le navigateur. Une course
+   * proposée sonne sur son propre canal Android, et n'est plus retentée
+   * au-delà d'une minute : elle aura expiré.
+   */
+  private static async pushMobileLivreur(userId: string | null, message: MessagePush) {
+    if (!userId) return 0;
+
+    const appareils = await db.pushDevice.findMany({
+      where: { userId, app: "delivery" },
+      select: { token: true },
+    });
+    if (appareils.length === 0) return 0;
+
+    const deliveryId = message.url?.match(/\/driver\/deliveries\/([^/?#]+)/)?.[1];
+    const proposee = message.tag === "course-proposee";
+
+    return this.expoPush(
+      appareils.map((a) => a.token),
+      {
+        title: message.title,
+        body: message.body,
+        data: {
+          tag: message.tag,
+          url: message.url,
+          ...(deliveryId ? { deliveryId } : {}),
+          ...(message.offerId ? { offerId: message.offerId } : {}),
+        },
+        // Une course proposée sonne longtemps, même téléphone verrouillé, et
+        // porte le bouton « Accepter » qui agit sans déverrouiller.
+        ...(proposee
+          ? {
+              channelId: "new-courses-v2",
+              sound: "new_course_long.wav",
+              ttl: 60,
+              ...(message.offerId ? { categoryId: "course_proposee" } : {}),
+            }
+          : {}),
+      }
+    );
+  }
+
+  /**
+   * Prévient le client sur les téléphones où l'application client est
+   * connectée à son compte. La commande voyage dans les données : la toucher
+   * ouvre son suivi. Un client invité n'a pas de compte, donc pas de téléphone
+   * enregistré : l'e-mail et le SMS restent ses seuls canaux.
+   */
+  static async pushClient(email: string | null | undefined, message: MessageExpo) {
+    if (!email) return 0;
+
+    const appareils = await db.pushDevice.findMany({
+      where: { app: "customer", user: { email: { equals: email, mode: "insensitive" } } },
+      select: { token: true },
+    });
+    if (appareils.length === 0) return 0;
+
+    return this.expoPush(
+      appareils.map((a) => a.token),
+      message
+    );
   }
 
   /**
@@ -191,12 +366,24 @@ export class Notifier {
         customerPhone: true,
         customerName: true,
         store: { select: { name: true } },
-        delivery: { select: { deliveryCode: true, driver: { select: { name: true } } } },
+        delivery: {
+          select: {
+            deliveryCode: true,
+            proofType: true,
+            proofPhoto: true,
+            proofNote: true,
+            driver: { select: { name: true } },
+          },
+        },
       },
     });
     if (!commande) return;
 
     const boutique = commande.store?.name || "votre commerce";
+    // Déposée en lieu sûr faute de réponse : le client doit savoir où la
+    // retrouver, photo à l'appui.
+    const depot = commande.delivery?.proofType === "PHOTO" ? commande.delivery : null;
+    const lieu = depot?.proofNote ? ` Lieu : ${depot.proofNote}.` : "";
     const livreur = commande.delivery?.driver?.name?.split(" ")[0] || "Votre livreur";
     const lien = `${process.env.SITE_URL || process.env.FRONTEND_URL || ""}/client/orders/${orderId}`;
     const code = commande.delivery?.deliveryCode;
@@ -212,16 +399,154 @@ export class Notifier {
         texte: `${livreur} a récupéré votre commande et arrive.${code ? ` Donnez-lui le code ${code} à la remise.` : ""}`,
         sms: `Votre commande ${boutique} est en route.${code ? ` Code de remise : ${code}.` : ""} Suivi : ${lien}`,
       },
-      DELIVERED: {
-        sujet: "Commande livrée",
-        texte: `Votre commande ${boutique} a été livrée. Bon appétit !`,
-        sms: null as string | null,
-      },
+      DELIVERED: depot
+        ? {
+            sujet: "Commande déposée en lieu sûr",
+            texte: `Sans réponse de votre part, ${livreur} a déposé votre commande ${boutique} en lieu sûr.${lieu} La photo du dépôt est sur votre suivi${depot.proofPhoto ? ` : ${depot.proofPhoto}` : ""}.`,
+            sms: `Commande ${boutique} déposée en lieu sûr.${lieu} Photo et suivi : ${lien}` as string | null,
+          }
+        : {
+            sujet: "Commande livrée",
+            texte: `Votre commande ${boutique} a été livrée. Bon appétit !`,
+            sms: null as string | null,
+          },
     }[etape];
 
     await Promise.all([
       this.email(commande.customerEmail, messages.sujet, messages.texte, lien),
       messages.sms ? this.sms(commande.customerPhone, messages.sms) : Promise.resolve(false),
+      this.pushClient(commande.customerEmail, {
+        title: messages.sujet,
+        body: messages.texte,
+        data: { tag: `livraison-${etape.toLowerCase()}`, orderId },
+      }),
+    ]);
+  }
+
+  /**
+   * Le livreur est à la porte et le client ne répond pas.
+   *
+   * Prévenu par tous les canaux : c'est souvent un téléphone en silencieux ou
+   * une sonnette en panne. À l'heure dite, la commande sera déposée en lieu sûr.
+   */
+  static async attenteClient(orderId: string, fin: Date) {
+    const commande = await db.order.findUnique({
+      where: { id: orderId },
+      select: {
+        customerEmail: true,
+        customerPhone: true,
+        store: { select: { name: true } },
+        delivery: { select: { driver: { select: { name: true } } } },
+      },
+    });
+    if (!commande) return;
+
+    const livreur = commande.delivery?.driver?.name?.split(" ")[0] || "Votre livreur";
+    const heure = fin.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
+    const lien = `${process.env.SITE_URL || process.env.FRONTEND_URL || ""}/client/orders/${orderId}`;
+    const sujet = "Votre livreur vous attend";
+    const texte = `${livreur} est devant chez vous avec votre commande et n'arrive pas à vous joindre. Sans réponse d'ici ${heure} (6 minutes), il la déposera en lieu sûr.`;
+
+    await Promise.all([
+      this.email(commande.customerEmail, sujet, texte, lien),
+      this.sms(commande.customerPhone, `${texte} Suivi : ${lien}`),
+      this.pushClient(commande.customerEmail, {
+        title: sujet,
+        body: texte,
+        data: { tag: "livraison-attente", orderId },
+      }),
+    ]);
+  }
+
+  /**
+   * Un livreur a accepté la course : la boutique sait qu'il arrive.
+   *
+   * La recherche part dès « En préparation » ; le commerçant n'a plus à
+   * surveiller l'écran pour savoir si quelqu'un viendra chercher la commande.
+   */
+  static async livreurTrouveBoutique(orderId: string) {
+    const commande = await db.order.findUnique({
+      where: { id: orderId },
+      select: {
+        storeId: true,
+        delivery: { select: { driver: { select: { name: true, vehicleType: true } } } },
+      },
+    });
+    if (!commande) return;
+
+    const livreur = commande.delivery?.driver?.name?.split(" ")[0] || "Un livreur";
+    const numero = orderId.slice(-6).toUpperCase();
+
+    // Les écrans ouverts l'affichent aussitôt ; le téléphone, même fermé.
+    await emitMerchantEvent(commande.storeId, "livreur-trouve", {
+      orderId,
+      storeId: commande.storeId,
+      livreur,
+      numero,
+    });
+
+    await this.pushEquipeBoutique(commande.storeId, {
+      title: "🛵 Livreur trouvé",
+      body: `${livreur} a accepté la commande #${numero} et arrive au commerce.`,
+      data: { type: "livreur-trouve", orderId, storeId: commande.storeId },
+    });
+  }
+
+  /**
+   * Le livreur est à moins de 300 m : le client peut descendre.
+   *
+   * Dans l'application (cloche et suivi en direct) et hors d'elle (courriel,
+   * SMS) : c'est le seul message dont l'intérêt tient en une minute.
+   */
+  static async livreurProcheClient(orderId: string) {
+    const commande = await db.order.findUnique({
+      where: { id: orderId },
+      select: {
+        customerEmail: true,
+        customerPhone: true,
+        delivery: { select: { deliveryCode: true, driver: { select: { name: true } } } },
+      },
+    });
+    if (!commande) return;
+
+    const livreur = commande.delivery?.driver?.name?.split(" ")[0] || "Votre livreur";
+    const code = commande.delivery?.deliveryCode;
+    const lien = `${process.env.SITE_URL || process.env.FRONTEND_URL || ""}/client/orders/${orderId}`;
+    const titre = "Votre livreur est bientôt là";
+    const texte = `${livreur} arrive dans un instant : vous pouvez descendre devant la porte.${
+      code ? ` Préparez votre code de remise : ${code}.` : ""
+    }`;
+
+    if (commande.customerEmail) {
+      await db.notification.create({
+        data: {
+          type: "DRIVER_NEARBY",
+          title: titre,
+          message: texte,
+          recipientEmail: commande.customerEmail,
+          link: `/client/orders/${orderId}`,
+          relatedOrderId: orderId,
+        },
+      });
+
+      const { emitNotification } = await import("../config/socket");
+      emitNotification(commande.customerEmail, {
+        type: "driver_nearby",
+        orderId,
+        title: titre,
+        message: texte,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    await Promise.all([
+      this.email(commande.customerEmail, titre, texte, lien),
+      this.sms(commande.customerPhone, `${texte} Suivi : ${lien}`),
+      this.pushClient(commande.customerEmail, {
+        title: titre,
+        body: texte,
+        data: { tag: "livreur-proche", orderId },
+      }),
     ]);
   }
 }

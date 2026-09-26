@@ -11,6 +11,7 @@
 
 import { chromium } from 'playwright';
 import { validerLivreur, codeDeRemise } from './outils-livreur.mjs';
+import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -55,12 +56,12 @@ const emailClient = `client-${uniq}@t.fr`;
 
 // ===== Le décor =====
 
-const plateforme = await appeler('/api/auth/signup', {
+const plateforme = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `p-${uniq}@t.fr`, password: motDePasse, name: `P ${uniq}` },
 });
 
-const commercant = await appeler('/api/auth/signup', {
+const commercant = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: `m-${uniq}@t.fr`, password: motDePasse, name: `M ${uniq}` },
 });
@@ -83,6 +84,7 @@ const boutique = await appeler('/api/stores', {
 });
 
 const storeId = boutique.donnees.store?.id || boutique.donnees.id;
+await ouvrirToutLeJour(appeler, storeId, T);
 
 const produit = await appeler('/api/products', {
   method: 'POST',
@@ -93,14 +95,14 @@ const produit = await appeler('/api/products', {
 const productId = produit.donnees.product?.id || produit.donnees.id;
 
 // Le client doit avoir un compte pour suivre sa commande.
-const client = await appeler('/api/auth/signup', {
+const client = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: emailClient, password: motDePasse, name: `Client ${uniq}` },
 });
 
 const commande = await appeler('/api/orders', {
   method: 'POST',
-  corps: {
+  corps: { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
     customerEmail: emailClient,
@@ -120,7 +122,7 @@ const orderId = commande.donnees.order?.id || commande.donnees.id;
 // Le livreur, en ligne et positionné près de la boutique.
 const livreur = await appeler('/api/drivers/register', {
   method: 'POST',
-  corps: {
+  corps: { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: `d-${uniq}@t.fr`,
     password: motDePasse,

@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Category {
   id: string;
@@ -17,21 +19,21 @@ export default function AdminCategories() {
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
   const fetchCategories = async () => {
     try {
       const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
       const data = await apiClient.getCategories(storeId);
       setCategories(Array.isArray(data) ? data : data.categories || []);
     } catch (error) {
-      console.error('Erreur chargement catégories:', error);
+      signalerErreur('Erreur chargement catégories:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchCategories();
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +45,7 @@ export default function AdminCategories() {
       setShowForm(false);
       fetchCategories();
     } catch (error) {
-      console.error('Erreur création:', error);
+      signalerErreur('Erreur création:', error);
     }
   };
 
@@ -53,7 +55,7 @@ export default function AdminCategories() {
         await apiClient.deleteCategory(categoryId);
         setCategories(categories.filter(c => c.id !== categoryId));
       } catch (error) {
-        console.error('Erreur suppression:', error);
+        signalerErreur('Erreur suppression:', error);
       }
     }
   };

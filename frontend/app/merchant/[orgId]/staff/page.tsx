@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Search, Users } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -62,14 +64,8 @@ export default function StaffPage() {
   const [formError, setFormError] = useState('');
 
 
-  useEffect(() => {
-    if (storeId) {
-      fetchStaff();
-    }
-  }, [storeId]);
 
-
-  const fetchStaff = async () => {
+  const fetchStaff = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/staff?storeId=${storeId}`, {
@@ -82,11 +78,17 @@ export default function StaffPage() {
         setStats({ total: data.total || 0, active: data.active || 0 });
       }
     } catch (error) {
-      console.error('Error fetching staff:', error);
+      signalerErreur('Error fetching staff:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
+
+  useEffectChargement(() => {
+    if (storeId) {
+      fetchStaff();
+    }
+  }, [storeId, fetchStaff]);
 
   const handleSaveStaff = async () => {
     setFormError('');
@@ -134,7 +136,7 @@ export default function StaffPage() {
         setFormData({ name: '', email: '', phone: '', role: 'CASHIER' });
       }
     } catch (error) {
-      console.error('Error saving staff:', error);
+      signalerErreur('Error saving staff:', error);
     } finally {
       setSaving(false);
     }
@@ -155,7 +157,7 @@ export default function StaffPage() {
         await fetchStaff();
       }
     } catch (error) {
-      console.error('Error deleting staff:', error);
+      signalerErreur('Error deleting staff:', error);
     } finally {
       setSaving(false);
     }
@@ -180,7 +182,7 @@ export default function StaffPage() {
         await fetchStaff();
       }
     } catch (error) {
-      console.error('Error toggling status:', error);
+      signalerErreur('Error toggling status:', error);
     } finally {
       setSaving(false);
     }

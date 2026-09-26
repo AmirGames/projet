@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
+import { useState, useEffect, useCallback } from 'react';
+import { useTempsReel } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -17,7 +19,7 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
@@ -25,6 +27,7 @@ export function useNotifications() {
 
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch(`${API_URL}/api/notifications?limit=20`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -33,9 +36,19 @@ export function useNotifications() {
         const data = await response.json();
         setNotifications(data.data);
         setUnreadCount(data.unreadCount);
+      } else if (response.status >= 500) {
+        setError('Erreur serveur : impossible de charger les notifications.');
+        signalerErreur('Server error fetching notifications:', response.status);
+      } else {
+        setError('Erreur : impossible de charger les notifications.');
       }
     } catch (err) {
-      console.error('Error fetching notifications:', err);
+      signalerErreur('Error fetching notifications:', err);
+      if (estErreurReseau(err)) {
+        setError('Erreur réseau : vérifiez votre connexion.');
+      } else {
+        setError('Erreur : impossible de charger les notifications.');
+      }
     } finally {
       setLoading(false);
     }
@@ -46,17 +59,24 @@ export function useNotifications() {
     if (!token) return;
 
     try {
-      await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (!response.ok && response.status >= 500) {
+        setError('Erreur serveur : impossible de marquer comme lu.');
+      }
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
-      console.error('Error marking notification as read:', err);
+      signalerErreur('Error marking notification as read:', err);
+      if (estErreurReseau(err)) {
+        setError('Erreur réseau : impossible de marquer comme lu.');
+      }
     }
   }, []);
 
@@ -65,59 +85,58 @@ export function useNotifications() {
     if (!token) return;
 
     try {
-      await fetch(`${API_URL}/api/notifications/read-all`, {
+      const response = await fetch(`${API_URL}/api/notifications/read-all`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      if (!response.ok && response.status >= 500) {
+        setError('Erreur serveur : impossible de marquer tous comme lus.');
+      }
+
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
-      console.error('Error marking all as read:', err);
+      signalerErreur('Error marking all as read:', err);
+      if (estErreurReseau(err)) {
+        setError('Erreur réseau : impossible de marquer tous comme lus.');
+      }
     }
   }, []);
 
-  useEffect(() => {
-    fetchNotifications();
+  // Le serveur pousse les nouvelles notifications : sans cela il fallait
+  // recharger la page pour les voir apparaître sur la cloche.
+  useTempsReel<Notification>('notification', (notification) => {
+    setNotifications((prev) =>
+      // Une même notification peut arriver deux fois (reconnexion) : on ne
+      // l'ajoute qu'une seule fois.
+      prev.some((n) => n.id === notification.id)
+        ? prev
+        : [notification, ...prev].slice(0, 20)
+    );
+    setUnreadCount((prev) => prev + 1);
+  });
 
+  useEffectChargement(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
-
-    // Le serveur pousse les nouvelles notifications : sans cela il fallait
-    // recharger la page pour les voir apparaître sur la cloche.
-    const socket = io(API_URL, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-    });
-    socketRef.current = socket;
-
-    socket.on('notification', (notification: Notification) => {
-      setNotifications((prev) =>
-        // Une même notification peut arriver deux fois (reconnexion) : on ne
-        // l'ajoute qu'une seule fois.
-        prev.some((n) => n.id === notification.id)
-          ? prev
-          : [notification, ...prev].slice(0, 20)
-      );
-      setUnreadCount((prev) => prev + 1);
-    });
 
     // Filet de sécurité si la connexion temps réel est coupée (proxy, réseau
     // d'entreprise) : on continue de rafraîchir, mais plus lentement.
     const interval = setInterval(fetchNotifications, 60000);
 
-    return () => {
-      clearInterval(interval);
-      socket.off('notification');
-      socket.disconnect();
-      socketRef.current = null;
-    };
+    return () => clearInterval(interval);
   }, [fetchNotifications]);
 
   return {
     notifications,
     unreadCount,
     loading,
+    error,
     markAsRead,
     markAllAsRead,
     refetch: fetchNotifications,

@@ -1,23 +1,24 @@
 const createNextIntlPlugin = require("next-intl/plugin");
 
-// La locale ne vit pas dans l'URL (pas de /fr/, /en/) : trois domaines se
-// partagent déjà le routage (voir middleware.ts) et ajouter un préfixe de
-// langue par-dessus aurait voulu dire déplacer les 80 et quelques pages sous
-// un segment [locale]. La locale se lit plutôt dans un cookie, voir
-// i18n/request.ts.
+// Pas de segment [locale] : déplacer les 80 et quelques pages dessous aurait
+// été un chantier à part entière. La locale se lit dans un cookie, ou dans la
+// région de l'adresse (/be-fr/…) que le proxy retire des pages
+// publiques avant de les servir — voir i18n/request.ts et proxy.ts.
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
+  // Le package-lock.json vide à la racine du dépôt ferait prendre `projet/`
+  // pour la racine de l'application.
+  outputFileTracingRoot: __dirname,
   images: {
-    domains: ["res.cloudinary.com", "localhost"],
     remotePatterns: [
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
       },
+      { hostname: "localhost" },
     ],
   },
   env: {
@@ -60,6 +61,9 @@ const nextConfig = {
       "/super-admin/notifications": "/superowner/notifications",
       "/super-admin/settings": "/superowner/system-config",
       "/super-admin/tickets": "/superowner/support-tickets",
+      // Même liste de livreurs que /superowner/members/deliveries, sous un
+      // second « Livreurs » dans le même menu.
+      "/superowner/members/drivers": "/superowner/members/deliveries",
     };
 
     const versCommercant = [
@@ -86,6 +90,19 @@ const nextConfig = {
       ...versCommercant.map((source) => ({
         source,
         destination: "/merchant",
+        permanent: true,
+      })),
+      // Première mouture de l'espace commerçant : sans menu, sans titre, et
+      // un produit à désigner par son identifiant. Les mêmes écrans vivent
+      // sous /merchant/:orgId, avec la liste des produits de la boutique.
+      ...[
+        ["notifications", "notifications"],
+        ["product-media", "product-media"],
+        ["product-seo", "product-seo"],
+        ["product-tag", "product-tags"],
+      ].map(([ancien, nouveau]) => ({
+        source: `/:orgId/merchant/dashboard/${ancien}`,
+        destination: `/merchant/:orgId/${nouveau}`,
         permanent: true,
       })),
     ];

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import {
@@ -11,6 +11,7 @@ import {
   RefreshCw,
   XCircle,
 } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 /**
  * La santé de la plateforme, relevé par relevé.
@@ -39,7 +40,7 @@ const teinteTexte = (score: number) =>
 const teinteBarre = (score: number) =>
   score >= 90 ? 'bg-green-500' : score >= 60 ? 'bg-amber-500' : 'bg-red-500';
 
-const ICONES: Record<string, JSX.Element> = {
+const ICONES: Record<string, ReactElement> = {
   OK: <CheckCircle2 size={20} className="text-green-400" />,
   ATTENTION: <AlertTriangle size={20} className="text-amber-400" />,
   PANNE: <XCircle size={20} className="text-red-400" />,
@@ -84,7 +85,7 @@ export default function SanteSystemePage() {
     }
   }, [t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

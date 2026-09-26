@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { MessageCircle, Plus, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { TicketConversation } from '@/components/TicketConversation';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -45,12 +48,10 @@ export default function SupportPage() {
   const [openTicketId, setOpenTicketId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
-  useEffect(() => {
-    fetchTickets();
-  }, [orgId, showArchived]);
-
-  const fetchTickets = async () => {
-    setLoading(true);
+  // silencieux : une relecture en direct garde la liste affichée — et la
+  // conversation ouverte dedans.
+  const fetchTickets = useCallback(async (silencieux = false) => {
+    if (!silencieux) setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/support/tickets?orgId=${orgId}&archived=${showArchived}`, {
@@ -62,11 +63,18 @@ export default function SupportPage() {
         setTickets(data.data || []);
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [orgId, showArchived]);
+
+  // Une réponse du support, un ticket clos ou rouvert : la liste suit.
+  useDonneesModifiees('tickets', () => fetchTickets(true), { orgId });
+
+  useEffectChargement(() => {
+    fetchTickets();
+  }, [orgId, showArchived, fetchTickets]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +100,7 @@ export default function SupportPage() {
         fetchTickets();
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setSubmitting(false);
     }

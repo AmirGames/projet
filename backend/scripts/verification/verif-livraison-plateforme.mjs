@@ -26,7 +26,7 @@ const aKm = (km) => ({ latitude: BOUTIQUE.latitude + km / 111.32, longitude: BOU
 // ===== La plateforme =====
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` })
+  await post('/api/auth/signup', { conditionsAcceptees: true, email: `p-${uniq}@t.fr`, password: 'Password123!', name: `P ${uniq}` })
 );
 await sqlExec(`UPDATE "User" SET "isSuperOwner" = true WHERE email = 'p-${uniq}@t.fr'`);
 const S = plateforme.accessToken;
@@ -60,7 +60,7 @@ check(
 // ===== Le commerçant =====
 
 const inscription = await j(
-  await post('/api/auth/merchant-register', {
+  await post('/api/auth/merchant-register', { conditionsAcceptees: true,
     businessName: `Pizzeria ${uniq}`,
     email: `m-${uniq}@t.fr`,
     password: 'Password123!',
@@ -99,7 +99,7 @@ const verdict = async (km) =>
   (await j(await get(`/api/client/stores/${storeId}/zone-livraison?lat=${aKm(km).latitude}&lng=${aKm(km).longitude}`)))?.data;
 
 const commander = (km) =>
-  post('/api/orders', {
+  post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `C ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
@@ -145,7 +145,7 @@ check('hors frais de livraison : 15 % de 20 €', commissionPlateforme === 3, `$
 
 titre('Le livreur touche les frais payés par le client');
 const livreur = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `L ${uniq}`,
     email: `l-${uniq}@t.fr`,
     password: 'Password123!',

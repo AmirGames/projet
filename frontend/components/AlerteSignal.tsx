@@ -1,9 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { WifiOff, MapPinOff, SatelliteDish } from 'lucide-react';
 
 export type EtatGps = 'ok' | 'refuse' | 'faible';
+
+function suivreReseau(avertir: () => void) {
+  window.addEventListener('online', avertir);
+  window.addEventListener('offline', avertir);
+  return () => {
+    window.removeEventListener('online', avertir);
+    window.removeEventListener('offline', avertir);
+  };
+}
 
 /**
  * L'état de la connexion et du GPS côté livreur.
@@ -14,26 +23,14 @@ export type EtatGps = 'ok' | 'refuse' | 'faible';
  * réseau revient pour renvoyer la position sans attendre le prochain envoi.
  */
 export function useSignalGps(surRetour?: () => void) {
-  const [enLigne, setEnLigne] = useState(true);
+  const enLigne = useSyncExternalStore(suivreReseau, () => navigator.onLine, () => true);
   const [gps, setGps] = useState<EtatGps>('ok');
 
   useEffect(() => {
-    if (typeof navigator === 'undefined') return;
-
-    setEnLigne(navigator.onLine);
-
-    const allume = () => {
-      setEnLigne(true);
-      surRetour?.();
-    };
-    const eteint = () => setEnLigne(false);
-
+    if (!surRetour) return;
+    const allume = () => surRetour();
     window.addEventListener('online', allume);
-    window.addEventListener('offline', eteint);
-    return () => {
-      window.removeEventListener('online', allume);
-      window.removeEventListener('offline', eteint);
-    };
+    return () => window.removeEventListener('online', allume);
   }, [surRetour]);
 
   const positionRecue = useCallback(() => setGps('ok'), []);

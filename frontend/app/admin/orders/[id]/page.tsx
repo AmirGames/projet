@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Order {
   id: string;
@@ -25,20 +27,20 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [newStatus, setNewStatus] = useState('');
 
-  useEffect(() => {
-    fetchOrder();
-  }, [orderId]);
-
   const fetchOrder = async () => {
     try {
       // Note: The API doesn't have a getOrder by ID endpoint
       // In production, implement GET /api/orders/:id
       setLoading(false);
     } catch (error) {
-      console.error('Erreur chargement commande:', error);
+      signalerErreur('Erreur chargement commande:', error);
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchOrder();
+  }, [orderId]);
 
   const handleStatusUpdate = async () => {
     if (!newStatus) return;
@@ -51,7 +53,7 @@ export default function OrderDetailPage() {
         setNewStatus('');
       }
     } catch (error) {
-      console.error('Erreur mise à jour statut:', error);
+      signalerErreur('Erreur mise à jour statut:', error);
     }
   };
 

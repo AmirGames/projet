@@ -11,8 +11,8 @@ emporter ou à livrer.
 > **État du projet.** Fonctionnel de bout en bout en local : on crée un compte,
 > une boutique, un menu, on commande sans compte, le commerçant suit sa commande
 > et un livreur — une fois son dossier validé par la plateforme — la prend en
-> charge. Le paiement en ligne reste incomplet (voir
-> [Ce qui n'est pas terminé](#ce-qui-nest-pas-terminé)). Rien n'est encore
+> charge. Le paiement en ligne par carte (Stripe) est confirmé par webhook et
+> remboursé automatiquement quand une commande est refusée. Rien n'est encore
 > déployé.
 
 ## Ce que fait la plateforme
@@ -34,6 +34,9 @@ emporter ou à livrer.
 - Est prévenu **par courriel et par SMS** quand un livreur prend sa commande,
   quand elle part du commerce (avec le code de remise) et quand elle est livrée
 - Retrouve une commande passée sans compte par son lien de suivi
+- Garde ses **commerces favoris**, d'un clic sur le cœur de leur carte
+- Dispose d'un **délai de 10 s** pour annuler une commande avant son envoi, et
+  d'un bandeau « commande en cours » dans son espace
 - **Tout compte a un espace client**, commerçants et livreurs compris : ils
   commandent comme n'importe qui, et les commandes passées sans compte se
   rattachent au compte qui porte la même adresse électronique
@@ -128,19 +131,30 @@ emporter ou à livrer.
 - Journal des actions administratives et journal des accès
 - Sauvegardes, mode maintenance, clés d'API, webhooks
 - Support : tous les tickets, réponses, priorités
+- **Pages légales** (mentions, CGU, CGV, conditions commerçants et livreurs,
+  confidentialité, cookies) : chaque publication crée une version, et
+  l'acceptation des conditions est enregistrée à l'inscription et à la commande
 
 ### Partout
 - **Un seul compte, plusieurs espaces** : le logo en haut à gauche ouvre les
   autres espaces auxquels le compte a droit — client, commerçant, livreur,
   administration
-- Le site en **français et en anglais**, au choix en haut à droite
+- Le site en **français et en anglais**, choisis avec la région dans la
+  fenêtre « Langue et région » (France, Belgique, Suisse, Luxembourg, Canada,
+  Royaume-Uni, Irlande, États-Unis…) : les pages publiques sont servies sous
+  un sous-répertoire de région (`/be-fr/`, `/fr-fr/`…), déclaré aux moteurs de
+  recherche (hreflang, `sitemap.xml`). Le pays détecté — Belgique par défaut,
+  ou France — règle l'adresse, l'indicatif téléphonique (+32 / +33) et la
+  réglementation des pages « Devenir »
+- Pages de présentation **Devenir livreur, commerçant, chauffeur** (le VTC est
+  annoncé « Bientôt disponible »)
 
 ## Pile technique
 
 | | |
 |---|---|
-| **Frontend** | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS |
-| **Backend** | Express, TypeScript, Prisma |
+| **Frontend** | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS |
+| **Backend** | Express 5, TypeScript, Prisma 7 (adaptateur `@prisma/adapter-pg`) |
 | **Base de données** | PostgreSQL |
 | **Temps réel** | Socket.IO (disponibilité des plats, notifications, suivi de livraison) |
 | **Authentification** | JWT (jeton d'accès + jeton de renouvellement) |
@@ -149,18 +163,18 @@ emporter ou à livrer.
 | **Langues** | next-intl, français et anglais (`frontend/messages/`) |
 | **Adresses** | Base Adresse Nationale pour la France, Photon (OpenStreetMap) pour la Belgique et au-delà — les deux interrogés ensemble. Google Places (New) en option, si la pertinence prime sur le coût |
 | **Cartes** | Leaflet, fond de carte OpenStreetMap (sans clé ni compte) |
-| **Paiement** | Stripe (intention de paiement ; webhook et remboursement à faire) |
+| **Paiement** | Stripe — intention de paiement, webhook signé (`POST /api/payments/webhook`), remboursement |
 
 Un seul dépôt, deux applications :
 
 ```
-backend/    API REST — 38 routeurs, 52 services, 48 modèles Prisma
-frontend/   Next.js — 132 pages
+backend/    API REST — 40 fichiers de routes, 61 services (hors tests), 53 modèles Prisma
+frontend/   Next.js — 142 pages
 ```
 
 ## Démarrer
 
-Il faut **Node 18 ou plus** et **PostgreSQL**.
+Il faut **Node 20.19 ou plus** (Prisma 7 et Next.js 16) et **PostgreSQL**.
 
 ```bash
 git clone https://github.com/AmirGames/projet.git
@@ -179,16 +193,23 @@ createdb zupone_dev
 cd backend
 npm install
 cp .env.example .env     # puis renseignez DATABASE_URL et les deux secrets JWT
-npx prisma db push
+npx prisma migrate deploy
 npm run dev              # http://localhost:3001
 ```
 
-Une base créée avant la validation des commerces : `db push` ajoute la colonne
-`approvedAt` vide, et tous les commerces existants se retrouveraient en attente
-de validation. Considérez-les validés une fois pour toutes :
+L'historique des migrations tient en une seule migration de référence,
+`0001_initial_schema`, qui crée tout le schéma sur une base vide. Chaque
+changement de schéma ajoute ensuite sa propre migration
+(`npx prisma migrate dev --name <nom>`), à committer avec le schéma.
+
+Une base créée **avant** cette remise à plat (par `db push` ou par
+l'ancienne chaîne de migrations) a déjà toutes les tables : il suffit, une
+fois, d'enregistrer la migration de référence comme appliquée, après avoir
+vérifié qu'il ne manque rien :
 
 ```bash
-psql "$DATABASE_URL" -c 'UPDATE "Organization" SET "approvedAt" = NOW() WHERE "approvedAt" IS NULL;'
+npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+npx prisma migrate resolve --applied 0001_initial_schema
 ```
 
 ### 3. Le site
@@ -233,14 +254,14 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1368 contrôles, 41 suites
+# API : 1574 contrôles, 48 suites
 cd backend
 createdb zupone_test
-DATABASE_URL="postgresql://.../zupone_test" npx prisma db push
+DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 644 contrôles, 25 suites
+# Navigateur : 716 contrôles, 27 suites
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
@@ -263,6 +284,50 @@ Le format exact, la vérification de la signature en Node, PHP et Python, et la
 charge utile de chaque événement sont dans
 [`DOCUMENTATION-WEBHOOKS.md`](DOCUMENTATION-WEBHOOKS.md).
 
+## Surveillance
+
+**Administration → Surveillance** montre le site en fonctionnement, rafraîchi
+toutes les 10 secondes :
+
+- **Trafic** : requêtes par minute, taux d'erreurs 4xx/5xx, temps de réponse
+  (médiane, p95, p99), sur l'heure écoulée, et le détail route par route
+- **Serveur** : processeur, mémoire, retard de la boucle d'événements, charge,
+  connexions temps réel
+- **Services externes** : base de données, SMTP, Redis, Stripe, SMS, push
+- **Tâches de fond** : dernier passage, durée, échecs — une tâche qui ne tourne
+  plus se voit
+- **Pannes serveur** (réponses 5xx, avec leur pile) et **erreurs des visiteurs**,
+  remontées de leur navigateur et regroupées par empreinte
+
+Une vigie contrôle tout cela toutes les 30 secondes. Quand un seuil est franchi
+(base injoignable, plus de 2 % de 5xx, p95 au-delà de 1,5 s, mémoire à 85 %,
+tâche en échec…), elle ouvre un incident et prévient par courriel les comptes
+plateforme — et `MONITORING_ALERT_EMAILS`, `MONITORING_WEBHOOK_URL` s'ils sont
+renseignés —, puis signale le retour à la normale.
+
+**Disponibilité** : l'API (serveur et base) et le site public sont relevés
+chaque minute, et l'historique est gardé 90 jours en base. La page en tire la
+disponibilité sur 24 h, 7, 30 et 90 jours, une frise d'un trait par jour et la
+liste des indisponibilités. Un trou dans les relevés de l'API compte comme une
+panne : un serveur arrêté ne relève rien. D'autres adresses se surveillent avec
+`UPTIME_URLS` (voir `backend/.env.example`).
+
+**Depuis l'extérieur** : tout ce qui précède tourne dans le serveur, et tombe
+avec lui si l'hébergement entier s'arrête. Le workflow
+`.github/workflows/disponibilite.yml` interroge le site depuis GitHub toutes les
+dix minutes et échoue — GitHub prévient alors par courriel — dès qu'une adresse
+ne répond plus. Il suffit de renseigner la variable de dépôt `UPTIME_URLS`
+(Settings → Secrets and variables → Actions → Variables), une adresse par ligne.
+
+Pour une autre sonde externe (UptimeRobot, Better Stack, répartiteur de charge) :
+
+| Adresse | Répond |
+|---|---|
+| `GET /health` | 200 tant que le processus tourne |
+| `GET /health/ready` | 200 si la base répond, **503** sinon |
+
+Les mesures sont gardées en mémoire, par instance et depuis son démarrage.
+
 ## Plusieurs domaines
 
 Le site sait se répartir sur trois domaines — public, commerçant, livreur — ou
@@ -275,9 +340,6 @@ vides pour rester sur un domaine unique.
 
 Par honnêteté, ce qui manque encore :
 
-- **Le paiement en ligne.** L'intention de paiement est créée chez Stripe, mais
-  le webhook qui confirme l'encaissement et le remboursement ne sont pas écrits :
-  une commande reste en paiement « en attente ».
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
 - **Les vérifications des derniers chantiers livreur** : pause, perte du
@@ -285,7 +347,15 @@ Par honnêteté, ce qui manque encore :
   d'attribution et paiement à la distance n'ont pas encore leur suite.
 - **Le stock par ingrédient** (une pizza consomme de la mozzarella). Aujourd'hui
   la disponibilité se bascule à la main, plat par plat.
-- **Prisma 5.22 → 7**, à faire une fois le reste stabilisé.
+- **Le texte des pages légales** : les pages existent et se modifient depuis
+  l'espace superowner, mais le texte de départ garde des champs entre crochets
+  à remplir avant d'ouvrir au public.
+- **Les applications mobiles** (`mobile/apps/merchant`, `delivery`, `customer`)
+  sont écrites mais pas encore publiées. Celle du livreur n'envoie sa position
+  qu'au premier plan ; celle du client ne commande qu'avec un compte (le site
+  garde la commande sans compte). Leurs cartes s'appuient sur les serveurs
+  publics d'OpenStreetMap et d'OSRM, à remplacer par un service payant ou
+  hébergé avant l'ouverture au public.
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.
 

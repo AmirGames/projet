@@ -2,8 +2,9 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
-import { AddressService } from "./address.service";
+import { AddressService, paysDeLAdresse } from "./address.service";
 import { MerchantApprovalService } from "./merchant-approval.service";
+import { TRANSMISE } from "../utils/commande-transmise";
 
 /**
  * La fiche d'une boutique vue par la plateforme, et les rares champs qu'elle
@@ -40,8 +41,11 @@ const CHAMPS_CORRIGEABLES = {
 
 export type ChampCorrigeable = keyof typeof CHAMPS_CORRIGEABLES;
 
+/** Ce qui suit l'adresse sans se saisir : journalisé, jamais corrigeable. */
+const CHAMPS_DEDUITS: Record<string, string> = { countryCode: "Pays" };
+
 export const libelleDuChamp = (champ: string) =>
-  CHAMPS_CORRIGEABLES[champ as ChampCorrigeable] || champ;
+  CHAMPS_CORRIGEABLES[champ as ChampCorrigeable] || CHAMPS_DEDUITS[champ] || champ;
 
 /** Un slug ne sert que s'il tient dans une URL. */
 const SLUG_VALIDE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -81,18 +85,18 @@ export class StoreSupportService {
 
     const [commandes, derniere, dernieresCommandes] = await Promise.all([
       db.order.aggregate({
-        where: { storeId, deletedAt: null },
+        where: { storeId, deletedAt: null, ...TRANSMISE },
         _sum: { totalAmount: true },
       }),
       db.order.findFirst({
-        where: { storeId, deletedAt: null },
+        where: { storeId, deletedAt: null, ...TRANSMISE },
         orderBy: { createdAt: "desc" },
         select: { createdAt: true, status: true },
       }),
       // Les 20 dernières commandes avec leur commission figée — ce que le
       // superowner ne pouvait plus voir après la refonte.
       db.order.findMany({
-        where: { storeId, deletedAt: null },
+        where: { storeId, deletedAt: null, ...TRANSMISE },
         orderBy: { createdAt: "desc" },
         take: 20,
         // commissionFrozen et tierAtOrder sont ajoutés par la migration
@@ -263,16 +267,23 @@ export class StoreSupportService {
       donnees.city !== undefined ||
       donnees.postalCode !== undefined;
 
+    const nouvelleAdresse = {
+      address: (donnees.address ?? boutique.address) as string | null,
+      postalCode: (donnees.postalCode ?? boutique.postalCode) as string | null,
+      city: (donnees.city ?? boutique.city) as string | null,
+    };
+
+    // Le pays suit l'adresse : il décide des régions du site où la boutique
+    // est listée.
+    if (adresseTouchee) donnees.countryCode = paysDeLAdresse(nouvelleAdresse);
+
     if (adresseTouchee && donnees.latitude === undefined && donnees.longitude === undefined) {
-      const texte = [
-        donnees.address ?? boutique.address,
-        donnees.postalCode ?? boutique.postalCode,
-        donnees.city ?? boutique.city,
-      ]
+      const texte = [nouvelleAdresse.address, nouvelleAdresse.postalCode, nouvelleAdresse.city]
         .filter(Boolean)
         .join(" ");
 
       const situation = await AddressService.situer(texte);
+      donnees.countryCode = paysDeLAdresse(nouvelleAdresse, situation.adresse);
 
       if (situation.point) {
         donnees.latitude = situation.point.latitude;

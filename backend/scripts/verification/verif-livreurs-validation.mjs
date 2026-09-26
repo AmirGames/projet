@@ -1,18 +1,18 @@
 // Un livreur ne roule pas avant que la plateforme ait vu son dossier.
 
-import { titre, check, j, uniq, post, get, patch, terminer, sqlScalaire } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, patch, terminer, sqlScalaire } from './outils.mjs';
 
 const MDP = 'Password123!';
 
 const plateforme = await j(
-  await post('/api/auth/signup', { email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
+  await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
 );
 const TP = plateforme.accessToken;
 
 // Un commerçant, sa boutique et une commande à livrer : de quoi vérifier
 // qu'aucune course ne part vers un livreur non validé.
 const commercant = await j(
-  await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
+  await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
 );
 const T = commercant.accessToken;
 
@@ -41,7 +41,7 @@ const produit = await j(
 const productId = produit.product?.id || produit.id;
 
 const commande = await j(
-  await post('/api/orders', {
+  await post('/api/orders', { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
     customerEmail: `c-${uniq}@t.fr`,
@@ -61,7 +61,7 @@ const orderId = commande.order?.id || commande.id;
 
 titre('Un livreur qui s’inscrit attend');
 const livreur = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Karim ${uniq}`,
     email: `d-${uniq}@t.fr`,
     password: MDP,
@@ -238,7 +238,7 @@ check(
 
 titre('Un dossier jamais validé ne se « rétablit » pas');
 const autre = await j(
-  await post('/api/drivers/register', {
+  await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Sami ${uniq}`,
     email: `d2-${uniq}@t.fr`,
     password: MDP,

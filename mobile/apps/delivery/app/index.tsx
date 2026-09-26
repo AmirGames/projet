@@ -1,0 +1,1119 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, AppState, ScrollView, useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_URL, ApiError, apiFetch, setUnauthorizedHandler } from '../lib/api';
+import { clearSession, DEFAULT_PREFS, loadPrefs, loadSession, Prefs, savePrefs, saveSession, Session } from '../lib/session';
+import { Delivery, Driver, Offer } from '../lib/deliveries';
+import { useDriverAlerts } from '../lib/useDriverAlerts';
+import { DutyMode, Tracking, useDriverLocation } from '../lib/useDriverLocation';
+import { useRealtimeEvent } from '../lib/realtime';
+import { isNetworkError, useOnline } from '../lib/network';
+import { clearOfflineStore, readJson, writeJson } from '../lib/offlineStore';
+import { clearOutbox, flushOutbox, useOutbox, withPendingSteps } from '../lib/outbox';
+import '../lib/offerNotification';
+import { onDriverNotificationTap, PushDriverData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
+import { applyTheme, COLORS, themedStyles } from '../components/ui';
+import SafetyCheck from '../components/SafetyCheck';
+import OfferSheet from '../components/OfferSheet';
+import DashboardScreen, { EarningsSummary } from '../components/screens/DashboardScreen';
+import DeliveryScreen from '../components/screens/DeliveryScreen';
+import TourneeScreen from '../components/screens/TourneeScreen';
+import HistoryScreen from '../components/screens/HistoryScreen';
+import EarningsScreen from '../components/screens/EarningsScreen';
+import ReviewsScreen from '../components/screens/ReviewsScreen';
+import NotificationsScreen from '../components/screens/NotificationsScreen';
+import SupportScreen from '../components/screens/SupportScreen';
+import SettingsScreen from '../components/screens/SettingsScreen';
+import AccountScreen from '../components/screens/AccountScreen';
+
+/** Filet de sécurité si la connexion temps réel tombe : les propositions sont relues. */
+const OFFERS_POLL_MS = 10_000;
+
+const DRAWER_ITEMS = [
+  { tab: 'history', label: '🗂️ Historique' },
+  { tab: 'earnings', label: '💶 Revenus' },
+  { tab: 'reviews', label: '⭐ Mes avis' },
+  { tab: 'notifications', label: '🔔 Notifications' },
+  { tab: 'support', label: '💬 Support' },
+  { tab: 'settings', label: '⚙️ Paramètres' },
+  { tab: 'account', label: '👤 Mon Compte' },
+];
+
+export default function DeliveryApp() {
+  const [booting, setBooting] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
+  const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
+  const [tab, setTab] = useState<string>('dashboard');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [driver, setDriver] = useState<Driver | null>(null);
+  const [earnings, setEarnings] = useState<EarningsSummary | null>(null);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [activeDeliveries, setActiveDeliveries] = useState<Delivery[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [openDeliveryId, setOpenDeliveryId] = useState<string | null>(null);
+  // La course ouverte dans l'onglet « Course en cours » : choisie dans la
+  // tournée, ou la seule en cours. Elle reste à l'écran une fois livrée,
+  // pour l'écran de fin.
+  const [courseSel, setCourseSel] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const [togglingOnline, setTogglingOnline] = useState(false);
+  const [answeringOfferId, setAnsweringOfferId] = useState<string | null>(null);
+  const [pushSetup, setPushSetup] = useState<PushSetup | null>(null);
+  const [pendingOpen, setPendingOpen] = useState<PushDriverData | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [supportUnread, setSupportUnread] = useState(0);
+  const [notifRefreshKey, setNotifRefreshKey] = useState(0);
+
+  // Le thème s'applique ici, avant que les écrans ne se dessinent : un
+  // changement de réglage, ou du mode du téléphone quand l'app le suit, fait
+  // redessiner toute l'application avec les nouvelles couleurs.
+  const phoneScheme = useColorScheme();
+  applyTheme(prefs.theme === 'system' ? (phoneScheme === 'light' ? 'light' : 'dark') : prefs.theme);
+
+  const token = session?.accessToken || '';
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+  const pushTokenRef = useRef<string | null>(null);
+
+  const updatePrefs = (patch: Partial<Prefs>) => {
+    setPrefs((p) => {
+      const next = { ...p, ...patch };
+      savePrefs(next);
+      return next;
+    });
+  };
+
+  const online = useOnline();
+  const outbox = useOutbox();
+
+  /** Sans réseau, l'erreur le dit plutôt que « Network request failed ». */
+  const errorMessage = (e: any, fallback: string) =>
+    isNetworkError(e) ? 'Pas de réseau : réessayez dès que vous captez.' : e?.message || fallback;
+
+  const patchDriver = useCallback((patch: Partial<Driver>) => setDriver((d) => (d ? { ...d, ...patch } : d)), []);
+
+  const loadOffers = useCallback(async (accessToken: string) => {
+    if (!accessToken) return;
+    try {
+      const res = await apiFetch<{ data: Offer[] }>('/api/drivers/offers', accessToken);
+      setOffers(res.data || []);
+    } catch {
+      // Les propositions déjà affichées restent : elles expirent d'elles-mêmes.
+    }
+  }, []);
+
+  /**
+   * Tout ce que l'accueil affiche : le livreur, ses courses, ses gains.
+   * Chaque réponse est gardée sur le téléphone ; sans réseau, c'est elle qui
+   * s'affiche, à commencer par la course en cours.
+   */
+  const loadAll = useCallback(
+    async (accessToken: string) => {
+      if (!accessToken) return;
+      const cached = <T,>(key: string, apply: (value: T) => void) => async (e: unknown) => {
+        if (!isNetworkError(e)) return;
+        const value = await readJson<T>(key);
+        if (value) apply(value);
+      };
+      await Promise.all([
+        apiFetch<{ data: Driver }>('/api/drivers/me', accessToken)
+          .then((res) => {
+            setDriver(res.data);
+            writeJson('livreur', res.data);
+          })
+          .catch(cached<Driver>('livreur', (d) => setDriver((current) => current || d))),
+        apiFetch<{ data: Delivery[] }>('/api/drivers/deliveries?status=ACTIVE', accessToken)
+          .then((res) => {
+            setActiveDeliveries(res.data || []);
+            writeJson('courses-actives', res.data || []);
+          })
+          .catch(cached<Delivery[]>('courses-actives', (list) => setActiveDeliveries((current) => (current.length ? current : list)))),
+        apiFetch<EarningsSummary>('/api/drivers/earnings', accessToken)
+          .then((res) => {
+            setEarnings(res);
+            writeJson('gains', res);
+          })
+          .catch(cached<EarningsSummary>('gains', (g) => setEarnings((current) => current || g))),
+        loadOffers(accessToken),
+      ]);
+    },
+    [loadOffers]
+  );
+
+  const openSession = async (next: Session) => {
+    // Un autre compte sur ce téléphone : rien du précédent ne reste, ni ses
+    // courses ni ses étapes en attente.
+    const owner = await readJson<string>('proprietaire');
+    if (owner && owner !== next.email) {
+      await clearOutbox();
+      await clearOfflineStore();
+    }
+    writeJson('proprietaire', next.email);
+    setSession(next);
+    setEmail(next.email);
+    setTab('dashboard');
+    await loadAll(next.accessToken);
+  };
+
+  /**
+   * forget : déconnexion voulue, les données du livreur quittent le
+   * téléphone. Une session expirée les garde : les étapes en attente
+   * partiront une fois le livreur reconnecté.
+   */
+  const handleLogout = useCallback((forget = false) => {
+    if (forget) {
+      clearOutbox().then(clearOfflineStore);
+    }
+    const current = sessionRef.current;
+    if (current && pushTokenRef.current) unregisterPush(current.accessToken, pushTokenRef.current);
+    pushTokenRef.current = null;
+    setPushSetup(null);
+    setPendingOpen(null);
+    clearSession();
+    setSession(null);
+    setPassword('');
+    setDriver(null);
+    setEarnings(null);
+    setOffers([]);
+    setActiveDeliveries([]);
+    setOpenDeliveryId(null);
+    setTab('dashboard');
+    setMenuOpen(false);
+    setUnreadCount(0);
+    setSupportUnread(0);
+  }, []);
+
+  // Démarrage : on reprend la session enregistrée et on renouvelle le jeton.
+  useEffect(() => {
+    (async () => {
+      const [stored, storedPrefs] = await Promise.all([loadSession(), loadPrefs()]);
+      setPrefs(storedPrefs);
+      if (stored?.refreshToken) {
+        try {
+          const response = await fetch(`${API_URL}/api/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken: stored.refreshToken }),
+          });
+          const data = await response.json();
+          if (response.ok && data.accessToken && data.driver) {
+            const renewed = { ...stored, accessToken: data.accessToken };
+            await saveSession(renewed);
+            await openSession(renewed);
+          } else if (response.ok || response.status === 401 || response.status === 403) {
+            // Jeton refusé, ou compte qui n'est plus livreur : on se reconnecte.
+            await clearSession();
+            setEmail(stored.email);
+          } else {
+            // Serveur en erreur : on garde la session telle quelle.
+            await openSession(stored);
+          }
+        } catch {
+          await openSession(stored);
+        }
+      }
+      setBooting(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      handleLogout(false);
+      Alert.alert('Session expirée', 'Veuillez vous reconnecter.');
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [handleLogout]);
+
+  // Ce téléphone reçoit les courses même application fermée.
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    registerForPush(token).then((setup) => {
+      if (cancelled) return;
+      pushTokenRef.current = setup.status === 'enabled' ? setup.token : null;
+      setPushSetup(setup);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // Toucher une notification ouvre la course, la proposition ou le support.
+  useEffect(() => onDriverNotificationTap(setPendingOpen), []);
+
+  const loadUnread = useCallback(async (accessToken: string) => {
+    try {
+      const [notifs, support] = await Promise.all([
+        apiFetch<{ unreadCount: number }>('/api/notifications?limit=1', accessToken),
+        apiFetch<{ data: { unread: number } }>('/api/drivers/support/unread', accessToken),
+      ]);
+      setUnreadCount(notifs.unreadCount || 0);
+      setSupportUnread(support.data?.unread || 0);
+    } catch {
+      // Les compteurs restent tels quels : ils seront recalculés plus tard.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (token) loadUnread(token);
+  }, [token, loadUnread]);
+
+  // Les courses encore à faire : une remise faite sans réseau, pas encore
+  // envoyée, n'en fait plus partie.
+  const visibleDeliveries = activeDeliveries
+    .map((d) => withPendingSteps(d, outbox.pending))
+    .filter((d) => d.status !== 'DELIVERED');
+
+  const singleId = visibleDeliveries.length === 1 ? visibleDeliveries[0].id : null;
+  useEffect(() => {
+    if (tab === 'course' && singleId && !courseSel) setCourseSel(singleId);
+    // Ailleurs que sur l'onglet, une course finie n'a plus à y revenir.
+    if (tab !== 'course') setCourseSel(null);
+  }, [tab, singleId]);
+
+  // Les étapes faites sans réseau partent au lancement, au retour dans
+  // l'application et à la reconnexion (le retour du réseau, lui, est suivi
+  // dans outbox.ts) ; une fois parties, l'accueil se relit.
+  useEffect(() => {
+    if (!token) return;
+    flushOutbox();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') flushOutbox();
+    });
+    return () => sub.remove();
+  }, [token]);
+  useRealtimeEvent('reconnecte', () => flushOutbox());
+  const pendingCount = outbox.pending.length;
+  const previousPending = useRef(pendingCount);
+  useEffect(() => {
+    if (pendingCount < previousPending.current && token) loadAll(token);
+    previousPending.current = pendingCount;
+  }, [pendingCount]);
+
+  // Position : transmise tant que le livreur est en ligne ou sur une course,
+  // avec la précision qu'il faut à ce moment-là (voir useDriverLocation).
+  const [tracking, setTracking] = useState<Tracking>({ target: null, navigating: false });
+  // Profil pas encore chargé : on ne coupe pas le suivi en arrière-plan d'un
+  // livreur resté en ligne, application fermée.
+  const dutyMode: DutyMode =
+    visibleDeliveries.length > 0 ? 'delivery' : driver ? (driver.isOnline ? 'idle' : 'off') : token ? 'loading' : 'off';
+  const { position, gps, background } = useDriverLocation(token, dutyMode, tracking);
+
+  // Une proposition expirée disparaît d'elle-même, et la sonnerie avec : un
+  // seul réveil, à l'échéance de la plus proche.
+  useEffect(() => {
+    if (offers.length === 0) return;
+    const next = Math.min(...offers.map((o) => new Date(o.expiresAt).getTime()));
+    const id = setTimeout(() => {
+      setOffers((list) => list.filter((o) => new Date(o.expiresAt).getTime() > Date.now()));
+    }, Math.max(0, next - Date.now()) + 50);
+    return () => clearTimeout(id);
+  }, [offers]);
+
+  // Un même changement arrive souvent par plusieurs événements : un seul
+  // rechargement suffit.
+  const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleReload = () => {
+    if (reloadTimer.current) clearTimeout(reloadTimer.current);
+    reloadTimer.current = setTimeout(() => loadAll(token), 300);
+  };
+
+  const { connected, ring } = useDriverAlerts({
+    token,
+    soundEnabled: prefs.soundEnabled,
+    pendingOffers: offers.length,
+    onOffer: (offer) => {
+      // Elle s'affiche en plein écran, par-dessus l'écran en cours.
+      setOffers((list) => (list.some((o) => o.id === offer.id) ? list : [...list, offer]));
+    },
+    onChanged: scheduleReload,
+    onNotification: () => {
+      loadUnread(token);
+      setNotifRefreshKey((k) => k + 1);
+    },
+  });
+
+  // Filet de sécurité : les propositions ne sont relues que si la connexion
+  // temps réel est coupée. Connectée, elle les apporte d'elle-même, et la
+  // reconnexion recharge tout (onChanged).
+  useEffect(() => {
+    if (!token || !driver?.isOnline || connected) return;
+    const id = setInterval(() => loadOffers(token), OFFERS_POLL_MS);
+    return () => clearInterval(id);
+  }, [token, driver?.isOnline, connected, loadOffers]);
+
+  useRealtimeEvent('mis-hors-ligne', (e: { raison?: string; message?: string }) => {
+    patchDriver({ isOnline: false, isAvailable: false });
+    Alert.alert('Vous êtes hors ligne', e?.message || e?.raison || 'Votre position n’arrivait plus au serveur.');
+  });
+  useRealtimeEvent('pause-terminee', (e: { isAvailable: boolean; isOnline: boolean }) => {
+    patchDriver({ isAvailable: e.isAvailable, isOnline: e.isOnline, pausedUntil: null, pauseReason: null });
+  });
+  useRealtimeEvent('gps-perdu', () => patchDriver({ gpsLostAt: new Date().toISOString() }));
+  useRealtimeEvent('gps-retabli', () => patchDriver({ gpsLostAt: null }));
+  useRealtimeEvent('support-message', (m: { sender?: string }) => {
+    if (m?.sender === 'SUPPORT' && tabRef.current !== 'support') setSupportUnread((n) => n + 1);
+  });
+
+  const openDelivery = (deliveryId: string) => {
+    setMenuOpen(false);
+    setOpenDeliveryId(deliveryId);
+  };
+
+  useEffect(() => {
+    if (!pendingOpen || !session) return;
+    setPendingOpen(null);
+    if (pendingOpen.deliveryId) {
+      openDelivery(pendingOpen.deliveryId);
+    } else if (pendingOpen.tag === 'support') {
+      setOpenDeliveryId(null);
+      setTab('support');
+    } else {
+      setOpenDeliveryId(null);
+      setTab('dashboard');
+      loadAll(token);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingOpen, session]);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        Alert.alert('Erreur', data.error || data.message || 'Connexion échouée');
+        return;
+      }
+
+      // Seul un compte livreur ouvre cette application.
+      try {
+        await apiFetch('/api/drivers/me', data.accessToken);
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) {
+          Alert.alert('Accès refusé', "Ce compte n'est pas un compte livreur.");
+          return;
+        }
+        throw e;
+      }
+
+      const next: Session = {
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        email: data.user?.email || email.trim(),
+      };
+      await saveSession(next);
+      setPassword('');
+      await openSession(next);
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible de se connecter au serveur');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleOnline = async (online: boolean) => {
+    setTogglingOnline(true);
+    try {
+      const res = await apiFetch<{ isOnline: boolean; isAvailable: boolean; pausedUntil: string | null }>(
+        '/api/drivers/availability',
+        token,
+        { method: 'PATCH', body: { isOnline: online } }
+      );
+      patchDriver({ isOnline: res.isOnline, isAvailable: res.isAvailable, pausedUntil: res.pausedUntil });
+      if (res.isOnline) loadOffers(token);
+      else setOffers([]);
+    } catch (e: any) {
+      Alert.alert(online ? 'Mise en ligne impossible' : 'Erreur', errorMessage(e, 'Réessayez'));
+    } finally {
+      setTogglingOnline(false);
+    }
+  };
+
+  const answerOffer = async (offer: Offer, answer: 'accept' | 'decline') => {
+    setAnsweringOfferId(offer.id);
+    try {
+      const res = await apiFetch<{ data?: { id?: string } }>(`/api/drivers/offers/${offer.id}/${answer}`, token, {
+        method: 'POST',
+      });
+      // Un lot se répond d'un geste : toutes ses courses quittent l'écran.
+      setOffers((list) => list.filter((o) => o.id !== offer.id && !(offer.batchId && o.batchId === offer.batchId)));
+      if (answer === 'accept') {
+        await loadAll(token);
+        if (offer.batchId || offer.ajout || visibleDeliveries.length > 0) {
+          // Plusieurs courses : direction la tournée, dans l'ordre des arrêts.
+          setOpenDeliveryId(null);
+          setMenuOpen(false);
+          setCourseSel(null);
+          setTab('course');
+        } else {
+          // Direction la course : adresse de retrait et itinéraire.
+          const deliveryId = res.data?.id || offer.deliveryId;
+          if (deliveryId) openDelivery(deliveryId);
+        }
+      }
+    } catch (e: any) {
+      Alert.alert('Course', errorMessage(e, "La réponse n'a pas été enregistrée"));
+      loadOffers(token);
+    } finally {
+      setAnsweringOfferId(null);
+    }
+  };
+
+  /** Des étapes attendent encore le réseau : se déconnecter les perdrait. */
+  const confirmLogout = () => {
+    if (pendingCount === 0) {
+      handleLogout(true);
+      return;
+    }
+    Alert.alert(
+      'Envois en attente',
+      `${pendingCount} étape${pendingCount > 1 ? 's' : ''} de course n’${pendingCount > 1 ? 'ont' : 'a'} pas encore été envoyée${pendingCount > 1 ? 's' : ''} faute de réseau. En vous déconnectant, elle${pendingCount > 1 ? 's' : ''} ser${pendingCount > 1 ? 'ont' : 'a'} perdue${pendingCount > 1 ? 's' : ''}.`,
+      [
+        { text: 'Rester connecté', style: 'cancel' },
+        { text: 'Me déconnecter quand même', style: 'destructive', onPress: () => handleLogout(true) },
+      ]
+    );
+  };
+
+  const openFromMenu = (target: string) => {
+    setOpenDeliveryId(null);
+    setTab(target);
+    setMenuOpen(false);
+  };
+
+  const refresh = async () => {
+    setRefreshing(true);
+    await loadAll(token);
+    setRefreshing(false);
+  };
+
+  const clearSupportUnread = useCallback(() => setSupportUnread(0), []);
+  const onDriverLoaded = useCallback((d: Driver) => setDriver(d), []);
+
+  if (booting) {
+    return (
+      <SafeAreaView style={[styles.container, styles.splash]}>
+        <StatusBar style="light" />
+        <Text style={styles.title}>Zupone</Text>
+        <ActivityIndicator color="#fff" style={{ marginTop: 20 }} />
+      </SafeAreaView>
+    );
+  }
+
+  // Login Screen
+  if (!session) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar style="light" />
+        <View style={styles.loginContainer}>
+          <Text style={styles.title}>Zupone</Text>
+          <Text style={styles.subtitle}>Livreur</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor={COLORS.muted}
+            value={email}
+            onChangeText={setEmail}
+            editable={!loading}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Mot de passe"
+            placeholderTextColor={COLORS.muted}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            editable={!loading}
+          />
+
+          <TouchableOpacity
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Se connecter</Text>}
+          </TouchableOpacity>
+
+          <Text style={styles.signupHint}>Pas encore livreur ? Inscrivez-vous sur le site Zupone.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // « Tout va bien ? » : veille sur le livreur tant qu'une course est en cours.
+  const safetyCheck = (
+    <>
+      <SafetyCheck token={token} deliveries={visibleDeliveries} position={position} />
+      {/* Une course proposée passe devant tout le reste, comme un appel. */}
+      <OfferSheet offers={offers} position={position} answeringOfferId={answeringOfferId} onAnswer={answerOffer} />
+    </>
+  );
+
+  // Delivery Detail Screen
+  if (openDeliveryId) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar style="light" />
+        <DeliveryScreen
+          key={openDeliveryId}
+          deliveryId={openDeliveryId}
+          token={token}
+          position={position}
+          navigationApp={prefs.navigationApp}
+          onBack={() => setOpenDeliveryId(null)}
+          onChanged={() => loadAll(token)}
+          onTrackingChange={setTracking}
+          todayEarnings={earnings?.today ?? null}
+          otherActive={visibleDeliveries.filter((d) => d.id !== openDeliveryId).length}
+          otherPickups={visibleDeliveries.filter((d) => d.id !== openDeliveryId && d.status === 'ACCEPTED').length}
+        />
+        {safetyCheck}
+      </SafeAreaView>
+    );
+  }
+
+  const currentDelivery = visibleDeliveries[0];
+  // L'onglet « Course en cours » reste sur la course qui vient de se
+  // terminer : sans cela, elle disparaissait avec sa remise, et l'écran de
+  // fin avec elle.
+  const courseTabId = courseSel ?? singleId;
+  const headerSubtitle = (
+    <View style={styles.subtitleRow}>
+      <View style={[styles.liveDot, { backgroundColor: online && connected ? '#7CFC8A' : '#FFB3B3' }]} />
+      <Text style={styles.headerEmail}>
+        {driver?.name || email}
+        {!online ? '  · 📴 pas de réseau' : connected ? '' : '  · hors ligne'}
+        {pendingCount > 0 ? `  · ${pendingCount} envoi${pendingCount > 1 ? 's' : ''} en attente` : ''}
+      </Text>
+    </View>
+  );
+  const back = () => setTab('dashboard');
+  const bell = (
+    <TouchableOpacity style={styles.bell} onPress={() => setTab('notifications')} hitSlop={8}>
+      <Text style={styles.bellIcon}>🔔</Text>
+      {unreadCount > 0 && (
+        <View style={styles.bellBadge}>
+          <Text style={styles.tabBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+
+  const renderTabContent = () => {
+    if (tab === 'history') return <HistoryScreen token={token} onBack={back} onOpenDelivery={openDelivery} />;
+    if (tab === 'earnings') return <EarningsScreen token={token} onBack={back} />;
+    if (tab === 'reviews') return <ReviewsScreen token={token} onBack={back} />;
+    if (tab === 'notifications') {
+      return (
+        <NotificationsScreen token={token} refreshKey={notifRefreshKey} onBack={back} onUnreadChange={setUnreadCount} />
+      );
+    }
+    if (tab === 'support') return <SupportScreen token={token} onBack={back} onRead={clearSupportUnread} />;
+    if (tab === 'settings') {
+      return (
+        <SettingsScreen
+          prefs={prefs}
+          onChangePrefs={updatePrefs}
+          onTestSound={ring}
+          pushEnabled={pushSetup?.status === 'enabled'}
+          pushInfo={pushSetup ? (pushSetup.status === 'enabled' ? undefined : pushSetup.reason) : 'Vérification…'}
+          gps={gps}
+          background={background}
+          email={email}
+          onBack={back}
+        />
+      );
+    }
+    if (tab === 'account') return <AccountScreen token={token} onBack={back} onDriverLoaded={onDriverLoaded} />;
+    if (tab === 'course') {
+      const others = visibleDeliveries.filter((d) => d.id !== courseTabId).length;
+      if (courseTabId) {
+        return (
+          <DeliveryScreen
+            key={courseTabId}
+            deliveryId={courseTabId}
+            token={token}
+            position={position}
+            navigationApp={prefs.navigationApp}
+            onBack={() => {
+              setCourseSel(null);
+              // Il reste des courses : retour à la tournée (ou à la suivante).
+              if (others === 0) back();
+            }}
+            onChanged={() => loadAll(token)}
+            onTrackingChange={setTracking}
+            todayEarnings={earnings?.today ?? null}
+            otherActive={others}
+            otherPickups={visibleDeliveries.filter((d) => d.id !== courseTabId && d.status === 'ACCEPTED').length}
+          />
+        );
+      }
+      if (visibleDeliveries.length > 1) {
+        return (
+          <TourneeScreen
+            token={token}
+            deliveries={visibleDeliveries}
+            position={position}
+            navigationApp={prefs.navigationApp}
+            maxCourses={driver?.maxCourses}
+            onOpenDelivery={setCourseSel}
+            onTrackingChange={setTracking}
+          />
+        );
+      }
+      return (
+        <>
+          <View style={styles.header}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Course en cours</Text>
+              {headerSubtitle}
+            </View>
+            {bell}
+          </View>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyIcon}>🛵</Text>
+            <Text style={styles.emptyText}>Aucune course en cours</Text>
+            <Text style={styles.emptyHint}>
+              {driver?.isOnline ? 'Les courses proposées apparaissent sur l’accueil.' : 'Passez en ligne pour recevoir des courses.'}
+            </Text>
+            <TouchableOpacity style={styles.emptyButton} onPress={back}>
+              <Text style={styles.emptyButtonText}>Aller à l’accueil</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      );
+    }
+    return (
+      <DashboardScreen
+        header={
+          <View style={styles.header}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.headerTitle}>Accueil</Text>
+              {headerSubtitle}
+            </View>
+            {bell}
+          </View>
+        }
+        token={token}
+        driver={driver}
+        earnings={earnings}
+        activeDeliveries={visibleDeliveries}
+        gps={gps}
+        background={background}
+        refreshing={refreshing}
+        onRefresh={refresh}
+        togglingOnline={togglingOnline}
+        onToggleOnline={toggleOnline}
+        onOpenDelivery={(d) => openDelivery(d.id)}
+        onDriverChange={patchDriver}
+        onSeeEarnings={() => setTab('earnings')}
+        onSeeAccount={() => setTab('account')}
+      />
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <StatusBar style="light" />
+
+      <View style={styles.dashboardContainer}>
+        {renderTabContent()}
+
+        <View style={styles.bottomTabBar}>
+          <TouchableOpacity style={styles.tabButton} onPress={() => setMenuOpen(true)}>
+            <View>
+              <Text style={styles.tabIcon}>☰</Text>
+              {supportUnread > 0 && (
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>{supportUnread}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.tabLabel}>Menu</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabButton, tab === 'dashboard' && styles.tabButtonActive]}
+            onPress={() => setTab('dashboard')}
+          >
+            <View>
+              <Text style={styles.tabIcon}>🏠</Text>
+              {offers.length > 0 && (
+                <View style={[styles.tabBadge, { backgroundColor: COLORS.success }]}>
+                  <Text style={styles.tabBadgeText}>{offers.length}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.tabLabel, tab === 'dashboard' && styles.tabLabelActive]}>Accueil</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabButton, tab === 'course' && styles.tabButtonActive]}
+            onPress={() => setTab('course')}
+          >
+            <View>
+              <Text style={styles.tabIcon}>🛵</Text>
+              {currentDelivery && (
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>{visibleDeliveries.length}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.tabLabel, tab === 'course' && styles.tabLabelActive]}>Course en cours</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {safetyCheck}
+
+      {/* Menu Drawer */}
+      {menuOpen && (
+        <View style={styles.menuOverlay}>
+          <View style={styles.menuDrawer}>
+            <View style={styles.menuHeader}>
+              <Text style={styles.menuTitle}>Menu</Text>
+              <TouchableOpacity onPress={() => setMenuOpen(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView>
+              {driver && (
+                <View style={styles.driverBlock}>
+                  <Text style={styles.driverBlockLabel}>Livreur</Text>
+                  <View style={styles.driverCurrent}>
+                    <Text style={styles.driverName} numberOfLines={1}>
+                      {driver.isOnline ? '🟢' : '⚪'} {driver.name || email}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {DRAWER_ITEMS.map((item) => (
+                <TouchableOpacity
+                  key={item.tab}
+                  style={[styles.menuItem, tab === item.tab && styles.menuItemActive]}
+                  onPress={() => openFromMenu(item.tab)}
+                >
+                  <Text style={styles.menuItemText}>
+                    {item.label}
+                    {item.tab === 'notifications' && unreadCount > 0 ? `  (${unreadCount})` : ''}
+                    {item.tab === 'support' && supportUnread > 0 ? `  (${supportUnread})` : ''}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={confirmLogout}>
+                <Text style={styles.menuItemLogoutText}>🚪 Déconnexion</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+          <TouchableOpacity style={styles.menuBackdrop} onPress={() => setMenuOpen(false)} />
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = themedStyles(() => ({
+  splash: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  tabBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -12,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#f44336',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  bell: {
+    padding: 6,
+  },
+  bellIcon: {
+    fontSize: 22,
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 0,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#f44336',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  tabBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.chrome,
+    position: 'relative',
+  },
+  menuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    zIndex: 999,
+  },
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  menuDrawer: {
+    width: '70%',
+    backgroundColor: COLORS.card,
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+  menuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  menuTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  closeButton: {
+    fontSize: 24,
+    color: COLORS.secondary,
+    fontWeight: 'bold',
+  },
+  menuItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: COLORS.text,
+    fontWeight: '500',
+  },
+  driverBlock: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  driverBlockLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.muted,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  driverCurrent: {
+    backgroundColor: COLORS.raised,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  driverName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  menuItemActive: {
+    backgroundColor: COLORS.infoBg,
+  },
+  menuItemLogout: {
+    marginTop: 8,
+    borderBottomWidth: 0,
+  },
+  menuItemLogoutText: {
+    fontSize: 16,
+    color: '#f44336',
+    fontWeight: '500',
+  },
+  loginContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  dashboardContainer: {
+    flex: 1,
+    backgroundColor: COLORS.bg,
+  },
+  header: {
+    backgroundColor: COLORS.header,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.onHeader,
+  },
+  headerEmail: {
+    fontSize: 11,
+    color: COLORS.onHeader,
+    opacity: 0.75,
+    marginTop: 2,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: COLORS.muted,
+  },
+  emptyHint: {
+    fontSize: 13,
+    color: COLORS.muted,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  emptyButton: {
+    marginTop: 16,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  emptyButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  title: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 18,
+    color: COLORS.onHeader,
+    opacity: 0.85,
+    marginBottom: 40,
+    textAlign: 'center',
+  },
+  input: {
+    backgroundColor: COLORS.raised,
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginBottom: 15,
+    fontSize: 16,
+    color: COLORS.text,
+  },
+  loginButton: {
+    backgroundColor: COLORS.loginButton,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  signupHint: {
+    marginTop: 20,
+    color: COLORS.onHeader,
+    opacity: 0.75,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  bottomTabBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.card,
+    paddingBottom: 8,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  tabButtonActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.link,
+  },
+  tabIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+    color: COLORS.text,
+  },
+  tabLabel: {
+    fontSize: 11,
+    color: COLORS.muted,
+    fontWeight: '500',
+  },
+  tabLabelActive: {
+    color: COLORS.link,
+    fontWeight: '600',
+  },
+}));

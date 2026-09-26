@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Store as StoreIcon, Search, Package, ShoppingCart, ExternalLink } from 'lucide-react';
 
 import { lienVersEspace } from '@/lib/domaines';
+import { useDonneesModifiees } from '@/lib/temps-reel';
 
 const API_URL =process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -48,9 +49,13 @@ export default function BoutiquesAdminPage() {
     return (statut && labels[statut]) || statut;
   };
 
-  const charger = useCallback(async () => {
-    setLoading(true);
-    setErreur('');
+  // silencieux : une relecture en direct garde la page affichée.
+  const charger = useCallback(async (silencieux = false) => {
+    // Une relecture en direct ne doit pas effacer le refus qu'on vient d'afficher.
+    if (!silencieux) {
+      setLoading(true);
+      setErreur('');
+    }
 
     try {
       const token = localStorage.getItem('accessToken');
@@ -85,6 +90,9 @@ export default function BoutiquesAdminPage() {
     const minuteur = setTimeout(charger, recherche ? 350 : 0);
     return () => clearTimeout(minuteur);
   }, [charger, recherche]);
+
+  // Une boutique créée, ouverte, fermée ou suspendue : la liste suit.
+  useDonneesModifiees(['stores', 'store-hours', 'organizations'], () => charger(true), { delaiMs: 1000 });
 
   return (
     <div className="space-y-6">

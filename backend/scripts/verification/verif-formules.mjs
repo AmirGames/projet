@@ -1,11 +1,11 @@
 // Formules, quotas de boutiques, notifications de ticket, service d'adresses.
 
 import { io } from 'socket.io-client';
-import { titre, check, j, uniq, post, get, patch, terminer, API } from './outils.mjs';
+import { inscription, titre, check, j, uniq, post, get, patch, terminer, API } from './outils.mjs';
 
-const sup = await j(await post('/api/auth/signup', { email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
+const sup = await j(await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const S = sup.accessToken;
-const m = await j(await post('/api/auth/signup', { email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
+const m = await j(await inscription({ email: `m-${uniq}@t.fr`, password: 'Password123!', name: `M ${uniq}` }));
 const T = m.accessToken, orgId = m.organization.id;
 
 const creerBoutique = (n) => post('/api/stores', {

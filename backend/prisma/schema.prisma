@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ============================================================================
@@ -36,11 +35,29 @@ model User {
   driver        Driver?
   customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
   ticketMessages TicketMessage[]
+  pushDevices   PushDevice[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([email])
+}
+
+/// Téléphone sur lequel l'application mobile est installée et connectée.
+/// Le jeton Expo Push permet de prévenir le compte même application fermée.
+model PushDevice {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String?  // ios, android
+  app       String?  // merchant, delivery, customer
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // ============================================================================
@@ -131,6 +148,15 @@ model Organization {
   iban                String?
   bic                 String?
   accountHolder       String?
+
+  /// La promo « zéro commission », accordée à la main par la plateforme.
+  ///
+  /// Tant qu'elle court, aucune commission n'est prélevée sur les ventes du
+  /// commerçant, quelle que soit sa formule ou qui livre. Sans date de fin,
+  /// elle dure jusqu'à ce qu'on la retire.
+  commissionFreeActive Boolean   @default(false)
+  commissionFreeUntil  DateTime?
+  commissionFreeNote   String?
 
   /// La validation du commerce par la plateforme.
   ///
@@ -235,6 +261,15 @@ model SystemConfig {
   driverOfferSeconds  Int       @default(30)
   // Au-delà, on ne propose plus la course
   driverMaxRadiusKm   Float     @default(8)
+  // Plusieurs courses à la fois (tournée) : combien au plus (1 = jamais de
+  // regroupement), clients « au même endroit », détour accepté.
+  driverMaxCourses    Int       @default(3)
+  driverGroupClientKm Float     @default(2)
+  driverGroupDetourKm Float     @default(2)
+
+  // Frais de service ajoutés à chaque commande du client. Ils reviennent à la
+  // plateforme, jamais au commerçant. 0 les supprime.
+  serviceFee          Decimal   @default(0.25) @db.Decimal(10, 2)
 
   // Settings JSON for additional configurations
   settings            Json      @default("{}")
@@ -375,6 +410,11 @@ model Store {
   address       String?
   city          String?
   postalCode    String?
+  /// Le pays de la boutique, code ISO en minuscules (« fr », « be »), déduit
+  /// de son adresse à chaque changement. Il décide des régions du site
+  /// (/fr-fr/, /be-fr/…) dans lesquelles elle est listée ; vide, elle l'est
+  /// partout plutôt que nulle part.
+  countryCode   String?
   phone         String?
   email         String?
   description   String?
@@ -449,6 +489,7 @@ model Store {
   notifications Notification[] @relation("NotificationToStore")
   tags          ProductTag[] @relation("TagToStore")
   favorites     FavoriteStore[] @relation("StoreFavorites")
+  customerCarts CustomerCart[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -456,6 +497,7 @@ model Store {
   @@unique([orgId, slug])
   @@index([orgId])
   @@index([deletedAt])
+  @@index([countryCode])
 }
 
 // ============================================================================
@@ -622,6 +664,8 @@ enum PaymentStatus {
   PENDING
   SUCCEEDED
   FAILED
+  /// Encaissé puis rendu au client : commande refusée ou annulée.
+  REFUNDED
 }
 
 enum DeliveryType {
@@ -657,6 +701,14 @@ model Order {
   // Status
   status          OrderStatus  @default(PENDING)
 
+  /// L'heure à laquelle la commande est parvenue au commerçant.
+  ///
+  /// Payée sur place : aussitôt passée. Payée par carte : seulement quand
+  /// Stripe a confirmé l'encaissement — le commerçant ne doit pas préparer une
+  /// commande que le client n'a jamais réglée. Vide, la commande n'existe pas
+  /// encore pour lui : ni liste, ni sonnerie, ni délai de réponse.
+  submittedAt     DateTime?    @default(now())
+
   // Payment
   totalAmount     Decimal      @db.Decimal(10, 2)
   taxAmount       Decimal      @db.Decimal(10, 2)
@@ -682,12 +734,20 @@ model Order {
   commissionAmount  Decimal    @default(0) @db.Decimal(10, 2)
   /// La formule du commerçant à cet instant, pour expliquer le taux retenu.
   tierAtOrder       String?
+  /// La commande est tombée pendant une promo « zéro commission ». Sa
+  /// commission vaut 0 et le reste : sans cette marque, un montant nul passe
+  /// pour « pas encore figé » et se refacture au taux du jour.
+  commissionWaived  Boolean    @default(false)
   /// Qui livre cette commande, figé à la commande : OWN (le commerçant, avec
   /// ses livreurs) ou PLATFORM (un livreur de la plateforme). Il décide du taux
   /// de commission, et de ce que deviennent les frais de livraison : gardés par
   /// le commerçant, ou encaissés par la plateforme puis versés au livreur.
   /// Nul pour une commande à emporter.
   deliveryMode      String?
+  /// Les frais de service payés par le client, figés à la commande. Ils sont
+  /// à la plateforme : hors du chiffre du commerçant et de l'assiette de sa
+  /// commission, et réclamés sur son relevé tant qu'il encaisse pour elle.
+  serviceFeeAmount  Decimal    @default(0) @db.Decimal(10, 2)
 
   // Le code promo appliqué, et la remise qu'il a réellement accordée. Aucun des
   // deux n'était conservé : la remise disparaissait de la commande, et le
@@ -702,6 +762,25 @@ model Order {
   paymentMethodName String?
 
   notes           String?
+
+  /// L'acceptation par le commerçant.
+  ///
+  /// Une commande passée n'est qu'une demande : le client n'est fixé que
+  /// quand le commerçant l'accepte, en annonçant son temps de préparation.
+  /// Sans cela, un commerçant qui fermait sur un imprévu laissait le client
+  /// venir chercher une commande que personne ne préparait.
+  acceptedAt         DateTime?
+  preparationMinutes Int?
+  /// L'heure à laquelle la commande sera prête : maintenant plus la
+  /// préparation, ou le créneau choisi pour un retrait programmé.
+  estimatedReadyAt   DateTime?
+
+  /// Le refus, et son motif : TOO_BUSY, PRODUCT_UNAVAILABLE,
+  /// EXCEPTIONAL_CLOSURE, OTHER — ou NO_RESPONSE quand le commerçant n'a pas
+  /// répondu à temps et que la commande a été refusée d'elle-même.
+  rejectedAt         DateTime?
+  rejectionReason    String?
+  rejectionNote      String?
 
   // Soft delete
   deletedAt       DateTime?
@@ -721,6 +800,7 @@ model Order {
   @@index([paymentStatus])
   @@index([createdAt])
   @@index([deletedAt])
+  @@index([submittedAt])
 }
 
 model OrderItem {
@@ -768,6 +848,12 @@ model Payment {
   stripeStatus    String?      // requires_payment_method, succeeded, etc.
   
   paidAt          DateTime?
+
+  /// Le remboursement, quand la commande est refusée ou annulée après
+  /// l'encaissement. Le montant est celui que Stripe a réellement rendu.
+  refundedAt      DateTime?
+  refundedAmount  Decimal?     @db.Decimal(10, 2)
+  stripeRefundId  String?
 
   // Relations
   order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -989,6 +1075,19 @@ model OrderDelivery {
   proofNote       String?
   proofAt         DateTime?
 
+  /// Le client a été prévenu que le livreur approche (à moins de 300 m).
+  ///
+  /// Posé une seule fois : sans cette marque, chaque position reçue dans le
+  /// rayon renverrait le même message.
+  nearCustomerNotifiedAt DateTime?
+
+  /// Le livreur est à la porte, le client ne répond pas : l'attente commence.
+  ///
+  /// Six minutes, visibles des deux côtés. Ce n'est qu'à leur terme que le
+  /// livreur peut déposer la commande en lieu sûr et la photographier : sans
+  /// cette attente, un livreur pressé posait le sac et partait.
+  customerWaitStartedAt DateTime?
+
   /// Le relevé de versement qui paie cette course.
   ///
   /// Tant qu'il est vide, la course est due au livreur. C'est ce lien qui
@@ -1006,6 +1105,11 @@ model OrderDelivery {
   offers          DeliveryOffer[]
   payout          DriverPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
   rating          DriverRating?
+
+  /// Tournée : le rang de cette remise, figé une fois toutes les commandes
+  /// récupérées. Seule la plus petite se montre et se remet ; les suivantes
+  /// attendent. Remis à zéro à chaque nouveau retrait.
+  ordreRemise     Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1085,6 +1189,13 @@ model DeliveryOffer {
   /// de quelques sollicitations : au-delà, ce serait du harcèlement.
   attempts    Int       @default(1)
 
+  /// Courses proposées ensemble au même livreur (un lot) : elles s'acceptent
+  /// ou se refusent d'un seul geste. Vide pour une course seule, ou ajoutée
+  /// à une tournée déjà commencée.
+  batchId     String?
+  /// Proposée à un livreur déjà en course, sur son trajet (« + 1 course »).
+  ajout       Boolean   @default(false)
+
   delivery    OrderDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
   driver      Driver        @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
@@ -1095,6 +1206,7 @@ model DeliveryOffer {
   @@unique([deliveryId, driverId])
   @@index([driverId, status])
   @@index([status, expiresAt])
+  @@index([batchId])
 }
 
 // ============================================================================
@@ -1258,6 +1370,35 @@ model Staff {
 // FAVORITES & PREFERENCES
 // ============================================================================
 
+/// Le panier d'un client chez un commerce, gardé sur le serveur.
+///
+/// Il ne vivait que dans l'appareil où il avait été composé : commencé sur le
+/// site, il n'existait pas sur le téléphone. Rangé ici, il suit le compte, et
+/// chaque modification est annoncée en direct aux autres appareils.
+///
+/// Un panier vidé (commandé, ou vidé à la main) reste une ligne sans articles
+/// plutôt que de disparaître : sans cette trace, l'appareil resté hors ligne
+/// qui en gardait une copie la renverrait, et le panier ressusciterait.
+model CustomerCart {
+  id          String   @id @default(cuid())
+  customerId  String
+  storeId     String
+  storeName   String   @default("")
+  storeSlug   String?
+  storeLogo   String?
+  /// Les lignes, au format du site (`frontend/lib/paniers.ts`) : productId,
+  /// variantId, name, variantNom, price (euros), quantity.
+  lines       Json     @default("[]")
+
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  updatedAt   DateTime @updatedAt
+
+  @@unique([customerId, storeId])
+  @@index([customerId])
+}
+
 model FavoriteStore {
   id        String  @id @default(cuid())
   customerId String
@@ -1315,6 +1456,7 @@ model Customer {
   reviews         Review[] @relation("ReviewToCustomer")
   driverRatings   DriverRating[]
   favorites       FavoriteStore[] @relation("CustomerFavorites")
+  carts           CustomerCart[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1365,18 +1507,25 @@ model DriverRating {
 model Review {
   id          String  @id @default(cuid())
   storeId     String
-  productId   String
+  // Absent pour un avis sur le commerce lui-même, qui ne porte sur aucun plat.
+  productId   String?
   customerId  String?
 
   rating      Int     @default(5) // 1-5 stars
   comment     String?
   helpfulCount Int    @default(0)
 
-  status      String  @default("PENDING") // PENDING, APPROVED, REJECTED
+  // APPROVED : publié. REMOVED : retiré par la plateforme. Le commerçant ne
+  // décide pas du sort d'un avis : il le signale (ReviewReport).
+  status      String  @default("PENDING")
+  // La dernière fois que le client l'a écrit ou retouché. updatedAt bouge
+  // aussi à chaque décision de modération, qui ne change rien à son contenu.
+  editedAt    DateTime @default(now())
+  reports     ReviewReport[]
 
   // Relations
   store       Store   @relation("ReviewToStore", fields: [storeId], references: [id], onDelete: Cascade)
-  product     Product @relation("ReviewToProduct", fields: [productId], references: [id], onDelete: Cascade)
+  product     Product? @relation("ReviewToProduct", fields: [productId], references: [id], onDelete: Cascade)
   customer    Customer? @relation("ReviewToCustomer", fields: [customerId], references: [id], onDelete: SetNull)
 
   createdAt   DateTime @default(now())
@@ -1386,6 +1535,32 @@ model Review {
   @@index([productId])
   @@index([status])
   @@index([createdAt])
+}
+
+/// Un signalement d'avis, et la décision de la plateforme.
+///
+/// Le commerçant signale, la plateforme tranche : conserver l'avis ou le
+/// retirer. Un avis retiré que le client retouche revient ici aussi, sans
+/// auteur, pour que la plateforme décide de le republier ou non.
+model ReviewReport {
+  id           String   @id @default(cuid())
+  reviewId     String
+  review       Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  reason       String
+  /// Le compte qui a signalé ; absent quand le signalement est automatique.
+  reportedById String?
+  createdAt    DateTime @default(now())
+
+  /// KEPT : l'avis reste publié. REMOVED : il est retiré. Absente tant que la
+  /// plateforme n'a pas tranché.
+  decision     String?
+  decisionNote String?
+  decidedById  String?
+  decidedAt    DateTime?
+
+  @@index([reviewId])
+  @@index([decision])
 }
 
 // ============================================================================
@@ -1552,6 +1727,8 @@ enum NotificationType {
   DRIVER_GPS_LOST
   // Message du support au livreur, ou du livreur au support
   SUPPORT_MESSAGE
+  // Le livreur est à moins de 300 m : le client peut descendre
+  DRIVER_NEARBY
 }
 
 model Notification {
@@ -1815,4 +1992,60 @@ model SecurityEvent {
   @@index([createdAt])
   @@index([severity])
   @@index([action])
+}
+
+// Preuve qu'une personne a accepté les conditions : qui, quels documents, dans
+// quelle version, quand et depuis où. Jamais modifiée ni supprimée avec le
+// compte : c'est elle qu'on oppose en cas de litige.
+model AcceptationConditions {
+  id         String   @id @default(cuid())
+  userId     String?
+  orderId    String?
+  email      String
+  documents  String[]
+  version    String
+  ip         String?
+  userAgent  String?
+  acceptedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([orderId])
+  @@index([email])
+}
+
+// Chaque version publiée d'une page légale. Rien n'est écrasé : la version en
+// vigueur est la plus récente, et les anciennes restent consultables pour
+// savoir quel texte une personne a accepté.
+model PageLegaleVersion {
+  id         String   @id @default(cuid())
+  slug       String
+  version    String
+  titre      String
+  contenu    String
+  publieLe   DateTime @default(now())
+  publiePar  String?
+
+  @@unique([slug, version])
+  @@index([slug, publieLe])
+}
+
+// ============================================================================
+// DISPONIBILITÉ
+// ============================================================================
+
+// Un relevé de disponibilité : une cible (l'API, le site…) interrogée à
+// intervalle régulier. L'historique survit aux redémarrages, et un trou dans
+// les relevés de l'API est lui-même une indisponibilité : un serveur arrêté
+// ne relève plus rien.
+model UptimeCheck {
+  id         String   @id @default(cuid())
+  target     String   // "api", "site", ou une cible de UPTIME_URLS
+  ok         Boolean
+  statusCode Int?
+  durationMs Int?
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([target, createdAt])
+  @@index([createdAt])
 }

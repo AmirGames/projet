@@ -65,7 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center font-bold">
               ST
             </div>
-            {sidebarOpen && <span className="font-bold text-lg">SaaS</span>}
+            {sidebarOpen && <span className="font-bold text-lg">Zupone</span>}
           </SelecteurEspace>
         </div>
 
@@ -90,7 +90,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-900/20 transition-colors text-red-400"
           >
             <LogOut size={20} />
-            {sidebarOpen && <span>Logout</span>}
+            {sidebarOpen && <span>Déconnexion</span>}
           </button>
         </div>
       </aside>

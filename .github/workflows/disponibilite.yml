@@ -1,0 +1,62 @@
+# Sonde de disponibilité, depuis l'extérieur.
+#
+# La surveillance intégrée tourne dans le serveur : si l'hébergement entier
+# tombe, elle tombe avec lui et ne prévient personne. Ce workflow interroge le
+# site depuis les serveurs de GitHub toutes les dix minutes ; un échec rend le
+# passage rouge, et GitHub envoie un courriel à qui a écrit ce fichier.
+#
+# À régler une fois, dans Settings → Secrets and variables → Actions →
+# Variables : UPTIME_URLS, une adresse par ligne, par exemple
+#   https://api.zupone.fr/health/ready
+#   https://zupone.fr
+# Sans cette variable, la sonde ne fait rien.
+#
+# Bon à savoir : GitHub peut retarder un passage planifié de plusieurs minutes
+# aux heures chargées, et suspend les workflows planifiés d'un dépôt sans
+# activité depuis 60 jours.
+
+name: Disponibilité
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: disponibilite
+  cancel-in-progress: false
+
+jobs:
+  sonder:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: ${{ vars.UPTIME_URLS != '' }}
+    steps:
+      - name: Interroger chaque adresse
+        env:
+          UPTIME_URLS: ${{ vars.UPTIME_URLS }}
+        run: |
+          echecs=0
+          while IFS= read -r url; do
+            url="$(echo "$url" | xargs)"
+            [ -z "$url" ] && continue
+
+            # Trois essais espacés de 20 s : un seul raté n'est pas une panne.
+            code=$(curl -sS -o /dev/null -w '%{http_code}' -L \
+              --max-time 15 --retry 2 --retry-delay 20 --retry-all-errors \
+              -A "Zupone-Disponibilite/1.0 (GitHub Actions)" "$url" || echo "000")
+
+            if [ "$code" -ge 200 ] && [ "$code" -lt 400 ]; then
+              echo "OK    $code  $url"
+            else
+              echo "::error title=Site indisponible::$url a répondu $code"
+              echecs=$((echecs + 1))
+            fi
+          done <<< "$UPTIME_URLS"
+
+          if [ "$echecs" -gt 0 ]; then
+            echo "$echecs adresse(s) injoignable(s)"
+            exit 1
+          fi

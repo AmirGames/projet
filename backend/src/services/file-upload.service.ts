@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import { join } from "path";
+import { randomBytes } from "crypto";
 import { getEnv } from "../config/env";
 import { logger } from "../config/logger";
 
@@ -76,7 +77,7 @@ export class FileUploadService {
   static async uploadDocument(
     buffer: Buffer,
     filename: string,
-    folder: "drivers" | "merchants",
+    folder: "drivers" | "merchants" | "deliveries",
     mimeType?: string
   ): Promise<{ url: string; publicId: string }> {
     if (isCloudinaryConfigured()) {
@@ -86,21 +87,43 @@ export class FileUploadService {
     }
   }
 
+  /**
+   * Une image faite pour être vue de tous : le logo d'une boutique.
+   *
+   * Les pièces justificatives sont servies sous jeton sur Cloudinary ; un logo
+   * s'affiche dans la liste des restaurants, à n'importe quel visiteur.
+   */
+  static async uploadPublicImage(
+    buffer: Buffer,
+    filename: string,
+    mimeType?: string
+  ): Promise<{ url: string; publicId: string }> {
+    if (isCloudinaryConfigured()) {
+      return this.uploadToCloudinary(buffer, filename, "stores", true);
+    }
+    return this.uploadLocal(buffer, filename, "stores", mimeType);
+  }
+
   private static async uploadToCloudinary(
     buffer: Buffer,
     filename: string,
-    folder: "drivers" | "merchants"
+    folder: "drivers" | "merchants" | "deliveries" | "stores",
+    publique = false
   ): Promise<{ url: string; publicId: string }> {
     const cloud = await getCloudinary();
 
     return new Promise((resolve, reject) => {
       const stream = cloud.uploader.upload_stream(
         {
-          folder: `documents/${folder}`,
-          resource_type: "auto",
-          public_id: filename.replace(/\.[^.]+$/, ""),
+          folder: publique ? `public/${folder}` : `documents/${folder}`,
+          resource_type: publique ? "image" : "auto",
+          // Un nom tiré au hasard : deux boutiques envoyant « logo.png » ne
+          // s'écrasent pas l'une l'autre.
+          public_id: publique
+            ? `${Date.now()}-${randomBytes(8).toString("hex")}`
+            : filename.replace(/\.[^.]+$/, ""),
           overwrite: true,
-          access_mode: "token",
+          ...(publique ? {} : { access_mode: "token" }),
         },
         (error: any, result: any) => {
           if (error) {
@@ -124,7 +147,7 @@ export class FileUploadService {
   private static async uploadLocal(
     buffer: Buffer,
     filename: string,
-    folder: "drivers" | "merchants",
+    folder: "drivers" | "merchants" | "deliveries" | "stores",
     mimeType?: string
   ): Promise<{ url: string; publicId: string }> {
     await ensureUploadsDir();
@@ -135,7 +158,9 @@ export class FileUploadService {
     logger.info("uploadLocal - Processing file:", { filename, mimeType, extractedExt: ext });
 
     // Générer un nom de fichier sécurisé avec l'extension
-    const randomId = Math.random().toString(36).slice(2, 10);
+    // Tiré au hasard pour de bon : les fichiers se servent sans jeton, et une
+    // photo de dépôt montre la porte d'un client.
+    const randomId = randomBytes(8).toString("hex");
     const timestamp = Date.now();
     const safeFilename = `${timestamp}-${randomId}.${ext}`;
     const relativePath = join(folder, safeFilename);

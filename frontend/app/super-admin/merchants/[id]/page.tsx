@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -52,11 +54,7 @@ export default function MerchantDetailPage() {
     }
   };
 
-  useEffect(() => {
-    fetchMerchant();
-  }, [merchantId]);
-
-  const fetchMerchant = async () => {
+  const fetchMerchant = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${API_URL}/api/admin/merchants/${merchantId}`, {
@@ -69,12 +67,16 @@ export default function MerchantDetailPage() {
       setMerchant(data);
       setNewTier(data.tier);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       router.push('/super-admin/merchants');
     } finally {
       setLoading(false);
     }
-  };
+  }, [merchantId, router]);
+
+  useEffectChargement(() => {
+    fetchMerchant();
+  }, [merchantId, fetchMerchant]);
 
   const handleUpdate = async () => {
     if (!merchant) return;

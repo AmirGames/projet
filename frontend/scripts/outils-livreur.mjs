@@ -72,3 +72,25 @@ export async function codeDeRemise(API, orderId) {
 
   return commande?.codeRemise || null;
 }
+
+/**
+ * Le commerçant accepte la commande, la prépare et la déclare prête.
+ *
+ * Le livreur ne peut emporter qu'une commande prête : les scripts qui mènent
+ * une course jusqu'au client passent par le vrai chemin du commerçant avant
+ * le retrait, plutôt que de forcer l'état en base.
+ */
+export async function declarerPrete(API, storeId, orderId, jetonCommercant) {
+  const envoyer = (methode, chemin, corps) =>
+    fetch(`${API}${chemin}`, {
+      method: methode,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jetonCommercant}` },
+      body: JSON.stringify(corps),
+    });
+
+  await envoyer('POST', `/api/order-management/${storeId}/${orderId}/accept`, { preparationMinutes: 15 });
+
+  for (const status of ['PREPARING', 'READY']) {
+    await envoyer('PATCH', `/api/order-management/${storeId}/${orderId}/status`, { status });
+  }
+}

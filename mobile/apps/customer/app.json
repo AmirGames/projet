@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Zupone",
+    "slug": "zupone-customer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "zupone-customer",
+    "updates": {
+      "enabled": false
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#007AFF"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Zupone utilise votre position pour trouver votre adresse de livraison et les commerces qui livrent chez vous."
+        }
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.amir_games.zuponecustomer",
+          "enableGooglePay": true
+        }
+      ]
+    ],
+    "android": {
+      "package": "com.amir_games.zuponecustomer"
+    }
+  }
+}

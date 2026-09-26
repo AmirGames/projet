@@ -3,13 +3,17 @@ import http from 'http';
 import { loadEnv } from "./config/env";
 import { logger } from "./config/logger";
 import { createApp } from "./app";
-import { initializeSocket } from "./config/socket";
+import { initializeSocket, brancherRedis } from "./config/socket";
+import { brancherAnnoncesCommandes } from "./middleware/diffusion";
 import { db } from "./services/db";
 import { ClosureJobs } from "./jobs/closure-jobs";
 import { DispatchJobs } from "./jobs/dispatch-jobs";
+import { OrderJobs } from "./jobs/order-jobs";
 import { DriverJobs } from "./jobs/driver-jobs";
 import { WebhookJobs } from "./jobs/webhook-jobs";
 import { MerchantJobs } from "./jobs/merchant-jobs";
+import { Vigie } from "./services/vigie.service";
+import { Disponibilite } from "./services/disponibilite.service";
 
 // Load environment variables
 const env = loadEnv();
@@ -23,6 +27,10 @@ const httpServer = http.createServer(app);
 // Initialize Socket.IO
 initializeSocket(httpServer);
 
+// Toute écriture sur une commande, même hors requête (tâches de fond), est
+// annoncée aux écrans qui la montrent.
+brancherAnnoncesCommandes();
+
 // Start server
 const start = async () => {
   try {
@@ -30,6 +38,10 @@ const start = async () => {
     logger.info("Testing database connection...");
     await db.$queryRaw`SELECT 1`;
     logger.info("✅ Database connected");
+
+    // Avant d'écouter : un événement émis entre-temps n'atteindrait que les
+    // connexions de cette instance.
+    await brancherRedis();
 
     // Start listening
     httpServer.listen(env.PORT, () => {
@@ -45,6 +57,11 @@ const start = async () => {
     DriverJobs.start();
     WebhookJobs.start();
     MerchantJobs.start();
+    OrderJobs.start();
+
+    // Après les tâches : la vigie les surveille dès son premier passage.
+    Vigie.demarrer();
+    Disponibilite.demarrer();
 
     // Graceful shutdown
     const gracefulShutdown = async () => {
@@ -53,6 +70,10 @@ const start = async () => {
       DispatchJobs.stop();
       WebhookJobs.stop();
       MerchantJobs.stop();
+      OrderJobs.stop();
+      DriverJobs.stop();
+      Vigie.arreter();
+      Disponibilite.arreter();
       httpServer.close(() => {
         logger.info("Server closed");
       });

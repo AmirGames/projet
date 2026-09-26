@@ -87,24 +87,4 @@ export class AuthService {
       throw new ApiError(401, "Invalid refresh token", "INVALID_REFRESH_TOKEN");
     }
   }
-
-  /**
-   * Generate random token (for email verification, password reset, etc.)
-   */
-  static generateRandomToken(): string {
-    return require("crypto").randomBytes(32).toString("hex");
-  }
-
-  /**
-   * Generate verification email token
-   */
-  static generateVerificationToken(_userId: string): {
-    token: string;
-    expiresAt: Date;
-  } {
-    const token = this.generateRandomToken();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    return { token, expiresAt };
-  }
 }

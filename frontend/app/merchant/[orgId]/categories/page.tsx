@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react';
 import {
   DndContext,
@@ -22,6 +23,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { useCurrentStore } from '@/lib/current-store';
 
 import { useTranslations } from 'next-intl';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Category {
@@ -133,13 +136,7 @@ export default function CategoriesPage() {
     })
   );
 
-  useEffect(() => {
-    if (storeId) {
-      fetchStoreAndCategories();
-    }
-  }, [storeId]);
-
-  const fetchStoreAndCategories = async () => {
+  const fetchStoreAndCategories = useCallback(async () => {
     if (!storeId) return;
 
     try {
@@ -155,11 +152,24 @@ export default function CategoriesPage() {
         setCategories(sorted);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      signalerErreur('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
+
+  // Une catégorie ajoutée ou réordonnée ailleurs, ou un plat qui change de
+  // catégorie (le compte par catégorie bouge) : la liste suit.
+  useDonneesModifiees(['categories', 'products'], () => fetchStoreAndCategories(), {
+    storeId,
+    actif: Boolean(storeId),
+  });
+
+  useEffectChargement(() => {
+    if (storeId) {
+      fetchStoreAndCategories();
+    }
+  }, [storeId, fetchStoreAndCategories]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -191,7 +201,7 @@ export default function CategoriesPage() {
         setMessage('✅ Catégories réorganisées');
         setTimeout(() => setMessage(''), 3000);
       } catch (error) {
-        console.error('Error reordering:', error);
+        signalerErreur('Error reordering:', error);
         setMessage('❌ Erreur lors de la réorganisation');
         fetchStoreAndCategories();
       } finally {
@@ -262,7 +272,7 @@ export default function CategoriesPage() {
         }
       }
     } catch (error) {
-      console.error('Error saving category:', error);
+      signalerErreur('Error saving category:', error);
       setMessage('❌ Erreur lors de la sauvegarde');
     }
   };
@@ -289,7 +299,7 @@ export default function CategoriesPage() {
         setMessage(`❌ ${errorMsg}`);
       }
     } catch (error) {
-      console.error('Error deleting category:', error);
+      signalerErreur('Error deleting category:', error);
       setMessage('❌ Erreur lors de la suppression');
     }
   };

@@ -8,11 +8,13 @@
  * encore arrêté, ce qui l'est et attend le virement, ce qui est sur son compte.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Banknote, Clock, FileText, Hourglass } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -66,9 +68,12 @@ export function MesVersements() {
     }
   }, []);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
+
+  // La plateforme verse ou annule : le livreur le voit sans recharger.
+  useDonneesModifiees(['payouts', 'drivers'], charger);
 
   if (!situation) return null;
 

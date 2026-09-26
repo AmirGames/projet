@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { signalerErreur } from '@/lib/erreurs';
+import { useState, useCallback } from 'react';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Analytics {
   totalRevenue: number;
@@ -21,10 +23,6 @@ export default function AdminAnalytics() {
     dailyRevenue: [],
   });
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
 
   // Agrège les lignes de toutes les commandes pour classer les produits.
   const meilleuresVentes = (orders: any[], products: any[]) => {
@@ -45,7 +43,7 @@ export default function AdminAnalytics() {
     return [...parProduit.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
   };
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const storeId = localStorage.getItem('storeId');
       if (!storeId) {
@@ -82,11 +80,15 @@ export default function AdminAnalytics() {
         })),
       });
     } catch (error) {
-      console.error('Erreur chargement analytics:', error);
+      signalerErreur('Erreur chargement analytics:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffectChargement(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
 
   if (loading) return <div className="text-center py-8">Chargement...</div>;
 
