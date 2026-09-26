@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { API_URL, apiFetch, formatEuros } from '../../lib/api';
+import { apiFetch, formatEuros } from '../../lib/api';
 import {
   callPhone,
   Delivery,
@@ -28,6 +28,7 @@ import {
   shortId,
 } from '../../lib/deliveries';
 import { reducePhoto } from '../../lib/photo';
+import { uploadFile } from '../../lib/upload';
 import { useRealtimeEvent } from '../../lib/realtime';
 import type { Prefs } from '../../lib/session';
 import type { Position, Tracking } from '../../lib/useDriverLocation';
@@ -291,18 +292,12 @@ export default function DeliveryScreen({
     setUploading(true);
     setPhotoError('');
     try {
-      const form = new FormData();
-      form.append('photo', file as any);
-      const response = await fetch(`${API_URL}/api/drivers/deliveries/${deliveryId}/photo`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
-      });
-      const data = await response.json().catch(() => null);
-      if (response.ok && data?.data?.photoUrl) setPhotoUrl(data.data.photoUrl);
-      else setPhotoError(data?.error || `La photo n'a pas pu être envoyée (erreur ${response.status})`);
-    } catch {
-      setPhotoError("La photo n'a pas pu être envoyée : vérifiez votre connexion");
+      const res = await uploadFile(`/api/drivers/deliveries/${deliveryId}/photo`, token, file, 'photo');
+      if (res.ok && res.data?.data?.photoUrl) setPhotoUrl(res.data.data.photoUrl);
+      else setPhotoError(res.data?.error || `La photo n'a pas pu être envoyée (erreur ${res.status})`);
+    } catch (e: any) {
+      // La vraie cause : « vérifiez votre connexion » ne disait rien d'utile.
+      setPhotoError(e?.message || "La photo n'a pas pu être envoyée");
     } finally {
       setUploading(false);
     }

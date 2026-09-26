@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { API_URL, apiFetch, formatEuros } from '../../lib/api';
+import { apiFetch, formatEuros } from '../../lib/api';
 import { reducePhoto } from '../../lib/photo';
+import { uploadFile } from '../../lib/upload';
 import { Driver, DRIVER_STATUS_LABELS, VEHICLE_LABELS } from '../../lib/deliveries';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
@@ -85,17 +86,16 @@ export default function AccountScreen({
     const asset = result.assets[0];
     setUploading(type);
     try {
-      const form = new FormData();
-      form.append('type', type);
       const photo = await reducePhoto(asset);
-      form.append('file', { ...photo, name: `${type.toLowerCase()}.jpg` } as any);
-      const response = await fetch(`${API_URL}/api/drivers/documents/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
-      });
-      const data = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(data?.error || data?.message || 'Envoi impossible');
+      const res = await uploadFile(
+        '/api/drivers/documents/upload',
+        token,
+        { ...photo, name: `${type.toLowerCase()}.jpg` },
+        'file',
+        { type }
+      );
+      const data = res.data;
+      if (!res.ok) throw new Error(data?.error || data?.message || `Envoi impossible (erreur ${res.status})`);
       Alert.alert('Pièce envoyée', data?.message || 'En attente de validation');
       await load();
     } catch (e: any) {
