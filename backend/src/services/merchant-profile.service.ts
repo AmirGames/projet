@@ -429,6 +429,50 @@ export class MerchantProfileService {
   }
 
   /**
+   * La plateforme corrige l'échéance d'une pièce.
+   *
+   * Une date mal saisie au dépôt faisait expirer — ou garder valide — une pièce
+   * à tort, sans autre recours que de la faire redéposer.
+   *
+   * Une pièce déjà expirée qui reçoit une date future n'est pas revalidée
+   * d'office : elle repart en examen.
+   */
+  static async changerEcheance(orgId: string, documentId: string, expiryDate: string) {
+    const piece = await db.organizationDocument.findUnique({ where: { id: documentId } });
+
+    if (!piece || piece.orgId !== orgId) {
+      throw new ApiError(404, "Document introuvable", "DOCUMENT_NOT_FOUND");
+    }
+
+    const echeance = new Date(expiryDate);
+
+    if (Number.isNaN(echeance.getTime())) {
+      throw new ApiError(400, "Date d'expiration invalide", "INVALID_EXPIRY_DATE");
+    }
+
+    if (echeance.getTime() < Date.now()) {
+      throw new ApiError(400, "Cette date est déjà passée", "DOCUMENT_EXPIRED");
+    }
+
+    const modifiee = await db.organizationDocument.update({
+      where: { id: documentId },
+      data: {
+        expiryDate: echeance,
+        // Le rappel envoyé portait sur l'ancienne date.
+        expiryReminderAt: null,
+        ...(piece.status === "EXPIRED" ? { status: "PENDING" } : {}),
+      },
+    });
+
+    await this.prevenirLeCommercant(
+      orgId,
+      `${libelleDuDocumentCommercant(piece.type)} : la date d'expiration a été changée au ${echeance.toLocaleDateString("fr-FR")}.`
+    );
+
+    return { avant: piece.expiryDate, piece: modifiee };
+  }
+
+  /**
    * La plateforme statue sur une pièce.
    *
    * Sans cela le dossier resterait « en attente » pour toujours : une pièce
