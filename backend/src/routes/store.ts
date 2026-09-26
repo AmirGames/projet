@@ -107,7 +107,14 @@ const duplicateStoreSchema = z.object({
  * l'adresse et le téléphone sont nouveaux. Le cloisonnement vérifie déjà que
  * la boutique modèle appartient à l'appelant.
  */
-router.post("/:id/duplicate", authMiddleware, checkOrgStatus, async (req: Request, res: Response, next: NextFunction) => {
+// `checkOrgStatus` retrouve l'organisation par le `storeId` du corps : la
+// boutique modèle n'est ici que dans le chemin.
+const boutiqueDuChemin = (req: Request, _res: Response, next: NextFunction) => {
+  req.body = { ...(req.body || {}), storeId: req.params.id };
+  next();
+};
+
+router.post("/:id/duplicate", authMiddleware, boutiqueDuChemin, checkOrgStatus, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
     const body = duplicateStoreSchema.parse(req.body);
