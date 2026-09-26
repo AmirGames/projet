@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { HelpCircle, MessageSquare, Clock, AlertCircle } from 'lucide-react';
 
 import { TicketConversation } from '@/components/TicketConversation';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -64,10 +65,6 @@ export default function SupportTicketsPage() {
   const [voirArchives, setVoirArchives] = useState(false);
   const limit = 20;
 
-  // Un ticket ouvert par un commerçant, une réponse, un changement de statut
-  // par un collègue : la liste suit.
-  useDonneesModifiees('tickets', () => fetchTickets(true));
-
   // silencieux : une relecture en direct garde la liste affichée — et la
   // conversation ouverte dedans.
   const fetchTickets = useCallback(async (silencieux = false) => {
@@ -105,7 +102,11 @@ export default function SupportTicketsPage() {
     }
   }, [filterPriority, filterStatus, offset, t, voirArchives]);
 
-  useEffect(() => {
+  // Un ticket ouvert par un commerçant, une réponse, un changement de statut
+  // par un collègue : la liste suit.
+  useDonneesModifiees('tickets', () => fetchTickets(true));
+
+  useEffectChargement(() => {
     fetchTickets();
   }, [offset, filterStatus, filterPriority, voirArchives, fetchTickets]);
 

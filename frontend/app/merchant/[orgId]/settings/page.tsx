@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useCurrentStore } from '@/lib/current-store';
 
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface StoreSettings {
@@ -205,7 +206,7 @@ export default function StoreSettings() {
     }
   }, [router, storeId, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (storeId) {
       fetchSettings();
     }
@@ -420,7 +421,6 @@ export default function StoreSettings() {
                       }`}
                     >
                       {logo ? (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={logo} alt="Logo de la boutique" className="h-full w-full object-contain" />
                       ) : (
                         <span className="text-2xl font-bold text-white opacity-50">

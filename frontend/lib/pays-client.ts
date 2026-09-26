@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { COOKIE_PAYS, PAYS_PAR_DEFAUT, paysValide, type Pays } from '@/lib/pays-infos';
 
 /** Fuseaux horaires propres à un pays : l'indice le plus fiable, et gratuit. */
@@ -61,17 +61,17 @@ export function paysDuNavigateur(): Pays {
   return paysValide(lireCookie()) || paysValide(devinerPaysNavigateur()) || PAYS_PAR_DEFAUT;
 }
 
+const sansAbonnement = () => () => {};
+
 /**
  * Le pays du visiteur dans un formulaire. Commence par le pays par défaut
  * (rendu serveur identique), puis se cale sur le navigateur. Changer de pays
  * le mémorise.
  */
 export function usePays(): [Pays, (pays: Pays) => void] {
-  const [pays, setPays] = useState<Pays>(PAYS_PAR_DEFAUT);
-
-  useEffect(() => {
-    setPays(paysDuNavigateur());
-  }, []);
+  const duNavigateur = useSyncExternalStore(sansAbonnement, paysDuNavigateur, () => PAYS_PAR_DEFAUT);
+  const [choisi, setPays] = useState<Pays | null>(null);
+  const pays = choisi ?? duNavigateur;
 
   const choisir = (nouveau: Pays) => {
     setPays(nouveau);

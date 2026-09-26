@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Car, Search, Filter, Eye, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -25,10 +26,6 @@ export default function DriversPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'inactive'>('all');
 
-  useEffect(() => {
-    fetchDrivers();
-  }, []);
-
   const fetchDrivers = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -49,6 +46,10 @@ export default function DriversPage() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchDrivers();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

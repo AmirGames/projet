@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { Store, Bike, Crown, ShoppingCart } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -27,6 +28,8 @@ export default function DashboardPage() {
     }
   }, [user, isLoading, router]);
 
+  const estSuperOwner = user?.isSuperOwner;
+
   const fetchRoles = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -48,7 +51,7 @@ export default function DashboardPage() {
         const activeRoles = [isMerchant, isDriver, isCustomer].filter(Boolean).length;
 
         // Redirection automatique si un seul rôle (et pas superowner)
-        if (!user?.isSuperOwner && activeRoles === 1) {
+        if (!estSuperOwner && activeRoles === 1) {
           if (isMerchant) {
             router.push('/merchant');
           } else if (isDriver) {
@@ -62,9 +65,9 @@ export default function DashboardPage() {
     } finally {
       setRolesLoading(false);
     }
-  }, [router, user?.isSuperOwner]);
+  }, [router, estSuperOwner]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (user && !isLoading) {
       fetchRoles();
     }

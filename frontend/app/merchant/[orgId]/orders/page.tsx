@@ -12,6 +12,8 @@ import { EVENEMENT_COMMANDES_CHANGEES } from '@/lib/reponse-commande';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { useParametreAdresse } from '@/lib/navigateur';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -98,7 +100,11 @@ export default function OrdersPage() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<OrderStatus | 'ALL'>('ALL');
+  // Le bandeau des nouvelles commandes mène ici, filtré sur celles à accepter
+  // (?filtre=PENDING) ; un filtre choisi dans la page l'emporte.
+  const filtreAdresse = useParametreAdresse('filtre') === 'PENDING' ? 'PENDING' : 'ALL';
+  const [filtreChoisi, setFilter] = useState<OrderStatus | 'ALL' | null>(null);
+  const filter = filtreChoisi ?? filtreAdresse;
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<any>(null);
@@ -110,25 +116,6 @@ export default function OrdersPage() {
   const [loadingDeliveryMen, setLoadingDeliveryMen] = useState(false);
 
   const itemsPerPage = 20;
-
-  // Le bandeau des nouvelles commandes mène ici, filtré sur celles à accepter.
-  // Lu après le premier affichage : le rendu serveur ne connaît pas l'adresse.
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('filtre') === 'PENDING') {
-      setFilter('PENDING');
-    }
-  }, []);
-
-  // Ailleurs aussi : un collègue, le livreur, le client, une annulation
-  // automatique. La liste suit sans qu'on recharge.
-  useDonneesModifiees(
-    'orders',
-    () => {
-      fetchOrders();
-      fetchStats();
-    },
-    { storeId, actif: Boolean(storeId) }
-  );
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -183,6 +170,17 @@ export default function OrdersPage() {
     }
   }, [storeId]);
 
+  // Ailleurs aussi : un collègue, le livreur, le client, une annulation
+  // automatique. La liste suit sans qu'on recharge.
+  useDonneesModifiees(
+    'orders',
+    () => {
+      fetchOrders();
+      fetchStats();
+    },
+    { storeId, actif: Boolean(storeId) }
+  );
+
   const fetchDeliverySettings = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
@@ -203,7 +201,7 @@ export default function OrdersPage() {
     }
   }, [storeId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (storeId) {
       fetchOrders();
       fetchStats();

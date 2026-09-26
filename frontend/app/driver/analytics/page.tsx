@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowDownRight, ArrowUpRight, BarChart3, Star } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { GraphiqueColonnes, type Colonne } from '@/components/GraphiqueColonnes';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -109,7 +110,7 @@ export default function AnalyticsLivreurPage() {
     }
   }, [jours, router]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

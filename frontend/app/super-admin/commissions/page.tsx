@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Search, Download, Filter } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -26,10 +27,6 @@ export default function CommissionsPage() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING' | 'PROCESSING'>('ALL');
   const [selectedPeriod, setSelectedPeriod] = useState('');
 
-  useEffect(() => {
-    fetchCommissions();
-  }, []);
-
   const fetchCommissions = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -46,6 +43,10 @@ export default function CommissionsPage() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchCommissions();
+  }, []);
 
   const filteredCommissions = commissions.filter(commission => {
     const matchesSearch = commission.orgName.toLowerCase().includes(search.toLowerCase());

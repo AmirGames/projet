@@ -2,18 +2,10 @@
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 export default function OrderConfirmationContent() {
   const searchParams = useSearchParams();
-  const [orderId, setOrderId] = useState("");
-
-  useEffect(() => {
-    const id = searchParams.get("orderId");
-    if (id) {
-      setOrderId(id);
-    }
-  }, [searchParams]);
+  const orderId = searchParams.get("orderId") ?? "";
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">

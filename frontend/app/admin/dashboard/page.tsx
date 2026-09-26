@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -63,7 +64,7 @@ export default function AdminDashboard() {
     }
   }, [router]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     loadDashboardData();
   }, [loadDashboardData]);
 

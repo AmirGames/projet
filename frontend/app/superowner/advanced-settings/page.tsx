@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Sliders, Save } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface AdvancedSettings {
   id: string;
@@ -56,7 +57,7 @@ export default function AdvancedSettingsPage() {
     }
   }, [t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchSettings();
   }, [fetchSettings]);
 

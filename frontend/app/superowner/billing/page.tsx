@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { CreditCard } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface BillingData {
   id: string;
@@ -127,7 +128,7 @@ export default function BillingPage() {
     }
   }, [offset, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchBillings();
   }, [offset, fetchBillings]);
 

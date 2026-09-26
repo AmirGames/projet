@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react';
 import {
   DndContext,
@@ -23,6 +23,7 @@ import { useCurrentStore } from '@/lib/current-store';
 
 import { useTranslations } from 'next-intl';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Category {
@@ -134,13 +135,6 @@ export default function CategoriesPage() {
     })
   );
 
-  // Une catégorie ajoutée ou réordonnée ailleurs, ou un plat qui change de
-  // catégorie (le compte par catégorie bouge) : la liste suit.
-  useDonneesModifiees(['categories', 'products'], () => fetchStoreAndCategories(), {
-    storeId,
-    actif: Boolean(storeId),
-  });
-
   const fetchStoreAndCategories = useCallback(async () => {
     if (!storeId) return;
 
@@ -163,7 +157,14 @@ export default function CategoriesPage() {
     }
   }, [storeId]);
 
-  useEffect(() => {
+  // Une catégorie ajoutée ou réordonnée ailleurs, ou un plat qui change de
+  // catégorie (le compte par catégorie bouge) : la liste suit.
+  useDonneesModifiees(['categories', 'products'], () => fetchStoreAndCategories(), {
+    storeId,
+    actif: Boolean(storeId),
+  });
+
+  useEffectChargement(() => {
     if (storeId) {
       fetchStoreAndCategories();
     }

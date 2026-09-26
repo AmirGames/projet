@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, CreditCard, Clock, Gift, Store } from 'lucide-react';
 
 import { euro, parSemaine } from '@/lib/format';
 
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 /**
  * La formule du commerçant, et le moyen d'en changer.
  *
@@ -92,7 +93,7 @@ export default function MaFormulePage() {
     }
   }, [t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Ban, Undo2, Search, AlertCircle } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface User {
   id: string;
@@ -22,10 +23,6 @@ export default function UserManagementPage() {
   const [banReason, setBanReason] = useState('');
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   const fetchUsers = async () => {
     try {
       // This would need a backend endpoint to fetch users
@@ -37,6 +34,10 @@ export default function UserManagementPage() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchUsers();
+  }, []);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.email.includes(search) || user.name.includes(search);

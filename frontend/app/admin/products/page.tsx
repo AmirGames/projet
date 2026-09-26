@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Product {
   id: string;
@@ -19,10 +20,6 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
   const fetchProducts = async () => {
     try {
       const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
@@ -34,6 +31,10 @@ export default function AdminProducts() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchProducts();
+  }, []);
 
   const handleDelete = async (productId: string) => {
     if (confirm('Supprimer ce produit?')) {

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 export default function ProductDetailPage() {
   const router = useRouter();
@@ -20,10 +21,6 @@ export default function ProductDetailPage() {
     sku: '',
   });
 
-  useEffect(() => {
-    fetchProduct();
-  }, [productId]);
-
   const fetchProduct = async () => {
     try {
       // Note: The API doesn't have a getProduct by ID endpoint, so we'll show a placeholder
@@ -34,6 +31,10 @@ export default function ProductDetailPage() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchProduct();
+  }, [productId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

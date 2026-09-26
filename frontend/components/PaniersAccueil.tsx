@@ -167,7 +167,6 @@ export function PaniersAccueil() {
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gray-700/60 transition"
                   >
                     {logos[panier.storeId] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={logos[panier.storeId] as string}
                         alt={panier.storeName || 'Commerce'}

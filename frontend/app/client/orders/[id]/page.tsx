@@ -13,6 +13,7 @@ import { intituleDeLaLigne } from '@/lib/ligne-commande';
 import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
 
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
@@ -57,10 +58,6 @@ export default function OrderTrackingPage() {
   // null : pas encore su. Une commande terminée invite à donner son avis, ou
   // à le revoir quand il a plus de quinze jours.
   const [avis, setAvis] = useState<{ aRedemander: boolean; dejaDonne: boolean } | null>(null);
-
-  // Ce que le statut ne dit pas : un livreur attribué, une heure revue, un
-  // remboursement. La commande est relue à chaque écriture qui la touche.
-  useDonneesModifiees('orders', () => loadOrderData(), { id: orderId });
 
   // Chargé à l'arrivée, et quand la commande passe « terminée » en direct.
   useEffect(() => {
@@ -119,18 +116,25 @@ export default function OrderTrackingPage() {
     }
   }, [orderId, router]);
 
-  useEffect(() => {
+  // Ce que le statut ne dit pas : un livreur attribué, une heure revue, un
+  // remboursement. La commande est relue à chaque écriture qui la touche.
+  useDonneesModifiees('orders', () => loadOrderData(), { id: orderId });
+
+  useEffectChargement(() => {
     loadOrderData();
   }, [orderId, loadOrderData]);
 
 
   // Le statut change en direct : on relit la commande entière, pour l'heure
   // annoncée à l'acceptation ou le motif d'un refus.
-  useEffect(() => {
-    if (orderStatus) {
-      setOrder(prev => prev ? { ...prev, status: orderStatus } : null);
-      loadOrderData();
-    }
+  const [statutVu, setStatutVu] = useState(orderStatus);
+  if (orderStatus !== statutVu) {
+    setStatutVu(orderStatus);
+    if (orderStatus) setOrder(prev => prev ? { ...prev, status: orderStatus } : null);
+  }
+
+  useEffectChargement(() => {
+    if (orderStatus) loadOrderData();
   }, [orderStatus, loadOrderData]);
 
   const getStatusInfo = (status: string) => {

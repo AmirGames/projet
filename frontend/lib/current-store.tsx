@@ -1,13 +1,7 @@
 'use client';
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -84,8 +78,14 @@ export function CurrentStoreProvider({
     }
   }, [orgId]);
 
-  useEffect(() => {
+  // Une autre organisation : ses boutiques restent à lire.
+  const [orgVue, setOrgVue] = useState(orgId);
+  if (orgId !== orgVue) {
+    setOrgVue(orgId);
     setLoading(true);
+  }
+
+  useEffectChargement(() => {
     load();
   }, [load]);
 

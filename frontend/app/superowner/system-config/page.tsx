@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Settings, Key, Copy, Save, Database, Webhook, Wrench } from 'lucide-react';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface ApiKey {
   id: string;
@@ -98,7 +99,7 @@ export default function SystemConfigPage() {
     }
   }, [t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     fetchConfig();
   }, [fetchConfig]);
 

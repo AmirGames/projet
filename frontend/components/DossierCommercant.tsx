@@ -11,9 +11,10 @@
  * caractères.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { AlertTriangle, BadgeCheck, Check, Clock, FileText, Upload, X } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -102,7 +103,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     }
   }, [orgId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

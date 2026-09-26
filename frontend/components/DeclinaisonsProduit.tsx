@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ChevronDown, ChevronUp, Layers, Plus, Save, Trash2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 /**
  * Les déclinaisons d'un plat, côté commerçant.
@@ -59,7 +60,7 @@ export function DeclinaisonsProduit({
     }
   }, [productId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     charger();
   }, [charger]);
 

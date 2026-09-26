@@ -11,6 +11,7 @@ import { AnnulerCourse } from '@/components/AnnulerCourse';
 import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
 import { GlisserPourValider } from '@/components/GlisserPourValider';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -155,10 +156,6 @@ export default function DeliveryTrackingPage() {
 
   const { enLigne, gps, positionRecue, erreurPosition } = useSignalGps(surRetourReseau);
 
-  // La commande est annulée, le commerçant la déclare prête : la course suit.
-  // Le livreur ne reçoit que les annonces de ses propres courses.
-  useDonneesModifiees('orders', () => loadDeliveryData(true));
-
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
 
@@ -208,7 +205,11 @@ export default function DeliveryTrackingPage() {
     }
   }, [deliveryId, router]);
 
-  useEffect(() => {
+  // La commande est annulée, le commerçant la déclare prête : la course suit.
+  // Le livreur ne reçoit que les annonces de ses propres courses.
+  useDonneesModifiees('orders', () => loadDeliveryData(true));
+
+  useEffectChargement(() => {
     loadDeliveryData();
   }, [deliveryId, loadDeliveryData]);
 
@@ -343,12 +344,14 @@ export default function DeliveryTrackingPage() {
   }, [currentStep]);
 
   // Quatre chiffres saisis : le code se vérifie sans autre geste.
-  useEffect(() => {
-    if (code.length === 4 && !modePhoto && currentStep === 2 && !updating) {
-      confirmerRemise({ code });
+  const saisirCode = (valeur: string) => {
+    const chiffres = valeur.replace(/\D/g, '').slice(0, 4);
+    if (chiffres === code) return;
+    setCode(chiffres);
+    if (chiffres.length === 4 && !modePhoto && currentStep === 2 && !updating) {
+      confirmerRemise({ code: chiffres });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  };
 
   /** L'appareil photo du téléphone s'ouvre ; la photo part aussitôt prise. */
   const photographier = async (fichier: File | undefined) => {
@@ -661,7 +664,7 @@ export default function DeliveryTrackingPage() {
                           <input
                             id="code-remise"
                             value={code}
-                            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                            onChange={(e) => saisirCode(e.target.value)}
                             inputMode="numeric"
                             autoComplete="one-time-code"
                             placeholder="0000"
@@ -710,7 +713,6 @@ export default function DeliveryTrackingPage() {
 
                         {photoUrl ? (
                           <div className="space-y-2">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={photoUrl}
                               alt="Photo du dépôt"

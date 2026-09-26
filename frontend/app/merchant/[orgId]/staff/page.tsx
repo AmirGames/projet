@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Search, Users } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
 import { useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -82,7 +83,7 @@ export default function StaffPage() {
     }
   }, [storeId]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     if (storeId) {
       fetchStaff();
     }

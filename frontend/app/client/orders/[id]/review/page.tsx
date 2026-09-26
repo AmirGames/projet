@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -8,6 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne, type LigneAffichable } from '@/lib/ligne-commande';
 import { useLocale, useTranslations } from 'next-intl';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -164,7 +165,7 @@ export default function ReviewPage() {
     }
   }, [orderId, router, t]);
 
-  useEffect(() => {
+  useEffectChargement(() => {
     loadOrderData();
   }, [orderId, loadOrderData]);
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 interface Category {
   id: string;
@@ -17,10 +18,6 @@ export default function AdminCategories() {
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
   const fetchCategories = async () => {
     try {
       const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
@@ -32,6 +29,10 @@ export default function AdminCategories() {
       setLoading(false);
     }
   };
+
+  useEffectChargement(() => {
+    fetchCategories();
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
