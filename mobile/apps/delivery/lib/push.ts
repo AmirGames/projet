@@ -4,9 +4,14 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import type * as NotificationsModule from 'expo-notifications';
 import { apiFetch } from './api';
+import { ACCEPT_ACTION, handleOfferAction, registerOfferCategory } from './offerNotification';
 
-/** Même nom que celui envoyé par le serveur pour une course proposée. */
-export const NEW_COURSES_CHANNEL = 'new-courses';
+/**
+ * Même nom que celui envoyé par le serveur pour une course proposée. Un canal
+ * Android ne change plus de son une fois créé : la sonnerie longue (10 s,
+ * pour un téléphone au fond d'une poche) a donc son propre canal.
+ */
+export const NEW_COURSES_CHANNEL = 'new-courses-v2';
 
 export type PushSetup =
   | { status: 'enabled'; token: string }
@@ -49,8 +54,8 @@ async function createAndroidChannel(N: typeof NotificationsModule) {
     name: 'Courses proposées',
     description: 'Sonne à chaque course à accepter',
     importance: N.AndroidImportance.MAX,
-    sound: 'new_course.wav',
-    vibrationPattern: [0, 400, 200, 400],
+    sound: 'new_course_long.wav',
+    vibrationPattern: [0, 600, 300, 600, 300, 600, 300, 600],
     lockscreenVisibility: N.AndroidNotificationVisibility.PUBLIC,
   });
 }
@@ -70,6 +75,8 @@ export async function registerForPush(accessToken: string): Promise<PushSetup> {
 
   try {
     await createAndroidChannel(N);
+    // Le bouton « Accepter » des notifications de course.
+    await registerOfferCategory();
 
     let { status } = await N.getPermissionsAsync();
     if (status !== 'granted') {
@@ -118,13 +125,24 @@ export function onDriverNotificationTap(callback: (data: PushDriverData) => void
   const N = notifications();
   if (!N) return () => undefined;
 
-  const initial = dataFromResponse(N.getLastNotificationResponse());
-  if (initial) {
+  const last = N.getLastNotificationResponse();
+  if (last?.actionIdentifier === ACCEPT_ACTION) {
     N.clearLastNotificationResponse();
-    callback(initial);
+    handleOfferAction(last);
+  } else {
+    const initial = dataFromResponse(last);
+    if (initial) {
+      N.clearLastNotificationResponse();
+      callback(initial);
+    }
   }
 
   const sub = N.addNotificationResponseReceivedListener((response) => {
+    // « Accepter » depuis la notification : la course est prise sans rien ouvrir.
+    if (response.actionIdentifier === ACCEPT_ACTION) {
+      handleOfferAction(response);
+      return;
+    }
     const data = dataFromResponse(response);
     if (data) callback(data);
   });

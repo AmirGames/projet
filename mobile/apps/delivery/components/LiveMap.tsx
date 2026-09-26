@@ -112,7 +112,7 @@ const HTML = `<!DOCTYPE html>
   body.dark .leaflet-control-attribution a { color: #8ab4f8; }
   .pin { display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%;
          border:3px solid #fff; font-size:16px; box-shadow:0 1px 4px rgba(0,0,0,.45); }
-  #recentrer { position:absolute; right:10px; bottom:24px; z-index:1000; display:none; background:#007AFF; color:#fff;
+  #recentrer { position:absolute; right:10px; bottom:24px; z-index:1000; display:none; background:#EA580C; color:#fff;
          border:none; border-radius:20px; padding:9px 14px; font:600 14px sans-serif; box-shadow:0 1px 4px rgba(0,0,0,.35); }
 </style>
 </head><body>
@@ -132,7 +132,7 @@ const HTML = `<!DOCTYPE html>
     return L.divIcon({ className: '', html: '<span class="pin" style="background:' + bg + '">' + emoji + '</span>',
       iconSize: [32, 32], iconAnchor: [16, 16] });
   }
-  var ICONS = { driver: icon('#007AFF', '🛵'), pickup: icon('#475569', '🏪'), dropoff: icon('#16a34a', '🏠') };
+  var ICONS = { driver: icon('#EA580C', '🛵'), pickup: icon('#475569', '🏪'), dropoff: icon('#16a34a', '🏠') };
   var markers = { driver: null, pickup: null, dropoff: null };
   var line = null;
   var following = true;
@@ -170,7 +170,7 @@ const HTML = `<!DOCTYPE html>
   }
   function straight(from, to) {
     if (line) map.removeLayer(line);
-    line = L.polyline([ll(from), ll(to)], { color: '#007AFF', weight: 4, opacity: 0.7, dashArray: '8 8' }).addTo(map);
+    line = L.polyline([ll(from), ll(to)], { color: '#EA580C', weight: 4, opacity: 0.7, dashArray: '8 8' }).addTo(map);
     send({ type: 'route', route: { distanceM: dist(from, to) * 1.3, durationS: dist(from, to) * 1.3 / 8 } });
   }
   function tour() {
@@ -181,7 +181,7 @@ const HTML = `<!DOCTYPE html>
     lastRoute = { key: key, from: pts[0], at: Date.now() };
     var droit = function () {
       if (line) map.removeLayer(line);
-      line = L.polyline(pts.map(ll), { color: '#007AFF', weight: 5, opacity: 0.7, dashArray: '8 8' }).addTo(map);
+      line = L.polyline(pts.map(ll), { color: '#EA580C', weight: 5, opacity: 0.7, dashArray: '8 8' }).addTo(map);
       var m = 0; for (var i = 1; i < pts.length; i++) m += dist(pts[i - 1], pts[i]) * 1.3;
       send({ type: 'route', route: { distanceM: m, durationS: m / 8 } });
     };
@@ -213,7 +213,7 @@ const HTML = `<!DOCTYPE html>
       if (!best) { straight(from, to); return; }
       if (line) map.removeLayer(line);
       line = L.polyline(best.geometry.coordinates.map(function (c) { return [c[1], c[0]]; }),
-        { color: '#007AFF', weight: 6, opacity: 0.85 }).addTo(map);
+        { color: '#EA580C', weight: 6, opacity: 0.85 }).addTo(map);
       send({ type: 'route', route: { distanceM: best.distance, durationS: best.duration } });
     }).catch(function () { straight(from, to); });
   }

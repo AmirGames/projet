@@ -58,6 +58,8 @@ export interface MessageExpo {
   sound?: string | null;
   /** Durée pendant laquelle Expo retente l'envoi, en secondes. */
   ttl?: number;
+  /** Catégorie déclarée par l'application : elle porte les boutons d'action. */
+  categoryId?: string;
 }
 
 export interface MessagePush {
@@ -67,6 +69,8 @@ export interface MessagePush {
   url?: string;
   /** Deux notifications de même tag se remplacent au lieu de s'empiler. */
   tag?: string;
+  /** Pour l'application livreur : la proposition, que « Accepter » accepte. */
+  offerId?: string;
 }
 
 /**
@@ -201,6 +205,7 @@ export class Notifier {
               data: message.data || {},
               sound: message.sound || "default",
               channelId: message.channelId,
+              ...(message.categoryId ? { categoryId: message.categoryId } : {}),
               priority: "high",
               ttl: message.ttl ?? 600,
             }))
@@ -305,8 +310,22 @@ export class Notifier {
       {
         title: message.title,
         body: message.body,
-        data: { tag: message.tag, url: message.url, ...(deliveryId ? { deliveryId } : {}) },
-        ...(proposee ? { channelId: "new-courses", sound: "new_course.wav", ttl: 60 } : {}),
+        data: {
+          tag: message.tag,
+          url: message.url,
+          ...(deliveryId ? { deliveryId } : {}),
+          ...(message.offerId ? { offerId: message.offerId } : {}),
+        },
+        // Une course proposée sonne longtemps, même téléphone verrouillé, et
+        // porte le bouton « Accepter » qui agit sans déverrouiller.
+        ...(proposee
+          ? {
+              channelId: "new-courses-v2",
+              sound: "new_course_long.wav",
+              ttl: 60,
+              ...(message.offerId ? { categoryId: "course_proposee" } : {}),
+            }
+          : {}),
       }
     );
   }

@@ -53,10 +53,18 @@ describe("Notifier.pushLivreur vers l'application livreur", () => {
       body: "Répondez vite !",
       url: "/driver",
       tag: "course-proposee",
+      offerId: "offre-7",
     });
 
     const [message] = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(message).toMatchObject({ channelId: "new-courses", sound: "new_course.wav", ttl: 60 });
+    expect(message).toMatchObject({
+      channelId: "new-courses-v2",
+      sound: "new_course_long.wav",
+      ttl: 60,
+      // Le bouton « Accepter », qui agit téléphone verrouillé.
+      categoryId: "course_proposee",
+      data: { offerId: "offre-7" },
+    });
   });
 
   it("ne dérange personne quand aucun téléphone ni navigateur n'est abonné", async () => {

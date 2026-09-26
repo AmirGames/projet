@@ -28,9 +28,18 @@ export const DEFAULT_PREFS: Prefs = { soundEnabled: true, navigationApp: 'zupone
 /** Version des préférences : la 2 a amené la carte intégrée. */
 const PREFS_VERSION = 2;
 
+/**
+ * Lisible téléphone verrouillé (après le premier déverrouillage depuis le
+ * démarrage) : accepter une course depuis la notification lit la session
+ * sans que le livreur ait à déverrouiller. Jamais copiée sur un autre appareil.
+ */
+const STORE_OPTIONS: SecureStore.SecureStoreOptions = {
+  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+};
+
 async function read<T>(key: string): Promise<T | null> {
   try {
-    const raw = await SecureStore.getItemAsync(key);
+    const raw = await SecureStore.getItemAsync(key, STORE_OPTIONS);
     return raw ? (JSON.parse(raw) as T) : null;
   } catch {
     return null;
@@ -39,7 +48,7 @@ async function read<T>(key: string): Promise<T | null> {
 
 async function write(key: string, value: unknown) {
   try {
-    await SecureStore.setItemAsync(key, JSON.stringify(value));
+    await SecureStore.setItemAsync(key, JSON.stringify(value), STORE_OPTIONS);
   } catch (e) {
     console.warn('Impossible d’enregistrer sur le téléphone', e);
   }
@@ -47,7 +56,7 @@ async function write(key: string, value: unknown) {
 
 export const loadSession = () => read<Session>(SESSION_KEY);
 export const saveSession = (session: Session) => write(SESSION_KEY, session);
-export const clearSession = () => SecureStore.deleteItemAsync(SESSION_KEY).catch(() => undefined);
+export const clearSession = () => SecureStore.deleteItemAsync(SESSION_KEY, STORE_OPTIONS).catch(() => undefined);
 
 export async function loadPrefs(): Promise<Prefs> {
   const stored = await read<Partial<Prefs> & { v?: number }>(PREFS_KEY);

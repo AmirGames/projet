@@ -10,9 +10,10 @@ export type ThemeName = 'dark' | 'light';
  */
 const DARK_COLORS = {
   /** Fonds de boutons et d'accents, sous du texte blanc. */
-  primary: '#0A6CD6',
+  /** Orange Zupone, comme le site : rien à voir avec le vert d'Uber Eats. */
+  primary: '#C2410C',
   /** Liens et textes d'accent. */
-  link: '#4DA3FF',
+  link: '#FB923C',
   bg: '#000',
   card: '#15181C',
   /** Champs, puces, boutons secondaires : un cran au-dessus des cartes. */
@@ -32,19 +33,25 @@ const DARK_COLORS = {
   successOnBg: '#7EE2A0',
   dangerBg: '#2E1412',
   warningBg: '#2E2410',
-  infoBg: '#0E2239',
+  infoBg: '#2A1608',
+  /** Fond teinté de la marque (étiquettes), et son texte. */
+  brandBg: '#3B1D0C',
+  brandOnBg: '#FDBA74',
+  /** Bouton « Accepter » : le temps qui reste, sur le temps écoulé. */
+  acceptFill: '#C2410C',
+  acceptTrack: '#7C2D12',
   /** En-têtes des écrans, et le texte posé dessus. */
   header: '#15181C',
   onHeader: '#FFFFFF',
   /** Fond derrière la barre d'état et de l'écran de connexion. */
   chrome: '#000',
-  loginButton: '#0A6CD6',
+  loginButton: '#C2410C',
 };
 
-/** Thème clair : les couleurs d'origine de l'application, en-têtes bleus. */
+/** Thème clair : en-têtes orange, fonds blancs. */
 const LIGHT_COLORS: typeof DARK_COLORS = {
-  primary: '#007AFF',
-  link: '#0066D6',
+  primary: '#EA580C',
+  link: '#C2410C',
   bg: '#f5f5f5',
   card: '#fff',
   raised: '#f0f1f3',
@@ -60,11 +67,15 @@ const LIGHT_COLORS: typeof DARK_COLORS = {
   successOnBg: '#1B5E20',
   dangerBg: '#FDECEA',
   warningBg: '#FFF4E5',
-  infoBg: '#EAF3FF',
-  header: '#007AFF',
+  infoBg: '#FFF7ED',
+  brandBg: '#FFEDD5',
+  brandOnBg: '#9A3412',
+  acceptFill: '#EA580C',
+  acceptTrack: '#FDBA74',
+  header: '#EA580C',
   onHeader: '#FFFFFF',
-  chrome: '#007AFF',
-  loginButton: '#0055CC',
+  chrome: '#EA580C',
+  loginButton: '#C2410C',
 };
 
 /**

@@ -13,9 +13,10 @@
       [
         "expo-notifications",
         {
-          "color": "#007AFF",
+          "color": "#EA580C",
           "sounds": [
-            "./assets/sounds/new_course.wav"
+            "./assets/sounds/new_course.wav",
+            "./assets/sounds/new_course_long.wav"
           ]
         }
       ],

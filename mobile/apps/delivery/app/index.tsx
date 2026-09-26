@@ -8,6 +8,7 @@ import { Delivery, Driver, Offer } from '../lib/deliveries';
 import { useDriverAlerts } from '../lib/useDriverAlerts';
 import { DutyMode, Tracking, useDriverLocation } from '../lib/useDriverLocation';
 import { useRealtimeEvent } from '../lib/realtime';
+import '../lib/offerNotification';
 import { onDriverNotificationTap, PushDriverData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
 import { applyTheme, COLORS, themedStyles } from '../components/ui';
 import SafetyCheck from '../components/SafetyCheck';

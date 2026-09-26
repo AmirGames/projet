@@ -25,6 +25,10 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
 - **Proposition de course plein écran** : trajet complet sur la carte, montant
   garanti, durée et distance totales, bouton « Accepter » qui se vide avec le
   temps de réponse.
+- **Téléphone verrouillé** : la course proposée sonne 10 s et s'affiche en
+  notification avec un seul bouton, **« Accepter la course »**, qui agit sans
+  déverrouiller ni ouvrir l'application (Android, même application fermée ;
+  iOS, application en fond). Refuser, c'est laisser passer.
 - **« Tout va bien ? »** : immobile plus de 3 minutes en pleine course (hors
   commerce et client), le livreur confirme ou appelle le 112 ; le support est
   prévenu.

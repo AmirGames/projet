@@ -366,6 +366,7 @@ export class DispatchService {
         body: `${course.order?.store?.name || "Commerce"} à ${approche.toFixed(1).replace(".", ",")} km, livraison de ${distancePayee.toFixed(1).replace(".", ",")} km. Répondez vite !`,
         url: "/driver",
         tag: "course-proposee",
+        offerId: proposition.id,
       })
     );
 

@@ -308,7 +308,7 @@ const styles = themedStyles(() => ({
     marginBottom: 12,
     gap: 12,
   },
-  onlineCardOn: { backgroundColor: '#1B5E20' },
+  onlineCardOn: { backgroundColor: COLORS.primary },
   onlineTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text },
   onlineText: { fontSize: 13, color: COLORS.secondary, marginTop: 2 },
   gpsBanner: {
