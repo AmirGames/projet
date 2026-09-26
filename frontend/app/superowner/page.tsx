@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useTranslations } from 'next-intl';
@@ -49,7 +50,7 @@ export default function SuperOwnerDashboard() {
       const data = await response.json();
       setStats(data.stats);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }

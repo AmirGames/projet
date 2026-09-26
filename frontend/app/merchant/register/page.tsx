@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, FormEvent, useEffect } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
 import AcceptationConditions from '@/components/AcceptationConditions';
@@ -227,7 +228,7 @@ export default function MerchantRegisterPage() {
       }, 2000);
     } catch (error) {
       setApiError('Une erreur est survenue. Veuillez réessayer.');
-      console.error('Registration error:', error);
+      signalerErreur('Registration error:', error);
     } finally {
       setLoading(false);
     }

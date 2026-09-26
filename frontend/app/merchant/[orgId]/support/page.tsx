@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { MessageCircle, Plus, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
@@ -62,7 +63,7 @@ export default function SupportPage() {
         setTickets(data.data || []);
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }
@@ -99,7 +100,7 @@ export default function SupportPage() {
         fetchTickets();
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setSubmitting(false);
     }

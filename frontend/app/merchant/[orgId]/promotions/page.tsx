@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Search, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
@@ -65,7 +66,7 @@ export default function PromotionsPage() {
         setPromotions(data.promotions || []);
       }
     } catch (error) {
-      console.error('Error fetching promotions:', error);
+      signalerErreur('Error fetching promotions:', error);
     } finally {
       setLoading(false);
     }
@@ -157,7 +158,7 @@ export default function PromotionsPage() {
         }
       }
     } catch (error) {
-      console.error('Error saving promotion:', error);
+      signalerErreur('Error saving promotion:', error);
       setMessage('❌ Erreur lors de la sauvegarde');
     }
   };
@@ -182,7 +183,7 @@ export default function PromotionsPage() {
         setMessage('❌ Erreur lors de la suppression');
       }
     } catch (error) {
-      console.error('Error deleting promotion:', error);
+      signalerErreur('Error deleting promotion:', error);
       setMessage('❌ Erreur lors de la suppression');
     }
   };
@@ -200,7 +201,7 @@ export default function PromotionsPage() {
         setPromotions(prev => prev.map(p => p.id === id ? updated.promotion : p));
       }
     } catch (error) {
-      console.error('Error toggling promotion:', error);
+      signalerErreur('Error toggling promotion:', error);
     }
   };
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
@@ -61,7 +62,7 @@ export default function DashboardPage() {
         // Sinon, on affiche le choix
       }
     } catch (error) {
-      console.error('Failed to fetch roles:', error);
+      signalerErreur('Failed to fetch roles:', error);
     } finally {
       setRolesLoading(false);
     }

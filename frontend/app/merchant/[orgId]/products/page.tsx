@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Plus, Edit2, Trash2, Search, AlertCircle, Package, GripVertical } from 'lucide-react';
@@ -263,13 +264,13 @@ export default function ProductsPage() {
             stats[product.id] = data;
           }
         } catch (error) {
-          console.error(`Error fetching stats for product ${product.id}:`, error);
+          signalerErreur(`Error fetching stats for product ${product.id}:`, error);
         }
       }
 
       setProductStats(stats);
     } catch (error) {
-      console.error('Error fetching products stats:', error);
+      signalerErreur('Error fetching products stats:', error);
     }
   }, [storeId]);
 
@@ -285,7 +286,7 @@ export default function ProductsPage() {
         setCategories(data.categories || []);
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      signalerErreur('Error fetching categories:', error);
     }
   }, [storeId]);
 
@@ -305,7 +306,7 @@ export default function ProductsPage() {
         await fetchProductsStats(sorted);
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
+      signalerErreur('Error fetching products:', error);
     } finally {
       setLoading(false);
     }
@@ -361,7 +362,7 @@ export default function ProductsPage() {
         setMessage('✅ Produits réorganisés');
         setTimeout(() => setMessage(''), 3000);
       } catch (error) {
-        console.error('Error reordering:', error);
+        signalerErreur('Error reordering:', error);
         setMessage('❌ Erreur lors de la réorganisation');
         fetchProducts();
       } finally {
@@ -488,7 +489,7 @@ export default function ProductsPage() {
         }
       }
     } catch (error) {
-      console.error('Error saving product:', error);
+      signalerErreur('Error saving product:', error);
       setMessage(t('errorProductSave'));
     }
   };
@@ -515,7 +516,7 @@ export default function ProductsPage() {
         setMessage(`❌ ${errorMsg}`);
       }
     } catch (error) {
-      console.error('Error deleting product:', error);
+      signalerErreur('Error deleting product:', error);
       setMessage(t('errorProductDelete'));
     }
   };

@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { filtrePays } from '@/i18n/regions';
@@ -149,7 +150,7 @@ export default function ClientHomePage() {
       const storeList = data.data || [];
       setStores(storeList);
     } catch (err) {
-      console.error('Error loading stores:', err);
+      signalerErreur('Error loading stores:', err);
     } finally {
       setLoading(false);
     }
@@ -165,7 +166,7 @@ export default function ClientHomePage() {
       const storeList = data.data || [];
       setStores(storeList);
     } catch (err) {
-      console.error('Error loading nearby stores:', err);
+      signalerErreur('Error loading nearby stores:', err);
     } finally {
       setLoading(false);
     }

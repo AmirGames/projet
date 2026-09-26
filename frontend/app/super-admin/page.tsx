@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -41,7 +42,7 @@ export default function SuperAdminDashboard() {
       const data = await response.json();
       setStats(data);
     } catch (error) {
-      console.error('Erreur chargement stats:', error);
+      signalerErreur('Erreur chargement stats:', error);
       router.push('/login');
     } finally {
       setLoading(false);

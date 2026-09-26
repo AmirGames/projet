@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -74,7 +75,7 @@ export default function InvoicesPage() {
       setInvoices(data.data || []);
       setTotal(data.total || 0);
     } catch (error) {
-      console.error('Error fetching invoices:', error);
+      signalerErreur('Error fetching invoices:', error);
     } finally {
       setLoading(false);
     }
@@ -95,7 +96,7 @@ export default function InvoicesPage() {
       const data = await response.json();
       setStats(data);
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      signalerErreur('Error fetching stats:', error);
     }
   }, [storeId]);
 
@@ -131,7 +132,7 @@ export default function InvoicesPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Error downloading invoice:', error);
+      signalerErreur('Error downloading invoice:', error);
     }
   };
 

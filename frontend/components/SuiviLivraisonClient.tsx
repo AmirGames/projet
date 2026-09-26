@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 /**
  * Suivi en temps réel de la livraison.
  *
@@ -242,7 +243,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
           }
         }
       } catch (err) {
-        console.error('Erreur WebSocket:', err);
+        signalerErreur('Erreur WebSocket:', err);
       }
     };
 

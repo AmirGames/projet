@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Edit2, Lock, Unlock, Clock } from 'lucide-react';
@@ -43,7 +44,7 @@ export default function MerchantsPage() {
       const data = await response.json();
       setMerchants(data.merchants || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       router.push('/login');
     } finally {
       setLoading(false);

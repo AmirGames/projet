@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 'lucide-react';
@@ -142,12 +143,12 @@ export default function TrackOrderPage() {
             setDelivery(deliveryData && 'data' in deliveryData ? deliveryData.data : deliveryData);
           }
         } catch (err) {
-          console.error('Error loading delivery:', err);
+          signalerErreur('Error loading delivery:', err);
           // Pas critique, on continue sans données de livraison
         }
       }
     } catch (err) {
-      console.error('Search error:', err);
+      signalerErreur('Search error:', err);
       setError('Erreur de connexion. Veuillez réessayer.');
     } finally {
       setLoading(false);

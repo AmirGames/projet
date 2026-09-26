@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { FileJson, FileText } from 'lucide-react';
@@ -39,7 +40,7 @@ export default function ExportsPage() {
       setMessage(t('success'));
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       setMessage(t('error'));
       setTimeout(() => setMessage(''), 3000);
     } finally {

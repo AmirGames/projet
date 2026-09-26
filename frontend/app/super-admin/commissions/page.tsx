@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { Search, Download, Filter } from 'lucide-react';
 
@@ -38,7 +39,7 @@ export default function CommissionsPage() {
       const data = await response.json();
       setCommissions(data.commissions || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }

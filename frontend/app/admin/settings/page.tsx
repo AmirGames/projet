@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { Save, AlertCircle } from 'lucide-react';
 import { apiClient } from '@/lib/api';
@@ -56,7 +57,7 @@ export default function AdminSettings() {
         }));
       }
     } catch (error) {
-      console.error('Erreur chargement settings:', error);
+      signalerErreur('Erreur chargement settings:', error);
     } finally {
       setLoading(false);
     }
@@ -83,7 +84,7 @@ export default function AdminSettings() {
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      signalerErreur('Erreur lors de la sauvegarde:', error);
       setMessage('❌ Erreur lors de la sauvegarde');
       setTimeout(() => setMessage(''), 3000);
     } finally {

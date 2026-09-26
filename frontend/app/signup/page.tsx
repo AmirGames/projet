@@ -1,5 +1,6 @@
 "use client";
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from "react";
 import AcceptationConditions from '@/components/AcceptationConditions';
 import { useRouter } from "next/navigation";
@@ -52,7 +53,7 @@ export default function SignupPage() {
       router.push("/auth/role-selection");
     } catch (err) {
       setError(t("error"));
-      console.error(err);
+      signalerErreur(err);
     } finally {
       setLoading(false);
     }

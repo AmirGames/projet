@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 
 import { useState, useCallback } from 'react';
 import { Download, TrendingUp, DollarSign, ShoppingCart, Users } from 'lucide-react';
@@ -95,7 +96,7 @@ export default function ReportsPage() {
         setCustomers(data.customers || []);
       }
     } catch (error) {
-      console.error('Error fetching reports:', error);
+      signalerErreur('Error fetching reports:', error);
     } finally {
       setLoading(false);
     }
@@ -131,7 +132,7 @@ export default function ReportsPage() {
         document.body.removeChild(a);
       }
     } catch (error) {
-      console.error('Error exporting report:', error);
+      signalerErreur('Error exporting report:', error);
     } finally {
       setExporting(false);
     }

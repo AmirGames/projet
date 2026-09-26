@@ -1,5 +1,6 @@
 "use client";
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -117,7 +118,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       setError(t("errorConnection"));
-      console.error(err);
+      signalerErreur(err);
     } finally {
       setLoading(false);
     }

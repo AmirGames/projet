@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { Trash2, Plus } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -31,7 +32,7 @@ export default function AdminManagementPage() {
       // For now, we'll show a placeholder
       setAdmins([]);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }
@@ -61,7 +62,7 @@ export default function AdminManagementPage() {
       setTimeout(() => setMessage(''), 3000);
       fetchAdmins();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       setMessage('❌ Erreur lors de la création');
       setTimeout(() => setMessage(''), 3000);
     }

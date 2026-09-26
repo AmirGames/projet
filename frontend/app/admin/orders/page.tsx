@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
@@ -27,7 +28,7 @@ export default function AdminOrders() {
       const data = await apiClient.getOrders(storeId, token);
       setOrders(Array.isArray(data) ? data : data.orders || []);
     } catch (error) {
-      console.error('Erreur chargement commandes:', error);
+      signalerErreur('Erreur chargement commandes:', error);
     } finally {
       setLoading(false);
     }

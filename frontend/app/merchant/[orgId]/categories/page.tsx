@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, GripVertical } from 'lucide-react';
 import {
@@ -151,7 +152,7 @@ export default function CategoriesPage() {
         setCategories(sorted);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      signalerErreur('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
@@ -200,7 +201,7 @@ export default function CategoriesPage() {
         setMessage('✅ Catégories réorganisées');
         setTimeout(() => setMessage(''), 3000);
       } catch (error) {
-        console.error('Error reordering:', error);
+        signalerErreur('Error reordering:', error);
         setMessage('❌ Erreur lors de la réorganisation');
         fetchStoreAndCategories();
       } finally {
@@ -271,7 +272,7 @@ export default function CategoriesPage() {
         }
       }
     } catch (error) {
-      console.error('Error saving category:', error);
+      signalerErreur('Error saving category:', error);
       setMessage('❌ Erreur lors de la sauvegarde');
     }
   };
@@ -298,7 +299,7 @@ export default function CategoriesPage() {
         setMessage(`❌ ${errorMsg}`);
       }
     } catch (error) {
-      console.error('Error deleting category:', error);
+      signalerErreur('Error deleting category:', error);
       setMessage('❌ Erreur lors de la suppression');
     }
   };

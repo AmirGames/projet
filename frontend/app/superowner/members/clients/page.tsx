@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Users, Search, Filter, Eye, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
@@ -40,7 +41,7 @@ export default function ClientsPage() {
         (data.clients || []).map((ligne: any) => ({ ...ligne, status: String(ligne.status || '').toLowerCase() }))
       );
     } catch (error) {
-      console.error('Error:', error);
+      signalerErreur('Error:', error);
     } finally {
       setLoading(false);
     }

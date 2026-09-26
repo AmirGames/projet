@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Trash2, Edit2, Power, Plus, X } from 'lucide-react';
@@ -139,7 +140,7 @@ export default function PaymentMethodsPage() {
       setMethods(data.data || []);
       setTotal(data.total || 0);
     } catch (error) {
-      console.error('Error fetching payment methods:', error);
+      signalerErreur('Error fetching payment methods:', error);
     } finally {
       setLoading(false);
     }
@@ -161,7 +162,7 @@ export default function PaymentMethodsPage() {
       const data = await response.json();
       setMethods(methods.map(m => m.id === methodId ? data.method : m));
     } catch (error) {
-      console.error('Error toggling payment method:', error);
+      signalerErreur('Error toggling payment method:', error);
     }
   };
 
@@ -176,7 +177,7 @@ export default function PaymentMethodsPage() {
       if (!response.ok) throw new Error('Failed to delete payment method');
       setMethods(methods.filter(m => m.id !== methodId));
     } catch (error) {
-      console.error('Error deleting payment method:', error);
+      signalerErreur('Error deleting payment method:', error);
     }
   };
 

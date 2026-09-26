@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useMemo } from 'react';
 import Link from '@/components/LienRegional';
 import { Search, MapPin, Star, Clock } from 'lucide-react';
@@ -62,7 +63,7 @@ export default function RestaurantsPage() {
         }))
       );
     } catch (err) {
-      console.error('Erreur:', err);
+      signalerErreur('Erreur:', err);
       setRestaurants([]);
     } finally {
       setLoading(false);

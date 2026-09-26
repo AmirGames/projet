@@ -1,3 +1,5 @@
+import { signalerErreur } from '@/lib/erreurs';
+
 export interface Theme {
   id: string;
   name: string;
@@ -139,7 +141,7 @@ export const loadThemeFromAPI = async (apiUrl: string, token: string) => {
       return theme;
     }
   } catch (error) {
-    console.error('Erreur lors du chargement du thème:', error);
+    signalerErreur('Erreur lors du chargement du thème:', error);
   }
 
   return loadSavedTheme();
@@ -160,7 +162,7 @@ export const saveThemeToAPI = async (themeId: string, apiUrl: string, token: str
       return await response.json();
     }
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde du thème:', error);
+    signalerErreur('Erreur lors de la sauvegarde du thème:', error);
   }
 
   return null;

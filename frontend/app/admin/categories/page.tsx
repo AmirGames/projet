@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
@@ -24,7 +25,7 @@ export default function AdminCategories() {
       const data = await apiClient.getCategories(storeId);
       setCategories(Array.isArray(data) ? data : data.categories || []);
     } catch (error) {
-      console.error('Erreur chargement catégories:', error);
+      signalerErreur('Erreur chargement catégories:', error);
     } finally {
       setLoading(false);
     }
@@ -44,7 +45,7 @@ export default function AdminCategories() {
       setShowForm(false);
       fetchCategories();
     } catch (error) {
-      console.error('Erreur création:', error);
+      signalerErreur('Erreur création:', error);
     }
   };
 
@@ -54,7 +55,7 @@ export default function AdminCategories() {
         await apiClient.deleteCategory(categoryId);
         setCategories(categories.filter(c => c.id !== categoryId));
       } catch (error) {
-        console.error('Erreur suppression:', error);
+        signalerErreur('Erreur suppression:', error);
       }
     }
   };

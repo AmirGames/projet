@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -86,7 +87,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
         setFormule(quota.tier ? { code: quota.tier, libelle: quota.tierLabel || quota.tier } : null);
       }
     } catch (error) {
-      console.error('Chargement des boutiques impossible', error);
+      signalerErreur('Chargement des boutiques impossible', error);
     }
   }, []);
 

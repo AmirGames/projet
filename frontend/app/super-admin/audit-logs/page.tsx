@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { Search, Download, Filter } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -32,7 +33,7 @@ export default function AuditLogsPage() {
       const data = await response.json();
       setLogs(data.logs || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }

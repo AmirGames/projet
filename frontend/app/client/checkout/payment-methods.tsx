@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { CreditCard, Plus, Trash2 } from 'lucide-react';
 import { useDerniereValeur } from '@/lib/use-derniere-valeur';
@@ -45,7 +46,7 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
         }
       }
     } catch (err) {
-      console.error('Error fetching payment methods:', err);
+      signalerErreur('Error fetching payment methods:', err);
     } finally {
       setLoading(false);
     }
@@ -68,7 +69,7 @@ export function PaymentMethods({ onSelect }: PaymentMethodsProps) {
       setMethods((prev) => prev.filter((m) => m.id !== methodId));
       if (selected === methodId) setSelected(null);
     } catch (err) {
-      console.error('Error deleting payment method:', err);
+      signalerErreur('Error deleting payment method:', err);
     }
   };
 

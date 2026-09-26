@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 
 import { useCallback, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -91,7 +92,7 @@ export default function TaxSettingsPage() {
         setProduits(Array.isArray(d) ? d : d.products || d.data || []);
       }
     } catch (err) {
-      console.error(err);
+      signalerErreur(err);
     } finally {
       setLoading(false);
     }
@@ -197,7 +198,7 @@ export default function TaxSettingsPage() {
       });
       if (r.ok) setTaxes(taxes.filter(t => t.id !== taxId));
     } catch (err) {
-      console.error(err);
+      signalerErreur(err);
     }
   };
 

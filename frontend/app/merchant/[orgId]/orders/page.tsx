@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -145,7 +146,7 @@ export default function OrdersPage() {
       setOrders(data.data || []);
       setTotal(data.total || 0);
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      signalerErreur('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
@@ -166,7 +167,7 @@ export default function OrdersPage() {
       const data = await response.json();
       setStats(data);
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      signalerErreur('Error fetching stats:', error);
     }
   }, [storeId]);
 
@@ -197,7 +198,7 @@ export default function OrdersPage() {
       const delivery = settings.delivery || {};
       setUseOwnDelivery(delivery.useOwnDelivery || false);
     } catch (error) {
-      console.error('Error fetching delivery settings:', error);
+      signalerErreur('Error fetching delivery settings:', error);
     }
   }, [storeId]);
 
@@ -266,7 +267,7 @@ export default function OrdersPage() {
         setDriversDiagnostic(expliquerAbsence(data.diagnostic, data.radiusKm));
       }
     } catch (error) {
-      console.error('Error fetching available drivers:', error);
+      signalerErreur('Error fetching available drivers:', error);
       setAvailableDeliveryMen([]);
       setDriversDiagnostic(error instanceof Error ? error.message : String(error));
     } finally {
@@ -305,7 +306,7 @@ export default function OrdersPage() {
       setShowDeliveryModal(null);
       fetchOrders();
     } catch (error) {
-      console.error('Error selecting driver:', error);
+      signalerErreur('Error selecting driver:', error);
       setDispatchMessage({ ok: false, text: 'Serveur injoignable.' });
     }
   };
