@@ -16,7 +16,7 @@ import { ActiverNotifications } from '@/components/ActiverNotifications';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Delivery {
   id: string;
   orderId: string;
@@ -72,7 +72,7 @@ export default function DriverDashboard() {
 
     try {
       // Load driver info
-      const driverResponse = await fetch(`${API_URL}/drivers/me`, {
+      const driverResponse = await fetch(`${API_URL}/api/drivers/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -93,7 +93,7 @@ export default function DriverDashboard() {
       // La course en cours (acceptée ou récupérée). Sans ce relevé, une course
       // acceptée depuis une proposition disparaissait du tableau de bord.
       const activeResponse = await fetch(
-        `${API_URL}/drivers/deliveries?status=ACTIVE`,
+        `${API_URL}/api/drivers/deliveries?status=ACTIVE`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -104,7 +104,7 @@ export default function DriverDashboard() {
 
       // Load available deliveries
       const deliveriesResponse = await fetch(
-        `${API_URL}/drivers/deliveries?status=PENDING`,
+        `${API_URL}/api/drivers/deliveries?status=PENDING`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -137,7 +137,7 @@ export default function DriverDashboard() {
     setIsOnline(nouvelEtat); // retour visuel immédiat
 
     try {
-      const reponse = await fetch(`${API_URL}/drivers/availability`, {
+      const reponse = await fetch(`${API_URL}/api/drivers/availability`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ isOnline: nouvelEtat }),
