@@ -1,6 +1,6 @@
 'use client';
 
-import { signalerErreur } from '@/lib/erreurs';
+import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -98,46 +98,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
-      } else {
+      } else if (response.status === 401) {
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
-          const refreshResponse = await fetch(`${API_URL}/api/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
-          });
+          try {
+            const refreshResponse = await fetch(`${API_URL}/api/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken }),
+            });
 
-          if (refreshResponse.ok) {
-            const refreshData = await refreshResponse.json();
-            localStorage.setItem('accessToken', refreshData.accessToken);
-            if (refreshData.refreshToken) {
-              localStorage.setItem('refreshToken', refreshData.refreshToken);
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              localStorage.setItem('accessToken', refreshData.accessToken);
+              if (refreshData.refreshToken) {
+                localStorage.setItem('refreshToken', refreshData.refreshToken);
+              }
+
+              setUser((precedent) => refreshData.user || precedent);
+            } else {
+              oublierLaSession();
+              setUser(null);
+
+              const connexion = connexionDeLEspace(window.location.pathname);
+              if (connexion) router.replace(connexion);
             }
-
-            /**
-             * Le compte, ou celui qu'on avait déjà.
-             *
-             * La route ne rendait que le jeton : `refreshData.user` était donc
-             * vide, et un renouvellement réussi déconnectait l'écran. Elle le
-             * rend maintenant ; le repli garde l'ancien au cas où.
-             */
-            setUser((precedent) => refreshData.user || precedent);
-          } else {
-            // La session est morte pour de bon : on efface, et on le dit à la
-            // page de connexion plutôt que de laisser l'écran réessayer.
-            oublierLaSession();
-            setUser(null);
-
-            const connexion = connexionDeLEspace(window.location.pathname);
-            if (connexion) router.replace(connexion);
+          } catch (refreshError) {
+            signalerErreur('Auth refresh failed:', refreshError);
+            if (!estErreurReseau(refreshError)) {
+              oublierLaSession();
+              setUser(null);
+              const connexion = connexionDeLEspace(window.location.pathname);
+              if (connexion) router.replace(connexion);
+            }
           }
         } else {
           setUser(null);
         }
+      } else {
+        signalerErreur('Auth check failed:', response.status);
       }
     } catch (error) {
       signalerErreur('Auth refresh error:', error);
-      setUser(null);
+      if (!estErreurReseau(error)) {
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
     }

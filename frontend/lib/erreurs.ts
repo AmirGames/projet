@@ -33,3 +33,17 @@ export function signalerErreur(...details: unknown[]): void {
   if (quitteLaPage()) return;
   console.error(...details);
 }
+
+/**
+ * Vérifie si une erreur vient d'une défaillance réseau.
+ */
+export function estErreurReseau(erreur: unknown): boolean {
+  if (erreur instanceof TypeError) {
+    const message = erreur.message.toLowerCase();
+    return message.includes('failed to fetch') ||
+           message.includes('network') ||
+           message.includes('connection') ||
+           message.includes('timeout');
+  }
+  return false;
+}
