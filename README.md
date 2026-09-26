@@ -305,7 +305,21 @@ tâche en échec…), elle ouvre un incident et prévient par courriel les compt
 plateforme — et `MONITORING_ALERT_EMAILS`, `MONITORING_WEBHOOK_URL` s'ils sont
 renseignés —, puis signale le retour à la normale.
 
-Pour une sonde externe (UptimeRobot, Better Stack, répartiteur de charge) :
+**Disponibilité** : l'API (serveur et base) et le site public sont relevés
+chaque minute, et l'historique est gardé 90 jours en base. La page en tire la
+disponibilité sur 24 h, 7, 30 et 90 jours, une frise d'un trait par jour et la
+liste des indisponibilités. Un trou dans les relevés de l'API compte comme une
+panne : un serveur arrêté ne relève rien. D'autres adresses se surveillent avec
+`UPTIME_URLS` (voir `backend/.env.example`).
+
+**Depuis l'extérieur** : tout ce qui précède tourne dans le serveur, et tombe
+avec lui si l'hébergement entier s'arrête. Le workflow
+`.github/workflows/disponibilite.yml` interroge le site depuis GitHub toutes les
+dix minutes et échoue — GitHub prévient alors par courriel — dès qu'une adresse
+ne répond plus. Il suffit de renseigner la variable de dépôt `UPTIME_URLS`
+(Settings → Secrets and variables → Actions → Variables), une adresse par ligne.
+
+Pour une autre sonde externe (UptimeRobot, Better Stack, répartiteur de charge) :
 
 | Adresse | Répond |
 |---|---|

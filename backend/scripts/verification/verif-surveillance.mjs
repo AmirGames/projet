@@ -116,6 +116,23 @@ for (let i = 0; i < 40 && !freine; i++) {
 }
 check('au-delà de 30 par minute, le serveur refuse', freine, 'jamais freiné');
 
+// ===== La disponibilité =====
+
+titre('La disponibilité dans la durée');
+const refusDisponibilite = await get('/api/superowner/uptime', commercant.accessToken);
+check('un commerçant ne la voit pas', refusDisponibilite.status === 403, `${refusDisponibilite.status}`);
+
+// Un relevé tout de suite : la base vient peut-être d'être vidée.
+await post('/api/superowner/monitoring/releve', {}, TP);
+const disponibilite = await j(await get('/api/superowner/uptime', TP)).then((r) => r?.data);
+const api = disponibilite?.cibles?.find((c) => c.cle === 'api');
+check('l’API est une cible', Boolean(api), JSON.stringify(disponibilite)?.slice(0, 300));
+check('elle a déjà été relevée', Boolean(api?.depuis), `${api?.depuis}`);
+check('elle répond', api?.etat === 'OK', `${api?.etat} — ${api?.derniereErreur}`);
+check('les quatre fenêtres sont chiffrées', ['24h', '7j', '30j', '90j'].every((f) => f in (api?.disponibilite || {})), JSON.stringify(api?.disponibilite));
+check('la frise compte un trait par jour', api?.jours?.length === disponibilite?.conservationJours, `${api?.jours?.length}`);
+check('la tâche de relevé est suivie', donnees.taches.some((t) => t.cle === 'disponibilite'), JSON.stringify(cles));
+
 // ===== Le statut =====
 
 titre('Le verdict');
