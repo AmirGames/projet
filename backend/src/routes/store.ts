@@ -6,6 +6,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, checkOrgStatus } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { PlanService } from "../services/plan.service";
+import { StoreDuplicationService } from "../services/store-duplication.service";
 import {
   TYPES_ETABLISSEMENT,
   TYPES_CUISINE,
@@ -82,6 +83,38 @@ router.post("/", authMiddleware, checkOrgStatus, async (req: Request, res: Respo
       message: "Store créée",
       store,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const duplicateStoreSchema = z.object({
+  name: z.string().min(2, "Nom minimum 2 caractères"),
+  slug: z.string().min(2).regex(/^[a-z0-9-]+$/),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  postalCode: z.string().optional(),
+  phone: z.string().optional(),
+  email: emailFacultatif,
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+});
+
+/**
+ * POST /stores/:id/duplicate - Ouvrir une boutique sur le modèle d'une autre.
+ *
+ * Catalogue, catégories, horaires, zones, taxes… sont recopiés ; seuls le nom,
+ * l'adresse et le téléphone sont nouveaux. Le cloisonnement vérifie déjà que
+ * la boutique modèle appartient à l'appelant.
+ */
+router.post("/:id/duplicate", authMiddleware, checkOrgStatus, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const body = duplicateStoreSchema.parse(req.body);
+
+    const store = await StoreDuplicationService.duplicate(req.userId as string, id, body);
+
+    res.status(201).json({ message: "Boutique dupliquée", store });
   } catch (err) {
     next(err);
   }

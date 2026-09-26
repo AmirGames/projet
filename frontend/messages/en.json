@@ -1947,7 +1947,8 @@
     "subtitle": "Welcome to your merchant dashboard",
     "title": "Dashboard",
     "totalRevenue": "Total revenue",
-    "totalStores": "Total stores"
+    "totalStores": "Total stores",
+    "duplicate": "Duplicate"
   },
   "merchantProfile": {
     "save": "Save",
@@ -2100,5 +2101,19 @@
     "cancel": "Cancel",
     "geolocationNotSupported": "Geolocation not supported",
     "cantAccessLocation": "Unable to access your location"
+  },
+  "dupliquerBoutique": {
+    "title": "Duplicate “{name}”",
+    "help": "Catalog, categories, opening hours, delivery zones, taxes and promotions are copied. Only fill in what changes.",
+    "name": "New store name",
+    "namePlaceholder": "Night Shop 02",
+    "address": "Address",
+    "postalCode": "Postal code",
+    "city": "City",
+    "phone": "Phone",
+    "cancel": "Cancel",
+    "submit": "Duplicate",
+    "submitting": "Duplicating…",
+    "error": "Duplication failed."
   }
 }

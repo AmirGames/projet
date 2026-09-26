@@ -5,7 +5,9 @@ import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Store, ShoppingCart, TrendingUp } from 'lucide-react';
+import { Store, ShoppingCart, TrendingUp, Copy } from 'lucide-react';
+
+import DupliquerBoutique from '@/components/DupliquerBoutique';
 
 import { memoriserBoutique } from '@/lib/current-store';
 import { euro } from '@/lib/format';
@@ -40,6 +42,7 @@ export default function MerchantDashboard() {
     canCreate: boolean;
     upgradeAvailable: boolean;
   } | null>(null);
+  const [aDupliquer, setADupliquer] = useState<Store | null>(null);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -231,33 +234,60 @@ export default function MerchantDashboard() {
               // retenir avant d'ouvrir le tableau de bord. Sans cela, toutes
               // les cartes menaient au même endroit et le choix n'avait aucun
               // effet.
-              <button
+              <div
                 key={store.id}
-                type="button"
-                onClick={() => ouvrirBoutique(store.id)}
-                className="block w-full text-left"
+                className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-orange-600 transition flex items-start justify-between gap-4"
               >
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-orange-600 transition cursor-pointer">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-white font-semibold">{store.name}</h3>
-                      {store.description && (
-                        <p className="text-gray-400 text-sm mt-1">{store.description}</p>
-                      )}
-                      {store.address && (
-                        <p className="text-gray-500 text-xs mt-2">{store.address}</p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-orange-600 hover:text-orange-500 transition">{t('manage')}</p>
-                    </div>
-                  </div>
+                <button
+                  type="button"
+                  onClick={() => ouvrirBoutique(store.id)}
+                  className="flex-1 text-left cursor-pointer"
+                >
+                  <h3 className="text-white font-semibold">{store.name}</h3>
+                  {store.description && (
+                    <p className="text-gray-400 text-sm mt-1">{store.description}</p>
+                  )}
+                  {store.address && (
+                    <p className="text-gray-500 text-xs mt-2">{store.address}</p>
+                  )}
+                </button>
+                <div className="text-right flex flex-col items-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => ouvrirBoutique(store.id)}
+                    className="text-orange-600 hover:text-orange-500 transition"
+                  >
+                    {t('manage')}
+                  </button>
+                  {/* Même catalogue, mêmes réglages : seuls le nom, l'adresse
+                      et le téléphone changent. */}
+                  {quota?.canCreate !== false && (
+                    <button
+                      type="button"
+                      onClick={() => setADupliquer(store)}
+                      className="text-sm text-gray-400 hover:text-white flex items-center gap-1 transition"
+                    >
+                      <Copy size={14} />
+                      {t('duplicate')}
+                    </button>
+                  )}
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      {aDupliquer && (
+        <DupliquerBoutique
+          source={aDupliquer}
+          onClose={() => setADupliquer(null)}
+          onDone={() => {
+            setADupliquer(null);
+            fetchDashboardData();
+          }}
+        />
+      )}
 
       {/* Recent Orders Section */}
       <div>

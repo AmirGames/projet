@@ -1947,7 +1947,8 @@
     "subtitle": "Bienvenue sur votre tableau de bord commerçant",
     "title": "Tableau de Bord",
     "totalRevenue": "Revenu Total",
-    "totalStores": "Total de Boutiques"
+    "totalStores": "Total de Boutiques",
+    "duplicate": "Dupliquer"
   },
   "merchantProfile": {
     "save": "Enregistrer",
@@ -2100,5 +2101,19 @@
     "cancel": "Annuler",
     "geolocationNotSupported": "Géolocalisation non supportée",
     "cantAccessLocation": "Impossible d'accéder à votre localisation"
+  },
+  "dupliquerBoutique": {
+    "title": "Dupliquer « {name} »",
+    "help": "Catalogue, catégories, horaires, zones de livraison, taxes et promotions sont recopiés. Indiquez seulement ce qui change.",
+    "name": "Nom de la nouvelle boutique",
+    "namePlaceholder": "Night Shop 02",
+    "address": "Adresse",
+    "postalCode": "Code postal",
+    "city": "Ville",
+    "phone": "Téléphone",
+    "cancel": "Annuler",
+    "submit": "Dupliquer",
+    "submitting": "Duplication…",
+    "error": "La duplication a échoué."
   }
 }
