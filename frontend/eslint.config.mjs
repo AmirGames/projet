@@ -11,8 +11,6 @@ export default defineConfig([
       // en avertissement le temps de corriger le code existant, qui les
       // enfreint à ~170 endroits.
       "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/immutability": "warn",
-      "react-hooks/preserve-manual-memoization": "warn",
     },
   },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),

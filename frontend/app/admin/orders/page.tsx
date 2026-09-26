@@ -19,10 +19,6 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('ALL');
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
   const fetchOrders = async () => {
     try {
       const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
@@ -35,6 +31,10 @@ export default function AdminOrders() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   const filteredOrders = filterStatus === 'ALL' 
     ? orders 

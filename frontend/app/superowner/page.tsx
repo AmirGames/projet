@@ -37,15 +37,6 @@ export default function SuperOwnerDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
-
-  // Les chiffres portent sur toute la plateforme : n'importe quelle écriture
-  // peut les changer. Deux secondes suffisent pour qu'une rafale n'en
-  // provoque qu'une relecture.
-  useDonneesModifiees('*', () => fetchDashboardStats(), { delaiMs: 2000 });
-
   const fetchDashboardStats = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -62,6 +53,15 @@ export default function SuperOwnerDashboard() {
       setLoading(false);
     }
   };
+
+  // Les chiffres portent sur toute la plateforme : n'importe quelle écriture
+  // peut les changer. Deux secondes suffisent pour qu'une rafale n'en
+  // provoque qu'une relecture.
+  useDonneesModifiees('*', () => fetchDashboardStats(), { delaiMs: 2000 });
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
 
   if (loading) return <div className="text-center py-8">{t('loading')}</div>;
 

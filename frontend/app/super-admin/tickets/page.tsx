@@ -34,9 +34,6 @@ export default function TicketsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  // Un ticket ouvert ou une réponse, ailleurs : la liste suit.
-  useDonneesModifiees('tickets', () => fetchTickets());
-
   const fetchTickets = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -63,6 +60,9 @@ export default function TicketsPage() {
       setLoading(false);
     }
   }, [showArchived, statusFilter]);
+
+  // Un ticket ouvert ou une réponse, ailleurs : la liste suit.
+  useDonneesModifiees('tickets', () => fetchTickets());
 
   useEffect(() => {
     fetchTickets();

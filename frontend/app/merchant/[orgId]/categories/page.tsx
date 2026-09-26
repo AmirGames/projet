@@ -134,13 +134,6 @@ export default function CategoriesPage() {
     })
   );
 
-  // Une catégorie ajoutée ou réordonnée ailleurs, ou un plat qui change de
-  // catégorie (le compte par catégorie bouge) : la liste suit.
-  useDonneesModifiees(['categories', 'products'], () => fetchStoreAndCategories(), {
-    storeId,
-    actif: Boolean(storeId),
-  });
-
   const fetchStoreAndCategories = useCallback(async () => {
     if (!storeId) return;
 
@@ -162,6 +155,13 @@ export default function CategoriesPage() {
       setLoading(false);
     }
   }, [storeId]);
+
+  // Une catégorie ajoutée ou réordonnée ailleurs, ou un plat qui change de
+  // catégorie (le compte par catégorie bouge) : la liste suit.
+  useDonneesModifiees(['categories', 'products'], () => fetchStoreAndCategories(), {
+    storeId,
+    actif: Boolean(storeId),
+  });
 
   useEffect(() => {
     if (storeId) {

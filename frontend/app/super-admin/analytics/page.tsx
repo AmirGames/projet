@@ -27,10 +27,6 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<CommissionData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchCommissions();
-  }, []);
-
   const fetchCommissions = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -50,6 +46,10 @@ export default function AnalyticsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCommissions();
+  }, []);
 
   if (loading) return <div className="text-center py-8">Chargement...</div>;
   if (!data) return <div className="text-center py-8 text-red-400">Erreur de chargement</div>;

@@ -29,10 +29,6 @@ export default function AdminSettingsPage() {
     maintenanceMessage: "",
   });
 
-  useEffect(() => {
-    fetchConfig();
-  }, []);
-
   const fetchConfig = async () => {
     try {
       const res = await fetch(`${API_URL}/api/admin/config`, {
@@ -57,6 +53,10 @@ export default function AdminSettingsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

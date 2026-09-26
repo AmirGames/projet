@@ -24,10 +24,6 @@ export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'inactive'>('all');
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
   const fetchClients = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -48,6 +44,10 @@ export default function ClientsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

@@ -119,17 +119,6 @@ export default function OrdersPage() {
     }
   }, []);
 
-  // Ailleurs aussi : un collègue, le livreur, le client, une annulation
-  // automatique. La liste suit sans qu'on recharge.
-  useDonneesModifiees(
-    'orders',
-    () => {
-      fetchOrders();
-      fetchStats();
-    },
-    { storeId, actif: Boolean(storeId) }
-  );
-
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
@@ -182,6 +171,17 @@ export default function OrdersPage() {
       console.error('Error fetching stats:', error);
     }
   }, [storeId]);
+
+  // Ailleurs aussi : un collègue, le livreur, le client, une annulation
+  // automatique. La liste suit sans qu'on recharge.
+  useDonneesModifiees(
+    'orders',
+    () => {
+      fetchOrders();
+      fetchStats();
+    },
+    { storeId, actif: Boolean(storeId) }
+  );
 
   const fetchDeliverySettings = useCallback(async () => {
     try {

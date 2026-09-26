@@ -79,6 +79,10 @@ interface Category {
   products: Product[];
 }
 
+/** Le prix d'une ligne : celui de la déclinaison retenue, sinon du plat. */
+const prixDeLaLigne = (item: { product: Product; variante?: Declinaison }) =>
+  Number(item.variante?.prixEffectif ?? item.product.price ?? 0);
+
 export default function StorefrontPage() {
   const params = useParams();
   const slug = params?.slug as string;
@@ -474,10 +478,6 @@ export default function StorefrontPage() {
       )
     );
   };
-
-  /** Le prix d'une ligne : celui de la déclinaison retenue, sinon du plat. */
-  const prixDeLaLigne = (item: { product: Product; variante?: Declinaison }) =>
-    Number(item.variante?.prixEffectif ?? item.product.price ?? 0);
 
   // Échap referme le tiroir du panier.
   useEffect(() => {

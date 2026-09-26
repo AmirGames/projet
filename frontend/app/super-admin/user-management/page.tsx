@@ -22,10 +22,6 @@ export default function UserManagementPage() {
   const [banReason, setBanReason] = useState('');
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   const fetchUsers = async () => {
     try {
       // This would need a backend endpoint to fetch users
@@ -37,6 +33,10 @@ export default function UserManagementPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.email.includes(search) || user.name.includes(search);

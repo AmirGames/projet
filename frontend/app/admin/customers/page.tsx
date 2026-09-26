@@ -18,10 +18,6 @@ export default function AdminCustomers() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
   const fetchCustomers = async () => {
     try {
       const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
@@ -56,6 +52,10 @@ export default function AdminCustomers() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
 
   const filteredCustomers = customers.filter(c =>
     c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||

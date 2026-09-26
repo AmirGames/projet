@@ -52,14 +52,6 @@ export default function PromotionsPage() {
     activeDays: [] as number[],
   });
 
-  // Une promotion créée, suspendue ou utilisée (son compteur bouge) : la
-  // liste suit.
-  useDonneesModifiees(['promotions', 'orders'], () => fetchPromotions(), {
-    storeId,
-    delaiMs: 1000,
-    actif: Boolean(storeId),
-  });
-
   const fetchPromotions = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -77,6 +69,14 @@ export default function PromotionsPage() {
       setLoading(false);
     }
   }, [storeId]);
+
+  // Une promotion créée, suspendue ou utilisée (son compteur bouge) : la
+  // liste suit.
+  useDonneesModifiees(['promotions', 'orders'], () => fetchPromotions(), {
+    storeId,
+    delaiMs: 1000,
+    actif: Boolean(storeId),
+  });
 
   useEffect(() => {
     if (storeId) {

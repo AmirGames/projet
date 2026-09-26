@@ -61,13 +61,6 @@ export default function MerchantDetailPage() {
     }
   };
 
-  // Sa formule, son statut, ses boutiques, ses commandes : la fiche suit.
-  useDonneesModifiees(
-    ['organizations', 'merchant-profile', 'stores', 'orders', 'tickets'],
-    () => fetchMerchant(true),
-    { orgId: merchantId, delaiMs: 1000 }
-  );
-
   // silencieux : une relecture en direct ne touche pas à la formule en cours
   // de choix, et un échec passager ne renvoie pas à la liste.
   const fetchMerchant = useCallback(async (silencieux = false) => {
@@ -93,6 +86,13 @@ export default function MerchantDetailPage() {
       setLoading(false);
     }
   }, [merchantId, router, t]);
+
+  // Sa formule, son statut, ses boutiques, ses commandes : la fiche suit.
+  useDonneesModifiees(
+    ['organizations', 'merchant-profile', 'stores', 'orders', 'tickets'],
+    () => fetchMerchant(true),
+    { orgId: merchantId, delaiMs: 1000 }
+  );
 
   useEffect(() => {
     fetchMerchant();

@@ -33,11 +33,6 @@ export default function RestaurantsPage() {
   // Sous /be-fr/, les commerces belges seulement.
   const region = useRegion();
 
-  useEffect(() => {
-    fetchRestaurants();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [region]);
-
   const fetchRestaurants = async () => {
     setLoading(true);
     try {
@@ -72,6 +67,11 @@ export default function RestaurantsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchRestaurants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [region]);
 
   const filteredRestaurants = useMemo(() => {
     let filtered = restaurants;

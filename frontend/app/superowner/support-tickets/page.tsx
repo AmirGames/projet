@@ -64,10 +64,6 @@ export default function SupportTicketsPage() {
   const [voirArchives, setVoirArchives] = useState(false);
   const limit = 20;
 
-  // Un ticket ouvert par un commerçant, une réponse, un changement de statut
-  // par un collègue : la liste suit.
-  useDonneesModifiees('tickets', () => fetchTickets(true));
-
   // silencieux : une relecture en direct garde la liste affichée — et la
   // conversation ouverte dedans.
   const fetchTickets = useCallback(async (silencieux = false) => {
@@ -104,6 +100,10 @@ export default function SupportTicketsPage() {
       setLoading(false);
     }
   }, [filterPriority, filterStatus, offset, t, voirArchives]);
+
+  // Un ticket ouvert par un commerçant, une réponse, un changement de statut
+  // par un collègue : la liste suit.
+  useDonneesModifiees('tickets', () => fetchTickets(true));
 
   useEffect(() => {
     fetchTickets();

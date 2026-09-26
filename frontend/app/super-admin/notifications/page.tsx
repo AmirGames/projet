@@ -34,10 +34,6 @@ export default function NotificationsPage() {
     targetAudience: 'ADMIN',
   });
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -54,6 +50,10 @@ export default function NotificationsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   const handleSendNotification = async (e: React.FormEvent) => {
     e.preventDefault();

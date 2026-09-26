@@ -53,6 +53,33 @@ export default function OrganizationsPage() {
   // Le commerçant dont on règle la promo « zéro commission ».
   const [promo, setPromo] = useState<{ org: Organization; until: string; note: string } | null>(null);
 
+  // silencieux : une relecture en direct garde la page affichée.
+  const fetchOrganizations = useCallback(async (silencieux = false) => {
+    if (!silencieux) setLoading(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const query = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(),
+        ...(aValider ? { validation: 'attente' } : {}),
+      });
+
+      const res = await fetch(`${API_URL}/api/superowner/organizations?${query}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error(t('loadError'));
+      const data: OrganizationsResponse = await res.json();
+      setOrganizations(data.organizations);
+      setTotal(data.pagination?.total ?? data.organizations?.length ?? 0);
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('genericError'));
+    } finally {
+      setLoading(false);
+    }
+  }, [aValider, offset, t]);
+
   // Suspension et fermeture partagent le service de l'espace
   // d'administration : le comportement est strictement le même.
   // Le changement de formule n'était possible que depuis la fiche détaillée
@@ -180,33 +207,6 @@ export default function OrganizationsPage() {
   useDonneesModifiees(['organizations', 'merchant-profile', 'stores'], () => fetchOrganizations(true), {
     delaiMs: 1000,
   });
-
-  // silencieux : une relecture en direct garde la page affichée.
-  const fetchOrganizations = useCallback(async (silencieux = false) => {
-    if (!silencieux) setLoading(true);
-    try {
-      const token = localStorage.getItem('accessToken');
-      const query = new URLSearchParams({
-        limit: limit.toString(),
-        offset: offset.toString(),
-        ...(aValider ? { validation: 'attente' } : {}),
-      });
-
-      const res = await fetch(`${API_URL}/api/superowner/organizations?${query}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) throw new Error(t('loadError'));
-      const data: OrganizationsResponse = await res.json();
-      setOrganizations(data.organizations);
-      setTotal(data.pagination?.total ?? data.organizations?.length ?? 0);
-      setError('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('genericError'));
-    } finally {
-      setLoading(false);
-    }
-  }, [aValider, offset, t]);
 
   useEffect(() => {
     fetchOrganizations();

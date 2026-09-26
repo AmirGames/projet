@@ -46,9 +46,6 @@ export default function SupportPage() {
   const [openTicketId, setOpenTicketId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
-  // Une réponse du support, un ticket clos ou rouvert : la liste suit.
-  useDonneesModifiees('tickets', () => fetchTickets(true), { orgId });
-
   // silencieux : une relecture en direct garde la liste affichée — et la
   // conversation ouverte dedans.
   const fetchTickets = useCallback(async (silencieux = false) => {
@@ -69,6 +66,9 @@ export default function SupportPage() {
       setLoading(false);
     }
   }, [orgId, showArchived]);
+
+  // Une réponse du support, un ticket clos ou rouvert : la liste suit.
+  useDonneesModifiees('tickets', () => fetchTickets(true), { orgId });
 
   useEffect(() => {
     fetchTickets();

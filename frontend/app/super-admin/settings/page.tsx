@@ -24,10 +24,6 @@ export default function SettingsPage() {
     driverMaxRadiusKm: 8,
   });
 
-  useEffect(() => {
-    fetchConfig();
-  }, []);
-
   const fetchConfig = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -58,6 +54,10 @@ export default function SettingsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;

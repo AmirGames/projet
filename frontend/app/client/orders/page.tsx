@@ -49,9 +49,6 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
 
-  // Acceptée, en route, livrée : chaque étape apparaît sans recharger.
-  useDonneesModifiees('orders', () => loadOrders(true));
-
   // silencieux : une relecture en direct ne vide pas la liste le temps de la
   // réponse.
   const loadOrders = useCallback(async (silencieux = false) => {
@@ -77,6 +74,9 @@ export default function OrdersPage() {
       setLoading(false);
     }
   }, [router]);
+
+  // Acceptée, en route, livrée : chaque étape apparaît sans recharger.
+  useDonneesModifiees('orders', () => loadOrders(true));
 
   useEffect(() => {
     loadOrders();

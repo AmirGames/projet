@@ -24,10 +24,6 @@ export default function AdminManagementPage() {
     password: '',
   });
 
-  useEffect(() => {
-    fetchAdmins();
-  }, []);
-
   const fetchAdmins = async () => {
     try {
       // This would need a backend endpoint to fetch admins
@@ -39,6 +35,10 @@ export default function AdminManagementPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();

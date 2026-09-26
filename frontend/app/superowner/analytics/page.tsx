@@ -40,10 +40,6 @@ export default function AnalyticsDashboard() {
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState<TimeRange>('30days');
 
-  // Les chiffres portent sur toute la plateforme : relus au plus toutes les
-  // cinq secondes, quelle que soit l'activité.
-  useDonneesModifiees('*', () => fetchAnalytics(true), { delaiMs: 5000 });
-
   // silencieux : une relecture en direct garde la page affichée.
   const fetchAnalytics = useCallback(async (silencieux = false) => {
     if (!silencieux) setLoading(true);
@@ -64,6 +60,10 @@ export default function AnalyticsDashboard() {
       setLoading(false);
     }
   }, [t, timeRange]);
+
+  // Les chiffres portent sur toute la plateforme : relus au plus toutes les
+  // cinq secondes, quelle que soit l'activité.
+  useDonneesModifiees('*', () => fetchAnalytics(true), { delaiMs: 5000 });
 
   useEffect(() => {
     fetchAnalytics();

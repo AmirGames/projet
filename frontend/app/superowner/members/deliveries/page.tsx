@@ -25,10 +25,6 @@ export default function DeliveriesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'inactive'>('all');
 
-  useEffect(() => {
-    fetchDeliveries();
-  }, []);
-
   const fetchDeliveries = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -49,6 +45,10 @@ export default function DeliveriesPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDeliveries();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

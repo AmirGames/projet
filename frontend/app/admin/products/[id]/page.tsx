@@ -20,10 +20,6 @@ export default function ProductDetailPage() {
     sku: '',
   });
 
-  useEffect(() => {
-    fetchProduct();
-  }, [productId]);
-
   const fetchProduct = async () => {
     try {
       // Note: The API doesn't have a getProduct by ID endpoint, so we'll show a placeholder
@@ -34,6 +30,10 @@ export default function ProductDetailPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProduct();
+  }, [productId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

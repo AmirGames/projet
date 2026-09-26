@@ -10,14 +10,6 @@ export default function Home() {
   const [roles, setRoles] = useState<any>(null);
   const [rolesLoading, setRolesLoading] = useState(true);
 
-  useEffect(() => {
-    if (user && !isLoading) {
-      fetchRoles();
-    } else if (!user) {
-      setRolesLoading(false);
-    }
-  }, [user, isLoading]);
-
   const fetchRoles = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -37,6 +29,14 @@ export default function Home() {
       setRolesLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user && !isLoading) {
+      fetchRoles();
+    } else if (!user) {
+      setRolesLoading(false);
+    }
+  }, [user, isLoading]);
 
   const isMerchant = roles?.merchant?.active ?? false;
   const isDriver = roles?.driver?.active ?? false;

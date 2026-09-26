@@ -18,6 +18,10 @@ import { useRegion } from '@/lib/region-context';
 
 const UN_AN = 60 * 60 * 24 * 365;
 
+function poserCookie(nom: string, valeur: string) {
+  document.cookie = `${nom}=${valeur};path=/;max-age=${UN_AN};samesite=lax`;
+}
+
 /**
  * Le sélecteur de région : le bouton affiche le pays en cours, et ouvre une
  * fenêtre où chaque carte associe une langue et un pays.
@@ -52,8 +56,8 @@ export function LanguageSwitcher() {
   }, [isOpen, region]);
 
   const choisir = (choix: Region) => {
-    document.cookie = `${NOM_COOKIE_REGION}=${choix.code};path=/;max-age=${UN_AN};samesite=lax`;
-    document.cookie = `${NOM_COOKIE_LANGUE}=${choix.langue};path=/;max-age=${UN_AN};samesite=lax`;
+    poserCookie(NOM_COOKIE_REGION, choix.code);
+    poserCookie(NOM_COOKIE_LANGUE, choix.langue);
     setIsOpen(false);
 
     const { region: dansAdresse, reste } = separerRegion(window.location.pathname);

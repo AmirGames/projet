@@ -24,10 +24,6 @@ export default function MerchantsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'closed'>('all');
 
-  useEffect(() => {
-    fetchMerchants();
-  }, []);
-
   const fetchMerchants = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -48,6 +44,10 @@ export default function MerchantsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchMerchants();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

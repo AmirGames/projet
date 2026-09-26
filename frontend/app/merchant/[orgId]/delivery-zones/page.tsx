@@ -106,17 +106,6 @@ export default function DeliveryZonesPage() {
     }
   }, [storeId]);
 
-  // Une zone dessinée par un collègue, l'adresse de la boutique déplacée :
-  // la carte suit.
-  useDonneesModifiees(
-    ['delivery-zones', 'stores'],
-    () => {
-      fetchZones();
-      chargerBoutique();
-    },
-    { storeId, actif: Boolean(storeId) }
-  );
-
   /**
    * Qui livre. Avec les livreurs de la plateforme, ces zones ne servent pas :
    * le rayon et les frais sont ceux de la plateforme.
@@ -225,6 +214,17 @@ export default function DeliveryZonesPage() {
       setLoading(false);
     }
   }, [storeId]);
+
+  // Une zone dessinée par un collègue, l'adresse de la boutique déplacée :
+  // la carte suit.
+  useDonneesModifiees(
+    ['delivery-zones', 'stores'],
+    () => {
+      fetchZones();
+      chargerBoutique();
+    },
+    { storeId, actif: Boolean(storeId) }
+  );
 
   useEffect(() => {
     if (storeId) {

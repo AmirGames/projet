@@ -246,18 +246,6 @@ export default function ProductsPage() {
     })
   );
 
-  // Un collègue ajoute un plat, le passe en épuisé, réordonne le menu : la
-  // liste suit. Une seconde d'attente : chaque relecture relit aussi les avis
-  // de chaque plat.
-  useDonneesModifiees(
-    ['products', 'categories', 'product-media', 'product-tags', 'reviews'],
-    () => {
-      fetchProducts();
-      fetchCategories();
-    },
-    { storeId, delaiMs: 1000, actif: Boolean(storeId) }
-  );
-
   const fetchProductsStats = useCallback(async (productList: Product[]) => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -321,6 +309,18 @@ export default function ProductsPage() {
       setLoading(false);
     }
   }, [storeId, fetchProductsStats]);
+
+  // Un collègue ajoute un plat, le passe en épuisé, réordonne le menu : la
+  // liste suit. Une seconde d'attente : chaque relecture relit aussi les avis
+  // de chaque plat.
+  useDonneesModifiees(
+    ['products', 'categories', 'product-media', 'product-tags', 'reviews'],
+    () => {
+      fetchProducts();
+      fetchCategories();
+    },
+    { storeId, delaiMs: 1000, actif: Boolean(storeId) }
+  );
 
   useEffect(() => {
     if (storeId) {

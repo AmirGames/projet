@@ -20,10 +20,6 @@ export default function AuditLogsPage() {
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
-
   const fetchLogs = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -40,6 +36,10 @@ export default function AuditLogsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = log.admin.email.includes(search) || log.target.includes(search);

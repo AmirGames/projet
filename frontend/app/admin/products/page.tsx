@@ -19,10 +19,6 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
   const fetchProducts = async () => {
     try {
       const storeId = localStorage.getItem('storeId') || '19c84158-7858-453f-9955-e95c01c4e895';
@@ -34,6 +30,10 @@ export default function AdminProducts() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   const handleDelete = async (productId: string) => {
     if (confirm('Supprimer ce produit?')) {

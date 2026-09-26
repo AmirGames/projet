@@ -58,10 +58,6 @@ export default function OrderTrackingPage() {
   // à le revoir quand il a plus de quinze jours.
   const [avis, setAvis] = useState<{ aRedemander: boolean; dejaDonne: boolean } | null>(null);
 
-  // Ce que le statut ne dit pas : un livreur attribué, une heure revue, un
-  // remboursement. La commande est relue à chaque écriture qui la touche.
-  useDonneesModifiees('orders', () => loadOrderData(), { id: orderId });
-
   // Chargé à l'arrivée, et quand la commande passe « terminée » en direct.
   useEffect(() => {
     if (order?.status !== 'COMPLETED') return;
@@ -118,6 +114,10 @@ export default function OrderTrackingPage() {
       setLoading(false);
     }
   }, [orderId, router]);
+
+  // Ce que le statut ne dit pas : un livreur attribué, une heure revue, un
+  // remboursement. La commande est relue à chaque écriture qui la touche.
+  useDonneesModifiees('orders', () => loadOrderData(), { id: orderId });
 
   useEffect(() => {
     loadOrderData();

@@ -25,10 +25,6 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [newStatus, setNewStatus] = useState('');
 
-  useEffect(() => {
-    fetchOrder();
-  }, [orderId]);
-
   const fetchOrder = async () => {
     try {
       // Note: The API doesn't have a getOrder by ID endpoint
@@ -39,6 +35,10 @@ export default function OrderDetailPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchOrder();
+  }, [orderId]);
 
   const handleStatusUpdate = async () => {
     if (!newStatus) return;

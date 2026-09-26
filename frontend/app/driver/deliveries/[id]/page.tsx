@@ -155,10 +155,6 @@ export default function DeliveryTrackingPage() {
 
   const { enLigne, gps, positionRecue, erreurPosition } = useSignalGps(surRetourReseau);
 
-  // La commande est annulée, le commerçant la déclare prête : la course suit.
-  // Le livreur ne reçoit que les annonces de ses propres courses.
-  useDonneesModifiees('orders', () => loadDeliveryData(true));
-
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
 
@@ -207,6 +203,10 @@ export default function DeliveryTrackingPage() {
       setLoading(false);
     }
   }, [deliveryId, router]);
+
+  // La commande est annulée, le commerçant la déclare prête : la course suit.
+  // Le livreur ne reçoit que les annonces de ses propres courses.
+  useDonneesModifiees('orders', () => loadDeliveryData(true));
 
   useEffect(() => {
     loadDeliveryData();

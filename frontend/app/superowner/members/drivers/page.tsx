@@ -25,10 +25,6 @@ export default function DriversPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'inactive'>('all');
 
-  useEffect(() => {
-    fetchDrivers();
-  }, []);
-
   const fetchDrivers = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -49,6 +45,10 @@ export default function DriversPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
