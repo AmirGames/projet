@@ -21,6 +21,8 @@ interface Props {
   /** Nom de la mesure, en-tête de la colonne du tableau. */
   mesure: string;
   hauteur?: number;
+  /** Affiché quand toutes les valeurs sont nulles. */
+  messageVide?: string;
 }
 
 /** Un pas d'axe « rond » (1, 2, 5 × 10ⁿ) donnant environ quatre graduations. */
@@ -44,7 +46,7 @@ const ACCENT = '#ea580c';
  * infobulle au survol ou au focus clavier, et une vue tableau pour qui ne
  * lit pas le graphique.
  */
-export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format, mesure, hauteur = 180 }: Props) {
+export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format, mesure, hauteur = 180, messageVide = 'Aucune course sur la période' }: Props) {
   const [survol, setSurvol] = useState<number | null>(null);
   const [tableau, setTableau] = useState(false);
 
@@ -117,7 +119,7 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
 
               {vide && (
                 <p className="absolute inset-0 flex items-center justify-center text-sm text-gray-500">
-                  Aucune course sur la période
+                  {messageVide}
                 </p>
               )}
 

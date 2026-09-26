@@ -10,6 +10,10 @@ import { maintenanceMiddleware } from "./middleware/maintenance";
 import { compteRestreint } from "./middleware/compte-restreint";
 import { cloisonnement } from "./middleware/cloisonnement";
 import { diffusionModifications } from "./middleware/diffusion";
+import { mesurerRequetes } from "./middleware/surveillance";
+import { limiterCadence } from "./middleware/throttle";
+import { Surveillance } from "./services/surveillance.service";
+import { Vigie } from "./services/vigie.service";
 import authRouter from "./routes/auth";
 import organizationRouter from "./routes/organization";
 import storeRouter from "./routes/store";
@@ -79,6 +83,10 @@ export function createApp(): Express {
     })
   );
 
+  // ===== Surveillance =====
+  // Au plus tôt : toute requête compte, webhook Stripe compris.
+  app.use(mesurerRequetes);
+
   // ===== Webhook Stripe =====
   // Avant le lecteur JSON : Stripe signe le corps brut, et une fois relu en
   // objet il ne se vérifie plus. Avant aussi la maintenance et les verrous de
@@ -97,9 +105,57 @@ export function createApp(): Express {
   app.use(middlewareOrigine);
 
   // ===== Health check =====
+  // Vivant : le processus répond. Ne touche à rien d'autre, pour qu'un
+  // orchestrateur ne redémarre pas le serveur parce que la base est tombée.
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
+
+  // Prêt : le serveur peut réellement servir (la base répond). C'est l'adresse
+  // à donner à une sonde externe (UptimeRobot, Better Stack, répartiteur de
+  // charge) : 503 dès que la base est injoignable.
+  app.get("/health/ready", async (_req, res) => {
+    const etat = await Vigie.pret();
+    res.status(etat.pret ? 200 : 503).json({
+      status: etat.pret ? "ok" : "unavailable",
+      ...etat,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Les erreurs survenues dans le navigateur des visiteurs. Avant le mode
+  // maintenance et les verrous de compte : une page qui plante doit se savoir
+  // quel que soit l'état du compte ou du site.
+  app.post(
+    "/api/monitoring/client-errors",
+    limiterCadence({
+      max: 30,
+      fenetreMs: 60_000,
+      cle: (req) => `erreurs-navigateur|${req.ip}`,
+      message: "Trop d'erreurs signalées",
+    }),
+    (req, res) => {
+      const corps = req.body || {};
+      const texte = (valeur: unknown, max: number) =>
+        typeof valeur === "string" && valeur.trim() ? valeur.slice(0, max) : undefined;
+
+      const message = texte(corps.message, 500);
+      const page = texte(corps.page, 300);
+      if (!message || !page) {
+        return res.status(400).json({ error: "message et page sont requis" });
+      }
+
+      Surveillance.erreurNavigateur({
+        message,
+        page,
+        source: texte(corps.source, 300),
+        pile: texte(corps.pile, 4000),
+        navigateur: texte(req.get("user-agent"), 300),
+      });
+
+      return res.status(204).end();
+    }
+  );
 
   // ===== Mode maintenance =====
   // Placé avant les routes métier : seuls la connexion et l'administration

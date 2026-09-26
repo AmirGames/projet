@@ -28,6 +28,7 @@ import {
   Key,
   Layers,
   Activity,
+  Radio,
   FileText,
   LifeBuoy,
   Users,
@@ -134,6 +135,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       title: t('nav.sectionSupervision'),
       items: [
         { label: t('nav.health'), icon: Activity, href: '/superowner/health' },
+        { label: t('nav.monitoring'), icon: Radio, href: '/superowner/monitoring' },
         { label: t('nav.dataManagement'), icon: Database, href: '/superowner/data-management' },
         { label: t('nav.securityAudit'), icon: Shield, href: '/superowner/security-audit' },
         { label: t('nav.auditLogs'), icon: FileText, href: '/superowner/audit-logs' },

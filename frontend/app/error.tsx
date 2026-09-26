@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
+import { signalerAuServeur } from '@/lib/surveillance-navigateur';
 
 export default function Error({
   error,
@@ -9,6 +11,12 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // Une erreur rattrapée par React n'atteint pas l'écouteur global de la
+  // page : sans cet envoi, un écran d'erreur resterait invisible au serveur.
+  useEffect(() => {
+    signalerAuServeur(error, error.digest ? `rendu (digest ${error.digest})` : 'rendu');
+  }, [error]);
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
       <div className="text-center max-w-md">

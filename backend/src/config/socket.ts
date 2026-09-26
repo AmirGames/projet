@@ -184,6 +184,24 @@ export function initializeSocket(httpServer: HTTPServer) {
   return io;
 }
 
+/** Ce qu'il en est de Redis, pour la surveillance. */
+let redisEtat: { configure: boolean; relie: boolean; pret: () => boolean } = {
+  configure: false,
+  relie: false,
+  pret: () => false,
+};
+
+export function etatTempsReel() {
+  return {
+    connexions: io ? io.engine.clientsCount : 0,
+    redis: {
+      configure: redisEtat.configure,
+      relie: redisEtat.relie,
+      pret: redisEtat.relie && redisEtat.pret(),
+    },
+  };
+}
+
 /** Au-delà, on renonce à Redis et on reste sur une seule instance. */
 const DELAI_CONNEXION_REDIS_MS = 5000;
 
@@ -238,11 +256,17 @@ export async function brancherRedis(url = process.env.REDIS_URL) {
 
     io.adapter(createAdapter(emetteur, recepteur));
     relie = true;
+    redisEtat = {
+      configure: true,
+      relie: true,
+      pret: () => emetteur.isReady && recepteur.isReady,
+    };
     logger.info('Temps réel : instances reliées par Redis');
     return true;
   } catch (err) {
     emetteur.destroy();
     recepteur.destroy();
+    redisEtat = { configure: true, relie: false, pret: () => false };
     logger.warn('Temps réel : Redis injoignable, on reste sur une seule instance', {
       error: err instanceof Error ? err.message : err,
     });

@@ -1,6 +1,7 @@
 import { DriverAvailabilityService } from "../services/driver-availability.service";
 import { DispatchService } from "../services/dispatch.service";
 import { logger } from "../config/logger";
+import { Surveillance } from "../services/surveillance.service";
 
 /**
  * Surveillance périodique des livreurs.
@@ -19,19 +20,23 @@ export class DriverJobs {
   static start() {
     if (minuteur) return;
 
+    Surveillance.declarerTache("livreurs", "Surveillance des livreurs", INTERVALLE_MS);
+
     minuteur = setInterval(async () => {
       if (enCours) return;
       enCours = true;
 
       try {
-        const pauses = await DriverAvailabilityService.leverPausesEchues();
-        if (pauses > 0) logger.info("Pauses de livreurs terminées", { nombre: pauses });
+        await Surveillance.executerTache("livreurs", async () => {
+          const pauses = await DriverAvailabilityService.leverPausesEchues();
+          if (pauses > 0) logger.info("Pauses de livreurs terminées", { nombre: pauses });
 
-        const relancees = await DispatchService.relancerRecherches();
-        if (relancees > 0) logger.info("Courses sans preneur reproposées", { nombre: relancees });
+          const relancees = await DispatchService.relancerRecherches();
+          if (relancees > 0) logger.info("Courses sans preneur reproposées", { nombre: relancees });
 
-        const gps = await DriverAvailabilityService.surveillerGps();
-        if (gps.perdus > 0 || gps.misHorsLigne > 0) logger.info("Signaux GPS surveillés", gps);
+          const gps = await DriverAvailabilityService.surveillerGps();
+          if (gps.perdus > 0 || gps.misHorsLigne > 0) logger.info("Signaux GPS surveillés", gps);
+        });
       } catch (err) {
         logger.error("Surveillance des livreurs impossible", {
           error: err instanceof Error ? err.message : err,
