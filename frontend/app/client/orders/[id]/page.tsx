@@ -127,11 +127,14 @@ export default function OrderTrackingPage() {
 
   // Le statut change en direct : on relit la commande entière, pour l'heure
   // annoncée à l'acceptation ou le motif d'un refus.
-  useEffect(() => {
-    if (orderStatus) {
-      setOrder(prev => prev ? { ...prev, status: orderStatus } : null);
-      loadOrderData();
-    }
+  const [statutVu, setStatutVu] = useState(orderStatus);
+  if (orderStatus !== statutVu) {
+    setStatutVu(orderStatus);
+    if (orderStatus) setOrder(prev => prev ? { ...prev, status: orderStatus } : null);
+  }
+
+  useEffectChargement(() => {
+    if (orderStatus) loadOrderData();
   }, [orderStatus, loadOrderData]);
 
   const getStatusInfo = (status: string) => {

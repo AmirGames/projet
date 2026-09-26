@@ -6,7 +6,8 @@ import { ShoppingCart, MapPin, Phone, Clock, Star, X, Bike } from 'lucide-react'
 
 import { euro } from '@/lib/format';
 import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
-import { lireAdresseLivraison, type AdresseLivraison } from '@/lib/adresseLivraison';
+import { useAdresseLivraisonEnregistree, type AdresseLivraison } from '@/lib/adresseLivraison';
+import { useParametreAdresse } from '@/lib/navigateur';
 import { useStoreLive } from '@/lib/use-store-live';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import {
@@ -97,7 +98,11 @@ export default function StorefrontPage() {
   >([]);
   // La déclinaison retenue pour chaque plat, avant l'ajout au panier.
   const [choix, setChoix] = useState<Record<string, string>>({});
-  const [showCart, setShowCart] = useState(false);
+  // Arrivé depuis le panier de l'accueil (?panier=1) : le panier s'ouvre
+  // d'emblée, tant que le client n'y a pas touché.
+  const panierDemande = useParametreAdresse('panier') === '1';
+  const [panierChoisi, setShowCart] = useState<boolean | null>(null);
+  const showCart = panierChoisi ?? panierDemande;
   // Les frais de service de la plateforme : le serveur les ajoute à toute
   // commande, livrée ou à emporter. Le panier ne les montrait pas, si bien que
   // son total était plus bas que celui réellement payé.
@@ -116,10 +121,6 @@ export default function StorefrontPage() {
     };
   }, []);
 
-  // Arrivé depuis le panier de l'accueil : le panier s'ouvre d'emblée.
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('panier') === '1') setShowCart(true);
-  }, []);
   /**
    * La boutique dont le panier a déjà été lu.
    *
@@ -132,32 +133,30 @@ export default function StorefrontPage() {
   // Le panier modifié sur un autre appareil du compte (le téléphone) : on le relit.
   const [relecturePanier, setRelecturePanier] = useState(0);
   // L'adresse choisie sur l'accueil (ou ici) et ce qu'il en coûte d'y livrer.
-  const [adresse, setAdresse] = useState<AdresseLivraison | null | undefined>(undefined);
+  const adresseEnregistree = useAdresseLivraisonEnregistree();
+  const [adresseChoisie, setAdresse] = useState<AdresseLivraison | null | undefined>(undefined);
+  const adresse = adresseChoisie !== undefined ? adresseChoisie : adresseEnregistree;
   const [livraison, setLivraison] = useState<Livraison | null>(null);
 
-  useEffect(() => {
-    setAdresse(lireAdresseLivraison());
-  }, []);
-
-  useEffect(() => {
-    if (!store?.id || !adresse) {
-      setLivraison(null);
-      return;
-    }
-
+  // La requête des conditions de livraison, null sans adresse exploitable.
+  const requeteLivraison = (() => {
+    if (!store?.id || !adresse) return null;
     const situee = adresse.latitude != null && adresse.longitude != null;
     const ecrite = [adresse.street, adresse.postalCode, adresse.city].filter(Boolean).join(' ');
-    if (!situee && !ecrite) {
-      setLivraison(null);
-      return;
-    }
-
+    if (!situee && !ecrite) return null;
     const parametres = situee
       ? `?lat=${adresse.latitude}&lng=${adresse.longitude}`
       : `?adresse=${encodeURIComponent(ecrite)}`;
+    return `${store.id}/zone-livraison${parametres}`;
+  })();
+
+  if (requeteLivraison === null && livraison !== null) setLivraison(null);
+
+  useEffect(() => {
+    if (requeteLivraison === null) return;
 
     let annule = false;
-    fetch(`${API_URL}/api/client/stores/${store.id}/zone-livraison${parametres}`)
+    fetch(`${API_URL}/api/client/stores/${requeteLivraison}`)
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => {
         if (!annule) setLivraison(donnees?.data || null);
@@ -169,7 +168,7 @@ export default function StorefrontPage() {
     return () => {
       annule = true;
     };
-  }, [store?.id, adresse]);
+  }, [requeteLivraison]);
 
   // Le menu change pendant que le client compose son panier.
   useStoreLive(store?.id, ({ productId, isAvailable }) => {

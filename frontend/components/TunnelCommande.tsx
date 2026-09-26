@@ -42,7 +42,7 @@ import { useRouter } from 'next/navigation';
 
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
-import { lireAdresseLivraison } from '@/lib/adresseLivraison';
+import { useAdresseLivraisonEnregistree } from '@/lib/adresseLivraison';
 import { cleDeLigne, nombreDArticles, totalDuPanier, type LignePanier } from '@/lib/paniers';
 import { useAuth } from '@/lib/auth-context';
 import { StripePayment } from '@/components/stripe-payment';
@@ -175,33 +175,39 @@ export function TunnelCommande({
 
   // L'état d'ouverture peut arriver après le premier affichage : on bascule
   // alors sur le retrait, seul mode possible.
-  useEffect(() => {
+  const [fermetureVue, setFermetureVue] = useState(false);
+  if (livraisonFermee !== fermetureVue) {
+    setFermetureVue(livraisonFermee);
     if (livraisonFermee) {
       setCheckoutForm((formulaire) =>
         formulaire.deliveryType === 'PICKUP' ? formulaire : { ...formulaire, deliveryType: 'PICKUP' }
       );
     }
-  }, [livraisonFermee]);
+  }
 
-  // L'adresse retenue sur l'accueil pré-remplit la livraison.
-  useEffect(() => {
-    const retenue = lireAdresseLivraison();
-    if (!retenue?.street) return;
-    if (retenue.city) setAdresseOuverte(false);
+  // L'adresse retenue sur l'accueil pré-remplit la livraison, une fois lue
+  // dans le navigateur.
+  const retenue = useAdresseLivraisonEnregistree();
+  const [retenueAppliquee, setRetenueAppliquee] = useState(false);
+  if (retenue !== undefined && !retenueAppliquee) {
+    setRetenueAppliquee(true);
+    if (retenue?.street) {
+      if (retenue.city) setAdresseOuverte(false);
 
-    setCheckoutForm((formulaire) =>
-      formulaire.deliveryAddress
-        ? formulaire
-        : {
-            ...formulaire,
-            deliveryAddress: retenue.street,
-            deliveryCity: retenue.city,
-            deliveryPostal: retenue.postalCode,
-            deliveryLat: retenue.latitude ?? undefined,
-            deliveryLng: retenue.longitude ?? undefined,
-          }
-    );
-  }, []);
+      setCheckoutForm((formulaire) =>
+        formulaire.deliveryAddress
+          ? formulaire
+          : {
+              ...formulaire,
+              deliveryAddress: retenue.street,
+              deliveryCity: retenue.city,
+              deliveryPostal: retenue.postalCode,
+              deliveryLat: retenue.latitude ?? undefined,
+              deliveryLng: retenue.longitude ?? undefined,
+            }
+      );
+    }
+  }
 
   // Charger les informations du profil utilisateur si connecté.
   useEffect(() => {
@@ -245,30 +251,29 @@ export function TunnelCommande({
   // Les conditions de livraison se lisent dès que l'adresse est retenue.
   // Seuls ces champs comptent : le reste du formulaire ne relance rien.
   const { deliveryType, deliveryLat, deliveryLng, deliveryAddress, deliveryCity, deliveryPostal } = checkoutForm;
-  useEffect(() => {
-    if (!boutique.id || deliveryType !== 'DELIVERY') {
-      setLivraison(null);
-      return;
-    }
-
-    let annule = false;
-
-    const situee = deliveryLat !== undefined && deliveryLng !== undefined;
+  const situee = deliveryLat !== undefined && deliveryLng !== undefined;
+  // La requête des conditions de livraison, null sans adresse exploitable.
+  const requeteLivraison = (() => {
+    if (!boutique.id || deliveryType !== 'DELIVERY') return null;
     // À défaut de suggestion retenue, le serveur situe l'adresse écrite.
     const ecrite = [deliveryAddress, deliveryPostal, deliveryCity].filter(Boolean).join(' ');
-
-    if (!situee && ecrite.trim().length < 3) {
-      setLivraison(null);
-      return;
-    }
-
+    if (!situee && ecrite.trim().length < 3) return null;
     const parametres = situee
       ? `?lat=${deliveryLat}&lng=${deliveryLng}`
       : `?adresse=${encodeURIComponent(ecrite)}`;
+    return `${boutique.id}/zone-livraison${parametres}`;
+  })();
+
+  if (requeteLivraison === null && livraison !== null) setLivraison(null);
+
+  useEffect(() => {
+    if (requeteLivraison === null) return;
+
+    let annule = false;
 
     // Sans temporisation, chaque frappe interrogerait le service d'adresses.
     const minuteur = setTimeout(() => {
-      fetch(`${API_URL}/api/client/stores/${boutique.id}/zone-livraison${parametres}`)
+      fetch(`${API_URL}/api/client/stores/${requeteLivraison}`)
         .then((reponse) => (reponse.ok ? reponse.json() : null))
         .then((donnees) => {
           if (!annule && donnees) setLivraison(donnees.data || null);
@@ -280,15 +285,7 @@ export function TunnelCommande({
       annule = true;
       clearTimeout(minuteur);
     };
-  }, [
-    boutique.id,
-    deliveryType,
-    deliveryLat,
-    deliveryLng,
-    deliveryAddress,
-    deliveryCity,
-    deliveryPostal,
-  ]);
+  }, [requeteLivraison, situee]);
 
   // Un champ d'heure libre laissait choisir 9 h alors que la boutique ouvre à
   // 11 h : la commande partait et personne n'était là pour la remettre.

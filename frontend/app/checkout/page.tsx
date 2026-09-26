@@ -19,6 +19,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { TunnelCommande, type BoutiqueCommandee } from '@/components/TunnelCommande';
+import { useHydrate } from '@/lib/navigateur';
 import { useTranslations } from 'next-intl';
 import {
   autresPaniers,
@@ -54,7 +55,14 @@ export default function CheckoutPage() {
    * La requête est lue ici et non par `useSearchParams`, qui obligerait à
    * envelopper la page d'une frontière Suspense pour se construire.
    */
-  useEffect(() => {
+  const hydrate = useHydrate();
+  const [panierLu, setPanierLu] = useState(false);
+  const [boutiqueRetenue, setBoutiqueRetenue] = useState<string | null>(null);
+
+  // Lu une fois, dans le navigateur : l'adresse de la page et les paniers
+  // n'existent pas au rendu serveur.
+  if (hydrate && !panierLu) {
+    setPanierLu(true);
     const demandee = new URLSearchParams(window.location.search).get('boutique') || '';
     const paniers = autresPaniers(undefined);
 
@@ -68,18 +76,21 @@ export default function CheckoutPage() {
       // Un identifiant annoncé sans panier : la boutique existe peut-être, mais
       // il n'y a rien à commander.
       setAChoisir(paniers);
-      setChargement(false);
-      return;
+    } else {
+      setLignes(retenu.lignes);
+      setBoutique({ id: retenu.storeId, name: retenu.storeName, slug: retenu.storeSlug });
+      setBoutiqueRetenue(retenu.storeId);
     }
-
-    setLignes(retenu.lignes);
-    setBoutique({ id: retenu.storeId, name: retenu.storeName, slug: retenu.storeSlug });
     setChargement(false);
+  }
 
-    // La route publique donne l'état d'ouverture, l'adresse et le logo de la
-    // boutique, et le nom quand celui enregistré manque (panier composé avant
-    // cette version).
-    fetch(`${API_URL}/api/client/stores/${retenu.storeId}`)
+  // La route publique donne l'état d'ouverture, l'adresse et le logo de la
+  // boutique, et le nom quand celui enregistré manque (panier composé avant
+  // cette version).
+  useEffect(() => {
+    if (!boutiqueRetenue) return;
+
+    fetch(`${API_URL}/api/client/stores/${boutiqueRetenue}`)
       .then((reponse) => (reponse.ok ? reponse.json() : null))
       .then((donnees) => {
         if (typeof donnees?.data?.isOpenNow === 'boolean') {
@@ -88,7 +99,7 @@ export default function CheckoutPage() {
         const lue = donnees?.data;
         if (!lue) return;
         setBoutique((actuelle) => ({
-          id: retenu.storeId,
+          id: boutiqueRetenue,
           name: actuelle?.name || lue.name || '',
           slug: actuelle?.slug || lue.slug,
           address: lue.address,
@@ -97,7 +108,7 @@ export default function CheckoutPage() {
         }));
       })
       .catch(() => undefined);
-  }, []);
+  }, [boutiqueRetenue]);
 
   if (chargement) {
     return (

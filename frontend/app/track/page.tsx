@@ -7,6 +7,8 @@ import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 
 import { euro } from '@/lib/format';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
 import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
+import { useParametreAdresse } from '@/lib/navigateur';
+import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 // Leaflet touche `window` dès l'import : la carte ne se charge que côté navigateur.
 const SuiviLivraisonClient = dynamic(
@@ -163,16 +165,18 @@ export default function TrackOrderPage() {
    * Un invité n'a pas d'historique : ce lien est son seul moyen de revenir sur
    * sa commande. La confirmation le lui donne, et la page le suit d'elle-même.
    *
-   * La requête est lue ici plutôt qu'avec `useSearchParams`, qui obligerait à
-   * envelopper la page d'une frontière Suspense pour se construire.
+   * La requête est lue sans `useSearchParams` (voir lib/navigateur.ts).
    */
-  useEffect(() => {
-    const demandee = new URLSearchParams(window.location.search).get('commande');
-    if (!demandee) return;
-
+  const demandee = useParametreAdresse('commande');
+  const [demandeeVue, setDemandeeVue] = useState<string | null>(null);
+  if (demandee && demandee !== demandeeVue) {
+    setDemandeeVue(demandee);
     setSearchQuery(demandee);
-    rechercher(demandee);
-  }, [rechercher]);
+  }
+
+  useEffectChargement(() => {
+    if (demandee) rechercher(demandee);
+  }, [demandee, rechercher]);
 
   /**
    * Tant que la commande avance, la page se relit d'elle-même.

@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LogOut, Menu, X, Home, DollarSign, FileText, BarChart3, MessageCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
+import { useStockageLocal } from '@/lib/navigateur';
 
 export default function DriverLayout({
   children,
@@ -15,16 +16,12 @@ export default function DriverLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Relu à chaque changement de page : le layout reste monté d'une page à
-  // l'autre, et une déconnexion doit faire disparaître la barre livreur.
-  useEffect(() => {
-    const token = localStorage.getItem('driverToken');
-    setIsAuthenticated(!!token);
-    setIsLoading(false);
-  }, [pathname]);
+  // Relu à chaque rendu, donc à chaque changement de page : le layout reste
+  // monté d'une page à l'autre, et une déconnexion doit faire disparaître la
+  // barre livreur. `undefined` tant que le navigateur n'a pas été lu.
+  const token = useStockageLocal('driverToken');
+  const isAuthenticated = !!token;
+  const isLoading = token === undefined;
 
   // Connexion et inscription portent la navbar globale : la barre livreur
   // s'y ajouterait par-dessus (ancien jeton encore en mémoire).

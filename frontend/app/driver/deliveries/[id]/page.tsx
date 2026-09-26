@@ -344,12 +344,14 @@ export default function DeliveryTrackingPage() {
   }, [currentStep]);
 
   // Quatre chiffres saisis : le code se vérifie sans autre geste.
-  useEffect(() => {
-    if (code.length === 4 && !modePhoto && currentStep === 2 && !updating) {
-      confirmerRemise({ code });
+  const saisirCode = (valeur: string) => {
+    const chiffres = valeur.replace(/\D/g, '').slice(0, 4);
+    if (chiffres === code) return;
+    setCode(chiffres);
+    if (chiffres.length === 4 && !modePhoto && currentStep === 2 && !updating) {
+      confirmerRemise({ code: chiffres });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  };
 
   /** L'appareil photo du téléphone s'ouvre ; la photo part aussitôt prise. */
   const photographier = async (fichier: File | undefined) => {
@@ -662,7 +664,7 @@ export default function DeliveryTrackingPage() {
                           <input
                             id="code-remise"
                             value={code}
-                            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                            onChange={(e) => saisirCode(e.target.value)}
                             inputMode="numeric"
                             autoComplete="one-time-code"
                             placeholder="0000"

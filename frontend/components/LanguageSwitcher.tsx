@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Globe, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NOM_COOKIE_LANGUE, type Langue } from '@/i18n/langues';
 import {
   NOM_COOKIE_REGION,
@@ -37,11 +37,14 @@ export function LanguageSwitcher() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const region = useRegion() ?? regionParDefaut(locale);
-  const [suggerees, setSuggerees] = useState<Region[]>([]);
+  // La fenêtre ne s'ouvre que dans le navigateur : navigator y existe.
+  const suggerees = useMemo(
+    () => (isOpen ? regionsSuggerees(region, navigator.languages ?? [navigator.language]) : []),
+    [isOpen, region]
+  );
 
   useEffect(() => {
     if (!isOpen) return;
-    setSuggerees(regionsSuggerees(region, navigator.languages ?? [navigator.language]));
 
     const fermerAuClavier = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsOpen(false);

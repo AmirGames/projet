@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
@@ -8,6 +8,17 @@ import { RAISON_DECONNEXION, useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+const sansAbonnement = () => () => {};
+
+function lireRaison(): string | null {
+  try {
+    return sessionStorage.getItem(RAISON_DECONNEXION);
+  } catch {
+    // Stockage refusé : on se passe du message.
+    return null;
+  }
+}
 
 export default function LoginPage() {
   const t = useTranslations('auth.login');
@@ -19,27 +30,26 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [adresseNonConfirmee, setAdresseNonConfirmee] = useState(false);
   const [lienRenvoye, setLienRenvoye] = useState("");
-  const [raison, setRaison] = useState("");
 
   /**
    * Dire pourquoi on a été déconnecté.
    *
    * Sans cela, une session périmée ramenait à un formulaire vide, sans un mot :
-   * l'utilisateur croyait à une panne. Le message est lu une fois puis retiré,
-   * sinon il réapparaîtrait à chaque visite de la page.
+   * l'utilisateur croyait à une panne. Le message est lu une fois, gardé pour
+   * la visite, puis retiré du stockage : il ne réapparaît pas à la suivante.
    */
-  useEffect(() => {
-    try {
-      const lue = sessionStorage.getItem(RAISON_DECONNEXION);
+  const raisonStockee = useSyncExternalStore(sansAbonnement, lireRaison, () => null);
+  const [raison, setRaison] = useState("");
+  if (raisonStockee && raisonStockee !== raison) setRaison(raisonStockee);
 
-      if (lue) {
-        setRaison(lue);
-        sessionStorage.removeItem(RAISON_DECONNEXION);
-      }
+  useEffect(() => {
+    if (!raisonStockee) return;
+    try {
+      sessionStorage.removeItem(RAISON_DECONNEXION);
     } catch {
-      // Stockage refusé : on se passe du message.
+      // Stockage refusé : rien à retirer.
     }
-  }, []);
+  }, [raisonStockee]);
 
   const renvoyerConfirmation = async () => {
     setLienRenvoye(t("resending"));
