@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -51,7 +52,7 @@ export default function SuperOwnerDashboard() {
       const data = await response.json();
       setStats(data);
     } catch (err) {
-      console.error('Error loading stats:', err);
+      signalerErreur('Error loading stats:', err);
     } finally {
       setLoading(false);
     }

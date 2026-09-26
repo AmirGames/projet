@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -58,7 +59,7 @@ export default function RootLayoutContent({
           loadSavedTheme();
         }
       } catch (error) {
-        console.error(t('themeError'), error);
+        signalerErreur(t('themeError'), error);
         loadSavedTheme();
       }
     };

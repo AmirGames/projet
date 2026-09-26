@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus, Edit2, Trash2, Search, MapPin, Crosshair } from 'lucide-react';
@@ -210,7 +211,7 @@ export default function DeliveryZonesPage() {
         setZones(data.zones || []);
       }
     } catch (error) {
-      console.error('Error fetching delivery zones:', error);
+      signalerErreur('Error fetching delivery zones:', error);
     } finally {
       setLoading(false);
     }
@@ -321,7 +322,7 @@ export default function DeliveryZonesPage() {
         setFormError(donnees?.error || t('saveError'));
       }
     } catch (error) {
-      console.error('Error saving delivery zone:', error);
+      signalerErreur('Error saving delivery zone:', error);
       setFormError(t('serverError'));
     } finally {
       setSaving(false);
@@ -343,7 +344,7 @@ export default function DeliveryZonesPage() {
         await fetchZones();
       }
     } catch (error) {
-      console.error('Error deleting delivery zone:', error);
+      signalerErreur('Error deleting delivery zone:', error);
     } finally {
       setSaving(false);
     }

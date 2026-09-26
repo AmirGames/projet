@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Trash2 } from 'lucide-react';
@@ -27,7 +28,7 @@ export default function ProductDetailPage() {
       // In production, you'd implement GET /api/products/:id
       setLoading(false);
     } catch (error) {
-      console.error('Erreur chargement produit:', error);
+      signalerErreur('Erreur chargement produit:', error);
       setLoading(false);
     }
   };
@@ -50,7 +51,7 @@ export default function ProductDetailPage() {
       // In production, you'd implement PUT /api/products/:id
       router.push('/admin/products');
     } catch (error) {
-      console.error('Erreur mise à jour produit:', error);
+      signalerErreur('Erreur mise à jour produit:', error);
     } finally {
       setSaving(false);
     }
@@ -62,7 +63,7 @@ export default function ProductDetailPage() {
         await apiClient.deleteProduct(productId);
         router.push('/admin/products');
       } catch (error) {
-        console.error('Erreur suppression produit:', error);
+        signalerErreur('Erreur suppression produit:', error);
       }
     }
   };

@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
 import { paysDuNavigateur } from '@/lib/pays-client';
@@ -145,7 +146,7 @@ export default function MerchantOnboardPage() {
       }, 1500);
     } catch (error) {
       setApiError(t('connectionError'));
-      console.error('Error:', error);
+      signalerErreur('Error:', error);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -41,7 +42,7 @@ export default function NewProductPage() {
 
       router.push('/admin/products');
     } catch (error) {
-      console.error('Erreur création produit:', error);
+      signalerErreur('Erreur création produit:', error);
     } finally {
       setLoading(false);
     }

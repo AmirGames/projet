@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -32,7 +33,7 @@ export default function OrderDetailPage() {
       // In production, implement GET /api/orders/:id
       setLoading(false);
     } catch (error) {
-      console.error('Erreur chargement commande:', error);
+      signalerErreur('Erreur chargement commande:', error);
       setLoading(false);
     }
   };
@@ -52,7 +53,7 @@ export default function OrderDetailPage() {
         setNewStatus('');
       }
     } catch (error) {
-      console.error('Erreur mise à jour statut:', error);
+      signalerErreur('Erreur mise à jour statut:', error);
     }
   };
 

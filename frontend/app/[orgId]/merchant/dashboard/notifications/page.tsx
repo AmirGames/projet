@@ -1,5 +1,6 @@
 "use client";
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useParams } from "next/navigation";
 import { useState, useCallback } from "react";
 import { Bell, Trash2, Check } from "lucide-react";
@@ -82,7 +83,7 @@ export default function NotificationsPage() {
         setUnreadCount(data.count);
       }
     } catch (err) {
-      console.error("Failed to fetch unread count:", err);
+      signalerErreur("Failed to fetch unread count:", err);
     }
   }, [storeId]);
 

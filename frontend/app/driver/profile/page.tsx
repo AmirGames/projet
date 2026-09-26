@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
 import { paysDuNavigateur } from '@/lib/pays-client';
@@ -71,7 +72,7 @@ export default function DriverProfilePage() {
         router.push('/driver/login');
       }
     } catch (err) {
-      console.error('Error loading driver data:', err);
+      signalerErreur('Error loading driver data:', err);
       setError('Erreur lors du chargement du profil');
     } finally {
       setLoading(false);
@@ -120,7 +121,7 @@ export default function DriverProfilePage() {
         setError(data.error || 'Erreur lors de la mise à jour');
       }
     } catch (err) {
-      console.error('Error updating profile:', err);
+      signalerErreur('Error updating profile:', err);
       setError('Erreur de connexion');
     }
   };

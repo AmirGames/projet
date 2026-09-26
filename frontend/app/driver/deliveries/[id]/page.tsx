@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
@@ -143,7 +144,7 @@ export default function DeliveryTrackingPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ latitude, longitude }),
-      }).catch((err) => console.error('Failed to update location:', err));
+      }).catch((err) => signalerErreur('Failed to update location:', err));
     },
     [deliveryId]
   );
@@ -198,7 +199,7 @@ export default function DeliveryTrackingPage() {
 
       setLoading(false);
     } catch (err) {
-      console.error('Error loading delivery:', err);
+      signalerErreur('Error loading delivery:', err);
       if (silencieux) return;
       setError('Erreur lors du chargement de la livraison');
       setLoading(false);
@@ -291,7 +292,7 @@ export default function DeliveryTrackingPage() {
     } catch (err) {
       gps?.close();
       setRefus("La prise en charge n'a pas pu être enregistrée");
-      console.error('Error updating delivery:', err);
+      signalerErreur('Error updating delivery:', err);
     } finally {
       setUpdating(false);
     }
@@ -325,7 +326,7 @@ export default function DeliveryTrackingPage() {
       await loadDeliveryData();
     } catch (err) {
       setRefus('Erreur lors de la confirmation de la remise');
-      console.error('Error updating delivery:', err);
+      signalerErreur('Error updating delivery:', err);
     } finally {
       setUpdating(false);
     }

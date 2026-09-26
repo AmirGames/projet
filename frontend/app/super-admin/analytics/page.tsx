@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -42,7 +43,7 @@ export default function AnalyticsPage() {
       const fetchedData = await response.json();
       setData(fetchedData);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }

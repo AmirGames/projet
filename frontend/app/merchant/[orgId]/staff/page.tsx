@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Search, Users } from 'lucide-react';
 import { useCurrentStore } from '@/lib/current-store';
@@ -77,7 +78,7 @@ export default function StaffPage() {
         setStats({ total: data.total || 0, active: data.active || 0 });
       }
     } catch (error) {
-      console.error('Error fetching staff:', error);
+      signalerErreur('Error fetching staff:', error);
     } finally {
       setLoading(false);
     }
@@ -135,7 +136,7 @@ export default function StaffPage() {
         setFormData({ name: '', email: '', phone: '', role: 'CASHIER' });
       }
     } catch (error) {
-      console.error('Error saving staff:', error);
+      signalerErreur('Error saving staff:', error);
     } finally {
       setSaving(false);
     }
@@ -156,7 +157,7 @@ export default function StaffPage() {
         await fetchStaff();
       }
     } catch (error) {
-      console.error('Error deleting staff:', error);
+      signalerErreur('Error deleting staff:', error);
     } finally {
       setSaving(false);
     }
@@ -181,7 +182,7 @@ export default function StaffPage() {
         await fetchStaff();
       }
     } catch (error) {
-      console.error('Error toggling status:', error);
+      signalerErreur('Error toggling status:', error);
     } finally {
       setSaving(false);
     }

@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { Ban, Undo2, Search, AlertCircle } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -29,7 +30,7 @@ export default function UserManagementPage() {
       // For now showing placeholder data structure
       setUsers([]);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }
@@ -59,7 +60,7 @@ export default function UserManagementPage() {
       setTimeout(() => setMessage(''), 3000);
       fetchUsers();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       setMessage('❌ Erreur lors du bannissement');
       setTimeout(() => setMessage(''), 3000);
     }
@@ -72,7 +73,7 @@ export default function UserManagementPage() {
       setTimeout(() => setMessage(''), 3000);
       fetchUsers();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       setMessage('❌ Erreur lors du débannissement');
       setTimeout(() => setMessage(''), 3000);
     }

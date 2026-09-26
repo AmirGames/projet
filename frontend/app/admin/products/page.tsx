@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
@@ -26,7 +27,7 @@ export default function AdminProducts() {
       const data = await apiClient.getProducts(storeId);
       setProducts(data.products || data || []);
     } catch (error) {
-      console.error('Erreur chargement produits:', error);
+      signalerErreur('Erreur chargement produits:', error);
     } finally {
       setLoading(false);
     }
@@ -42,7 +43,7 @@ export default function AdminProducts() {
         await apiClient.deleteProduct(productId);
         setProducts(products.filter(p => p.id !== productId));
       } catch (error) {
-        console.error('Erreur suppression:', error);
+        signalerErreur('Erreur suppression:', error);
       }
     }
   };

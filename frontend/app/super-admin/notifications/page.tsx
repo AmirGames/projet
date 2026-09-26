@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { Bell, Search, Trash2, Settings, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -46,7 +47,7 @@ export default function NotificationsPage() {
       const data = await response.json();
       setNotifications(data.notifications || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }
@@ -70,7 +71,7 @@ export default function NotificationsPage() {
       setShowForm(false);
       fetchNotifications();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     }
   };
 
@@ -83,7 +84,7 @@ export default function NotificationsPage() {
       });
       fetchNotifications();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     }
   };
 
@@ -96,7 +97,7 @@ export default function NotificationsPage() {
       });
       fetchNotifications();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     }
   };
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -72,7 +73,7 @@ export function CurrentStoreProvider({
       const valid = list.some((s) => s.id === remembered);
       setStoreId(valid ? (remembered as string) : list[0]?.id || '');
     } catch (error) {
-      console.error('Error loading stores:', error);
+      signalerErreur('Error loading stores:', error);
     } finally {
       setLoading(false);
     }

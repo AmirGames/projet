@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -101,7 +102,7 @@ export default function MerchantDashboard() {
         }));
       }
     } catch (error) {
-      console.error(t('loadError'), error);
+      signalerErreur(t('loadError'), error);
     } finally {
       setLoading(false);
     }

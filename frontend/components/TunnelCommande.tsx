@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 /**
  * Commander en tant qu'invité : coordonnées, mode de livraison, adresse.
  *
@@ -525,7 +526,7 @@ export function TunnelCommande({
 
       surCommandePassee(commande);
     } catch (error) {
-      console.error('Checkout error:', error);
+      signalerErreur('Checkout error:', error);
       setCheckoutError('Erreur de connexion. Veuillez réessayer.');
     } finally {
       setSubmitting(false);

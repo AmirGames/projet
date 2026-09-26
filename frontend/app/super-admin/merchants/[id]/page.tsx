@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, AlertCircle, Clock, Archive, XCircle } from 'lucide-react';
@@ -66,7 +67,7 @@ export default function MerchantDetailPage() {
       setMerchant(data);
       setNewTier(data.tier);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       router.push('/super-admin/merchants');
     } finally {
       setLoading(false);

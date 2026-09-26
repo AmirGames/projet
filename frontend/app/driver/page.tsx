@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -114,7 +115,7 @@ export default function DriverDashboard() {
 
       setLoading(false);
     } catch (err) {
-      console.error('Error loading driver data:', err);
+      signalerErreur('Error loading driver data:', err);
       if (silencieux) return;
       router.push('/driver/login');
     }
@@ -205,7 +206,7 @@ export default function DriverDashboard() {
         setDeliveries(deliveries.filter(d => d.id !== delivery.id));
       }
     } catch (err) {
-      console.error('Error accepting delivery:', err);
+      signalerErreur('Error accepting delivery:', err);
     }
   };
 

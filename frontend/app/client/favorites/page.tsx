@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -56,7 +57,7 @@ export default function FavoritesPage() {
         setFavorites(data.data || []);
       }
     } catch (err) {
-      console.error('Error loading favorites:', err);
+      signalerErreur('Error loading favorites:', err);
       setError(t('loadingError'));
     } finally {
       setLoading(false);
@@ -79,7 +80,7 @@ export default function FavoritesPage() {
 
       setFavorites(favorites.filter(fav => fav.storeId !== storeId));
     } catch (err) {
-      console.error('Error removing favorite:', err);
+      signalerErreur('Error removing favorite:', err);
     }
   };
 

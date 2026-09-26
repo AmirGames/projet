@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Star, Flag } from 'lucide-react';
@@ -91,7 +92,7 @@ export default function ReviewsPage() {
       const [signales, retires] = await Promise.all([compter(token, 'signales'), compter(token, 'retires')]);
       setCompteurs({ signales, retires });
     } catch (error) {
-      console.error('Error fetching reviews:', error);
+      signalerErreur('Error fetching reviews:', error);
     } finally {
       setLoading(false);
     }

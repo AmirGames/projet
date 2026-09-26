@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -58,7 +59,7 @@ export default function AdminDashboard() {
       });
       setLoading(false);
     } catch (err) {
-      console.error('Error:', err);
+      signalerErreur('Error:', err);
       setError('Erreur lors du chargement');
       setLoading(false);
     }

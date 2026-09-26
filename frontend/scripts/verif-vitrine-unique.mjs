@@ -164,7 +164,13 @@ titre('L’accueil ne pointe plus vers la maquette');
 await page.goto(SITE);
 await page.waitForTimeout(2500);
 
-const liens = await page.locator('a[href]').evaluateAll((a) => a.map((l) => l.getAttribute('href')));
+// Les liens publics portent la région du visiteur (/fr-fr/restaurants) :
+// on la retire pour comparer les pages elles-mêmes.
+const sansRegion = (lien) => lien?.replace(/^\/[a-z]{2}-[a-z]{2}(?=\/|$)/, '') || lien;
+
+const liens = (await page.locator('a[href]').evaluateAll((a) => a.map((l) => l.getAttribute('href')))).map(
+  sansRegion
+);
 check('aucun lien vers /store nu', !liens.includes('/store'), JSON.stringify(liens.filter((l) => l?.startsWith('/store'))));
 check('il mène à la liste des commerces', liens.includes('/restaurants'), JSON.stringify(liens));
 
@@ -172,9 +178,9 @@ titre('La liste des commerces mène à la vitrine unique');
 await page.goto(`${SITE}/restaurants`);
 await page.waitForTimeout(3000);
 
-const liensListe = await page
-  .locator('a[href]')
-  .evaluateAll((a) => a.map((l) => l.getAttribute('href')));
+const liensListe = (
+  await page.locator('a[href]').evaluateAll((a) => a.map((l) => l.getAttribute('href')))
+).map(sansRegion);
 
 check(
   'elle pointe par adresse lisible',

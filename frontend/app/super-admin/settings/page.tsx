@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { AVAILABLE_THEMES, applyTheme, getTheme, saveThemeToAPI, Theme } from '@/lib/theme-config';
@@ -50,7 +51,7 @@ export default function SettingsPage() {
       // Apply saved theme
       applyTheme(getTheme(data.selectedTheme || 'dark'));
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }
@@ -104,7 +105,7 @@ export default function SettingsPage() {
       setTimeout(() => setMessage(''), 3000);
       fetchConfig();
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
       setMessage('❌ Erreur lors de la sauvegarde');
       setTimeout(() => setMessage(''), 3000);
     } finally {
@@ -124,7 +125,7 @@ export default function SettingsPage() {
 
       applyTheme(getTheme(themeId));
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     }
   };
 

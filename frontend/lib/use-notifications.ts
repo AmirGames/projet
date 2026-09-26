@@ -1,3 +1,4 @@
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect, useCallback } from 'react';
 import { useTempsReel } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -35,7 +36,7 @@ export function useNotifications() {
         setUnreadCount(data.unreadCount);
       }
     } catch (err) {
-      console.error('Error fetching notifications:', err);
+      signalerErreur('Error fetching notifications:', err);
     } finally {
       setLoading(false);
     }
@@ -56,7 +57,7 @@ export function useNotifications() {
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
-      console.error('Error marking notification as read:', err);
+      signalerErreur('Error marking notification as read:', err);
     }
   }, []);
 
@@ -73,7 +74,7 @@ export function useNotifications() {
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
-      console.error('Error marking all as read:', err);
+      signalerErreur('Error marking all as read:', err);
     }
   }, []);
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -148,7 +149,7 @@ export default function MarketingPage() {
       setCampaigns(data.data || []);
       setTotal(data.total || 0);
     } catch (error) {
-      console.error('Error fetching campaigns:', error);
+      signalerErreur('Error fetching campaigns:', error);
     } finally {
       setLoading(false);
     }
@@ -171,7 +172,7 @@ export default function MarketingPage() {
       if (!response.ok) throw new Error('Failed to delete campaign');
       setCampaigns(campaigns.filter(c => c.id !== campaignId));
     } catch (error) {
-      console.error('Error deleting campaign:', error);
+      signalerErreur('Error deleting campaign:', error);
     }
   };
 

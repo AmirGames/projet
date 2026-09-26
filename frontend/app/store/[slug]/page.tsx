@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ShoppingCart, MapPin, Phone, Clock, Star, X, Bike } from 'lucide-react';
@@ -7,7 +8,7 @@ import { ShoppingCart, MapPin, Phone, Clock, Star, X, Bike } from 'lucide-react'
 import { euro } from '@/lib/format';
 import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
 import { useAdresseLivraisonEnregistree, type AdresseLivraison } from '@/lib/adresseLivraison';
-import { quitteLaPage, useParametreAdresse } from '@/lib/navigateur';
+import { useParametreAdresse } from '@/lib/navigateur';
 import { useStoreLive } from '@/lib/use-store-live';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import {
@@ -374,8 +375,7 @@ export default function StorefrontPage() {
         }
       }
     } catch (error) {
-      // Parti en plein chargement : la requête a été coupée, rien n'a échoué.
-      if (!quitteLaPage()) console.error('Error fetching store:', error);
+      signalerErreur('Error fetching store:', error);
     } finally {
       setLoading(false);
     }

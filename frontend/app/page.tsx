@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { PAGES_LEGALES } from '@/lib/editeur';
 import Link from '@/components/LienRegional';
 import { useAuth } from "@/lib/auth-context";
@@ -25,7 +26,7 @@ export default function Home() {
         setRoles(data.roles);
       }
     } catch (error) {
-      console.error('Failed to fetch roles:', error);
+      signalerErreur('Failed to fetch roles:', error);
     } finally {
       setRolesLoading(false);
     }

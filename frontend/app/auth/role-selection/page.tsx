@@ -1,5 +1,6 @@
 "use client";
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect } from "react";
 import { telephoneInternational } from "@/lib/pays-infos";
 import { paysDuNavigateur } from "@/lib/pays-client";
@@ -66,7 +67,7 @@ export default function RoleSelectionPage() {
         setRoles(data.roles);
       } catch (err) {
         setError("Erreur lors du chargement des rôles");
-        console.error(err);
+        signalerErreur(err);
       } finally {
         setLoading(false);
       }
@@ -107,7 +108,7 @@ export default function RoleSelectionPage() {
       });
     } catch (err: any) {
       setError(err.message || "Erreur lors de la création du commerce");
-      console.error(err);
+      signalerErreur(err);
     }
   };
 
@@ -133,7 +134,7 @@ export default function RoleSelectionPage() {
       });
     } catch (err: any) {
       setError(err.message || "Erreur lors de la création du profil livreur");
-      console.error(err);
+      signalerErreur(err);
     }
   };
 

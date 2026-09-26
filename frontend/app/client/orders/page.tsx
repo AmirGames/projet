@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -70,7 +71,7 @@ export default function OrdersPage() {
         setOrders(data.data || []);
       }
     } catch (err) {
-      console.error('Error loading orders:', err);
+      signalerErreur('Error loading orders:', err);
     } finally {
       setLoading(false);
     }

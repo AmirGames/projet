@@ -154,10 +154,12 @@ check('la liste de la cliente suit, sans recharger', (await enAttente(pCliente))
 
 titre('Une commande restée sans réponse est refusée par la tâche de fond');
 
-// Vieillie en base : la tâche de fond la refuse à son prochain passage.
+// Vieillie en base : la tâche de fond la refuse à son prochain passage. Elle
+// compte depuis l'envoi de la commande (submittedAt), pas depuis sa création.
+const ilYaDeuxHeures = new Date(Date.now() - 2 * 60 * 60 * 1000);
 await base.order.update({
   where: { id: oubliee },
-  data: { createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+  data: { createdAt: ilYaDeuxHeures, submittedAt: ilYaDeuxHeures },
 });
 
 const ficheAvant = await texte(pFiche);

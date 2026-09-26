@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { Search, Eye, Mail } from 'lucide-react';
 import { apiClient } from '@/lib/api';
@@ -48,7 +49,7 @@ export default function AdminCustomers() {
 
       setCustomers(Array.from(customerMap.values()));
     } catch (error) {
-      console.error('Erreur chargement clients:', error);
+      signalerErreur('Erreur chargement clients:', error);
     } finally {
       setLoading(false);
     }

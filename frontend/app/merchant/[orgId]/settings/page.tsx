@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle, ImagePlus, Trash2 } from 'lucide-react';
@@ -199,7 +200,7 @@ export default function StoreSettings() {
       });
       setFacturation(data.facturation || null);
     } catch (error) {
-      console.error('Error fetching settings:', error);
+      signalerErreur('Error fetching settings:', error);
       setMessage({ type: 'error', text: t('loadError') });
     } finally {
       setLoading(false);
@@ -242,7 +243,7 @@ export default function StoreSettings() {
       setMessage({ type: 'success', text: 'Logo enregistré' });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
-      console.error('Error uploading logo:', error);
+      signalerErreur('Error uploading logo:', error);
       setMessage({ type: 'error', text: "Le logo n'a pas pu être envoyé" });
     } finally {
       setLogoEnCours(false);
@@ -343,7 +344,7 @@ export default function StoreSettings() {
       setTimeout(() => setMessage(null), 3000);
       fetchSettings();
     } catch (error) {
-      console.error('Error saving settings:', error);
+      signalerErreur('Error saving settings:', error);
       setMessage({ type: 'error', text: 'Erreur lors de la sauvegarde des paramètres' });
     } finally {
       setSaving(false);

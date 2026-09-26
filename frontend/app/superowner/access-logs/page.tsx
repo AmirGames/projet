@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Search, Download, Filter, Clock } from 'lucide-react';
@@ -41,7 +42,7 @@ export default function AccessLogsPage() {
       const data = await response.json();
       setLogs(data.logs || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      signalerErreur('Erreur:', error);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -110,7 +111,7 @@ export default function OrderTrackingPage() {
 
       setLoading(false);
     } catch (err) {
-      console.error('Error loading order:', err);
+      signalerErreur('Error loading order:', err);
       setError('Erreur lors du chargement de la commande');
       setLoading(false);
     }

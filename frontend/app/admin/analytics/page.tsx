@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
@@ -79,7 +80,7 @@ export default function AdminAnalytics() {
         })),
       });
     } catch (error) {
-      console.error('Erreur chargement analytics:', error);
+      signalerErreur('Erreur chargement analytics:', error);
     } finally {
       setLoading(false);
     }

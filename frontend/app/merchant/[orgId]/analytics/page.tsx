@@ -1,5 +1,6 @@
 'use client';
 
+import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { TrendingUp, Calendar, DollarSign, ShoppingCart, Users, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -101,7 +102,7 @@ export default function AnalyticsPage() {
         });
       }
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      signalerErreur('Error fetching analytics:', error);
     } finally {
       setLoading(false);
     }
