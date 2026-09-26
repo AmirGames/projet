@@ -1981,6 +1981,40 @@ router.get("/drivers/:driverId", authMiddleware, isSuperOwner, async (req: Reque
   }
 });
 
+// PATCH /superowner/drivers/:driverId/documents/:documentId/expiry - Corriger l'échéance d'une pièce
+router.patch(
+  "/drivers/:driverId/documents/:documentId/expiry",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const schema = z.object({
+        expiryDate: z.string().min(1, "Donnez une date d'expiration"),
+      });
+      const body = schema.parse(req.body);
+
+      const { avant, piece } = await DriverApprovalService.changerEcheance(
+        req.params.driverId as string,
+        req.params.documentId as string,
+        body.expiryDate
+      );
+
+      await db.systemAuditLog.create({
+        data: {
+          adminId: req.userId as string,
+          action: "UPDATE_DRIVER_DOCUMENT_EXPIRY",
+          target: req.params.driverId as string,
+          changes: { type: piece.type, avant, apres: piece.expiryDate } as any,
+        },
+      });
+
+      res.json({ success: true, document: piece });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // PATCH /superowner/drivers/:driverId/documents/:documentId - Statuer sur une pièce
 router.patch(
   "/drivers/:driverId/documents/:documentId",
