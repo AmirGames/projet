@@ -6,7 +6,7 @@ import { API_URL, ApiError, apiFetch, formatEuros, setUnauthorizedHandler } from
 import { clearSession, DEFAULT_PREFS, loadPrefs, loadSession, Prefs, savePrefs, saveSession, Session } from '../lib/session';
 import { Delivery, Driver, formatKm, Offer } from '../lib/deliveries';
 import { useDriverAlerts } from '../lib/useDriverAlerts';
-import { useDriverLocation } from '../lib/useDriverLocation';
+import { DutyMode, Tracking, useDriverLocation } from '../lib/useDriverLocation';
 import { useRealtimeEvent } from '../lib/realtime';
 import { onDriverNotificationTap, PushDriverData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
 import { COLORS } from '../components/ui';
@@ -208,32 +208,26 @@ export default function DeliveryApp() {
     if (token) loadUnread(token);
   }, [token, loadUnread]);
 
-  // Position : transmise tant que le livreur est en ligne ou sur une course.
-  const onDuty = Boolean(driver?.isOnline) || activeDeliveries.length > 0;
-  const { position, gps } = useDriverLocation(token, onDuty);
+  // Position : transmise tant que le livreur est en ligne ou sur une course,
+  // avec la précision qu'il faut à ce moment-là (voir useDriverLocation).
+  const [tracking, setTracking] = useState<Tracking>({ target: null, navigating: false });
+  const dutyMode: DutyMode = activeDeliveries.length > 0 ? 'delivery' : driver?.isOnline ? 'idle' : 'off';
+  const { position, gps } = useDriverLocation(token, dutyMode, tracking);
 
-  // Une proposition expirée disparaît d'elle-même, et la sonnerie avec.
+  // Une proposition expirée disparaît d'elle-même, et la sonnerie avec : un
+  // seul réveil, à l'échéance de la plus proche.
   useEffect(() => {
     if (offers.length === 0) return;
-    const id = setInterval(() => {
-      setOffers((list) => {
-        const live = list.filter((o) => new Date(o.expiresAt).getTime() > Date.now());
-        return live.length === list.length ? list : live;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [offers.length]);
+    const next = Math.min(...offers.map((o) => new Date(o.expiresAt).getTime()));
+    const id = setTimeout(() => {
+      setOffers((list) => list.filter((o) => new Date(o.expiresAt).getTime() > Date.now()));
+    }, Math.max(0, next - Date.now()) + 50);
+    return () => clearTimeout(id);
+  }, [offers]);
 
   useEffect(() => {
     if (banner && !offers.some((o) => o.id === banner.id)) setBanner(null);
   }, [offers, banner]);
-
-  // Filet de sécurité : relecture régulière des propositions tant qu'il est en ligne.
-  useEffect(() => {
-    if (!token || !driver?.isOnline) return;
-    const id = setInterval(() => loadOffers(token), OFFERS_POLL_MS);
-    return () => clearInterval(id);
-  }, [token, driver?.isOnline, loadOffers]);
 
   // Un même changement arrive souvent par plusieurs événements : un seul
   // rechargement suffit.
@@ -257,6 +251,15 @@ export default function DeliveryApp() {
       setNotifRefreshKey((k) => k + 1);
     },
   });
+
+  // Filet de sécurité : les propositions ne sont relues que si la connexion
+  // temps réel est coupée. Connectée, elle les apporte d'elle-même, et la
+  // reconnexion recharge tout (onChanged).
+  useEffect(() => {
+    if (!token || !driver?.isOnline || connected) return;
+    const id = setInterval(() => loadOffers(token), OFFERS_POLL_MS);
+    return () => clearInterval(id);
+  }, [token, driver?.isOnline, connected, loadOffers]);
 
   useRealtimeEvent('mis-hors-ligne', (e: { raison?: string; message?: string }) => {
     patchDriver({ isOnline: false, isAvailable: false });
@@ -463,6 +466,7 @@ export default function DeliveryApp() {
           navigationApp={prefs.navigationApp}
           onBack={() => setOpenDeliveryId(null)}
           onChanged={() => loadAll(token)}
+          onTrackingChange={setTracking}
         />
       </SafeAreaView>
     );
@@ -525,6 +529,7 @@ export default function DeliveryApp() {
             navigationApp={prefs.navigationApp}
             onBack={back}
             onChanged={() => loadAll(token)}
+            onTrackingChange={setTracking}
           />
         );
       }

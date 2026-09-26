@@ -28,7 +28,7 @@ import {
 } from '../../lib/deliveries';
 import { useRealtimeEvent } from '../../lib/realtime';
 import type { Prefs } from '../../lib/session';
-import type { Position } from '../../lib/useDriverLocation';
+import type { Position, Tracking } from '../../lib/useDriverLocation';
 import SlideToConfirm from '../SlideToConfirm';
 import LiveMap, { RouteInfo } from '../LiveMap';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
@@ -50,6 +50,7 @@ export default function DeliveryScreen({
   navigationApp,
   onBack,
   onChanged,
+  onTrackingChange,
 }: {
   deliveryId: string;
   token: string;
@@ -57,6 +58,8 @@ export default function DeliveryScreen({
   navigationApp: Prefs['navigationApp'];
   onBack: () => void;
   onChanged: () => void;
+  /** La prochaine étape et la carte en plein écran décident de la précision du GPS. */
+  onTrackingChange: (tracking: Tracking) => void;
 }) {
   const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [loading, setLoading] = useState(true);
@@ -142,6 +145,16 @@ export default function DeliveryScreen({
     if (step === 1 && previousStep.current === 0) Vibration.vibrate(200);
     previousStep.current = step;
   }, [step]);
+
+  // Le GPS s'affine à l'approche de l'étape et quand la carte est en plein
+  // écran ; ailleurs, il économise la batterie.
+  const trackingTarget = finished ? null : delivery?.status === 'PICKED_UP' ? dropoff : pickup;
+  const onTrackingRef = useRef(onTrackingChange);
+  onTrackingRef.current = onTrackingChange;
+  useEffect(() => {
+    onTrackingRef.current({ target: trackingTarget, navigating: mapOpen && !finished });
+  }, [trackingTarget?.lat, trackingTarget?.lng, mapOpen, finished]);
+  useEffect(() => () => onTrackingRef.current({ target: null, navigating: false }), []);
 
   const sendStatus = (status: 'PICKED_UP' | 'DELIVERED', proof?: Record<string, string>) =>
     apiFetch(`/api/drivers/deliveries/${deliveryId}`, token, { method: 'PATCH', body: { status, ...(proof || {}) } });

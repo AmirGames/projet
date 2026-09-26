@@ -202,12 +202,18 @@ export default function DashboardScreen({
   onSeeEarnings: () => void;
   onSeeAccount: () => void;
 }) {
-  // Les comptes à rebours des propositions et de la pause avancent à la seconde.
+  // Les comptes à rebours des propositions et de la pause avancent à la
+  // seconde, mais seulement quand il y en a un : sans rien à décompter,
+  // redessiner l'écran chaque seconde use la batterie pour rien.
   const [now, setNow] = useState(() => Date.now());
+  const pauseEnd = driver?.pausedUntil ? new Date(driver.pausedUntil).getTime() : 0;
+  const ticking = offers.length > 0 || pauseEnd > Date.now();
   useEffect(() => {
+    if (!ticking) return;
+    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [ticking]);
 
   const dateLabel = new Date(now).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   const liveOffers = offers.filter((o) => new Date(o.expiresAt).getTime() > now);
