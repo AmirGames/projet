@@ -831,7 +831,7 @@ export default function DeliveryScreen({
             <Row key={item.id || i} label={itemName(item)} value={`×${item.quantity}`} />
           ))}
           <Row label="Distance" value={formatKm(delivery.distance)} />
-          <Row label="Montant de la commande" value={formatEuros(delivery.totalAmount)} last />
+          <Row label="Votre gain" value={formatEuros(delivery.payout)} last />
         </Card>
 
         {delivery.status === 'ACCEPTED' && (

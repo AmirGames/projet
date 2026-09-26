@@ -14,7 +14,6 @@ interface CourseRemuneree {
   id: string;
   orderId: string;
   deliveredAt: string;
-  orderAmount: number;
   earning: number;
 }
 
@@ -177,7 +176,6 @@ export default function RevenusLivreurPage() {
                       <tr>
                         <th className="text-left py-2">{t('order')}</th>
                         <th className="text-left py-2">{t('deliveredOn')}</th>
-                        <th className="text-right py-2">{t('orderAmount')}</th>
                         <th className="text-right py-2">{t('yourEarning')}</th>
                       </tr>
                     </thead>
@@ -187,9 +185,6 @@ export default function RevenusLivreurPage() {
                           <td className="py-3">{course.orderId.slice(-8).toUpperCase()}</td>
                           <td className="py-3 text-gray-400">
                             {new Date(course.deliveredAt).toLocaleString('fr-FR')}
-                          </td>
-                          <td className="py-3 text-right text-gray-400">
-                            {euro(course.orderAmount)}
                           </td>
                           <td className="py-3 text-right font-bold text-green-400">
                             {euro(course.earning)}
