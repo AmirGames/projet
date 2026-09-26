@@ -5,6 +5,7 @@ import { etatTempsReel } from "../config/socket";
 import { EmailService } from "./email.service";
 import { Notifier } from "./notifier.service";
 import { Surveillance, resumeErreur } from "./surveillance.service";
+import { Disponibilite } from "./disponibilite.service";
 
 /**
  * La vigie : elle regarde les mesures à intervalle régulier, ouvre un incident
@@ -277,6 +278,17 @@ function evaluer(): Constat[] {
         tache.etat === "PANNE"
           ? `${tache.echecsDeSuite} échecs de suite : ${tache.derniereErreur}`
           : `Aucun passage terminé depuis ${tache.derniereFin ?? "le démarrage"}`,
+    });
+  }
+
+  // L'API se sonde elle-même : sa panne est déjà dite par celle de la base.
+  for (const cible of Disponibilite.enEchec()) {
+    if (cible.cle === "api") continue;
+    constats.push({
+      cle: `disponibilite:${cible.cle}`,
+      niveau: cible.cle === "site" ? "CRITIQUE" : "ATTENTION",
+      titre: `${cible.libelle} injoignable`,
+      detail: `${cible.url} : ${cible.erreur} (${cible.echecsDeSuite} relevés en échec de suite)`,
     });
   }
 

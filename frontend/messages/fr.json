@@ -73,7 +73,9 @@
       "driverSupport": "Chat livreurs",
       "reviews": "Avis signalés",
       "monitoring": "Surveillance"
-    }
+    },
+    "openMenu": "Ouvrir le menu",
+    "toggleSidebar": "Replier ou déplier le menu"
   },
   "superownerDashboard": {
     "loading": "Chargement...",
@@ -318,7 +320,27 @@
     "historyEmpty": "Aucun incident depuis le démarrage.",
     "historyRange": "Du {from} au {to}",
     "footerNote": "Mesures en mémoire, pour cette instance et depuis son démarrage. Pour une sonde externe, utilisez /health/ready (503 dès que la base ne répond plus).",
-    "footerHealthLink": "Voir aussi la santé de la plateforme."
+    "footerHealthLink": "Voir aussi la santé de la plateforme.",
+    "uptimeTitle": "Disponibilité",
+    "uptimeSubtitle": "Un relevé toutes les {interval} s, gardé {days} jours",
+    "uptimeLoadError": "Impossible de lire la disponibilité",
+    "uptimeInternal": "Sondée de l'intérieur : le serveur répond et la base aussi",
+    "uptimeSince": "relevée depuis le {date}",
+    "uptimeDownSince": "depuis le {date}",
+    "uptimeWindow24h": "24 h",
+    "uptimeWindow7j": "7 jours",
+    "uptimeWindow30j": "30 jours",
+    "uptimeWindow90j": "90 jours",
+    "uptimeNoData": "Pas encore de relevé.",
+    "uptimeNoDataDay": "Pas de relevé ce jour-là",
+    "uptimeTimelineLabel": "Disponibilité jour par jour",
+    "uptimeDowntime": "{m} min d'indisponibilité",
+    "uptimeResponse": "{ms} ms en moyenne",
+    "uptimeDaysAgo": "il y a {n} jours",
+    "uptimeToday": "aujourd'hui",
+    "uptimeIncidents": "{n, plural, one {# indisponibilité} other {# indisponibilités}}",
+    "uptimeOngoing": "en cours",
+    "uptimeSeconds": "{s} s"
   },
   "superownerAccessLogs": {
     "loading": "Chargement...",
