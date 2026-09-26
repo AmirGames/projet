@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { apiFetch, formatEuros } from '../../lib/api';
+import { pickPdf } from '../../lib/document';
 import { reducePhoto } from '../../lib/photo';
 import { uploadFile } from '../../lib/upload';
 import { Driver, DRIVER_STATUS_LABELS, VEHICLE_LABELS } from '../../lib/deliveries';
@@ -69,31 +70,38 @@ export default function AccountScreen({
     load();
   }, [load]);
 
-  const upload = async (type: string, source: 'camera' | 'library') => {
+  /** Une photo prise ou choisie, réduite avant l'envoi. */
+  const pickPhoto = async (type: string, source: 'camera' | 'library') => {
     const permission =
       source === 'camera'
         ? await ImagePicker.requestCameraPermissionsAsync()
         : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert('Autorisation', "Autorisez l'accès dans les réglages du téléphone.");
-      return;
+      return null;
     }
     const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.7 };
     const result =
       source === 'camera' ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
-    if (result.canceled || !result.assets?.[0]) return;
+    if (result.canceled || !result.assets?.[0]) return null;
 
-    const asset = result.assets[0];
+    const photo = await reducePhoto(result.assets[0]);
+    return { ...photo, name: `${type.toLowerCase()}.jpg` };
+  };
+
+  const upload = async (type: string, source: 'camera' | 'library' | 'file') => {
+    let file: { uri: string; type: string; name: string } | null;
+    try {
+      file = source === 'file' ? await pickPdf() : await pickPhoto(type, source);
+    } catch (e: any) {
+      Alert.alert('Fichier impossible à ajouter', e.message || 'Réessayez');
+      return;
+    }
+    if (!file) return;
+
     setUploading(type);
     try {
-      const photo = await reducePhoto(asset);
-      const res = await uploadFile(
-        '/api/drivers/documents/upload',
-        token,
-        { ...photo, name: `${type.toLowerCase()}.jpg` },
-        'file',
-        { type }
-      );
+      const res = await uploadFile('/api/drivers/documents/upload', token, file, 'file', { type });
       const data = res.data;
       if (!res.ok) throw new Error(data?.error || data?.message || `Envoi impossible (erreur ${res.status})`);
       Alert.alert('Pièce envoyée', data?.message || 'En attente de validation');
@@ -105,12 +113,20 @@ export default function AccountScreen({
     }
   };
 
+  // Android n'affiche que trois boutons dans une alerte : le quatrième, « Annuler »,
+  // y est remplacé par un appui en dehors de la fenêtre.
   const chooseSource = (type: string, libelle: string) =>
-    Alert.alert(libelle, 'Comment ajouter la pièce ?', [
-      { text: 'Prendre une photo', onPress: () => upload(type, 'camera') },
-      { text: 'Choisir dans la galerie', onPress: () => upload(type, 'library') },
-      { text: 'Annuler', style: 'cancel' },
-    ]);
+    Alert.alert(
+      libelle,
+      'Comment ajouter la pièce ?',
+      [
+        { text: 'Prendre une photo', onPress: () => upload(type, 'camera') },
+        { text: 'Choisir dans la galerie', onPress: () => upload(type, 'library') },
+        { text: 'Choisir un fichier PDF', onPress: () => upload(type, 'file') },
+        ...(Platform.OS === 'android' ? [] : [{ text: 'Annuler', style: 'cancel' as const }]),
+      ],
+      { cancelable: true }
+    );
 
   const displayName = driver?.name || driver?.email?.split('@')[0] || '';
   const initials = displayName

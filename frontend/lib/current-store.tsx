@@ -139,3 +139,8 @@ export function useCurrentStore() {
 
   return context;
 }
+
+/** Comme `useCurrentStore`, mais sans boutique ouverte (niveau /merchant) : null plutôt qu'une erreur. */
+export function useCurrentStoreOptionnel() {
+  return useContext(CurrentStoreContext) ?? null;
+}

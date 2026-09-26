@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 
 import { memoriserBoutique } from '@/lib/current-store';
+import { AlerteCommandes } from '@/components/AlerteCommandes';
 import { NotificationBell } from '@/components/NotificationBell';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
@@ -247,6 +248,10 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             <LanguageSwitcher />
           </div>
         </header>
+
+        {/* Une commande peut tomber pendant qu'on choisit sa boutique : sans
+            cela, elle ne sonnait qu'une fois une boutique ouverte. */}
+        {orgId && <AlerteCommandes orgId={orgId} toutesBoutiques />}
 
         <main className="flex-1 p-6 overflow-auto">{children}</main>
       </div>

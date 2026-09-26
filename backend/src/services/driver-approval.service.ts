@@ -3,6 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
 import { FileUploadService } from "./file-upload.service";
+import { notifierPlateforme } from "./notification.service";
 
 /**
  * Le dossier d'un livreur, et sa validation par la plateforme.
@@ -111,7 +112,22 @@ export class DriverApprovalService {
 
     logger.info("Driver document submitted", { driverId, type: piece.type });
 
+    await this.signalerDepot(driverId, piece.type);
+
     return deposee;
+  }
+
+  /** Prévient la plateforme qu'une pièce attend son examen. */
+  private static async signalerDepot(driverId: string, type: TypeDocument) {
+    const livreur = await db.driver
+      .findUnique({ where: { id: driverId }, select: { name: true, email: true } })
+      .catch(() => null);
+
+    await notifierPlateforme(
+      `Nouveau document livreur — ${livreur?.name || livreur?.email || "livreur"}`,
+      `${libelleDuDocument(type)} a été mis en ligne et attend votre validation.`,
+      `/superowner/drivers`
+    );
   }
 
   /** Dépose une pièce via upload de fichier. */
@@ -155,7 +171,50 @@ export class DriverApprovalService {
 
     logger.info("Driver document uploaded", { driverId, type: piece.type });
 
+    await this.signalerDepot(driverId, piece.type);
+
     return deposee;
+  }
+
+  /**
+   * La plateforme corrige l'échéance d'une pièce.
+   *
+   * Une date mal saisie au dépôt faisait expirer — ou garder valide — une pièce
+   * à tort, sans autre recours que de la faire redéposer. Une pièce expirée qui
+   * reçoit une date future repart en examen, sans être revalidée d'office.
+   */
+  static async changerEcheance(driverId: string, documentId: string, expiryDate: string) {
+    const piece = await db.driverDocument.findUnique({ where: { id: documentId } });
+
+    if (!piece || piece.driverId !== driverId) {
+      throw new ApiError(404, "Document introuvable", "DOCUMENT_NOT_FOUND");
+    }
+
+    const echeance = new Date(expiryDate);
+
+    if (Number.isNaN(echeance.getTime())) {
+      throw new ApiError(400, "Date d'expiration invalide", "INVALID_EXPIRY_DATE");
+    }
+
+    if (echeance.getTime() < Date.now()) {
+      throw new ApiError(400, "Cette date est déjà passée", "DOCUMENT_EXPIRED");
+    }
+
+    const modifiee = await db.driverDocument.update({
+      where: { id: documentId },
+      data: {
+        expiryDate: echeance,
+        ...(piece.status === "EXPIRED" ? { status: "PENDING" } : {}),
+      },
+    });
+
+    await this.prevenir(
+      driverId,
+      `${libelleDuDocument(piece.type)} : date d'expiration modifiée`,
+      `Nouvelle date d'expiration : ${echeance.toLocaleDateString("fr-FR")}.`
+    );
+
+    return { avant: piece.expiryDate, piece: modifiee };
   }
 
   /** La plateforme statue sur une pièce. */

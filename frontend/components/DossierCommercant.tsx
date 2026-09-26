@@ -12,7 +12,8 @@
  */
 
 import { useCallback, useState } from 'react';
-import { AlertTriangle, BadgeCheck, Check, Clock, FileText, Upload, X } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Check, Clock, Eye, FileText, Upload, X } from 'lucide-react';
+import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -80,6 +81,11 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState('');
   const [motif, setMotif] = useState<Record<string, string>>({});
+  const [apercu, setApercu] = useState<{ documentUrl: string; libelle: string } | null>(null);
+  // La date en cours de modification, par pièce (format AAAA-MM-JJ).
+  const [echeance, setEcheance] = useState<Record<string, string>>({});
+  // Demain : une date du jour serait déjà passée pour le serveur (minuit UTC).
+  const [dateMin, setDateMin] = useState('');
   const [afficherFormulaire, setAfficherFormulaire] = useState(false);
   const [typePiece, setTypePiece] = useState('');
   const [fichier, setFichier] = useState<File | null>(null);
@@ -110,6 +116,40 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
   // Une pièce déposée par le commerçant, examinée par un collègue : le
   // dossier suit.
   useDonneesModifiees(['merchant-profile', 'organizations'], charger, { orgId });
+
+  const changerEcheance = async (piece: Piece) => {
+    const date = echeance[piece.id];
+    if (!date) return;
+
+    setErreur('');
+    setEnCours(piece.id);
+
+    try {
+      const jeton = localStorage.getItem('accessToken');
+      const reponse = await fetch(
+        `${API_URL}/api/superowner/organizations/${orgId}/documents/${piece.id}/expiry`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jeton}` },
+          body: JSON.stringify({ expiryDate: date }),
+        }
+      );
+
+      const lu = await reponse.json().catch(() => null);
+
+      if (!reponse.ok) {
+        setErreur(lu?.error || 'Modification impossible');
+        return;
+      }
+
+      setEcheance(({ [piece.id]: _, ...reste }) => reste);
+      await charger();
+    } catch {
+      setErreur('Modification impossible');
+    } finally {
+      setEnCours('');
+    }
+  };
 
   const statuer = async (piece: Piece, approuve: boolean) => {
     setErreur('');
@@ -396,18 +436,67 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                       <p className={`text-xs ${marque.classe}`}>
                         {marque.libelle}
                         {piece.expiryDate && ` · expire le ${dateCourte(piece.expiryDate)}`}
+                        {piece.expiryDate && echeance[piece.id] === undefined && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDateMin(new Date(Date.now() + 86_400_000).toISOString().slice(0, 10));
+                              setEcheance({ ...echeance, [piece.id]: piece.expiryDate!.slice(0, 10) });
+                            }}
+                            className="ml-2 text-blue-400 hover:underline"
+                          >
+                            Modifier
+                          </button>
+                        )}
                       </p>
+                      {echeance[piece.id] !== undefined && (
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <input
+                            type="date"
+                            value={echeance[piece.id]}
+                            min={dateMin}
+                            onChange={(e) => setEcheance({ ...echeance, [piece.id]: e.target.value })}
+                            aria-label={`Nouvelle date d'expiration pour ${piece.libelle}`}
+                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => changerEcheance(piece)}
+                            disabled={enCours === piece.id || !echeance[piece.id]}
+                            className="px-2 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded text-xs"
+                          >
+                            Enregistrer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEcheance(({ [piece.id]: _, ...reste }) => reste)}
+                            className="px-2 py-1 text-gray-400 hover:text-white text-xs"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      )}
                       {piece.reviewNote && (
                         <p className="text-xs text-red-300 mt-1">{piece.reviewNote}</p>
                       )}
-                      <a
-                        href={piece.documentUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-orange-400 hover:underline break-all"
-                      >
-                        {piece.fileName || piece.documentUrl}
-                      </a>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <button
+                          type="button"
+                          onClick={() => setApercu(piece)}
+                          className="flex items-center gap-1 text-xs text-blue-400 hover:underline"
+                        >
+                          <Eye size={12} />
+                          Aperçu
+                        </button>
+                        <a
+                          href={piece.documentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-orange-400 hover:underline break-all"
+                        >
+                          {piece.fileName || piece.documentUrl}
+                        </a>
+                      </div>
                     </div>
                     <Icone size={18} className={`flex-shrink-0 ${marque.classe}`} />
                   </div>
@@ -443,6 +532,14 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
           </ul>
         )}
       </div>
+
+      {apercu && (
+        <DocumentPreviewModal
+          documentUrl={apercu.documentUrl}
+          libelle={apercu.libelle}
+          onClose={() => setApercu(null)}
+        />
+      )}
     </div>
   );
 }

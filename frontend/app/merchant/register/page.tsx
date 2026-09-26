@@ -1,6 +1,7 @@
 'use client';
 
 import { signalerErreur } from '@/lib/erreurs';
+import { slugify } from '@/lib/slug';
 import { useState, FormEvent, useEffect } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
 import AcceptationConditions from '@/components/AcceptationConditions';
@@ -137,21 +138,10 @@ export default function MerchantRegisterPage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: name === 'storeSlug' ? slugify(value, false) : value,
+      // Génère automatiquement le slug à partir du nom de la boutique
+      ...(name === 'storeName' ? { storeSlug: slugify(value) } : {}),
     }));
-
-    // Auto-generate storeSlug from storeName
-    if (name === 'storeName') {
-      const slug = value
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '');
-      setFormData(prev => ({
-        ...prev,
-        storeSlug: slug,
-      }));
-    }
 
     // Clear error for this field
     if (errors[name]) {

@@ -6,6 +6,7 @@ import { telephoneInternational } from "@/lib/pays-infos";
 import { paysDuNavigateur } from "@/lib/pays-client";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { slugify } from "@/lib/slug";
 import { useTypesDeCommerce } from "@/lib/types-commerce";
 import Link from "next/link";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
@@ -308,6 +309,7 @@ export default function RoleSelectionPage() {
                     setMerchantFormData({
                       ...merchantFormData,
                       storeName: e.target.value,
+                      storeSlug: slugify(e.target.value),
                     })
                   }
                   className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -320,7 +322,7 @@ export default function RoleSelectionPage() {
                   onChange={(e) =>
                     setMerchantFormData({
                       ...merchantFormData,
-                      storeSlug: e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                      storeSlug: slugify(e.target.value, false),
                     })
                   }
                   className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"

@@ -35,6 +35,8 @@ export default function OfferSheet({
   const [now, setNow] = useState(() => Date.now());
   const [route, setRoute] = useState<RouteInfo | null>(null);
   // Le temps de réponse total, mesuré à la première apparition de l'offre.
+  // Clé sur l'échéance aussi : une course refusée puis reproposée garde son
+  // identifiant, mais c'est une nouvelle proposition, avec un nouveau délai.
   const firstSeen = useRef(new Map<string, number>());
 
   const live = offers.filter((o) => new Date(o.expiresAt).getTime() > now);
@@ -42,23 +44,25 @@ export default function OfferSheet({
   // Un lot s'affiche d'un bloc : même temps de réponse, un seul geste.
   const group = offer?.batchId ? live.filter((o) => o.batchId === offer.batchId) : offer ? [offer] : [];
   const others = live.length - group.length;
+  const offerKey = offer ? `${offer.id}|${offer.expiresAt}` : null;
 
   useEffect(() => {
-    if (!offer) return;
-    if (!firstSeen.current.has(offer.id)) firstSeen.current.set(offer.id, Date.now());
+    if (!offerKey) return;
+    if (!firstSeen.current.has(offerKey)) firstSeen.current.set(offerKey, Date.now());
+    setNow(Date.now());
     setRoute(null);
-  }, [offer?.id]);
+  }, [offerKey]);
 
   useEffect(() => {
     if (!offer) return;
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
-  }, [offer?.id]);
+  }, [offerKey]);
 
   if (!offer) return null;
 
   const expires = new Date(offer.expiresAt).getTime();
-  const start = firstSeen.current.get(offer.id) ?? now;
+  const start = firstSeen.current.get(`${offer.id}|${offer.expiresAt}`) ?? now;
   const total = Math.max(1, expires - start);
   const remaining = Math.max(0, expires - now);
   const fraction = Math.min(1, remaining / total);
@@ -186,7 +190,9 @@ export default function OfferSheet({
             {busy ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.acceptText}>{group.length > 1 ? `Accepter les ${group.length}` : 'Accepter'}</Text>
+              <Text style={styles.acceptText}>
+                {group.length > 1 ? `Accepter les ${group.length}` : 'Accepter'} · {Math.ceil(remaining / 1000)} s
+              </Text>
             )}
           </TouchableOpacity>
         </View>
