@@ -13,6 +13,7 @@ import { DriverJobs } from "./jobs/driver-jobs";
 import { WebhookJobs } from "./jobs/webhook-jobs";
 import { MerchantJobs } from "./jobs/merchant-jobs";
 import { Vigie } from "./services/vigie.service";
+import { Disponibilite } from "./services/disponibilite.service";
 
 // Load environment variables
 const env = loadEnv();
@@ -60,6 +61,7 @@ const start = async () => {
 
     // Après les tâches : la vigie les surveille dès son premier passage.
     Vigie.demarrer();
+    Disponibilite.demarrer();
 
     // Graceful shutdown
     const gracefulShutdown = async () => {
@@ -71,6 +73,7 @@ const start = async () => {
       OrderJobs.stop();
       DriverJobs.stop();
       Vigie.arreter();
+      Disponibilite.arreter();
       httpServer.close(() => {
         logger.info("Server closed");
       });

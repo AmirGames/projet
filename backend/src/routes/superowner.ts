@@ -25,6 +25,7 @@ import { MerchantProfileService } from "../services/merchant-profile.service";
 import { MerchantApprovalService } from "../services/merchant-approval.service";
 import { SystemHealthService } from "../services/system-health.service";
 import { Vigie } from "../services/vigie.service";
+import { Disponibilite } from "../services/disponibilite.service";
 import { ReviewModerationService } from "../services/review-moderation.service";
 
 const LIBELLES_STATUT: Record<string, string> = {
@@ -161,9 +162,20 @@ router.get("/monitoring", authMiddleware, isSuperOwner, (_req: Request, res: Res
   res.json({ success: true, data: Vigie.instantane() });
 });
 
+// GET /superowner/uptime - La disponibilité dans la durée : 24 h, 7, 30 et 90 jours
+router.get("/uptime", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await Disponibilite.bilan() });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /superowner/monitoring/releve - Relever tout de suite, sans attendre la vigie
 router.post("/monitoring/releve", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
   try {
+    // La disponibilité d'abord : la vigie lit son état pour ses alertes.
+    await Disponibilite.passer();
     await Vigie.passer();
     res.json({ success: true, data: Vigie.instantane() });
   } catch (err) {

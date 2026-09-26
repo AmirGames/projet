@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { GraphiqueColonnes } from '@/components/GraphiqueColonnes';
+import { DisponibiliteSite } from '@/components/DisponibiliteSite';
 
 /**
  * Le site en fonctionnement, en direct.
@@ -373,6 +374,9 @@ export default function SurveillancePage() {
                 : t('alertsOff')}
             </p>
           </section>
+
+          {/* Dans la durée : l'historique survit aux redémarrages. */}
+          <DisponibiliteSite />
 
           {/* Les chiffres qui comptent */}
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">

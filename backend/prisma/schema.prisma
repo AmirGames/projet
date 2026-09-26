@@ -2010,3 +2010,24 @@ model PageLegaleVersion {
   @@unique([slug, version])
   @@index([slug, publieLe])
 }
+
+// ============================================================================
+// DISPONIBILITÉ
+// ============================================================================
+
+// Un relevé de disponibilité : une cible (l'API, le site…) interrogée à
+// intervalle régulier. L'historique survit aux redémarrages, et un trou dans
+// les relevés de l'API est lui-même une indisponibilité : un serveur arrêté
+// ne relève plus rien.
+model UptimeCheck {
+  id         String   @id @default(cuid())
+  target     String   // "api", "site", ou une cible de UPTIME_URLS
+  ok         Boolean
+  statusCode Int?
+  durationMs Int?
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([target, createdAt])
+  @@index([createdAt])
+}
