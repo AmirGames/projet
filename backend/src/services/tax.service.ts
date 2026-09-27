@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { Prisma } from "@prisma/client";
+import { ttc } from "../utils/prix-ttc";
 
 const { Decimal } = Prisma;
 
@@ -158,7 +159,8 @@ export class TaxService {
    */
   static async taxeDesLignes(
     storeId: string,
-    lignes: { productId: string; montant: number }[]
+    lignes: { productId: string; montant: number }[],
+    options: { prixTTC?: boolean } = {}
   ): Promise<{
     total: number;
     /** Ce qui s'ajoute au total : zéro quand la taxe est déjà comprise. */
@@ -189,11 +191,6 @@ export class TaxService {
 
     const categorieDuProduit = new Map(produits.map((p) => [p.id, p.categoryId]));
 
-    // Du plus précis au plus général : le premier qui correspond gagne.
-    const parProduit = reglages.filter((r) => r.applicableTo === "products");
-    const parCategorie = reglages.filter((r) => r.applicableTo === "categories");
-    const surTout = reglages.filter((r) => r.applicableTo === "all");
-
     const cumul = new Map<
       string,
       { nom: string; taux: number; base: number; taxe: number; comprise: boolean }
@@ -205,10 +202,7 @@ export class TaxService {
     for (const ligne of lignes) {
       const categorieId = categorieDuProduit.get(ligne.productId);
 
-      const reglage =
-        parProduit.find((r) => r.productIds.includes(ligne.productId)) ||
-        (categorieId ? parCategorie.find((r) => r.categoryIds.includes(categorieId)) : undefined) ||
-        surTout[0];
+      const reglage = TaxService.reglageDuProduit(reglages, ligne.productId, categorieId);
 
       if (!reglage) {
         // Aucune taxe ne s'applique à ce produit.
@@ -220,7 +214,9 @@ export class TaxService {
 
       // Comprise : on l'extrait du prix (12 % dans 112 € en font 12).
       // Ajoutée : elle se calcule sur le prix et grossit le total.
-      const taxe = reglage.included
+      // Des prix déjà passés TTC (voir prixAuClient) : la taxe s'en extrait.
+      const comprise = reglage.included || options.prixTTC === true;
+      const taxe = comprise
         ? (ligne.montant * taux) / (100 + taux)
         : (ligne.montant * taux) / 100;
 
@@ -241,7 +237,7 @@ export class TaxService {
           taux,
           base: ligne.montant,
           taxe,
-          comprise: reglage.included,
+          comprise,
         });
       }
     }
@@ -304,5 +300,78 @@ export class TaxService {
     } catch (error) {
       throw error;
     }
+  }
+
+  /**
+   * Le réglage de taxe qui vaut pour un produit : du plus précis au plus
+   * général, le premier qui correspond gagne.
+   */
+  private static reglageDuProduit<
+    R extends { applicableTo: string; productIds: string[]; categoryIds: string[] }
+  >(reglages: R[], productId: string, categorieId?: string | null): R | undefined {
+    return (
+      reglages.find((r) => r.applicableTo === "products" && r.productIds.includes(productId)) ||
+      (categorieId
+        ? reglages.find((r) => r.applicableTo === "categories" && r.categoryIds.includes(categorieId))
+        : undefined) ||
+      reglages.find((r) => r.applicableTo === "all")
+    );
+  }
+
+  /**
+   * Le taux à ajouter au prix de chaque produit saisi hors taxe.
+   *
+   * Un commerçant peut saisir ses prix HT (réglage « taxe non comprise »). Le
+   * client, lui, doit voir et payer des prix TTC : la carte montrait 10 €, la
+   * commande en facturait 12, et le total annoncé avant de valider était faux.
+   * Seuls les produits concernés figurent dans la table.
+   */
+  static async tauxAAjouter(
+    storeId: string,
+    produits: { id: string; categoryId?: string | null }[]
+  ): Promise<Map<string, number>> {
+    const taux = new Map<string, number>();
+    if (produits.length === 0) return taux;
+
+    const reglages = await db.taxSetting.findMany({ where: { storeId, status: "ACTIVE" } });
+    if (!reglages.some((r) => !r.included)) return taux;
+
+    for (const produit of produits) {
+      const reglage = TaxService.reglageDuProduit(reglages, produit.id, produit.categoryId);
+      if (reglage && !reglage.included && Number(reglage.rate) > 0) {
+        taux.set(produit.id, Number(reglage.rate));
+      }
+    }
+    return taux;
+  }
+
+  /** Un prix HT passé TTC, arrondi au centime. */
+  static ttc = ttc;
+
+  /**
+   * Les produits tels que le client doit les voir : prix et déclinaisons TTC.
+   * Sans réglage hors taxe, ils ressortent tels quels.
+   */
+  static async prixAuClient<
+    P extends { id: string; categoryId?: string | null; price: unknown; variants?: { price: unknown }[] }
+  >(storeId: string, produits: P[]): Promise<P[]> {
+    const taux = await TaxService.tauxAAjouter(storeId, produits);
+    if (taux.size === 0) return produits;
+
+    return produits.map((produit) => {
+      const t = taux.get(produit.id);
+      if (!t) return produit;
+      return {
+        ...produit,
+        price: TaxService.ttc(produit.price, t),
+        ...(produit.variants
+          ? {
+              variants: produit.variants.map((v) =>
+                v.price == null ? v : { ...v, price: TaxService.ttc(v.price, t) }
+              ),
+            }
+          : {}),
+      };
+    });
   }
 }
