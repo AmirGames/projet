@@ -8,9 +8,7 @@ import {
   exigerPermission,
   PermissionsPlateforme,
   SECTIONS,
-  LIBELLES_ROLES,
-  ROLES_PLATEFORME,
-  estRolePlateforme,
+  estRoleDeBase,
 } from "../services/permissions-plateforme.service";
 import { ApiKeyService } from "../services/api-key.service";
 import { WebhookService, EVENEMENTS_WEBHOOK } from "../services/webhook.service";
@@ -2710,9 +2708,13 @@ router.post("/admins", authMiddleware, superOwnerSeul, async (req: Request, res:
     const schema = z.object({
       email: z.string().email(),
       name: z.string().optional(),
-      role: z.enum(["SUPEROWNER", ...ROLES_PLATEFORME]).default("ADMIN"),
+      role: z.string().min(1).default("ADMIN"),
     });
     const body = schema.parse(req.body);
+
+    if (body.role !== "SUPEROWNER" && !(await PermissionsPlateforme.role(body.role))) {
+      throw new ApiError(400, "Rôle inconnu", "UNKNOWN_ROLE");
+    }
 
     const compte = await db.user.findUnique({ where: { email: body.email } });
 
@@ -2826,7 +2828,10 @@ router.delete("/admins/:adminId", authMiddleware, superOwnerSeul, async (req: Re
 router.patch("/admins/:adminId/role", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const adminId = req.params.adminId as string;
-    const { role } = z.object({ role: z.enum(ROLES_PLATEFORME) }).parse(req.body);
+    const { role } = z.object({ role: z.string().min(1) }).parse(req.body);
+    if (!(await PermissionsPlateforme.role(role))) {
+      throw new ApiError(400, "Rôle inconnu", "UNKNOWN_ROLE");
+    }
 
     if (adminId === req.userId) {
       throw new ApiError(400, "Vous ne pouvez pas changer votre propre rôle", "CANNOT_CHANGE_SELF");
@@ -2874,14 +2879,15 @@ router.get("/me/permissions", authMiddleware, async (req: Request, res: Response
       });
       return;
     }
-    if (!compte?.isSystemAdmin || !estRolePlateforme(compte.platformRole)) {
+    const role = compte?.isSystemAdmin ? await PermissionsPlateforme.role(compte.platformRole) : null;
+    if (!role) {
       throw new ApiError(403, "Accès refusé", "FORBIDDEN");
     }
     res.json({
       isSuperOwner: false,
-      role: compte.platformRole,
-      roleLabel: LIBELLES_ROLES[compte.platformRole],
-      permissions: await PermissionsPlateforme.permissionsDu(compte.platformRole),
+      role: role.code,
+      roleLabel: role.label,
+      permissions: role.permissions,
     });
   } catch (err) {
     next(err);
@@ -2901,15 +2907,13 @@ router.get("/roles", authMiddleware, superOwnerSeul, async (_req: Request, res: 
 
     res.json({
       sections: SECTIONS,
-      roles: ROLES_PLATEFORME.map((code) => {
-        const role = roles.find((r) => r.code === code);
-        return {
-          code,
-          label: role?.label ?? LIBELLES_ROLES[code],
-          permissions: role?.permissions ?? {},
-          membres: parRole[code] ?? 0,
-        };
-      }),
+      roles: roles.map((role) => ({
+        code: role.code,
+        label: role.label,
+        permissions: role.permissions,
+        membres: parRole[role.code] ?? 0,
+        deBase: estRoleDeBase(role.code),
+      })),
     });
   } catch (err) {
     next(err);
@@ -2919,8 +2923,8 @@ router.get("/roles", authMiddleware, superOwnerSeul, async (_req: Request, res: 
 // PUT /superowner/roles/:code - Cocher les permissions d'un groupe
 router.put("/roles/:code", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const code = req.params.code;
-    if (!estRolePlateforme(code)) {
+    const code = req.params.code as string;
+    if (!(await PermissionsPlateforme.role(code))) {
       throw new ApiError(404, "Rôle inconnu", "NOT_FOUND");
     }
     const { permissions } = z
@@ -2939,6 +2943,55 @@ router.put("/roles/:code", authMiddleware, superOwnerSeul, async (req: Request, 
     });
 
     res.json({ success: true, role });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/roles - Créer un rôle (ex. « Facturation »), sans accès au départ
+router.post("/roles", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { label } = z
+      .object({ label: z.string().trim().min(2, "Donnez un nom au rôle").max(40) })
+      .parse(req.body);
+
+    const role = await PermissionsPlateforme.creer(label);
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "CREATE_PLATFORM_ROLE",
+        target: role.code,
+        changes: { label: role.label } as any,
+      },
+    });
+
+    res.status(201).json({ success: true, role: { ...role, membres: 0, deBase: false } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /superowner/roles/:code - Supprimer un rôle ajouté, s'il n'a plus de membres
+router.delete("/roles/:code", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const code = req.params.code as string;
+    if (!(await PermissionsPlateforme.role(code))) {
+      throw new ApiError(404, "Rôle inconnu", "NOT_FOUND");
+    }
+
+    await PermissionsPlateforme.supprimer(code);
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "DELETE_PLATFORM_ROLE",
+        target: code,
+        changes: {} as any,
+      },
+    });
+
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

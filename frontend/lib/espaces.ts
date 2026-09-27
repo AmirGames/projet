@@ -23,7 +23,12 @@ const ESPACES: Record<Espace, Omit<EspaceAccessible, 'id'>> = {
 };
 
 interface RolesCompte {
-  user?: { isSuperOwner?: boolean; isSystemAdmin?: boolean };
+  user?: {
+    isSuperOwner?: boolean;
+    isSystemAdmin?: boolean;
+    platformRole?: string | null;
+    platformRoleLabel?: string | null;
+  };
   roles?: {
     customer?: { active?: boolean };
     driver?: { active?: boolean };
@@ -64,21 +69,31 @@ function lireJeton(): string | null {
 }
 
 function espacesDuCompte(donnees: RolesCompte): EspaceAccessible[] {
+  // Un membre de l'équipe (SuperAdmin, Administrateur, Support) travaille dans
+  // l'espace de la plateforme, sous le nom de son groupe ; les anciens espaces
+  // d'administration restent au superowner.
+  const membreEquipe = !donnees.user?.isSuperOwner && !!donnees.user?.platformRole;
   const ouverts: Record<Espace, boolean> = {
     // Tout compte peut commander : la fiche client est créée à la première
     // visite de l'espace client (voir clientConnecte côté serveur).
     client: true,
     driver: !!donnees.roles?.driver?.active,
     merchant: !!donnees.roles?.merchant?.active,
-    admin: !!donnees.user?.isSystemAdmin,
-    'super-admin': !!donnees.user?.isSystemAdmin,
+    admin: !!donnees.user?.isSystemAdmin && !membreEquipe,
+    'super-admin': !!donnees.user?.isSystemAdmin && !membreEquipe,
     // L'équipe de la plateforme (SuperAdmin, Administrateur, Support) y entre
     // aussi ; ce qu'elle y voit dépend des permissions de son groupe.
     superowner: !!donnees.user?.isSuperOwner || !!donnees.user?.isSystemAdmin,
   };
   return (Object.keys(ESPACES) as Espace[])
     .filter((id) => ouverts[id])
-    .map((id) => ({ id, ...ESPACES[id] }));
+    .map((id) => ({
+      id,
+      ...ESPACES[id],
+      ...(id === 'superowner' && membreEquipe && donnees.user?.platformRoleLabel
+        ? { libelle: donnees.user.platformRoleLabel }
+        : {}),
+    }));
 }
 
 /**

@@ -16,12 +16,14 @@ import {
   oublierRoles,
   sectionDeLaRoute,
   nettoyerPermissions,
+  codeDuLibelle,
 } from "../permissions-plateforme.service";
 
 const roles = [
   { code: "SUPER_ADMIN", label: "SuperAdmin", permissions: {} },
   { code: "ADMIN", label: "Administrateur", permissions: { billing: "write", organizations: "read" } },
   { code: "SUPPORT", label: "Support", permissions: { "support-tickets": "write", organizations: "read" } },
+  { code: "FACTURATION", label: "Facturation", permissions: { billing: "write", payouts: "read" } },
 ];
 
 async function passer(routeur: any, compte: any, method: string, path: string) {
@@ -49,6 +51,9 @@ describe("permissions de l'équipe", () => {
     expect(sectionDeLaRoute("superowner", "/organizations/o1/tier")).toBe("formules");
     expect(sectionDeLaRoute("superowner", "/organizations/o1/suspend")).toBe("organizations");
     expect(sectionDeLaRoute("admin", "/tickets/t1")).toBe("support-tickets");
+    // Rouvrir un compte fermé va avec le fermer : même section.
+    expect(sectionDeLaRoute("admin", "/merchants/o1/close")).toBe("organizations");
+    expect(sectionDeLaRoute("admin", "/merchants/o1/restore-from-backup")).toBe("organizations");
     expect(sectionDeLaRoute("superowner", "/admins")).toBeNull();
     expect(sectionDeLaRoute("superowner", "/roles/ADMIN")).toBeNull();
   });
@@ -73,6 +78,19 @@ describe("permissions de l'équipe", () => {
 
   it("refuse un administrateur sans rôle", async () => {
     expect(await passer("superowner", membre(null), "GET", "/organizations")).toBe(403);
+  });
+
+  it("applique les droits d'un rôle créé par le superowner", async () => {
+    expect(await passer("superowner", membre("FACTURATION"), "POST", "/orders/x/refund")).toBe(200);
+    expect(await passer("superowner", membre("FACTURATION"), "GET", "/payouts")).toBe(200);
+    expect(await passer("superowner", membre("FACTURATION"), "POST", "/payouts/draw")).toBe(403);
+    expect(await passer("superowner", membre("FACTURATION"), "GET", "/organizations")).toBe(403);
+    expect(await passer("superowner", membre("SUPPRIME"), "GET", "/billing")).toBe(403);
+  });
+
+  it("tire un code stable du nom du rôle", () => {
+    expect(codeDuLibelle("Facturation & compta")).toBe("FACTURATION_COMPTA");
+    expect(codeDuLibelle("  Équipe réseau ")).toBe("EQUIPE_RESEAU");
   });
 
   it("écarte les sections et niveaux inconnus", () => {
