@@ -2136,5 +2136,14 @@
     "deleteConfirm": "Delete the role “{role}”?",
     "deleted": "Role “{role}” deleted",
     "deleteError": "Could not delete the role"
+  },
+  "motDePasse": {
+    "longueur": "At least 8 characters",
+    "chiffre": "At least one digit",
+    "minuscule": "At least one lowercase letter",
+    "majuscule": "At least one uppercase letter",
+    "respecte": "met",
+    "manquant": "missing",
+    "invalide": "The password must be at least 8 characters long and contain a digit, a lowercase letter and an uppercase letter."
   }
 }

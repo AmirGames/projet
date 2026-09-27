@@ -12,6 +12,8 @@ import { usePays } from '@/lib/pays-client';
 import { PAYS } from '@/lib/pays-infos';
 
 import { useTranslations } from 'next-intl';
+import ReglesMotDePasse from '@/components/ReglesMotDePasse';
+import { motDePasseValide } from '@/lib/mot-de-passe';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 const VEHICULES = [
@@ -22,6 +24,7 @@ const VEHICULES = [
 
 export default function InscriptionLivreurPage() {
   const t = useTranslations('driverAuth');
+  const tMdp = useTranslations('motDePasse');
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
 
@@ -49,8 +52,8 @@ export default function InscriptionLivreurPage() {
     e.preventDefault();
     setErreur('');
 
-    if (formulaire.password.length < 8) {
-      setErreur('Le mot de passe doit contenir au moins 8 caractères');
+    if (!motDePasseValide(formulaire.password)) {
+      setErreur(tMdp('invalide'));
       return;
     }
 
@@ -154,15 +157,17 @@ export default function InscriptionLivreurPage() {
 
           <div>
             <label className="block text-sm text-gray-400 mb-1">
-              Mot de passe <span className="text-gray-500">(8 caractères minimum)</span>
+              Mot de passe
             </label>
             <input
               type="password"
               required
               minLength={8}
+              autoComplete="new-password"
               {...champ('password')}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
             />
+            <ReglesMotDePasse valeur={formulaire.password} sombre />
           </div>
 
           <div>

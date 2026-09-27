@@ -176,6 +176,7 @@ continue.
 | `verif-horaires-plages.mjs` | Plusieurs services par jour, et la nuit qui déborde |
 | `verif-identite-boutique.mjs` | Genre du commerce, et l'identité sous laquelle la boutique facture |
 | `verif-inscription-doublon.mjs` | Adresse déjà prise à chaque porte d'inscription : commande passée sans compte, inscriptions simultanées, devenir livreur ; jamais de 500 ni de compte orphelin. Adresses en minuscules, comptes antérieurs à la conversion |
+| `verif-mot-de-passe.mjs` | Règle du mot de passe (8 caractères, chiffre, minuscule, majuscule) à chaque porte : inscriptions client, livreur, commerçant, réinitialisation ; refus relus en base, caractères spéciaux permis, anciens comptes toujours admis à la connexion |
 | `verif-inscription-boutique.mjs` | Boutiques créées à l'inscription : situées et genrées ; notes réelles des plats en vitrine |
 | `verif-journal.mjs` | Ce que le journal crie, et ce qu'il murmure (démarre sa propre API) |
 

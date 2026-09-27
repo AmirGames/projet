@@ -27,6 +27,30 @@ export const emailFacultatif = z
 export const champEmail = (message = "Email invalide") =>
   z.string().trim().toLowerCase().email(message);
 
+/**
+ * Le mot de passe d'un compte, tel qu'on l'accepte à sa création ou à son
+ * changement.
+ *
+ * Six caractères quelconques suffisaient : « aaaaaa » ou « 123456 » ouvraient
+ * un compte qui encaisse de l'argent. Il faut désormais 8 caractères, dont un
+ * chiffre, une minuscule et une majuscule ; les caractères spéciaux sont
+ * permis sans être exigés. La connexion, elle, n'applique pas cette règle :
+ * les comptes créés avant elle doivent pouvoir entrer.
+ *
+ * Chaque manque a son message, pour que l'écran dise quoi corriger.
+ */
+export const REGLE_MOT_DE_PASSE =
+  "8 caractères minimum, avec au moins un chiffre, une minuscule et une majuscule";
+
+export const champMotDePasse = () =>
+  z
+    .string()
+    .min(8, "8 caractères minimum")
+    .max(128, "128 caractères au plus")
+    .regex(/[0-9]/, "au moins un chiffre")
+    .regex(/[a-z]/, "au moins une lettre minuscule")
+    .regex(/[A-Z]/, "au moins une lettre majuscule");
+
 export const ValidationSchemas = {
   pagination: z.object({
     page: z.coerce.number().int().positive().default(1),
@@ -42,7 +66,7 @@ export const ValidationSchemas = {
 
   signupSchema: z.object({
     email: champEmail(),
-    password: z.string().min(6, "Minimum 6 caractères"),
+    password: champMotDePasse(),
     // « Nom requis » laissait croire à un champ vide, y compris pour une seule
     // lettre. Le champ est nommé par le gestionnaire d'erreurs.
     name: z.string().min(2, "Minimum 2 caractères"),

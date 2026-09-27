@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, Linking, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, apiFetch, setUnauthorizedHandler } from '../lib/api';
+import { API_URL, SITE_URL, apiFetch, setUnauthorizedHandler } from '../lib/api';
 import {
   clearSession,
   DeliveryAddress,
@@ -18,6 +18,7 @@ import { useCustomerRealtime } from '../lib/useCustomerRealtime';
 import { useCartSync } from '../lib/useCartSync';
 import { onCustomerNotificationTap, PushCustomerData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
 import { COLORS } from '../components/ui';
+import { CRITERES_MOT_DE_PASSE, MESSAGE_MOT_DE_PASSE, motDePasseValide } from '../lib/motDePasse';
 import HomeScreen from '../components/screens/HomeScreen';
 import StoreScreen from '../components/screens/StoreScreen';
 import CartsScreen from '../components/screens/CartsScreen';
@@ -50,12 +51,24 @@ type Page =
   | { kind: 'review'; orderId: string }
   | { kind: 'address' };
 
+/** Un lien vers une page légale du site, dans le texte d'acceptation. */
+function lienSite(chemin: string, libelle: string) {
+  return (
+    <Text style={styles.lienSite} onPress={() => Linking.openURL(`${SITE_URL}${chemin}`).catch(() => undefined)}>
+      {libelle}
+    </Text>
+  );
+}
+
 export default function CustomerApp() {
   const [booting, setBooting] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [tab, setTab] = useState<string>('home');
   const [pages, setPages] = useState<Page[]>([]);
   const [mode, setMode] = useState<'login' | 'signup'>('login');
+  // L'inscription exige l'acceptation des conditions : sans elle, le serveur
+  // refusait toute création de compte depuis l'application.
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -268,6 +281,14 @@ export default function CustomerApp() {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
+    if (mode === 'signup' && !motDePasseValide(password)) {
+      Alert.alert('Mot de passe', MESSAGE_MOT_DE_PASSE);
+      return;
+    }
+    if (mode === 'signup' && !conditionsAcceptees) {
+      Alert.alert('Conditions', 'Acceptez les conditions pour créer votre compte.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -277,7 +298,7 @@ export default function CustomerApp() {
         body: JSON.stringify({
           email: email.trim(),
           password,
-          ...(mode === 'signup' ? { name: name.trim() } : {}),
+          ...(mode === 'signup' ? { name: name.trim(), conditionsAcceptees } : {}),
         }),
       });
 
@@ -371,13 +392,46 @@ export default function CustomerApp() {
 
           <TextInput
             style={styles.input}
-            placeholder={mode === 'signup' ? 'Mot de passe (6 caractères minimum)' : 'Mot de passe'}
+            placeholder="Mot de passe"
             placeholderTextColor="#999"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            autoComplete={mode === 'signup' ? 'new-password' : 'password'}
+            textContentType={mode === 'signup' ? 'newPassword' : 'password'}
             editable={!loading}
           />
+          {mode === 'signup' && (
+            <View style={styles.criteres}>
+              {CRITERES_MOT_DE_PASSE.map(({ libelle, respecte }) => {
+                const ok = respecte(password);
+                return (
+                  <Text key={libelle} style={[styles.critere, ok && styles.critereOk]}>
+                    {ok ? '✓' : '•'} {libelle}
+                  </Text>
+                );
+              })}
+            </View>
+          )}
+
+          {mode === 'signup' && (
+            <TouchableOpacity
+              style={styles.acceptRow}
+              onPress={() => setConditionsAcceptees((a) => !a)}
+              disabled={loading}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: conditionsAcceptees }}
+            >
+              <View style={[styles.box, conditionsAcceptees && styles.boxChecked]}>
+                {conditionsAcceptees && <Text style={styles.tick}>✓</Text>}
+              </View>
+              <Text style={styles.acceptText}>
+                J’ai lu et j’accepte les {lienSite('/cgu', 'conditions générales d’utilisation')} et les{' '}
+                {lienSite('/cgv', 'conditions générales de vente')}, et je prends connaissance de la{' '}
+                {lienSite('/confidentialite', 'politique de confidentialité')}.
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.loginButton, loading && styles.loginButtonDisabled]}
@@ -998,6 +1052,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.9,
   },
+  criteres: { marginTop: -8, marginBottom: 15 },
+  critere: { fontSize: 13, color: '#fff', opacity: 0.75, marginBottom: 2 },
+  critereOk: { opacity: 1, fontWeight: '700' },
   input: {
     backgroundColor: '#fff',
     borderRadius: 10,
@@ -1022,6 +1079,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  acceptRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 4, marginBottom: 8 },
+  box: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  boxChecked: { backgroundColor: '#0055CC', borderColor: '#0055CC' },
+  tick: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  acceptText: { flex: 1, fontSize: 14, color: '#fff', lineHeight: 20 },
+  lienSite: { color: '#fff', textDecorationLine: 'underline', fontWeight: '700' },
   switchMode: {
     marginTop: 18,
     color: '#fff',

@@ -351,7 +351,8 @@ La facture du mois porte enfin ces mentions, et dit ce qui lui manque encore.
 L'autocomplétion d'adresse, elle, connaît désormais la Belgique.
 
 **Comptes et sécurité**
-Récupération de mot de passe, confirmation d'adresse e-mail, suspension et
+Mot de passe de 8 caractères avec chiffre, minuscule et majuscule à chaque
+création, récupération de mot de passe, confirmation d'adresse e-mail, suspension et
 fermeture de compte en direct, **cloisonnement des commerçants** (une boutique
 n'accepte plus l'identifiant d'une autre), sessions périmées répondant un 401
 explicite, erreurs de validation rendues en français plutôt qu'un
@@ -417,10 +418,10 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 55 | **1802** |
+| **API** (`backend/scripts/verification/`) | 56 | **1872** |
 | **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
 
-Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1771
+Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1841
 contrôles dans la suite complète, plus les 31 de `verif-paiement`, qui se joue
 à part contre une API à Stripe actif (voir le `LISEZ-MOI`) : son interruption
 dans la suite complète est attendue. Rejouée aussi sous Windows, session
@@ -733,6 +734,17 @@ sur sa facture du mois.
 
 Un invariant de plus :
 
+- **La règle du mot de passe vaut à la création, jamais à la connexion.**
+  `champMotDePasse()` (`backend/src/utils/validation.ts`) : 8 caractères
+  minimum, un chiffre, une minuscule, une majuscule, caractères spéciaux
+  permis ; un message par manque. Il sert à `/auth/signup`,
+  `/auth/merchant-register`, `/drivers/register` et `/auth/reset-password`.
+  `loginSchema` garde l'ancienne tolérance : durcir la connexion aurait
+  enfermé dehors les comptes créés avec six caractères. La même règle est
+  recopiée côté site (`frontend/lib/mot-de-passe.ts`, affichée par
+  `ReglesMotDePasse`) et dans les applications (`lib/motDePasse.ts`) pour un
+  retour immédiat — le serveur reste juge. Toute nouvelle route qui fixe un
+  mot de passe passe par `champMotDePasse()`.
 - **Un compte suspendu garde son dossier.** `/api/merchant-profile` est la
   seule route commerçante ouverte à un compte suspendu, en plus du support et
   des notifications : une suspension tient presque toujours à ce qui manque là

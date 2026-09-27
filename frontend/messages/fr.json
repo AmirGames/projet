@@ -2136,5 +2136,14 @@
     "deleteConfirm": "Supprimer le rôle « {role} » ?",
     "deleted": "Rôle « {role} » supprimé",
     "deleteError": "Impossible de supprimer le rôle"
+  },
+  "motDePasse": {
+    "longueur": "8 caractères minimum",
+    "chiffre": "Au moins un chiffre",
+    "minuscule": "Au moins une lettre minuscule",
+    "majuscule": "Au moins une lettre majuscule",
+    "respecte": "respecté",
+    "manquant": "manquant",
+    "invalide": "Le mot de passe doit contenir 8 caractères minimum, dont un chiffre, une minuscule et une majuscule."
   }
 }

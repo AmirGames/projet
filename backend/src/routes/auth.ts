@@ -4,7 +4,7 @@ import {
 } from "../services/permissions-plateforme.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { champEmail, signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation";
+import { champEmail, champMotDePasse, signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation";
 import { AuthService } from "../services/auth.service";
 import { UserService } from "../services/user.service";
 import { ApiError } from "../middleware/errorHandler";
@@ -606,7 +606,7 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
     const schema = z.object({
       businessName: z.string().min(1).max(200),
       email: champEmail(),
-      password: z.string().min(8),
+      password: champMotDePasse(),
       // Le genre en code (« restaurant ») ; les anciennes graphies
       // (« Restaurant », « RESTAURANT ») sont encore comprises.
       businessType: z.string().min(1).max(50),
@@ -900,7 +900,7 @@ router.post(
       const body = z
         .object({
           jeton: z.string().min(32),
-          password: z.string().min(6, "Minimum 6 caractères"),
+          password: champMotDePasse(),
         })
         .parse(req.body);
 

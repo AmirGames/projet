@@ -21,7 +21,7 @@ check(
 check('l’adresse est mise en cause', /[Ee]mail invalide/.test(refus?.error || ''), refus?.error);
 check(
   'le mot de passe aussi, et il est nommé',
-  /[Mm]ot de passe.*6 caractères/.test(refus?.error || ''),
+  /[Mm]ot de passe : 8 caractères minimum/.test(refus?.error || ''),
   refus?.error
 );
 check('le détail par champ reste disponible', refus?.details?.fieldErrors !== undefined, JSON.stringify(refus?.details));

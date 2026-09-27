@@ -13,6 +13,7 @@ import {
 import { API_URL, SITE_URL } from '../../lib/api';
 import type { Session } from '../../lib/session';
 import { COLORS, themedStyles } from '../ui';
+import { CRITERES_MOT_DE_PASSE, MESSAGE_MOT_DE_PASSE, motDePasseValide } from '../../lib/motDePasse';
 
 /** Les pays où ZupEat livre, comme sur le site. */
 const PAYS = {
@@ -69,7 +70,7 @@ export default function SignupScreen({
     setError('');
     if (name.trim().length < 2) return setError('Indiquez votre nom complet.');
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('Adresse e-mail invalide.');
-    if (password.length < 8) return setError('Le mot de passe doit contenir au moins 8 caractères.');
+    if (!motDePasseValide(password)) return setError(MESSAGE_MOT_DE_PASSE);
     if (phone.replace(/\D/g, '').length < 9) return setError('Numéro de téléphone invalide.');
     if (motorise && !vehiclePlate.trim()) return setError('Indiquez la plaque d’immatriculation.');
     if (!accepted) return setError('Acceptez les conditions pour continuer.');
@@ -163,10 +164,19 @@ export default function SignupScreen({
           secureTextEntry
           autoComplete="new-password"
           textContentType="newPassword"
-          placeholder="8 caractères minimum"
           placeholderTextColor={COLORS.muted}
           editable={!sending}
         />
+        <View style={styles.criteres}>
+          {CRITERES_MOT_DE_PASSE.map(({ libelle, respecte }) => {
+            const ok = respecte(password);
+            return (
+              <Text key={libelle} style={[styles.critere, ok && styles.critereOk]}>
+                {ok ? '✓' : '•'} {libelle}
+              </Text>
+            );
+          })}
+        </View>
 
         <Text style={styles.label}>Téléphone</Text>
         <TextInput
@@ -258,6 +268,9 @@ const styles = themedStyles(() => ({
     fontSize: 16,
     color: COLORS.text,
   },
+  criteres: { marginTop: -6, marginBottom: 14 },
+  critere: { fontSize: 13, color: COLORS.onHeader, opacity: 0.75, marginBottom: 2 },
+  critereOk: { opacity: 1, fontWeight: '700' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   chip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, backgroundColor: COLORS.raised },
   chipActive: { backgroundColor: COLORS.primary },

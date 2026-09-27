@@ -8,7 +8,9 @@ même tiroir latéral, mêmes composants (`components/ui.tsx`).
 ## Ce que fait l'application
 
 - **Connexion ou création de compte** (tout compte peut commander : la fiche
-  client naît à la première visite).
+  client naît à la première visite). La création exige un mot de passe de
+  8 caractères avec chiffre, minuscule et majuscule, et l'acceptation des
+  CGU, des CGV et de la politique de confidentialité, liées au site.
 - **Supprimer mon compte ZupEat** (Paramètres › Vos données) : profil, adresses,
   favoris et paniers effacés, commandes passées gardées sans lien le temps que la
   loi l'exige ; refusé pendant une commande en cours. Un compte livreur ou un

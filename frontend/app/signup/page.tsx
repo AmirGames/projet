@@ -5,6 +5,8 @@ import { useState } from "react";
 import AcceptationConditions from '@/components/AcceptationConditions';
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import ReglesMotDePasse from "@/components/ReglesMotDePasse";
+import { motDePasseValide } from "@/lib/mot-de-passe";
 import { api } from "@/lib/api";
 import Link from "next/link";
 import { SelecteurPays } from "@/components/SelecteurPays";
@@ -12,6 +14,7 @@ import { usePays } from "@/lib/pays-client";
 
 export default function SignupPage() {
   const t = useTranslations('auth.signup');
+  const tMdp = useTranslations('motDePasse');
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -26,6 +29,11 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!motDePasseValide(password)) {
+      setError(tMdp("invalide"));
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError(t("passwordsMismatch"));
@@ -114,8 +122,10 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="••••••••"
+              autoComplete="new-password"
               required
             />
+            <ReglesMotDePasse valeur={password} />
           </div>
 
           <div>
