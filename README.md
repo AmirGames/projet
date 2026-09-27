@@ -209,6 +209,10 @@ emporter ou à livrer.
   majuscule ; les caractères spéciaux sont permis sans être exigés. Les
   critères se cochent pendant la saisie. Les comptes plus anciens se
   connectent toujours avec leur mot de passe
+- **Une adresse e-mail, quelle que soit sa casse** : « Test@Exemple.fr » et
+  « test@exemple.fr » sont le même compte, à l'inscription comme à la
+  connexion. Une adresse déjà prise est refusée clairement, et s'inscrire
+  après avoir commandé sans compte reprend la fiche de cette commande
 - **Un seul compte ZupOne, plusieurs espaces** : le logo en haut à gauche ouvre
   les autres espaces auxquels le compte a droit — client, commerçant, livreur,
   plateforme (sous le nom du groupe de l'équipe : Support, Administrateur…)
@@ -477,7 +481,8 @@ Par honnêteté, ce qui manque encore :
 - **Les applications mobiles** (`mobile/apps/merchant`, `delivery`, `customer`)
   sont écrites mais pas encore publiées. Celle du livreur est prête pour les
   stores (icônes provisoires, profils EAS, autorisations réduites, suppression
-  du compte) ; celle du client ne commande qu'avec un compte (le site garde la
+  du compte) ; celle du client ne commande qu'avec un compte, créé dans
+  l'application avec l'acceptation des conditions (le site garde la
   commande sans compte). Leurs cartes s'appuient sur les serveurs publics
   d'OpenStreetMap et d'OSRM, à remplacer par un service payant ou hébergé avant
   l'ouverture au public.

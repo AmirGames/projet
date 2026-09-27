@@ -8,7 +8,11 @@ ZupOne, l'équipe et ses rôles par plateforme sur un seul panneau
 (`/superowner`), les reversements hebdomadaires et le fichier SEPA, les montants
 justes pour chacun (commerçant, livreur, client), la tournée de trois courses,
 l'application livreur prête pour les stores (hors réseau, position en
-arrière-plan, suppression du compte) et la surveillance du site.
+arrière-plan, suppression du compte) et la surveillance du site. Puis les
+comptes : une adresse déjà prise refusée en 409 à chaque porte, les adresses
+e-mail sans casse, le mot de passe de 8 caractères avec chiffre, minuscule et
+majuscule, et l'inscription réparée dans l'application client ; la suite
+d'API passe aussi sous Windows.
 
 ---
 
@@ -756,6 +760,21 @@ Un invariant de plus :
   fermeture précède l'ouverture se termine le lendemain. L'ancienne forme
   `{ open, close, closed }` reste lue (`lireLeJour`) : pas de migration, pas de
   temps d'arrêt, et le nouveau format s'écrit dès la première modification.
+- **Une adresse e-mail n'a pas de casse.** `champEmail()`
+  (`utils/validation.ts`) retire les espaces et met en minuscules avant de
+  valider ; il sert à toute adresse qui identifie quelqu'un (inscriptions,
+  connexion, mot de passe oublié, fiche client, commande sans compte, équipe
+  d'une boutique, nomination dans l'équipe). La migration 0014 a converti
+  l'existant, sauf les doublons à la casse près, laissés tels quels : une
+  migration ne fusionne pas deux comptes. La connexion retrouve encore un
+  compte resté en majuscules, s'il est seul. Toute nouvelle route qui reçoit
+  une adresse de personne passe par `champEmail()`.
+- **Une adresse déjà prise est un 409, jamais un 500.** Chaque porte
+  d'inscription vérifie l'adresse (`EMAIL_EXISTS`) ; le gestionnaire
+  d'erreurs traduit en plus toute violation d'unicité Prisma (P2002) en 409
+  `ALREADY_EXISTS`, pour deux requêtes simultanées. À l'inscription, la fiche
+  client née d'une commande sans compte est reprise et rattachée au compte,
+  au lieu d'être recréée.
 - **Un champ e-mail facultatif accepte la chaîne vide** (`emailFacultatif`,
   `utils/validation.ts`). `z.string().email().optional()` la refuse : une
   boutique sans adresse de contact ne pouvait ni être créée, ni voir le moindre
