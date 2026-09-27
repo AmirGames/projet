@@ -1,584 +1,667 @@
-# 🧪 Plan de Tests E2E - Refonte Identité Unifiée
+# Plan de tests E2E — identité unifiée, rôles et validations
 
-**Date**: 2026-09-22  
-**Status**: 📋 Prêt pour exécution  
-**Environnement**: Local ou UAT  
+**Mis à jour** : 27 septembre 2026 (première version : 22 septembre)
+**Environnement** : local
+
+Ce plan se déroule **à la main**, dans un navigateur et avec `curl`. Il couvre le
+parcours d'un compte ZupOne : inscription, choix des espaces, passage
+commerçant et livreur, validation par la plateforme, droits de l'équipe et
+suppression de compte.
+
+Il ne remplace pas les vérifications automatiques — des scripts qui relisent la
+base après chaque action (voir `README.md`, « Vérifications ») — : il sert à
+voir l'enchaînement comme un utilisateur le voit.
+
+> **Toutes les routes de l'API sont sous `/api`** : `POST /api/auth/signup`,
+> `GET /api/auth/me/roles`… Les exemples ci-dessous visent
+> `http://localhost:3001/api`.
 
 ---
 
-## 🚀 Configuration Préalable
+## Préparation
 
-### 1. Démarrer les Services
+### 1. Les services
+
 ```bash
 # À la racine du projet
 docker-compose up -d
-
-# Vérifier les services
 docker-compose ps
 ```
 
-Services attendus:
-- ✅ PostgreSQL (localhost:5432)
-- ✅ Redis (localhost:6379)
-- ✅ Mailpit (http://localhost:8025)
+Services attendus :
+- PostgreSQL (localhost:5432, base `saas_dev`, utilisateur `postgres` / `postgres`)
+- Redis (localhost:6379) — facultatif en local
+- Mailpit (http://localhost:8025) — les courriels de confirmation
 
-### 2. Configurer l'Environnement Test
+Sans Docker, une base PostgreSQL locale suffit (`createdb zupone_dev`, voir le
+README).
+
+### 2. L'API
 
 ```bash
-# Frontend
-cd frontend
-npm install
-npm run dev  # Devrait lancer sur http://localhost:3000
-
-# Backend
-cd ../backend
+cd backend
 npm install
 cp .env.example .env
-
-# Éditer .env:
-# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/saas_dev?schema=public
-# JWT_SECRET=test-secret-key-min-32-characters-long
-# JWT_REFRESH_SECRET=test-refresh-secret-key-min-32-chars
-# API_URL=http://localhost:3001
-# FRONTEND_URL=http://localhost:3000
+# Dans .env :
+#   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/saas_dev?schema=public
+#   JWT_SECRET=… (32 caractères au moins)
+#   JWT_REFRESH_SECRET=…
+#   ENABLE_STRIPE=false        (sinon une commande hors espèces attend son paiement)
+npm run dev                  # applique les migrations, régénère Prisma, écoute sur :3001
 ```
 
-### 3. Initialiser la Base de Données
+### 3. Le site
+
+```bash
+cd frontend
+npm install
+cp .env.example .env.local
+npm run dev                  # http://localhost:3000
+```
+
+### 4. Une base vide
+
+Le **premier compte inscrit devient la plateforme** (superowner). Le plan
+suppose donc une base vide au départ :
 
 ```bash
 cd backend
-npx prisma migrate deploy  # Apply all migrations
-npx prisma db seed        # Optional: seed test data
-npm run dev               # Devrait lancer sur http://localhost:3001
+node scripts/verification/reinitialiser.mjs   # garde-fou : le nom de la base doit contenir « test »
+```
+
+Sur `saas_dev`, recréez plutôt la base (`dropdb saas_dev && createdb saas_dev`)
+puis `npm run dev`.
+
+---
+
+## Phase 1 — Inscription
+
+### Test 1.1 : le premier compte devient la plateforme
+
+```
+Étapes :
+1. Ouvrir http://localhost:3000/signup
+2. Remplir : e-mail test-user-001@example.com, nom « Test User 001 »,
+   mot de passe TestPassword123!, cocher l'acceptation des conditions
+3. Valider
+
+Attendu :
+✅ Redirection vers /auth/role-selection
+✅ L'espace client est actif ; « Devenir commerçant » et « Devenir livreur » proposés
+
+En base :
+✅ User : isSuperOwner = true, isSystemAdmin = true
+✅ Customer créé et relié (userId)
+✅ AcceptationConditions : une ligne avec les versions de cgu, cgv, confidentialite
+✅ Un courriel de confirmation dans Mailpit (si ENABLE_EMAIL_VERIFICATION n'est pas « false »)
+```
+
+### Test 1.2 : les comptes suivants sont ordinaires
+
+```
+Étapes :
+1. Se déconnecter
+2. S'inscrire avec test-user-002@example.com
+
+Attendu :
+✅ User.isSuperOwner = false, User.isSystemAdmin = false
+✅ Aucun accès à /superowner (voir phase 7)
+```
+
+### Test 1.3 : les conditions sont exigées
+
+```bash
+curl -s -X POST http://localhost:3001/api/auth/signup \
+  -H 'content-type: application/json' \
+  -d '{"email":"sans-conditions@example.com","password":"TestPassword123!","name":"Test User"}'
+```
+
+```
+Attendu :
+✅ 400, « conditionsAcceptees : Vous devez accepter les conditions pour continuer »
+✅ Aucun compte créé
+```
+
+Les messages de validation sont en français et nomment le champ (« Nom :
+Minimum 2 caractères »).
+
+### Test 1.4 : une adresse déjà prise est refusée
+
+```
+Étapes :
+1. S'inscrire à nouveau avec test-user-001@example.com
+
+Attendu :
+✅ 409, « Cet email est déjà utilisé », code EMAIL_EXISTS, affiché sur le formulaire
+✅ Aucun second compte ; le mot de passe du compte existant ne change pas
+```
+
+(Jusqu'au 27 septembre, ce cas répondait 500 : la contrainte d'unicité de la
+base remontait telle quelle. Deux inscriptions simultanées qui passeraient
+toutes deux la vérification reçoivent désormais un 409 `ALREADY_EXISTS`.)
+
+### Test 1.5 : trop d'inscriptions depuis une même adresse IP
+
+En production seulement (`NODE_ENV=production`) : dix inscriptions par heure et
+par IP, tous formulaires confondus (client, commerçant, livreur) ; la onzième
+reçoit un 429.
+
+---
+
+## Phase 2 — Le jeton
+
+### Test 2.1 : le jeton ne porte que l'identifiant
+
+```
+Étapes :
+1. Se connecter avec test-user-001@example.com
+2. DevTools → Application → Local Storage : copier accessToken
+3. Le décoder (https://jwt.io ou `node -e`)
+
+Attendu :
+✅ { "userId": "…", "iat": …, "exp": … }
+❌ Ni orgId, ni rôle, ni storeIds : tout se relit en base à chaque requête
+```
+
+Durées par défaut : 7 jours pour le jeton d'accès (`JWT_EXPIRES_IN`), 30 jours
+pour le jeton de renouvellement (`JWT_REFRESH_EXPIRES_IN`).
+
+### Test 2.2 : session expirée ou révoquée
+
+```
+Étapes :
+1. Remplacer accessToken par une valeur invalide dans le Local Storage
+2. Recharger une page d'un espace
+
+Attendu :
+✅ L'API répond 401 (INVALID_TOKEN)
+✅ Le site renvoie vers la connexion, sans boucle
+```
+
+### Test 2.3 : trop d'essais de connexion
+
+Dix essais par quart d'heure, comptés par IP et par compte : le onzième reçoit un
+429 **même avec le bon mot de passe**. Un autre compte, depuis la même IP,
+n'est pas gêné.
+
+---
+
+## Phase 3 — `GET /api/auth/me/roles`
+
+### Test 3.1 : les espaces après l'inscription
+
+```
+Étapes :
+1. Connecté, ouvrir l'onglet réseau sur /auth/role-selection
+2. Lire la réponse de GET /api/auth/me/roles
+
+Attendu :
+✅ 200
+✅ user : id, email, isSuperOwner, isSystemAdmin, platformRole,
+   platformRoleLabel, accesEquipe (un rôle par plateforme pour un membre de l'équipe)
+✅ roles.customer  = { active: true,  customerId: "…" }
+✅ roles.driver    = { active: false, driverId: null, status: null }
+✅ roles.merchant  = { active: false, organizations: [] }
+```
+
+### Test 3.2 : authentification exigée
+
+```bash
+curl -s http://localhost:3001/api/auth/me/roles -H "Authorization: Bearer invalide"
+```
+
+```
+Attendu :
+✅ 401, { "error": "Invalid token", "code": "INVALID_TOKEN" }
+```
+
+### Test 3.3 : le sélecteur d'espaces
+
+```
+Étapes :
+1. Avec un compte qui a plusieurs espaces, cliquer sur le logo en haut à gauche
+
+Attendu :
+✅ Le menu liste les autres espaces du compte (client, commerçant, livreur, plateforme)
+✅ Un membre de l'équipe voit l'espace plateforme sous le nom de son groupe
+   (Support, Administrateur…), pas « Super Owner »
+✅ Un compte qui n'a que l'espace client est envoyé directement sur /client/orders
 ```
 
 ---
 
-## 📋 Flux de Test Manual
+## Phase 4 — Devenir commerçant
 
-### **PHASE 1: SIGNUP & CUSTOMER CREATION**
+### Test 4.1 : activer l'espace commerçant
 
-#### Test 1.1: Signup - Créer User + Customer
 ```
-Steps:
-1. Navigate to http://localhost:3000/signup
-2. Fill form:
-   - Email: test-user-001@example.com
-   - Name: Test User 001
-   - Password: TestPassword123!
-3. Click "Sign up"
+Étapes :
+1. Sur /auth/role-selection (test-user-002), cliquer « Devenir commerçant »
+2. Remplir :
+   - Nom de l'entreprise : My Test Restaurant
+   - Nom de la boutique : Main Location (l'adresse web se déduit du nom)
+   - Genre : restaurant (et type de cuisine)
+   - Téléphone : +32 470 12 34 56
+   - Adresse : choisir une suggestion (Namur, 5000)
+   - Description : Un restaurant de test
+3. Créer
 
-Expected:
-✅ Redirect to /auth/role-selection
-✅ Page shows "Customer" role as ACTIVE
-✅ "Devenir commerçant" button visible
-✅ "Devenir livreur" button visible
+Attendu :
+✅ 201, « Rôle de commerçant activé avec succès »
+✅ L'espace commerçant apparaît dans /auth/me/roles
 
-Database:
-✅ User created with isSuperOwner=true (first user)
-✅ Customer created with userId linked
-✅ JWT token contains only { userId }
-```
-
-#### Test 1.2: Second User Not Super Owner
-```
-Steps:
-1. Logout (if logged in)
-2. Signup with new email: test-user-002@example.com
-3. Verify page loads
-
-Expected:
-✅ Second user should NOT see admin panel
-✅ User.isSuperOwner = false in DB
-✅ User.isSystemAdmin = false in DB
+En base :
+✅ Organization : slug = celui de la boutique, tier FREE, approvedAt VIDE
+   (le commerce attend la validation de la plateforme)
+✅ Store créé avec ses coordonnées quand la suggestion en donne
+✅ Membership : rôle ADMIN, storeIds contient la boutique
 ```
 
-#### Test 1.3: Duplicate Email Rejected
+### Test 4.2 : adresse web déjà prise
+
 ```
-Steps:
-1. Try signup with email: test-user-001@example.com (from Test 1.1)
-2. Observe error
+Étapes :
+1. Avec un autre compte, créer un commerce avec la même adresse web
 
-Expected:
-✅ Error message displayed: "Cet email est déjà utilisé"
-✅ Status 400 in network tab
-```
-
----
-
-### **PHASE 2: JWT SIMPLIFIED**
-
-#### Test 2.1: JWT Payload Verification
-```
-Steps:
-1. Login with test-user-001@example.com
-2. Open DevTools → Application → LocalStorage
-3. Decode accessToken at https://jwt.io
-
-Expected JWT Payload:
-✅ Contains: userId (only ID)
-✅ Contains: iat, exp (timestamps)
-❌ Does NOT contain: orgId
-❌ Does NOT contain: role
-❌ Does NOT contain: storeIds
-
-Example:
-{
-  "userId": "cuid_123abc...",
-  "iat": 1695398400,
-  "exp": 1695484800
-}
+Attendu :
+✅ 400, « Cette URL est déjà utilisée », code SLUG_EXISTS
 ```
 
-#### Test 2.2: Token Expiration
-```
-Steps:
-1. Wait for token to expire (7 days, or simulate in dev)
-2. Try calling an API endpoint
-3. Refresh page
+### Test 4.3 : plusieurs commerces pour un même compte
 
-Expected:
-✅ 401 Unauthorized error
-✅ Prompt user to login again
-✅ New token generated after login
+```
+Attendu :
+✅ Un second commerce se crée ; roles.merchant.organizations en compte deux
+✅ Le sélecteur de boutique de l'espace commerçant passe de l'un à l'autre
+✅ Le nombre de boutiques reste borné par la formule souscrite
+```
+
+### Test 4.4 : un commerce non validé ne vend pas
+
+```
+Étapes :
+1. Dans l'espace commerçant, préparer la boutique (catalogue, horaires)
+2. Tenter de l'ouvrir
+3. Chercher la boutique depuis l'espace client
+
+Attendu :
+✅ Bandeau « en attente de validation » ; l'ouverture est refusée
+✅ La boutique n'apparaît pas aux clients ; une commande est refusée par le serveur
+```
+
+### Test 4.5 : la plateforme valide le commerce
+
+```
+Étapes :
+1. Le commerçant dépose ses pièces dans /merchant/profil :
+   immatriculation (Kbis / BCE), identité du propriétaire, RIB
+2. En superowner : /superowner/organizations, filtre « À valider »
+3. Examiner chaque pièce (aperçu image ou PDF), puis « Valider le commerce »
+
+Attendu :
+✅ La plateforme est notifiée à chaque pièce déposée
+✅ La validation est refusée tant qu'une pièce exigée n'est pas validée
+✅ Une fois validé : Organization.approvedAt renseigné, la boutique peut ouvrir
+```
+
+### Test 4.6 : cloisonnement entre commerçants
+
+```
+Attendu :
+✅ Un commerçant ne voit ni ne modifie la boutique d'un autre, même en
+   passant l'identifiant de celle-ci dans l'URL ou le corps de la requête (403)
 ```
 
 ---
 
-### **PHASE 3: /ME/ROLES ENDPOINT**
+## Phase 5 — Devenir livreur
 
-#### Test 3.1: Initial Roles After Signup
+### Test 5.1 : candidature
+
 ```
-Steps:
-1. Login (or from Test 1.1, already on role-selection)
-2. Inspect network tab → GET /auth/me/roles
-3. Check response body
+Étapes :
+1. Sur /auth/role-selection, cliquer « Devenir livreur »
+2. Remplir : téléphone +32 470 12 34 56, véhicule Scooter / Moto, plaque 1-ABC-123
+3. Valider
 
-Expected Response:
-✅ Status 200
-✅ roles.customer.active = true
-✅ roles.customer.customerId = "cuid_..."
-✅ roles.driver.active = false
-✅ roles.driver.driverId = null
-✅ roles.merchant.active = false
-✅ roles.merchant.organizations = []
-```
+Attendu :
+✅ 201, « Candidature de livreur soumise avec succès » ; la réponse porte de nouveaux jetons
+✅ roles.driver = { active: true, status: "PENDING", driverId: "…" }
 
-#### Test 3.2: Authentication Required
-```
-Steps:
-1. Open new incognito window
-2. Manually call: curl -H "Authorization: Bearer invalid" http://localhost:3001/auth/me/roles
-
-Expected:
-✅ Status 401
-✅ Message: "Not authenticated"
+En base :
+✅ Driver : userId relié, status PENDING, nom et e-mail repris du compte,
+   vehicleType (car, scooter ou bike), vehiclePlate
 ```
 
----
+L'inscription se fait aussi depuis `/driver/signup` et depuis l'application
+livreur (écran « Devenir livreur »).
 
-### **PHASE 4: BECOME MERCHANT**
+### Test 5.2 : pas deux candidatures
 
-#### Test 4.1: Activate Merchant Role
 ```
-Steps:
-1. On /auth/role-selection page
-2. Click "Devenir commerçant"
-3. Fill merchant form:
-   - Business Name: My Test Restaurant
-   - Store Name: Main Location
-   - Store Slug: my-test-restaurant
-   - Business Type: restaurant
-   - Phone: +33612345678
-   - Address: 123 Rue de Test
-   - City: Paris
-   - Postal Code: 75001
-   - Description: A test restaurant
-4. Click "Créer"
-
-Expected:
-✅ Modal closes
-✅ Page shows merchant role as ACTIVE
-✅ Organization card displays: "My Test Restaurant"
-✅ Status 201 in network tab
-✅ Response includes org & store details
-
-Database:
-✅ Organization created with slug="my-test-restaurant"
-✅ Store created linked to org
-✅ Membership created: userId → org, role=ADMIN
-✅ membership.storeIds includes the store ID
+Attendu :
+✅ 400, « Vous avez déjà un profil livreur », code DRIVER_EXISTS
 ```
 
-#### Test 4.2: Duplicate Slug Rejected
-```
-Steps:
-1. Logout and login with new user (test-user-003@example.com)
-2. Try to become merchant with slug: my-test-restaurant (duplicate from Test 4.1)
-3. Submit form
+### Test 5.3 : dossier et validation
 
-Expected:
-✅ Error message: "Cette URL est déjà utilisée"
-✅ Modal stays open
-✅ Status 400 in network
-✅ Code: SLUG_EXISTS
 ```
+Étapes (livreur) :
+1. Dans /driver/profile, déposer les pièces exigées pour un scooter :
+   pièce d'identité, permis, assurance, carte grise, sac isotherme
+   (photo du sac ou facture) — en image ou en PDF
+2. Tenter de se mettre en ligne
 
-#### Test 4.3: Multiple Merchants Per User
-```
-Steps:
-1. On /auth/role-selection (as test-user-001)
-2. Become second merchant:
-   - Business Name: Second Restaurant
-   - Store Slug: second-restaurant
-   - Fill other fields...
-3. Submit
+Étapes (superowner) :
+3. /superowner/drivers : ouvrir le dossier, valider les pièces une à une
+   (une date d'expiration mal saisie se corrige avec « Modifier »)
+4. Cliquer « Valider le livreur »
 
-Expected:
-✅ Second organization created
-✅ /auth/me/roles shows roles.merchant.organizations.length = 2
-✅ Both org cards visible on role page
-✅ Can navigate between merchants
-```
-
-#### Test 4.4: Merchant Can Access Store
-```
-Steps:
-1. After becoming merchant (Test 4.1)
-2. Navigate to merchant dashboard
-3. Should see store name "Main Location"
-4. Can create products, see orders, etc.
-
-Expected:
-✅ Store dashboard loads
-✅ User can only see their own stores
-✅ Cannot access other merchant's store
+Attendu :
+✅ Tant que le dossier n'est pas validé : pas de mise en ligne, aucune course proposée
+✅ Sans le sac isotherme : 400 « Dossier incomplet : Sac isotherme (photo du sac
+   ou facture) reste à valider. », code INCOMPLETE_FILE
+✅ À vélo, seules l'identité et le sac isotherme sont exigées
+✅ Après validation : Driver.status = ACTIVE, le livreur peut se mettre en ligne
+✅ Un refus de pièce exige un motif, que le livreur lit
 ```
 
 ---
 
-### **PHASE 5: BECOME DRIVER**
+## Phase 6 — Parcours complet
 
-#### Test 5.1: Activate Driver Role
+### Test 6.1 : un compte, trois espaces
+
 ```
-Steps:
-1. On /auth/role-selection page
-2. Click "Devenir livreur"
-3. Fill driver form:
-   - Name: John Delivery Driver
-   - Email: john-driver@example.com
-   - Phone: +33612345678
-   - Vehicle Type: Motorcycle
-   - Vehicle Plate/Registration: ABC-123
-4. Click "S'inscrire"
+Étapes :
+1. S'inscrire avec complete-user@example.com
+2. Devenir commerçant (« Complete Restaurant »)
+3. Devenir livreur
+4. Lire GET /api/auth/me/roles
 
-Expected:
-✅ Modal closes
-✅ Driver role shows: PENDING (awaiting approval)
-✅ Status 201 in network tab
-✅ Button changes to "Application en attente d'approbation"
-
-Database:
-✅ Driver created with:
-  - userId linked to user
-  - status = "PENDING"
-  - name, email, phone, vehicleType, vehiclePlate saved
-```
-
-#### Test 5.2: Cannot Apply Twice
-```
-Steps:
-1. From Test 5.1, try to click "Devenir livreur" again
-2. Or try to POST /auth/me/become-driver again
-
-Expected:
-✅ Error message: "Vous avez déjà un profil livreur"
-✅ Status 400
-✅ Code: DRIVER_EXISTS
-✅ Button remains "Application en attente..."
-```
-
-#### Test 5.3: Driver Approval Workflow
-```
-Steps (Admin):
-1. Login as superowner (first user from Test 1.1)
-2. Navigate to /superowner/drivers
-3. Find pending driver from Test 5.1
-4. Click "Approuver"
-5. Select "ACTIVE"
-6. Save
-
-Expected:
-✅ Driver status changes from PENDING to ACTIVE
-✅ Driver can now accept deliveries
-✅ User can see driver role as ACTIVE
+Attendu après chaque étape :
+1️⃣ client seul
+2️⃣ client + commerçant (1 organisation, en attente de validation)
+3️⃣ client + commerçant + livreur (PENDING)
+4️⃣ customer.active, merchant.organizations[1], driver.status = "PENDING"
 ```
 
 ---
 
-### **PHASE 6: COMPLETE FLOW**
+## Phase 7 — Droits et équipe de la plateforme
 
-#### Test 6.1: Full Journey (Signup → Merchant → Driver)
+### Test 7.1 : pas d'accès à l'organisation d'un autre
+
 ```
-Steps:
-1. Signup with email: complete-user@example.com
-2. Verify on /auth/role-selection
-   - Only Customer active
-3. Become Merchant:
-   - Create "Complete Restaurant"
-   - Verify status updates
-4. Become Driver:
-   - Create driver profile
-   - Verify status = PENDING
-5. Access /auth/me/roles
-   - Verify all 3 roles show
+Étapes :
+1. Compte A (commerce X), compte B (autre compte)
+2. Avec le jeton de B : GET /api/stores?orgId=<X>, ou une modification d'une boutique de X
 
-Expected After Each Step:
-1️⃣ Signup → Customer active only
-2️⃣ After Merchant → Customer + Merchant active (1 org)
-3️⃣ After Driver → All 3 active, Driver=PENDING
-4️⃣ GET /me/roles shows:
-   - customer: { active: true, customerId: "..." }
-   - merchant: { active: true, organizations: [{...}] }
-   - driver: { active: true, status: "PENDING", driverId: "..." }
+Attendu :
+✅ Refus (403) : rien de X n'est lu ni modifié
+```
+
+### Test 7.2 : l'administration est réservée à l'équipe
+
+```bash
+curl -s http://localhost:3001/api/superowner/dashboard -H "Authorization: Bearer <jeton de test-user-002>"
+```
+
+```
+Attendu :
+✅ 403, « Accès refusé - votre rôle n'ouvre pas cette section », code FORBIDDEN
+```
+
+### Test 7.3 : un membre de l'équipe ne voit que ses sections
+
+```
+Étapes (superowner) :
+1. /superowner/user-management : nommer test-user-002 « Support » sur ZupEat
+   (la personne doit déjà avoir un compte)
+2. /superowner/roles : vérifier ce que coche le rôle Support
+
+Étapes (test-user-002) :
+3. Se reconnecter, ouvrir /superowner
+
+Attendu :
+✅ Le menu ne montre que les sections ouvertes au rôle
+✅ Une section en lecture seule : GET passe, toute modification répond 403
+   « Accès refusé - votre rôle ne permet pas de modifier cette section »
+✅ Les chiffres financiers (revenu, MRR…) n'apparaissent pas sans « Facturation »
+✅ Le Support peut suspendre un commerce, pas le fermer (droit à part)
+✅ La gestion de l'équipe et des rôles reste au superowner seul
+```
+
+### Test 7.4 : rôles personnalisés et par plateforme
+
+```
+Étapes (superowner) :
+1. /superowner/roles : créer un rôle « Facturation », cocher ses sections
+2. L'attribuer à un membre
+3. Tenter de supprimer le rôle, puis retirer le membre et le supprimer
+4. Donner à un même membre un rôle différent sur ZupDrive
+
+Attendu :
+✅ Le rôle apparaît dans la liste et s'attribue
+✅ Suppression refusée tant qu'un membre le porte ; les trois rôles de base
+   (SuperAdmin, Administrateur, Support) ne se suppriment pas
+✅ AccesEquipe : une ligne par membre et par plateforme (EAT, DRIVE)
+```
+
+### Test 7.5 : le jeton ne donne aucun droit
+
+```
+Étapes :
+1. Modifier le jeton de A pour y ajouter un orgId ou un rôle
+2. Appeler l'API avec ce jeton
+
+Attendu :
+✅ 401 : la signature ne correspond plus
+✅ Même bien signé, un champ ajouté serait ignoré : les droits se relisent en base
 ```
 
 ---
 
-### **PHASE 7: SECURITY & ACCESS CONTROL**
+## Phase 8 — Suppression de compte
 
-#### Test 7.1: Cannot Access Other's Organization
+### Test 8.1 : compte livreur
+
 ```
-Steps:
-1. Login as user A (has organization X)
-2. Get organization ID from DB
-3. Login as user B (different user)
-4. Try to POST /api/stores with orgId=X (user A's org)
-5. Or try to GET /api/stores?orgId=X
+Étapes :
+1. /suppression-compte (ou Paramètres › Vos données dans l'application livreur)
+2. Lire l'aperçu, confirmer
 
-Expected:
-✅ Status 403 or 401
-✅ Error: "Organization access denied"
-❌ User B cannot see/modify user A's data
-```
-
-#### Test 7.2: SuperOwner Only Routes
-```
-Steps:
-1. Login as regular user (test-user-002)
-2. Try to access: http://localhost:3001/api/superowner/dashboard
-3. Check network tab response
-
-Expected:
-✅ Status 403
-✅ Message: "Accès refusé - Superowner requis"
-❌ Regular user cannot access admin routes
+Attendu :
+✅ Refusée pendant une course
+✅ Refusée en 409 IBAN_REQUIRED s'il reste un montant dû sans IBAN valide,
+   avec le montant et le lundi du versement
+✅ Acceptée : Driver.status = INACTIVE, hors ligne, suppressionDemandeeLe renseigné,
+   demande transmise au support
+✅ Le compte client ZupEat reste actif (connexion possible, espace client ouvert)
 ```
 
-#### Test 7.3: JWT Cannot Bypass Permissions
-```
-Steps:
-1. Capture JWT from user A (regular user)
-2. Manually modify JWT in DevTools to add orgId field
-3. Call API with modified JWT
+### Test 8.2 : compte client ZupEat
 
-Expected:
-✅ API should still require permissions from DB
-✅ Modified JWT field should be ignored
-✅ orgId loaded from database (not JWT)
-❌ User cannot escalate permissions via JWT
+```
+Étapes :
+1. Dans l'application client : Paramètres › Vos données › Supprimer mon compte ZupEat
+   (ou POST /api/client/me/suppression ; GET pour l'aperçu)
+
+Attendu :
+✅ Refusée pendant une commande en cours
+✅ Profil, adresses, favoris, paniers et notifications ZupEat effacés ;
+   commandes passées gardées, détachées
+✅ Seul client : la connexion ZupOne disparaît et les sessions tombent
+✅ Aussi livreur ou commerçant : la connexion reste, et le message le dit
 ```
 
 ---
 
-## 🔧 Backend Tests (Jest)
+## Tests automatiques
 
-### Setup Test Environment
+### Les vérifications (la référence)
+
 ```bash
 cd backend
+createdb zupone_test
+DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy
+DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev          # un terminal
+DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
+```
 
-# Create .env.test
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/saas_test
-JWT_SECRET=test-secret-min-32-characters-long
-JWT_REFRESH_SECRET=test-refresh-secret-min-32-characters
+Les suites qui couvrent ce plan : `verif-inscription-boutique`,
+`verif-cloisonnement`, `verif-validation-commerce`,
+`verif-livreurs-validation`, `verif-limites-connexion`,
+`verif-suppression-livreur`, `verif-suppression-client`. Les réglages
+nécessaires à la suite complète sont dans
+`backend/scripts/verification/LISEZ-MOI.md`.
 
-# Run tests
+### Jest
+
+```bash
+cd backend
 npm test -- src/routes/__tests__/refonte-e2e.test.ts
-
-# Or with coverage
-npm run test:coverage
 ```
 
-### Test Cases Automated
-✅ Signup creates User + Customer  
-✅ JWT payload contains only userId  
-✅ GET /me/roles returns correct structure  
-✅ POST /me/become-merchant creates Org + Store  
-✅ POST /me/become-driver creates Driver (PENDING)  
-✅ Cannot duplicate slug  
-✅ Cannot apply for driver twice  
-✅ Multiple merchants per user  
-✅ Complete flow integration test  
+`refonte-e2e.test.ts` et `auth.integration.test.ts` datent de la refonte
+d'identité ; ils ne couvrent ni la validation des commerces, ni les rôles de
+l'équipe, ni les suppressions de compte.
 
 ---
 
-## 🐛 Common Issues & Fixes
+## Problèmes courants
 
-### Issue: "Database connection failed"
+### « Database connection failed »
 ```
-Fix:
-1. Verify docker-compose services running
-2. Check DATABASE_URL in .env
-3. Run: psql -U postgres -h localhost -d saas_dev
-4. If DB not initialized: npx prisma migrate deploy
-```
-
-### Issue: "Token invalid" after login
-```
-Fix:
-1. Check JWT_SECRET and JWT_REFRESH_SECRET in .env
-2. Verify token format: "Bearer <token>"
-3. Check authorization header in network tab
-4. Ensure token hasn't expired
+1. docker-compose ps : PostgreSQL doit être « healthy »
+2. DATABASE_URL dans backend/.env
+3. psql -U postgres -h localhost -d saas_dev
+4. npm run dev applique lui-même les migrations en attente
 ```
 
-### Issue: "Organization not found"
+### « Unknown argument … » au démarrage ou sur une route
 ```
-Fix:
-1. Verify organization slug is unique
-2. Check merchant form validation
-3. Look at response in network tab for error details
-4. Database: SELECT * FROM "Organization" ORDER BY "createdAt" DESC LIMIT 5
+Le client Prisma est en retard sur le schéma : relancer npm run dev
+(predev = prisma migrate deploy && prisma generate).
 ```
 
-### Issue: "Customer not created"
+### « Token invalid » après connexion
 ```
-Fix:
-1. Check ENABLE_EMAIL_VERIFICATION setting
-2. Verify customer.ts migration was applied
-3. Check browser console for errors
-4. Database: SELECT * FROM "Customer" WHERE "userId" = 'your-user-id'
+1. JWT_SECRET et JWT_REFRESH_SECRET dans .env (changés = jetons existants invalides)
+2. En-tête « Authorization: Bearer <jeton> »
+3. Le jeton n'a pas expiré
+```
+
+### « Organisation non identifiée » (MISSING_ORG)
+```
+La route commerçant n'a trouvé ni orgId ni storeId dans le corps, la requête
+ou l'URL. Vérifier la boutique choisie dans le sélecteur de l'espace commerçant.
+```
+
+### Le commerce n'ouvre pas
+```
+Organization.approvedAt est vide : la plateforme ne l'a pas encore validé (test 4.5).
+```
+
+### Pas de courriel de confirmation
+```
+1. ENABLE_EMAIL_VERIFICATION n'est pas « false »
+2. Mailpit tourne (http://localhost:8025) et SMTP_HOST / SMTP_PORT pointent dessus
 ```
 
 ---
 
-## ✅ Validation Checklist
+## Récapitulatif à cocher
 
-After running all tests:
+**Inscription et connexion**
+- [ ] Premier compte : superowner et admin système
+- [ ] Comptes suivants ordinaires
+- [ ] Customer créé à l'inscription
+- [ ] Conditions exigées et acceptation enregistrée
+- [ ] Adresse déjà prise refusée en 409
+- [ ] Jeton : userId seul
+- [ ] Limites de connexion et d'inscription
 
-**Signup & Authentication**
-- [ ] User created with correct email/name
-- [ ] Customer created linked to user
-- [ ] First user marked as SuperOwner
-- [ ] Second+ users NOT SuperOwner
-- [ ] JWT simplified (userId only)
-- [ ] Tokens stored in localStorage
-- [ ] Duplicate email rejected
+**Espaces**
+- [ ] /auth/role-selection montre les trois espaces
+- [ ] Sélecteur d'espaces par le logo
+- [ ] Compte client seul redirigé vers /client/orders
 
-**Role Selection**
-- [ ] /auth/role-selection accessible after login
-- [ ] All 3 roles displayed
-- [ ] Customer shows as ACTIVE
-- [ ] Driver/Merchant show as INACTIVE initially
-- [ ] User info displayed correctly
+**Commerçant**
+- [ ] Organisation, boutique et appartenance créées
+- [ ] Adresse web unique
+- [ ] Plusieurs commerces par compte
+- [ ] Commerce bloqué jusqu'à validation, puis validé
 
-**Merchant Activation**
-- [ ] Merchant form shows with all fields
-- [ ] Organization created on submit
-- [ ] Store created linked to org
-- [ ] Membership created with ADMIN role
-- [ ] Slug must be unique
-- [ ] Can create multiple merchants
-- [ ] Merchant dashboard accessible
+**Livreur**
+- [ ] Candidature PENDING, pas de doublon
+- [ ] Pièces exigées selon le véhicule, sac isotherme pour tous
+- [ ] Validation refusée sur dossier incomplet, acceptée ensuite
 
-**Driver Activation**
-- [ ] Driver form shows with vehicle fields
-- [ ] Driver created with PENDING status
-- [ ] Cannot apply twice (error shown)
-- [ ] Superowner can approve/reject
-- [ ] Once approved, status = ACTIVE
+**Droits**
+- [ ] Organisation d'autrui inaccessible
+- [ ] Administration réservée à l'équipe
+- [ ] Sections et lecture / modification selon le rôle
+- [ ] Rôles personnalisés et par plateforme
+- [ ] Jeton modifié sans effet
 
-**Security**
-- [ ] JWT doesn't contain orgId/role/storeIds
-- [ ] Regular users cannot access /admin, /superowner
-- [ ] Cannot access other user's organization
-- [ ] Modified JWT cannot escalate permissions
-- [ ] API validates ownership in database
-
-**Database**
-- [ ] User table: id, email, isSuperOwner, isSystemAdmin
-- [ ] Customer table: id, userId (unique, linked)
-- [ ] Organization table: slug (unique)
-- [ ] Membership table: userId, orgId, role
-- [ ] Driver table: userId (unique), status, vehicleType
-- [ ] No orphaned records (cleanup works)
+**Suppression**
+- [ ] Compte livreur : garde-fous, dernier versement, compte client intact
+- [ ] Compte client ZupEat : données effacées, commandes gardées
 
 ---
 
-## 📊 Test Results Template
+## Modèle de compte rendu
 
 ```
-🎯 REFONTE E2E TEST RESULTS
-Date: [DATE]
-Tester: [NAME]
-Environment: [LOCAL/UAT]
+PLAN E2E — COMPTE RENDU
+Date : [DATE]
+Testeur : [NOM]
+Environnement : local
 
-PHASE 1: SIGNUP & CUSTOMER
-✅ Test 1.1: Create User + Customer - PASS
-✅ Test 1.2: Second user not super owner - PASS
-✅ Test 1.3: Duplicate email rejected - PASS
+PHASE 1 — INSCRIPTION
+  1.1 Premier compte superowner ........ [OK / ÉCHEC]
+  1.2 Comptes suivants ordinaires ...... [OK / ÉCHEC]
+  1.3 Conditions exigées ............... [OK / ÉCHEC]
+  1.4 Adresse déjà prise ............... [OK / ÉCHEC]
+  1.5 Limite d'inscriptions ............ [OK / ÉCHEC / NON JOUÉ]
 
-PHASE 2: JWT SIMPLIFIED
-✅ Test 2.1: JWT payload verification - PASS
-⚠️  Test 2.2: Token expiration - [COMMENT]
+PHASE 2 — JETON
+  2.1 userId seul ...................... [OK / ÉCHEC]
+  2.2 Session expirée .................. [OK / ÉCHEC]
+  2.3 Limite de connexion .............. [OK / ÉCHEC]
 
-PHASE 3: /ME/ROLES
-✅ Test 3.1: Initial roles - PASS
-✅ Test 3.2: Auth required - PASS
+PHASE 3 — /api/auth/me/roles
+  3.1 Espaces après inscription ........ [OK / ÉCHEC]
+  3.2 Authentification exigée .......... [OK / ÉCHEC]
+  3.3 Sélecteur d'espaces .............. [OK / ÉCHEC]
 
-PHASE 4: BECOME MERCHANT
-✅ Test 4.1: Activate merchant - PASS
-✅ Test 4.2: Duplicate slug - PASS
-✅ Test 4.3: Multiple merchants - PASS
-✅ Test 4.4: Access store - PASS
+PHASE 4 — COMMERÇANT
+  4.1 Activation ....................... [OK / ÉCHEC]
+  4.2 Adresse web prise ................ [OK / ÉCHEC]
+  4.3 Plusieurs commerces .............. [OK / ÉCHEC]
+  4.4 Bloqué avant validation .......... [OK / ÉCHEC]
+  4.5 Validation ....................... [OK / ÉCHEC]
+  4.6 Cloisonnement .................... [OK / ÉCHEC]
 
-PHASE 5: BECOME DRIVER
-✅ Test 5.1: Activate driver - PASS
-✅ Test 5.2: Cannot apply twice - PASS
-✅ Test 5.3: Approval workflow - PASS
+PHASE 5 — LIVREUR
+  5.1 Candidature ...................... [OK / ÉCHEC]
+  5.2 Pas de doublon ................... [OK / ÉCHEC]
+  5.3 Dossier et validation ............ [OK / ÉCHEC]
 
-PHASE 6: COMPLETE FLOW
-✅ Test 6.1: Full journey - PASS
+PHASE 6 — PARCOURS COMPLET
+  6.1 Un compte, trois espaces ......... [OK / ÉCHEC]
 
-PHASE 7: SECURITY
-✅ Test 7.1: Cannot access other's org - PASS
-✅ Test 7.2: Superowner only routes - PASS
-✅ Test 7.3: JWT cannot bypass - PASS
+PHASE 7 — DROITS
+  7.1 Organisation d'autrui ............ [OK / ÉCHEC]
+  7.2 Administration réservée .......... [OK / ÉCHEC]
+  7.3 Sections du rôle ................. [OK / ÉCHEC]
+  7.4 Rôles personnalisés .............. [OK / ÉCHEC]
+  7.5 Jeton modifié .................... [OK / ÉCHEC]
 
-SUMMARY:
-Total Tests: 16
-Passed: 16
-Failed: 0
-Warnings: 0
+PHASE 8 — SUPPRESSION
+  8.1 Compte livreur ................... [OK / ÉCHEC]
+  8.2 Compte client ZupEat ............. [OK / ÉCHEC]
 
-Status: ✅ READY FOR PRODUCTION
+BILAN : __ / 28 réussis — anomalies : …
 ```
-
----
-
-## 🚀 Next Steps
-
-After Manual E2E Testing:
-1. ✅ Fix any blocking issues
-2. ✅ Run Jest automated tests
-3. ✅ Update REFONTE-STATUS.md with results
-4. ✅ Code review of changes
-5. ✅ Security audit
-6. ✅ Performance testing
-7. 🚀 Deploy to UAT → Production
-
----
-
-**Created**: 2026-09-22  
-**Last Updated**: 2026-09-22  
-**Status**: 📋 Ready for Testing  

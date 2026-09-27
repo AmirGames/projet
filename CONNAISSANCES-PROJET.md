@@ -3,10 +3,12 @@
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
 
-Dernière mise à jour : les favoris depuis l'accueil client (le cœur des cartes)
-et le logo des commerces sur la page Favoris, après le nettoyage des
-dépendances de hooks sur tout le frontend et les versions régionales déclarées
-aux moteurs de recherche.
+Dernière mise à jour (27 septembre) : la marque ZupEat au sein du groupe
+ZupOne, l'équipe et ses rôles par plateforme sur un seul panneau
+(`/superowner`), les reversements hebdomadaires et le fichier SEPA, les montants
+justes pour chacun (commerçant, livreur, client), la tournée de trois courses,
+l'application livreur prête pour les stores (hors réseau, position en
+arrière-plan, suppression du compte) et la surveillance du site.
 
 ---
 
@@ -18,8 +20,9 @@ proximité, dans l'esprit d'Uber Eats ou Glovo. Trois métiers cohabitent :
 - **le client** commande depuis la vitrine d'un commerce, avec ou sans compte ;
 - **le commerçant** tient son catalogue, ses horaires, ses zones et ses commandes ;
 - **le livreur** reçoit les courses et les mène à leur terme ;
-- **la plateforme** (superowner) surveille l'ensemble, facture les commissions
-  et valide les livreurs.
+- **la plateforme** (superowner et son équipe) surveille l'ensemble, valide
+  commerces et livreurs, retient ses commissions et verse chaque semaine à
+  chacun ce qui lui revient.
 
 Plusieurs commerçants cohabitent sur la même installation, chacun chez lui
 (multi-tenant). Restaurants, boulangeries, épiceries — tout commerce qui vend
@@ -85,15 +88,19 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Courriel** | SMTP via nodemailer, Mailpit en développement |
 | **Adresses** | BAN pour la France + Photon pour la Belgique (`ADDRESS_PROVIDER=ban+photon`) |
 | **Paiement** | Stripe — intention liée à la commande, webhook signé, remboursement au refus |
+| **Virements** | Fichier SEPA `pain.001.001.03` généré chaque semaine, importé à la main dans la banque |
+| **Notifications** | Web Push (VAPID), SMS Twilio, push Expo pour les applications — chacun facultatif |
+| **Mobile** | Expo (React Native) : `mobile/apps/customer`, `merchant`, `delivery` |
 
 ```
-backend/    API REST — 40 fichiers de routes, 61 services (hors tests), 53 modèles Prisma
-frontend/   Next.js — 142 pages
+backend/    API REST — 40 fichiers de routes, 69 services (hors tests), 57 modèles Prisma, 13 migrations
+frontend/   Next.js — 116 pages
+mobile/     trois applications Expo
 ```
 
 **Le premier compte inscrit devient la plateforme** (superowner). Tous les
-suivants sont des commerçants ordinaires. Cette règle gouverne aussi les
-scripts de vérification (voir §6).
+suivants sont des comptes ordinaires ; le superowner nomme ensuite son équipe.
+Cette règle gouverne aussi les scripts de vérification (voir §6).
 
 ---
 
@@ -106,7 +113,14 @@ scripts de vérification (voir §6).
 - **Un panier par commerce** : passer de l'un à l'autre ne mélange rien
 - **Commande sans compte** : coordonnées, adresse de livraison avec suggestions,
   ou créneau de retrait tenu aux horaires réels
-- Frais de livraison et minimum de commande annoncés **avant** de valider
+- Frais de livraison et minimum de commande annoncés **avant** de valider ;
+  **livraison offerte** dès un montant de panier quand la zone le prévoit
+  (`DeliveryZone.freeAbove`), avec « Encore X € pour la livraison offerte »
+- **Prix affichés TTC** même quand le commerçant saisit HT
+  (`TaxService.prixAuClient` sur les routes publiques du menu) : le total
+  annoncé est celui qui est payé
+- **Détail du total** (`DetailDuTotal`) sur le suivi et « Mes commandes » :
+  sous-total, livraison, frais de service, remise, total, dont TVA
 - **Frais de service** de la plateforme (0,25 € par défaut, réglables dans
   Configuration système) ajoutés à chaque commande, annoncés au tunnel
 - Code promo et choix du moyen de paiement au tunnel
@@ -115,6 +129,13 @@ scripts de vérification (voir §6).
 - Retrouve une commande passée sans compte par son lien de suivi
 - **Favoris** : le cœur de chaque carte de l'accueil ajoute ou retire le
   commerce ; la page Favoris montre son logo (ou son initiale à défaut)
+- **Client injoignable** : il voit sur son suivi le compte à rebours des
+  6 minutes d'attente du livreur, puis reçoit la photo et l'endroit du dépôt
+- **Suppression du compte ZupEat** (application, `POST /api/client/me/suppression`,
+  aperçu en `GET`) : profil, adresses, favoris, paniers et notifications ZupEat
+  effacés, adresse libérée, commandes gardées détachées ; refusée pendant une
+  commande en cours. Seul client, la connexion ZupOne disparaît ; aussi livreur
+  ou commerçant, elle reste
 
 ### Le commerçant
 - Inscription, puis **validation du commerce par la plateforme** : pièces
@@ -124,10 +145,19 @@ scripts de vérification (voir §6).
 - Rappel **30 jours avant l'expiration** d'une pièce (espace + courriel, une
   seule fois) ; à échéance la pièce passe `EXPIRED`, la plateforme est prévenue,
   le commerce n'est pas fermé d'office
-- Plusieurs boutiques par compte, selon la formule souscrite
+- Plusieurs boutiques par compte, selon la formule souscrite ; **duplication**
+  d'une boutique (`POST /api/stores/:id/duplicate`) : catalogue, taxes, zones,
+  promotions, thème, horaires et réglages copiés, jamais les commandes, avis,
+  factures ni le personnel ; quota de la formule appliqué, copie annulée en
+  bloc si elle échoue. Le slug se génère depuis le nom dans tous les formulaires
 - Catalogue : catégories et plats réordonnables au glisser-déposer,
   déclinaisons, disponibilité basculable en direct
-- Commandes : liste, détail, changement d'état, facture imprimable
+- Commandes : liste, détail, changement d'état, facture imprimable. Partout
+  (web et application) le montant est **`montantCommercant`** = total −
+  livraison − frais de service : ses articles, remise déduite. La livraison
+  qu'il assure lui-même s'affiche sur sa ligne
+- Nouvelle commande qui sonne aussi sur `/merchant` (toutes ses boutiques)
+- **Reversements** (`/merchant/[orgId]/payouts`) : un relevé par semaine
 - Horaires **service par service** (midi et soir dans la même journée,
   fermetures après minuit), créneaux de retrait, ouverture et fermeture
   immédiate
@@ -147,8 +177,21 @@ scripts de vérification (voir §6).
   de leur examen, motif lisible en cas de refus
 - **Tant que le dossier n'est pas validé, ni mise en ligne ni course proposée**
 - Passage en ligne, position transmise
+- Pièces : identité, permis, assurance, carte grise (seule l'identité à vélo)
+  et, pour tous, le **sac isotherme** (photo ou facture) — sans lui, pas de
+  validation. Dépôt en photo ou en **PDF**. La liste vient du serveur
+- Inscription possible **dans l'application** (écran « Devenir livreur »)
 - Courses attribuées automatiquement au livreur disponible le plus proche
-- Acceptation, refus, étapes de la course, rémunération calculée
+- Acceptation, refus, étapes de la course, rémunération calculée. Il voit
+  **son gain** (`payout`, figé à l'attribution), jamais le total du client
+- **Tournée** (`tournee.service.ts`) : jusqu'à `driverMaxCourses` courses
+  (3 par défaut). Une course rejoint la tournée si son client est à
+  `driverGroupClientKm` d'un autre ou sur le trajet, et si son commerce est le
+  même ou à `driverGroupDetourKm` de détour. Un **lot** (`batchId`) se propose
+  et s'accepte d'un bloc ; une course « sur votre trajet » s'ajoute en route.
+  `GET /api/drivers/tournee` rend les arrêts dans l'ordre
+- **Écran de fin de course** : gain, distance, durée, heures, mode de remise,
+  gains du jour (`bilanCourse`, renvoyé par `GET /api/drivers/deliveries/:id`)
 - **Sait s'il est payé** : ce qui reste dû, ce qui est arrêté et attend le
   virement, ce qui est arrivé, et le détail de chaque relevé
 - **La prise en charge se déverrouille au commerce** : à moins de 150 m, un
@@ -159,9 +202,38 @@ scripts de vérification (voir §6).
 - **Prouve la remise** : le code du client, vérifié seul au quatrième chiffre,
   ou la photo du dépôt prise avec l'appareil du téléphone, que le client voit
 - **Est noté par ses clients**, et lit leurs remarques sur son tableau de bord
+- **Client injoignable** : attente de 6 minutes
+  (`POST /api/drivers/deliveries/:id/attente`, `OrderDelivery.customerWaitStartedAt`)
+  avant que le serveur accepte la photo du dépôt. **« Tout va bien ? »** :
+  immobile plus de 3 minutes hors commerce et client, il confirme ou appelle
+  le 112, le support reçoit sa position
+- **Application** : course gardée et étapes mises en file **sans réseau**
+  (envoyées au retour, `effectueLe` garde l'heure réelle) ; position en
+  **arrière-plan** (expo-location + expo-task-manager) ; course proposée
+  acceptable depuis la notification, téléphone verrouillé ; thème sombre,
+  clair ou comme le téléphone
+- **Suppression du compte livreur** (application et `/suppression-compte`) :
+  `POST /api/drivers/me/suppression` passe le livreur `INACTIVE`, refusée
+  pendant une course, et en `409 IBAN_REQUIRED` tant qu'il reste de l'argent
+  dû sans IBAN valide ; `DriverPayoutService.soldeFinal` annonce le dernier
+  versement et son lundi. Son compte client ZupEat reste actif
 
-### La plateforme (superowner)
-- Commerçants : formule, suspension, fermeture, restauration depuis sauvegarde
+### La plateforme (superowner et équipe)
+- **Un seul panneau, `/superowner`**, sur `manager.zupone.com` : `/admin`,
+  `/super-admin` et le routeur `/api/super-admin` ont été supprimés. Le
+  routeur `/api/admin` reste, des pages superowner s'en servent
+- **Équipe et rôles** : SuperAdmin, Administrateur, Support (non supprimables)
+  et les rôles créés par le superowner (« Facturation »…), supprimables une fois
+  sans membre. Chaque rôle coche, **section par section**
+  (`SECTIONS`, `permissions-plateforme.service.ts`), la lecture ou la
+  modification. **Un rôle par plateforme** (`AccesEquipe`, `Plateforme` :
+  `EAT`, `DRIVE`) ; `User.platformRole` a disparu. La gestion de l'équipe et
+  des rôles reste au superowner seul. Les chiffres financiers ne partent
+  qu'aux rôles qui ont `billing`
+- Commerçants : formule, suspension, fermeture (**section à part**,
+  `organizations-close` : elle archive puis efface à 60 jours ; le Support
+  suspend et réactive mais ne ferme pas), réouverture depuis sauvegarde
+  (section Organisations)
 - Formules réglables : nom, prix, quota de boutiques, **commission sur les
   ventes** — deux taux par formule : propre livraison, et livreurs de la
   plateforme (plus élevé) —, arguments de vente
@@ -175,7 +247,18 @@ scripts de vérification (voir §6).
   de la plateforme, ils sortent de son chiffre d'affaires et lui sont réclamés
   avec la commission du mois (`fraisDusALaPlateforme`, commandes livrées
   seulement)
-- Facturation : commission du mois par commerçant, avec le détail par commande
+- Facturation : commission du mois par commerçant, avec le détail par commande,
+  **seulement pour les commandes d'avant `PAYOUTS_START_DATE`** : ensuite, la
+  commission est retenue sur le reversement de la semaine
+- **Versements SEPA** (`/superowner/versements`) : relevés commerçants
+  (`MerchantPayout`) et livreurs de la semaine, fichier `pain.001.001.03`
+  unique, IBAN contrôlés, bénéficiaires invalides écartés, « marquer le lot
+  versé »
+- **Pièces** : notification à chaque dépôt (`notifierPlateforme`),
+  prévisualisation (le type réel est lu dans les premiers octets, les anciens
+  `.bin` compris), **correction de la date d'expiration** d'une pièce
+  commerçant ou livreur (journalisée, l'intéressé prévenu, une pièce expirée
+  redatée repart en examen)
 - **Boutiques** : une fiche par commerce, avec la correction des seuls champs
   dont la plateforme répond (voir la règle ci-dessous)
 - **Dossier d'un commerçant** : son identité de facturation, reportée sur sa
@@ -187,6 +270,13 @@ scripts de vérification (voir §6).
 - **Versements** : ce qu'elle doit et à qui, arrêté des relevés d'une période,
   versement avec sa référence, annulation d'un relevé non versé
 - Santé du système : cinq relevés chiffrés et la conduite à tenir
+- **Surveillance** (`/superowner/monitoring`) : trafic, serveur, services
+  externes, tâches de fond, pannes 5xx et erreurs des navigateurs ; vigie
+  toutes les 30 s qui ouvre et ferme des incidents ; disponibilité relevée
+  chaque minute et gardée 90 jours (`UptimeCheck`) ; sonde externe par
+  GitHub Actions (`.github/workflows/disponibilite.yml`)
+- Réglages de la **tournée** dans Configuration système (`driverMaxCourses` de
+  1 à 5, `driverGroupClientKm`, `driverGroupDetourKm`), et le thème du site
 - Journal des actions et journal des accès (avec IP et durée réelles)
 - Sauvegardes, mode maintenance, clés d'API, webhooks
 - Support : tous les tickets, y compris archivés, réponses, priorités
@@ -224,7 +314,9 @@ le site, barre latérale réparée.
 
 **Espace plateforme**
 Les trois espaces d'administration (`/admin`, `/super-admin`, `/superowner`)
-réunis sous `/superowner` avec redirections. Analytics, journal, support,
+réunis sous `/superowner`, puis les deux premiers supprimés pour de bon : ils
+contournaient les rôles (`POST /api/super-admin/admins` nommait un
+administrateur sans passer par l'équipe). Analytics, journal, support,
 administrateurs, réglages rendus opérationnels. Clés d'API, webhooks,
 sauvegardes (téléchargement, restauration, suppression), audit de sécurité,
 mode maintenance réellement appliqué. Suppression des treize routes fictives.
@@ -278,6 +370,33 @@ reste qu'une, `/store/<slug>` ; les anciennes adresses redirigent. Le panier
 global (`cart-context`) a disparu avec l'ancien tunnel `/client/checkout` :
 seul `lib/paniers.ts`, un panier par commerce, subsiste.
 
+**Le groupe ZupOne et son équipe**
+Marque visible ZupEat partout (site, courriels, applications, fiches des
+stores, identifiants `com.amir_games.zupeat*`, cookie `ZUPEAT_REGION`, en-têtes
+`x-zupeat-*`) ; ZupOne pour le compte et l'équipe. Rôles cochables, rôles
+personnalisés, un rôle par plateforme, domaine propre au panneau de l'équipe,
+barre latérale en tiroir sur téléphone.
+
+**L'argent juste pour chacun**
+Chacun voyait le total payé par le client comme si c'était le sien : le
+commerçant comptait dans son chiffre la livraison du livreur et les frais de
+service, le livreur lisait 20,25 € pour une course qui lui rapportait 5 €, le
+client un « Total HT » faux et un suivi qui oubliait la remise, et des prix
+saisis HT faisaient payer plus que le total annoncé. Puis **les reversements
+hebdomadaires** : ce que la plateforme doit à chaque commerçant, figé chaque
+lundi, et le fichier SEPA qui les paie avec les livreurs — la facturation
+mensuelle cessant de réclamer ce que le reversement retient déjà.
+
+**L'application livreur**
+Tournée de trois courses, course sans réseau, position téléphone verrouillé,
+acceptation depuis la notification, client injoignable, « Tout va bien ? »,
+écran de fin, dépôt de pièces en PDF, inscription et suppression du compte
+dans l'application, préparation de la publication (`PUBLICATION.md`).
+
+**Surveillance**
+Métriques en mémoire, vigie, incidents et alertes, disponibilité sur 90 jours,
+sonde externe.
+
 **Infrastructure de vérification**
 Les scripts de vérification versés dans le dépôt, un `README.md`, et le présent
 document.
@@ -298,10 +417,16 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 48 | **1566** |
-| **Navigateur** (`frontend/scripts/`) | 27 | **716** |
+| **API** (`backend/scripts/verification/`) | 54 | **1775** |
+| **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
 
-Tout est vert au dernier passage complet (24 septembre).
+Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1744
+contrôles dans la suite complète, plus les 31 de `verif-paiement`, qui se joue
+à part contre une API à Stripe actif (voir le `LISEZ-MOI`) : son interruption
+dans la suite complète est attendue.
+
+La suite navigateur n'a pas été rejouée depuis le 24 septembre (716 contrôles,
+alors 27 suites).
 
 Trois réglages rendent les suites indépendantes des nouveautés du produit :
 - la remise à zéro pose une configuration aux **frais de service nuls**
@@ -387,6 +512,11 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
   (y compris sous Windows) : il laisserait la base en avance sur l'historique.
 - Une base créée avant la remise à plat des migrations s'aligne une fois par
   `npx prisma migrate resolve --applied 0001_initial_schema`.
+- `npm run dev` passe par `predev` (`prisma migrate deploy && prisma
+  generate`) : sans lui, un serveur démarré après un changement de schéma
+  gardait l'ancien client (« Unknown argument batchId »).
+- Le backend est en **ESM** : un `require(...)` passe sous `tsx` mais casse une
+  fois compilé (`node dist/server.js`). Toujours `import`.
 
 **Scripts de vérification**
 - `sqlScalaire()` ne renvoie que **la première colonne**. Jamais
@@ -407,7 +537,34 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 - `Order` **n'a pas de `orderNumber`** : les commandes se désignent par leur
   `id`, que l'interface raccourcit à ses huit derniers caractères.
 
+**Droits de l'équipe**
+- Toute route d'administration passe par `exigerPermission(routeur,
+  plateforme)` : le superowner passe partout, un membre seulement si **une
+  section couvre la route** (`sectionDeLaRoute`) — lecture pour un `GET`,
+  modification sinon. Une nouvelle route superowner sans section répond 403 à
+  toute l'équipe : l'ajouter à la table des sections. Les routeurs actuels
+  sont ceux de ZupEat (`EAT`).
+
+**Applications mobiles**
+- L'adresse de l'API se trouve seule : `EXPO_PUBLIC_API_URL` si définie,
+  sinon, en développement, la machine qui sert Metro (port 3001), sinon
+  `localhost`. Ne jamais écrire `localhost` en dur : sur un téléphone, c'est le
+  téléphone.
+- Les modules natifs ajoutés (`expo-task-manager`, `expo-file-system`,
+  `expo-image-manipulator`…) exigent une recompilation ; ceux qui peuvent
+  manquer dans une ancienne version sont chargés à la demande.
+- Les envois de fichiers passent par `FileSystem.uploadAsync` (multipart
+  natif) : le `fetch` multipart de React Native échouait sur Android.
+
+**Fichiers servis par l'API**
+- Helmet pose `Cross-Origin-Resource-Policy: same-origin` et interdit
+  l'encadrement : l'aperçu d'une pièce dans le panneau télécharge le fichier et
+  l'affiche en URL `blob:` plutôt que de le charger directement.
+
 **Next.js**
+- Next 16 écrit `frontend/AGENTS.md` (et `CLAUDE.md`) à chaque `next dev` : ils
+  sont versionnés, et demandent de lire `node_modules/next/dist/docs` avant
+  d'écrire du code.
 - `useSearchParams()` dans un composant client impose une frontière `Suspense`
   au build. Lire `window.location.search` dans un `useEffect` à la place.
 - Un commentaire JSX `{/* … */}` ne peut pas être **frère** de l'élément que
@@ -454,13 +611,11 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
   - catalogue du commerçant (produits, catégories, horaires, zones,
     promotions) et vitrine, dont le panier se remet d'accord avec le menu
     (plat retiré ou épuisé sorti, nouveau prix repris) ;
-  - tickets (support du commerçant, tickets de la plateforme et du
-    super-admin, conversation ouverte) ;
+  - tickets (support du commerçant, tickets de la plateforme, conversation
+    ouverte) ;
   - plateforme : commerçants (liste, fiche, dossier), livreurs (file et
     dossier ouvert), versements, statistiques, boutiques ; côté livreur, son
     dossier et ses versements — `verif-catalogue-support-direct`.
-- `/admin/orders` et `/admin/orders/[id]` ne sont pas branchées : ce sont des
-  brouillons (boutique codée en dur, fiche qui ne charge rien).
 
 **La vitrine (`/store/<slug>`)**
 - Son panier est un **panneau replié** : un script qui veut lire ses lignes doit
@@ -548,6 +703,23 @@ Deux invariants à ne jamais casser :
   commission (`deliveryFeesDue`, `totalDue`). `amount` reste la seule
   commission. Le jour où Stripe Connect sera branché, le partage se fera au
   paiement et ce relevé n'aura plus de frais à réclamer.
+- **Le client suivant ne se montre qu'une fois le précédent livré.** Tant
+  qu'une commande de la tournée attend au commerce, le serveur ne rend le
+  client d'aucune course (champ `masque`) et refuse remise, attente et photo
+  (`409 TOURNEE_RETRAITS`). Toutes en main, l'ordre des remises est figé
+  (`OrderDelivery.ordreRemise`) et seule la première se remet
+  (`409 TOURNEE_ORDRE`). Le livreur n'est libéré qu'à la fin de sa dernière
+  course (`DispatchService.liberer`).
+- **Ce qu'un reversement retient ne se facture pas au mois.** La facturation
+  mensuelle ne compte que les commandes d'avant `PAYOUTS_START_DATE` : sinon
+  le commerçant payait deux fois sa commission et ses frais.
+- **Un livreur qui part est payé.** L'arrêté du lundi et le fichier SEPA ne
+  regardent pas le statut du livreur ; la suppression est refusée tant qu'il
+  reste un montant dû sans IBAN valide, et le support ne doit rien effacer
+  avant le dernier versement (`Driver.suppressionDemandeeLe`).
+- **À chacun son montant.** Commerçant : `montantCommercant` (total − livraison
+  − frais de service). Livreur : `payout`. Client : le détail complet. Aucun
+  écran ne présente le total du client comme l'argent d'un autre.
 - **Le code de remise appartient au client, jamais au livreur.** Aucune route
   côté livreur ne le rend ; il sait seulement qu'un code est attendu et combien
   d'essais lui restent. Cinq essais ratés le bloquent, et la photo du dépôt
@@ -723,6 +895,15 @@ Le carnet ci-dessous.
 
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
+- **Des suites pour les derniers chantiers** : reversements commerçants et
+  fichier SEPA, rôles de l'équipe et `exigerPermission`, duplication de
+  boutique, livraison offerte, et côté livreur la pause, la perte du signal,
+  le support en direct et les statistiques.
+- **ZupDrive** et la vitrine du groupe : prévus par `Plateforme.DRIVE` et les
+  domaines, rien d'autre n'est écrit.
+- **Publier les applications** : icônes définitives, comptes des stores, et un
+  service de cartes et d'itinéraires hébergé à la place des serveurs publics
+  d'OpenStreetMap et d'OSRM.
 - **Se servir de la note à l'attribution** : elle est écrite et lue, mais le
   dispatch départage toujours à la distance seule.
 - **Prisma 7 → 8**, rien d'urgent : le projet est sur Prisma 7.10, toujours

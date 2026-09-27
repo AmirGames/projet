@@ -105,7 +105,10 @@ check('gain conforme au barème plutôt qu aux frais client', revenus?.total ===
 check('une course comptabilisée', revenus?.deliveryCount === 1, `=${revenus?.deliveryCount}`);
 check('gain du jour renseigné', revenus?.today === remuneration, `=${revenus?.today}`);
 check('détail de la course présent', (revenus?.deliveries || []).length === 1, `n=${revenus?.deliveries?.length}`);
-check('montant de la commande rappelé', revenus?.deliveries?.[0]?.orderAmount === 30, `=${revenus?.deliveries?.[0]?.orderAmount}`);
+// Le total payé par le client passait pour le gain du livreur : la course
+// n'affiche plus que ce qu'elle lui rapporte.
+check('gain de la course détaillé', revenus?.deliveries?.[0]?.earning === remuneration, `=${revenus?.deliveries?.[0]?.earning}`);
+check('le total payé par le client n\'est pas envoyé', !('orderAmount' in (revenus?.deliveries?.[0] || {})), JSON.stringify(revenus?.deliveries?.[0]));
 
 const compteurs = await j(await get('/api/drivers/me', dToken));
 check('compteur de courses incrémenté', compteurs?.data?.completedDeliveries === 1, `=${compteurs?.data?.completedDeliveries}`);
