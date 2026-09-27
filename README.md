@@ -342,7 +342,7 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1711 contrôles, 54 suites
+# API : 1775 contrôles, 54 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy
@@ -358,10 +358,8 @@ VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run
 `backend/scripts/verification/LISEZ-MOI.md` et `frontend/scripts/LISEZ-MOI.md`
 détaillent chaque suite et ses prérequis.
 
-Au dernier passage de l'API (27 septembre), quatre contrôles échouent dans des
-suites que les derniers chantiers ont laissées en arrière (l'ancien espace
-`/super-admin`, le gain du livreur, l'attente avant la photo du dépôt) ;
-`CONNAISSANCES-PROJET.md` §6 les détaille.
+Au dernier passage de l'API (27 septembre), tout est vert. `verif-paiement` se
+joue contre une API où Stripe est actif (voir le `LISEZ-MOI`).
 
 > La base visée est **vidée** à chaque script. Un garde-fou refuse de s'exécuter
 > si son nom ne contient pas `test`.

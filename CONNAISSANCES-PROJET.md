@@ -417,23 +417,13 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 54 | **1711** |
+| **API** (`backend/scripts/verification/`) | 54 | **1775** |
 | **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
 
-Dernier passage de la suite d'API : **27 septembre**, 1707 réussis, 4 échoués,
-et deux scripts interrompus — des suites que les derniers chantiers ont
-laissées en arrière, pas des pannes du produit :
-
-- `verif-admin-motdepasse` (3) appelle encore `POST /api/super-admin/admins`,
-  supprimé avec l'espace `/super-admin` ; un membre de l'équipe se nomme
-  désormais depuis `/superowner` ;
-- `verif-livreur-admin` (1) attend le « montant de la commande » dans les
-  revenus du livreur, qui ne montrent plus que son gain ;
-- `verif-parcours-livreur` refuse un PDF en 409 (la photo n'est plus acceptée
-  avant les 6 minutes d'attente) puis vise `localhost:3001` en dur au lieu de
-  `VERIF_API_URL` ;
-- `verif-paiement` se joue contre une API à Stripe actif (voir le `LISEZ-MOI`) :
-  son interruption dans la suite complète est attendue.
+Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1744
+contrôles dans la suite complète, plus les 31 de `verif-paiement`, qui se joue
+à part contre une API à Stripe actif (voir le `LISEZ-MOI`) : son interruption
+dans la suite complète est attendue.
 
 La suite navigateur n'a pas été rejouée depuis le 24 septembre (716 contrôles,
 alors 27 suites).
