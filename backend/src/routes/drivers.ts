@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { ibanNormalise, ibanValide } from "../utils/sepa";
 import { db } from "../services/db";
 import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
 import { ApiError } from "../middleware/errorHandler";
@@ -420,6 +421,37 @@ router.get("/support/unread", authMiddleware, async (req: Request, res: Response
 });
 
 // GET /drivers/me - Get current driver info (protected)
+const compteSchema = z.object({
+  iban: z.string().min(15).max(40),
+  bic: z.string().max(11).optional().nullable(),
+  accountHolder: z.string().min(2).max(70),
+});
+
+// PUT /drivers/me/bank-account - Le compte où recevoir ses versements du lundi
+router.put("/me/bank-account", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const corps = compteSchema.parse(req.body);
+
+    if (!ibanValide(corps.iban)) {
+      throw new ApiError(400, "Cet IBAN n'est pas valide : vérifiez-le.", "INVALID_IBAN");
+    }
+
+    await db.driver.update({
+      where: { id: livreur.id },
+      data: {
+        iban: ibanNormalise(corps.iban),
+        bic: corps.bic ? corps.bic.replace(/\s+/g, "").toUpperCase() : null,
+        accountHolder: corps.accountHolder.trim(),
+      },
+    });
+
+    res.json({ success: true, message: "Compte enregistré" });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/me", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.userId as string;
@@ -449,6 +481,10 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         rating: driver.totalRatings > 0 ? Number(driver.rating) : null,
         avis: driver.totalRatings,
         totalEarnings: driver.totalEarnings,
+        // Le compte des versements : jamais l'IBAN entier.
+        compte: driver.iban
+          ? { ibanFin: ibanNormalise(driver.iban).slice(-4), titulaire: driver.accountHolder, valide: ibanValide(driver.iban) }
+          : null,
         completedDeliveries: driver.totalDeliveries,
         // isOnline est ce que le livreur a choisi, isAvailable ce que
         // l'attribution en a fait. L'application a besoin des deux.

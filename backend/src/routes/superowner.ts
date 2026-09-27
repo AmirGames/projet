@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { MerchantPayoutService } from "../services/merchant-payout.service";
 import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
@@ -2229,6 +2230,120 @@ router.patch("/stores/:storeId", authMiddleware, isSuperOwner, async (req: Reque
  * relevé prend les courses dues d'une période ; le payer marque le relevé
  * versé. Une course déjà portée par un relevé n'est jamais reprise.
  */
+
+// ─── Reversements commerçants et fichier SEPA ───────────────────────────────
+//
+// Chaque lundi 00 h 00 (Bruxelles), la semaine est arrêtée d'elle-même. La
+// plateforme télécharge un seul fichier SEPA pour tous les versements en
+// attente, l'importe dans sa banque, puis marque le lot versé.
+
+// GET /superowner/merchant-payouts - Les relevés de reversement
+router.get("/merchant-payouts", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({
+      success: true,
+      data: await MerchantPayoutService.lister({
+        status: req.query.status as string | undefined,
+        orgId: req.query.orgId as string | undefined,
+      }),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/merchant-payouts/:id - Un relevé de reversement
+router.get("/merchant-payouts/:id", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await MerchantPayoutService.detail(req.params.id as string) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/versements/arreter - Arrêter la semaine écoulée maintenant
+router.post("/versements/arreter", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const bilan = await MerchantPayoutService.arreterLaSemaine();
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "DRAW_WEEKLY_PAYOUTS",
+        target: "all",
+        changes: bilan as any,
+      },
+    });
+
+    res.status(201).json({ success: true, data: bilan });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/versements/sepa - Le lot à verser : total, inclus, écartés
+router.get("/versements/sepa", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { xml, ...lot } = await MerchantPayoutService.fichierDesVersements();
+    res.json({ success: true, data: { ...lot, pret: Boolean(xml) } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/versements/sepa.xml - Le fichier à importer dans la banque
+router.get("/versements/sepa.xml", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const lot = await MerchantPayoutService.fichierDesVersements();
+    if (!lot.xml) throw new ApiError(400, "Aucun versement en attente", "NOTHING_TO_PAY");
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "EXPORT_SEPA_FILE",
+        target: lot.reference,
+        changes: { total: lot.total, nombre: lot.nombre, ecartes: lot.ecartes.length } as any,
+      },
+    });
+
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${lot.reference}.xml"`);
+    res.send(lot.xml);
+  } catch (err) {
+    next(err);
+  }
+});
+
+const lotSchema = z.object({
+  commercants: z.array(z.string()).default([]),
+  livreurs: z.array(z.string()).default([]),
+  reference: z.string().max(100).optional(),
+});
+
+// POST /superowner/versements/payer - Marquer le lot importé comme versé
+router.post("/versements/payer", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const corps = lotSchema.parse(req.body);
+    const bilan = await MerchantPayoutService.payerLeLot(
+      { commercants: corps.commercants, livreurs: corps.livreurs },
+      { method: "BANK_TRANSFER", reference: corps.reference },
+      req.userId as string
+    );
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "PAY_SEPA_BATCH",
+        target: corps.reference || "sepa",
+        changes: bilan as any,
+      },
+    });
+
+    res.json({ success: true, data: bilan });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // GET /superowner/payouts - Les relevés, filtrés par état
 router.get("/payouts", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {

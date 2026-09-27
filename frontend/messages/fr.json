@@ -45,6 +45,7 @@
       "stores": "Boutiques",
       "drivers": "Livreurs",
       "payouts": "Versements",
+      "sepaPayouts": "Versements SEPA",
       "analytics": "Analytics",
       "billing": "Facturation",
       "formules": "Formules",

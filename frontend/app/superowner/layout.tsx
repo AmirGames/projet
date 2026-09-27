@@ -108,6 +108,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
         { label: t('nav.stores'), icon: Store, href: '/superowner/stores' },
         { label: t('nav.drivers'), icon: Truck, href: '/superowner/drivers' },
         { label: t('nav.payouts'), icon: Banknote, href: '/superowner/payouts' },
+        { label: t('nav.sepaPayouts'), icon: Banknote, href: '/superowner/versements' },
         { label: t('nav.analytics'), icon: TrendingUp, href: '/superowner/analytics' },
         { label: t('nav.billing'), icon: CreditCard, href: '/superowner/billing' },
         { label: t('nav.formules'), icon: Layers, href: '/superowner/formules' },
