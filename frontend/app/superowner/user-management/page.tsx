@@ -11,7 +11,7 @@ interface Admin {
   id: string;
   email: string;
   name: string;
-  role: 'SUPEROWNER' | 'ADMIN' | 'MODERATOR';
+  role: 'SUPEROWNER' | 'SUPER_ADMIN' | 'ADMIN' | 'SUPPORT';
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   lastLogin: string;
   createdAt: string;
@@ -118,11 +118,31 @@ export default function UserManagementPage() {
     }
   };
 
+  const handleChangeRole = async (adminId: string, role: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${API_URL}/api/superowner/admins/${adminId}/role`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || data.error?.message || t('roleChangeError'));
+      }
+      setAdmins((liste) => liste.map((a) => (a.id === adminId ? { ...a, role: role as Admin['role'] } : a)));
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('genericError'));
+    }
+  };
+
   const getRoleColor = (role: string) => {
     const colors: { [key: string]: string } = {
       SUPEROWNER: 'bg-red-600',
       ADMIN: 'bg-blue-600',
-      MODERATOR: 'bg-purple-600',
+      SUPER_ADMIN: 'bg-orange-600',
+      SUPPORT: 'bg-purple-600',
     };
     return colors[role] || 'bg-gray-600';
   };
@@ -194,8 +214,9 @@ export default function UserManagementPage() {
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
               >
+                <option value="SUPER_ADMIN">{t('roleSuperAdmin')}</option>
                 <option value="ADMIN">{t('roleAdmin')}</option>
-                <option value="MODERATOR">{t('roleModerator')}</option>
+                <option value="SUPPORT">{t('roleSupport')}</option>
               </select>
             </div>
             <div className="flex gap-2">
@@ -242,9 +263,22 @@ export default function UserManagementPage() {
                   <td className="px-6 py-4 text-sm">{admin.email}</td>
                   <td className="px-6 py-4 text-sm">{admin.name}</td>
                   <td className="px-6 py-4 text-sm">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold text-white ${getRoleColor(admin.role)}`}>
-                      {admin.role}
-                    </span>
+                    {admin.role === 'SUPEROWNER' ? (
+                      <span className={`px-2 py-1 rounded text-xs font-semibold text-white ${getRoleColor(admin.role)}`}>
+                        {t('roleSuperOwner')}
+                      </span>
+                    ) : (
+                      <select
+                        value={admin.role}
+                        onChange={(e) => handleChangeRole(admin.id, e.target.value)}
+                        aria-label={t('colRole')}
+                        className={`px-2 py-1 rounded text-xs font-semibold text-white border-0 ${getRoleColor(admin.role)}`}
+                      >
+                        <option value="SUPER_ADMIN">{t('roleSuperAdmin')}</option>
+                        <option value="ADMIN">{t('roleAdmin')}</option>
+                        <option value="SUPPORT">{t('roleSupport')}</option>
+                      </select>
+                    )}
                   </td>
                   <td className={`px-6 py-4 text-sm font-semibold ${getStatusColor(admin.status)}`}>
                     {admin.status}

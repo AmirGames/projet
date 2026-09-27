@@ -73,7 +73,8 @@
       "accessLogs": "Access Log",
       "driverSupport": "Driver chat",
       "reviews": "Reported reviews",
-      "monitoring": "Monitoring"
+      "monitoring": "Monitoring",
+      "roles": "Roles & access"
     },
     "openMenu": "Open menu",
     "toggleSidebar": "Collapse or expand the menu"
@@ -488,8 +489,8 @@
     "genericError": "Something went wrong"
   },
   "superownerUserManagement": {
-    "title": "Admin Management",
-    "subtitle": "Manage users with superowner access",
+    "title": "Platform team",
+    "subtitle": "Team members and their group. What each group can do is set in “Roles & access”.",
     "addAdmin": "Add Admin",
     "emailNameRequired": "Email and name required",
     "createError": "Error creating the admin",
@@ -500,7 +501,7 @@
     "name": "Name",
     "namePlaceholder": "Full name",
     "role": "Role",
-    "roleAdmin": "Admin",
+    "roleAdmin": "Administrator",
     "roleModerator": "Moderator",
     "create": "Create",
     "cancel": "Cancel",
@@ -516,7 +517,11 @@
     "previous": "Previous",
     "next": "Next",
     "loadError": "Error loading admins",
-    "genericError": "Something went wrong"
+    "genericError": "Something went wrong",
+    "roleSuperAdmin": "SuperAdmin",
+    "roleSupport": "Support",
+    "roleSuperOwner": "SuperOwner",
+    "roleChangeError": "Could not change the role"
   },
   "superownerFormules": {
     "loading": "Loading plans…",
@@ -2116,5 +2121,26 @@
     "submit": "Duplicate",
     "submitting": "Duplicating…",
     "error": "Duplication failed."
+  },
+  "superownerRoles": {
+    "title": "Roles & access",
+    "subtitle": "Tick, for each group, the sections it can view or edit. The SuperOwner sees everything and is the only one who can change these rights.",
+    "section": "Section",
+    "view": "View",
+    "edit": "Edit",
+    "members": "{count, plural, =0 {no members} one {# member} other {# members}}",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Permissions saved",
+    "unsaved": "Unsaved changes",
+    "reset": "Discard changes",
+    "loadError": "Could not load roles",
+    "saveError": "Could not save",
+    "allView": "View all",
+    "allEdit": "Edit all",
+    "none": "Remove all",
+    "deniedTitle": "Access denied",
+    "deniedText": "Your role does not open this section. Ask the SuperOwner to grant you access.",
+    "yourRole": "Your role: {role}"
   }
 }

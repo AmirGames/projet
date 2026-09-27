@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
+import { exigerPermission } from "../services/permissions-plateforme.service";
 import { authMiddleware, oublierCompte } from "../middleware/auth";
 import { AuthService } from "../services/auth.service";
 import { MerchantClosureService } from "../services/merchant-closure.service";
@@ -26,15 +27,9 @@ const router = Router();
 
 // Middleware to check if user is system admin
 // Idem : `authMiddleware` a déjà établi que le compte existe.
-const isSystemAdmin = (req: Request, _res: Response, next: NextFunction) => {
-  if (!req.compte?.isSystemAdmin) {
-    return next(
-      new ApiError(403, "Accès refusé - Administrateur système requis", "FORBIDDEN")
-    );
-  }
-
-  next();
-};
+// Le superowner passe partout ; un membre de l'équipe selon les permissions
+// de son groupe, cochées depuis l'espace superowner.
+const isSystemAdmin = exigerPermission("super-admin");
 
 // ============================================================================
 // DASHBOARD
