@@ -34,6 +34,8 @@ export interface DeliveryZoneData {
   opacity?: number;
   baseFee: number;
   minOrder: number;
+  /** Livraison offerte dès ce montant d'articles ; nul pour jamais. */
+  freeAbove?: number | null;
   deliveryMinutes?: number | null;
   isActive?: boolean;
 }
@@ -48,6 +50,7 @@ export interface ZoneLisible {
   opacity: number;
   baseFee: number;
   minOrder: number;
+  freeAbove: number | null;
   deliveryMinutes: number | null;
   isActive: boolean;
 }
@@ -63,6 +66,11 @@ export interface Verdict {
   frais: number;
   /** Le montant minimum de commande. */
   minimum: number;
+  /**
+   * Livraison offerte dès ce montant d'articles (zone du commerçant). Nul :
+   * les frais s'appliquent quel que soit le panier.
+   */
+  gratuiteDes?: number | null;
   /** Pourquoi ce n'est pas livrable, en clair. */
   raison: string;
   /** Vrai quand aucune zone n'est définie : on retombe sur le forfait boutique. */
@@ -87,6 +95,7 @@ const lisible = (zone: any): ZoneLisible => ({
   opacity: Number(zone.opacity),
   baseFee: Number(zone.baseFee),
   minOrder: Number(zone.minOrder),
+  freeAbove: zone.freeAbove == null ? null : Number(zone.freeAbove),
   deliveryMinutes: zone.deliveryMinutes ?? null,
   isActive: zone.isActive,
 });
@@ -110,7 +119,7 @@ export class DeliveryZoneService {
       throw new ApiError(400, "Une zone a besoin d'un nom", "MISSING_NAME");
     }
 
-    if (data.baseFee < 0 || data.minOrder < 0) {
+    if (data.baseFee < 0 || data.minOrder < 0 || (data.freeAbove ?? 0) < 0) {
       throw new ApiError(400, "Ni les frais ni le minimum ne peuvent être négatifs", "INVALID_AMOUNT");
     }
 
@@ -159,6 +168,7 @@ export class DeliveryZoneService {
         opacity: data.opacity ?? 0.35,
         baseFee: data.baseFee,
         minOrder: data.minOrder || 0,
+        freeAbove: data.freeAbove ?? null,
         deliveryMinutes: data.deliveryMinutes ?? null,
         isActive: data.isActive ?? true,
       },
@@ -196,7 +206,11 @@ export class DeliveryZoneService {
       );
     }
 
-    if ((data.baseFee !== undefined && data.baseFee < 0) || (data.minOrder !== undefined && data.minOrder < 0)) {
+    if (
+      (data.baseFee !== undefined && data.baseFee < 0) ||
+      (data.minOrder !== undefined && data.minOrder < 0) ||
+      (data.freeAbove != null && data.freeAbove < 0)
+    ) {
       throw new ApiError(400, "Ni les frais ni le minimum ne peuvent être négatifs", "INVALID_AMOUNT");
     }
 
@@ -244,6 +258,7 @@ export class DeliveryZoneService {
           ...(data.opacity !== undefined ? { opacity: data.opacity } : {}),
           ...(data.baseFee !== undefined ? { baseFee: data.baseFee } : {}),
           ...(data.minOrder !== undefined ? { minOrder: data.minOrder } : {}),
+          ...(data.freeAbove !== undefined ? { freeAbove: data.freeAbove } : {}),
           ...(data.deliveryMinutes !== undefined ? { deliveryMinutes: data.deliveryMinutes } : {}),
           ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
         },
@@ -517,6 +532,7 @@ export class DeliveryZoneService {
       distanceKm: zone.type === "RADIUS" ? Number(distance.toFixed(2)) : null,
       frais: zone.baseFee,
       minimum: zone.minOrder,
+      gratuiteDes: zone.baseFee > 0 ? zone.freeAbove : null,
       raison: "",
       forfaitBoutique: false,
     };
@@ -632,6 +648,11 @@ export class DeliveryZoneService {
         )} €.`,
         "DELIVERY_BELOW_MINIMUM"
       );
+    }
+
+    // Le panier atteint le seuil de la zone : la livraison est offerte.
+    if (verdict.gratuiteDes != null && totalDesArticles >= verdict.gratuiteDes) {
+      return { ...verdict, frais: 0 };
     }
 
     return verdict;

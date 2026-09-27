@@ -64,6 +64,8 @@ const baseZoneSchema = z.object({
   opacity: z.number().min(0.1).max(0.9).optional(),
   baseFee: z.number().nonnegative("Les frais ne peuvent pas être négatifs"),
   minOrder: z.number().nonnegative("Le minimum ne peut pas être négatif").optional(),
+  // Livraison offerte dès ce montant d'articles. Nul pour la retirer.
+  freeAbove: z.number().positive("Le seuil doit être supérieur à zéro").nullable().optional(),
   deliveryMinutes: z.number().int().positive().max(600).nullable().optional(),
   isActive: z.boolean().optional(),
 });

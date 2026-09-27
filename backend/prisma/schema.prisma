@@ -1260,6 +1260,9 @@ model DeliveryZone {
 
   baseFee   Decimal @db.Decimal(10, 2)
   minOrder  Decimal @db.Decimal(10, 2)
+  /// Livraison offerte dès ce montant d'articles. Vide : jamais offerte
+  /// d'office, les frais de la zone s'appliquent toujours.
+  freeAbove Decimal? @db.Decimal(10, 2)
 
   // Relations
   store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
