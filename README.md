@@ -12,8 +12,13 @@ emporter ou à livrer.
 > une boutique, un menu, on commande sans compte, le commerçant suit sa commande
 > et un livreur — une fois son dossier validé par la plateforme — la prend en
 > charge. Le paiement en ligne par carte (Stripe) est confirmé par webhook et
-> remboursé automatiquement quand une commande est refusée. Rien n'est encore
-> déployé.
+> remboursé automatiquement quand une commande est refusée ; chaque lundi, la
+> plateforme arrête ce qu'elle doit aux commerçants et aux livreurs et en tire
+> un fichier de virements SEPA. Rien n'est encore déployé.
+>
+> ZupEat est la première plateforme du groupe **ZupOne** : un seul compte ZupOne
+> par personne, et une seule équipe qui administre toutes les plateformes du
+> groupe (ZupDrive, les courses VTC, viendra ensuite).
 
 ## Ce que fait la plateforme
 
@@ -26,11 +31,19 @@ emporter ou à livrer.
 - Garde **un panier par commerce** : passer d'un commerce à l'autre ne mélange rien
 - Commande **sans créer de compte** : coordonnées, adresse de livraison avec
   suggestions, ou créneau de retrait tenu aux heures d'ouverture réelles
-- Voit ses frais de livraison et le minimum de commande **avant** de valider
+- Voit ses frais de livraison et le minimum de commande **avant** de valider,
+  et ce qu'il lui manque pour la **livraison offerte** quand le commerce en
+  propose une (« Encore 4,50 € pour la livraison offerte »)
+- Paie **le prix affiché** : un commerçant qui saisit ses prix hors taxe les
+  voit présentés et facturés TTC, et le total annoncé est celui qui est payé
+- Retrouve sur son suivi et dans « Mes commandes » le **détail du total** :
+  sous-total, livraison, frais de service, remise, total, dont TVA
 - Suit sa commande sur une carte : distance restante, durée estimée, position
   du livreur — et un avertissement quand le livreur a perdu son signal GPS
 - Reçoit un **code de remise** à quatre chiffres, qu'il donne au livreur à la
-  porte — et sait ensuite comment sa commande a été remise
+  porte — et sait ensuite comment sa commande a été remise. Injoignable, il est
+  prévenu et voit sur son suivi les **6 minutes** d'attente du livreur avant un
+  dépôt en lieu sûr, dont il reçoit la photo et l'endroit
 - Est prévenu **par courriel et par SMS** quand un livreur prend sa commande,
   quand elle part du commerce (avec le code de remise) et quand elle est livrée
 - Retrouve une commande passée sans compte par son lien de suivi
@@ -40,6 +53,10 @@ emporter ou à livrer.
 - **Tout compte a un espace client**, commerçants et livreurs compris : ils
   commandent comme n'importe qui, et les commandes passées sans compte se
   rattachent au compte qui porte la même adresse électronique
+- **Supprime son compte ZupEat** depuis l'application : profil, adresses,
+  favoris et paniers effacés, commandes gardées sans lien pour la
+  comptabilité ; un espace livreur ou commerçant sur le même compte reste
+  actif
 
 ### Le commerçant
 - Inscription, puis **validation par la plateforme** : il prépare sa boutique
@@ -50,20 +67,31 @@ emporter ou à livrer.
 - **Prévenu 30 jours avant l'expiration** d'une pièce, dans son espace et par
   courriel ; le jour venu la pièce passe « expirée » et la plateforme l'apprend,
   sans que le commerce soit fermé d'office
-- Plusieurs boutiques par compte, selon la formule souscrite
+- Plusieurs boutiques par compte, selon la formule souscrite. Une boutique se
+  **duplique** : catalogue, taxes, zones, promotions, thème, horaires et
+  réglages repris, seuls le nom, l'adresse et le téléphone sont nouveaux.
+  L'adresse web (slug) se déduit toute seule du nom
 - Catalogue : catégories et plats réordonnables au glisser-déposer, déclinaisons,
   disponibilité basculable en direct (le client la voit changer sans recharger)
-- Commandes : liste, détail, changement d'état, facture imprimable
+- Commandes : liste, détail, changement d'état, facture imprimable. Il y lit
+  **le montant de ses articles** (remise déduite), pas le total payé par le
+  client : la livraison d'un livreur de la plateforme et les frais de service
+  ne sont pas à lui. Une nouvelle commande sonne aussi sur la page qui réunit
+  toutes ses boutiques
 - Horaires d'ouverture **service par service** : le midi et le soir dans la
   même journée, et les fermetures après minuit (17h30 – 01h00)
 - Créneaux de retrait, ouverture et fermeture immédiate
 - Zones de livraison en anneaux autour de la boutique, **réglées sur une carte** :
   il pose son commerce d'un clic, tire une poignée pour fixer le rayon et voit
-  ce qu'il couvre — rayon, frais et montant minimum par zone
+  ce qu'il couvre — rayon, frais, montant minimum et **livraison offerte dès**
+  un montant de panier, zone par zone
 - Genre du commerce (restaurant, épicerie, fleuriste…) et type de cuisine,
   demandés dès la création
 - Codes promo, moyens de paiement proposés, taxes, clientèle
 - Statistiques de vente, exports
+- **Reversements** : chaque semaine, un relevé figé de ses ventes moins la
+  commission et les retenues, ligne par ligne et expliqué ; un solde négatif
+  se reporte sur la semaine suivante
 - **Son profil** : identité de facturation, propriétaire du commerce, numéro de
   TVA, compte bancaire et justificatifs — la page dit ce qui manque encore pour
   être facturé et pour être payé. L'IBAN n'est jamais réaffiché en entier. Un
@@ -74,18 +102,33 @@ emporter ou à livrer.
 - Support par tickets, avec fil de discussion
 
 ### Le livreur
-- Inscription, puis **dossier examiné par la plateforme** : il dépose ses pièces
-  (identité, permis, assurance, carte grise — seule l'identité à vélo), suit leur
-  examen pièce par pièce, et lit le motif quand l'une est refusée
+- Inscription — sur le site ou dans l'application —, puis **dossier examiné par
+  la plateforme** : il dépose ses pièces (identité, permis, assurance, carte
+  grise — seule l'identité à vélo — et, pour tous, le **justificatif de sac
+  isotherme**), en photo ou en PDF, suit leur examen pièce par pièce, et lit le
+  motif quand l'une est refusée
 - Tant que son dossier n'est pas validé, il ne peut pas se mettre en ligne et
   aucune course ne lui est proposée
 - Passage en ligne, position transmise
 - Courses proposées automatiquement au livreur disponible le plus proche. Une
   course que tous ont laissée passer **repart pour un nouveau tour** trois
   minutes plus tard, trois fois au plus, sans que le commerçant ait à la relancer
+- **Jusqu'à trois courses à la fois** : les commandes qui vont au même endroit
+  se proposent en lot, et une course « sur votre trajet » peut s'ajouter en
+  route. La tournée fait **tous les retraits d'abord** ; le client suivant ne
+  s'affiche qu'une fois le précédent livré — verrou côté serveur
 - Acceptation, refus, étapes de la course. Une fois la course acceptée, il la
   voit sur une carte (commerce, client, lui-même) et lance le GPS de son
-  téléphone vers le commerce, puis vers le client
+  téléphone vers le commerce, puis vers le client. Il voit partout **son gain**,
+  jamais le total payé par le client, et un **écran de fin** récapitule chaque
+  course (gain, distance, durée, gains du jour)
+- Dans l'application : la course **continue sans réseau** (prise en charge et
+  remise partent au retour de la connexion), la position suit **téléphone
+  verrouillé**, et une course proposée s'accepte depuis la notification sans
+  déverrouiller
+- **Client injoignable** : appel ou SMS, puis 6 minutes d'attente avant le dépôt
+  photo. **« Tout va bien ? »** : immobile plus de 3 minutes en pleine course,
+  il confirme ou appelle le 112, et le support est prévenu
 - **Payé sur la distance du commerce au client** : frais fixe plus un tarif au
   kilomètre, les mêmes pour tous — le trajet jusqu'au commerce est affiché,
   pas payé
@@ -104,41 +147,65 @@ emporter ou à livrer.
 - **Prouve la remise** : le code du client, ou la photo du dépôt quand celui-ci
   est absent — sans preuve, la course ne se clôt pas
 - **Sait s'il est payé** : ce qui lui reste dû, ce qui est arrêté et attend le
-  virement, ce qui est arrivé — et le détail de chaque relevé
+  virement, ce qui est arrivé — et le détail de chaque relevé. Ses courses sont
+  arrêtées chaque lundi et virées sur l'IBAN qu'il a renseigné
+- **Supprime son compte livreur** (site ou application) : refusé pendant une
+  course, et tant qu'il reste de l'argent dû sans IBAN valide ; le dernier
+  versement est garanti, et son compte client ZupEat reste actif
 
-### La plateforme (superowner)
-- Commerçants : formule, suspension, fermeture, restauration depuis sauvegarde
+### La plateforme (l'équipe du groupe)
+- **Un seul panneau**, `/superowner`, servi sur le domaine du groupe
+  (`manager.zupone.com`) : les anciens espaces `/admin` et `/super-admin` ont
+  disparu
+- **L'équipe et ses rôles** : SuperAdmin, Administrateur, Support, et les rôles
+  que le superowner ajoute (« Facturation »…). Il coche, section par section,
+  la lecture ou la modification ; le contrôle est fait au serveur et le menu ne
+  montre que ce qui est ouvert. **Un rôle par plateforme** : on peut être
+  SuperAdmin sur ZupEat et Support sur ZupDrive. Les chiffres financiers ne
+  sont envoyés qu'aux rôles qui ont « Facturation », et le tableau de bord
+  s'adapte au rôle connecté
+- Commerçants : formule, suspension, fermeture (un droit à part : elle archive
+  puis efface les données à 60 jours), réouverture depuis sauvegarde
 - Formules d'abonnement réglables : nom, prix, quota de boutiques, **commission
   sur les ventes**, arguments de vente
-- Facturation : commission du mois par commerçant, avec son calcul détaillé
+- Facturation : commission du mois par commerçant, avec son calcul détaillé —
+  pour les seules commandes d'avant les reversements hebdomadaires
+  (`PAYOUTS_START_DATE`), que la retenue sur reversement remplace ensuite
+- **Versements SEPA** : un seul fichier `pain.001.001.03` pour tous les
+  commerçants et livreurs de la semaine (KBC/CBC, Isabel, Belfius, ING…), IBAN
+  contrôlés et bénéficiaires invalides écartés et signalés, puis « marquer le
+  lot versé »
 - Boutiques : une fiche par commerce, et la correction des seuls champs dont
   la plateforme répond — adresse et coordonnées, adresse publique, contact. Le
   catalogue, les prix et les horaires restent au commerçant
 - Commerçants, leur dossier : identité de facturation reportée sur la facture du
   mois, et examen de leurs justificatifs — un refus se motive, et le commerçant
-  en est prévenu
+  en est prévenu. La plateforme est **notifiée à chaque pièce déposée**, prévisualise
+  le fichier (image ou PDF) et peut **corriger une date d'expiration** mal saisie
 - Livreurs : dossiers à traiter, examen des pièces une à une, validation,
   suspension et rétablissement — chaque geste motivé et journalisé
 - Attribution des courses réglable : rayon de recherche, délai pour accepter,
-  frais fixe et tarif au kilomètre des livreurs
+  frais fixe et tarif au kilomètre des livreurs, et **la tournée** (nombre de
+  courses à la fois, distance entre clients, détour accepté)
 - Support livreurs en direct : une boîte de réception par livreur, avec son
   état (en ligne, en course, signal perdu) et de quoi l'appeler
 - Versements : ce qu'elle doit et à qui, arrêté des relevés d'une période,
   versement avec sa référence — une course payée ne l'est jamais deux fois
-- Santé du système : cinq relevés chiffrés, et ce qu'il faut faire pour chacun
+- Santé du système : cinq relevés chiffrés, et ce qu'il faut faire pour chacun ;
+  **Surveillance** du site en fonctionnement (voir plus bas)
 - Annonces diffusées au public visé — commerçants, clients, livreurs — et
   reçues par chacun d'eux
 - Journal des actions administratives et journal des accès
-- Sauvegardes, mode maintenance, clés d'API, webhooks
+- Sauvegardes, mode maintenance, thème du site, clés d'API, webhooks
 - Support : tous les tickets, réponses, priorités
 - **Pages légales** (mentions, CGU, CGV, conditions commerçants et livreurs,
   confidentialité, cookies) : chaque publication crée une version, et
   l'acceptation des conditions est enregistrée à l'inscription et à la commande
 
 ### Partout
-- **Un seul compte, plusieurs espaces** : le logo en haut à gauche ouvre les
-  autres espaces auxquels le compte a droit — client, commerçant, livreur,
-  administration
+- **Un seul compte ZupOne, plusieurs espaces** : le logo en haut à gauche ouvre
+  les autres espaces auxquels le compte a droit — client, commerçant, livreur,
+  plateforme (sous le nom du groupe de l'équipe : Support, Administrateur…)
 - Le site en **français et en anglais**, choisis avec la région dans la
   fenêtre « Langue et région » (France, Belgique, Suisse, Luxembourg, Canada,
   Royaume-Uni, Irlande, États-Unis…) : les pages publiques sont servies sous
@@ -146,8 +213,10 @@ emporter ou à livrer.
   recherche (hreflang, `sitemap.xml`). Le pays détecté — Belgique par défaut,
   ou France — règle l'adresse, l'indicatif téléphonique (+32 / +33) et la
   réglementation des pages « Devenir »
-- Pages de présentation **Devenir livreur, commerçant, chauffeur** (le VTC est
-  annoncé « Bientôt disponible »)
+- Pages de présentation **Devenir livreur, commerçant, chauffeur** (le VTC, sous
+  le nom de ZupDrive, est annoncé « Bientôt disponible »)
+- **`/suppression-compte`** : la demande de suppression du compte livreur depuis
+  le site, exigée par les stores
 
 ## Pile technique
 
@@ -168,8 +237,9 @@ emporter ou à livrer.
 Un seul dépôt, deux applications :
 
 ```
-backend/    API REST — 40 fichiers de routes, 61 services (hors tests), 53 modèles Prisma
-frontend/   Next.js — 142 pages
+backend/    API REST — 40 fichiers de routes, 69 services (hors tests), 57 modèles Prisma
+frontend/   Next.js — 116 pages
+mobile/     Expo — applications client, commerçant et livreur (apps/customer, merchant, delivery)
 ```
 
 ## Démarrer
@@ -197,10 +267,15 @@ npx prisma migrate deploy
 npm run dev              # http://localhost:3001
 ```
 
-L'historique des migrations tient en une seule migration de référence,
-`0001_initial_schema`, qui crée tout le schéma sur une base vide. Chaque
-changement de schéma ajoute ensuite sa propre migration
-(`npx prisma migrate dev --name <nom>`), à committer avec le schéma.
+`npm run dev` applique d'abord les migrations en attente et régénère le client
+Prisma (`predev`) : après une mise à jour qui change le schéma, rien à faire à
+la main.
+
+L'historique des migrations part d'une migration de référence,
+`0001_initial_schema`, qui crée tout le schéma sur une base vide ; chaque
+changement de schéma ajoute ensuite sa propre migration (`0002` à `0013`
+aujourd'hui, `npx prisma migrate dev --name <nom>`), à committer avec le
+schéma.
 
 Une base créée **avant** cette remise à plat (par `db push` ou par
 l'ancienne chaîne de migrations) a déjà toutes les tables : il suffit, une
@@ -246,6 +321,19 @@ node scripts/seed-demo.mjs                    # plateforme, commerçant, livreur
 
 Il affiche les comptes créés et leur mot de passe.
 
+### Facultatif : les applications mobiles
+
+```bash
+cd mobile/apps/merchant   # ou customer, delivery
+npm install
+npx expo start
+```
+
+En développement, l'application trouve seule l'API sur le PC qui la sert
+(port 3001) ; `EXPO_PUBLIC_API_URL` la fixe pour une autre machine ou la
+production. La préparation de la publication de l'application livreur est
+décrite dans `mobile/apps/delivery/PUBLICATION.md`.
+
 ## Vérifications
 
 Le projet ne se vérifie pas avec des tests unitaires à simulacres, mais avec des
@@ -254,14 +342,14 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1574 contrôles, 48 suites
+# API : 1711 contrôles, 54 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy
 DATABASE_URL="postgresql://.../zupone_test" PORT=3099 npm run dev   # un terminal
 DATABASE_URL="postgresql://.../zupone_test" VERIF_API_URL=http://localhost:3099 npm run verif
 
-# Navigateur : 716 contrôles, 27 suites
+# Navigateur : 29 suites (716 contrôles au dernier décompte)
 cd frontend
 npm i -D playwright && npx playwright install chromium
 VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run verif:invite
@@ -269,6 +357,11 @@ VERIF_SITE_URL=http://localhost:3000 VERIF_API_URL=http://localhost:3099 npm run
 
 `backend/scripts/verification/LISEZ-MOI.md` et `frontend/scripts/LISEZ-MOI.md`
 détaillent chaque suite et ses prérequis.
+
+Au dernier passage de l'API (27 septembre), quatre contrôles échouent dans des
+suites que les derniers chantiers ont laissées en arrière (l'ancien espace
+`/super-admin`, le gain du livreur, l'attente avant la photo du dépôt) ;
+`CONNAISSANCES-PROJET.md` §6 les détaille.
 
 > La base visée est **vidée** à chaque script. Un garde-fou refuse de s'exécuter
 > si son nom ne contient pas `test`.
@@ -330,11 +423,35 @@ Les mesures sont gardées en mémoire, par instance et depuis son démarrage.
 
 ## Plusieurs domaines
 
-Le site sait se répartir sur trois domaines — public, commerçant, livreur — ou
-tenir sur un seul. Il suffit de renseigner les trois noms côté frontend
-(`NEXT_PUBLIC_DOMAINE_*`) : chaque page est alors servie par le domaine qui lui
-revient, et une page demandée au mauvais domaine redirige vers le bon. Laissez-les
-vides pour rester sur un domaine unique.
+Le site sait se répartir sur quatre domaines ou tenir sur un seul :
+
+| Variable (frontend) | Exemple | Sert |
+|---|---|---|
+| `NEXT_PUBLIC_DOMAINE_GROUPE` | `manager.zupone.com` | Le panneau de l'équipe (`/superowner`) |
+| `NEXT_PUBLIC_DOMAINE_PUBLIC` | `zupeat.com` | Les clients |
+| `NEXT_PUBLIC_DOMAINE_PRO` | `manager.zupeat.com` | Les commerçants |
+| `NEXT_PUBLIC_DOMAINE_LIVREUR` | `delivery.zupeat.com` | Les livreurs |
+
+Chaque page est alors servie par le domaine qui lui revient, et une page
+demandée au mauvais domaine redirige vers le bon. Laissez-les vides pour rester
+sur un domaine unique.
+
+## Reversements et virements
+
+Les clients paient en ligne, l'argent arrive chez la plateforme. **Chaque lundi
+à 0 h (heure de Bruxelles)**, elle arrête la semaine écoulée :
+
+- **un relevé par commerçant** (`MerchantPayout`), figé, ligne par ligne avec
+  un code — 100 ventes, 110 remises, 120 livraison propre, 200 commission,
+  230/240 retenues sur place, 300 report — et son explication ;
+- **un relevé par livreur** pour ses courses livrées, qu'aucune ne soit payée
+  deux fois.
+
+**Administration → Versements SEPA** en tire un fichier `pain.001.001.03` à
+importer dans la banque, puis marque le lot versé. L'arrêté automatique ne
+démarre qu'une fois `PAYOUTS_START_DATE` renseignée ; le compte débité se
+règle par `SEPA_DEBTOR_NAME`, `SEPA_DEBTOR_IBAN` et `SEPA_DEBTOR_BIC`
+(voir `backend/.env.example`).
 
 ## Ce qui n'est pas terminé
 
@@ -342,20 +459,26 @@ Par honnêteté, ce qui manque encore :
 
 - **Les commandes en mode test**, pour qu'un commerçant s'entraîne sans polluer
   ses statistiques.
-- **Les vérifications des derniers chantiers livreur** : pause, perte du
+- **Les vérifications des derniers chantiers** : côté livreur, pause, perte du
   signal, notifications, support en direct, statistiques, nouveaux tours
-  d'attribution et paiement à la distance n'ont pas encore leur suite.
+  d'attribution et paiement à la distance ; côté commerçant et plateforme,
+  reversements hebdomadaires et fichier SEPA, rôles de l'équipe, duplication
+  de boutique et livraison offerte n'ont pas encore leur suite. La tournée et
+  les suppressions de compte ont la leur.
 - **Le stock par ingrédient** (une pizza consomme de la mozzarella). Aujourd'hui
   la disponibilité se bascule à la main, plat par plat.
 - **Le texte des pages légales** : les pages existent et se modifient depuis
   l'espace superowner, mais le texte de départ garde des champs entre crochets
   à remplir avant d'ouvrir au public.
 - **Les applications mobiles** (`mobile/apps/merchant`, `delivery`, `customer`)
-  sont écrites mais pas encore publiées. Celle du livreur n'envoie sa position
-  qu'au premier plan ; celle du client ne commande qu'avec un compte (le site
-  garde la commande sans compte). Leurs cartes s'appuient sur les serveurs
-  publics d'OpenStreetMap et d'OSRM, à remplacer par un service payant ou
-  hébergé avant l'ouverture au public.
+  sont écrites mais pas encore publiées. Celle du livreur est prête pour les
+  stores (icônes provisoires, profils EAS, autorisations réduites, suppression
+  du compte) ; celle du client ne commande qu'avec un compte (le site garde la
+  commande sans compte). Leurs cartes s'appuient sur les serveurs publics
+  d'OpenStreetMap et d'OSRM, à remplacer par un service payant ou hébergé avant
+  l'ouverture au public.
+- **ZupDrive** (courses VTC) et la vitrine du groupe (`zupone.com`) : les rôles
+  de l'équipe et les domaines les prévoient, rien d'autre n'est écrit.
 - Ni file d'attente, ni hébergement d'images externe, ni remontée d'erreurs :
   les variables correspondantes sont commentées dans `.env.example`.
 

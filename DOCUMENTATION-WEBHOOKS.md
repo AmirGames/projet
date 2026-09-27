@@ -6,7 +6,10 @@ enregistrez une adresse, vous choisissez des événements, et ZupEat vous envoie
 une requête `POST` à chaque fois que l'un d'eux se produit.
 
 Les abonnements se gèrent dans **Administration → Webhooks**
-(`/superowner/webhooks`).
+(`/superowner/webhooks`, sur le domaine de l'équipe, `manager.zupone.com`) :
+par le superowner, ou par un membre de l'équipe dont le rôle ouvre la section
+**Webhooks** — en lecture pour consulter, en modification pour créer,
+supprimer, réactiver ou envoyer un essai.
 
 ---
 
@@ -31,6 +34,7 @@ X-Webhook-Attempt: 1
     "status": "PENDING",
     "deliveryType": "PICKUP",
     "totalAmount": 24,
+    "merchantAmount": 24,
     "customerName": "Client Dupont",
     "createdAt": "2026-09-17T13:27:09.380Z"
   }
@@ -157,15 +161,27 @@ d'autres, et le serveur refuse un abonnement qui en nomme un inconnu.
 
 | Événement | Quand | Ce que porte `data` |
 | --- | --- | --- |
-| `order.created` | Une commande vient d'être passée | `orderId`, `storeId`, `status`, `deliveryType`, `totalAmount`, `customerName`, `createdAt` |
+| `order.created` | Une commande parvient au commerçant (voir ci-dessous) | `orderId`, `storeId`, `status`, `deliveryType`, `totalAmount`, `merchantAmount`, `customerName`, `createdAt` |
 | `order.status_changed` | Une commande change d'état | `orderId`, `storeId`, `previousStatus`, `status`, `totalAmount` |
 | `merchant.suspended` | Un compte commerçant est suspendu | `orgId`, `name`, `reason` |
 | `merchant.closed` | Un compte commerçant est fermé | `orgId`, `name`, `reason`, `closedUntil` |
 | `ticket.created` | Un commerçant ouvre un ticket | `ticketId`, `orgId`, `title`, `priority`, `category` |
 | `ticket.message` | Un message est ajouté à un ticket | `ticketId`, `title`, `orgId`, `authorRole` |
 
-Les états d'une commande : `PENDING`, `ACCEPTED`, `REJECTED`, `READY`,
-`COMPLETED`.
+Les états d'une commande : `PENDING`, `ACCEPTED`, `PREPARING`, `REJECTED`,
+`READY`, `COMPLETED`. Une commande livrée par un livreur reste `READY` jusqu'à
+sa remise au client, puis passe `COMPLETED`.
+
+**`order.created` part quand le commerçant reçoit la commande**, pas quand le
+client clique : aussitôt pour un paiement sur place (espèces), mais **à
+l'encaissement** pour un paiement en ligne — une commande jamais payée n'est
+jamais annoncée. `createdAt` reste l'heure où le client l'a passée.
+
+**Deux montants** : `totalAmount` est ce que le client a payé, livraison et
+frais de service compris ; `merchantAmount` ce qui revient au commerçant, ses
+articles remise déduite (total − livraison − frais de service). Une caisse
+branchée sur le chiffre d'affaires du commerce doit lire `merchantAmount`.
+`order.status_changed` ne porte que `totalAmount`.
 
 À ceux-là s'ajoute `webhook.test`, envoyé uniquement par le bouton d'essai. Il
 ne correspond à aucun événement réel — ne le traitez pas comme une commande.
@@ -206,8 +222,11 @@ WEBHOOK_RELANCES_MS=300,600,900 WEBHOOK_BALAYAGE_MS=200 npx tsx src/server.ts
 ## 8. Ce qui n'existe pas encore
 
 - **Les webhooks sont au niveau de la plateforme.** Un commerçant ne peut pas
-  brancher sa propre caisse sur ses propres commandes : seul le superowner gère
-  des abonnements, et ils reçoivent les événements de tous les commerces.
+  brancher sa propre caisse sur ses propres commandes : seule l'équipe de la
+  plateforme gère des abonnements, et ils reçoivent les événements de tous les
+  commerces.
+- **Aucun événement pour les livreurs ni pour l'argent** : ni course acceptée
+  ou livrée, ni paiement, remboursement ou reversement.
 - **Aucun filtrage par boutique** : si vous vous abonnez à `order.created`, vous
   recevez toutes les commandes de la plateforme.
 - **Pas de rotation du secret** : pour en changer, il faut supprimer
