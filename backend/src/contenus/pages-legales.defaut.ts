@@ -22,7 +22,7 @@ export type SlugLegal = (typeof SLUGS_LEGAUX)[number];
 export const PAGES_LEGALES_DEFAUT: Record<SlugLegal, { titre: string; contenu: string }> = {
   "mentions-legales": {
     titre: "Mentions légales",
-    contenu: `Conformément à l'article 6-III de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN), voici l'identité des intervenants du site zupone.com et de ses déclinaisons (zupeat.com, zupdrive.com).
+    contenu: `Conformément à l'article 6-III de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN), voici l'identité des intervenants du site zupeat.com et de ses déclinaisons (zupeat.com, zupdrive.com).
 
 ## Éditeur
 
@@ -30,24 +30,24 @@ export const PAGES_LEGALES_DEFAUT: Record<SlugLegal, { titre: string; contenu: s
 - Siège social : [Adresse du siège social]
 - RCS : [Ville d'immatriculation] [numéro SIREN]
 - TVA intracommunautaire : [Numéro de TVA intracommunautaire]
-- Courriel : [contact@zupone.com](mailto:contact@zupone.com) — Téléphone : [Téléphone]
+- Courriel : [contact@zupeat.com](mailto:contact@zupeat.com) — Téléphone : [Téléphone]
 - Directeur de la publication : [Nom du directeur de la publication]
 
 ## Hébergement
 
 [Nom de l'hébergeur], [Adresse de l'hébergeur], [Téléphone de l'hébergeur].
 
-## Rôle de Zupone
+## Rôle de ZupEat
 
-Zupone est une plateforme d'intermédiation. Les produits sont vendus par les commerçants partenaires, qui en sont seuls vendeurs et responsables ; chaque vitrine indique l'identité du commerçant concerné. Zupone met en relation clients, commerçants et livreurs et encaisse les paiements pour le compte des commerçants.
+ZupEat est une plateforme d'intermédiation. Les produits sont vendus par les commerçants partenaires, qui en sont seuls vendeurs et responsables ; chaque vitrine indique l'identité du commerçant concerné. ZupEat met en relation clients, commerçants et livreurs et encaisse les paiements pour le compte des commerçants.
 
 ## Propriété intellectuelle
 
-La marque Zupone, le site, son code et ses contenus propres sont protégés. Toute reproduction sans autorisation écrite est interdite. Les photos et descriptions de produits appartiennent aux commerçants qui les publient. Les fonds de carte proviennent d'OpenStreetMap (© contributeurs OpenStreetMap, licence ODbL).
+La marque ZupEat, le site, son code et ses contenus propres sont protégés. Toute reproduction sans autorisation écrite est interdite. Les photos et descriptions de produits appartiennent aux commerçants qui les publient. Les fonds de carte proviennent d'OpenStreetMap (© contributeurs OpenStreetMap, licence ODbL).
 
 ## Signaler un contenu
 
-Tout contenu manifestement illicite peut être signalé à [contact@zupone.com](mailto:contact@zupone.com) en précisant l'adresse de la page, la nature du contenu et le motif du signalement.
+Tout contenu manifestement illicite peut être signalé à [contact@zupeat.com](mailto:contact@zupeat.com) en précisant l'adresse de la page, la nature du contenu et le motif du signalement.
 
 ## Médiation de la consommation
 
@@ -56,11 +56,11 @@ En cas de litige non résolu avec notre service client, le consommateur peut rec
 
   cgu: {
     titre: "Conditions générales d'utilisation",
-    contenu: `Les présentes conditions encadrent l'accès et l'usage de la plateforme Zupone, éditée par [Raison sociale] (voir les [mentions légales](/mentions-legales)). Utiliser le site, avec ou sans compte, vaut acceptation de ces conditions.
+    contenu: `Les présentes conditions encadrent l'accès et l'usage de la plateforme ZupEat, éditée par [Raison sociale] (voir les [mentions légales](/mentions-legales)). Utiliser le site, avec ou sans compte, vaut acceptation de ces conditions.
 
 ## 1. Objet
 
-Zupone permet aux clients de commander auprès de commerces de proximité, en retrait ou en livraison, aux commerçants de gérer leur boutique en ligne et aux livreurs de réaliser des courses. Les ventes elles-mêmes relèvent des [conditions générales de vente](/cgv).
+ZupEat permet aux clients de commander auprès de commerces de proximité, en retrait ou en livraison, aux commerçants de gérer leur boutique en ligne et aux livreurs de réaliser des courses. Les ventes elles-mêmes relèvent des [conditions générales de vente](/cgv).
 
 ## 2. Compte
 
@@ -68,7 +68,7 @@ Zupone permet aux clients de commander auprès de commerces de proximité, en re
 - Les informations fournies doivent être exactes et tenues à jour.
 - L'utilisateur garde son mot de passe confidentiel et répond de l'usage de son compte.
 - Il faut avoir 16 ans pour créer un compte, et 18 ans pour commander de l'alcool.
-- Le compte peut être supprimé à tout moment sur simple demande à [contact@zupone.com](mailto:contact@zupone.com).
+- Le compte peut être supprimé à tout moment sur simple demande à [contact@zupeat.com](mailto:contact@zupeat.com).
 
 ## 3. Comportements interdits
 
@@ -76,21 +76,21 @@ Zupone permet aux clients de commander auprès de commerces de proximité, en re
 - publier des contenus illicites, trompeurs, injurieux ou portant atteinte aux droits de tiers ;
 - tenter d'accéder aux données d'autres utilisateurs ou de perturber le service ;
 - extraire massivement les données du site par des moyens automatisés ;
-- contourner la plateforme pour régler une commande passée via Zupone.
+- contourner la plateforme pour régler une commande passée via ZupEat.
 
 Tout manquement peut entraîner la restriction, la suspension ou la fermeture du compte, après information de l'intéressé sauf urgence.
 
 ## 4. Avis et notes
 
-Les notes attribuées aux livreurs reflètent l'expérience réelle de l'utilisateur. Zupone peut retirer une note manifestement abusive. Les notes ne sont pas rémunérées.
+Les notes attribuées aux livreurs reflètent l'expérience réelle de l'utilisateur. ZupEat peut retirer une note manifestement abusive. Les notes ne sont pas rémunérées.
 
 ## 5. Disponibilité
 
-Zupone s'efforce de maintenir le service accessible mais ne garantit pas une disponibilité continue : des interruptions pour maintenance peuvent survenir, annoncées lorsque c'est possible.
+ZupEat s'efforce de maintenir le service accessible mais ne garantit pas une disponibilité continue : des interruptions pour maintenance peuvent survenir, annoncées lorsque c'est possible.
 
 ## 6. Responsabilité
 
-Zupone répond du bon fonctionnement de la plateforme. Chaque commerçant répond des produits qu'il vend et des informations de sa vitrine (prix, allergènes, disponibilité).
+ZupEat répond du bon fonctionnement de la plateforme. Chaque commerçant répond des produits qu'il vend et des informations de sa vitrine (prix, allergènes, disponibilité).
 
 ## 7. Données personnelles
 
@@ -107,7 +107,7 @@ Droit français. En cas de litige, une solution amiable est recherchée en prior
 
   cgv: {
     titre: "Conditions générales de vente",
-    contenu: `Ces conditions s'appliquent à toute commande passée par un client auprès d'un commerçant via Zupone. Le vendeur est le commerçant dont l'identité figure sur la vitrine ; Zupone agit en intermédiaire et encaisse le paiement pour son compte.
+    contenu: `Ces conditions s'appliquent à toute commande passée par un client auprès d'un commerçant via ZupEat. Le vendeur est le commerçant dont l'identité figure sur la vitrine ; ZupEat agit en intermédiaire et encaisse le paiement pour son compte.
 
 ## 1. Commande
 
@@ -118,12 +118,12 @@ Le client compose son panier, choisit le retrait ou la livraison, et valide apr�
 Les prix sont affichés en euros TTC, fixés par chaque commerçant. S'y ajoutent, affichés avant validation :
 
 - les frais de livraison, selon la zone de l'adresse ;
-- des frais de service de 0,25 € par commande, perçus par Zupone ;
+- des frais de service de 0,25 € par commande, perçus par ZupEat ;
 - le cas échéant, un minimum de commande propre au commerçant.
 
 ## 3. Paiement
 
-Le paiement s'effectue par carte bancaire via notre prestataire Stripe. Zupone ne stocke jamais les données de carte. Le débit intervient à la validation de la commande.
+Le paiement s'effectue par carte bancaire via notre prestataire Stripe. ZupEat ne stocke jamais les données de carte. Le débit intervient à la validation de la commande.
 
 ## 4. Retrait et livraison
 
@@ -135,11 +135,11 @@ Le client peut annuler sans frais tant que le commerçant n'a pas accepté la co
 
 ## 6. Droit de rétractation
 
-Conformément à l'article L221-28 du Code de la consommation, le droit de rétractation ne s'applique pas aux denrées susceptibles de se détériorer ou de se périmer rapidement, ni aux biens confectionnés selon les spécifications du client. Pour les autres produits non périssables, le client dispose de 14 jours à compter de la réception pour se rétracter, en contactant [contact@zupone.com](mailto:contact@zupone.com).
+Conformément à l'article L221-28 du Code de la consommation, le droit de rétractation ne s'applique pas aux denrées susceptibles de se détériorer ou de se périmer rapidement, ni aux biens confectionnés selon les spécifications du client. Pour les autres produits non périssables, le client dispose de 14 jours à compter de la réception pour se rétracter, en contactant [contact@zupeat.com](mailto:contact@zupeat.com).
 
 ## 7. Réclamations
 
-Produit manquant, erroné ou non conforme : signalez-le depuis votre espace (support) ou à [contact@zupone.com](mailto:contact@zupone.com) dans les 48 heures, avec si possible une photo. Un remboursement total ou partiel est accordé lorsque la réclamation est fondée. Les garanties légales de conformité et des vices cachés restent applicables.
+Produit manquant, erroné ou non conforme : signalez-le depuis votre espace (support) ou à [contact@zupeat.com](mailto:contact@zupeat.com) dans les 48 heures, avec si possible une photo. Un remboursement total ou partiel est accordé lorsque la réclamation est fondée. Les garanties légales de conformité et des vices cachés restent applicables.
 
 ## 8. Allergènes et alcool
 
@@ -152,11 +152,11 @@ Voir la médiation dans les [mentions légales](/mentions-legales). Droit franç
 
   "conditions-commercants": {
     titre: "Conditions générales commerçants",
-    contenu: `Ces conditions lient Zupone et tout professionnel qui ouvre une boutique sur la plateforme. Elles complètent les [CGU](/cgu).
+    contenu: `Ces conditions lient ZupEat et tout professionnel qui ouvre une boutique sur la plateforme. Elles complètent les [CGU](/cgu).
 
 ## 1. Inscription
 
-Le commerçant fournit un dossier exact et à jour (identité de l'entreprise, SIRET, TVA le cas échéant, coordonnées bancaires, autorisations propres à son activité). Zupone peut refuser ou suspendre une boutique dont le dossier est incomplet ou inexact.
+Le commerçant fournit un dossier exact et à jour (identité de l'entreprise, SIRET, TVA le cas échéant, coordonnées bancaires, autorisations propres à son activité). ZupEat peut refuser ou suspendre une boutique dont le dossier est incomplet ou inexact.
 
 ## 2. Obligations du commerçant
 
@@ -172,7 +172,7 @@ Le commerçant souscrit une formule (prix, nombre de boutiques) et paie une comm
 
 ## 4. Encaissement et reversement
 
-Zupone encaisse le paiement des clients pour le compte du commerçant, via Stripe, et lui reverse les sommes dues après déduction des commissions et frais. Une facture mensuelle détaille chaque ligne.
+ZupEat encaisse le paiement des clients pour le compte du commerçant, via Stripe, et lui reverse les sommes dues après déduction des commissions et frais. Une facture mensuelle détaille chaque ligne.
 
 ## 5. Données des clients
 
@@ -180,11 +180,11 @@ Le commerçant n'utilise les données des clients que pour exécuter les command
 
 ## 6. Contenus
 
-Le commerçant garantit détenir les droits sur les photos, logos et textes qu'il publie, et concède à Zupone le droit de les afficher pour la durée de la relation.
+Le commerçant garantit détenir les droits sur les photos, logos et textes qu'il publie, et concède à ZupEat le droit de les afficher pour la durée de la relation.
 
 ## 7. Suspension et résiliation
 
-Chaque partie peut résilier à tout moment avec un préavis de 30 jours. Zupone peut suspendre sans préavis une boutique en cas de manquement grave (fraude, produits dangereux, plaintes répétées), en motivant sa décision conformément au règlement (UE) 2019/1150.
+Chaque partie peut résilier à tout moment avec un préavis de 30 jours. ZupEat peut suspendre sans préavis une boutique en cas de manquement grave (fraude, produits dangereux, plaintes répétées), en motivant sa décision conformément au règlement (UE) 2019/1150.
 
 ## 8. Classement
 
@@ -192,12 +192,12 @@ L'ordre d'affichage des commerces dépend principalement de la distance, de l'ou
 
 ## 9. Réclamations et droit applicable
 
-Les réclamations passent par le support commerçant. Droit français ; tribunal de commerce du siège de Zupone compétent.`,
+Les réclamations passent par le support commerçant. Droit français ; tribunal de commerce du siège de ZupEat compétent.`,
   },
 
   "conditions-livreurs": {
     titre: "Conditions générales livreurs",
-    contenu: `Ces conditions lient Zupone et les livreurs indépendants qui réalisent des courses via la plateforme. Elles complètent les [CGU](/cgu).
+    contenu: `Ces conditions lient ZupEat et les livreurs indépendants qui réalisent des courses via la plateforme. Elles complètent les [CGU](/cgu).
 
 ## 1. Statut
 
@@ -205,7 +205,7 @@ Le livreur exerce en tant que travailleur indépendant (micro-entrepreneur ou so
 
 ## 2. Validation du dossier
 
-Avant toute course, le livreur fournit : pièce d'identité, justificatif d'immatriculation, droit de travailler en France, et selon le véhicule permis, carte grise et assurance adaptée. Zupone valide le dossier et peut le refuser s'il est incomplet ou non conforme.
+Avant toute course, le livreur fournit : pièce d'identité, justificatif d'immatriculation, droit de travailler en France, et selon le véhicule permis, carte grise et assurance adaptée. ZupEat valide le dossier et peut le refuser s'il est incomplet ou non conforme.
 
 ## 3. Réalisation des courses
 
@@ -228,12 +228,12 @@ Le livreur justifie d'une assurance responsabilité civile professionnelle et d'
 
 ## 7. Fin de la relation
 
-Le livreur peut clôturer son compte à tout moment. Zupone peut désactiver un compte en cas de fraude, de mise en danger ou de manquement grave, après en avoir exposé les motifs.`,
+Le livreur peut clôturer son compte à tout moment. ZupEat peut désactiver un compte en cas de fraude, de mise en danger ou de manquement grave, après en avoir exposé les motifs.`,
   },
 
   confidentialite: {
     titre: "Politique de confidentialité",
-    contenu: `[Raison sociale] (Zupone) est responsable des traitements décrits ci-dessous, conformément au règlement (UE) 2016/679 (RGPD) et à la loi Informatique et Libertés. Chaque commerçant est responsable des traitements qu'il réalise pour ses propres besoins.
+    contenu: `[Raison sociale] (ZupEat) est responsable des traitements décrits ci-dessous, conformément au règlement (UE) 2016/679 (RGPD) et à la loi Informatique et Libertés. Chaque commerçant est responsable des traitements qu'il réalise pour ses propres besoins.
 
 ## Données traitées et finalités
 
@@ -261,7 +261,7 @@ Nous ne vendons aucune donnée. Lorsqu'un prestataire traite des données hors d
 
 ## Vos droits
 
-Vous disposez des droits d'accès, de rectification, d'effacement, de limitation, d'opposition, de portabilité et du droit de retirer votre consentement, ainsi que de définir des directives sur le sort de vos données après votre décès. Écrivez à [dpo@zupone.com](mailto:dpo@zupone.com) ; nous répondons sous un mois. Vous pouvez aussi saisir la CNIL ([cnil.fr](https://www.cnil.fr)).
+Vous disposez des droits d'accès, de rectification, d'effacement, de limitation, d'opposition, de portabilité et du droit de retirer votre consentement, ainsi que de définir des directives sur le sort de vos données après votre décès. Écrivez à [dpo@zupeat.com](mailto:dpo@zupeat.com) ; nous répondons sous un mois. Vous pouvez aussi saisir la CNIL ([cnil.fr](https://www.cnil.fr)).
 
 ## Sécurité
 
@@ -274,7 +274,7 @@ Voir la page [cookies et traceurs](/cookies).`,
 
   cookies: {
     titre: "Cookies et traceurs",
-    contenu: `Zupone n'utilise **aucun cookie publicitaire ni de mesure d'audience tierce**. Les seuls traceurs déposés sont strictement nécessaires au service ; conformément à l'article 82 de la loi Informatique et Libertés, ils sont exemptés de consentement.
+    contenu: `ZupEat n'utilise **aucun cookie publicitaire ni de mesure d'audience tierce**. Les seuls traceurs déposés sont strictement nécessaires au service ; conformément à l'article 82 de la loi Informatique et Libertés, ils sont exemptés de consentement.
 
 ## Traceurs utilisés
 

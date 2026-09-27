@@ -10,7 +10,7 @@ export type ThemeName = 'dark' | 'light';
  */
 const DARK_COLORS = {
   /** Fonds de boutons et d'accents, sous du texte blanc. */
-  /** Orange Zupone, comme le site : rien à voir avec le vert d'Uber Eats. */
+  /** Orange ZupEat, comme le site : rien à voir avec le vert d'Uber Eats. */
   primary: '#C2410C',
   /** Liens et textes d'accent. */
   link: '#FB923C',

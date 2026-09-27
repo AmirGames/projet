@@ -79,8 +79,8 @@ export default function CheckoutScreen(props: Props) {
     return (
       <StripeProvider
         publishableKey={config.publishableKey}
-        merchantIdentifier="merchant.com.amir_games.zuponecustomer"
-        urlScheme="zupone-customer"
+        merchantIdentifier="merchant.com.amir_games.zupeatcustomer"
+        urlScheme="zupeat-customer"
       >
         <WithStripe {...props} config={config} />
       </StripeProvider>
@@ -94,8 +94,8 @@ function WithStripe(props: Props & { config: PaymentConfig }) {
   const pay: Pay = async (clientSecret) => {
     const init = await initPaymentSheet({
       paymentIntentClientSecret: clientSecret,
-      merchantDisplayName: 'Zupone',
-      returnURL: 'zupone-customer://stripe-redirect',
+      merchantDisplayName: 'ZupEat',
+      returnURL: 'zupeat-customer://stripe-redirect',
     });
     if (init.error) return init.error.message;
     const result = await presentPaymentSheet();
@@ -586,7 +586,7 @@ function CheckoutBody({
           <Text style={styles.conditionsCase}>{conditionsAcceptees ? '☑' : '☐'}</Text>
           <Text style={styles.conditionsTexte}>
             J&apos;ai lu et j&apos;accepte les{' '}
-            <Text style={styles.conditionsLien} onPress={() => Linking.openURL('https://zupone.com/cgv')}>
+            <Text style={styles.conditionsLien} onPress={() => Linking.openURL('https://zupeat.com/cgv')}>
               conditions générales de vente
             </Text>
             .

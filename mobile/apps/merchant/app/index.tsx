@@ -342,7 +342,7 @@ export default function MerchantApp() {
     return (
       <SafeAreaView style={[styles.container, styles.splash]}>
         <StatusBar style="light" />
-        <Text style={styles.title}>Zupone</Text>
+        <Text style={styles.title}>ZupEat</Text>
         <ActivityIndicator color="#fff" style={{ marginTop: 20 }} />
       </SafeAreaView>
     );
@@ -354,7 +354,7 @@ export default function MerchantApp() {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <StatusBar style="light" />
         <View style={styles.loginContainer}>
-          <Text style={styles.title}>Zupone</Text>
+          <Text style={styles.title}>ZupEat</Text>
           <Text style={styles.subtitle}>Commerçant</Text>
 
           <TextInput

@@ -70,7 +70,7 @@ const serveur = http.createServer((requete, reponse) => {
 });
 
 await new Promise((resoudre) => serveur.listen(0, '127.0.0.1', resoudre));
-const URL_RECEPTEUR = `http://127.0.0.1:${serveur.address().port}/zupone`;
+const URL_RECEPTEUR = `http://127.0.0.1:${serveur.address().port}/zupeat`;
 
 // ===== Le décor =====
 

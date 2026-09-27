@@ -268,7 +268,7 @@ check('elle n’existe plus', heritee === null, `${heritee}`);
 
 const magasin = await page.evaluate(() => {
   try {
-    return JSON.parse(localStorage.getItem('zupone-paniers') || '{}');
+    return JSON.parse(localStorage.getItem('zupeat-paniers') || '{}');
   } catch {
     return {};
   }

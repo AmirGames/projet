@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Zupone",
-    "slug": "zupone-customer",
+    "name": "ZupEat",
+    "slug": "zupeat-customer",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "scheme": "zupone-customer",
+    "scheme": "zupeat-customer",
     "updates": {
       "enabled": false
     },
@@ -19,19 +19,19 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Zupone utilise votre position pour trouver votre adresse de livraison et les commerces qui livrent chez vous."
+          "locationWhenInUsePermission": "ZupEat utilise votre position pour trouver votre adresse de livraison et les commerces qui livrent chez vous."
         }
       ],
       [
         "@stripe/stripe-react-native",
         {
-          "merchantIdentifier": "merchant.com.amir_games.zuponecustomer",
+          "merchantIdentifier": "merchant.com.amir_games.zupeatcustomer",
           "enableGooglePay": true
         }
       ]
     ],
     "android": {
-      "package": "com.amir_games.zuponecustomer"
+      "package": "com.amir_games.zupeatcustomer"
     }
   }
 }

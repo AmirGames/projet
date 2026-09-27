@@ -64,7 +64,7 @@ const serveur = http.createServer((requete, reponse) => {
 
 await new Promise((resoudre) => serveur.listen(0, "127.0.0.1", resoudre));
 const PORT_RECEPTEUR = serveur.address().port;
-const URL_RECEPTEUR = `http://127.0.0.1:${PORT_RECEPTEUR}/zupone`;
+const URL_RECEPTEUR = `http://127.0.0.1:${PORT_RECEPTEUR}/zupeat`;
 
 /** Attend qu'un envoi corresponde, plutôt que de dormir une durée au hasard. */
 const attendre = async (predicat, limiteMs = 6000) => {

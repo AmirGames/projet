@@ -67,7 +67,7 @@ export function PageDevenir({
     <div className="min-h-screen bg-white text-slate-900">
       <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4 md:px-10">
         <Link href="/" className="text-2xl font-black text-primary md:text-3xl">
-          Zupone
+          ZupEat
         </Link>
         <div className="flex items-center gap-4">
           <nav aria-label="Pays" className="flex gap-1 rounded-full border border-slate-200 p-1 text-sm">

@@ -6,7 +6,7 @@ import { oublierCompte } from "../middleware/auth";
 /**
  * Supprimer son compte client ZupEat.
  *
- * Un compte Zupone est unique : la même adresse ouvre ZupEat, l'espace
+ * Un compte ZupOne est unique : la même adresse ouvre ZupEat, l'espace
  * livreur et un éventuel espace commerçant. Supprimer ZupEat efface le
  * profil client (coordonnées, adresse, favoris, paniers) ; les commandes
  * passées restent, détachées du compte, le temps que la loi l'exige
@@ -100,7 +100,7 @@ export class CustomerAccountService {
           where: { id },
           data: {
             name: "Client supprimé",
-            email: `supprime-${id}@zupone.invalid`,
+            email: `supprime-${id}@zupeat.invalid`,
             phone: null,
             address: null,
             city: null,
@@ -143,7 +143,7 @@ export class CustomerAccountService {
   static message(apercu: Awaited<ReturnType<typeof CustomerAccountService.apercu>>) {
     const base =
       "Votre compte ZupEat est supprimé : votre profil, vos adresses, vos favoris et vos paniers sont effacés. Vos commandes passées sont conservées sans lien avec vous, le temps que la loi l'exige.";
-    if (apercu.compteEntierSupprime) return `${base} Votre compte Zupone n'existe plus.`;
+    if (apercu.compteEntierSupprime) return `${base} Votre compte ZupOne n'existe plus.`;
     const autres = [
       apercu.restent.livreur &&
         (apercu.restent.livreurEnSuppression

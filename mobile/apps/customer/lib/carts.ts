@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * ailleurs attendent leur tour.
  */
 
-const KEY = 'zupone.customer.carts';
+const KEY = 'zupeat.customer.carts';
 
 export interface CartLine {
   productId: string;

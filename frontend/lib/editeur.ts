@@ -3,7 +3,7 @@
  * (Pages légales) et sont servis par l'API. Ici ne restent que le sommaire et
  * l'adresse de contact affichée sous chaque page.
  */
-export const EMAIL_CONTACT = 'contact@zupone.com';
+export const EMAIL_CONTACT = 'contact@zupeat.com';
 
 export const PAGES_LEGALES = [
   { href: '/mentions-legales', titre: 'Mentions légales' },

@@ -54,7 +54,7 @@ export default function ClientLayout({
               <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
                 Z
               </div>
-              <span className="font-bold text-white">Zupone</span>
+              <span className="font-bold text-white">ZupEat</span>
             </SelecteurEspace>
 
             <div className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export default function ClientLayout({
               <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
                 Z
               </div>
-              <span className="font-bold text-white text-lg">Zupone</span>
+              <span className="font-bold text-white text-lg">ZupEat</span>
             </SelecteurEspace>
 
             <div className="flex items-center gap-4">
@@ -154,7 +154,7 @@ export default function ClientLayout({
           <div className="max-w-7xl mx-auto px-4 py-8">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
               <div>
-                <h3 className="text-white font-bold mb-4">Zupone</h3>
+                <h3 className="text-white font-bold mb-4">ZupEat</h3>
                 <p className="text-gray-400 text-sm">
                   La plateforme qui relie commerçants, clients et livreurs de proximité.
                 </p>
@@ -178,7 +178,7 @@ export default function ClientLayout({
             </div>
 
             <div className="border-t border-gray-700 pt-8 text-center text-gray-400 text-sm">
-              <p>&copy; {new Date().getFullYear()} Zupone. Tous droits réservés.</p>
+              <p>&copy; {new Date().getFullYear()} ZupEat. Tous droits réservés.</p>
             </div>
           </div>
         </footer>

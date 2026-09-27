@@ -178,12 +178,12 @@ export default function StoreScreen({
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.storeName}>{store.name}</Text>
-                <Text style={styles.meta}>{[store.genreLibelle, rating].filter(Boolean).join(' · ') || 'Nouveau sur Zupone'}</Text>
+                <Text style={styles.meta}>{[store.genreLibelle, rating].filter(Boolean).join(' · ') || 'Nouveau sur ZupEat'}</Text>
                 <Text style={styles.meta} numberOfLines={2}>
                   {[store.address, store.city].filter(Boolean).join(', ')}
                 </Text>
                 <Text style={[styles.openState, { color: open ? COLORS.success : COLORS.danger }]}>
-                  {store.enAttenteDeValidation ? 'Bientôt sur Zupone' : open ? '● Ouvert' : '● Fermé — commande en retrait sur un créneau'}
+                  {store.enAttenteDeValidation ? 'Bientôt sur ZupEat' : open ? '● Ouvert' : '● Fermé — commande en retrait sur un créneau'}
                 </Text>
               </View>
             </View>

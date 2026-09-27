@@ -38,7 +38,7 @@ export function cibles(): Cible[] {
     liste.push({ cle: "site", libelle: "Site public", url: site });
   }
 
-  // UPTIME_URLS="Vitrine|https://zupone.fr/store/demo,Espace pro|https://pro.zupone.fr"
+  // UPTIME_URLS="Vitrine|https://zupeat.com/store/demo,Espace pro|https://manager.zupeat.com"
   for (const entree of (process.env.UPTIME_URLS || "").split(",")) {
     const [libelle, url] = entree.split("|").map((morceau) => morceau?.trim());
     if (!libelle || !url) continue;
@@ -89,7 +89,7 @@ async function sonderUrl(url: string): Promise<Releve> {
     const reponse = await fetch(url, {
       signal: abandon.signal,
       redirect: "follow",
-      headers: { "User-Agent": "Zupone-Disponibilite/1.0" },
+      headers: { "User-Agent": "ZupEat-Disponibilite/1.0" },
     });
     // Le corps n'intéresse pas : on le libère sans le lire.
     await reponse.body?.cancel().catch(() => undefined);

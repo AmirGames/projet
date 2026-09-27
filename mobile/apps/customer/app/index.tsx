@@ -332,7 +332,7 @@ export default function CustomerApp() {
     return (
       <SafeAreaView style={[styles.container, styles.splash]}>
         <StatusBar style="light" />
-        <Text style={styles.title}>Zupone</Text>
+        <Text style={styles.title}>ZupEat</Text>
         <ActivityIndicator color="#fff" style={{ marginTop: 20 }} />
       </SafeAreaView>
     );
@@ -344,7 +344,7 @@ export default function CustomerApp() {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <StatusBar style="light" />
         <ScrollView contentContainerStyle={styles.loginContainer} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>Zupone</Text>
+          <Text style={styles.title}>ZupEat</Text>
           <Text style={styles.subtitle}>Vos commerces de quartier, livrés</Text>
 
           {mode === 'signup' && (

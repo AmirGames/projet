@@ -251,7 +251,7 @@ check('la commande est retrouvée', suivi.includes('20 Rue de la République'), 
 check('son état est affiché', /En Attente/i.test(suivi), suivi.slice(0, 600));
 
 titre('Le panier a été vidé');
-const restant = await page.evaluate(() => localStorage.getItem('zupone-paniers'));
+const restant = await page.evaluate(() => localStorage.getItem('zupeat-paniers'));
 check('plus de panier pour ce commerce', !(restant || '').includes(storeId), restant || 'vide');
 
 const vraiesErreurs = erreurs.filter(

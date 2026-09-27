@@ -123,7 +123,7 @@ check('ce qui manque pour être payé aussi', /Pour être payé/.test(vide), vid
 check('aucun compte bancaire n’est annoncé', /Aucun compte enregistré/.test(vide), vide.slice(0, 1500));
 
 titre('Il renseigne son identité de facturation');
-await page.fill('#legalName', `Zupone Test ${uniq}`);
+await page.fill('#legalName', `ZupEat Test ${uniq}`);
 await page.fill('#registrationNumber', '81234567800015');
 await page.fill('#vatNumber', 'FR12345678901');
 await page.fill('#billingAddress', '20 Rue de la République');
@@ -144,7 +144,7 @@ await page.fill('#ownerPhone', '0600000000');
 await page.fill('#ownerBirthDate', '1985-04-12');
 await page.fill('#iban', IBAN);
 await page.fill('#bic', 'AGRIFRPP');
-await page.fill('#accountHolder', `Zupone Test ${uniq}`);
+await page.fill('#accountHolder', `ZupEat Test ${uniq}`);
 
 await page.click('button:has-text("Enregistrer")');
 await page.waitForTimeout(3000);
@@ -155,7 +155,7 @@ check('plus rien ne manque pour facturer', !/Pour être facturé/.test(apres), a
 check('ni pour être payé', !/Pour être payé/.test(apres), apres.slice(0, 900));
 
 const vuServeur = await appeler(`/api/merchant-profile/${orgId}`, { jeton: T });
-check('le serveur a bien la raison sociale', vuServeur.donnees?.data?.legalName === `Zupone Test ${uniq}`, vuServeur.donnees?.data?.legalName);
+check('le serveur a bien la raison sociale', vuServeur.donnees?.data?.legalName === `ZupEat Test ${uniq}`, vuServeur.donnees?.data?.legalName);
 check('et le numéro de TVA', vuServeur.donnees?.data?.vatNumber === 'FR12345678901', vuServeur.donnees?.data?.vatNumber);
 check('et la date de naissance du propriétaire', String(vuServeur.donnees?.data?.ownerBirthDate || '').startsWith('1985-04-12'), vuServeur.donnees?.data?.ownerBirthDate);
 
@@ -231,7 +231,7 @@ await plateformePage.waitForTimeout(3000);
 
 const vuPlateforme = await plateformePage.locator('body').innerText();
 check('le dossier est affiché', /Dossier du commerçant/.test(vuPlateforme), vuPlateforme.slice(0, 1200));
-check('la raison sociale y est', vuPlateforme.includes(`Zupone Test ${uniq}`), vuPlateforme.slice(0, 2000));
+check('la raison sociale y est', vuPlateforme.includes(`ZupEat Test ${uniq}`), vuPlateforme.slice(0, 2000));
 check('le numéro de TVA aussi', vuPlateforme.includes('FR12345678901'), vuPlateforme.slice(0, 2500));
 check('la pièce est signalée à examiner', /1 pièce à examiner/.test(vuPlateforme), vuPlateforme.slice(0, 2000));
 // Elle rapproche un virement d'un compte : quatre caractères suffisent.

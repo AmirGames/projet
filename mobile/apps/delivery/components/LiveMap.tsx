@@ -77,7 +77,7 @@ export default function LiveMap({
     <View style={[styles.box, dark && styles.boxDark, height ? { height } : { flex: 1 }]}>
       <WebView
         ref={web}
-        source={{ html: HTML, baseUrl: 'https://zupone.com/' }}
+        source={{ html: HTML, baseUrl: 'https://zupeat.com/' }}
         originWhitelist={['*']}
         onLoadEnd={() => setReady(true)}
         onMessage={onMessage}

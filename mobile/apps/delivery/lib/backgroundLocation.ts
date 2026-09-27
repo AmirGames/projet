@@ -22,7 +22,7 @@ import { flushOutbox } from './outbox';
  * livreur qu'il est en ligne.
  */
 
-export const LOCATION_TASK = 'ZUPONE_POSITION_LIVREUR';
+export const LOCATION_TASK = 'ZUPEAT_POSITION_LIVREUR';
 
 export interface Position {
   lat: number;
@@ -151,8 +151,8 @@ function explain(): Promise<boolean> {
     Alert.alert(
       'Position écran verrouillé',
       Platform.OS === 'android'
-        ? 'Pour que le client vous suive et que les courses vous soient proposées téléphone rangé, Zupone a besoin de votre position même quand l’application n’est pas à l’écran.\n\nDans l’écran qui s’ouvre, choisissez « Toujours autoriser ».'
-        : 'Pour que le client vous suive et que les courses vous soient proposées téléphone rangé, Zupone a besoin de votre position même quand l’application n’est pas à l’écran.\n\nChoisissez « Toujours autoriser » ou « Passer à Toujours autoriser ».',
+        ? 'Pour que le client vous suive et que les courses vous soient proposées téléphone rangé, ZupEat a besoin de votre position même quand l’application n’est pas à l’écran.\n\nDans l’écran qui s’ouvre, choisissez « Toujours autoriser ».'
+        : 'Pour que le client vous suive et que les courses vous soient proposées téléphone rangé, ZupEat a besoin de votre position même quand l’application n’est pas à l’écran.\n\nChoisissez « Toujours autoriser » ou « Passer à Toujours autoriser ».',
       [
         { text: 'Plus tard', style: 'cancel', onPress: () => resolve(false) },
         { text: 'Continuer', onPress: () => resolve(true) },
@@ -209,7 +209,7 @@ export async function startBackgroundLocation(profile: BackgroundProfile): Promi
       pausesUpdatesAutomatically: false,
       activityType: Location.ActivityType.OtherNavigation,
       foregroundService: {
-        notificationTitle: 'Zupone Livreur',
+        notificationTitle: 'ZupEat Livreur',
         notificationBody: SERVICE_TEXT[profile],
         notificationColor: '#EA580C',
         // Application balayée pendant une course : la position continue.

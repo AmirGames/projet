@@ -40,17 +40,17 @@ const REGION_PAR_LANGUE: Record<Langue, string> = {
   en: "gb-en",
 };
 
-export const NOM_COOKIE_REGION = "ZUPONE_REGION";
+export const NOM_COOKIE_REGION = "ZUPEAT_REGION";
 
 /**
  * En-tête posé par le proxy quand la page est demandée sous un
  * sous-répertoire de région : la langue et la région de l'adresse priment
  * sur les cookies pour ce rendu-là.
  */
-export const ENTETE_REGION = "x-zupone-region";
+export const ENTETE_REGION = "x-zupeat-region";
 
 /** Le chemin de la page sans son préfixe (/restaurants pour /be-fr/restaurants). */
-export const ENTETE_CHEMIN = "x-zupone-chemin";
+export const ENTETE_CHEMIN = "x-zupeat-chemin";
 
 export function trouverRegion(code: string | undefined): Region | undefined {
   return REGIONS.find((r) => r.code === code);

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Trash2 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const DPO = 'dpo@zupone.com';
+const DPO = 'dpo@zupeat.com';
 
 interface Apercu {
   coursesEnCours: number;
@@ -14,7 +14,7 @@ interface Apercu {
   ibanValide: boolean;
   ibanFin: string | null;
   demandeeLe: string | null;
-  /** Le compte Zupone reste : client ZupEat toujours, commerçant s'il en a un. */
+  /** Le compte ZupOne reste : client ZupEat toujours, commerçant s'il en a un. */
   restent?: { client: boolean; commercant: boolean };
 }
 

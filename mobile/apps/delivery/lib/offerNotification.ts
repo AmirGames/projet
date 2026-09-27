@@ -19,7 +19,7 @@ import { fetchWithSession } from './sessionFetch';
 /** Sans « - » ni « : », que les catégories iOS n'acceptent pas. Le serveur envoie le même nom. */
 export const OFFER_CATEGORY = 'course_proposee';
 export const ACCEPT_ACTION = 'accepter';
-const TASK = 'ZUPONE_ACTION_COURSE';
+const TASK = 'ZUPEAT_ACTION_COURSE';
 
 let cached: typeof NotificationsModule | null | undefined;
 function notifications(): typeof NotificationsModule | null {

@@ -4,7 +4,7 @@ import { COMMERCANT } from '@/lib/devenir-contenus';
 import { paysDuVisiteur } from '@/lib/pays';
 
 export const metadata: Metadata = {
-  title: 'Devenir commerçant — Zupone',
+  title: 'Devenir commerçant — ZupEat',
   description: 'Mettez votre commerce en ligne et recevez des commandes livrées.',
 };
 

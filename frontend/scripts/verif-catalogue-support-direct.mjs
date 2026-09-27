@@ -108,7 +108,7 @@ const ouvrir = async (jeton, chemin, panier = null) => {
     ([t, s, p]) => {
       if (t) localStorage.setItem('accessToken', t);
       localStorage.setItem('storeId', s);
-      if (p) localStorage.setItem('zupone-paniers', p);
+      if (p) localStorage.setItem('zupeat-paniers', p);
     },
     [jeton, storeId, panier]
   );
@@ -149,7 +149,7 @@ await appeler('/api/categories', { method: 'POST', jeton: T, corps: { storeId, n
 check('une catégorie ajoutée ailleurs apparaît', await attendre(pCategories, contient(pCategories, nouvelleCategorie)));
 
 const lignesDuPanier = () =>
-  pVitrine.evaluate((s) => JSON.parse(localStorage.getItem('zupone-paniers') || '{}')[s]?.lignes || [], storeId);
+  pVitrine.evaluate((s) => JSON.parse(localStorage.getItem('zupeat-paniers') || '{}')[s]?.lignes || [], storeId);
 
 const miseAJour = await appeler(`/api/products/${idA}`, { method: 'PUT', jeton: T, corps: { price: 12 } });
 check('le prix du plat est changé', miseAJour.statut < 400, JSON.stringify(miseAJour.donnees)?.slice(0, 200));

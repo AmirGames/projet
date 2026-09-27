@@ -7,8 +7,8 @@
 #
 # À régler une fois, dans Settings → Secrets and variables → Actions →
 # Variables : UPTIME_URLS, une adresse par ligne, par exemple
-#   https://api.zupone.fr/health/ready
-#   https://zupone.fr
+#   https://api.zupeat.com/health/ready
+#   https://zupeat.com
 # Sans cette variable, la sonde ne fait rien.
 #
 # Bon à savoir : GitHub peut retarder un passage planifié de plusieurs minutes
@@ -46,7 +46,7 @@ jobs:
             # Trois essais espacés de 20 s : un seul raté n'est pas une panne.
             code=$(curl -sS -o /dev/null -w '%{http_code}' -L \
               --max-time 15 --retry 2 --retry-delay 20 --retry-all-errors \
-              -A "Zupone-Disponibilite/1.0 (GitHub Actions)" "$url" || echo "000")
+              -A "ZupEat-Disponibilite/1.0 (GitHub Actions)" "$url" || echo "000")
 
             if [ "$code" -ge 200 ] && [ "$code" -lt 400 ]; then
               echo "OK    $code  $url"

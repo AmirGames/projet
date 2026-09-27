@@ -17,7 +17,7 @@ const CONDITIONS_COMMERCANTS = { libelle: 'conditions commerçants', href: '/con
 // ─── Livreur ────────────────────────────────────────────────────────────────
 
 const livreurCommun = {
-  badge: 'Livreur Zupone',
+  badge: 'Livreur ZupEat',
   titre: 'Livrez près de chez vous, quand vous le voulez',
   accroche:
     'À vélo, en scooter ou en voiture : vous vous connectez quand vous êtes disponible, et les courses des commerces du quartier vous sont proposées.',
@@ -47,7 +47,7 @@ export const LIVREUR: ParPays = {
       'Un smartphone avec connexion internet et localisation',
     ],
     questions: [
-      { question: 'Suis-je salarié de Zupone ?', reponse: 'Non, vous exercez comme indépendant et restez libre d’accepter ou de refuser les courses.' },
+      { question: 'Suis-je salarié de ZupEat ?', reponse: 'Non, vous exercez comme indépendant et restez libre d’accepter ou de refuser les courses.' },
       { question: 'Je suis étudiant, puis-je livrer ?', reponse: 'Oui, sous le statut d’étudiant‑indépendant, à condition de respecter les règles de ce statut (inscription BCE et caisse d’assurances sociales).' },
       { question: 'Dois-je facturer la TVA ?', reponse: 'Cela dépend de votre chiffre d’affaires : sous le seuil de la franchise TVA, vous n’en facturez pas. Votre comptable ou votre guichet d’entreprise peut vous le confirmer.' },
       { question: 'Puis-je refuser une course ?', reponse: 'Oui. Une course refusée est simplement proposée au livreur suivant.' },
@@ -69,7 +69,7 @@ export const LIVREUR: ParPays = {
       'Un smartphone avec connexion internet et localisation',
     ],
     questions: [
-      { question: 'Suis-je salarié de Zupone ?', reponse: 'Non, vous exercez en tant qu’indépendant et restez libre d’accepter ou de refuser les courses.' },
+      { question: 'Suis-je salarié de ZupEat ?', reponse: 'Non, vous exercez en tant qu’indépendant et restez libre d’accepter ou de refuser les courses.' },
       { question: 'Comment obtenir un SIRET ?', reponse: 'En créant une micro‑entreprise sur le guichet unique de l’INPI ; le numéro est généralement attribué en quelques jours.' },
       { question: 'Puis-je refuser une course ?', reponse: 'Oui. Une course refusée est simplement proposée au livreur suivant.' },
     ],
@@ -79,7 +79,7 @@ export const LIVREUR: ParPays = {
 // ─── Commerçant ─────────────────────────────────────────────────────────────
 
 const commercantCommun = {
-  badge: 'Commerçant Zupone',
+  badge: 'Commerçant ZupEat',
   titre: 'Votre commerce en ligne, en quelques minutes',
   accroche:
     'Restaurant, boulangerie, épicerie, fleuriste… Créez votre boutique, publiez votre catalogue et recevez des commandes livrées par des livreurs du quartier.',
@@ -144,7 +144,7 @@ const chauffeurCommun = {
   badge: 'Chauffeur VTC · Bientôt disponible',
   titre: 'Conduisez des passagers dans votre ville',
   accroche:
-    'Zupone prépare son service de transport de personnes. Chauffeurs, faites-vous connaître dès maintenant pour faire partie des premiers sur la plateforme.',
+    'ZupDrive prépare son service de transport de personnes. Chauffeurs, faites-vous connaître dès maintenant pour faire partie des premiers sur la plateforme.',
   cta: {
     libelle: 'Je suis intéressé',
     href: `mailto:${EMAIL_CONTACT}?subject=${encodeURIComponent('Candidature chauffeur VTC')}`,

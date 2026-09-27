@@ -23,7 +23,7 @@
  * compte et pour rester utilisable hors ligne. Voir `SynchroPaniers`.
  */
 
-const CLE = 'zupone-paniers';
+const CLE = 'zupeat-paniers';
 
 /** L'ancienne clé, dont le contenu n'est pas récupérable de façon fiable. */
 const CLE_HERITEE = 'cart';
@@ -174,13 +174,13 @@ export function retenirVitrineDuPanier(storeId: string, storeSlug: string) {
 }
 
 /** Émis à chaque modification d'un panier, dans l'onglet courant. */
-export const EVENEMENT_PANIERS = 'zupone-paniers-modifies';
+export const EVENEMENT_PANIERS = 'zupeat-paniers-modifies';
 
 /**
  * Émis quand un panier a été modifié sur un autre appareil du compte
  * (`detail.storeId`) : la vitrine ouverte le relit.
  */
-export const EVENEMENT_PANIER_DISTANT = 'zupone-panier-distant';
+export const EVENEMENT_PANIER_DISTANT = 'zupeat-panier-distant';
 
 export function viderPanier(storeId: string | undefined) {
   enregistrerPanier(storeId, []);

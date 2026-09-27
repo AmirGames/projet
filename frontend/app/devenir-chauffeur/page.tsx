@@ -4,8 +4,8 @@ import { CHAUFFEUR } from '@/lib/devenir-contenus';
 import { paysDuVisiteur } from '@/lib/pays';
 
 export const metadata: Metadata = {
-  title: 'Devenir chauffeur VTC — Zupone',
-  description: 'Transportez des passagers avec Zupone — bientôt disponible.',
+  title: 'Devenir chauffeur VTC — ZupDrive',
+  description: 'Transportez des passagers avec ZupDrive — bientôt disponible.',
 };
 
 export default async function DevenirChauffeurPage({ searchParams }: { searchParams: Promise<{ pays?: string }> }) {

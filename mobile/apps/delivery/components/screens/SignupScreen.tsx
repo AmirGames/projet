@@ -14,7 +14,7 @@ import { API_URL, SITE_URL } from '../../lib/api';
 import type { Session } from '../../lib/session';
 import { COLORS, themedStyles } from '../ui';
 
-/** Les pays où Zupone livre, comme sur le site. */
+/** Les pays où ZupEat livre, comme sur le site. */
 const PAYS = {
   FR: { libelle: '🇫🇷 France', indicatif: '+33' },
   BE: { libelle: '🇧🇪 Belgique', indicatif: '+32' },

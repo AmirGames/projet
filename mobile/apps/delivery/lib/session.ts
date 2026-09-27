@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
-const SESSION_KEY = 'zupone.delivery.session';
-const PREFS_KEY = 'zupone.delivery.prefs';
+const SESSION_KEY = 'zupeat.delivery.session';
+const PREFS_KEY = 'zupeat.delivery.prefs';
 
 export interface Session {
   accessToken: string;
@@ -15,7 +15,7 @@ export interface Prefs {
    * Ce que fait « Itinéraire » : la carte de l'application (par défaut), ou
    * une application de navigation extérieure.
    */
-  navigationApp: 'zupone' | 'google' | 'waze' | 'apple';
+  navigationApp: 'zupeat' | 'google' | 'waze' | 'apple';
   /**
    * Sombre par défaut : il économise la batterie des écrans OLED. « system »
    * suit le mode clair ou sombre réglé sur le téléphone.
@@ -23,7 +23,7 @@ export interface Prefs {
   theme: 'dark' | 'light' | 'system';
 }
 
-export const DEFAULT_PREFS: Prefs = { soundEnabled: true, navigationApp: 'zupone', theme: 'dark' };
+export const DEFAULT_PREFS: Prefs = { soundEnabled: true, navigationApp: 'zupeat', theme: 'dark' };
 
 /** Version des préférences : la 2 a amené la carte intégrée. */
 const PREFS_VERSION = 2;
@@ -64,7 +64,7 @@ export async function loadPrefs(): Promise<Prefs> {
   const prefs: Prefs = { ...DEFAULT_PREFS, ...rest };
   // Avant la carte intégrée, Google Maps était le choix par défaut, pas celui
   // du livreur : la carte de l'application prend sa place.
-  if ((v ?? 1) < PREFS_VERSION) prefs.navigationApp = 'zupone';
+  if ((v ?? 1) < PREFS_VERSION) prefs.navigationApp = 'zupeat';
   return prefs;
 }
 export const savePrefs = (prefs: Prefs) => write(PREFS_KEY, { ...prefs, v: PREFS_VERSION });

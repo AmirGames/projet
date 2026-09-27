@@ -19,7 +19,7 @@ import "./globals.css";
 export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: await baseDuSite(),
-    title: "Zupone — Commandez chez vos commerces de proximité",
+    title: "ZupEat — Commandez chez vos commerces de proximité",
     description: "La plateforme qui relie commerçants, clients et livreurs de proximité.",
     alternates: await alternatesRegionales(),
   };

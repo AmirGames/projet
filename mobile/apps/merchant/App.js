@@ -46,7 +46,7 @@ export default function App() {
       
       {!isLoggedIn ? (
         <View style={styles.loginContainer}>
-          <Text style={styles.title}>Zupone</Text>
+          <Text style={styles.title}>ZupEat</Text>
           <Text style={styles.subtitle}>Commerçant</Text>
 
           <TextInput

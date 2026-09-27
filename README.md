@@ -1,4 +1,4 @@
-# Zupone
+# ZupEat
 
 Une plateforme de commande en ligne pour les commerces de proximité : le
 commerçant tient son catalogue et ses commandes, le client commande depuis sa

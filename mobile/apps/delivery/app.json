@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Zupone Livreur",
-    "slug": "zupone-delivery",
+    "name": "ZupEat Livreur",
+    "slug": "zupeat-delivery",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
-    "scheme": "zupone-delivery",
+    "scheme": "zupeat-delivery",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -14,14 +14,14 @@
       "enabled": false
     },
     "ios": {
-      "bundleIdentifier": "com.amirgames.zuponedelivery",
+      "bundleIdentifier": "com.amirgames.zupeatdelivery",
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.amir_games.zuponedelivery",
+      "package": "com.amir_games.zupeatdelivery",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
@@ -61,9 +61,9 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Zupone transmet votre position pendant que vous êtes en ligne : elle décide des courses qui vous sont proposées et permet au client de suivre sa livraison.",
-          "locationAlwaysAndWhenInUsePermission": "Zupone transmet votre position pendant que vous êtes en ligne ou sur une course, même téléphone rangé : les courses proches vous sont proposées et le client suit sa livraison. Elle n'est plus transmise dès que vous passez hors ligne.",
-          "locationAlwaysPermission": "Zupone transmet votre position pendant que vous êtes en ligne ou sur une course, même téléphone rangé : les courses proches vous sont proposées et le client suit sa livraison. Elle n'est plus transmise dès que vous passez hors ligne.",
+          "locationWhenInUsePermission": "ZupEat transmet votre position pendant que vous êtes en ligne : elle décide des courses qui vous sont proposées et permet au client de suivre sa livraison.",
+          "locationAlwaysAndWhenInUsePermission": "ZupEat transmet votre position pendant que vous êtes en ligne ou sur une course, même téléphone rangé : les courses proches vous sont proposées et le client suit sa livraison. Elle n'est plus transmise dès que vous passez hors ligne.",
+          "locationAlwaysPermission": "ZupEat transmet votre position pendant que vous êtes en ligne ou sur une course, même téléphone rangé : les courses proches vous sont proposées et le client suit sa livraison. Elle n'est plus transmise dès que vous passez hors ligne.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true,

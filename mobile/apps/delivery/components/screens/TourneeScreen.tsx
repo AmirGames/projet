@@ -98,7 +98,7 @@ export default function TourneeScreen({
   }, [next?.lat, next?.lng]);
 
   const navigate = (stop: Stop) => {
-    if (navigationApp === 'zupone') {
+    if (navigationApp === 'zupeat') {
       onOpenDelivery(stop.deliveryId);
       return;
     }
@@ -141,7 +141,7 @@ export default function TourneeScreen({
               <TouchableOpacity style={styles.primary} onPress={() => onOpenDelivery(next.deliveryId)}>
                 <Text style={styles.primaryText}>{next.type === 'RETRAIT' ? 'Prendre la commande' : 'Remettre la commande'}</Text>
               </TouchableOpacity>
-              {navigationApp !== 'zupone' && (
+              {navigationApp !== 'zupeat' && (
                 <TouchableOpacity style={styles.secondary} onPress={() => navigate(next)}>
                   <Text style={styles.secondaryText}>🧭 GPS</Text>
                 </TouchableOpacity>

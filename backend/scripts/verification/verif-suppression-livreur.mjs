@@ -76,7 +76,7 @@ check('l’aperçu aussi', (await j(await get('/api/drivers/me/suppression', D))
 titre('Seul le compte livreur est supprimé');
 const reconnexion = await post('/api/auth/login', { email, password: 'Password123!' });
 const recompte = await j(reconnexion);
-check('le compte Zupone se connecte toujours', reconnexion.status === 200 && !!recompte?.accessToken, `statut ${reconnexion.status}`);
+check('le compte ZupOne se connecte toujours', reconnexion.status === 200 && !!recompte?.accessToken, `statut ${reconnexion.status}`);
 const client = await get('/api/client/me', recompte?.accessToken);
 check('l’espace client ZupEat reste ouvert', client.status === 200, `statut ${client.status}`);
 const message = await sqlScalaire(

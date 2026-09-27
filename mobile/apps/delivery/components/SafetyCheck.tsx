@@ -112,7 +112,7 @@ export default function SafetyCheck({
           <TouchableOpacity style={styles.sos} onPress={callEmergency}>
             <Text style={styles.sosText}>🚨 Appeler le 112</Text>
           </TouchableOpacity>
-          <Text style={styles.note}>Le support Zupone sera prévenu de votre appel.</Text>
+          <Text style={styles.note}>Le support ZupEat sera prévenu de votre appel.</Text>
         </View>
       </View>
     </Modal>

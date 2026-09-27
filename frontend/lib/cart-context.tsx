@@ -41,7 +41,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
  * pages écrivaient sous « cart » une liste à plat en euros. Chacune écrasait
  * les autres, et le panier revenait déformé ou vide.
  */
-const CLE = 'zupone-panier-client';
+const CLE = 'zupeat-panier-client';
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartStore[]>([]);

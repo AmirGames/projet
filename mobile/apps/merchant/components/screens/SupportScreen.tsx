@@ -89,7 +89,7 @@ function NewTicket({ token, orgId, onDone, onCancel }: { token: string; orgId: s
         method: 'POST',
         body: { orgId, subject: subject.trim(), description: description.trim(), category, priority },
       });
-      Alert.alert('Demande envoyée', 'L’équipe Zupone vous répondra ici.');
+      Alert.alert('Demande envoyée', 'L’équipe ZupEat vous répondra ici.');
       onDone();
     } catch (e: any) {
       Alert.alert('Erreur', e.message || 'Envoi impossible');
@@ -209,7 +209,7 @@ function Conversation({ token, ticket, onBack }: { token: string; ticket: Ticket
               const mine = item.authorRole === 'MERCHANT';
               return (
                 <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
-                  {!mine && <Text style={styles.author}>{item.authorName} · Zupone</Text>}
+                  {!mine && <Text style={styles.author}>{item.authorName} · ZupEat</Text>}
                   <Text style={[styles.bubbleText, mine && { color: '#fff' }]}>{item.body}</Text>
                   <Text style={[styles.bubbleTime, mine && { color: 'rgba(255,255,255,0.75)' }]}>{fmt(item.createdAt)}</Text>
                 </View>
@@ -277,7 +277,7 @@ export default function SupportScreen({ token, orgId, onBack }: { token: string;
 
   return (
     <View style={{ flex: 1 }}>
-      <ScreenHeader title="Support 💬" subtitle="Échangez avec l’équipe Zupone" onBack={onBack} />
+      <ScreenHeader title="Support 💬" subtitle="Échangez avec l’équipe ZupEat" onBack={onBack} />
       {loading ? (
         <Loading />
       ) : error ? (

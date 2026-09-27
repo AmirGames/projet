@@ -6,7 +6,7 @@ import type { DeliveryAddress } from '../../lib/session';
 import { Card, COLORS, Row, ScreenHeader, ui } from '../ui';
 
 /** Le site public : conditions, confidentialité (fixé par eas.json en production). */
-const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || 'https://zupone.com').replace(/\/+$/, '');
+const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || 'https://zupeat.com').replace(/\/+$/, '');
 
 interface DeletionPreview {
   commandesEnCours: number;
@@ -67,7 +67,7 @@ function useAccountDeletion(token: string | null, onDeleted: () => void) {
       'Supprimer votre compte ZupEat ?',
       `Vous supprimez votre compte ZupEat : votre profil, vos adresses, vos favoris et vos paniers seront effacés. Vos commandes passées sont conservées sans lien avec vous, le temps que la loi l’exige.\n\n${
         preview.compteEntierSupprime
-          ? 'Votre compte Zupone sera supprimé : vous ne pourrez plus vous connecter.'
+          ? 'Votre compte ZupOne sera supprimé : vous ne pourrez plus vous connecter.'
           : `${restent.join(' ')} Vous vous y connectez avec la même adresse e-mail et le même mot de passe.`
       }`,
       [
@@ -130,7 +130,7 @@ export default function SettingsScreen({
         </Card>
 
         <Card title="À propos">
-          <Row label="Application" value="Zupone" />
+          <Row label="Application" value="ZupEat" />
           <Row label="Version" value={Constants.expoConfig?.version || '1.0.0'} />
           <Row label="Serveur" value={API_URL} last />
         </Card>

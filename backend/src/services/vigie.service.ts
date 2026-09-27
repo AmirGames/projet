@@ -335,8 +335,8 @@ async function alerter(incident: Incident, ouverture: boolean) {
 
   const prefixe = ouverture ? (incident.niveau === "CRITIQUE" ? "🔴" : "🟠") : "✅";
   const sujet = ouverture
-    ? `${prefixe} [Zupone] ${incident.titre}`
-    : `${prefixe} [Zupone] Rétabli : ${incident.titre}`;
+    ? `${prefixe} [ZupEat] ${incident.titre}`
+    : `${prefixe} [ZupEat] Rétabli : ${incident.titre}`;
   const texte = ouverture
     ? `${incident.detail}\n\nOuvert le ${new Date(incident.ouvertLe).toLocaleString("fr-FR")}.`
     : `L'incident est clos (ouvert le ${new Date(incident.ouvertLe).toLocaleString("fr-FR")}).`;

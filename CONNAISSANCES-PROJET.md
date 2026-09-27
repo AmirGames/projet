@@ -1,4 +1,4 @@
-# Zupone — connaissances du projet
+# ZupEat (groupe ZupOne) — connaissances du projet
 
 Document de référence : ce qu'est le projet, comment on y travaille, ce qui a
 été fait, et ce qui reste. À relire avant de reprendre le travail.
@@ -12,7 +12,7 @@ aux moteurs de recherche.
 
 ## 1. Le projet
 
-**Zupone** est une plateforme de commande en ligne pour les commerces de
+**ZupEat** est une plateforme de commande en ligne pour les commerces de
 proximité, dans l'esprit d'Uber Eats ou Glovo. Trois métiers cohabitent :
 
 - **le client** commande depuis la vitrine d'un commerce, avec ou sans compte ;
@@ -25,9 +25,32 @@ Plusieurs commerçants cohabitent sur la même installation, chacun chez lui
 (multi-tenant). Restaurants, boulangeries, épiceries — tout commerce qui vend
 à emporter ou à livrer.
 
-**Noms de domaine réservés** : `zupone.com`, `zupeat.com`, `zupdrive.com`.
-Le site sait se répartir sur trois domaines (public / commerçant / livreur) ou
-tenir sur un seul. **Rien n'est déployé : tout se passe en local.**
+### Le groupe ZupOne
+
+ZupEat est la première plateforme du groupe **ZupOne** ; **ZupDrive** (courses
+de taxi / VTC) viendra ensuite, sur le même code et le même compte.
+
+| Domaine | Rôle |
+|---|---|
+| `zupone.com` | Vitrine du groupe (à faire) |
+| `manager.zupone.com` | L'équipe du groupe : un seul panneau (`/superowner`) pour toutes les plateformes |
+| `zupeat.com` | Les clients de ZupEat |
+| `manager.zupeat.com` | Les commerçants |
+| `delivery.zupeat.com` | Les livreurs |
+| `zupdrive.com`, `manager.zupdrive.com` | ZupDrive : clients, sociétés de taxi (à faire) |
+
+- **Un seul compte ZupOne** par personne (`User`), client sur toutes les
+  plateformes, commerçant ou livreur s'il l'est.
+- **Les rôles de l'équipe sont propres à chaque plateforme** (`AccesEquipe`,
+  énumération `Plateforme` : `EAT`, `DRIVE`) : on peut être SuperAdmin sur
+  ZupEat et Support sur ZupDrive. Les groupes et leurs permissions
+  (`PlatformRole`) se règlent aussi plateforme par plateforme.
+- Le **nom visible** partout est ZupEat ; ZupOne n'apparaît que pour le compte
+  et l'équipe du groupe.
+
+Le site se répartit sur ces domaines (`NEXT_PUBLIC_DOMAINE_GROUPE`, `_PUBLIC`,
+`_PRO`, `_LIVREUR`) ou tient sur un seul. **Rien n'est déployé : tout se passe
+en local.**
 
 ---
 
@@ -450,8 +473,8 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
   légales, pages « devenir ». Liste dans `frontend/i18n/chemins-regionaux.ts`.
 - **Aucune page n'est déplacée** : le proxy (`frontend/proxy.ts`) retire le préfixe, réécrit
   vers la page d'origine et transmet la région par l'en-tête
-  `x-zupone-region`. Une page publique appelée sans préfixe est redirigée
-  (307) vers la région du visiteur : cookie `ZUPONE_REGION`, sinon langue
+  `x-zupeat-region`. Une page publique appelée sans préfixe est redirigée
+  (307) vers la région du visiteur : cookie `ZUPEAT_REGION`, sinon langue
   choisie, sinon `Accept-Language`, sinon `fr-fr`.
 - Un script de vérification qui ouvre `/restaurants` atterrit donc sur
   `/fr-fr/restaurants` : comparer les adresses sans le préfixe.

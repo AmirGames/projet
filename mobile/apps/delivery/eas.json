@@ -14,8 +14,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.zupone.com",
-        "EXPO_PUBLIC_SITE_URL": "https://zupone.com"
+        "EXPO_PUBLIC_API_URL": "https://api.zupeat.com",
+        "EXPO_PUBLIC_SITE_URL": "https://zupeat.com"
       }
     },
     "production": {
@@ -24,8 +24,8 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.zupone.com",
-        "EXPO_PUBLIC_SITE_URL": "https://zupone.com"
+        "EXPO_PUBLIC_API_URL": "https://api.zupeat.com",
+        "EXPO_PUBLIC_SITE_URL": "https://zupeat.com"
       }
     }
   },

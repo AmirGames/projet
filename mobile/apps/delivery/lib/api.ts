@@ -26,7 +26,7 @@ function detectApiUrl() {
 export const API_URL = detectApiUrl();
 
 /** Le site public : conditions, confidentialité (fixé par eas.json en production). */
-export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || 'https://zupone.com').replace(/\/+$/, '');
+export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || 'https://zupeat.com').replace(/\/+$/, '');
 
 export class ApiError extends Error {
   constructor(message: string, public status: number) {

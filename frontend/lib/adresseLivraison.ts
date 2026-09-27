@@ -19,7 +19,7 @@ export interface AdresseLivraison {
   longitude: number | null;
 }
 
-const CLE = 'zupone.adresseLivraison';
+const CLE = 'zupeat.adresseLivraison';
 
 function lireBrut(): string | null {
   try {

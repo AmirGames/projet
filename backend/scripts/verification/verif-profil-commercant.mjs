@@ -60,7 +60,7 @@ const enregistre = await j(
   await put(
     `/api/merchant-profile/${orgId}`,
     {
-      legalName: `Zupone Test ${uniq}`,
+      legalName: `ZupEat Test ${uniq}`,
       registrationNumber: '81234567800015',
       vatNumber: 'FR12345678901',
       billingAddress: '20 Rue de la République',
@@ -74,13 +74,13 @@ const enregistre = await j(
       ownerBirthDate: '1985-04-12',
       iban: 'FR7630006000011234567890189',
       bic: 'AGRIFRPP',
-      accountHolder: `Zupone Test ${uniq}`,
+      accountHolder: `ZupEat Test ${uniq}`,
     },
     T
   )
 );
 
-check('la raison sociale est relue', enregistre?.data?.legalName === `Zupone Test ${uniq}`, enregistre?.data?.legalName);
+check('la raison sociale est relue', enregistre?.data?.legalName === `ZupEat Test ${uniq}`, enregistre?.data?.legalName);
 check('le numéro de TVA est relu', enregistre?.data?.vatNumber === 'FR12345678901', enregistre?.data?.vatNumber);
 check('la ville de facturation est relue', enregistre?.data?.billingCity === 'Lyon', enregistre?.data?.billingCity);
 check('le propriétaire est relu', enregistre?.data?.ownerFirstName === 'Amir', enregistre?.data?.ownerFirstName);
@@ -161,7 +161,7 @@ const ecritureVoisine = await put(`/api/merchant-profile/${orgId}`, { legalName:
 check('et ne l’écrit pas', ecritureVoisine.status === 403, `statut ${ecritureVoisine.status}`);
 
 const nomApres = await sqlScalaire(`SELECT "legalName" FROM "Organization" WHERE id = '${orgId}'`);
-check('la raison sociale n’a pas bougé', nomApres === `Zupone Test ${uniq}`, nomApres);
+check('la raison sociale n’a pas bougé', nomApres === `ZupEat Test ${uniq}`, nomApres);
 
 // ===== Les pièces =====
 
@@ -278,7 +278,7 @@ check('la validation passe', validation?.document?.status === 'APPROVED', valida
 
 titre('Le dossier vu par la plateforme');
 const dossier = await j(await get(`/api/superowner/organizations/${orgId}/profile`, TP));
-check('la plateforme lit le dossier', dossier?.data?.legalName === `Zupone Test ${uniq}`, dossier?.data?.legalName);
+check('la plateforme lit le dossier', dossier?.data?.legalName === `ZupEat Test ${uniq}`, dossier?.data?.legalName);
 check('elle compte les pièces à examiner', dossier?.data?.piecesAExaminer === 0, `${dossier?.data?.piecesAExaminer}`);
 // Elle a besoin de rapprocher un virement d'un compte, pas de l'IBAN entier.
 check(
@@ -295,7 +295,7 @@ check('un commerçant n’accède pas à cette vue', dossierParLeCommercant.stat
 
 titre('La facture porte les mentions du commerçant');
 const facture = await j(await get(`/api/superowner/billing/${orgId}`, TP));
-check('la raison sociale y figure', facture?.organization?.legalName === `Zupone Test ${uniq}`, facture?.organization?.legalName);
+check('la raison sociale y figure', facture?.organization?.legalName === `ZupEat Test ${uniq}`, facture?.organization?.legalName);
 check('le numéro de TVA aussi', facture?.organization?.vatNumber === 'BE0123456789', facture?.organization?.vatNumber);
 check('et plus rien ne manque', (facture?.organization?.manquePourFacturer || []).length === 0, JSON.stringify(facture?.organization?.manquePourFacturer));
 

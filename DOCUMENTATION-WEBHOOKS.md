@@ -1,8 +1,8 @@
-# Webhooks Zupone
+# Webhooks ZupEat
 
 Un webhook prévient **votre** serveur de ce qui se passe sur la plateforme :
 une commande arrive, un ticket s'ouvre, un commerçant est suspendu. Vous
-enregistrez une adresse, vous choisissez des événements, et Zupone vous envoie
+enregistrez une adresse, vous choisissez des événements, et ZupEat vous envoie
 une requête `POST` à chaque fois que l'un d'eux se produit.
 
 Les abonnements se gèrent dans **Administration → Webhooks**
@@ -13,7 +13,7 @@ Les abonnements se gèrent dans **Administration → Webhooks**
 ## 1. Ce que vous recevez
 
 ```http
-POST https://votre-serveur.fr/zupone
+POST https://votre-serveur.fr/zupeat
 Content-Type: application/json
 X-Webhook-Event: order.created
 X-Webhook-Signature: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b…
@@ -48,7 +48,7 @@ X-Webhook-Attempt: 1
 
 ## 2. Vérifier la signature
 
-C'est ce qui prouve que la requête vient de Zupone et que personne n'a touché
+C'est ce qui prouve que la requête vient de ZupEat et que personne n'a touché
 au contenu. **Le secret est affiché une seule fois, à la création de
 l'abonnement.** Il n'est récupérable nulle part ensuite : copiez-le tout de
 suite. Si vous l'avez perdu, supprimez l'abonnement et recréez-le.
@@ -62,7 +62,7 @@ signature ne tombera plus juste.
 ```js
 const crypto = require('crypto');
 
-app.post('/zupone', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/zupeat', express.raw({ type: 'application/json' }), (req, res) => {
   const attendue = crypto.createHmac('sha256', SECRET).update(req.body).digest('hex');
   const recue = req.get('X-Webhook-Signature') || '';
 
@@ -98,8 +98,8 @@ $envoi = json_decode($corps, true);
 ```python
 import hmac, hashlib
 
-@app.post("/zupone")
-def zupone():
+@app.post("/zupeat")
+def zupeat():
     corps = request.get_data()
     attendue = hmac.new(SECRET.encode(), corps, hashlib.sha256).hexdigest()
 
@@ -118,10 +118,10 @@ caractère par caractère.
 
 ## 3. Répondez vite
 
-**Zupone abandonne l'envoi au bout de 5 secondes.** Répondez `200` dès que vous
+**ZupEat abandonne l'envoi au bout de 5 secondes.** Répondez `200` dès que vous
 avez vérifié la signature, et faites votre travail après — imprimer un ticket,
 appeler votre caisse, envoyer un courriel. Un traitement lent ne rate pas
-seulement le délai : il fait croire à Zupone que votre serveur est en panne.
+seulement le délai : il fait croire à ZupEat que votre serveur est en panne.
 
 Tout code de la famille `2xx` vaut succès. Tout le reste vaut échec, et
 déclenche les relances.
@@ -135,7 +135,7 @@ trente. Quatre tentatives en tout, sur un peu plus d'une demi-heure. Au-delà,
 l'envoi est abandonné.
 
 La file d'attente est en base de données, pas en mémoire : un redémarrage du
-serveur Zupone ne perd pas les relances en cours.
+serveur ZupEat ne perd pas les relances en cours.
 
 **Les relances portent le même `X-Webhook-Id`.** C'est ce qui vous permet de
 reconnaître un envoi que vous avez déjà traité — par exemple si vous aviez bien

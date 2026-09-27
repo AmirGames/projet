@@ -48,7 +48,7 @@ export default function Home() {
       {/* HEADER */}
       <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 md:px-10">
         <Link href="/" className="text-2xl font-black text-primary md:text-3xl">
-          Zupone
+          ZupEat
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
@@ -254,7 +254,7 @@ export default function Home() {
       <footer className="bg-slate-900 px-6 py-16 text-white md:px-10">
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 md:grid-cols-4">
           <div>
-            <h4 className="mb-3 text-lg font-bold">Zupone</h4>
+            <h4 className="mb-3 text-lg font-bold">ZupEat</h4>
             <p className="text-slate-300">
               La plateforme qui relie commerçants, clients et livreurs de proximité.
             </p>

@@ -4,7 +4,7 @@ import { LIVREUR } from '@/lib/devenir-contenus';
 import { paysDuVisiteur } from '@/lib/pays';
 
 export const metadata: Metadata = {
-  title: 'Devenir livreur — Zupone',
+  title: 'Devenir livreur — ZupEat',
   description: 'Livrez les commandes des commerces de proximité, à votre rythme.',
 };
 

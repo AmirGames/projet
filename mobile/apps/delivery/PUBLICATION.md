@@ -1,4 +1,4 @@
-# Publier Zupone Livreur
+# Publier ZupEat Livreur
 
 Ce qui est prêt dans le dépôt, puis ce qui reste à faire (comptes, clés,
 fiches des stores), dans l'ordre.
@@ -7,8 +7,8 @@ fiches des stores), dans l'ordre.
 
 - **`app.json`** : nom, icônes (iOS, Android adaptative et monochrome),
   écran de démarrage orange, icône des notifications et du suivi de position,
-  identifiants `com.amirgames.zuponedelivery` (iOS) et
-  `com.amir_games.zuponedelivery` (Android), `runtimeVersion`, déclaration de
+  identifiants `com.amirgames.zupeatdelivery` (iOS) et
+  `com.amir_games.zupeatdelivery` (Android), `runtimeVersion`, déclaration de
   chiffrement pour Apple (`ITSAppUsesNonExemptEncryption: false`).
 - **Autorisations réduites au nécessaire**. Android : position (y compris en
   arrière-plan), service au premier plan « localisation », Internet, vibreur,
@@ -27,7 +27,7 @@ fiches des stores), dans l'ordre.
   immédiate, demande transmise au support de la plateforme, données effacées
   sous 30 jours sauf obligations légales).
 
-> Les icônes sont **provisoires** (un « Z » blanc sur l'orange Zupone) :
+> Les icônes sont **provisoires** (un « Z » blanc sur l'orange ZupEat) :
 > remplacez les fichiers de `assets/images/` par le vrai logo en gardant les
 > mêmes noms et tailles (icône 1024 × 1024 sans transparence ; premier plan
 > Android 1024 × 1024 transparent, logo dans le cercle central de 66 % ;
@@ -35,8 +35,8 @@ fiches des stores), dans l'ordre.
 
 ## 1. À vérifier dans `eas.json`
 
-`EXPO_PUBLIC_API_URL` vaut `https://api.zupone.com` et `EXPO_PUBLIC_SITE_URL`
-`https://zupone.com` : **corrigez-les si l'adresse réelle diffère**. Le
+`EXPO_PUBLIC_API_URL` vaut `https://api.zupeat.com` et `EXPO_PUBLIC_SITE_URL`
+`https://zupeat.com` : **corrigez-les si l'adresse réelle diffère**. Le
 serveur doit répondre en **HTTPS** (Android refuse le HTTP simple dans une
 version publiée).
 
@@ -62,7 +62,7 @@ Sans `projectId`, les notifications push ne s'activent pas (voir `lib/push.ts`).
 ## 4. Notifications push
 
 - **Android** : dans Firebase, ajoutez une application Android
-  `com.amir_games.zuponedelivery`, téléchargez `google-services.json`, placez-le
+  `com.amir_games.zupeatdelivery`, téléchargez `google-services.json`, placez-le
   dans `mobile/apps/delivery/`, et ajoutez dans `app.json` :
   `"android": { "googleServicesFile": "./google-services.json", … }`.
   Puis `npx eas-cli@latest credentials` › Android › *Google Service Account
@@ -106,17 +106,17 @@ npx eas-cli@latest submit --profile production --platform ios       # TestFlight
 
 ## 8. Fiches des stores
 
-**Nom** : Zupone Livreur
+**Nom** : ZupEat Livreur
 **Sous-titre (iOS, 30 caractères)** : Vos courses, en temps réel
 **Catégorie** : Économie et entreprise (iOS) / Business (Android)
 **Âge** : 18 ans et plus (activité professionnelle)
 
 **Description courte (Android, 80 caractères)** :
-Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs Zupone.
+Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs ZupEat.
 
 **Description** :
 
-> Zupone Livreur est l'application des livreurs partenaires de Zupone.
+> ZupEat Livreur est l'application des livreurs partenaires de ZupEat.
 >
 > • Passez en ligne et recevez les courses proches de vous : montant garanti,
 >   distance et durée affichés avant d'accepter.
@@ -128,9 +128,9 @@ Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs Zupon
 > • Gains du jour, de la semaine et du mois, historique, avis clients.
 > • Support en direct et bouton d'urgence pendant les courses.
 >
-> Un compte livreur validé par Zupone est nécessaire. Inscription sur zupone.com.
+> Un compte livreur validé par ZupEat est nécessaire. Inscription sur zupeat.com.
 
-**Mots-clés (iOS)** : livreur,livraison,coursier,courses,repas,scooter,vélo,gains,zupone
+**Mots-clés (iOS)** : livreur,livraison,coursier,courses,repas,scooter,vélo,gains,zupeat
 
 ## 9. Déclarations des stores
 
@@ -140,7 +140,7 @@ Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs Zupon
   de localisation*) : fonction « Suivi de la livraison et attribution des
   courses au livreur le plus proche, pendant qu'il est en ligne ». Google exige
   une **courte vidéo** : passage en ligne, message d'explication, choix
-  « Toujours autoriser », téléphone verrouillé, notification Zupone visible.
+  « Toujours autoriser », téléphone verrouillé, notification ZupEat visible.
 - **Service au premier plan de type « localisation »** : même justification
   (la notification permanente est affichée tant que la position est suivie).
 - **Sécurité des données** :
@@ -152,15 +152,15 @@ Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs Zupon
   - chiffrement en transit : oui ; suppression sur demande : oui.
 - **Suppression du compte** : elle se fait dans l'application (Paramètres ›
   Vos données) et sur le site, pour ceux qui n'ont plus l'application :
-  **`https://zupone.com/suppression-compte`** — l'adresse à indiquer dans la
+  **`https://zupeat.com/suppression-compte`** — l'adresse à indiquer dans la
   Console. Dans les deux cas, ce qui reste dû au livreur n'est pas perdu :
   ses courses de la semaine sont arrêtées le lundi suivant et versées sur son
   IBAN (sans IBAN valide, la demande est refusée jusqu'à ce qu'il le donne) ;
   ses données ne s'effacent qu'après ce dernier versement.
-  Seul le **compte livreur** est supprimé : le compte Zupone (même e-mail,
+  Seul le **compte livreur** est supprimé : le compte ZupOne (même e-mail,
   même mot de passe) reste, et avec lui le compte client ZupEat — c'est dit
   au livreur avant et après la suppression.
-- **Politique de confidentialité** : `https://zupone.com/confidentialite`.
+- **Politique de confidentialité** : `https://zupeat.com/confidentialite`.
 - **Accès pour l'examen** : un compte livreur de démonstration, déjà validé.
 
 ### Apple
@@ -180,7 +180,7 @@ Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs Zupon
 
   > The account created and managed in this app is the courier (driver)
   > account. It can be deleted in the app: Settings › Vos données › Supprimer
-  > mon compte livreur (also on https://zupone.com/suppression-compte). This
+  > mon compte livreur (also on https://zupeat.com/suppression-compte). This
   > deletes the courier account and its data (documents, vehicle, bank
   > details, location); outstanding earnings are paid on the following Monday,
   > then the courier data is erased within 30 days. The same login can also
@@ -201,7 +201,7 @@ tableau des traitements :
 
 | Finalité | Données | Base légale | Durée |
 | --- | --- | --- | --- |
-| Attribution des courses | position du livreur tant qu'il est en ligne, y compris application en arrière-plan ou téléphone verrouillé (application Zupone Livreur) ; rien n'est transmis hors ligne | contrat | seule la dernière position est conservée |
+| Attribution des courses | position du livreur tant qu'il est en ligne, y compris application en arrière-plan ou téléphone verrouillé (application ZupEat Livreur) ; rien n'est transmis hors ligne | contrat | seule la dernière position est conservée |
 | Preuve de livraison | photo du dépôt et endroit indiqué, ou validation par le code du client | contrat | durée de la relation, puis 5 ans |
 
 ## Mises à jour suivantes

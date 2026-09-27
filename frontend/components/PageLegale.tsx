@@ -22,7 +22,7 @@ async function lirePage(slug: string): Promise<Page | null> {
 
 export async function metadataLegale(slug: string): Promise<Metadata> {
   const page = await lirePage(slug);
-  return { title: `${page?.titre ?? 'Informations légales'} — Zupone` };
+  return { title: `${page?.titre ?? 'Informations légales'} — ZupEat` };
 }
 
 /**

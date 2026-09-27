@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Zupone Merchant",
-    "slug": "zupone-merchant",
+    "name": "ZupEat Commerçant",
+    "slug": "zupeat-merchant",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "scheme": "zupone-merchant",
+    "scheme": "zupeat-merchant",
     "updates": {
       "enabled": false
     },
@@ -21,7 +21,7 @@
       ]
     ],
     "android": {
-      "package": "com.amir_games.zuponemerchant"
+      "package": "com.amir_games.zupeatmerchant"
     }
   }
 }

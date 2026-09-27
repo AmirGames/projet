@@ -183,7 +183,7 @@ export const shortId = (id: string) => `#${id.slice(-6).toUpperCase()}`;
  */
 export async function openNavigation(
   target: { lat?: number | null; lng?: number | null; address?: string },
-  app: Exclude<Prefs['navigationApp'], 'zupone'>
+  app: Exclude<Prefs['navigationApp'], 'zupeat'>
 ) {
   const coords = target.lat != null && target.lng != null ? `${target.lat},${target.lng}` : null;
   const query = coords || encodeURIComponent(target.address || '');
@@ -218,7 +218,7 @@ export function callPhone(phone?: string | null) {
 export function sendSms(phone?: string | null) {
   if (!phone) return;
   const body = encodeURIComponent(
-    'Bonjour, je suis votre livreur Zupone : je suis devant chez vous avec votre commande.'
+    'Bonjour, je suis votre livreur ZupEat : je suis devant chez vous avec votre commande.'
   );
   // Android lit « ?body= », iOS « &body= ».
   const separator = Platform.OS === 'ios' ? '&' : '?';

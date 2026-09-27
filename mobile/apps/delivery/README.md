@@ -1,4 +1,4 @@
-# Zupone Livreur
+# ZupEat Livreur
 
 Application mobile du livreur, construite sur le même modèle que l'application
 commerçant (`../merchant`) : même connexion, même barre du bas (Menu · Accueil ·
@@ -75,7 +75,7 @@ La position est envoyée à `PATCH /api/drivers/location` tant que le livreur es
 en ligne ou sur une course, **même téléphone verrouillé** : avec la
 localisation « Toujours autoriser », une tâche en arrière-plan
 (`lib/backgroundLocation.ts`) prend le relais. Sur Android, une notification
-Zupone le signale tant qu'elle tourne, et elle continue si l'application est
+ZupEat le signale tant qu'elle tourne, et elle continue si l'application est
 balayée pendant une course. Elle s'arrête hors ligne, à la déconnexion, ou
 quand le serveur répond que le livreur est passé hors ligne ailleurs. Sans
 « Toujours » (ou dans Expo Go), la position ne part qu'application ouverte :
@@ -91,7 +91,7 @@ npx expo start
 L'adresse du serveur se trouve toute seule en développement : c'est le PC qui
 sert l'application (Metro), port 3001. Pour une autre machine ou la
 production, définir `EXPO_PUBLIC_API_URL` (par exemple dans un fichier `.env` :
-`EXPO_PUBLIC_API_URL=https://api.zupone.com`). Voir `lib/api.ts`.
+`EXPO_PUBLIC_API_URL=https://api.zupeat.com`). Voir `lib/api.ts`.
 
 Les notifications push, la localisation et l'appareil photo demandent une
 **build de développement** (`npx expo run:android` ou

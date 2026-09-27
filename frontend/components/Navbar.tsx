@@ -29,7 +29,7 @@ export default function Navbar() {
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-sm">
               Z
             </div>
-            <span className="font-bold text-lg hidden sm:inline">Zupone</span>
+            <span className="font-bold text-lg hidden sm:inline">ZupEat</span>
           </Link>
 
           {/* Desktop Navigation */}

@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   return {
-    ...(boutique?.name && { title: `${boutique.name} — Zupone` }),
+    ...(boutique?.name && { title: `${boutique.name} — ZupEat` }),
     alternates: await alternatesRegionales(boutique?.countryCode),
   };
 }

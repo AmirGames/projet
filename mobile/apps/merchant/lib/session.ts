@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
-const SESSION_KEY = 'zupone.merchant.session';
-const PREFS_KEY = 'zupone.merchant.prefs';
+const SESSION_KEY = 'zupeat.merchant.session';
+const PREFS_KEY = 'zupeat.merchant.prefs';
 
 export interface Session {
   accessToken: string;

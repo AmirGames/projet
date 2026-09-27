@@ -8,7 +8,7 @@ import type { BackgroundState, GpsState } from '../../lib/useDriverLocation';
 import { Card, COLORS, isDarkTheme, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 const NAVIGATION_APPS: { key: Prefs['navigationApp']; label: string }[] = [
-  { key: 'zupone', label: 'Carte Zupone' },
+  { key: 'zupeat', label: 'Carte ZupEat' },
   { key: 'google', label: 'Google Maps' },
   { key: 'waze', label: 'Waze' },
   ...(Platform.OS === 'ios' ? [{ key: 'apple' as const, label: 'Plans' }] : []),
@@ -47,7 +47,7 @@ interface DeletionPreview {
   versementLe: string | null;
   ibanValide: boolean;
   ibanFin: string | null;
-  /** Ce qui reste du compte Zupone : le client ZupEat toujours, le commerçant s'il en a un. */
+  /** Ce qui reste du compte ZupOne : le client ZupEat toujours, le commerçant s'il en a un. */
   restent?: { client: boolean; commercant: boolean };
 }
 
@@ -111,7 +111,7 @@ function useAccountDeletion(token: string, onDeleted: () => void, onOpenAccount:
       preview.montantDu > 0 && preview.versementLe
         ? `Vos ${euros(preview.montantDu)} de courses vous seront versés avec les paiements du ${jour(preview.versementLe)}, sur votre compte •••${preview.ibanFin}. `
         : '';
-    // Seul le compte livreur disparaît : le compte Zupone reste, et avec lui
+    // Seul le compte livreur disparaît : le compte ZupOne reste, et avec lui
     // l'espace client ZupEat (même e-mail, même mot de passe).
     const restent = preview.restent?.commercant
       ? 'Votre compte client ZupEat et votre espace commerçant restent actifs.'
@@ -236,7 +236,7 @@ export default function SettingsScreen({
             {background === 'unavailable'
               ? 'Cette version de l’application ne la transmet qu’à l’écran : gardez-la ouverte pendant vos courses.'
               : `Avec la localisation « Toujours autoriser », elle continue téléphone rangé${
-                  Platform.OS === 'android' ? ' (une notification Zupone le signale)' : ''
+                  Platform.OS === 'android' ? ' (une notification ZupEat le signale)' : ''
                 }.`}
           </Text>
           {(gps === 'denied' || background === 'denied') && (
@@ -247,7 +247,7 @@ export default function SettingsScreen({
         </Card>
 
         <Card title="À propos">
-          <Row label="Application" value="Zupone Livreur" />
+          <Row label="Application" value="ZupEat Livreur" />
           <Row label="Version" value={Constants.expoConfig?.version || '1.0.0'} />
           <Row label="Serveur" value={API_URL} last />
         </Card>

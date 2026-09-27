@@ -65,7 +65,7 @@ export default function SettingsScreen({
         </Card>
 
         <Card title="À propos">
-          <Row label="Application" value="Zupone Commerçant" />
+          <Row label="Application" value="ZupEat Commerçant" />
           <Row label="Version" value={Constants.expoConfig?.version || '1.0.0'} />
           <Row label="Serveur" value={API_URL} last />
         </Card>

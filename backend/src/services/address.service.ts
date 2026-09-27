@@ -462,7 +462,7 @@ export class AddressService {
 
       const reponse = await fetch(construireUrl(requete, demandees, fournisseur, indice), {
         signal: controleur.signal,
-        headers: { "User-Agent": "Zupone/1.0" },
+        headers: { "User-Agent": "ZupEat/1.0" },
       });
 
       if (!reponse.ok) {

@@ -426,7 +426,7 @@ const euros = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
 
 /**
  * Ce que la suppression implique pour ce livreur : courses en cours, dernier
- * versement, et ce qui reste de son compte. Un compte Zupone est unique : la
+ * versement, et ce qui reste de son compte. Un compte ZupOne est unique : la
  * même adresse ouvre l'espace client ZupEat (et un espace commerçant s'il en
  * a un). Seul le compte livreur est supprimé.
  */
@@ -469,7 +469,7 @@ router.get("/me/suppression", authMiddleware, async (req: Request, res: Response
  * que la loi oblige à garder (courses payées, pièces comptables), comme le
  * dit la politique de confidentialité.
  *
- * Seul le compte livreur disparaît : le compte Zupone (même e-mail, même
+ * Seul le compte livreur disparaît : le compte ZupOne (même e-mail, même
  * mot de passe) reste, et avec lui l'espace client ZupEat.
  *
  * Ce qui est dû n'est pas perdu : les courses de la semaine sont arrêtées le

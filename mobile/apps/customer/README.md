@@ -1,4 +1,4 @@
-# Zupone — application client
+# ZupEat — application client
 
 Application mobile du client, construite sur le même modèle que les
 applications commerçant (`../merchant`) et livreur (`../delivery`) : même
@@ -13,7 +13,7 @@ même tiroir latéral, mêmes composants (`components/ui.tsx`).
   favoris et paniers effacés, commandes passées gardées sans lien le temps que la
   loi l'exige ; refusé pendant une commande en cours. Un compte livreur ou un
   espace commerçant sur la même adresse reste actif (c'est dit avant et après) ;
-  sinon la connexion Zupone disparaît aussi.
+  sinon la connexion ZupOne disparaît aussi.
 - **Accueil** : adresse de livraison (suggestions du serveur ou position du
   téléphone), recherche, catégories de cuisine (Pizzas, Sushis…), tri (note,
   distance, frais), commerces qui livrent à l'adresse d'abord, avec leurs frais

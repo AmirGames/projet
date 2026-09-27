@@ -341,7 +341,7 @@ export default function WebhooksPage() {
               id="champ-url"
               value={formulaire.url}
               onChange={(e) => setFormulaire({ ...formulaire, url: e.target.value })}
-              placeholder="https://mon-serveur.fr/zupone"
+              placeholder="https://mon-serveur.fr/zupeat"
               className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
             />
           </div>

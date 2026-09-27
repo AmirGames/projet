@@ -302,7 +302,7 @@ export default function DeliveryScreen({
    */
   const navigate = (towardCustomer: boolean) => {
     if (!delivery) return;
-    if (navigationApp === 'zupone') {
+    if (navigationApp === 'zupeat') {
       setMapOpen(true);
       return;
     }
@@ -585,7 +585,7 @@ export default function DeliveryScreen({
             )}
             <TouchableOpacity style={styles.navButton} onPress={() => navigate(towardCustomer)}>
               <Text style={styles.navButtonText}>
-                {navigationApp === 'zupone' ? '🗺️ Itinéraire en plein écran' : '🧭 Lancer le GPS'}{' '}
+                {navigationApp === 'zupeat' ? '🗺️ Itinéraire en plein écran' : '🧭 Lancer le GPS'}{' '}
                 {towardCustomer ? 'vers le client' : 'vers le commerce'}
               </Text>
             </TouchableOpacity>
