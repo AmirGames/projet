@@ -2145,6 +2145,15 @@
     "none": "Tout retirer",
     "deniedTitle": "Accès refusé",
     "deniedText": "Votre rôle n'ouvre pas cette section. Demandez au SuperOwner de vous en donner l'accès.",
-    "yourRole": "Votre rôle : {role}"
+    "yourRole": "Votre rôle : {role}",
+    "newRole": "Nouveau rôle",
+    "newRolePlaceholder": "Ex. Facturation",
+    "create": "Créer le rôle",
+    "created": "Rôle « {role} » créé : cochez maintenant ses accès.",
+    "createError": "Impossible de créer le rôle",
+    "delete": "Supprimer le rôle",
+    "deleteConfirm": "Supprimer le rôle « {role} » ?",
+    "deleted": "Rôle « {role} » supprimé",
+    "deleteError": "Impossible de supprimer le rôle"
   }
 }
