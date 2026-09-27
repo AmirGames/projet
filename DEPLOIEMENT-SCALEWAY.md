@@ -204,8 +204,9 @@ puis ouvrez `https://zupeat.com`.
 
 1. **Créez tout de suite le compte plateforme.** Le **premier compte inscrit
    devient le superowner** : inscrivez-vous immédiatement sur
-   `https://manager.zupone.com/signup` (ou votre domaine), avant que
-   quiconque d'autre ne le fasse.
+   `https://manager.zupeat.com/signup` (l'inscription vit sur le domaine
+   professionnel), avant que quiconque d'autre ne le fasse. Le panneau
+   d'administration s'ouvre ensuite sur `https://manager.zupone.com`.
 2. **Webhook Stripe** : tableau de bord Stripe → *Développeurs* → *Webhooks* →
    endpoint `https://api.zupeat.com/api/payments/webhook`, événements
    `payment_intent.succeeded`, `payment_intent.payment_failed`,
