@@ -99,7 +99,11 @@
     "quickBilling": "Billing",
     "quickConfig": "Configuration",
     "quickSecurityAudit": "Security Audit",
-    "loggedInAs": "🔐 You are logged in as Superowner. You have full access to all systems."
+    "loggedInAs": "🔐 You are logged in as Superowner. You have full access to all systems.",
+    "titleRole": "{role} Dashboard",
+    "titleGeneric": "Dashboard",
+    "subtitleTeam": "Platform overview, within your role's access",
+    "loggedInAsRole": "🔐 You are logged in as {role}. You can only access the sections open to your role; ask the SuperOwner for more."
   },
   "superownerOrganizations": {
     "title": "Organizations",
