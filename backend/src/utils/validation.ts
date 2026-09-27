@@ -15,21 +15,33 @@ export const emailFacultatif = z
   .optional()
   .or(z.literal(""));
 
+/**
+ * L'adresse e-mail d'une personne, telle qu'on la compare et l'enregistre.
+ *
+ * Tous les fournisseurs livrent « TeST@test.com » dans la même boîte que
+ * « test@test.com », mais la base, elle, les distinguait : une même personne
+ * pouvait ouvrir deux comptes, ou ne plus retrouver le sien en tapant une
+ * majuscule. L'adresse est donc ramenée en minuscules, sans espaces autour,
+ * avant d'être validée.
+ */
+export const champEmail = (message = "Email invalide") =>
+  z.string().trim().toLowerCase().email(message);
+
 export const ValidationSchemas = {
   pagination: z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(10),
   }),
 
-  email: z.string().email("Email invalide"),
+  email: champEmail(),
   password: z.string().min(6, "Minimum 6 caractères"),
   authInput: z.object({
-    email: z.string().email("Email invalide"),
+    email: champEmail(),
     password: z.string().min(6, "Minimum 6 caractères"),
   }),
 
   signupSchema: z.object({
-    email: z.string().email("Email invalide"),
+    email: champEmail(),
     password: z.string().min(6, "Minimum 6 caractères"),
     // « Nom requis » laissait croire à un champ vide, y compris pour une seule
     // lettre. Le champ est nommé par le gestionnaire d'erreurs.
@@ -37,7 +49,7 @@ export const ValidationSchemas = {
   }),
 
   loginSchema: z.object({
-    email: z.string().email("Email invalide"),
+    email: champEmail(),
     password: z.string().min(6, "Minimum 6 caractères"),
   }),
 

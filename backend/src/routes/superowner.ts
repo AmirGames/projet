@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { MerchantPayoutService, horsReversements, reversementsDepuis } from "../services/merchant-payout.service";
 import { z } from "zod";
+import { champEmail } from "../utils/validation";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, oublierCompte } from "../middleware/auth";
@@ -2766,7 +2767,7 @@ const schemaPlateforme = z.enum(PLATEFORMES).default("EAT");
 router.post("/admins", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const schema = z.object({
-      email: z.string().email(),
+      email: champEmail(),
       name: z.string().optional(),
       role: z.string().min(1).default("ADMIN"),
       plateforme: schemaPlateforme,

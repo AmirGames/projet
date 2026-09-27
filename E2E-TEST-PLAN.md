@@ -157,6 +157,24 @@ Attendu :
 adresse unique et répondait 409 « Cette valeur est déjà utilisée » — en laissant
 derrière elle un compte créé. Vérifié par `verif-inscription-doublon`.)
 
+### Test 1.4 ter : une adresse ne dépend pas de sa casse
+
+```
+Étapes :
+1. S'inscrire avec " Test-Casse@Example.COM " (majuscules, espaces autour)
+2. Se déconnecter, puis s'inscrire à nouveau avec test-casse@example.com
+3. Se connecter avec TEST-CASSE@EXAMPLE.COM
+
+Attendu :
+✅ 1 : compte créé, adresse enregistrée « test-casse@example.com »
+✅ 2 : 409, « Cet email est déjà utilisé » ; toujours un seul compte
+✅ 3 : connexion acceptée
+```
+
+(Jusqu'au 27 septembre, les deux inscriptions ouvraient deux comptes, et la
+connexion exigeait la casse exacte de l'inscription. La migration 0014 convertit
+les adresses existantes, sauf les doublons à la casse près, laissés tels quels.)
+
 ### Test 1.5 : trop d'inscriptions depuis une même adresse IP
 
 En production seulement (`NODE_ENV=production`) : dix inscriptions par heure et
@@ -597,6 +615,7 @@ Organization.approvedAt est vide : la plateforme ne l'a pas encore validé (test
 - [ ] Conditions exigées et acceptation enregistrée
 - [ ] Adresse déjà prise refusée en 409
 - [ ] Inscription après une commande sans compte : fiche client reprise
+- [ ] Adresse en minuscules : une seule inscription, connexion quelle que soit la casse
 - [ ] Jeton : userId seul
 - [ ] Limites de connexion et d'inscription
 

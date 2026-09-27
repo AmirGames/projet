@@ -4,7 +4,7 @@ import {
 } from "../services/permissions-plateforme.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation";
+import { champEmail, signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation";
 import { AuthService } from "../services/auth.service";
 import { UserService } from "../services/user.service";
 import { ApiError } from "../middleware/errorHandler";
@@ -605,7 +605,7 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
   try {
     const schema = z.object({
       businessName: z.string().min(1).max(200),
-      email: z.string().email(),
+      email: champEmail(),
       password: z.string().min(8),
       // Le genre en code (« restaurant ») ; les anciennes graphies
       // (« Restaurant », « RESTAURANT ») sont encore comprises.
@@ -828,7 +828,7 @@ router.post(
   }),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const body = z.object({ email: z.string().email() }).parse(req.body);
+      const body = z.object({ email: champEmail() }).parse(req.body);
       const email = body.email.toLowerCase();
 
       const user = await db.user.findUnique({
@@ -1047,7 +1047,7 @@ router.post(
         }
       }
 
-      const demande = z.object({ email: z.string().email().optional() }).parse(req.body || {});
+      const demande = z.object({ email: champEmail().optional() }).parse(req.body || {});
 
       if (!userId && !demande.email) {
         throw new ApiError(400, "Indiquez votre adresse e-mail", "MISSING_EMAIL");

@@ -1,5 +1,6 @@
 // Une adresse déjà prise, à chaque porte d'inscription : jamais de 500, jamais
-// de compte en double ni orphelin. Chaque contrôle relit la base.
+// de compte en double ni orphelin, et une adresse ne dépend pas de sa casse.
+// Chaque contrôle relit la base.
 //
 // Le refus simple de /auth/signup est vérifié dans verif-compte-email ; ici,
 // les cas qui passent le premier contrôle et butaient ensuite sur une autre
@@ -86,5 +87,60 @@ check(
   'aucune fiche livreur pour le repreneur',
   (await sqlScalaire(`SELECT COUNT(*) FROM "Driver" WHERE "userId" = '${repreneur?.user?.id}'`)) === '0'
 );
+
+titre('Une adresse ne dépend pas de sa casse');
+// « TeST@test.com » et « test@test.com » sont la même boîte : la base les
+// distinguait, et une même personne pouvait ouvrir deux comptes.
+const casse = `casse-${uniq}@test.fr`;
+const enMajuscules = await inscrire(`  Casse-${uniq.toUpperCase()}@Test.FR `, 'Casse');
+const enMajusculesData = await j(enMajuscules);
+check('l inscription en majuscules passe', enMajuscules.status === 201, `status=${enMajuscules.status} ${JSON.stringify(enMajusculesData)}`);
+check('l adresse est enregistrée en minuscules, sans espaces', (await sqlScalaire(`SELECT email FROM "User" WHERE id = '${enMajusculesData?.user?.id}'`)) === casse, await sqlScalaire(`SELECT email FROM "User" WHERE id = '${enMajusculesData?.user?.id}'`));
+check('la fiche client aussi', enMajusculesData?.customer?.email === casse, JSON.stringify(enMajusculesData?.customer));
+
+const memeEnMinuscules = await inscrire(casse, 'Casse Bis');
+const memeEnMinusculesData = await j(memeEnMinuscules);
+check('la même adresse en minuscules est refusée', memeEnMinuscules.status === 409 && memeEnMinusculesData?.code === 'EMAIL_EXISTS', `status=${memeEnMinuscules.status} ${JSON.stringify(memeEnMinusculesData)}`);
+check('un seul compte à la casse près', (await sqlScalaire(`SELECT COUNT(*) FROM "User" WHERE lower(email) = '${casse}'`)) === '1');
+
+const connexionMajuscules = await post('/api/auth/login', { email: casse.toUpperCase(), password: MOT_DE_PASSE });
+check('la connexion accepte l adresse en majuscules', connexionMajuscules.status === 200, `status=${connexionMajuscules.status}`);
+
+const livreurMajuscules = await post('/api/drivers/register', {
+  conditionsAcceptees: true, name: 'Livreur', email: casse.toUpperCase(), password: MOT_DE_PASSE, phone: '0644444444', vehicleType: 'bike',
+});
+check('inscription livreur sur la même adresse en majuscules refusée', livreurMajuscules.status === 409, `status=${livreurMajuscules.status}`);
+
+// Une commande passée sans compte, en majuscules, puis l'inscription en
+// minuscules : c'est la même personne, la fiche est reprise.
+const emailInvite2 = `invite2-${uniq}@test.fr`;
+await sqlExec(
+  `INSERT INTO "Customer" (id, name, email, "createdAt", "updatedAt") VALUES ('invite2-${uniq}', 'Invité', '${emailInvite2}', NOW(), NOW())`
+);
+const inviteMajuscules = await j(await inscrire(emailInvite2.toUpperCase(), 'Invité Deux'));
+check('commande puis inscription en majuscules : fiche reprise', inviteMajuscules?.customer?.id === `invite2-${uniq}`, JSON.stringify(inviteMajuscules?.customer));
+
+titre('Un compte enregistré avant la conversion');
+// La migration 0014 ne convertit pas un doublon à la casse près : la
+// connexion retrouve encore un compte resté en majuscules, s'il est seul.
+const ancienCompte = `Ancien.Casse-${uniq}@Test.fr`;
+await sqlExec(
+  `INSERT INTO "User" (id, email, name, "passwordHash", status, "createdAt", "updatedAt") VALUES ('ancien-casse-${uniq}', '${ancienCompte}', 'Ancien', crypt('${MOT_DE_PASSE}', gen_salt('bf', 10)), 'ACTIVE', NOW(), NOW())`
+);
+// Un compte client a sa fiche : sans elle, la connexion le refuse (aucun espace).
+await sqlExec(
+  `INSERT INTO "Customer" (id, "userId", name, email, "createdAt", "updatedAt") VALUES ('ancien-casse-c-${uniq}', 'ancien-casse-${uniq}', 'Ancien', '${ancienCompte}', NOW(), NOW())`
+);
+const connexionAncien = await post('/api/auth/login', { email: ancienCompte.toLowerCase(), password: MOT_DE_PASSE });
+check('il se connecte avec son adresse en minuscules', connexionAncien.status === 200, `status=${connexionAncien.status}`);
+
+const paire = `paire-${uniq}@test.fr`;
+for (const [n, variante] of [[1, `Paire-${uniq}@test.fr`], [2, `PAIRE-${uniq}@test.fr`]]) {
+  await sqlExec(
+    `INSERT INTO "User" (id, email, name, "passwordHash", status, "createdAt", "updatedAt") VALUES ('paire-${n}-${uniq}', '${variante}', 'Paire', crypt('${MOT_DE_PASSE}', gen_salt('bf', 10)), 'ACTIVE', NOW(), NOW())`
+  );
+}
+const connexionAmbigue = await post('/api/auth/login', { email: paire, password: MOT_DE_PASSE });
+check('entre deux comptes à la casse près, aucun n est choisi au hasard', connexionAmbigue.status !== 200, `status=${connexionAmbigue.status}`);
 
 await terminer();
