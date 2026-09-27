@@ -26,7 +26,7 @@ import { DriverAvailabilityService } from "../services/driver-availability.servi
 import { Notifier, enArrierePlan } from "../services/notifier.service";
 import { DriverSupportService, LONGUEUR_MAX } from "../services/driver-support.service";
 import { z } from "zod";
-import { champEmail } from "../utils/validation";
+import { champEmail, champMotDePasse } from "../utils/validation";
 import { distanceKm, estUnPoint } from "../utils/geo";
 import { Prisma } from "@prisma/client";
 import fs from "fs";
@@ -98,7 +98,7 @@ function adresseLivraison(order?: { deliveryAddress?: string | null; deliveryPos
 const inscriptionSchema = z.object({
   name: z.string().min(2, "Nom minimum 2 caractères"),
   email: champEmail(),
-  password: z.string().min(8, "Mot de passe : 8 caractères minimum"),
+  password: champMotDePasse(),
   phone: z.string().min(9, "Téléphone invalide"),
   vehicleType: z.enum(["car", "scooter", "bike"]),
   vehiclePlate: z.string().optional(),

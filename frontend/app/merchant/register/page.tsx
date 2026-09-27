@@ -15,6 +15,8 @@ import { usePays } from '@/lib/pays-client';
 import { PAYS } from '@/lib/pays-infos';
 
 import { useTranslations } from 'next-intl';
+import ReglesMotDePasse from '@/components/ReglesMotDePasse';
+import { motDePasseValide } from '@/lib/mot-de-passe';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface FormData {
@@ -40,6 +42,7 @@ interface FormErrors {
 
 export default function MerchantRegisterPage() {
   const t = useTranslations('merchantAuth');
+  const tMdp = useTranslations('motDePasse');
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -90,8 +93,8 @@ export default function MerchantRegisterPage() {
 
     if (!formData.password) {
       newErrors.password = 'Le mot de passe est requis';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
+    } else if (!motDePasseValide(formData.password)) {
+      newErrors.password = tMdp('invalide');
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -544,8 +547,10 @@ export default function MerchantRegisterPage() {
                       errors.password ? 'border-red-500' : 'border-gray-600'
                     }`}
                     placeholder="••••••••"
+                    autoComplete="new-password"
                   />
                   {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
+                  <ReglesMotDePasse valeur={formData.password} sombre />
                 </div>
 
                 <div>
@@ -566,9 +571,6 @@ export default function MerchantRegisterPage() {
                 </div>
               </div>
 
-              <p className="text-gray-400 text-sm mt-2">
-                🔒 Minimum 8 caractères. Utilisez une combinaison de lettres, chiffres et caractères spéciaux.
-              </p>
             </div>
 
             <AcceptationConditions

@@ -125,6 +125,26 @@ Attendu :
 Les messages de validation sont en français et nomment le champ (« Nom :
 Minimum 2 caractères »).
 
+### Test 1.3 bis : un mot de passe solide est exigé
+
+```
+Étapes :
+1. Sur /signup, taper « motdepasse1 » dans le mot de passe
+2. Observer la liste sous le champ, puis valider
+3. Remplacer par « Motdepasse1 » et valider
+
+Attendu :
+✅ Les critères se cochent pendant la saisie ; « Au moins une lettre majuscule » reste à cocher
+✅ Refus avant envoi : « Le mot de passe doit contenir 8 caractères minimum,
+   dont un chiffre, une minuscule et une majuscule. »
+✅ Côté API, même refus en 400 (« Mot de passe : au moins une lettre majuscule »),
+   aucun compte créé
+✅ « Motdepasse1 » est accepté : les caractères spéciaux ne sont pas exigés
+✅ Même règle sur /driver/signup, /merchant/register, /reinitialiser et dans les
+   applications client et livreur
+✅ Un compte créé avant la règle avec un mot de passe plus faible se connecte toujours
+```
+
 ### Test 1.4 : une adresse déjà prise est refusée
 
 ```
@@ -613,6 +633,7 @@ Organization.approvedAt est vide : la plateforme ne l'a pas encore validé (test
 - [ ] Comptes suivants ordinaires
 - [ ] Customer créé à l'inscription
 - [ ] Conditions exigées et acceptation enregistrée
+- [ ] Mot de passe : 8 caractères, chiffre, minuscule, majuscule (site et applis)
 - [ ] Adresse déjà prise refusée en 409
 - [ ] Inscription après une commande sans compte : fiche client reprise
 - [ ] Adresse en minuscules : une seule inscription, connexion quelle que soit la casse
@@ -660,6 +681,7 @@ PHASE 1 — INSCRIPTION
   1.1 Premier compte superowner ........ [OK / ÉCHEC]
   1.2 Comptes suivants ordinaires ...... [OK / ÉCHEC]
   1.3 Conditions exigées ............... [OK / ÉCHEC]
+  1.3 bis Mot de passe solide .......... [OK / ÉCHEC]
   1.4 Adresse déjà prise ............... [OK / ÉCHEC]
   1.5 Limite d'inscriptions ............ [OK / ÉCHEC / NON JOUÉ]
 
@@ -700,5 +722,5 @@ PHASE 8 — SUPPRESSION
   8.1 Compte livreur ................... [OK / ÉCHEC]
   8.2 Compte client ZupEat ............. [OK / ÉCHEC]
 
-BILAN : __ / 28 réussis — anomalies : …
+BILAN : __ / 29 réussis — anomalies : …
 ```

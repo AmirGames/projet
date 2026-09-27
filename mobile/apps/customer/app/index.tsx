@@ -18,6 +18,7 @@ import { useCustomerRealtime } from '../lib/useCustomerRealtime';
 import { useCartSync } from '../lib/useCartSync';
 import { onCustomerNotificationTap, PushCustomerData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
 import { COLORS } from '../components/ui';
+import { CRITERES_MOT_DE_PASSE, MESSAGE_MOT_DE_PASSE, motDePasseValide } from '../lib/motDePasse';
 import HomeScreen from '../components/screens/HomeScreen';
 import StoreScreen from '../components/screens/StoreScreen';
 import CartsScreen from '../components/screens/CartsScreen';
@@ -268,6 +269,10 @@ export default function CustomerApp() {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
+    if (mode === 'signup' && !motDePasseValide(password)) {
+      Alert.alert('Mot de passe', MESSAGE_MOT_DE_PASSE);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -371,13 +376,27 @@ export default function CustomerApp() {
 
           <TextInput
             style={styles.input}
-            placeholder={mode === 'signup' ? 'Mot de passe (6 caractères minimum)' : 'Mot de passe'}
+            placeholder="Mot de passe"
             placeholderTextColor="#999"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            autoComplete={mode === 'signup' ? 'new-password' : 'password'}
+            textContentType={mode === 'signup' ? 'newPassword' : 'password'}
             editable={!loading}
           />
+          {mode === 'signup' && (
+            <View style={styles.criteres}>
+              {CRITERES_MOT_DE_PASSE.map(({ libelle, respecte }) => {
+                const ok = respecte(password);
+                return (
+                  <Text key={libelle} style={[styles.critere, ok && styles.critereOk]}>
+                    {ok ? '✓' : '•'} {libelle}
+                  </Text>
+                );
+              })}
+            </View>
+          )}
 
           <TouchableOpacity
             style={[styles.loginButton, loading && styles.loginButtonDisabled]}
@@ -998,6 +1017,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.9,
   },
+  criteres: { marginTop: -8, marginBottom: 15 },
+  critere: { fontSize: 13, color: '#fff', opacity: 0.75, marginBottom: 2 },
+  critereOk: { opacity: 1, fontWeight: '700' },
   input: {
     backgroundColor: '#fff',
     borderRadius: 10,

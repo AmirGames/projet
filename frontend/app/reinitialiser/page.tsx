@@ -5,12 +5,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import ReglesMotDePasse from '@/components/ReglesMotDePasse';
+import { motDePasseValide } from '@/lib/mot-de-passe';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /** Choix d'un nouveau mot de passe, depuis le lien reçu par courriel. */
 function Formulaire() {
   const t = useTranslations('resetPassword');
+  const tMdp = useTranslations('motDePasse');
   const router = useRouter();
   const jeton = useSearchParams().get('jeton') || '';
 
@@ -25,6 +28,11 @@ function Formulaire() {
     setErreur('');
 
     // Vérifié ici pour un retour immédiat ; le serveur reste juge du reste.
+    if (!motDePasseValide(motDePasse)) {
+      setErreur(tMdp('invalide'));
+      return;
+    }
+
     if (motDePasse !== confirmation) {
       setErreur('Les deux mots de passe ne sont pas identiques.');
       return;
@@ -89,7 +97,9 @@ function Formulaire() {
   return (
     <>
       <h1 className="text-3xl font-bold text-slate-900 mb-2 text-center">Nouveau mot de passe</h1>
-      <p className="text-slate-600 text-center mb-6">Choisissez-en un d&apos;au moins 6 caractères.</p>
+      <p className="text-slate-600 text-center mb-6">
+        Au moins 8 caractères, dont un chiffre, une minuscule et une majuscule.
+      </p>
 
       {erreur && <div className="bg-red-50 border border-red-200 text-red-900 p-4 rounded-lg mb-4">{erreur}</div>}
 
@@ -105,10 +115,12 @@ function Formulaire() {
             onChange={(e) => setMotDePasse(e.target.value)}
             className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="••••••••"
-            minLength={6}
+            minLength={8}
+            autoComplete="new-password"
             required
             autoFocus
           />
+          <ReglesMotDePasse valeur={motDePasse} />
         </div>
 
         <div>
@@ -122,7 +134,8 @@ function Formulaire() {
             onChange={(e) => setConfirmation(e.target.value)}
             className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="••••••••"
-            minLength={6}
+            minLength={8}
+            autoComplete="new-password"
             required
           />
         </div>

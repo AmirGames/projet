@@ -203,6 +203,12 @@ emporter ou à livrer.
   l'acceptation des conditions est enregistrée à l'inscription et à la commande
 
 ### Partout
+- **Un mot de passe solide** à chaque création ou changement (inscription
+  client, commerçant, livreur, réinitialisation, sur le site comme dans les
+  applications) : 8 caractères minimum, dont un chiffre, une minuscule et une
+  majuscule ; les caractères spéciaux sont permis sans être exigés. Les
+  critères se cochent pendant la saisie. Les comptes plus anciens se
+  connectent toujours avec leur mot de passe
 - **Un seul compte ZupOne, plusieurs espaces** : le logo en haut à gauche ouvre
   les autres espaces auxquels le compte a droit — client, commerçant, livreur,
   plateforme (sous le nom du groupe de l'équipe : Support, Administrateur…)
@@ -342,7 +348,7 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1802 contrôles, 55 suites
+# API : 1872 contrôles, 56 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy
