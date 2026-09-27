@@ -67,6 +67,23 @@ LOG_LEVEL=info VERIF_API_URL=http://localhost:3099 npm run verif
 
 (`DATABASE_URL` est à ajouter aux deux commandes, comme plus haut.)
 
+### Une base réglée sur l'heure locale
+
+Les colonnes de date n'ont pas de fuseau, et les suites qui vieillissent une
+donnée l'écrivent en SQL (`NOW() - INTERVAL '7 minutes'`). Sur un PostgreSQL
+réglé sur `Europe/Paris` — le cas d'une installation Windows —, `NOW()` écrit
+l'heure de Paris que Prisma relit comme de l'UTC : la donnée « vieillie » est
+en fait deux heures dans le futur. Une trentaine de contrôles tombent alors
+(photo du dépôt refusée en 409, propositions qui n'expirent pas, créneaux
+décalés d'un jour) sans que rien ne soit cassé.
+
+Alignez la session sur UTC, pour l'API **et** les vérifications :
+
+```bash
+DATABASE_URL="postgresql://.../zupone_test?schema=public&options=-c%20TimeZone%3DUTC"
+TZ=UTC
+```
+
 ### Le paiement, à part
 
 Avec Stripe actif, toute commande qui n'est pas payée en espèces attend
@@ -158,6 +175,7 @@ continue.
 | `verif-annonces.mjs` | Une annonce de la plateforme atteint le public visé, et lui seul |
 | `verif-horaires-plages.mjs` | Plusieurs services par jour, et la nuit qui déborde |
 | `verif-identite-boutique.mjs` | Genre du commerce, et l'identité sous laquelle la boutique facture |
+| `verif-inscription-doublon.mjs` | Adresse déjà prise à chaque porte d'inscription : commande passée sans compte, inscriptions simultanées, devenir livreur ; jamais de 500 ni de compte orphelin |
 | `verif-inscription-boutique.mjs` | Boutiques créées à l'inscription : situées et genrées ; notes réelles des plats en vitrine |
 | `verif-journal.mjs` | Ce que le journal crie, et ce qu'il murmure (démarre sa propre API) |
 

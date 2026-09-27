@@ -23,7 +23,7 @@ export async function ouvrirApiGeocodante({ port = 4611, portAdresses = 4601 } =
 
   const enfant = spawn(
     process.execPath,
-    [join(RACINE, "node_modules", ".bin", "tsx"), join(RACINE, "src", "server.ts")],
+    [join(RACINE, "node_modules", "tsx", "dist", "cli.mjs"), join(RACINE, "src", "server.ts")],
     {
       cwd: RACINE,
       env: {

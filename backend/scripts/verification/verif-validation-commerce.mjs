@@ -7,6 +7,7 @@
 // une seule fois.
 
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 import {
   titre,
@@ -40,12 +41,17 @@ const inscrireCommerce = async (prefixe) =>
     })
   );
 
-/** Joue la surveillance des pièces, comme le ferait le passage horaire. */
+/**
+ * Joue la surveillance des pièces, comme le ferait le passage horaire.
+ *
+ * tsx est lancé par son point d'entrée JavaScript, sous le Node courant :
+ * `npx` n'existe sous Windows qu'en `npx.cmd`, que execFileSync ne trouve pas.
+ */
 const surveiller = () =>
   execFileSync(
-    'npx',
+    process.execPath,
     [
-      'tsx',
+      fileURLToPath(new URL('../../node_modules/tsx/dist/cli.mjs', import.meta.url)),
       // Le service lit sa configuration comme le serveur : depuis .env.
       '--import',
       'dotenv/config',
