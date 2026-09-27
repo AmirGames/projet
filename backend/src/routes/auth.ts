@@ -75,14 +75,26 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
       await envoyerConfirmation(user);
     }
 
-    // Create customer profile linked to user (unified identity)
-    const customer = await db.customer.create({
-      data: {
-        userId: user.id,
-        name: body.name || user.email.split("@")[0],
-        email: user.email,
-      },
-    });
+    /**
+     * La fiche client du compte.
+     *
+     * Une commande passée sans compte a pu créer une fiche à cette adresse,
+     * unique elle aussi : la recréer échouait sur la contrainte, après la
+     * création du compte — l'inscrit lisait un refus alors que son compte
+     * existait. On la rattache au compte, comme le fait l'espace client à la
+     * première visite.
+     */
+    const ficheInvite = await db.customer.findUnique({ where: { email: user.email } });
+    const customer =
+      ficheInvite && !ficheInvite.userId
+        ? await db.customer.update({ where: { id: ficheInvite.id }, data: { userId: user.id } })
+        : await db.customer.create({
+            data: {
+              userId: user.id,
+              name: body.name || user.email.split("@")[0],
+              email: user.email,
+            },
+          });
 
     // Generate tokens
     const accessToken = AuthService.generateAccessToken(user.id);
@@ -537,6 +549,17 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
 
     if (existingDriver) {
       throw new ApiError(400, "Vous avez déjà un profil livreur", "DRIVER_EXISTS");
+    }
+
+    // L'e-mail d'une fiche livreur est unique : une fiche restée sur cette
+    // adresse (compte qui en a changé depuis) ferait échouer la création.
+    const livreurSurEmail = await db.driver.findUnique({
+      where: { email: user.email },
+      select: { id: true },
+    });
+
+    if (livreurSurEmail) {
+      throw new ApiError(409, "Cet email est déjà utilisé", "EMAIL_EXISTS");
     }
 
     // Create driver using user's existing email and name

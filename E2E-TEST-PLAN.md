@@ -140,6 +140,23 @@ Attendu :
 base remontait telle quelle. Deux inscriptions simultanées qui passeraient
 toutes deux la vérification reçoivent désormais un 409 `ALREADY_EXISTS`.)
 
+### Test 1.4 bis : s'inscrire après avoir commandé sans compte
+
+```
+Étapes :
+1. Sans être connecté, passer une commande avec l'adresse test-invite@example.com
+2. S'inscrire ensuite avec cette même adresse
+
+Attendu :
+✅ 201, compte créé
+✅ La fiche client née de la commande est reprise et rattachée au compte :
+   une seule fiche à cette adresse, et la commande apparaît dans l'historique
+```
+
+(Jusqu'au 27 septembre, l'inscription recréait la fiche client, butait sur son
+adresse unique et répondait 409 « Cette valeur est déjà utilisée » — en laissant
+derrière elle un compte créé. Vérifié par `verif-inscription-doublon`.)
+
 ### Test 1.5 : trop d'inscriptions depuis une même adresse IP
 
 En production seulement (`NODE_ENV=production`) : dix inscriptions par heure et
@@ -579,6 +596,7 @@ Organization.approvedAt est vide : la plateforme ne l'a pas encore validé (test
 - [ ] Customer créé à l'inscription
 - [ ] Conditions exigées et acceptation enregistrée
 - [ ] Adresse déjà prise refusée en 409
+- [ ] Inscription après une commande sans compte : fiche client reprise
 - [ ] Jeton : userId seul
 - [ ] Limites de connexion et d'inscription
 
