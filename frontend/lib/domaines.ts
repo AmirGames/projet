@@ -58,10 +58,7 @@ export const CLOISONNEMENT_ACTIF = Boolean(
  */
 const SEGMENTS: Record<EspaceHeberge, string[]> = {
   groupe: ['superowner'],
-  pro: [
-    'merchant',
-    'signup', // inscription commerçant : elle crée une organisation
-  ],
+  pro: ['merchant'],
   livreur: ['driver'],
   public: [
     'client',
@@ -89,8 +86,13 @@ const CHEMINS: Partial<Record<EspaceHeberge, string[]>> = {
  * Un lien de réinitialisation doit fonctionner quel que soit le domaine
  * depuis lequel la demande a été faite. Le dashboard est aussi commun car
  * c'est le sélecteur de rôles pour les utilisateurs multi-rôles.
+ *
+ * L'inscription aussi : elle crée un compte ZupOne, unique pour toutes les
+ * plateformes, et le rôle (client, commerçant, livreur) se choisit ensuite.
+ * Rangée côté commerçant, elle envoyait un client inscrit depuis le domaine
+ * public sur le domaine professionnel, où sa session restait enfermée.
  */
-const SEGMENTS_COMMUNS = ['login', 'mot-de-passe-oublie', 'reinitialiser', 'verifier-email', 'dashboard'];
+const SEGMENTS_COMMUNS = ['login', 'signup', 'mot-de-passe-oublie', 'reinitialiser', 'verifier-email', 'dashboard'];
 
 /** Accueil propre à chaque domaine. */
 export const ACCUEIL: Record<EspaceHeberge, string> = {
