@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Préparation d'un VPS Scaleway neuf (Ubuntu 24.04 LTS ou Debian 12), en root :
+# Préparation d'un VPS neuf (Scaleway, OVH… ; Ubuntu 24.04/26.04 LTS ou Debian 12), en root :
 #
 #   curl -fsSL https://raw.githubusercontent.com/AmirGames/projet/main/deploy/installer-serveur.sh -o installer.sh
 #   sudo bash installer.sh
@@ -18,8 +18,16 @@ SWAP_GO="${SWAP_GO:-4}"
 . /etc/os-release
 case "$ID" in
   ubuntu|debian) ;;
-  *) echo "❌ Système non pris en charge : $ID (Ubuntu 24.04 ou Debian 12 attendus)"; exit 1 ;;
+  *) echo "❌ Système non pris en charge : $ID (Ubuntu ou Debian attendus)"; exit 1 ;;
 esac
+# Une Ubuntu toute neuve peut précéder les paquets Docker : on vérifie avant
+# de modifier quoi que ce soit.
+if ! command -v docker >/dev/null 2>&1 && \
+   ! curl -fsSI "https://download.docker.com/linux/$ID/dists/$VERSION_CODENAME/Release" >/dev/null; then
+  echo "❌ Docker ne publie pas encore de paquets pour $PRETTY_NAME ($VERSION_CODENAME)."
+  echo "   Réinstallez le VPS en Ubuntu 24.04 LTS."
+  exit 1
+fi
 echo "▶ Système : $PRETTY_NAME"
 
 export DEBIAN_FRONTEND=noninteractive
@@ -90,10 +98,18 @@ if ! id "$UTILISATEUR" >/dev/null 2>&1; then
   adduser --disabled-password --gecos "" "$UTILISATEUR"
 fi
 usermod -aG docker,sudo "$UTILISATEUR"
-# Même clé SSH que root, pour se connecter directement en « deploy ».
-if [ -f /root/.ssh/authorized_keys ] && [ ! -f "/home/$UTILISATEUR/.ssh/authorized_keys" ]; then
+# Même clé SSH que le compte qui lance le script : « ubuntu » chez OVH (via
+# sudo), root chez Scaleway. Les lignes « command=… » sont écartées : chez
+# OVH, la clé de root ne fait qu'afficher « connectez-vous en ubuntu ».
+SOURCE_CLES=/root/.ssh/authorized_keys
+if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != root ] && [ -s "/home/$SUDO_USER/.ssh/authorized_keys" ]; then
+  SOURCE_CLES="/home/$SUDO_USER/.ssh/authorized_keys"
+fi
+if [ -f "$SOURCE_CLES" ] && [ ! -s "/home/$UTILISATEUR/.ssh/authorized_keys" ]; then
   install -d -m 700 -o "$UTILISATEUR" -g "$UTILISATEUR" "/home/$UTILISATEUR/.ssh"
-  install -m 600 -o "$UTILISATEUR" -g "$UTILISATEUR" /root/.ssh/authorized_keys "/home/$UTILISATEUR/.ssh/authorized_keys"
+  grep -v 'command=' "$SOURCE_CLES" > "/home/$UTILISATEUR/.ssh/authorized_keys" || true
+  chown "$UTILISATEUR:$UTILISATEUR" "/home/$UTILISATEUR/.ssh/authorized_keys"
+  chmod 600 "/home/$UTILISATEUR/.ssh/authorized_keys"
 fi
 # sudo sans mot de passe : le compte n'en a pas, la connexion se fait par clé.
 echo "$UTILISATEUR ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/90-$UTILISATEUR"

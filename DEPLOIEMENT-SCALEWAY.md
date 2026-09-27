@@ -41,6 +41,16 @@ Les deux fonctionnent avec les scripts fournis (ils détectent le système), mai
 partir sur Debian 12 aujourd'hui, c'est prévoir une montée de version bientôt.
 Choisissez l'image **Ubuntu 24.04 (Noble Numbat) 64 bits**.
 
+**Ubuntu 26.04 LTS** (proposée par défaut chez OVH) convient aussi : support
+jusqu'en 2031, et Docker publie ses paquets pour elle. Le script d'installation
+refuse de continuer si ce n'était pas le cas.
+
+> **Chez OVH** (VPS-2 et suivants) tout le guide s'applique, à deux
+> différences près : on se connecte en `ubuntu` et non en `root`
+> (`ssh ubuntu@<IP>` puis `sudo bash installer.sh`), et le pare-feu réseau
+> optionnel d'OVH (*Edge Network Firewall*) doit laisser passer 80 et 443 s'il
+> est activé.
+
 ## 1. Commander le VPS
 
 Dans la console Scaleway :
