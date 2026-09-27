@@ -92,7 +92,8 @@ export interface Delivery {
   deliveryAddress: string;
   customerName?: string;
   customerPhone?: string;
-  totalAmount?: number | string;
+  /** Ce que la course rapporte au livreur. Il n'a rien à encaisser. */
+  payout?: number | string;
   distance?: number;
   estimatedTime?: number | null;
   /** Point de livraison : exact une fois la course acceptée. */
