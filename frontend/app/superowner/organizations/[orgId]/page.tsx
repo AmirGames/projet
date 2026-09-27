@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { DossierCommercant } from '@/components/DossierCommercant';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { AccesPlateforme, chargerAcces } from '@/lib/acces-plateforme';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -39,6 +40,16 @@ interface MerchantDetail {
 
 export default function MerchantDetailPage() {
   const t = useTranslations('superownerOrganizationDetail');
+  // Suspendre relève de « Organisations » ; fermer et rouvrir, qui touchent
+  // aux données, d'un droit à part. Les boutons suivent les droits du rôle.
+  const [acces, setAcces] = useState<AccesPlateforme | null>(null);
+  useEffectChargement(() => {
+    chargerAcces().then(setAcces).catch(() => setAcces(null));
+  }, []);
+  const peut = (section: string) =>
+    !!acces?.isSuperOwner || acces?.permissions[section] === 'write';
+  const peutSuspendre = peut('organizations');
+  const peutFermer = peut('organizations-close');
   const router = useRouter();
   const params = useParams();
   // Le segment s'appelle [orgId] depuis le regroupement des espaces
@@ -333,22 +344,22 @@ export default function MerchantDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {merchant.status === 'ACTIVE' && (
             <>
-              <button
+              {peutSuspendre && (<button
                 onClick={() => setShowActionModal('suspend')}
                 className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors font-medium text-sm"
               >
                 Suspendre
-              </button>
-              <button
+              </button>)}
+              {peutFermer && (<button
                 onClick={() => setShowActionModal('close')}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors font-medium text-sm"
               >
                 Fermer le compte
-              </button>
+              </button>)}
             </>
           )}
 
-          {merchant.status === 'SUSPENDED' && (
+          {merchant.status === 'SUSPENDED' && peutSuspendre && (
             <button
               onClick={handleUnsuspend}
               disabled={saving}
@@ -358,7 +369,7 @@ export default function MerchantDetailPage() {
             </button>
           )}
 
-          {merchant.status === 'CLOSED' && !merchant.isArchivedPermanently && (
+          {merchant.status === 'CLOSED' && !merchant.isArchivedPermanently && peutFermer && (
             <button
               onClick={() => setShowActionModal('restore')}
               disabled={saving}

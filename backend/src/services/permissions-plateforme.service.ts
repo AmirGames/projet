@@ -32,7 +32,12 @@ export interface Section {
 /** Les sections de l'espace, dans l'ordre du menu. */
 export const SECTIONS: Section[] = [
   { id: "dashboard", label: "Tableau de bord", groupe: "Général" },
-  { id: "organizations", label: "Organisations", groupe: "Activité" },
+  { id: "organizations", label: "Organisations (dont suspendre / réactiver)", groupe: "Activité" },
+  {
+    id: "organizations-close",
+    label: "Fermer / rouvrir un commerce (données supprimées à 60 jours)",
+    groupe: "Activité",
+  },
   { id: "stores", label: "Commerces", groupe: "Activité" },
   { id: "drivers", label: "Livreurs", groupe: "Activité" },
   { id: "payouts", label: "Versements", groupe: "Activité" },
@@ -109,6 +114,7 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
     [/^\/dashboard/, "dashboard"],
     [/^\/organizations\/[^/]+\/tier/, "formules"],
     [/^\/organizations\/[^/]+\/commission-promo/, "formules"],
+    [/^\/organizations\/[^/]+\/close/, "organizations-close"],
     [/^\/organizations/, "organizations"],
     [/^\/members\/drivers/, "drivers"],
     [/^\/members/, "members"],
@@ -135,6 +141,7 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
   ],
   admin: [
     [/^\/config/, "system-config"],
+    [/^\/merchants\/[^/]+\/(close|restore-from-backup)/, "organizations-close"],
     [/^\/merchants/, "organizations"],
     [/^\/stores/, "stores"],
     [/^\/tickets/, "support-tickets"],
