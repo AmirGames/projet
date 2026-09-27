@@ -142,6 +142,9 @@ Attendu :
 ✅ « Motdepasse1 » est accepté : les caractères spéciaux ne sont pas exigés
 ✅ Même règle sur /driver/signup, /merchant/register, /reinitialiser et dans les
    applications client et livreur
+✅ Application client : la création de compte exige de cocher l'acceptation des
+   CGU, des CGV et de la politique de confidentialité (liens vers le site) ;
+   le compte créé a son acceptation en base (AcceptationConditions)
 ✅ Un compte créé avant la règle avec un mot de passe plus faible se connecte toujours
 ```
 
