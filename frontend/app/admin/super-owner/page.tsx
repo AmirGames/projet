@@ -15,7 +15,7 @@ interface StatsData {
   merchants: { total: number; active: number; suspended: number };
   stores: { total: number; active: number };
   orders: { total: number; pending: number; completed: number };
-  revenue: { total: number; completed: number };
+  revenue: { total: number; completed: number } | null;
   users: { total: number };
   customers: { total: number };
   payments: { pending: number; successful: number };
@@ -79,7 +79,7 @@ export default function SuperOwnerDashboard() {
   }
 
   const platformFeePercent = stats.config.platformFeePercent;
-  const platformCommission = stats.revenue.total * (platformFeePercent / 100);
+  const platformCommission = (stats.revenue?.total ?? 0) * (platformFeePercent / 100);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -148,7 +148,7 @@ export default function SuperOwnerDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-yellow-300 text-sm">Chiffre d'Affaires</p>
-                <p className="text-4xl font-bold mt-2">{euro(stats.revenue.total)}</p>
+                <p className="text-4xl font-bold mt-2">{euro((stats.revenue?.total ?? 0))}</p>
                 <p className="text-yellow-300 text-xs mt-2">Total brut</p>
               </div>
               <TrendingUp size={40} className="text-yellow-400 opacity-50" />
@@ -187,11 +187,11 @@ export default function SuperOwnerDashboard() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-400">Chiffre brut</span>
-                <span className="font-bold">{euro(stats.revenue.total)}</span>
+                <span className="font-bold">{euro((stats.revenue?.total ?? 0))}</span>
               </div>
               <div className="flex justify-between text-green-400">
                 <span className="text-gray-400">Complétées</span>
-                <span className="font-bold">{euro(stats.revenue.completed)}</span>
+                <span className="font-bold">{euro((stats.revenue?.completed ?? 0))}</span>
               </div>
               <div className="flex justify-between text-orange-400">
                 <span className="text-gray-400">Commission ({platformFeePercent}%)</span>

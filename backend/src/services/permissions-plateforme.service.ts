@@ -297,6 +297,17 @@ export const PermissionsPlateforme = {
 };
 
 /**
+ * Les chiffres financiers (revenus, frais, MRR) ne sortent que pour le
+ * superowner et les rôles qui ont la section « Facturation », même sur une
+ * route que le rôle a le droit de lire, comme le tableau de bord.
+ */
+export async function voitLesFinances(compte: Request["compte"]): Promise<boolean> {
+  if (compte?.isSuperOwner) return true;
+  if (!compte?.isSystemAdmin) return false;
+  return !!(await PermissionsPlateforme.permissionsDu(compte.platformRole)).billing;
+}
+
+/**
  * Garde d'un routeur de l'espace d'administration.
  *
  * Le superowner passe partout. Un membre de l'équipe passe si son groupe a la

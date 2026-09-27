@@ -17,6 +17,7 @@ import {
   sectionDeLaRoute,
   nettoyerPermissions,
   codeDuLibelle,
+  voitLesFinances,
 } from "../permissions-plateforme.service";
 
 const roles = [
@@ -86,6 +87,14 @@ describe("permissions de l'équipe", () => {
     expect(await passer("superowner", membre("FACTURATION"), "POST", "/payouts/draw")).toBe(403);
     expect(await passer("superowner", membre("FACTURATION"), "GET", "/organizations")).toBe(403);
     expect(await passer("superowner", membre("SUPPRIME"), "GET", "/billing")).toBe(403);
+  });
+
+  it("ne montre les chiffres financiers qu'aux rôles qui ont Facturation", async () => {
+    expect(await voitLesFinances({ id: "s", isSuperOwner: true, isSystemAdmin: true, platformRole: null })).toBe(true);
+    expect(await voitLesFinances(membre("FACTURATION"))).toBe(true);
+    expect(await voitLesFinances(membre("ADMIN"))).toBe(true);
+    expect(await voitLesFinances(membre("SUPPORT"))).toBe(false);
+    expect(await voitLesFinances(undefined)).toBe(false);
   });
 
   it("tire un code stable du nom du rôle", () => {
