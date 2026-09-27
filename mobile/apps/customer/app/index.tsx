@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ActivityIndicator, Alert, Linking, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { API_URL, apiFetch, setUnauthorizedHandler } from '../lib/api';
+import { API_URL, SITE_URL, apiFetch, setUnauthorizedHandler } from '../lib/api';
 import {
   clearSession,
   DeliveryAddress,
@@ -51,12 +51,24 @@ type Page =
   | { kind: 'review'; orderId: string }
   | { kind: 'address' };
 
+/** Un lien vers une page légale du site, dans le texte d'acceptation. */
+function lienSite(chemin: string, libelle: string) {
+  return (
+    <Text style={styles.lienSite} onPress={() => Linking.openURL(`${SITE_URL}${chemin}`).catch(() => undefined)}>
+      {libelle}
+    </Text>
+  );
+}
+
 export default function CustomerApp() {
   const [booting, setBooting] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [tab, setTab] = useState<string>('home');
   const [pages, setPages] = useState<Page[]>([]);
   const [mode, setMode] = useState<'login' | 'signup'>('login');
+  // L'inscription exige l'acceptation des conditions : sans elle, le serveur
+  // refusait toute création de compte depuis l'application.
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -273,6 +285,10 @@ export default function CustomerApp() {
       Alert.alert('Mot de passe', MESSAGE_MOT_DE_PASSE);
       return;
     }
+    if (mode === 'signup' && !conditionsAcceptees) {
+      Alert.alert('Conditions', 'Acceptez les conditions pour créer votre compte.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -282,7 +298,7 @@ export default function CustomerApp() {
         body: JSON.stringify({
           email: email.trim(),
           password,
-          ...(mode === 'signup' ? { name: name.trim() } : {}),
+          ...(mode === 'signup' ? { name: name.trim(), conditionsAcceptees } : {}),
         }),
       });
 
@@ -396,6 +412,25 @@ export default function CustomerApp() {
                 );
               })}
             </View>
+          )}
+
+          {mode === 'signup' && (
+            <TouchableOpacity
+              style={styles.acceptRow}
+              onPress={() => setConditionsAcceptees((a) => !a)}
+              disabled={loading}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: conditionsAcceptees }}
+            >
+              <View style={[styles.box, conditionsAcceptees && styles.boxChecked]}>
+                {conditionsAcceptees && <Text style={styles.tick}>✓</Text>}
+              </View>
+              <Text style={styles.acceptText}>
+                J’ai lu et j’accepte les {lienSite('/cgu', 'conditions générales d’utilisation')} et les{' '}
+                {lienSite('/cgv', 'conditions générales de vente')}, et je prends connaissance de la{' '}
+                {lienSite('/confidentialite', 'politique de confidentialité')}.
+              </Text>
+            </TouchableOpacity>
           )}
 
           <TouchableOpacity
@@ -1044,6 +1079,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  acceptRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 4, marginBottom: 8 },
+  box: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  boxChecked: { backgroundColor: '#0055CC', borderColor: '#0055CC' },
+  tick: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  acceptText: { flex: 1, fontSize: 14, color: '#fff', lineHeight: 20 },
+  lienSite: { color: '#fff', textDecorationLine: 'underline', fontWeight: '700' },
   switchMode: {
     marginTop: 18,
     color: '#fff',

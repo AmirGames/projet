@@ -21,6 +21,9 @@ function detectApiUrl() {
 
 export const API_URL = detectApiUrl();
 
+/** Le site public : conditions, confidentialité (fixé par EXPO_PUBLIC_SITE_URL en production). */
+export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || 'https://zupeat.com').replace(/\/+$/, '');
+
 export class ApiError extends Error {
   constructor(message: string, public status: number, public code?: string) {
     super(message);

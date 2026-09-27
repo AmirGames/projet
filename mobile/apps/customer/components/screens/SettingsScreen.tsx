@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
-import { API_URL, ApiError, apiFetch } from '../../lib/api';
+import { API_URL, ApiError, apiFetch, SITE_URL } from '../../lib/api';
 import type { DeliveryAddress } from '../../lib/session';
 import { Card, COLORS, Row, ScreenHeader, ui } from '../ui';
 
 /** Le site public : conditions, confidentialité (fixé par eas.json en production). */
-const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || 'https://zupeat.com').replace(/\/+$/, '');
 
 interface DeletionPreview {
   commandesEnCours: number;
