@@ -9,8 +9,17 @@ import { Users, DollarSign, AlertCircle, Server, Lock, ChevronRight } from 'luci
 import { euro } from '@/lib/format';
 import Link from 'next/link';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { AccesPlateforme, chargerAcces } from '@/lib/acces-plateforme';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+// Chaque raccourci n'apparaît qu'aux rôles qui ont accès à sa section.
+const RACCOURCIS = [
+  { href: '/superowner/organizations', section: 'organizations', icone: '🏢', libelle: 'quickOrganizations' },
+  { href: '/superowner/billing', section: 'billing', icone: '💳', libelle: 'quickBilling' },
+  { href: '/superowner/system-config', section: 'system-config', icone: '⚙️', libelle: 'quickConfig' },
+  { href: '/superowner/security-audit', section: 'security-audit', icone: '🔒', libelle: 'quickSecurityAudit' },
+] as const;
 
 interface DashboardStats {
   totalRevenue: number;
@@ -36,6 +45,14 @@ const teinteFond = (score: number) =>
 
 export default function SuperOwnerDashboard() {
   const t = useTranslations('superownerDashboard');
+  // Le rôle du compte : le titre, les raccourcis et le bandeau en dépendent.
+  const [acces, setAcces] = useState<AccesPlateforme | null>(null);
+  useEffectChargement(() => {
+    chargerAcces().then(setAcces).catch(() => setAcces(null));
+  }, []);
+  const estSuperOwner = !!acces?.isSuperOwner;
+  const nomDuRole = estSuperOwner ? 'SuperOwner' : acces?.roleLabel ?? '';
+  const peutVoir = (section: string) => estSuperOwner || !!acces?.permissions[section];
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -73,9 +90,9 @@ export default function SuperOwnerDashboard() {
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Lock size={32} className="text-red-600" />
-          {t('title')}
+          {nomDuRole ? t('titleRole', { role: nomDuRole }) : t('titleGeneric')}
         </h1>
-        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
+        <p className="text-gray-400 mt-1">{estSuperOwner ? t('subtitle') : t('subtitleTeam')}</p>
       </div>
 
       {/* Critical Alerts */}
@@ -168,41 +185,27 @@ export default function SuperOwnerDashboard() {
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
         <h2 className="text-lg font-bold mb-4">{t('quickActions')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Link
-            href="/superowner/organizations"
-            className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
-          >
-            <p className="text-2xl mb-2">🏢</p>
-            <p className="text-sm font-medium">{t('quickOrganizations')}</p>
-          </Link>
-          <Link
-            href="/superowner/billing"
-            className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
-          >
-            <p className="text-2xl mb-2">💳</p>
-            <p className="text-sm font-medium">{t('quickBilling')}</p>
-          </Link>
-          <Link
-            href="/superowner/system-config"
-            className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
-          >
-            <p className="text-2xl mb-2">⚙️</p>
-            <p className="text-sm font-medium">{t('quickConfig')}</p>
-          </Link>
-          <Link
-            href="/superowner/security-audit"
-            className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
-          >
-            <p className="text-2xl mb-2">🔒</p>
-            <p className="text-sm font-medium">{t('quickSecurityAudit')}</p>
-          </Link>
+          {RACCOURCIS.filter((r) => peutVoir(r.section)).map((r) => (
+            <Link
+              key={r.href}
+              href={r.href}
+              className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-center transition-colors block"
+            >
+              <p className="text-2xl mb-2">{r.icone}</p>
+              <p className="text-sm font-medium">{t(r.libelle)}</p>
+            </Link>
+          ))}
         </div>
       </div>
 
       {/* Info */}
       <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
         <p className="text-blue-400 text-sm">
-          {t('loggedInAs')}
+          {estSuperOwner
+            ? t('loggedInAs')
+            : nomDuRole
+              ? t('loggedInAsRole', { role: nomDuRole })
+              : null}
         </p>
       </div>
     </div>

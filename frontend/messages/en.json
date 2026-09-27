@@ -99,7 +99,11 @@
     "quickBilling": "Billing",
     "quickConfig": "Configuration",
     "quickSecurityAudit": "Security Audit",
-    "loggedInAs": "🔐 You are logged in as Superowner. You have full access to all systems."
+    "loggedInAs": "🔐 You are logged in as Superowner. You have full access to all systems.",
+    "titleRole": "{role} Dashboard",
+    "titleGeneric": "Dashboard",
+    "subtitleTeam": "Platform overview, within your role's access",
+    "loggedInAsRole": "🔐 You are logged in as {role}. You can only access the sections open to your role; ask the SuperOwner for more."
   },
   "superownerOrganizations": {
     "title": "Organizations",
@@ -2141,6 +2145,15 @@
     "none": "Remove all",
     "deniedTitle": "Access denied",
     "deniedText": "Your role does not open this section. Ask the SuperOwner to grant you access.",
-    "yourRole": "Your role: {role}"
+    "yourRole": "Your role: {role}",
+    "newRole": "New role",
+    "newRolePlaceholder": "E.g. Billing",
+    "create": "Create role",
+    "created": "Role “{role}” created: now tick its access.",
+    "createError": "Could not create the role",
+    "delete": "Delete role",
+    "deleteConfirm": "Delete the role “{role}”?",
+    "deleted": "Role “{role}” deleted",
+    "deleteError": "Could not delete the role"
   }
 }
