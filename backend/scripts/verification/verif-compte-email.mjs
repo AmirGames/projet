@@ -26,6 +26,22 @@ check(
   courrielConfirmation?.sujet
 );
 
+// Une adresse déjà prise sortait en 500 : la contrainte d'unicité de la base
+// remontait telle quelle, et l'inscrit ne savait pas qu'il avait un compte.
+titre('Une adresse déjà prise');
+const doublon = await post('/api/auth/signup', { conditionsAcceptees: true, email, password: 'Autre123!', name: 'Doublon' });
+const corpsDoublon = await j(doublon);
+check('refusée en 409', doublon.status === 409, `status=${doublon.status} ${JSON.stringify(corpsDoublon)?.slice(0, 120)}`);
+check('avec un message qui le dit', corpsDoublon?.code === 'EMAIL_EXISTS' && /déjà utilisé/.test(corpsDoublon?.error || ''), JSON.stringify(corpsDoublon)?.slice(0, 120));
+check(
+  'un seul compte en base',
+  (await sqlScalaire(`SELECT COUNT(*) FROM "User" WHERE email = '${email}'`)) === '1'
+);
+check(
+  'le mot de passe du compte n\'a pas changé',
+  (await post('/api/auth/login', { email, password: motDePasseInitial })).status === 200
+);
+
 const lienConfirmation = courrielConfirmation?.lien('/verifier-email');
 check('il contient un lien de confirmation', !!lienConfirmation, courrielConfirmation?.contenu?.slice(0, 200));
 

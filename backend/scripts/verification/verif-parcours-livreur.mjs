@@ -166,9 +166,6 @@ async function envoyerPhoto(contenu, type, jeton = D) {
   });
 }
 
-const pdf = await envoyerPhoto(Buffer.from('%PDF-1.4'), 'application/pdf');
-check('un PDF n’est pas une photo', pdf.status === 400, `statut ${pdf.status}`);
-
 const autre = await j(
   await post('/api/drivers/register', { conditionsAcceptees: true,
     name: `Autre ${uniq}`,
@@ -186,11 +183,18 @@ const avantAttente = await envoyerPhoto(PIXEL, 'image/png');
 check('pas de photo avant l’attente du client', avantAttente.status === 409, `statut ${avantAttente.status}`);
 await attenteClientEcoulee(courseId);
 
+// Le serveur regarde l'attente avant le fichier : le format ne se contrôle
+// qu'une fois l'attente écoulée, sinon la réponse est le 409 de l'attente.
+const pdf = await envoyerPhoto(Buffer.from('%PDF-1.4'), 'application/pdf');
+check('un PDF n’est pas une photo', pdf.status === 400, `statut ${pdf.status}`);
+
 const envoi = await envoyerPhoto(PIXEL, 'image/png');
 const photoUrl = (await j(envoi))?.data?.photoUrl;
 check('la photo est reçue', envoi.status === 201 && Boolean(photoUrl), `statut ${envoi.status}`);
 
-const servie = photoUrl ? await fetch(photoUrl) : null;
+// L'adresse rendue suit l'API_URL du serveur, qui n'est pas forcément le
+// port visé par la suite : on garde son chemin, servi par l'API testée.
+const servie = photoUrl ? await fetch(new URL(new URL(photoUrl).pathname, API)) : null;
 check('et se sert telle quelle', servie?.status === 200, `statut ${servie?.status}`);
 check(
   'au même octet près',

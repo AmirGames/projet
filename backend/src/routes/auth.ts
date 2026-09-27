@@ -37,6 +37,15 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
 
     logger.info("Signup attempt", { email: body.email });
 
+    // Une adresse déjà prise faisait échouer la création sur la contrainte
+    // d'unicité : l'inscrit lisait « Internal server error » au lieu de
+    // comprendre qu'il avait déjà un compte.
+    const compteExistant = await db.user.findUnique({ where: { email: body.email } });
+
+    if (compteExistant) {
+      throw new ApiError(409, "Cet email est déjà utilisé", "EMAIL_EXISTS");
+    }
+
     // Check if this is the first user
     const userCount = await db.user.count();
     const isFirstUser = userCount === 0;

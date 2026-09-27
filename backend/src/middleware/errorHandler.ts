@@ -125,14 +125,25 @@ export const errorHandler = (
     return res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: message, code: err.code });
   }
 
+  /**
+   * Une valeur déjà prise est un conflit, pas une panne.
+   *
+   * Les routes vérifient l'unicité avant d'écrire, mais deux requêtes
+   * simultanées passent toutes deux la vérification : la seconde bute sur la
+   * contrainte de la base (P2002), qui sortait en 500 avec sa pile.
+   */
+  const doublon = (err as { code?: unknown }).code === "P2002";
+
   const statut =
     err instanceof ApiError
       ? err.statusCode
       : err instanceof ZodError
         ? 400
-        : err instanceof SyntaxError && typeof statutPorte === "number"
-          ? statutPorte
-          : 500;
+        : doublon
+          ? 409
+          : err instanceof SyntaxError && typeof statutPorte === "number"
+            ? statutPorte
+            : 500;
 
   const attendu = statut < 500;
 
@@ -167,6 +178,13 @@ export const errorHandler = (
     return res.status(err.statusCode).json({
       error: err.message,
       code: err.code,
+    });
+  }
+
+  if (doublon) {
+    return res.status(409).json({
+      error: "Cette valeur est déjà utilisée.",
+      code: "ALREADY_EXISTS",
     });
   }
 

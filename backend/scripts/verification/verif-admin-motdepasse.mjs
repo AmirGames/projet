@@ -1,21 +1,32 @@
-// Vérifie la création d'admin et l'interdiction des mots de passe en clair.
+// Vérifie l'entrée d'un membre dans l'équipe et l'interdiction des mots de passe en clair.
 
 import { inscription, check, j, uniq, post, sqlScalaire, sqlExec, terminer } from './outils.mjs';
 
 const sup = await j(await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const S = sup.accessToken;
 
-console.log('[Création d\'un administrateur]');
+console.log('[Entrée d\'un membre dans l\'équipe]');
+// Un membre de l'équipe n'est plus créé par la plateforme avec un mot de passe
+// choisi pour lui : il crée son compte, et le superowner le fait entrer dans
+// l'équipe (POST /api/superowner/admins, qui a remplacé /api/super-admin/admins).
 const email = `admin-${uniq}@t.fr`;
-const creation = await post('/api/super-admin/admins', { email, name: 'Admin Test', password: 'MotDePasse123!' }, S);
-check('admin créé', creation.status < 300, `status=${creation.status} ${JSON.stringify(await j(creation))?.slice(0, 150)}`);
+const compte = await post('/api/auth/signup', { conditionsAcceptees: true, email, name: 'Admin Test', password: 'MotDePasse123!' });
+check('compte du futur membre créé', compte.status === 201, `status=${compte.status}`);
+
+const creation = await post('/api/superowner/admins', { email, role: 'ADMIN', plateforme: 'EAT' }, S);
+check('entré dans l\'équipe', creation.status === 201, `status=${creation.status} ${JSON.stringify(await j(creation))?.slice(0, 150)}`);
+check('admin système en base', (await sqlScalaire(`SELECT "isSystemAdmin"::text FROM "User" WHERE email = '${email}'`)) === 'true');
+check(
+  'rôle Administrateur sur ZupEat',
+  (await sqlScalaire(`SELECT a.role FROM "AccesEquipe" a JOIN "User" u ON u.id = a."userId" WHERE u.email = '${email}' AND a.plateforme = 'EAT'`)) === 'ADMIN'
+);
 
 const enBase = await sqlScalaire(`SELECT "passwordHash" FROM "User" WHERE email = '${email}'`);
-check('mot de passe haché en base (en clair auparavant)', enBase.startsWith('$2'), enBase.slice(0, 20));
+check('mot de passe haché en base', enBase.startsWith('$2'), enBase.slice(0, 20));
 check('le mot de passe n\'apparaît pas en base', !enBase.includes('MotDePasse123'), enBase.slice(0, 20));
 
 const connexion = await post('/api/auth/login', { email, password: 'MotDePasse123!' });
-check('cet admin peut se connecter (impossible auparavant)', connexion.status === 200, `status=${connexion.status} ${JSON.stringify(await j(connexion))?.slice(0, 120)}`);
+check('ce membre peut se connecter', connexion.status === 200, `status=${connexion.status} ${JSON.stringify(await j(connexion))?.slice(0, 120)}`);
 
 console.log('\n[Aucun mot de passe en clair]');
 // La base refuse toute valeur qui n'est pas une empreinte bcrypt.

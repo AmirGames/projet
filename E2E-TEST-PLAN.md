@@ -132,11 +132,13 @@ Minimum 2 caractères »).
 1. S'inscrire à nouveau avec test-user-001@example.com
 
 Attendu :
-✅ Refus, aucun second compte
-⚠️ Défaut connu (27 septembre) : l'API répond 500 « Internal server error »
-   au lieu d'un refus explicite — la contrainte d'unicité de User.email
-   remonte telle quelle. À corriger dans POST /api/auth/signup.
+✅ 409, « Cet email est déjà utilisé », code EMAIL_EXISTS, affiché sur le formulaire
+✅ Aucun second compte ; le mot de passe du compte existant ne change pas
 ```
+
+(Jusqu'au 27 septembre, ce cas répondait 500 : la contrainte d'unicité de la
+base remontait telle quelle. Deux inscriptions simultanées qui passeraient
+toutes deux la vérification reçoivent désormais un 409 `ALREADY_EXISTS`.)
 
 ### Test 1.5 : trop d'inscriptions depuis une même adresse IP
 
@@ -576,7 +578,7 @@ Organization.approvedAt est vide : la plateforme ne l'a pas encore validé (test
 - [ ] Comptes suivants ordinaires
 - [ ] Customer créé à l'inscription
 - [ ] Conditions exigées et acceptation enregistrée
-- [ ] Adresse déjà prise refusée (aujourd'hui en 500 : défaut connu)
+- [ ] Adresse déjà prise refusée en 409
 - [ ] Jeton : userId seul
 - [ ] Limites de connexion et d'inscription
 
