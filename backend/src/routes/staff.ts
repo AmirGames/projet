@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { emailFacultatif } from "../utils/validation";
+import { champEmail, emailFacultatif } from "../utils/validation";
 import { StaffService } from "../services/staff.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
@@ -11,7 +11,7 @@ const router = Router();
 const createStaffSchema = z.object({
   storeId: z.string().cuid(),
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
-  email: z.string().email("Invalid email format"),
+  email: champEmail("Invalid email format"),
   phone: z.string().optional(),
   role: z.enum(["MANAGER", "CASHIER", "KITCHEN", "DELIVERY", "SUPPORT"]).default("CASHIER"),
   permissions: z.array(z.string()).optional(),

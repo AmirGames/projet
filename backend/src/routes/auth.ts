@@ -4,7 +4,7 @@ import {
 } from "../services/permissions-plateforme.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation";
+import { champEmail, signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation";
 import { AuthService } from "../services/auth.service";
 import { UserService } from "../services/user.service";
 import { ApiError } from "../middleware/errorHandler";
@@ -75,14 +75,26 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
       await envoyerConfirmation(user);
     }
 
-    // Create customer profile linked to user (unified identity)
-    const customer = await db.customer.create({
-      data: {
-        userId: user.id,
-        name: body.name || user.email.split("@")[0],
-        email: user.email,
-      },
-    });
+    /**
+     * La fiche client du compte.
+     *
+     * Une commande passée sans compte a pu créer une fiche à cette adresse,
+     * unique elle aussi : la recréer échouait sur la contrainte, après la
+     * création du compte — l'inscrit lisait un refus alors que son compte
+     * existait. On la rattache au compte, comme le fait l'espace client à la
+     * première visite.
+     */
+    const ficheInvite = await db.customer.findUnique({ where: { email: user.email } });
+    const customer =
+      ficheInvite && !ficheInvite.userId
+        ? await db.customer.update({ where: { id: ficheInvite.id }, data: { userId: user.id } })
+        : await db.customer.create({
+            data: {
+              userId: user.id,
+              name: body.name || user.email.split("@")[0],
+              email: user.email,
+            },
+          });
 
     // Generate tokens
     const accessToken = AuthService.generateAccessToken(user.id);
@@ -539,6 +551,17 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
       throw new ApiError(400, "Vous avez déjà un profil livreur", "DRIVER_EXISTS");
     }
 
+    // L'e-mail d'une fiche livreur est unique : une fiche restée sur cette
+    // adresse (compte qui en a changé depuis) ferait échouer la création.
+    const livreurSurEmail = await db.driver.findUnique({
+      where: { email: user.email },
+      select: { id: true },
+    });
+
+    if (livreurSurEmail) {
+      throw new ApiError(409, "Cet email est déjà utilisé", "EMAIL_EXISTS");
+    }
+
     // Create driver using user's existing email and name
     const driver = await db.driver.create({
       data: {
@@ -582,7 +605,7 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
   try {
     const schema = z.object({
       businessName: z.string().min(1).max(200),
-      email: z.string().email(),
+      email: champEmail(),
       password: z.string().min(8),
       // Le genre en code (« restaurant ») ; les anciennes graphies
       // (« Restaurant », « RESTAURANT ») sont encore comprises.
@@ -805,7 +828,7 @@ router.post(
   }),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const body = z.object({ email: z.string().email() }).parse(req.body);
+      const body = z.object({ email: champEmail() }).parse(req.body);
       const email = body.email.toLowerCase();
 
       const user = await db.user.findUnique({
@@ -1024,7 +1047,7 @@ router.post(
         }
       }
 
-      const demande = z.object({ email: z.string().email().optional() }).parse(req.body || {});
+      const demande = z.object({ email: champEmail().optional() }).parse(req.body || {});
 
       if (!userId && !demande.email) {
         throw new ApiError(400, "Indiquez votre adresse e-mail", "MISSING_EMAIL");

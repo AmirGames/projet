@@ -29,9 +29,24 @@ export class UserService {
   }
 
   static async getUserByEmail(email: string) {
-    const user = await db.user.findUnique({
+    /**
+     * L'adresse arrive en minuscules, et la migration 0014 y a ramené les
+     * comptes existants — sauf ceux qu'elle ne pouvait pas convertir sans
+     * collision (« Jean@x.fr » et « jean@x.fr » inscrits tous deux). Pour
+     * ceux-là, on cherche sans tenir compte de la casse, et seulement si un
+     * compte unique répond : entre deux, on ne choisit pas au hasard.
+     */
+    let user = await db.user.findUnique({
       where: { email },
     });
+
+    if (!user) {
+      const proches = await db.user.findMany({
+        where: { email: { equals: email, mode: "insensitive" } },
+        take: 2,
+      });
+      if (proches.length === 1) user = proches[0];
+    }
 
     if (!user) {
       throw new ApiError(404, "User not found", "USER_NOT_FOUND");

@@ -273,7 +273,7 @@ la main.
 
 L'historique des migrations part d'une migration de référence,
 `0001_initial_schema`, qui crée tout le schéma sur une base vide ; chaque
-changement de schéma ajoute ensuite sa propre migration (`0002` à `0013`
+changement de schéma ajoute ensuite sa propre migration (`0002` à `0014`
 aujourd'hui, `npx prisma migrate dev --name <nom>`), à committer avec le
 schéma.
 
@@ -342,7 +342,7 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1775 contrôles, 54 suites
+# API : 1802 contrôles, 55 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy

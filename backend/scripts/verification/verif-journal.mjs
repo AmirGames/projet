@@ -22,7 +22,7 @@ let journal = '';
 
 const api = spawn(
   process.execPath,
-  [join(RACINE, 'node_modules', '.bin', 'tsx'), join(RACINE, 'src', 'server.ts')],
+  [join(RACINE, 'node_modules', 'tsx', 'dist', 'cli.mjs'), join(RACINE, 'src', 'server.ts')],
   {
     cwd: RACINE,
     env: { ...process.env, PORT: String(PORT) },
@@ -161,7 +161,7 @@ titre('Une vraie panne garde sa pile');
 const pannier = spawn(
   process.execPath,
   [
-    join(RACINE, 'node_modules', '.bin', 'tsx'),
+    join(RACINE, 'node_modules', 'tsx', 'dist', 'cli.mjs'),
     '-e',
     `
     import "dotenv/config";

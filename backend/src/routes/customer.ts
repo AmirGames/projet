@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { champEmail } from "../utils/validation";
 import { CustomerService } from "../services/customer.service";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
@@ -8,7 +9,7 @@ const router = Router();
 
 const createCustomerSchema = z.object({
   name: z.string().min(2).max(100),
-  email: z.string().email(),
+  email: champEmail(),
   phone: z.string().max(20).optional(),
   address: z.string().max(200).optional(),
   city: z.string().max(100).optional(),

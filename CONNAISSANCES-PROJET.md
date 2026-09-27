@@ -93,7 +93,7 @@ Ces règles sont permanentes, elles ne se redemandent pas.
 | **Mobile** | Expo (React Native) : `mobile/apps/customer`, `merchant`, `delivery` |
 
 ```
-backend/    API REST — 40 fichiers de routes, 69 services (hors tests), 57 modèles Prisma, 13 migrations
+backend/    API REST — 40 fichiers de routes, 69 services (hors tests), 57 modèles Prisma, 14 migrations
 frontend/   Next.js — 116 pages
 mobile/     trois applications Expo
 ```
@@ -417,13 +417,14 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 54 | **1775** |
+| **API** (`backend/scripts/verification/`) | 55 | **1802** |
 | **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
 
-Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1744
+Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1771
 contrôles dans la suite complète, plus les 31 de `verif-paiement`, qui se joue
 à part contre une API à Stripe actif (voir le `LISEZ-MOI`) : son interruption
-dans la suite complète est attendue.
+dans la suite complète est attendue. Rejouée aussi sous Windows, session
+PostgreSQL en UTC (voir le `LISEZ-MOI`).
 
 La suite navigateur n'a pas été rejouée depuis le 24 septembre (716 contrôles,
 alors 27 suites).

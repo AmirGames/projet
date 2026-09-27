@@ -28,20 +28,25 @@ export async function ouvrirBoiteAuxLettres(port = 1025) {
       tampon += bloc.toString("utf-8");
 
       // Le corps se termine par une ligne ne contenant qu'un point.
+      //
+      // La marque se cherche dans tout le corps reçu, pas dans le dernier
+      // bloc : l'expéditeur envoie souvent le dernier saut de ligne et le point
+      // en deux blocs, et la marque, coupée en deux, n'était jamais vue — la
+      // boîte n'accusait pas réception, et l'inscription attendait sans fin.
       if (dansLeCorps) {
-        const fin = tampon.indexOf("\r\n.\r\n");
+        corps += tampon;
+        tampon = "";
 
-        if (fin === -1) {
-          corps += tampon;
-          tampon = "";
-          return;
-        }
+        // Le saut de ligne ajouté en tête couvre un corps vide (« . » seul).
+        const texte = "\r\n" + corps;
+        const fin = texte.indexOf("\r\n.\r\n");
 
-        corps += tampon.slice(0, fin);
-        tampon = tampon.slice(fin + 5);
+        if (fin === -1) return;
+
+        tampon = texte.slice(fin + 5);
         dansLeCorps = false;
 
-        messages.push(decoder(corps));
+        messages.push(decoder(texte.slice(2, Math.max(fin, 2))));
         corps = "";
         socket.write("250 recu\r\n");
       }

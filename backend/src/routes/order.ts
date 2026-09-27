@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { champEmail } from "../utils/validation";
 import { OrderService } from "../services/order.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
@@ -61,7 +62,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
 const createOrderSchema = z.object({
   storeId: z.string().cuid(),
   customerName: z.string().min(2, "Nom minimum 2 caractères"),
-  customerEmail: z.string().email("Email invalide"),
+  customerEmail: champEmail(),
   customerPhone: z.string().min(9, "Téléphone invalide"),
   deliveryType: z.enum(["PICKUP", "DELIVERY"]),
   pickupTime: z.string().optional(),
