@@ -27,7 +27,7 @@ const UN_AN = 60 * 60 * 24 * 365;
 /**
  * Aiguille chaque requête vers le bon domaine.
  *
- * Trois domaines, un seul déploiement : le proxy lit l'hôte demandé et
+ * Plusieurs domaines, un seul déploiement : le proxy lit l'hôte demandé et
  * décide si la page a le droit d'y être affichée. Une page commerçant appelée
  * depuis le domaine public est renvoyée vers le domaine professionnel, une
  * page livreur vers le domaine livreur — l'adresse visible reste cohérente
@@ -107,7 +107,7 @@ export function proxy(requete: NextRequest) {
     : null;
 
   // Les sous-répertoires de région n'existent que côté public : les domaines
-  // commerçant et livreur n'ont rien à indexer.
+  // commerçant, livreur et du groupe n'ont rien à indexer.
   const regionsActives = !espaceHote || espaceHote === 'public';
 
   // L'en-tête de région ne vient que d'ici, jamais du navigateur.

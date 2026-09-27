@@ -1,10 +1,12 @@
 /**
  * Répartition des pages entre les domaines du site.
  *
- * Un même code sert trois publics qui n'ont rien à faire les uns chez les
+ * Un même code sert quatre publics qui n'ont rien à faire les uns chez les
  * autres :
- *   - le domaine professionnel (commercant.monsite.fr) : commerçants,
- *     administration et superowner ;
+ *   - le domaine du groupe (manager.zupone.com) : l'équipe du groupe
+ *     (superowner, SuperAdmin, Administrateurs, Support), qui administre
+ *     toutes les plateformes depuis un seul panneau ;
+ *   - le domaine professionnel (manager.zupeat.com) : les commerçants ;
  *   - le domaine livreur (livreur.monsite.fr) : les livreurs de la
  *     plateforme, avec leur propre panneau ;
  *   - le domaine public (monsite.fr) : la vitrine, les boutiques et les
@@ -20,18 +22,20 @@
  * domaine unique.
  */
 
-export type Espace = 'pro' | 'livreur' | 'public' | 'commun';
+export type Espace = 'groupe' | 'pro' | 'livreur' | 'public' | 'commun';
 
 /** Un espace qui possède son propre domaine. */
-export type EspaceHeberge = 'pro' | 'livreur' | 'public';
+export type EspaceHeberge = 'groupe' | 'pro' | 'livreur' | 'public';
 
 const lire = (valeur: string | undefined) => (valeur || '').trim().toLowerCase();
 
+export const DOMAINE_GROUPE = lire(process.env.NEXT_PUBLIC_DOMAINE_GROUPE);
 export const DOMAINE_PRO = lire(process.env.NEXT_PUBLIC_DOMAINE_PRO);
 export const DOMAINE_PUBLIC = lire(process.env.NEXT_PUBLIC_DOMAINE_PUBLIC);
 export const DOMAINE_LIVREUR = lire(process.env.NEXT_PUBLIC_DOMAINE_LIVREUR);
 
 export const DOMAINES: Record<EspaceHeberge, string> = {
+  groupe: DOMAINE_GROUPE,
   pro: DOMAINE_PRO,
   livreur: DOMAINE_LIVREUR,
   public: DOMAINE_PUBLIC,
@@ -41,7 +45,9 @@ export const DOMAINES: Record<EspaceHeberge, string> = {
  * La séparation demande le domaine public et au moins un espace
  * professionnel : sans point de comparaison, il n'y a rien à répartir.
  */
-export const CLOISONNEMENT_ACTIF = Boolean(DOMAINE_PUBLIC && (DOMAINE_PRO || DOMAINE_LIVREUR));
+export const CLOISONNEMENT_ACTIF = Boolean(
+  DOMAINE_PUBLIC && (DOMAINE_PRO || DOMAINE_LIVREUR || DOMAINE_GROUPE),
+);
 
 /**
  * Premier segment des pages de chaque espace.
@@ -51,9 +57,9 @@ export const CLOISONNEMENT_ACTIF = Boolean(DOMAINE_PUBLIC && (DOMAINE_PRO || DOM
  * injoignable.
  */
 const SEGMENTS: Record<EspaceHeberge, string[]> = {
+  groupe: ['superowner', 'super-admin', 'admin'],
   pro: [
     'merchant',
-    'superowner',
     'signup', // inscription commerçant : elle crée une organisation
   ],
   livreur: ['driver'],
@@ -88,6 +94,9 @@ const SEGMENTS_COMMUNS = ['login', 'mot-de-passe-oublie', 'reinitialiser', 'veri
 
 /** Accueil propre à chaque domaine. */
 export const ACCUEIL: Record<EspaceHeberge, string> = {
+  // L'équipe arrive sur le panneau d'administration, qui la renvoie à la
+  // connexion si elle n'est pas identifiée.
+  groupe: '/superowner',
   // La page d'accueil actuelle présente l'offre aux commerçants.
   pro: '/',
   // Le livreur arrive sur son tableau de bord, qui le renvoie à la connexion
@@ -96,6 +105,8 @@ export const ACCUEIL: Record<EspaceHeberge, string> = {
   // Côté public, la liste des commerces qui livrent chez le visiteur.
   public: '/client',
 };
+
+const ESPACES_HEBERGES: EspaceHeberge[] = ['groupe', 'pro', 'livreur', 'public'];
 
 /** Un espace n'est cloisonné que si son domaine est renseigné. */
 export function espaceHeberge(espace: EspaceHeberge): boolean {
@@ -108,7 +119,7 @@ export function espaceDuChemin(chemin: string): Espace {
 
   if (SEGMENTS_COMMUNS.includes(segment)) return 'commun';
 
-  for (const espace of ['pro', 'livreur', 'public'] as EspaceHeberge[]) {
+  for (const espace of ESPACES_HEBERGES) {
     const exceptions = CHEMINS[espace] || [];
 
     if (exceptions.some((prefixe) => chemin === prefixe || chemin.startsWith(`${prefixe}/`))) {
@@ -116,7 +127,7 @@ export function espaceDuChemin(chemin: string): Espace {
     }
   }
 
-  for (const espace of ['pro', 'livreur', 'public'] as EspaceHeberge[]) {
+  for (const espace of ESPACES_HEBERGES) {
     if (SEGMENTS[espace].includes(segment)) return espace;
   }
 
@@ -132,7 +143,7 @@ export function espaceDuDomaine(hote: string): EspaceHeberge | null {
   // Le port ne fait pas partie du domaine ; en développement il est toujours là.
   const domaine = hote.split(':')[0].toLowerCase();
 
-  for (const espace of ['pro', 'livreur', 'public'] as EspaceHeberge[]) {
+  for (const espace of ESPACES_HEBERGES) {
     if (DOMAINES[espace] && DOMAINES[espace] === domaine) return espace;
   }
 
