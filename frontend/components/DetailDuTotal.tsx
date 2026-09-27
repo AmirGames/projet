@@ -1,0 +1,75 @@
+import { euro } from '@/lib/format';
+
+type Montant = number | string | null | undefined;
+
+/**
+ * Le détail de ce que le client a payé : chaque ligne, puis le total.
+ *
+ * Le suivi omettait la remise (15 + 5 + 0,25 annonçait 18,25 €), le détail
+ * de « Mes commandes » ne montrait ni la livraison, ni la remise, ni le
+ * sous-total. Et son « Total HT » retirait la TVA des articles d'un total qui
+ * comprend aussi la livraison et les frais : il était faux. Seule la TVA,
+ * connue, s'affiche.
+ */
+export default function DetailDuTotal({
+  commande,
+  couleurTotal = 'text-white',
+}: {
+  commande: {
+    totalAmount: Montant;
+    feesAmount?: Montant;
+    serviceFeeAmount?: Montant;
+    discountAmount?: Montant;
+    promoCode?: string | null;
+    taxAmount?: Montant;
+    taxRate?: Montant;
+    deliveryType?: string;
+    items?: { price: Montant; quantity: number }[];
+  };
+  couleurTotal?: string;
+}) {
+  const sousTotal = (commande.items || []).reduce(
+    (somme, ligne) => somme + Number(ligne.price || 0) * ligne.quantity,
+    0
+  );
+
+  return (
+    <div className="space-y-2 text-sm">
+      <div className="flex justify-between text-gray-400">
+        <span>Sous-total</span>
+        <span>{euro(sousTotal)}</span>
+      </div>
+      {commande.deliveryType === 'DELIVERY' && (
+        <div className="flex justify-between text-gray-400">
+          <span>Livraison</span>
+          <span>{Number(commande.feesAmount) > 0 ? euro(commande.feesAmount) : 'Offerte'}</span>
+        </div>
+      )}
+      {Number(commande.serviceFeeAmount) > 0 && (
+        <div className="flex justify-between text-gray-400">
+          <span>Frais de service</span>
+          <span>{euro(commande.serviceFeeAmount)}</span>
+        </div>
+      )}
+      {Number(commande.discountAmount) > 0 && (
+        <div className="flex justify-between text-green-400">
+          <span>Remise{commande.promoCode ? ` (${commande.promoCode})` : ''}</span>
+          <span>− {euro(commande.discountAmount)}</span>
+        </div>
+      )}
+      <div className="flex justify-between items-center pt-2 border-t border-gray-700 text-lg font-bold text-white">
+        <span>Total</span>
+        <span className={`text-2xl ${couleurTotal}`}>{euro(commande.totalAmount)}</span>
+      </div>
+      {Number(commande.taxAmount) > 0 && (
+        <div className="flex justify-between text-gray-500">
+          <span>
+            dont TVA
+            {Number(commande.taxRate) > 0 ? ` ${Number(commande.taxRate)} %` : ''}
+          </span>
+          <span>{euro(commande.taxAmount)}</span>
+        </div>
+      )}
+    </div>
+  );
+}

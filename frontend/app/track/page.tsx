@@ -1,5 +1,6 @@
 'use client';
 
+import DetailDuTotal from '@/components/DetailDuTotal';
 import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
@@ -42,6 +43,8 @@ interface Order {
   feesAmount?: number | string;
   /** Les frais de service de la plateforme, figés à la commande. */
   serviceFeeAmount?: number | string;
+  discountAmount?: number | string;
+  promoCode?: string | null;
   deliveryType: 'PICKUP' | 'DELIVERY';
   deliveryAddress?: string;
   deliveryCity?: string;
@@ -516,41 +519,8 @@ export default function TrackOrderPage() {
               </div>
             </div>
 
-            {/* Le total, et le détail de la taxe. Le client payait un prix TTC
-                sans jamais voir la TVA qu'il contient : ce n'était pas un
-                justificatif. */}
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-2">
-              {Number(order.feesAmount) > 0 && (
-                <div className="flex justify-between items-center text-sm text-gray-400">
-                  <span>Frais de livraison</span>
-                  <span>{euro(order.feesAmount)}</span>
-                </div>
-              )}
-              {Number(order.serviceFeeAmount) > 0 && (
-                <div className="flex justify-between items-center text-sm text-gray-400">
-                  <span>Frais de service</span>
-                  <span>{euro(order.serviceFeeAmount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center text-lg font-bold">
-                <span>Montant Total TTC</span>
-                <span className="text-red-400 text-2xl">{euro(order.totalAmount)}</span>
-              </div>
-              {Number(order.taxAmount) > 0 && (
-                <div className="pt-2 border-t border-gray-700 space-y-1 text-sm text-gray-400">
-                  <div className="flex justify-between">
-                    <span>Total HT</span>
-                    <span>{euro(Number(order.totalAmount) - Number(order.taxAmount))}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>
-                      dont TVA
-                      {Number(order.taxRate) > 0 ? ` ${Number(order.taxRate)} %` : ''}
-                    </span>
-                    <span>{euro(order.taxAmount)}</span>
-                  </div>
-                </div>
-              )}
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <DetailDuTotal commande={order} couleurTotal="text-red-400" />
             </div>
 
             {/* Notes */}
