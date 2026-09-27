@@ -11,7 +11,10 @@ import {
   LIBELLES_ROLES,
   ROLES_PLATEFORME,
   estRolePlateforme,
+  PLATEFORMES,
+  LIBELLES_PLATEFORMES,
 } from "../services/permissions-plateforme.service";
+import { Plateforme } from "@prisma/client";
 import { ApiKeyService } from "../services/api-key.service";
 import { WebhookService, EVENEMENTS_WEBHOOK } from "../services/webhook.service";
 import { BackupService } from "../services/backup.service";
@@ -2673,7 +2676,7 @@ router.post(
 // ADMINISTRATEURS
 // ============================================================================
 
-// GET /superowner/admins - Comptes disposant de droits d'administration
+// GET /superowner/admins - Les membres de l'équipe et leurs rôles par plateforme
 router.get("/admins", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
@@ -2681,20 +2684,19 @@ router.get("/admins", authMiddleware, superOwnerSeul, async (req: Request, res: 
     const where = { OR: [{ isSystemAdmin: true }, { isSuperOwner: true }] };
 
     const [comptes, total] = await Promise.all([
-      db.user.findMany({ where, skip: offset, take: limit, orderBy: { createdAt: "desc" } }),
+      db.user.findMany({
+        where,
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: { accesEquipe: { select: { plateforme: true, role: true } } },
+      }),
       db.user.count({ where }),
     ]);
 
     res.json({
-      admins: comptes.map((c) => ({
-        id: c.id,
-        email: c.email,
-        name: c.name || c.email,
-        role: c.isSuperOwner ? "SUPEROWNER" : c.platformRole || "ADMIN",
-        status: c.status === "BANNED" ? "SUSPENDED" : c.status,
-        lastLogin: c.updatedAt,
-        createdAt: c.createdAt,
-      })),
+      admins: comptes.map(presenterMembre),
+      plateformes: PLATEFORMES.map((code) => ({ code, label: LIBELLES_PLATEFORMES[code] })),
       pagination: { total, limit, offset },
     });
   } catch (err) {
@@ -2702,15 +2704,52 @@ router.get("/admins", authMiddleware, superOwnerSeul, async (req: Request, res: 
   }
 });
 
-// POST /superowner/admins - Promouvoir un compte existant
+/** Un membre de l'équipe tel que l'espace de gestion l'affiche. */
+function presenterMembre(c: {
+  id: string;
+  email: string;
+  name: string | null;
+  isSuperOwner: boolean;
+  status: string;
+  updatedAt: Date;
+  createdAt: Date;
+  accesEquipe: { plateforme: Plateforme; role: string }[];
+}) {
+  const eat = c.accesEquipe.find((a) => a.plateforme === "EAT");
+  return {
+    id: c.id,
+    email: c.email,
+    name: c.name || c.email,
+    // Le rôle sur ZupEat, pour les écrans qui n'en montrent qu'un.
+    role: c.isSuperOwner ? "SUPEROWNER" : eat?.role ?? null,
+    acces: c.isSuperOwner
+      ? []
+      : c.accesEquipe.map((a) => ({
+          plateforme: a.plateforme,
+          plateformeLabel: LIBELLES_PLATEFORMES[a.plateforme],
+          role: a.role,
+          roleLabel: estRolePlateforme(a.role) ? LIBELLES_ROLES[a.role] : a.role,
+        })),
+    status: c.status === "BANNED" ? "SUSPENDED" : c.status,
+    lastLogin: c.updatedAt,
+    createdAt: c.createdAt,
+  };
+}
+
+const schemaPlateforme = z.enum(PLATEFORMES).default("EAT");
+
+// POST /superowner/admins - Faire entrer un compte existant dans l'équipe
 // Volontairement une promotion et non une création : créer un compte ici
 // imposerait un mot de passe que personne ne pourrait communiquer au titulaire.
+// Le compte entre avec un rôle sur une plateforme ; les autres s'ajoutent
+// ensuite, une par une.
 router.post("/admins", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const schema = z.object({
       email: z.string().email(),
       name: z.string().optional(),
       role: z.enum(["SUPEROWNER", ...ROLES_PLATEFORME]).default("ADMIN"),
+      plateforme: schemaPlateforme,
     });
     const body = schema.parse(req.body);
 
@@ -2725,17 +2764,23 @@ router.post("/admins", authMiddleware, superOwnerSeul, async (req: Request, res:
     }
 
     if (compte.isSuperOwner || compte.isSystemAdmin) {
-      throw new ApiError(400, "Ce compte est déjà administrateur", "ALREADY_ADMIN");
+      throw new ApiError(
+        400,
+        "Ce compte fait déjà partie de l'équipe : ajoutez-lui un rôle sur une autre plateforme",
+        "ALREADY_ADMIN"
+      );
     }
 
+    const superowner = body.role === "SUPEROWNER";
     const promu = await db.user.update({
       where: { id: compte.id },
       data: {
         isSystemAdmin: true,
-        isSuperOwner: body.role === "SUPEROWNER",
-        platformRole: body.role === "SUPEROWNER" ? null : body.role,
+        isSuperOwner: superowner,
         name: body.name || compte.name,
+        ...(superowner ? {} : { accesEquipe: { create: { plateforme: body.plateforme, role: body.role } } }),
       },
+      include: { accesEquipe: { select: { plateforme: true, role: true } } },
     });
 
     // Le compte est gardé trente secondes : sans cet oubli, le nouvel
@@ -2747,28 +2792,17 @@ router.post("/admins", authMiddleware, superOwnerSeul, async (req: Request, res:
         adminId: req.userId as string,
         action: "GRANT_ADMIN",
         target: promu.id,
-        changes: { role: body.role } as any,
+        changes: { role: body.role, plateforme: superowner ? null : body.plateforme } as any,
       },
     });
 
-    res.status(201).json({
-      success: true,
-      admin: {
-        id: promu.id,
-        email: promu.email,
-        name: promu.name || promu.email,
-        role: promu.isSuperOwner ? "SUPEROWNER" : promu.platformRole,
-        status: promu.status,
-        lastLogin: promu.updatedAt,
-        createdAt: promu.createdAt,
-      },
-    });
+    res.status(201).json({ success: true, admin: presenterMembre(promu) });
   } catch (err) {
     next(err);
   }
 });
 
-// DELETE /superowner/admins/:adminId - Retirer les droits (le compte est conservé)
+// DELETE /superowner/admins/:adminId - Sortir de l'équipe (le compte est conservé)
 router.delete("/admins/:adminId", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const adminId = req.params.adminId as string;
@@ -2800,10 +2834,13 @@ router.delete("/admins/:adminId", authMiddleware, superOwnerSeul, async (req: Re
       }
     }
 
-    await db.user.update({
-      where: { id: adminId },
-      data: { isSystemAdmin: false, isSuperOwner: false, platformRole: null },
-    });
+    await db.$transaction([
+      db.accesEquipe.deleteMany({ where: { userId: adminId } }),
+      db.user.update({
+        where: { id: adminId },
+        data: { isSystemAdmin: false, isSuperOwner: false },
+      }),
+    ]);
 
     oublierCompte(adminId);
 
@@ -2822,25 +2859,40 @@ router.delete("/admins/:adminId", authMiddleware, superOwnerSeul, async (req: Re
   }
 });
 
-// PATCH /superowner/admins/:adminId/role - Changer le groupe d'un membre de l'équipe
+/** Un membre de l'équipe dont on règle les rôles : ni soi-même, ni un superowner. */
+async function membreARegler(adminId: string, userId: string | undefined) {
+  if (adminId === userId) {
+    throw new ApiError(400, "Vous ne pouvez pas changer votre propre rôle", "CANNOT_CHANGE_SELF");
+  }
+  const compte = await db.user.findUnique({ where: { id: adminId } });
+  if (!compte || !compte.isSystemAdmin) {
+    throw new ApiError(404, "Membre de l'équipe non trouvé", "NOT_FOUND");
+  }
+  if (compte.isSuperOwner) {
+    throw new ApiError(400, "Un superowner n'a pas de groupe : il voit tout", "IS_SUPEROWNER");
+  }
+  return compte;
+}
+
+// PATCH /superowner/admins/:adminId/role - Nommer un membre dans un groupe, sur une plateforme
+// Crée le rôle s'il n'en avait pas encore sur cette plateforme.
 router.patch("/admins/:adminId/role", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const adminId = req.params.adminId as string;
-    const { role } = z.object({ role: z.enum(ROLES_PLATEFORME) }).parse(req.body);
+    const { role, plateforme } = z
+      .object({ role: z.enum(ROLES_PLATEFORME), plateforme: schemaPlateforme })
+      .parse(req.body);
 
-    if (adminId === req.userId) {
-      throw new ApiError(400, "Vous ne pouvez pas changer votre propre rôle", "CANNOT_CHANGE_SELF");
-    }
+    await membreARegler(adminId, req.userId);
 
-    const compte = await db.user.findUnique({ where: { id: adminId } });
-    if (!compte || !compte.isSystemAdmin) {
-      throw new ApiError(404, "Membre de l'équipe non trouvé", "NOT_FOUND");
-    }
-    if (compte.isSuperOwner) {
-      throw new ApiError(400, "Un superowner n'a pas de groupe : il voit tout", "IS_SUPEROWNER");
-    }
-
-    await db.user.update({ where: { id: adminId }, data: { platformRole: role } });
+    const avant = await db.accesEquipe.findUnique({
+      where: { userId_plateforme: { userId: adminId, plateforme } },
+    });
+    await db.accesEquipe.upsert({
+      where: { userId_plateforme: { userId: adminId, plateforme } },
+      create: { userId: adminId, plateforme, role },
+      update: { role },
+    });
     oublierCompte(adminId);
 
     await db.systemAuditLog.create({
@@ -2848,11 +2900,41 @@ router.patch("/admins/:adminId/role", authMiddleware, superOwnerSeul, async (req
         adminId: req.userId as string,
         action: "CHANGE_PLATFORM_ROLE",
         target: adminId,
-        changes: { avant: compte.platformRole, apres: role } as any,
+        changes: { plateforme, avant: avant?.role ?? null, apres: role } as any,
       },
     });
 
-    res.json({ success: true, role });
+    res.json({ success: true, plateforme, role });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /superowner/admins/:adminId/acces/:plateforme - Retirer l'accès à une plateforme
+// Le membre reste dans l'équipe, avec ses rôles sur les autres plateformes.
+router.delete("/admins/:adminId/acces/:plateforme", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminId = req.params.adminId as string;
+    const plateforme = z.enum(PLATEFORMES).parse(req.params.plateforme);
+
+    await membreARegler(adminId, req.userId);
+
+    const { count } = await db.accesEquipe.deleteMany({ where: { userId: adminId, plateforme } });
+    if (count === 0) {
+      throw new ApiError(404, "Ce membre n'a pas de rôle sur cette plateforme", "NOT_FOUND");
+    }
+    oublierCompte(adminId);
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "REVOKE_PLATFORM_ROLE",
+        target: adminId,
+        changes: { plateforme } as any,
+      },
+    });
+
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }
@@ -2862,44 +2944,51 @@ router.patch("/admins/:adminId/role", authMiddleware, superOwnerSeul, async (req
 // RÔLES DE L'ÉQUIPE ET PERMISSIONS
 // ============================================================================
 
-// GET /superowner/me/permissions - Ce que le compte connecté peut voir et faire
+// GET /superowner/me/permissions?plateforme=EAT - Ce que le compte connecté peut voir et faire
 router.get("/me/permissions", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const compte = req.compte;
+    const plateforme = schemaPlateforme.parse(req.query.plateforme);
     if (compte?.isSuperOwner) {
       res.json({
         isSuperOwner: true,
+        plateforme,
         role: "SUPEROWNER",
         permissions: Object.fromEntries(SECTIONS.map((s) => [s.id, "write"])),
       });
       return;
     }
-    if (!compte?.isSystemAdmin || !estRolePlateforme(compte.platformRole)) {
+    const role = compte?.acces[plateforme];
+    if (!compte?.isSystemAdmin || !estRolePlateforme(role)) {
       throw new ApiError(403, "Accès refusé", "FORBIDDEN");
     }
     res.json({
       isSuperOwner: false,
-      role: compte.platformRole,
-      roleLabel: LIBELLES_ROLES[compte.platformRole],
-      permissions: await PermissionsPlateforme.permissionsDu(compte.platformRole),
+      plateforme,
+      role,
+      roleLabel: LIBELLES_ROLES[role],
+      permissions: await PermissionsPlateforme.permissionsDu(role, plateforme),
     });
   } catch (err) {
     next(err);
   }
 });
 
-// GET /superowner/roles - Les groupes, les sections et ce qui est coché
-router.get("/roles", authMiddleware, superOwnerSeul, async (_req: Request, res: Response, next: NextFunction) => {
+// GET /superowner/roles?plateforme=EAT - Les groupes d'une plateforme, les sections et ce qui est coché
+router.get("/roles", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const roles = await PermissionsPlateforme.lister();
-    const effectifs = await db.user.groupBy({
-      by: ["platformRole"],
-      where: { isSystemAdmin: true, isSuperOwner: false },
+    const plateforme = schemaPlateforme.parse(req.query.plateforme);
+    const roles = await PermissionsPlateforme.lister(plateforme);
+    const effectifs = await db.accesEquipe.groupBy({
+      by: ["role"],
+      where: { plateforme, user: { isSystemAdmin: true, isSuperOwner: false } },
       _count: { _all: true },
     });
-    const parRole = Object.fromEntries(effectifs.map((e) => [e.platformRole, e._count._all]));
+    const parRole = Object.fromEntries(effectifs.map((e) => [e.role, e._count._all]));
 
     res.json({
+      plateforme,
+      plateformes: PLATEFORMES.map((code) => ({ code, label: LIBELLES_PLATEFORMES[code] })),
       sections: SECTIONS,
       roles: ROLES_PLATEFORME.map((code) => {
         const role = roles.find((r) => r.code === code);
@@ -2916,25 +3005,26 @@ router.get("/roles", authMiddleware, superOwnerSeul, async (_req: Request, res: 
   }
 });
 
-// PUT /superowner/roles/:code - Cocher les permissions d'un groupe
+// PUT /superowner/roles/:code?plateforme=EAT - Cocher les permissions d'un groupe
 router.put("/roles/:code", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const code = req.params.code;
     if (!estRolePlateforme(code)) {
       throw new ApiError(404, "Rôle inconnu", "NOT_FOUND");
     }
+    const plateforme = schemaPlateforme.parse(req.query.plateforme);
     const { permissions } = z
       .object({ permissions: z.record(z.string(), z.enum(["read", "write"])) })
       .parse(req.body);
 
-    const role = await PermissionsPlateforme.modifier(code, permissions);
+    const role = await PermissionsPlateforme.modifier(code, permissions, plateforme);
 
     await db.systemAuditLog.create({
       data: {
         adminId: req.userId as string,
         action: "UPDATE_PLATFORM_ROLE_PERMISSIONS",
-        target: code,
-        changes: { permissions: role.permissions } as any,
+        target: `${plateforme}:${code}`,
+        changes: { plateforme, permissions: role.permissions } as any,
       },
     });
 

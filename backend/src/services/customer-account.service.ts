@@ -34,9 +34,8 @@ export class CustomerAccountService {
         email: true,
         isSuperOwner: true,
         isSystemAdmin: true,
-        platformRole: true,
+        _count: { select: { memberships: true, accesEquipe: true } },
         driver: { select: { id: true, suppressionDemandeeLe: true } },
-        _count: { select: { memberships: true } },
       },
     });
     if (!utilisateur) throw new ApiError(401, "Session invalide", "UNAUTHORIZED");
@@ -61,7 +60,7 @@ export class CustomerAccountService {
 
     const livreur = Boolean(utilisateur.driver);
     const commercant = utilisateur._count.memberships > 0;
-    const equipe = utilisateur.isSuperOwner || utilisateur.isSystemAdmin || Boolean(utilisateur.platformRole);
+    const equipe = utilisateur.isSuperOwner || utilisateur.isSystemAdmin || utilisateur._count.accesEquipe > 0;
 
     return {
       commandesEnCours,

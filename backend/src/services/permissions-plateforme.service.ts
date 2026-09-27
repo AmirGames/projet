@@ -1,15 +1,31 @@
 import { Request, Response, NextFunction } from "express";
+import { Plateforme } from "@prisma/client";
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 
 /**
- * Qui, dans l'équipe de la plateforme, peut faire quoi dans l'espace superowner.
+ * Qui, dans l'équipe du groupe, peut faire quoi, plateforme par plateforme.
  *
- * Le superowner voit tout et règle le reste : il coche, pour chaque groupe
- * (SuperAdmin, Administrateur, Support), les sections ouvertes en lecture ou en
- * modification. Le contrôle se fait ici, sur chaque route : masquer un lien du
+ * Le superowner voit tout et règle le reste : il nomme chaque membre de
+ * l'équipe dans un groupe (SuperAdmin, Administrateur, Support) sur chaque
+ * plateforme où il travaille, et coche, pour chaque groupe de chaque
+ * plateforme, les sections ouvertes en lecture ou en modification. Le contrôle se fait ici, sur chaque route : masquer un lien du
  * menu n'a jamais fermé une porte.
  */
+
+export const PLATEFORMES = ["EAT", "DRIVE"] as const satisfies readonly Plateforme[];
+
+export const LIBELLES_PLATEFORMES: Record<Plateforme, string> = {
+  EAT: "ZupEat",
+  DRIVE: "ZupDrive",
+};
+
+export function estPlateforme(code: unknown): code is Plateforme {
+  return typeof code === "string" && (PLATEFORMES as readonly string[]).includes(code);
+}
+
+/** Les rôles d'un compte, par plateforme. */
+export type Acces = Partial<Record<Plateforme, string>>;
 
 export type Niveau = "read" | "write";
 export type Permissions = Record<string, Niveau>;
@@ -176,50 +192,56 @@ export function nettoyerPermissions(brut: unknown): Permissions {
 // Lu à chaque requête de l'équipe : gardé quelques secondes, oublié dès qu'un
 // rôle change.
 const DUREE_CACHE_MS = 30000;
-let cache: { roles: Record<string, Permissions>; expireA: number } | null = null;
+const cache = new Map<Plateforme, { roles: Record<string, Permissions>; expireA: number }>();
 
 export function oublierRoles() {
-  cache = null;
+  cache.clear();
 }
 
 export const PermissionsPlateforme = {
-  /** Les trois groupes, créés avec leurs permissions par défaut s'ils manquent. */
-  async lister() {
-    const existants = await db.platformRole.findMany();
+  /**
+   * Les trois groupes d'une plateforme, créés avec leurs permissions par
+   * défaut s'ils manquent.
+   */
+  async lister(plateforme: Plateforme = "EAT") {
+    const existants = await db.platformRole.findMany({ where: { plateforme } });
     const connus = new Set(existants.map((r) => r.code));
     const manquants = ROLES_PLATEFORME.filter((code) => !connus.has(code));
 
     if (manquants.length > 0) {
       await db.platformRole.createMany({
         data: manquants.map((code) => ({
+          plateforme,
           code,
           label: LIBELLES_ROLES[code],
           permissions: PERMISSIONS_PAR_DEFAUT[code],
         })),
         skipDuplicates: true,
       });
-      return db.platformRole.findMany();
+      return db.platformRole.findMany({ where: { plateforme } });
     }
 
     return existants;
   },
 
-  async permissionsDu(role: string | null | undefined): Promise<Permissions> {
+  async permissionsDu(role: string | null | undefined, plateforme: Plateforme = "EAT"): Promise<Permissions> {
     if (!estRolePlateforme(role)) return {};
-    if (!cache || Date.now() >= cache.expireA) {
-      const roles = await this.lister();
-      cache = {
+    let connu = cache.get(plateforme);
+    if (!connu || Date.now() >= connu.expireA) {
+      const roles = await this.lister(plateforme);
+      connu = {
         roles: Object.fromEntries(roles.map((r) => [r.code, nettoyerPermissions(r.permissions)])),
         expireA: Date.now() + DUREE_CACHE_MS,
       };
+      cache.set(plateforme, connu);
     }
-    return cache.roles[role] ?? {};
+    return connu.roles[role] ?? {};
   },
 
-  async modifier(code: RolePlateforme, permissions: unknown) {
+  async modifier(code: RolePlateforme, permissions: unknown, plateforme: Plateforme = "EAT") {
     const role = await db.platformRole.upsert({
-      where: { code },
-      create: { code, label: LIBELLES_ROLES[code], permissions: nettoyerPermissions(permissions) },
+      where: { plateforme_code: { plateforme, code } },
+      create: { plateforme, code, label: LIBELLES_ROLES[code], permissions: nettoyerPermissions(permissions) },
       update: { permissions: nettoyerPermissions(permissions) },
     });
     oublierRoles();
@@ -230,18 +252,21 @@ export const PermissionsPlateforme = {
 /**
  * Garde d'un routeur de l'espace d'administration.
  *
- * Le superowner passe partout. Un membre de l'équipe passe si son groupe a la
- * section de la route : en lecture pour un GET, en modification sinon. Sans
- * rôle, ou sur une route qu'aucune section ne couvre, c'est non.
+ * Le superowner passe partout. Un membre de l'équipe passe si son groupe sur
+ * la plateforme a la section de la route : en lecture pour un GET, en
+ * modification sinon. Sans rôle sur cette plateforme, ou sur une route
+ * qu'aucune section ne couvre, c'est non.
+ *
+ * Les routeurs d'administration actuels sont ceux de ZupEat.
  */
-export function exigerPermission(routeur: Routeur) {
+export function exigerPermission(routeur: Routeur, plateforme: Plateforme = "EAT") {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
       const compte = req.compte;
       if (compte?.isSuperOwner) return next();
 
       const section = sectionDeLaRoute(routeur, req.path);
-      const permissions = await PermissionsPlateforme.permissionsDu(compte?.platformRole);
+      const permissions = await PermissionsPlateforme.permissionsDu(compte?.acces[plateforme], plateforme);
       const niveau = section ? permissions[section] : undefined;
       const lecture = req.method === "GET" || req.method === "HEAD";
 

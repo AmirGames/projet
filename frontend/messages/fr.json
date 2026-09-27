@@ -521,7 +521,11 @@
     "roleSuperAdmin": "SuperAdmin",
     "roleSupport": "Support",
     "roleSuperOwner": "SuperOwner",
-    "roleChangeError": "Impossible de changer le rôle"
+    "roleChangeError": "Impossible de changer le rôle",
+    "platform": "Plateforme",
+    "noAccess": "Aucun accès",
+    "revokePlatformConfirm": "Retirer l'accès de ce membre à {plateforme} ?",
+    "platformHint": "Les rôles sur les autres plateformes s'ajoutent ensuite, dans le tableau."
   },
   "superownerFormules": {
     "loading": "Chargement des formules…",
@@ -2141,6 +2145,7 @@
     "none": "Tout retirer",
     "deniedTitle": "Accès refusé",
     "deniedText": "Votre rôle n'ouvre pas cette section. Demandez au SuperOwner de vous en donner l'accès.",
-    "yourRole": "Votre rôle : {role}"
+    "yourRole": "Votre rôle : {role}",
+    "platform": "Plateforme"
   }
 }

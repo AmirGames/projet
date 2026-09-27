@@ -7,11 +7,21 @@ import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+type Role = 'SUPER_ADMIN' | 'ADMIN' | 'SUPPORT';
+
+interface Plateforme {
+  code: string;
+  label: string;
+}
+
 interface Admin {
   id: string;
   email: string;
   name: string;
-  role: 'SUPEROWNER' | 'SUPER_ADMIN' | 'ADMIN' | 'SUPPORT';
+  /** SUPEROWNER, ou le rôle sur ZupEat. */
+  role: 'SUPEROWNER' | Role | null;
+  /** Les rôles du membre, plateforme par plateforme. */
+  acces: { plateforme: string; role: Role }[];
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   lastLogin: string;
   createdAt: string;
@@ -19,6 +29,7 @@ interface Admin {
 
 interface AdminsResponse {
   admins: Admin[];
+  plateformes: Plateforme[];
   pagination: {
     total: number;
     limit: number;
@@ -30,12 +41,13 @@ export default function UserManagementPage() {
   const t = useTranslations('superownerUserManagement');
   const locale = useLocale();
   const [admins, setAdmins] = useState<Admin[]>([]);
+  const [plateformes, setPlateformes] = useState<Plateforme[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ email: '', name: '', role: 'ADMIN' });
+  const [formData, setFormData] = useState({ email: '', name: '', role: 'ADMIN', plateforme: 'EAT' });
   const limit = 20;
 
   const fetchAdmins = useCallback(async () => {
@@ -54,6 +66,7 @@ export default function UserManagementPage() {
       if (!res.ok) throw new Error(t('loadError'));
       const data: AdminsResponse = await res.json();
       setAdmins(data.admins);
+      setPlateformes(data.plateformes);
       setTotal(data.pagination.total);
       setError('');
     } catch (err) {
@@ -90,7 +103,7 @@ export default function UserManagementPage() {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || t('createError'));
       }
-      setFormData({ email: '', name: '', role: 'ADMIN' });
+      setFormData({ email: '', name: '', role: 'ADMIN', plateforme: 'EAT' });
       setShowForm(false);
       fetchAdmins();
     } catch (err) {
@@ -118,19 +131,32 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleChangeRole = async (adminId: string, role: string) => {
+  // Un rôle vide retire l'accès à la plateforme ; le membre garde les autres.
+  const handleChangeRole = async (adminId: string, plateforme: Plateforme, role: string) => {
+    if (!role && !confirm(t('revokePlatformConfirm', { plateforme: plateforme.label }))) return;
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/api/superowner/admins/${adminId}/role`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role }),
-      });
+      const res = role
+        ? await fetch(`${API_URL}/api/superowner/admins/${adminId}/role`, {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role, plateforme: plateforme.code }),
+          })
+        : await fetch(`${API_URL}/api/superowner/admins/${adminId}/acces/${plateforme.code}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || data.error?.message || t('roleChangeError'));
       }
-      setAdmins((liste) => liste.map((a) => (a.id === adminId ? { ...a, role: role as Admin['role'] } : a)));
+      setAdmins((liste) =>
+        liste.map((a) => {
+          if (a.id !== adminId) return a;
+          const autres = a.acces.filter((x) => x.plateforme !== plateforme.code);
+          return { ...a, acces: role ? [...autres, { plateforme: plateforme.code, role: role as Role }] : autres };
+        })
+      );
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('genericError'));
@@ -219,6 +245,19 @@ export default function UserManagementPage() {
                 <option value="SUPPORT">{t('roleSupport')}</option>
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">{t('platform')}</label>
+              <select
+                value={formData.plateforme}
+                onChange={(e) => setFormData({ ...formData, plateforme: e.target.value })}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+              >
+                {plateformes.map((p) => (
+                  <option key={p.code} value={p.code}>{p.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">{t('platformHint')}</p>
+            </div>
             <div className="flex gap-2">
               <button type="submit" className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
                 {t('create')}
@@ -251,7 +290,9 @@ export default function UserManagementPage() {
               <tr>
                 <th className="px-6 py-3 text-left text-sm font-semibold">{t('colEmail')}</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold">{t('colName')}</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold">{t('colRole')}</th>
+                {plateformes.map((p) => (
+                  <th key={p.code} className="px-6 py-3 text-left text-sm font-semibold">{p.label}</th>
+                ))}
                 <th className="px-6 py-3 text-left text-sm font-semibold">{t('colStatus')}</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold">{t('colLastLogin')}</th>
                 <th className="px-6 py-3 text-right text-sm font-semibold">{t('colActions')}</th>
@@ -262,24 +303,30 @@ export default function UserManagementPage() {
                 <tr key={admin.id} className="hover:bg-gray-700/50 transition">
                   <td className="px-6 py-4 text-sm">{admin.email}</td>
                   <td className="px-6 py-4 text-sm">{admin.name}</td>
-                  <td className="px-6 py-4 text-sm">
-                    {admin.role === 'SUPEROWNER' ? (
-                      <span className={`px-2 py-1 rounded text-xs font-semibold text-white ${getRoleColor(admin.role)}`}>
-                        {t('roleSuperOwner')}
-                      </span>
-                    ) : (
-                      <select
-                        value={admin.role}
-                        onChange={(e) => handleChangeRole(admin.id, e.target.value)}
-                        aria-label={t('colRole')}
-                        className={`px-2 py-1 rounded text-xs font-semibold text-white border-0 ${getRoleColor(admin.role)}`}
-                      >
-                        <option value="SUPER_ADMIN">{t('roleSuperAdmin')}</option>
-                        <option value="ADMIN">{t('roleAdmin')}</option>
-                        <option value="SUPPORT">{t('roleSupport')}</option>
-                      </select>
-                    )}
-                  </td>
+                  {plateformes.map((p) => {
+                    const role = admin.acces.find((a) => a.plateforme === p.code)?.role ?? '';
+                    return (
+                      <td key={p.code} className="px-6 py-4 text-sm">
+                        {admin.role === 'SUPEROWNER' ? (
+                          <span className={`px-2 py-1 rounded text-xs font-semibold text-white ${getRoleColor('SUPEROWNER')}`}>
+                            {t('roleSuperOwner')}
+                          </span>
+                        ) : (
+                          <select
+                            value={role}
+                            onChange={(e) => handleChangeRole(admin.id, p, e.target.value)}
+                            aria-label={`${t('colRole')} ${p.label}`}
+                            className={`px-2 py-1 rounded text-xs font-semibold text-white border-0 ${getRoleColor(role)}`}
+                          >
+                            <option value="">{t('noAccess')}</option>
+                            <option value="SUPER_ADMIN">{t('roleSuperAdmin')}</option>
+                            <option value="ADMIN">{t('roleAdmin')}</option>
+                            <option value="SUPPORT">{t('roleSupport')}</option>
+                          </select>
+                        )}
+                      </td>
+                    );
+                  })}
                   <td className={`px-6 py-4 text-sm font-semibold ${getStatusColor(admin.status)}`}>
                     {admin.status}
                   </td>

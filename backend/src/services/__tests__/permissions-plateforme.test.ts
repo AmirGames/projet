@@ -24,25 +24,33 @@ const roles = [
   { code: "SUPPORT", label: "Support", permissions: { "support-tickets": "write", organizations: "read" } },
 ];
 
-async function passer(routeur: any, compte: any, method: string, path: string) {
+const rolesDrive = [
+  { code: "SUPER_ADMIN", label: "SuperAdmin", permissions: { organizations: "write" } },
+  { code: "ADMIN", label: "Administrateur", permissions: {} },
+  { code: "SUPPORT", label: "Support", permissions: {} },
+];
+
+async function passer(routeur: any, compte: any, method: string, path: string, plateforme?: any) {
   let erreur: any;
-  await exigerPermission(routeur)({ compte, method, path } as any, {} as any, (e?: any) => {
+  await exigerPermission(routeur, plateforme)({ compte, method, path } as any, {} as any, (e?: any) => {
     erreur = e;
   });
   return erreur ? erreur.statusCode ?? 403 : 200;
 }
 
-const membre = (platformRole: string | null) => ({
+const membre = (roleEat: string | null, roleDrive?: string) => ({
   id: "u",
   isSuperOwner: false,
   isSystemAdmin: true,
-  platformRole,
+  acces: { ...(roleEat ? { EAT: roleEat } : {}), ...(roleDrive ? { DRIVE: roleDrive } : {}) },
 });
 
 describe("permissions de l'équipe", () => {
   beforeEach(() => {
     oublierRoles();
-    db.platformRole.findMany.mockResolvedValue(roles);
+    db.platformRole.findMany.mockImplementation(async ({ where }: any) =>
+      where?.plateforme === "DRIVE" ? rolesDrive : roles
+    );
   });
 
   it("rattache chaque route à sa section", () => {
@@ -57,7 +65,7 @@ describe("permissions de l'équipe", () => {
   });
 
   it("laisse passer le superowner partout", async () => {
-    const so = { id: "s", isSuperOwner: true, isSystemAdmin: true, platformRole: null };
+    const so = { id: "s", isSuperOwner: true, isSystemAdmin: true, acces: {} };
     expect(await passer("superowner", so, "POST", "/admins")).toBe(200);
   });
 
@@ -76,6 +84,16 @@ describe("permissions de l'équipe", () => {
 
   it("refuse un administrateur sans rôle", async () => {
     expect(await passer("superowner", membre(null), "GET", "/organizations")).toBe(403);
+  });
+
+  it("lit le rôle de la plateforme demandée, pas celui d'une autre", async () => {
+    // Support sur ZupEat, SuperAdmin sur ZupDrive.
+    const double = membre("SUPPORT", "SUPER_ADMIN");
+    expect(await passer("superowner", double, "POST", "/organizations/o1/suspend")).toBe(403);
+    expect(await passer("superowner", double, "POST", "/organizations/o1/suspend", "DRIVE")).toBe(200);
+    // Aucun rôle sur ZupEat : les routes de ZupEat restent fermées.
+    const driveSeul = membre(null, "SUPER_ADMIN");
+    expect(await passer("superowner", driveSeul, "GET", "/organizations")).toBe(403);
   });
 
   it("écarte les sections et niveaux inconnus", () => {

@@ -31,6 +31,9 @@ export default function RolesPage() {
   const t = useTranslations('superownerRoles');
   const [sections, setSections] = useState<Section[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  // Chaque plateforme du groupe a sa propre grille.
+  const [plateforme, setPlateforme] = useState('EAT');
+  const [plateformes, setPlateformes] = useState<{ code: string; label: string }[]>([]);
   const [brouillon, setBrouillon] = useState<Record<string, Permissions>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -40,12 +43,17 @@ export default function RolesPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/api/superowner/roles`, {
+      const res = await fetch(`${API_URL}/api/superowner/roles?plateforme=${plateforme}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(t('loadError'));
-      const data: { sections: Section[]; roles: Role[] } = await res.json();
+      const data: {
+        sections: Section[];
+        roles: Role[];
+        plateformes: { code: string; label: string }[];
+      } = await res.json();
       setSections(data.sections);
+      setPlateformes(data.plateformes);
       setRoles(data.roles);
       setBrouillon(Object.fromEntries(data.roles.map((r) => [r.code, { ...r.permissions }])));
       setMessage(null);
@@ -54,7 +62,7 @@ export default function RolesPage() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, plateforme]);
 
   useEffectChargement(() => {
     charger();
@@ -110,7 +118,7 @@ export default function RolesPage() {
     setSaving(code);
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${API_URL}/api/superowner/roles/${code}`, {
+      const res = await fetch(`${API_URL}/api/superowner/roles/${code}?plateforme=${plateforme}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ permissions: brouillon[code] ?? {} }),
@@ -145,6 +153,22 @@ export default function RolesPage() {
           {t('title')}
         </h1>
         <p className="text-gray-400 mt-1">{t('subtitle')}</p>
+      </div>
+
+      <div role="tablist" aria-label={t('platform')} className="flex gap-2">
+        {plateformes.map((p) => (
+          <button
+            key={p.code}
+            role="tab"
+            aria-selected={p.code === plateforme}
+            onClick={() => setPlateforme(p.code)}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+              p.code === plateforme ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
 
       {message && (

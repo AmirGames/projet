@@ -1,6 +1,7 @@
 import {
   estRolePlateforme,
   LIBELLES_ROLES,
+  LIBELLES_PLATEFORMES,
 } from "../services/permissions-plateforme.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
@@ -320,6 +321,8 @@ router.get("/me/roles", authMiddleware, async (req: Request, res: Response, next
       where: { userId },
       select: { id: true },
     });
+    const acces = req.compte?.acces ?? {};
+    const roleEat = acces.EAT;
 
     res.json({
       user: {
@@ -327,13 +330,20 @@ router.get("/me/roles", authMiddleware, async (req: Request, res: Response, next
         email: user.email,
         isSuperOwner: user.isSuperOwner,
         isSystemAdmin: user.isSystemAdmin,
-        // Le groupe dans l'équipe de la plateforme : le sélecteur d'espaces
+        // Le groupe dans l'équipe de ZupEat : le sélecteur d'espaces
         // l'affiche à la place de « Super Owner ».
-        platformRole: user.isSuperOwner ? null : user.platformRole ?? null,
+        platformRole: user.isSuperOwner ? null : roleEat ?? null,
         platformRoleLabel:
-          !user.isSuperOwner && estRolePlateforme(user.platformRole)
-            ? LIBELLES_ROLES[user.platformRole]
-            : null,
+          !user.isSuperOwner && estRolePlateforme(roleEat) ? LIBELLES_ROLES[roleEat] : null,
+        // Les rôles dans l'équipe, plateforme par plateforme.
+        accesEquipe: user.isSuperOwner
+          ? []
+          : Object.entries(acces).map(([plateforme, role]) => ({
+              plateforme,
+              plateformeLabel: LIBELLES_PLATEFORMES[plateforme as keyof typeof LIBELLES_PLATEFORMES],
+              role,
+              roleLabel: estRolePlateforme(role) ? LIBELLES_ROLES[role] : role,
+            })),
       },
       roles: {
         customer: {

@@ -2,14 +2,15 @@ import { Request, Response, NextFunction } from "express";
 import { AuthService, JwtPayload } from "../services/auth.service";
 import { ApiError } from "./errorHandler";
 import { db } from "../services/db";
+import type { Acces } from "../services/permissions-plateforme.service";
 
 /** Ce que le jeton ne dit pas : le compte existe-t-il encore, et qu'est-il. */
 export interface Compte {
   id: string;
   isSuperOwner: boolean;
   isSystemAdmin: boolean;
-  /** Rôle dans l'équipe de la plateforme, s'il en a un. */
-  platformRole: string | null;
+  /** Rôle dans l'équipe, sur chaque plateforme où il en a un. */
+  acces: Acces;
 }
 
 declare global {
@@ -52,12 +53,26 @@ export async function compteDuJeton(userId: string): Promise<Compte | null> {
 
   const utilisateur = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, isSuperOwner: true, isSystemAdmin: true, platformRole: true },
+    select: {
+      id: true,
+      isSuperOwner: true,
+      isSystemAdmin: true,
+      accesEquipe: { select: { plateforme: true, role: true } },
+    },
   });
 
-  comptes.set(userId, { compte: utilisateur ?? null, expireA: Date.now() + DUREE_CACHE_MS });
+  const compte: Compte | null = utilisateur
+    ? {
+        id: utilisateur.id,
+        isSuperOwner: utilisateur.isSuperOwner,
+        isSystemAdmin: utilisateur.isSystemAdmin,
+        acces: Object.fromEntries(utilisateur.accesEquipe.map((a) => [a.plateforme, a.role])),
+      }
+    : null;
 
-  return utilisateur ?? null;
+  comptes.set(userId, { compte, expireA: Date.now() + DUREE_CACHE_MS });
+
+  return compte;
 }
 
 export async function authMiddleware(req: Request, _res: Response, next: NextFunction) {

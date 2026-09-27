@@ -27,10 +27,10 @@ model User {
   resetTokenExpiresAt DateTime?
   isSystemAdmin Boolean   @default(false)
   isSuperOwner  Boolean   @default(false)
-  /// Rôle dans l'équipe de la plateforme (SUPER_ADMIN, ADMIN, SUPPORT).
-  /// Ce qu'il ouvre se règle dans PlatformRole ; le superowner n'en a pas
+  /// Rôles dans l'équipe du groupe, un par plateforme (ZupEat, ZupDrive…).
+  /// Ce qu'ils ouvrent se règle dans PlatformRole ; le superowner n'en a pas
   /// besoin, il voit tout.
-  platformRole  String?
+  accesEquipe   AccesEquipe[]
   status        String    @default("ACTIVE") // ACTIVE, BANNED, SUSPENDED
 
   // Relations
@@ -50,13 +50,43 @@ model User {
 /// Un groupe de l'équipe de la plateforme et ce qu'il peut faire dans l'espace
 /// superowner. Les permissions se cochent depuis cet espace, par le superowner
 /// seul : `{ "<section>": "read" | "write" }`, une section absente est fermée.
+/// Les plateformes du groupe ZupOne. Une nouvelle plateforme s'ajoute ici.
+enum Plateforme {
+  EAT
+  DRIVE
+}
+
+/// Les groupes de l'équipe (SuperAdmin, Administrateur, Support) et leurs
+/// permissions, cochées par le superowner — plateforme par plateforme : un
+/// Support ZupEat n'ouvre pas les mêmes sections qu'un Support ZupDrive.
 model PlatformRole {
-  code        String   @id
+  plateforme  Plateforme @default(EAT)
+  code        String
   label       String
   permissions Json     @default("{}")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@id([plateforme, code])
+}
+
+/// Le rôle d'un membre de l'équipe sur une plateforme. Une même personne peut
+/// être SuperAdmin sur ZupEat et Support sur ZupDrive, ou n'avoir accès qu'à
+/// l'une des deux.
+model AccesEquipe {
+  userId     String
+  plateforme Plateforme
+  /// SUPER_ADMIN, ADMIN ou SUPPORT.
+  role       String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, plateforme])
+  @@index([plateforme, role])
 }
 
 /// Téléphone sur lequel l'application mobile est installée et connectée.
