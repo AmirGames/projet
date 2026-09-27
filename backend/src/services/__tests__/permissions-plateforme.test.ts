@@ -49,6 +49,9 @@ describe("permissions de l'équipe", () => {
     expect(sectionDeLaRoute("superowner", "/organizations/o1/tier")).toBe("formules");
     expect(sectionDeLaRoute("superowner", "/organizations/o1/suspend")).toBe("organizations");
     expect(sectionDeLaRoute("admin", "/tickets/t1")).toBe("support-tickets");
+    // Rouvrir un compte fermé va avec le fermer : même section.
+    expect(sectionDeLaRoute("admin", "/merchants/o1/close")).toBe("organizations");
+    expect(sectionDeLaRoute("admin", "/merchants/o1/restore-from-backup")).toBe("organizations");
     expect(sectionDeLaRoute("superowner", "/admins")).toBeNull();
     expect(sectionDeLaRoute("superowner", "/roles/ADMIN")).toBeNull();
   });

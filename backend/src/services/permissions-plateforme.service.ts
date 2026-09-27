@@ -135,7 +135,6 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
   ],
   admin: [
     [/^\/config/, "system-config"],
-    [/^\/merchants\/[^/]+\/restore-from-backup/, "data-management"],
     [/^\/merchants/, "organizations"],
     [/^\/stores/, "stores"],
     [/^\/tickets/, "support-tickets"],

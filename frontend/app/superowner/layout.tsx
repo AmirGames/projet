@@ -213,7 +213,11 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
             <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center font-bold">
               <Lock size={20} />
             </div>
-            {etendu && <span className="font-bold text-lg">{t('brand')}</span>}
+            {etendu && (
+              <span className="font-bold text-lg truncate">
+                {!acces.isSuperOwner && acces.roleLabel ? acces.roleLabel : t('brand')}
+              </span>
+            )}
           </SelecteurEspace>
         </div>
 

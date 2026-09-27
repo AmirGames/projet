@@ -1,3 +1,7 @@
+import {
+  estRolePlateforme,
+  LIBELLES_ROLES,
+} from "../services/permissions-plateforme.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation";
@@ -323,6 +327,13 @@ router.get("/me/roles", authMiddleware, async (req: Request, res: Response, next
         email: user.email,
         isSuperOwner: user.isSuperOwner,
         isSystemAdmin: user.isSystemAdmin,
+        // Le groupe dans l'équipe de la plateforme : le sélecteur d'espaces
+        // l'affiche à la place de « Super Owner ».
+        platformRole: user.isSuperOwner ? null : user.platformRole ?? null,
+        platformRoleLabel:
+          !user.isSuperOwner && estRolePlateforme(user.platformRole)
+            ? LIBELLES_ROLES[user.platformRole]
+            : null,
       },
       roles: {
         customer: {
