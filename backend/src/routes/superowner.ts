@@ -9,6 +9,7 @@ import {
   PermissionsPlateforme,
   SECTIONS,
   estRoleDeBase,
+  voitLesFinances,
 } from "../services/permissions-plateforme.service";
 import { ApiKeyService } from "../services/api-key.service";
 import { WebhookService, EVENEMENTS_WEBHOOK } from "../services/webhook.service";
@@ -88,7 +89,7 @@ const superOwnerSeul = (req: Request, _res: Response, next: NextFunction) => {
 // ============================================================================
 
 // GET /superowner/dashboard - Superowner dashboard stats
-router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
+router.get("/dashboard", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const maintenant = new Date();
     const debutMois = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1);
@@ -148,7 +149,13 @@ router.get("/dashboard", authMiddleware, isSuperOwner, async (_req: Request, res
           : 0,
     };
 
-    res.json({ stats, recentLogs: auditLogs });
+    if (!(await voitLesFinances(req.compte))) {
+      const masque = { ...stats, totalRevenue: null, platformFee: null, monthlyRecurring: null, growth: null };
+      res.json({ stats: masque, recentLogs: auditLogs, finances: false });
+      return;
+    }
+
+    res.json({ stats, recentLogs: auditLogs, finances: true });
   } catch (err) {
     next(err);
   }

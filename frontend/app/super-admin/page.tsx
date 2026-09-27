@@ -16,7 +16,7 @@ interface Stats {
   merchants: { total: number; active: number; suspended: number };
   stores: { total: number; active: number };
   orders: { total: number; pending: number; completed: number };
-  revenue: { total: number; completed: number };
+  revenue: { total: number; completed: number } | null;
   tickets: { open: number; critical: number };
   config: { platformFeePercent: number; maintenanceMode: boolean };
 }
@@ -122,7 +122,7 @@ export default function SuperAdminDashboard() {
             <p className="text-gray-400 text-sm">{t('revenue')}</p>
             <TrendingUp size={20} className="text-yellow-500" />
           </div>
-          <p className="text-3xl font-bold">{euro(stats.revenue.total)}</p>
+          <p className="text-3xl font-bold">{euro((stats.revenue?.total ?? 0))}</p>
           <p className="text-sm text-gray-400 mt-2">{t('commission')} {stats.config.platformFeePercent}%</p>
         </div>
       </div>

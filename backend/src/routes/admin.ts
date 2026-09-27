@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
-import { exigerPermission } from "../services/permissions-plateforme.service";
+import { exigerPermission, voitLesFinances } from "../services/permissions-plateforme.service";
 import { authMiddleware } from "../middleware/auth";
 import { MerchantClosureService } from "../services/merchant-closure.service";
 import { TicketMessageService } from "../services/ticket-message.service";
@@ -813,7 +813,7 @@ router.get("/tickets/:ticketId", authMiddleware, isSystemAdmin, async (req: Requ
 // ============================================================================
 
 // GET /admin/stats - Get system statistics
-router.get("/stats", authMiddleware, isSystemAdmin, async (_req: Request, res: Response, next: NextFunction) => {
+router.get("/stats", authMiddleware, isSystemAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     // La page consommatrice attend des blocs détaillés : renvoyer de simples
     // nombres la faisait planter sur stats.revenue.total.
@@ -867,10 +867,13 @@ router.get("/stats", authMiddleware, isSystemAdmin, async (_req: Request, res: R
       stores: { total: totalStores, active: activeStores },
       orders: { total: totalOrders, pending: pendingOrders, completed: completedOrders },
       // Montants en euros : les colonnes sont des Decimal(10,2).
-      revenue: {
-        total: Number(revenueTotale._sum.totalAmount) || 0,
-        completed: Number(revenueTerminee._sum.totalAmount) || 0,
-      },
+      // Réservé aux rôles qui ont « Facturation » (voir voitLesFinances).
+      revenue: (await voitLesFinances(req.compte))
+        ? {
+            total: Number(revenueTotale._sum.totalAmount) || 0,
+            completed: Number(revenueTerminee._sum.totalAmount) || 0,
+          }
+        : null,
       users: { total: totalUsers },
       customers: { total: totalCustomers },
       payments: { pending: paiementsEnAttente, successful: paiementsReussis },

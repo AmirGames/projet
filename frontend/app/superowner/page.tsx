@@ -53,6 +53,9 @@ export default function SuperOwnerDashboard() {
   const estSuperOwner = !!acces?.isSuperOwner;
   const nomDuRole = estSuperOwner ? 'SuperOwner' : acces?.roleLabel ?? '';
   const peutVoir = (section: string) => estSuperOwner || !!acces?.permissions[section];
+  // Revenus, frais et MRR : réservés aux rôles qui ont « Facturation ». Le
+  // serveur ne les envoie pas aux autres ; ici on retire les cartes vides.
+  const finances = peutVoir('billing');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -109,7 +112,9 @@ export default function SuperOwnerDashboard() {
       ) : null}
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${finances ? 'md:grid-cols-4' : 'md:grid-cols-2'}`}>
+        {finances && (
+          <>
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 rounded-lg bg-green-600/20 text-green-400">
@@ -134,6 +139,9 @@ export default function SuperOwnerDashboard() {
           <p className="text-gray-400 text-sm mb-1">{t('platformFee')}</p>
           <p className="text-3xl font-bold text-blue-400">{euro((stats?.platformFee || 0), 0)}</p>
         </div>
+
+          </>
+        )}
 
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <div className="flex justify-between items-start mb-4">
@@ -167,18 +175,20 @@ export default function SuperOwnerDashboard() {
       </div>
 
       {/* Secondary Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${finances ? 'md:grid-cols-2' : ''}`}>
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <p className="text-gray-400 text-sm mb-2">{t('totalUsers')}</p>
           <p className="text-4xl font-bold">{stats?.totalUsers || 0}</p>
           <p className="text-xs text-gray-500 mt-2">{t('totalUsersSubtitle')}</p>
         </div>
 
+        {finances && (
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
           <p className="text-gray-400 text-sm mb-2">{t('mrr')}</p>
           <p className="text-4xl font-bold text-green-400">{euro((stats?.monthlyRecurring || 0), 0)}</p>
           <p className="text-xs text-gray-500 mt-2">{t('mrrSubtitle')}</p>
         </div>
+        )}
       </div>
 
       {/* Quick Actions */}
