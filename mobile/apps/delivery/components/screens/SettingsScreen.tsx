@@ -1,7 +1,8 @@
-import React from 'react';
-import { Linking, Platform, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, Linking, Platform, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
-import { API_URL, DPO_EMAIL, SITE_URL } from '../../lib/api';
+import { API_URL, ApiError, apiFetch, SITE_URL } from '../../lib/api';
+import { isNetworkError } from '../../lib/network';
 import type { Prefs } from '../../lib/session';
 import type { BackgroundState, GpsState } from '../../lib/useDriverLocation';
 import { Card, COLORS, isDarkTheme, Row, ScreenHeader, themedStyles, ui } from '../ui';
@@ -35,6 +36,40 @@ const BACKGROUND_LABELS: Record<BackgroundState, { text: string; color: () => st
   unavailable: { text: 'Indisponible ici', color: () => COLORS.muted },
 };
 
+/**
+ * Supprimer son compte depuis l'application : les stores l'exigent dès que
+ * l'on peut y créer un compte. Le serveur désactive le compte sur-le-champ et
+ * transmet la demande à la plateforme, qui efface les données.
+ */
+function useAccountDeletion(token: string, onDeleted: () => void) {
+  const [deleting, setDeleting] = useState(false);
+  const run = async () => {
+    setDeleting(true);
+    try {
+      const res = await apiFetch<{ message?: string }>('/api/drivers/me/suppression', token, { method: 'POST', body: {} });
+      Alert.alert('Compte supprimé', res.message || 'Votre compte est désactivé et vos données seront supprimées.');
+      onDeleted();
+    } catch (e) {
+      Alert.alert(
+        'Suppression impossible',
+        isNetworkError(e) ? 'Pas de réseau : réessayez dès que vous captez.' : (e as ApiError).message || 'Réessayez plus tard.'
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+  const ask = () =>
+    Alert.alert(
+      'Supprimer votre compte ?',
+      'Votre compte sera désactivé tout de suite : vous ne recevrez plus de courses. Vos données seront supprimées sous 30 jours, sauf celles que la loi nous oblige à garder (courses payées, pièces comptables). Cette action est définitive.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Supprimer mon compte', style: 'destructive', onPress: run },
+      ]
+    );
+  return { deleting, ask };
+}
+
 export default function SettingsScreen({
   prefs,
   onChangePrefs,
@@ -43,7 +78,8 @@ export default function SettingsScreen({
   pushInfo,
   gps,
   background,
-  email,
+  token,
+  onAccountDeleted,
   onBack,
 }: {
   prefs: Prefs;
@@ -53,10 +89,12 @@ export default function SettingsScreen({
   pushInfo?: string;
   gps: GpsState;
   background: BackgroundState;
-  /** Le compte connecté : il accompagne une demande de suppression. */
-  email?: string;
+  token: string;
+  /** Compte supprimé : la session se ferme et le téléphone est vidé. */
+  onAccountDeleted: () => void;
   onBack: () => void;
 }) {
+  const deletion = useAccountDeletion(token, onAccountDeleted);
   return (
     <View style={{ flex: 1 }}>
       <ScreenHeader title="Paramètres ⚙️" onBack={onBack} />
@@ -162,17 +200,12 @@ export default function SettingsScreen({
           <TouchableOpacity style={styles.linkRow} onPress={() => Linking.openURL(`${SITE_URL}/conditions-livreurs`)}>
             <Text style={styles.linkText}>Conditions des livreurs</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.linkRow, { borderBottomWidth: 0 }]}
-            onPress={() =>
-              Linking.openURL(
-                `mailto:${DPO_EMAIL}?subject=${encodeURIComponent('Suppression de mon compte livreur')}&body=${encodeURIComponent(
-                  `Bonjour,\n\nJe souhaite la suppression de mon compte livreur Zupone${email ? ` (${email})` : ''} et des données qui s’y rattachent.\n`
-                )}`
-              ).catch(() => undefined)
-            }
-          >
-            <Text style={[styles.linkText, { color: COLORS.danger }]}>Demander la suppression de mon compte</Text>
+          <TouchableOpacity style={[styles.linkRow, { borderBottomWidth: 0 }]} onPress={deletion.ask} disabled={deletion.deleting}>
+            {deletion.deleting ? (
+              <ActivityIndicator color={COLORS.danger} />
+            ) : (
+              <Text style={[styles.linkText, { color: COLORS.danger }]}>Supprimer mon compte</Text>
+            )}
           </TouchableOpacity>
         </Card>
       </ScrollView>

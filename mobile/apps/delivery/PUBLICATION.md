@@ -19,8 +19,13 @@ fiches des stores), dans l'ordre.
 - **`eas.json`** : profils `development` (build de développement),
   `preview` (APK à installer à la main, pour les essais) et `production`
   (App Bundle Android, numéro de build incrémenté par EAS).
+- **Inscription dans l'application** (« Créer un compte » sur l'écran de
+  connexion), avec acceptation des conditions ; le compte attend la
+  validation de la plateforme.
 - **Paramètres › Vos données** : politique de confidentialité, conditions des
-  livreurs, demande de suppression du compte (courriel au DPO).
+  livreurs, **suppression du compte** depuis l'application (désactivation
+  immédiate, demande transmise au support de la plateforme, données effacées
+  sous 30 jours sauf obligations légales).
 
 > Les icônes sont **provisoires** (un « Z » blanc sur l'orange Zupone) :
 > remplacez les fichiers de `assets/images/` par le vrai logo en gardant les
@@ -78,7 +83,11 @@ qu'il propose.
 
 ## 6. Essais avant soumission (sur de vrais téléphones)
 
-- Connexion, passage en ligne, autorisation « Toujours » acceptée et refusée.
+- Création d'un compte, envoi des pièces, validation depuis l'espace
+  plateforme, puis connexion.
+- Passage en ligne, autorisation « Toujours » acceptée et refusée.
+- Suppression du compte (Paramètres › Vos données) : compte désactivé, message
+  reçu par le support.
 - Téléphone verrouillé : une course proposée sonne ; « Accepter » depuis la
   notification ; la position continue (pastille qui bouge côté client).
 - Course complète : retrait (à moins de 150 m), code, dépôt avec photo, écran
@@ -141,9 +150,11 @@ Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs Zupon
   - photos : preuve de dépôt et pièces justificatives ;
   - identifiants de l'appareil (jeton de notification) : notifications ;
   - chiffrement en transit : oui ; suppression sur demande : oui.
-- **Suppression du compte** : Google demande **une page web** où la demander.
-  À créer sur le site (par exemple `/suppression-compte`, qui explique la
-  démarche et renvoie vers dpo@zupone.com), puis à indiquer dans la Console.
+- **Suppression du compte** : elle se fait dans l'application (Paramètres ›
+  Vos données). Google demande **en plus une page web** pour ceux qui n'ont
+  plus l'application : à créer sur le site (par exemple
+  `/suppression-compte`, qui explique la démarche et renvoie vers
+  dpo@zupone.com), puis à indiquer dans la Console.
 - **Politique de confidentialité** : `https://zupone.com/confidentialite`.
 - **Accès pour l'examen** : un compte livreur de démonstration, déjà validé.
 
@@ -155,9 +166,12 @@ Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs Zupon
   et en ligne ; expliquer que la position « Toujours » sert à proposer les
   courses proches et au suivi du client, et qu'elle s'arrête hors ligne.
   Idéalement, une commande de démonstration à proposer pendant l'examen.
-- Apple n'exige la suppression du compte dans l'application que si le compte
-  peut y être créé : ici l'inscription se fait sur le site, le lien
-  « Demander la suppression de mon compte » des paramètres suffit.
+- Le compte se crée dans l'application : Apple exige donc sa **suppression
+  dans l'application** (règle 5.1.1(v)). C'est fait : Paramètres › Vos données
+  › Supprimer mon compte. Préciser dans les notes d'examen que la suppression
+  définitive est traitée par la plateforme sous 30 jours.
+- Le compte de démonstration peut être créé depuis l'application, mais il
+  doit être **validé** depuis l'espace plateforme pour recevoir des courses.
 
 ### Politique de confidentialité à mettre à jour
 

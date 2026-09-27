@@ -358,6 +358,11 @@ const c7 = await commander(boutiqueA, { latitude: 44.8518, longitude: -0.5695 })
 const pourUnSerre = await offresDe(un);
 check('elle ne s’ajoute plus', !pourUnSerre.some((o) => o.deliveryId === c7.deliveryId), JSON.stringify(pourUnSerre));
 
+titre('Pas de suppression de compte en pleine course');
+const suppression = await post('/api/drivers/me/suppression', {}, un.jeton);
+check('refusée tant qu’une course est en cours', suppression.status === 409, `statut ${suppression.status}`);
+check('le compte reste actif', (await champ(`SELECT status FROM "Driver" WHERE email = '${un.email}'`)) === 'ACTIVE');
+
 // Les autres suites comptent sur les valeurs d'origine.
 await regler({ driverMaxCourses: 3, driverGroupClientKm: 2, driverGroupDetourKm: 2 });
 

@@ -19,6 +19,7 @@ import OfferSheet from '../components/OfferSheet';
 import DashboardScreen, { EarningsSummary } from '../components/screens/DashboardScreen';
 import DeliveryScreen from '../components/screens/DeliveryScreen';
 import TourneeScreen from '../components/screens/TourneeScreen';
+import SignupScreen from '../components/screens/SignupScreen';
 import HistoryScreen from '../components/screens/HistoryScreen';
 import EarningsScreen from '../components/screens/EarningsScreen';
 import ReviewsScreen from '../components/screens/ReviewsScreen';
@@ -48,6 +49,8 @@ export default function DeliveryApp() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  // Écran de connexion ou d'inscription, tant que personne n'est connecté.
+  const [signingUp, setSigningUp] = useState(false);
   const [driver, setDriver] = useState<Driver | null>(null);
   const [earnings, setEarnings] = useState<EarningsSummary | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -519,6 +522,25 @@ export default function DeliveryApp() {
     );
   }
 
+  // Inscription
+  if (!session && signingUp) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar style="light" />
+        <SignupScreen
+          onCancel={() => setSigningUp(false)}
+          onSignedUp={async (next) => {
+            await saveSession(next);
+            setSigningUp(false);
+            await openSession(next);
+            // Première chose à faire : envoyer ses pièces pour être validé.
+            setTab('account');
+          }}
+        />
+      </SafeAreaView>
+    );
+  }
+
   // Login Screen
   if (!session) {
     return (
@@ -557,7 +579,11 @@ export default function DeliveryApp() {
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Se connecter</Text>}
           </TouchableOpacity>
 
-          <Text style={styles.signupHint}>Pas encore livreur ? Inscrivez-vous sur le site Zupone.</Text>
+          <TouchableOpacity onPress={() => setSigningUp(true)} disabled={loading} style={styles.signupButton}>
+            <Text style={styles.signupHint}>
+              Pas encore livreur ? <Text style={styles.signupLink}>Créer un compte</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -642,7 +668,8 @@ export default function DeliveryApp() {
           pushInfo={pushSetup ? (pushSetup.status === 'enabled' ? undefined : pushSetup.reason) : 'Vérification…'}
           gps={gps}
           background={background}
-          email={email}
+          token={token}
+          onAccountDeleted={() => handleLogout(true)}
           onBack={back}
         />
       );
@@ -1079,8 +1106,9 @@ const styles = themedStyles(() => ({
     fontSize: 16,
     fontWeight: '600',
   },
+  signupButton: { marginTop: 20, paddingVertical: 8 },
+  signupLink: { fontWeight: '700', textDecorationLine: 'underline', opacity: 1 },
   signupHint: {
-    marginTop: 20,
     color: COLORS.onHeader,
     opacity: 0.75,
     fontSize: 14,

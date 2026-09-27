@@ -409,6 +409,66 @@ router.get("/support/unread", authMiddleware, async (req: Request, res: Response
   }
 });
 
+/**
+ * POST /drivers/me/suppression - Le livreur demande la suppression de son compte
+ *
+ * Depuis que l'on peut créer un compte dans l'application, les stores
+ * exigent de pouvoir l'y supprimer. Le compte est désactivé sur-le-champ
+ * (plus de courses, plus de notifications) et la plateforme reçoit la
+ * demande par le support : elle efface les données, sauf ce que la loi
+ * oblige à garder (courses payées, pièces comptables), comme le dit la
+ * politique de confidentialité.
+ */
+router.post("/me/suppression", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const { motif } = z.object({ motif: z.string().max(500).optional() }).parse(req.body ?? {});
+
+    const enCours = await db.orderDelivery.count({ where: { driverId: livreur.id, status: { in: STATUTS_EN_COURSE } } });
+    if (enCours > 0) {
+      throw new ApiError(
+        409,
+        "Terminez ou annulez d'abord vos courses en cours, puis refaites la demande.",
+        "DELIVERIES_IN_PROGRESS"
+      );
+    }
+
+    const le = new Date();
+    await db.driver.update({
+      where: { id: livreur.id },
+      data: {
+        status: "INACTIVE",
+        statusReason: `Suppression du compte demandée le ${le.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}.`,
+        isOnline: false,
+        isAvailable: false,
+        pausedUntil: null,
+        pauseReason: null,
+      },
+    });
+    // Plus aucune notification vers ce téléphone.
+    if (livreur.userId) await db.pushDevice.deleteMany({ where: { userId: livreur.userId } });
+
+    await DriverSupportService.envoyer(
+      livreur.id,
+      "DRIVER",
+      `🗑️ Je demande la suppression de mon compte livreur et de mes données (demande faite depuis l'application).${
+        motif?.trim() ? `\nMotif : ${motif.trim()}` : ""
+      }`,
+      { deliveryId: null }
+    );
+
+    logger.warn("Suppression de compte demandée", { driverId: livreur.id });
+
+    res.json({
+      success: true,
+      message:
+        "Votre compte est désactivé. Vos données seront supprimées sous 30 jours, sauf celles que la loi nous oblige à conserver.",
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /drivers/me - Get current driver info (protected)
 router.get("/me", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {

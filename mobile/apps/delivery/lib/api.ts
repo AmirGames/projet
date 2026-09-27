@@ -28,9 +28,6 @@ export const API_URL = detectApiUrl();
 /** Le site public : conditions, confidentialité (fixé par eas.json en production). */
 export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || 'https://zupone.com').replace(/\/+$/, '');
 
-/** Le délégué à la protection des données, comme sur la politique de confidentialité. */
-export const DPO_EMAIL = 'dpo@zupone.com';
-
 export class ApiError extends Error {
   constructor(message: string, public status: number) {
     super(message);

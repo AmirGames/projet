@@ -6,7 +6,9 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
 
 ## Ce que fait l'application
 
-- **Connexion** avec un compte livreur (un compte commerçant ou client est refusé).
+- **Connexion** avec un compte livreur (un compte commerçant ou client est refusé),
+  et **inscription** dans l'application : le compte attend la validation de la
+  plateforme, les pièces s'envoient depuis « Mon compte ».
 - **Accueil** : passage en ligne / hors ligne, état du dossier tant qu'il n'est
   pas validé, **courses proposées** avec compte à rebours (accepter / refuser),
   course en cours, gains du jour et de la semaine, note, **pause** (15, 30, 60 min).
