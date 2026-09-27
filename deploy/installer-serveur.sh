@@ -77,7 +77,7 @@ fi
 echo "▶ Pare-feu : SSH, HTTP, HTTPS"
 # Docker publie ses ports en contournant UFW : c'est pourquoi seul Caddy
 # (80/443) publie un port dans docker-compose.prod.yml, jamais la base.
-ufw allow OpenSSH
+ufw allow 22/tcp
 ufw allow 80/tcp
 ufw allow 443/tcp
 ufw allow 443/udp
