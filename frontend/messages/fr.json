@@ -99,7 +99,11 @@
     "quickBilling": "Facturation",
     "quickConfig": "Configuration",
     "quickSecurityAudit": "Audit Sécurité",
-    "loggedInAs": "🔐 Vous êtes connecté en tant que Superowner. Vous avez accès complet à tous les systèmes."
+    "loggedInAs": "🔐 Vous êtes connecté en tant que Superowner. Vous avez accès complet à tous les systèmes.",
+    "titleRole": "Tableau de bord {role}",
+    "titleGeneric": "Tableau de bord",
+    "subtitleTeam": "Vue d'ensemble de la plateforme, selon les accès de votre rôle",
+    "loggedInAsRole": "🔐 Vous êtes connecté en tant que {role}. Vous n'avez accès qu'aux sections ouvertes à votre rôle ; demandez au SuperOwner pour en obtenir d'autres."
   },
   "superownerOrganizations": {
     "title": "Organisations",
@@ -2122,6 +2126,15 @@
     "deniedTitle": "Accès refusé",
     "deniedText": "Votre rôle n'ouvre pas cette section. Demandez au SuperOwner de vous en donner l'accès.",
     "yourRole": "Votre rôle : {role}",
-    "platform": "Plateforme"
+    "platform": "Plateforme",
+    "newRole": "Nouveau rôle",
+    "newRolePlaceholder": "Ex. Facturation",
+    "create": "Créer le rôle",
+    "created": "Rôle « {role} » créé : cochez maintenant ses accès.",
+    "createError": "Impossible de créer le rôle",
+    "delete": "Supprimer le rôle",
+    "deleteConfirm": "Supprimer le rôle « {role} » ?",
+    "deleted": "Rôle « {role} » supprimé",
+    "deleteError": "Impossible de supprimer le rôle"
   }
 }

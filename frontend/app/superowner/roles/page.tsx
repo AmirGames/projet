@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ShieldCheck, Save, RotateCcw } from 'lucide-react';
+import { ShieldCheck, Save, RotateCcw, Plus, Trash2 } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -21,6 +21,8 @@ interface Role {
   label: string;
   permissions: Permissions;
   membres: number;
+  /** SuperAdmin, Administrateur, Support : ne se suppriment pas. */
+  deBase: boolean;
 }
 
 /**
@@ -38,6 +40,8 @@ export default function RolesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'ok' | 'erreur'; texte: string } | null>(null);
+  const [nouveauRole, setNouveauRole] = useState('');
+  const [creation, setCreation] = useState(false);
 
   const charger = useCallback(async () => {
     setLoading(true);
@@ -137,6 +141,51 @@ export default function RolesPage() {
     }
   };
 
+  const messageDErreur = async (res: Response, parDefaut: string) => {
+    const data = await res.json().catch(() => ({}));
+    return data?.error?.message || data?.message || parDefaut;
+  };
+
+  const creerRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (nouveauRole.trim().length < 2) return;
+    setCreation(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${API_URL}/api/superowner/roles?plateforme=${plateforme}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: nouveauRole.trim() }),
+      });
+      if (!res.ok) throw new Error(await messageDErreur(res, t('createError')));
+      const data: { role: Role } = await res.json();
+      setRoles((liste) => [...liste, { ...data.role, permissions: {} }]);
+      setBrouillon((b) => ({ ...b, [data.role.code]: {} }));
+      setNouveauRole('');
+      setMessage({ type: 'ok', texte: t('created', { role: data.role.label }) });
+    } catch (err) {
+      setMessage({ type: 'erreur', texte: err instanceof Error ? err.message : t('createError') });
+    } finally {
+      setCreation(false);
+    }
+  };
+
+  const supprimerRole = async (role: Role) => {
+    if (!confirm(t('deleteConfirm', { role: role.label }))) return;
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${API_URL}/api/superowner/roles/${role.code}?plateforme=${plateforme}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(await messageDErreur(res, t('deleteError')));
+      setRoles((liste) => liste.filter((r) => r.code !== role.code));
+      setMessage({ type: 'ok', texte: t('deleted', { role: role.label }) });
+    } catch (err) {
+      setMessage({ type: 'erreur', texte: err instanceof Error ? err.message : t('deleteError') });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -171,6 +220,27 @@ export default function RolesPage() {
         ))}
       </div>
 
+      <form onSubmit={creerRole} className="flex flex-wrap items-end gap-2">
+        <label className="flex-1 min-w-[200px] max-w-sm">
+          <span className="block text-sm text-gray-400 mb-1">{t('newRole')}</span>
+          <input
+            value={nouveauRole}
+            onChange={(e) => setNouveauRole(e.target.value)}
+            placeholder={t('newRolePlaceholder')}
+            maxLength={40}
+            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={creation || nouveauRole.trim().length < 2}
+          className="flex items-center gap-1 px-4 py-2 rounded bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white"
+        >
+          <Plus size={16} />
+          {t('create')}
+        </button>
+      </form>
+
       {message && (
         <div
           role="status"
@@ -193,7 +263,19 @@ export default function RolesPage() {
               </th>
               {roles.map((role) => (
                 <th key={role.code} colSpan={2} className="px-4 pt-3 text-center font-semibold border-l border-gray-700">
-                  <div>{role.label}</div>
+                  <div className="flex items-center justify-center gap-1">
+                    {role.label}
+                    {!role.deBase && (
+                      <button
+                        onClick={() => supprimerRole(role)}
+                        title={t('delete')}
+                        aria-label={`${t('delete')} ${role.label}`}
+                        className="p-1 text-red-400 hover:bg-red-900/30 rounded"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
                   <div className="text-xs font-normal text-gray-400">
                     {t('members', { count: role.membres })}
                   </div>

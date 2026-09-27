@@ -7,9 +7,10 @@ import { ApiError } from "../middleware/errorHandler";
  * Qui, dans l'équipe du groupe, peut faire quoi, plateforme par plateforme.
  *
  * Le superowner voit tout et règle le reste : il nomme chaque membre de
- * l'équipe dans un groupe (SuperAdmin, Administrateur, Support) sur chaque
- * plateforme où il travaille, et coche, pour chaque groupe de chaque
- * plateforme, les sections ouvertes en lecture ou en modification. Le contrôle se fait ici, sur chaque route : masquer un lien du
+ * l'équipe dans un groupe (SuperAdmin, Administrateur, Support, ou un groupe
+ * qu'il a ajouté) sur chaque plateforme où il travaille, et coche, pour chaque
+ * groupe de chaque plateforme, les sections ouvertes en lecture ou en
+ * modification. Le contrôle se fait ici, sur chaque route : masquer un lien du
  * menu n'a jamais fermé une porte.
  */
 
@@ -48,7 +49,12 @@ export interface Section {
 /** Les sections de l'espace, dans l'ordre du menu. */
 export const SECTIONS: Section[] = [
   { id: "dashboard", label: "Tableau de bord", groupe: "Général" },
-  { id: "organizations", label: "Organisations", groupe: "Activité" },
+  { id: "organizations", label: "Organisations (dont suspendre / réactiver)", groupe: "Activité" },
+  {
+    id: "organizations-close",
+    label: "Fermer / rouvrir un commerce (données supprimées à 60 jours)",
+    groupe: "Activité",
+  },
   { id: "stores", label: "Commerces", groupe: "Activité" },
   { id: "drivers", label: "Livreurs", groupe: "Activité" },
   { id: "payouts", label: "Versements", groupe: "Activité" },
@@ -125,6 +131,7 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
     [/^\/dashboard/, "dashboard"],
     [/^\/organizations\/[^/]+\/tier/, "formules"],
     [/^\/organizations\/[^/]+\/commission-promo/, "formules"],
+    [/^\/organizations\/[^/]+\/close/, "organizations-close"],
     [/^\/organizations/, "organizations"],
     [/^\/members\/drivers/, "drivers"],
     [/^\/members/, "members"],
@@ -151,6 +158,7 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
   ],
   admin: [
     [/^\/config/, "system-config"],
+    [/^\/merchants\/[^/]+\/(close|restore-from-backup)/, "organizations-close"],
     [/^\/merchants/, "organizations"],
     [/^\/stores/, "stores"],
     [/^\/tickets/, "support-tickets"],
@@ -167,8 +175,20 @@ export function sectionDeLaRoute(routeur: Routeur, chemin: string): string | nul
   return trouve ? trouve[1] : null;
 }
 
-export function estRolePlateforme(code: unknown): code is RolePlateforme {
+/** Les trois groupes livrés avec la plateforme : ils ne se suppriment pas. */
+export function estRoleDeBase(code: unknown): code is RolePlateforme {
   return typeof code === "string" && (ROLES_PLATEFORME as readonly string[]).includes(code);
+}
+
+/** « Facturation & compta » → « FACTURATION_COMPTA ». */
+export function codeDuLibelle(libelle: string): string {
+  return libelle
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40);
 }
 
 /** Ne garde que des sections connues et des niveaux valides. */
@@ -183,10 +203,16 @@ export function nettoyerPermissions(brut: unknown): Permissions {
   return propres;
 }
 
+export interface RoleConnu {
+  code: string;
+  label: string;
+  permissions: Permissions;
+}
+
 // Lu à chaque requête de l'équipe : gardé quelques secondes, oublié dès qu'un
 // rôle change.
 const DUREE_CACHE_MS = 30000;
-const cache = new Map<Plateforme, { roles: Record<string, Permissions>; expireA: number }>();
+const cache = new Map<Plateforme, { roles: Record<string, RoleConnu>; expireA: number }>();
 
 export function oublierRoles() {
   cache.clear();
@@ -194,54 +220,119 @@ export function oublierRoles() {
 
 export const PermissionsPlateforme = {
   /**
-   * Les trois groupes d'une plateforme, créés avec leurs permissions par
-   * défaut s'ils manquent.
+   * Tous les groupes d'une plateforme : les trois de base, créés avec leurs
+   * permissions par défaut s'ils manquent, puis ceux que le superowner a
+   * ajoutés.
    */
   async lister(plateforme: Plateforme = "EAT") {
-    const existants = await db.platformRole.findMany({ where: { plateforme } });
+    const lire = () =>
+      db.platformRole.findMany({ where: { plateforme }, orderBy: { createdAt: "asc" } });
+    const existants = await lire();
     const connus = new Set(existants.map((r) => r.code));
     const manquants = ROLES_PLATEFORME.filter((code) => !connus.has(code));
 
-    if (manquants.length > 0) {
-      await db.platformRole.createMany({
-        data: manquants.map((code) => ({
-          plateforme,
-          code,
-          label: LIBELLES_ROLES[code],
-          permissions: PERMISSIONS_PAR_DEFAUT[code],
-        })),
-        skipDuplicates: true,
-      });
-      return db.platformRole.findMany({ where: { plateforme } });
-    }
+    const roles = manquants.length
+      ? (await db.platformRole.createMany({
+          data: manquants.map((code) => ({
+            plateforme,
+            code,
+            label: LIBELLES_ROLES[code],
+            permissions: PERMISSIONS_PAR_DEFAUT[code],
+          })),
+          skipDuplicates: true,
+        }),
+        await lire())
+      : existants;
 
-    return existants;
+    // Les rôles de base d'abord, dans leur ordre ; les autres ensuite.
+    const rang = (code: string) => {
+      const i = (ROLES_PLATEFORME as readonly string[]).indexOf(code);
+      return i === -1 ? ROLES_PLATEFORME.length : i;
+    };
+    return [...roles].sort((x, y) => rang(x.code) - rang(y.code));
   },
 
-  async permissionsDu(role: string | null | undefined, plateforme: Plateforme = "EAT"): Promise<Permissions> {
-    if (!estRolePlateforme(role)) return {};
+  async role(code: string | null | undefined, plateforme: Plateforme = "EAT"): Promise<RoleConnu | null> {
+    if (!code) return null;
     let connu = cache.get(plateforme);
     if (!connu || Date.now() >= connu.expireA) {
       const roles = await this.lister(plateforme);
       connu = {
-        roles: Object.fromEntries(roles.map((r) => [r.code, nettoyerPermissions(r.permissions)])),
+        roles: Object.fromEntries(
+          roles.map((r) => [
+            r.code,
+            { code: r.code, label: r.label, permissions: nettoyerPermissions(r.permissions) },
+          ])
+        ),
         expireA: Date.now() + DUREE_CACHE_MS,
       };
       cache.set(plateforme, connu);
     }
-    return connu.roles[role] ?? {};
+    return connu.roles[code] ?? null;
   },
 
-  async modifier(code: RolePlateforme, permissions: unknown, plateforme: Plateforme = "EAT") {
-    const role = await db.platformRole.upsert({
+  async permissionsDu(code: string | null | undefined, plateforme: Plateforme = "EAT"): Promise<Permissions> {
+    return (await this.role(code, plateforme))?.permissions ?? {};
+  },
+
+  async modifier(code: string, permissions: unknown, plateforme: Plateforme = "EAT") {
+    const role = await db.platformRole.update({
       where: { plateforme_code: { plateforme, code } },
-      create: { plateforme, code, label: LIBELLES_ROLES[code], permissions: nettoyerPermissions(permissions) },
-      update: { permissions: nettoyerPermissions(permissions) },
+      data: { permissions: nettoyerPermissions(permissions) },
     });
     oublierRoles();
     return role;
   },
+
+  /** Un nouveau groupe sur une plateforme, sans aucun accès : le superowner coche ensuite. */
+  async creer(libelle: string, plateforme: Plateforme = "EAT") {
+    const label = libelle.trim();
+    const code = codeDuLibelle(label);
+    if (!code || code === "SUPEROWNER") {
+      throw new ApiError(400, "Ce nom de rôle n'est pas utilisable", "INVALID_ROLE_NAME");
+    }
+    const existant = await db.platformRole.findFirst({
+      where: { plateforme, OR: [{ code }, { label: { equals: label, mode: "insensitive" } }] },
+    });
+    if (existant) {
+      throw new ApiError(400, `Le rôle « ${existant.label} » existe déjà`, "ROLE_EXISTS");
+    }
+    const role = await db.platformRole.create({ data: { plateforme, code, label, permissions: {} } });
+    oublierRoles();
+    return role;
+  },
+
+  /** Retire un groupe ajouté, à condition que plus personne n'y soit sur cette plateforme. */
+  async supprimer(code: string, plateforme: Plateforme = "EAT") {
+    if (estRoleDeBase(code)) {
+      throw new ApiError(400, "Les rôles de base ne se suppriment pas", "BASE_ROLE");
+    }
+    const membres = await db.accesEquipe.count({ where: { plateforme, role: code } });
+    if (membres > 0) {
+      throw new ApiError(
+        400,
+        `${membres} membre(s) ont encore ce rôle : changez-les de rôle d'abord`,
+        "ROLE_IN_USE"
+      );
+    }
+    await db.platformRole.delete({ where: { plateforme_code: { plateforme, code } } });
+    oublierRoles();
+  },
 };
+
+/**
+ * Les chiffres financiers (revenus, frais, MRR) ne sortent que pour le
+ * superowner et les rôles qui ont la section « Facturation », même sur une
+ * route que le rôle a le droit de lire, comme le tableau de bord.
+ */
+export async function voitLesFinances(
+  compte: Request["compte"],
+  plateforme: Plateforme = "EAT"
+): Promise<boolean> {
+  if (compte?.isSuperOwner) return true;
+  if (!compte?.isSystemAdmin) return false;
+  return !!(await PermissionsPlateforme.permissionsDu(compte.acces[plateforme], plateforme)).billing;
+}
 
 /**
  * Garde d'un routeur de l'espace d'administration.

@@ -24,7 +24,7 @@ export const ETATS_LIVREUR = ["PENDING", "ACTIVE", "REJECTED", "SUSPENDED", "INA
 export type EtatLivreur = (typeof ETATS_LIVREUR)[number];
 
 /** Les pièces qu'un livreur peut déposer. */
-export const TYPES_DOCUMENT = ["identity", "license", "insurance", "vehicle_registration"] as const;
+export const TYPES_DOCUMENT = ["identity", "license", "insurance", "vehicle_registration", "insulated_bag"] as const;
 export type TypeDocument = (typeof TYPES_DOCUMENT)[number];
 
 const LIBELLES_DOCUMENT: Record<string, string> = {
@@ -32,18 +32,21 @@ const LIBELLES_DOCUMENT: Record<string, string> = {
   license: "Permis de conduire",
   insurance: "Attestation d'assurance",
   vehicle_registration: "Carte grise",
+  insulated_bag: "Sac isotherme (photo du sac ou facture)",
 };
 
 /**
  * Les pièces exigées pour rouler, selon le véhicule.
  *
  * À vélo, ni permis ni carte grise : les exiger empêcherait d'inscrire un
- * livreur parfaitement en règle.
+ * livreur parfaitement en règle. Le sac isotherme, lui, est exigé de tous :
+ * sans lui, un repas n'arrive pas chaud (ni un produit frais au frais), et
+ * le compte n'est pas validé.
  */
 export function piecesAttendues(vehicleType: string): TypeDocument[] {
-  if (vehicleType === "bike") return ["identity"];
+  if (vehicleType === "bike") return ["identity", "insulated_bag"];
 
-  return ["identity", "license", "insurance", "vehicle_registration"];
+  return ["identity", "license", "insurance", "vehicle_registration", "insulated_bag"];
 }
 
 export const libelleDuDocument = (type: string) => LIBELLES_DOCUMENT[type] || type;

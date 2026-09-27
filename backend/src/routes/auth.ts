@@ -1,6 +1,5 @@
 import {
-  estRolePlateforme,
-  LIBELLES_ROLES,
+  PermissionsPlateforme,
   LIBELLES_PLATEFORMES,
 } from "../services/permissions-plateforme.service";
 import { Router, Request, Response, NextFunction } from "express";
@@ -333,17 +332,22 @@ router.get("/me/roles", authMiddleware, async (req: Request, res: Response, next
         // Le groupe dans l'équipe de ZupEat : le sélecteur d'espaces
         // l'affiche à la place de « Super Owner ».
         platformRole: user.isSuperOwner ? null : roleEat ?? null,
-        platformRoleLabel:
-          !user.isSuperOwner && estRolePlateforme(roleEat) ? LIBELLES_ROLES[roleEat] : null,
+        platformRoleLabel: user.isSuperOwner
+          ? null
+          : (await PermissionsPlateforme.role(roleEat, "EAT"))?.label ?? null,
         // Les rôles dans l'équipe, plateforme par plateforme.
         accesEquipe: user.isSuperOwner
           ? []
-          : Object.entries(acces).map(([plateforme, role]) => ({
-              plateforme,
-              plateformeLabel: LIBELLES_PLATEFORMES[plateforme as keyof typeof LIBELLES_PLATEFORMES],
-              role,
-              roleLabel: estRolePlateforme(role) ? LIBELLES_ROLES[role] : role,
-            })),
+          : await Promise.all(
+              (Object.entries(acces) as [keyof typeof LIBELLES_PLATEFORMES, string][]).map(
+                async ([plateforme, role]) => ({
+                  plateforme,
+                  plateformeLabel: LIBELLES_PLATEFORMES[plateforme],
+                  role,
+                  roleLabel: (await PermissionsPlateforme.role(role, plateforme))?.label ?? role,
+                })
+              )
+            ),
       },
       roles: {
         customer: {

@@ -7,8 +7,6 @@ import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-type Role = 'SUPER_ADMIN' | 'ADMIN' | 'SUPPORT';
-
 interface Plateforme {
   code: string;
   label: string;
@@ -19,9 +17,9 @@ interface Admin {
   email: string;
   name: string;
   /** SUPEROWNER, ou le rôle sur ZupEat. */
-  role: 'SUPEROWNER' | Role | null;
+  role: string | null;
   /** Les rôles du membre, plateforme par plateforme. */
-  acces: { plateforme: string; role: Role }[];
+  acces: { plateforme: string; role: string }[];
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   lastLogin: string;
   createdAt: string;
@@ -79,6 +77,30 @@ export default function UserManagementPage() {
   useEffectChargement(() => {
     fetchAdmins();
   }, [offset, fetchAdmins]);
+
+  // Les rôles de l'équipe sur chaque plateforme, y compris ceux créés dans
+  // « Rôles et accès ».
+  const rolesDeBase = [
+    { code: 'SUPER_ADMIN', label: t('roleSuperAdmin') },
+    { code: 'ADMIN', label: t('roleAdmin') },
+    { code: 'SUPPORT', label: t('roleSupport') },
+  ];
+  const [rolesParPlateforme, setRolesParPlateforme] = useState<Record<string, { code: string; label: string }[]>>({});
+  const codesPlateformes = plateformes.map((p) => p.code).join(',');
+  useEffectChargement(() => {
+    const token = localStorage.getItem('accessToken');
+    for (const code of codesPlateformes.split(',').filter(Boolean)) {
+      fetch(`${API_URL}/api/superowner/roles?plateforme=${code}`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: { roles: { code: string; label: string }[] } | null) => {
+          if (data?.roles?.length) {
+            setRolesParPlateforme((r) => ({ ...r, [code]: data.roles.map(({ code: c, label }) => ({ code: c, label })) }));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [codesPlateformes]);
+  const rolesDe = (plateforme: string) => rolesParPlateforme[plateforme] ?? rolesDeBase;
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,7 +176,7 @@ export default function UserManagementPage() {
         liste.map((a) => {
           if (a.id !== adminId) return a;
           const autres = a.acces.filter((x) => x.plateforme !== plateforme.code);
-          return { ...a, acces: role ? [...autres, { plateforme: plateforme.code, role: role as Role }] : autres };
+          return { ...a, acces: role ? [...autres, { plateforme: plateforme.code, role }] : autres };
         })
       );
       setError('');
@@ -240,9 +262,11 @@ export default function UserManagementPage() {
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
               >
-                <option value="SUPER_ADMIN">{t('roleSuperAdmin')}</option>
-                <option value="ADMIN">{t('roleAdmin')}</option>
-                <option value="SUPPORT">{t('roleSupport')}</option>
+                {rolesDe(formData.plateforme).map((r) => (
+                  <option key={r.code} value={r.code}>
+                    {r.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -319,9 +343,11 @@ export default function UserManagementPage() {
                             className={`px-2 py-1 rounded text-xs font-semibold text-white border-0 ${getRoleColor(role)}`}
                           >
                             <option value="">{t('noAccess')}</option>
-                            <option value="SUPER_ADMIN">{t('roleSuperAdmin')}</option>
-                            <option value="ADMIN">{t('roleAdmin')}</option>
-                            <option value="SUPPORT">{t('roleSupport')}</option>
+                            {rolesDe(p.code).map((r) => (
+                              <option key={r.code} value={r.code}>
+                                {r.label}
+                              </option>
+                            ))}
                           </select>
                         )}
                       </td>

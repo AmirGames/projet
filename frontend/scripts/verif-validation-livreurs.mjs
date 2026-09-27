@@ -153,9 +153,9 @@ const refus = await page.locator('body').innerText();
 // Refus du serveur si le bouton était actif, bandeau du dossier s'il est grisé.
 check('le refus lui est expliqué', /dossier (est )?en cours de validation/i.test(refus), refus.slice(0, 600));
 
-// Les trois pièces restantes passent par l'API : les redéposer une à une dans
+// Les quatre pièces restantes passent par l'API : les redéposer une à une dans
 // le navigateur ne vérifierait rien de plus que le dépôt déjà contrôlé.
-for (const type of ['identity', 'insurance', 'vehicle_registration']) {
+for (const type of ['identity', 'insurance', 'vehicle_registration', 'insulated_bag']) {
   await appeler('/api/drivers/documents', {
     method: 'POST',
     jeton: jetonLivreur,
@@ -195,7 +195,7 @@ await pagePlateforme.waitForTimeout(2500);
 const liste = await pagePlateforme.locator('main').innerText();
 check('le livreur en attente est listé', liste.includes(`Karim ${uniq}`), liste.slice(0, 600));
 check('son état est affiché', /En attente|À valider/.test(liste), liste.slice(0, 600));
-check('le compte de pièces validées aussi', /0\/4 pièces validées/.test(liste), liste.slice(0, 600));
+check('le compte de pièces validées aussi', /0\/5 pièces validées/.test(liste), liste.slice(0, 600));
 
 titre('Elle ouvre le dossier');
 await pagePlateforme.click(`button:has-text("Karim ${uniq}")`);
@@ -237,19 +237,20 @@ const permisBis = (redepose.donnees?.data?.documents || []).filter((piece) => pi
 check('une seule pièce par type au dossier', permisBis.length === 1, `${permisBis.length}`);
 check('elle est de nouveau à examiner', permisBis[0]?.status === 'PENDING', permisBis[0]?.status);
 
-titre('Elle valide les quatre pièces');
+titre('Elle valide les cinq pièces');
 await pagePlateforme.reload();
 await pagePlateforme.waitForTimeout(2500);
 await pagePlateforme.click(`button:has-text("Karim ${uniq}")`);
 await pagePlateforme.waitForTimeout(2000);
 
-// Les libellés viennent du serveur : les relire évite de valider trois pièces
-// sur quatre parce qu'une apostrophe n'est pas la même.
+// Les libellés viennent du serveur : les relire évite de valider quatre pièces
+// sur cinq parce qu'une apostrophe n'est pas la même.
 const aValider = await pagePlateforme
   .locator('button[aria-label^="Valider "]')
   .evaluateAll((boutons) => boutons.map((b) => b.getAttribute('aria-label')));
 
-check('chaque pièce a son bouton de validation', aValider.length === 4, `${aValider.length}`);
+// Identité, permis, assurance, carte grise et sac isotherme.
+check('chaque pièce a son bouton de validation', aValider.length === 5, `${aValider.length}`);
 
 for (const etiquette of aValider) {
   const bouton = pagePlateforme.locator(`button[aria-label="${etiquette}"]`).first();

@@ -16,12 +16,16 @@ import {
   oublierRoles,
   sectionDeLaRoute,
   nettoyerPermissions,
+  codeDuLibelle,
+  voitLesFinances,
 } from "../permissions-plateforme.service";
 
 const roles = [
   { code: "SUPER_ADMIN", label: "SuperAdmin", permissions: {} },
   { code: "ADMIN", label: "Administrateur", permissions: { billing: "write", organizations: "read" } },
   { code: "SUPPORT", label: "Support", permissions: { "support-tickets": "write", organizations: "read" } },
+  { code: "MODERATION", label: "Modération", permissions: { organizations: "write" } },
+  { code: "FACTURATION", label: "Facturation", permissions: { billing: "write", payouts: "read" } },
 ];
 
 const rolesDrive = [
@@ -57,9 +61,12 @@ describe("permissions de l'équipe", () => {
     expect(sectionDeLaRoute("superowner", "/organizations/o1/tier")).toBe("formules");
     expect(sectionDeLaRoute("superowner", "/organizations/o1/suspend")).toBe("organizations");
     expect(sectionDeLaRoute("admin", "/tickets/t1")).toBe("support-tickets");
-    // Rouvrir un compte fermé va avec le fermer : même section.
-    expect(sectionDeLaRoute("admin", "/merchants/o1/close")).toBe("organizations");
-    expect(sectionDeLaRoute("admin", "/merchants/o1/restore-from-backup")).toBe("organizations");
+    // Fermer et rouvrir un compte fermé : un droit à part de la suspension.
+    expect(sectionDeLaRoute("admin", "/merchants/o1/suspend")).toBe("organizations");
+    expect(sectionDeLaRoute("admin", "/merchants/o1/unsuspend")).toBe("organizations");
+    expect(sectionDeLaRoute("admin", "/merchants/o1/close")).toBe("organizations-close");
+    expect(sectionDeLaRoute("admin", "/merchants/o1/restore-from-backup")).toBe("organizations-close");
+    expect(sectionDeLaRoute("superowner", "/organizations/o1/close")).toBe("organizations-close");
     expect(sectionDeLaRoute("superowner", "/admins")).toBeNull();
     expect(sectionDeLaRoute("superowner", "/roles/ADMIN")).toBeNull();
   });
@@ -75,6 +82,13 @@ describe("permissions de l'équipe", () => {
     expect(await passer("superowner", membre("SUPPORT"), "GET", "/billing")).toBe(403);
     expect(await passer("admin", membre("SUPPORT"), "PATCH", "/tickets/t1")).toBe(200);
     expect(await passer("superowner", membre("ADMIN"), "POST", "/orders/x/refund")).toBe(200);
+  });
+
+  it("laisse suspendre sans laisser fermer", async () => {
+    expect(await passer("admin", membre("MODERATION"), "POST", "/merchants/o1/suspend")).toBe(200);
+    expect(await passer("admin", membre("MODERATION"), "POST", "/merchants/o1/unsuspend")).toBe(200);
+    expect(await passer("admin", membre("MODERATION"), "POST", "/merchants/o1/close")).toBe(403);
+    expect(await passer("superowner", membre("MODERATION"), "POST", "/organizations/o1/close")).toBe(403);
   });
 
   it("réserve l'équipe et les rôles au superowner", async () => {
@@ -94,6 +108,29 @@ describe("permissions de l'équipe", () => {
     // Aucun rôle sur ZupEat : les routes de ZupEat restent fermées.
     const driveSeul = membre(null, "SUPER_ADMIN");
     expect(await passer("superowner", driveSeul, "GET", "/organizations")).toBe(403);
+  });
+
+  it("applique les droits d'un rôle créé par le superowner", async () => {
+    expect(await passer("superowner", membre("FACTURATION"), "POST", "/orders/x/refund")).toBe(200);
+    expect(await passer("superowner", membre("FACTURATION"), "GET", "/payouts")).toBe(200);
+    expect(await passer("superowner", membre("FACTURATION"), "POST", "/payouts/draw")).toBe(403);
+    expect(await passer("superowner", membre("FACTURATION"), "GET", "/organizations")).toBe(403);
+    expect(await passer("superowner", membre("SUPPRIME"), "GET", "/billing")).toBe(403);
+  });
+
+  it("ne montre les chiffres financiers qu'aux rôles qui ont Facturation", async () => {
+    expect(await voitLesFinances({ id: "s", isSuperOwner: true, isSystemAdmin: true, acces: {} } as any)).toBe(true);
+    expect(await voitLesFinances(membre("FACTURATION"))).toBe(true);
+    expect(await voitLesFinances(membre("ADMIN"))).toBe(true);
+    expect(await voitLesFinances(membre("SUPPORT"))).toBe(false);
+    expect(await voitLesFinances(undefined)).toBe(false);
+    // Facturation sur ZupEat n'ouvre pas les chiffres de ZupDrive.
+    expect(await voitLesFinances(membre("FACTURATION"), "DRIVE")).toBe(false);
+  });
+
+  it("tire un code stable du nom du rôle", () => {
+    expect(codeDuLibelle("Facturation & compta")).toBe("FACTURATION_COMPTA");
+    expect(codeDuLibelle("  Équipe réseau ")).toBe("EQUIPE_RESEAU");
   });
 
   it("écarte les sections et niveaux inconnus", () => {
