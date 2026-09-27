@@ -24,6 +24,7 @@ const roles = [
   { code: "SUPER_ADMIN", label: "SuperAdmin", permissions: {} },
   { code: "ADMIN", label: "Administrateur", permissions: { billing: "write", organizations: "read" } },
   { code: "SUPPORT", label: "Support", permissions: { "support-tickets": "write", organizations: "read" } },
+  { code: "MODERATION", label: "Modération", permissions: { organizations: "write" } },
   { code: "FACTURATION", label: "Facturation", permissions: { billing: "write", payouts: "read" } },
 ];
 
@@ -52,9 +53,12 @@ describe("permissions de l'équipe", () => {
     expect(sectionDeLaRoute("superowner", "/organizations/o1/tier")).toBe("formules");
     expect(sectionDeLaRoute("superowner", "/organizations/o1/suspend")).toBe("organizations");
     expect(sectionDeLaRoute("admin", "/tickets/t1")).toBe("support-tickets");
-    // Rouvrir un compte fermé va avec le fermer : même section.
-    expect(sectionDeLaRoute("admin", "/merchants/o1/close")).toBe("organizations");
-    expect(sectionDeLaRoute("admin", "/merchants/o1/restore-from-backup")).toBe("organizations");
+    // Fermer et rouvrir un compte fermé : un droit à part de la suspension.
+    expect(sectionDeLaRoute("admin", "/merchants/o1/suspend")).toBe("organizations");
+    expect(sectionDeLaRoute("admin", "/merchants/o1/unsuspend")).toBe("organizations");
+    expect(sectionDeLaRoute("admin", "/merchants/o1/close")).toBe("organizations-close");
+    expect(sectionDeLaRoute("admin", "/merchants/o1/restore-from-backup")).toBe("organizations-close");
+    expect(sectionDeLaRoute("superowner", "/organizations/o1/close")).toBe("organizations-close");
     expect(sectionDeLaRoute("superowner", "/admins")).toBeNull();
     expect(sectionDeLaRoute("superowner", "/roles/ADMIN")).toBeNull();
   });
@@ -70,6 +74,13 @@ describe("permissions de l'équipe", () => {
     expect(await passer("superowner", membre("SUPPORT"), "GET", "/billing")).toBe(403);
     expect(await passer("admin", membre("SUPPORT"), "PATCH", "/tickets/t1")).toBe(200);
     expect(await passer("superowner", membre("ADMIN"), "POST", "/orders/x/refund")).toBe(200);
+  });
+
+  it("laisse suspendre sans laisser fermer", async () => {
+    expect(await passer("admin", membre("MODERATION"), "POST", "/merchants/o1/suspend")).toBe(200);
+    expect(await passer("admin", membre("MODERATION"), "POST", "/merchants/o1/unsuspend")).toBe(200);
+    expect(await passer("admin", membre("MODERATION"), "POST", "/merchants/o1/close")).toBe(403);
+    expect(await passer("superowner", membre("MODERATION"), "POST", "/organizations/o1/close")).toBe(403);
   });
 
   it("réserve l'équipe et les rôles au superowner", async () => {
