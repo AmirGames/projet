@@ -150,6 +150,7 @@ export class MerchantProfileService {
 
     return {
       ...reste,
+      suggestions: await MerchantProfileService.suggestions(orgId, org.name),
       // Jamais l'IBAN lui-même : seulement de quoi reconnaître le compte.
       ibanMasque: ibanMasque(iban),
       ibanRenseigne: !!iban,
@@ -179,6 +180,49 @@ export class MerchantProfileService {
       manquePourEtrePaye: [!iban && "l'IBAN", !org.accountHolder && "le titulaire du compte"].filter(
         Boolean
       ) as string[],
+    };
+  }
+
+  /**
+   * De quoi pré-remplir un profil encore vide.
+   *
+   * À l'inscription, le commerçant a déjà donné le nom de son commerce,
+   * l'adresse et le téléphone de sa boutique, et son compte porte son nom et
+   * son adresse électronique. Le profil les lui redemandait sur une page
+   * blanche. Ce ne sont que des propositions : l'écran les place dans les
+   * champs vides, le commerçant les corrige s'il le faut, et rien n'est
+   * enregistré tant qu'il ne l'a pas fait lui-même.
+   */
+  static async suggestions(orgId: string, nomDuCommerce: string) {
+    const [boutique, responsable] = await Promise.all([
+      db.store.findFirst({
+        where: { orgId },
+        orderBy: { createdAt: "asc" },
+        select: { address: true, postalCode: true, city: true, countryCode: true, phone: true },
+      }),
+      db.membership.findFirst({
+        where: { orgId, role: "ADMIN" },
+        orderBy: { createdAt: "asc" },
+        select: { user: { select: { name: true, email: true } } },
+      }),
+    ]);
+
+    // Le nom tel que saisi à l'inscription : le premier mot pour le prénom,
+    // le reste pour le nom. Une proposition, que le commerçant corrige.
+    const [prenom, ...nom] = (responsable?.user.name || "").trim().split(/\s+/);
+    const pays = { FR: "France", BE: "Belgique" }[(boutique?.countryCode || "").toUpperCase()];
+
+    return {
+      legalName: nomDuCommerce || null,
+      billingAddress: boutique?.address || null,
+      billingPostalCode: boutique?.postalCode || null,
+      billingCity: boutique?.city || null,
+      billingCountry: pays || null,
+      ownerFirstName: prenom || null,
+      ownerLastName: nom.join(" ") || null,
+      ownerEmail: responsable?.user.email || null,
+      ownerPhone: boutique?.phone || null,
+      accountHolder: nomDuCommerce || null,
     };
   }
 
