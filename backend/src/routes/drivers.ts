@@ -424,13 +424,26 @@ const dateLongue = (d: Date) =>
   d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Brussels" });
 const euros = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
 
-/** Ce que la suppression implique pour ce livreur : courses en cours, dernier versement. */
-async function apercuSuppression(livreurId: string) {
-  const [coursesEnCours, solde] = await Promise.all([
-    db.orderDelivery.count({ where: { driverId: livreurId, status: { in: STATUTS_EN_COURSE } } }),
-    DriverPayoutService.soldeFinal(livreurId),
+/**
+ * Ce que la suppression implique pour ce livreur : courses en cours, dernier
+ * versement, et ce qui reste de son compte. Un compte Zupone est unique : la
+ * même adresse ouvre l'espace client ZupEat (et un espace commerçant s'il en
+ * a un). Seul le compte livreur est supprimé.
+ */
+async function apercuSuppression(livreur: { id: string; userId: string | null }) {
+  const [coursesEnCours, solde, commerces] = await Promise.all([
+    db.orderDelivery.count({ where: { driverId: livreur.id, status: { in: STATUTS_EN_COURSE } } }),
+    DriverPayoutService.soldeFinal(livreur.id),
+    livreur.userId ? db.membership.count({ where: { userId: livreur.userId } }) : 0,
   ]);
-  return { coursesEnCours, ...solde };
+  return { coursesEnCours, ...solde, restent: { client: true, commercant: commerces > 0 } };
+}
+
+/** « Votre compte client ZupEat reste actif » (et commerçant, s'il en a un). */
+function phraseAutresEspaces(restent: { commercant: boolean }) {
+  return restent.commercant
+    ? "Votre compte client ZupEat et votre espace commerçant restent actifs, avec la même adresse e-mail et le même mot de passe."
+    : "Votre compte client ZupEat reste actif : vous pouvez toujours commander avec la même adresse e-mail et le même mot de passe.";
 }
 
 // GET /drivers/me/suppression - Ce que la suppression implique, avant de confirmer
@@ -439,7 +452,7 @@ router.get("/me/suppression", authMiddleware, async (req: Request, res: Response
     const livreur = await livreurConnecte(req);
     res.json({
       success: true,
-      data: { ...(await apercuSuppression(livreur.id)), demandeeLe: livreur.suppressionDemandeeLe },
+      data: { ...(await apercuSuppression(livreur)), demandeeLe: livreur.suppressionDemandeeLe },
     });
   } catch (err) {
     next(err);
@@ -451,10 +464,13 @@ router.get("/me/suppression", authMiddleware, async (req: Request, res: Response
  *
  * Depuis que l'on peut créer un compte dans l'application, les stores
  * exigent de pouvoir l'y supprimer. Le compte est désactivé sur-le-champ
- * (plus de courses, plus de notifications) et la plateforme reçoit la
- * demande par le support : elle efface les données, sauf ce que la loi
- * oblige à garder (courses payées, pièces comptables), comme le dit la
- * politique de confidentialité.
+ * (plus de courses, plus de notifications livreur) et la plateforme reçoit
+ * la demande par le support : elle efface les données de livreur, sauf ce
+ * que la loi oblige à garder (courses payées, pièces comptables), comme le
+ * dit la politique de confidentialité.
+ *
+ * Seul le compte livreur disparaît : le compte Zupone (même e-mail, même
+ * mot de passe) reste, et avec lui l'espace client ZupEat.
  *
  * Ce qui est dû n'est pas perdu : les courses de la semaine sont arrêtées le
  * lundi suivant (00 h 00, Bruxelles) avec celles de tout le monde, et
@@ -466,7 +482,7 @@ router.post("/me/suppression", authMiddleware, async (req: Request, res: Respons
     const livreur = await livreurConnecte(req);
     const { motif } = z.object({ motif: z.string().max(500).optional() }).parse(req.body ?? {});
 
-    const apercu = await apercuSuppression(livreur.id);
+    const apercu = await apercuSuppression(livreur);
     if (apercu.coursesEnCours > 0) {
       throw new ApiError(
         409,
@@ -489,7 +505,7 @@ router.post("/me/suppression", authMiddleware, async (req: Request, res: Respons
       where: { id: livreur.id },
       data: {
         status: "INACTIVE",
-        statusReason: `Suppression du compte demandée le ${le.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}.`,
+        statusReason: `Suppression du compte livreur demandée le ${le.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}.`,
         suppressionDemandeeLe: le,
         isOnline: false,
         isAvailable: false,
@@ -497,8 +513,9 @@ router.post("/me/suppression", authMiddleware, async (req: Request, res: Respons
         pauseReason: null,
       },
     });
-    // Plus aucune notification vers ce téléphone.
-    if (livreur.userId) await db.pushDevice.deleteMany({ where: { userId: livreur.userId } });
+    // Plus aucune notification de l'application Livreur. Celles de
+    // l'application client ZupEat continuent : ce compte-là reste actif.
+    if (livreur.userId) await db.pushDevice.deleteMany({ where: { userId: livreur.userId, app: "delivery" } });
 
     const versement = apercu.versementLe
       ? `Dernier versement : ${euros(apercu.montantDu)}, arrêté le ${dateLongue(apercu.versementLe)} (IBAN •••${apercu.ibanFin}). Ne pas effacer les données avant ce versement.`
@@ -506,7 +523,7 @@ router.post("/me/suppression", authMiddleware, async (req: Request, res: Respons
     await DriverSupportService.envoyer(
       livreur.id,
       "DRIVER",
-      `🗑️ Je demande la suppression de mon compte livreur et de mes données.${
+      `🗑️ Je demande la suppression de mon compte livreur et de mes données de livreur (pièces, véhicule, IBAN, position). Mon compte client ZupEat reste actif : ne pas supprimer le compte utilisateur.${
         motif?.trim() ? `\nMotif : ${motif.trim()}` : ""
       }\n${versement}`,
       { deliveryId: null }
@@ -517,9 +534,11 @@ router.post("/me/suppression", authMiddleware, async (req: Request, res: Respons
     res.json({
       success: true,
       data: apercu,
-      message: apercu.versementLe
-        ? `Votre compte est désactivé. Vos ${euros(apercu.montantDu)} de courses vous seront versés avec les paiements du ${dateLongue(apercu.versementLe)}, sur votre compte •••${apercu.ibanFin}. Vos données seront ensuite supprimées sous 30 jours, sauf celles que la loi nous oblige à conserver.`
-        : "Votre compte est désactivé. Vos données seront supprimées sous 30 jours, sauf celles que la loi nous oblige à conserver.",
+      message: `Votre compte livreur est supprimé : vous ne recevrez plus de courses. ${
+        apercu.versementLe
+          ? `Vos ${euros(apercu.montantDu)} de courses vous seront versés avec les paiements du ${dateLongue(apercu.versementLe)}, sur votre compte •••${apercu.ibanFin}. Vos données de livreur seront ensuite supprimées sous 30 jours, sauf celles que la loi nous oblige à conserver.`
+          : "Vos données de livreur seront supprimées sous 30 jours, sauf celles que la loi nous oblige à conserver."
+      } ${phraseAutresEspaces(apercu.restent)}`,
     });
   } catch (err) {
     next(err);

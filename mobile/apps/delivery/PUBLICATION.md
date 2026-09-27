@@ -157,6 +157,9 @@ Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs Zupon
   ses courses de la semaine sont arrêtées le lundi suivant et versées sur son
   IBAN (sans IBAN valide, la demande est refusée jusqu'à ce qu'il le donne) ;
   ses données ne s'effacent qu'après ce dernier versement.
+  Seul le **compte livreur** est supprimé : le compte Zupone (même e-mail,
+  même mot de passe) reste, et avec lui le compte client ZupEat — c'est dit
+  au livreur avant et après la suppression.
 - **Politique de confidentialité** : `https://zupone.com/confidentialite`.
 - **Accès pour l'examen** : un compte livreur de démonstration, déjà validé.
 
@@ -170,7 +173,7 @@ Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs Zupon
   Idéalement, une commande de démonstration à proposer pendant l'examen.
 - Le compte se crée dans l'application : Apple exige donc sa **suppression
   dans l'application** (règle 5.1.1(v)). C'est fait : Paramètres › Vos données
-  › Supprimer mon compte. Préciser dans les notes d'examen que la suppression
+  › Supprimer mon compte livreur. Préciser dans les notes d'examen que la suppression
   définitive est traitée par la plateforme sous 30 jours.
 - Le compte de démonstration peut être créé depuis l'application, mais il
   doit être **validé** depuis l'espace plateforme pour recevoir des courses.

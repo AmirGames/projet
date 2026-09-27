@@ -47,6 +47,8 @@ interface DeletionPreview {
   versementLe: string | null;
   ibanValide: boolean;
   ibanFin: string | null;
+  /** Ce qui reste du compte Zupone : le client ZupEat toujours, le commerçant s'il en a un. */
+  restent?: { client: boolean; commercant: boolean };
 }
 
 const euros = (n: number) => `${n.toFixed(2).replace('.', ',')} €`;
@@ -65,7 +67,10 @@ function useAccountDeletion(token: string, onDeleted: () => void, onOpenAccount:
     setDeleting(true);
     try {
       const res = await apiFetch<{ message?: string }>('/api/drivers/me/suppression', token, { method: 'POST', body: {} });
-      Alert.alert('Compte supprimé', res.message || 'Votre compte est désactivé et vos données seront supprimées.');
+      Alert.alert(
+        'Compte livreur supprimé',
+        res.message || 'Votre compte livreur est supprimé. Votre compte client ZupEat reste actif.'
+      );
       onDeleted();
     } catch (e) {
       fail(e);
@@ -106,12 +111,17 @@ function useAccountDeletion(token: string, onDeleted: () => void, onOpenAccount:
       preview.montantDu > 0 && preview.versementLe
         ? `Vos ${euros(preview.montantDu)} de courses vous seront versés avec les paiements du ${jour(preview.versementLe)}, sur votre compte •••${preview.ibanFin}. `
         : '';
+    // Seul le compte livreur disparaît : le compte Zupone reste, et avec lui
+    // l'espace client ZupEat (même e-mail, même mot de passe).
+    const restent = preview.restent?.commercant
+      ? 'Votre compte client ZupEat et votre espace commerçant restent actifs.'
+      : 'Votre compte client ZupEat reste actif : vous pourrez toujours commander avec la même adresse e-mail.';
     Alert.alert(
-      'Supprimer votre compte ?',
-      `Votre compte sera désactivé tout de suite : vous ne recevrez plus de courses. ${versement}Vos données seront ensuite supprimées sous 30 jours, sauf celles que la loi nous oblige à garder (courses payées, pièces comptables). Cette action est définitive.`,
+      'Supprimer votre compte livreur ?',
+      `Vous supprimez votre compte livreur : il sera désactivé tout de suite et vous ne recevrez plus de courses. ${versement}Vos données de livreur (pièces, véhicule, IBAN) seront ensuite supprimées sous 30 jours, sauf celles que la loi nous oblige à garder (courses payées, pièces comptables).\n\n${restent}`,
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Supprimer mon compte', style: 'destructive', onPress: run },
+        { text: 'Supprimer mon compte livreur', style: 'destructive', onPress: run },
       ]
     );
   };
@@ -255,7 +265,10 @@ export default function SettingsScreen({
             {deletion.deleting ? (
               <ActivityIndicator color={COLORS.danger} />
             ) : (
-              <Text style={[styles.linkText, { color: COLORS.danger }]}>Supprimer mon compte</Text>
+              <>
+                <Text style={[styles.linkText, { color: COLORS.danger }]}>Supprimer mon compte livreur</Text>
+                <Text style={styles.linkHint}>Votre compte client ZupEat reste actif.</Text>
+              </>
             )}
           </TouchableOpacity>
         </Card>
@@ -274,6 +287,7 @@ const styles = themedStyles(() => ({
   testText: { fontSize: 15, fontWeight: '600', color: COLORS.link },
   linkRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   linkText: { fontSize: 15, fontWeight: '600', color: COLORS.link },
+  linkHint: { fontSize: 13, color: COLORS.secondary, marginTop: 2 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 14,

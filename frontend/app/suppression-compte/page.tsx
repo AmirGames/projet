@@ -14,6 +14,8 @@ interface Apercu {
   ibanValide: boolean;
   ibanFin: string | null;
   demandeeLe: string | null;
+  /** Le compte Zupone reste : client ZupEat toujours, commerçant s'il en a un. */
+  restent?: { client: boolean; commercant: boolean };
 }
 
 const euros = (n: number) => `${n.toFixed(2).replace('.', ',')} €`;
@@ -117,18 +119,20 @@ export default function SuppressionCompte() {
           <>
             <div className="text-slate-600 text-sm space-y-3 mb-6">
               <p>
-                La suppression concerne votre compte <strong>Zupone Livreur</strong>. Vous pouvez aussi la demander depuis
-                l’application : <em>Paramètres › Vos données › Supprimer mon compte</em>.
+                Vous supprimez uniquement votre <strong>compte livreur</strong>.{' '}
+                <strong>Votre compte client ZupEat reste actif</strong> : vous pourrez toujours commander avec la même
+                adresse e-mail et le même mot de passe. Vous pouvez aussi faire la demande depuis l’application :{' '}
+                <em>Paramètres › Vos données › Supprimer mon compte livreur</em>.
               </p>
               <ul className="list-disc pl-5 space-y-1">
-                <li>Votre compte est désactivé aussitôt : plus de courses, plus de notifications.</li>
+                <li>Votre compte livreur est désactivé aussitôt : plus de courses, plus de notifications livreur.</li>
                 <li>
                   <strong>Ce qui vous est dû n’est pas perdu.</strong> Les courses de la semaine (du lundi 00 h 00 au
                   dimanche 23 h 59) sont versées avec les paiements du lundi suivant, sur votre IBAN.
                 </li>
                 <li>
-                  Vos données (identité, pièces, téléphone, position) sont ensuite supprimées sous 30 jours. Seules
-                  restent celles que la loi nous oblige à garder : courses payées et pièces comptables (10 ans).
+                  Vos données de livreur (pièces, véhicule, IBAN, position) sont ensuite supprimées sous 30 jours.
+                  Seules restent celles que la loi nous oblige à garder : courses payées et pièces comptables (10 ans).
                 </li>
               </ul>
             </div>
@@ -204,6 +208,11 @@ export default function SuppressionCompte() {
                   ) : (
                     <p>Aucun versement en attente.</p>
                   )}
+                  <p className="text-green-800">
+                    {apercu.restent?.commercant
+                      ? 'Votre compte client ZupEat et votre espace commerçant restent actifs.'
+                      : 'Votre compte client ZupEat reste actif.'}
+                  </p>
                 </div>
 
                 <div>
@@ -226,7 +235,7 @@ export default function SuppressionCompte() {
                   disabled={enCours || bloque}
                   className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
                 >
-                  {enCours ? 'Envoi…' : 'Supprimer définitivement mon compte'}
+                  {enCours ? 'Envoi…' : 'Supprimer mon compte livreur'}
                 </button>
               </div>
             )}

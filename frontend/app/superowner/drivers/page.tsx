@@ -370,6 +370,10 @@ export default function LivreursPage() {
                           🗑️ Suppression demandée le{' '}
                           {new Date(dossier.suppression.demandeeLe).toLocaleDateString('fr-FR')}
                         </p>
+                        <p className="mt-1">
+                          Seul le compte livreur est à supprimer : son compte client ZupEat reste actif (ne supprimez
+                          pas le compte utilisateur).
+                        </p>
                         {dossier.suppression.montantDu > 0 ? (
                           <p className="mt-1">
                             Reste à verser : <strong>{euro(dossier.suppression.montantDu)}</strong>
@@ -385,7 +389,7 @@ export default function LivreursPage() {
                             N’effacez pas ses données avant ce versement.
                           </p>
                         ) : (
-                          <p className="mt-1">Rien à lui verser : ses données peuvent être effacées.</p>
+                          <p className="mt-1">Rien à lui verser : ses données de livreur peuvent être effacées.</p>
                         )}
                       </div>
                     )}

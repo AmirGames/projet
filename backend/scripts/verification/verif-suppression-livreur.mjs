@@ -47,6 +47,8 @@ check('sans accepter les conditions, refusé', sansConditions.status === 400, `s
 await validerLivreur(D, S);
 await patch('/api/drivers/availability', { isOnline: true }, D);
 await post('/api/push-devices', { token: `ExponentPushToken[${uniq}]`, platform: 'android', app: 'delivery' }, D);
+// Le même compte a aussi l'application client ZupEat sur son téléphone.
+await post('/api/push-devices', { token: `ExponentPushToken[client-${uniq}]`, platform: 'android', app: 'customer' }, D);
 
 titre('La demande de suppression');
 const refusSansJeton = await post('/api/drivers/me/suppression', {});
@@ -63,7 +65,20 @@ check('il passe hors ligne', (await sqlScalaire(`SELECT "isOnline" FROM "Driver"
 const appareils = await sqlScalaire(
   `SELECT count(*) FROM "PushDevice" p JOIN "User" u ON u.id = p."userId" WHERE u.email = '${email}'`
 );
-check('plus aucune notification vers son téléphone', appareils === '0', appareils);
+check('plus aucune notification livreur', appareils === '1', appareils);
+const appareilClient = await sqlScalaire(
+  `SELECT app FROM "PushDevice" p JOIN "User" u ON u.id = p."userId" WHERE u.email = '${email}'`
+);
+check('celles de l’application client ZupEat continuent', appareilClient === 'customer', appareilClient);
+check('le message dit que le compte client ZupEat reste actif', /compte client ZupEat reste actif/.test(reponse?.message || ''), reponse?.message);
+check('l’aperçu aussi', (await j(await get('/api/drivers/me/suppression', D)))?.data?.restent?.client === true);
+
+titre('Seul le compte livreur est supprimé');
+const reconnexion = await post('/api/auth/login', { email, password: 'Password123!' });
+const recompte = await j(reconnexion);
+check('le compte Zupone se connecte toujours', reconnexion.status === 200 && !!recompte?.accessToken, `statut ${reconnexion.status}`);
+const client = await get('/api/client/me', recompte?.accessToken);
+check('l’espace client ZupEat reste ouvert', client.status === 200, `statut ${client.status}`);
 const message = await sqlScalaire(
   `SELECT body FROM "DriverSupportMessage" m JOIN "Driver" d ON d.id = m."driverId" WHERE d.email = '${email}' ORDER BY m."createdAt" DESC LIMIT 1`
 );
@@ -72,7 +87,7 @@ check('la plateforme reçoit la demande', /suppression/.test(message) && /J’ar
 const enLigne = await patch('/api/drivers/availability', { isOnline: true }, D);
 check('il ne peut plus passer en ligne', enLigne.status !== 200, `statut ${enLigne.status}`);
 const moi = (await j(await get('/api/drivers/me', D)))?.data;
-check('son écran le lui dit', moi?.status === 'INACTIVE' && /Suppression du compte demandée/.test(moi?.statusReason || ''), JSON.stringify(moi?.statusReason));
+check('son écran le lui dit', moi?.status === 'INACTIVE' && /Suppression du compte livreur demandée/.test(moi?.statusReason || ''), JSON.stringify(moi?.statusReason));
 
 // ===== Supprimer son compte ne fait pas perdre la semaine =====
 // Un livreur livre dans la semaine, puis supprime son compte le samedi : ses
