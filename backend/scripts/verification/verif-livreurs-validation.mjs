@@ -171,6 +171,25 @@ for (const piece of vue.documents) {
   );
 }
 
+titre('Sans justificatif de sac isotherme, pas de validation');
+const sansSac = await j(await get(`/api/superowner/drivers/${enAttente.id}`, TP));
+check(
+  'le dossier reste incomplet',
+  sansSac?.dossierComplet === false && JSON.stringify(sansSac?.piecesManquantes) === '["insulated_bag"]',
+  JSON.stringify(sansSac?.piecesManquantes)
+);
+const refusSac = await post(`/api/superowner/drivers/${enAttente.id}/approve`, {}, TP);
+check(
+  'la validation est refusée en nommant le sac isotherme',
+  refusSac.status === 400 && /Sac isotherme/.test((await j(refusSac))?.error || ''),
+  `statut ${refusSac.status}`
+);
+await post('/api/drivers/documents', { type: 'insulated_bag', documentUrl: 'https://exemple.fr/sac.jpg' }, D);
+const avecSac = await j(await get(`/api/superowner/drivers/${enAttente.id}`, TP));
+const sac = (avecSac?.documents || []).find((piece) => piece.type === 'insulated_bag');
+check('le justificatif arrive au dossier', sac?.libelle === 'Sac isotherme (photo du sac ou facture)', JSON.stringify(sac));
+await patch(`/api/superowner/drivers/${enAttente.id}/documents/${sac?.id}`, { approuve: true }, TP);
+
 const apres = await j(await get(`/api/superowner/drivers/${enAttente.id}`, TP));
 check('le dossier devient complet', apres?.dossierComplet === true, JSON.stringify(apres?.piecesManquantes));
 
@@ -259,8 +278,8 @@ check(
 
 titre('À vélo, on n’exige ni permis ni carte grise');
 check(
-  'une seule pièce est attendue',
-  jamaisValide?.piecesAttendues === 1,
+  'deux pièces sont attendues : identité et sac isotherme',
+  jamaisValide?.piecesAttendues === 2,
   `${jamaisValide?.piecesAttendues}`
 );
 

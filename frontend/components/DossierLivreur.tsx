@@ -286,7 +286,10 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                   <label htmlFor="piece-fichier" className="block text-sm text-gray-400 mb-1">
                     Sélectionner un fichier (JPG, PNG, PDF)
                   </label>
+                  {/* Une clé par mode : sans elle, React réutilisait ce champ
+                      libre pour le champ du lien (contrôlé), et le signalait. */}
                   <input
+                    key="fichier"
                     id="piece-fichier"
                     type="file"
                     accept=".jpg,.jpeg,.png,.webp,.pdf"
@@ -305,6 +308,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                     Lien vers le document
                   </label>
                   <input
+                    key="lien"
                     id="piece-lien"
                     type="url"
                     value={formulaire.documentUrl}
