@@ -545,7 +545,16 @@ export default function CustomerApp() {
           address={address}
           pushEnabled={pushSetup?.status === 'enabled'}
           pushInfo={pushSetup ? (pushSetup.status === 'enabled' ? undefined : pushSetup.reason) : 'Vérification…'}
+          token={token || null}
           onChangeAddress={() => pushPage({ kind: 'address' })}
+          onAccountDeleted={() => {
+            // Plus rien de ce compte sur le téléphone : paniers et adresse compris.
+            setCarts({});
+            saveCarts({});
+            setAddress(null);
+            saveAddress(null);
+            handleLogout();
+          }}
           onBack={back}
         />
       );

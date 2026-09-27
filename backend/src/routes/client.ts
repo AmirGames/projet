@@ -12,6 +12,7 @@ import { genreDuCommerce } from "../services/store-type.service";
 import { trierProduitsSelonCategorie } from "../services/category.service";
 import { DeliveryZoneService } from "../services/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";
+import { CustomerAccountService } from "../services/customer-account.service";
 import { avisARedemander, avisRestaurantParCommerce } from "../services/avis-client.service";
 import { avecLaVraieNote } from "../services/review.service";
 import { CustomerCartService, panierSchema } from "../services/customer-cart.service";
@@ -580,6 +581,39 @@ const profilSchema = z.object({
   address: z.string().optional(),
   city: z.string().optional(),
   postalCode: z.string().optional(),
+});
+
+/**
+ * GET /client/me/suppression - Ce que la suppression du compte ZupEat implique
+ *
+ * Les stores exigent de pouvoir supprimer dans l'application le compte qu'on
+ * y a créé. Seul le compte ZupEat est concerné : un compte livreur ou un
+ * espace commerçant rattaché à la même adresse reste actif, et on le dit
+ * avant de confirmer (voir customer-account.service.ts).
+ */
+router.get("/me/suppression", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.userId || (req as any).user?.userId;
+    res.json({ success: true, data: CustomerAccountService.public(await CustomerAccountService.apercu(userId)) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /client/me/suppression - Supprimer son compte ZupEat
+router.post("/me/suppression", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.userId || (req as any).user?.userId;
+    const { motif } = z.object({ motif: z.string().max(500).optional() }).parse(req.body ?? {});
+    const apercu = await CustomerAccountService.supprimer(userId, motif);
+    res.json({
+      success: true,
+      data: CustomerAccountService.public(apercu),
+      message: CustomerAccountService.message(apercu),
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // GET /api/client/me - Profil du client connecté
