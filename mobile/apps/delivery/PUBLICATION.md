@@ -175,6 +175,19 @@ Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs Zupon
   dans l'application** (règle 5.1.1(v)). C'est fait : Paramètres › Vos données
   › Supprimer mon compte livreur. Préciser dans les notes d'examen que la suppression
   définitive est traitée par la plateforme sous 30 jours.
+- **Suppression limitée au compte livreur** (choix assumé : le compte client
+  ZupEat n'est pas supprimé). À coller dans les notes d'examen :
+
+  > The account created and managed in this app is the courier (driver)
+  > account. It can be deleted in the app: Settings › Vos données › Supprimer
+  > mon compte livreur (also on https://zupone.com/suppression-compte). This
+  > deletes the courier account and its data (documents, vehicle, bank
+  > details, location); outstanding earnings are paid on the following Monday,
+  > then the courier data is erased within 30 days. The same login can also
+  > be used on our separate consumer service ZupEat (food ordering), which is
+  > not part of this app and remains available; its account can be deleted
+  > from the ZupEat app.
+
 - Le compte de démonstration peut être créé depuis l'application, mais il
   doit être **validé** depuis l'espace plateforme pour recevoir des courses.
 
