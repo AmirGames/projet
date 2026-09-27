@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { MerchantPayoutService } from "../services/merchant-payout.service";
+import { MerchantPayoutService, horsReversements, reversementsDepuis } from "../services/merchant-payout.service";
 import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
@@ -306,7 +306,9 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
 
         const commandes = storeIds.length
           ? await db.order.findMany({
-              where: { storeId: { in: storeIds }, createdAt: { gte: debutMois } },
+              // Les commandes réglées par les reversements du lundi ne se
+              // facturent plus : la commission y est déjà retenue.
+              where: { storeId: { in: storeIds }, createdAt: { gte: debutMois }, AND: [horsReversements()] },
               select: {
                 totalAmount: true,
                 feesAmount: true,
@@ -428,6 +430,9 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
         activeSubscriptions: organisations.filter((o) => o.status === "ACTIVE").length,
       },
       pagination: { total: lignes.length, limit, offset },
+      // À partir de cette date, la commission se retient sur les reversements
+      // du lundi : elle n'apparaît plus ici.
+      reversementsDepuis: reversementsDepuis(),
     });
   } catch (err) {
     next(err);
@@ -500,6 +505,8 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
             storeId: { in: storeIds },
             createdAt: { gte: debutMois, lt: finMois },
             deletedAt: null,
+            // Réglées par les reversements du lundi : déjà retenues.
+            AND: [horsReversements()],
           },
           select: {
             id: true,

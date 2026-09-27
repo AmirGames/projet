@@ -91,6 +91,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 export default function BillingPage() {
   const t = useTranslations('superownerBilling');
   const [billings, setBillings] = useState<BillingData[]>([]);
+  const [reversementsDepuis, setReversementsDepuis] = useState<string | null>(null);
   const [summary, setSummary] = useState({ totalRevenue: 0, pendingAmount: 0, activeSubscriptions: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -120,6 +121,7 @@ export default function BillingPage() {
         data.summary ?? { totalRevenue: 0, pendingAmount: 0, activeSubscriptions: 0 }
       );
       setTotal(data.pagination?.total ?? data.billings?.length ?? 0);
+      setReversementsDepuis((data as { reversementsDepuis?: string | null }).reversementsDepuis ?? null);
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('genericError'));
@@ -178,6 +180,16 @@ export default function BillingPage() {
         </h1>
         <p className="text-gray-400 mt-2">{t('subtitle')}</p>
       </div>
+
+      {/* La commission se retient désormais sur les reversements du lundi :
+          la facturer ici aussi la ferait payer deux fois. */}
+      {reversementsDepuis && (
+        <div className="p-4 bg-blue-900/20 text-blue-300 rounded-lg border border-blue-500/20 text-sm">
+          Depuis le {new Date(reversementsDepuis).toLocaleDateString('fr-FR')}, la commission et les frais
+          sont retenus chaque semaine sur les reversements (page Versements SEPA). Cette page ne compte
+          plus que les commandes d&apos;avant cette date.
+        </div>
+      )}
 
       {error && (
         <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">

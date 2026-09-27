@@ -48,6 +48,22 @@ function debutDesReversements(): Date | null {
   return date ? debutDeSemaine(new Date(`${date}T12:00:00Z`)) : null;
 }
 
+/**
+ * Les commandes que l'ancienne facturation mensuelle peut encore réclamer.
+ *
+ * Depuis les reversements, la commission et les frais se retiennent chaque
+ * semaine sur ce qui est reversé au commerçant : les lui facturer aussi en fin
+ * de mois les lui ferait payer deux fois. La facturation ne compte plus que les
+ * commandes d'avant le premier lundi des reversements.
+ */
+export function horsReversements() {
+  const debut = debutDesReversements();
+  return debut ? { createdAt: { lt: debut } } : {};
+}
+
+/** Le premier lundi des reversements, s'ils sont activés. */
+export const reversementsDepuis = () => debutDesReversements();
+
 /** Les commandes d'une organisation qui attendent d'être reversées. */
 function commandesAReverser(orgId: string, fin: Date) {
   const debut = debutDesReversements();
