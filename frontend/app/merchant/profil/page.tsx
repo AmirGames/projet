@@ -414,6 +414,17 @@ export default function ProfilCommercantPage() {
               {profil.validation.piecesAFournir.map((piece) => piece.libelle).join(', ')}.
             </p>
           )}
+          {/* Tout est déposé : le dire franchement. La liste « en cours
+              d'examen » seule laissait le commerçant se demander s'il lui
+              manquait encore quelque chose. */}
+          {profil.validation.piecesAFournir?.length === 0 &&
+            profil.validation.piecesEnExamen?.length > 0 && (
+              <p className="flex items-center gap-2 font-semibold text-green-300">
+                <Check size={16} aria-hidden />
+                Toutes vos pièces obligatoires sont déposées. La plateforme les examine et
+                vous prévient dans votre espace dès qu&apos;elles sont validées.
+              </p>
+            )}
           {profil.validation.piecesEnExamen?.length > 0 && (
             <p className="text-blue-200/80">
               En cours d&apos;examen :{' '}
