@@ -21,7 +21,6 @@ const CHEMINS_AUTORISES = [
   "/api/auth/me",
   "/api/superowner",
   "/api/admin",
-  "/api/super-admin",
 ];
 
 async function etatMaintenance() {

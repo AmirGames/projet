@@ -3,15 +3,13 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Crown, LayoutDashboard, Shield, ShoppingBag, Store, Truck } from 'lucide-react';
+import { Check, ChevronDown, Crown, ShoppingBag, Store, Truck } from 'lucide-react';
 import { preparerEspace, useEspacesAccessibles, type Espace } from '@/lib/espaces';
 
 const ICONES: Record<Espace, typeof Store> = {
   client: ShoppingBag,
   driver: Truck,
   merchant: Store,
-  admin: LayoutDashboard,
-  'super-admin': Shield,
   superowner: Crown,
 };
 

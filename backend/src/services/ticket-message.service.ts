@@ -229,7 +229,7 @@ export class TicketMessageService {
         select: { email: true },
       });
       recipients = admins.map((a) => a.email);
-      link = `/super-admin/tickets`;
+      link = `/superowner/support-tickets`;
     }
 
     const unique = [...new Set(recipients)].filter((email) => email !== authorEmail);

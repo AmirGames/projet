@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-export type Espace = 'client' | 'driver' | 'merchant' | 'admin' | 'super-admin' | 'superowner';
+export type Espace = 'client' | 'driver' | 'merchant' | 'superowner';
 
 export interface EspaceAccessible {
   id: Espace;
@@ -17,8 +17,6 @@ const ESPACES: Record<Espace, Omit<EspaceAccessible, 'id'>> = {
   client: { libelle: 'Espace client', href: '/client' },
   driver: { libelle: 'Espace livreur', href: '/driver' },
   merchant: { libelle: 'Espace commerçant', href: '/merchant' },
-  admin: { libelle: 'Administration', href: '/admin/dashboard' },
-  'super-admin': { libelle: 'Super Admin', href: '/super-admin' },
   superowner: { libelle: 'Super Owner', href: '/superowner' },
 };
 
@@ -70,8 +68,7 @@ function lireJeton(): string | null {
 
 function espacesDuCompte(donnees: RolesCompte): EspaceAccessible[] {
   // Un membre de l'équipe (SuperAdmin, Administrateur, Support) travaille dans
-  // l'espace de la plateforme, sous le nom de son groupe ; les anciens espaces
-  // d'administration restent au superowner.
+  // l'espace de la plateforme, sous le nom de son groupe.
   const membreEquipe = !donnees.user?.isSuperOwner && !!donnees.user?.platformRole;
   const ouverts: Record<Espace, boolean> = {
     // Tout compte peut commander : la fiche client est créée à la première
@@ -79,8 +76,6 @@ function espacesDuCompte(donnees: RolesCompte): EspaceAccessible[] {
     client: true,
     driver: !!donnees.roles?.driver?.active,
     merchant: !!donnees.roles?.merchant?.active,
-    admin: !!donnees.user?.isSystemAdmin && !membreEquipe,
-    'super-admin': !!donnees.user?.isSystemAdmin && !membreEquipe,
     // L'équipe de la plateforme (SuperAdmin, Administrateur, Support) y entre
     // aussi ; ce qu'elle y voit dépend des permissions de son groupe.
     superowner: !!donnees.user?.isSuperOwner || !!donnees.user?.isSystemAdmin,

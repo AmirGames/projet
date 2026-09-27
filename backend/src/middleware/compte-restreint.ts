@@ -54,7 +54,6 @@ const CHEMINS_OUVERTS_SI_SUSPENDU = ["/api/merchant-profile"];
 const CHEMINS_HORS_PORTEE = [
   "/api/superowner",
   "/api/admin",
-  "/api/super-admin",
   "/api/client",
   "/api/drivers",
 ];

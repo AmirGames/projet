@@ -1968,30 +1968,6 @@
   "merchantAuth": {
     "myStores": "Ma Boutique"
   },
-  "superadminDashboard": {
-    "accessDenied": "Erreur d'accès",
-    "activeMerchants": "Commerçants Actifs",
-    "commission": "Commission :",
-    "investigate": "À investiguer",
-    "loading": "Chargement...",
-    "maintenanceEnabled": "Mode maintenance activé",
-    "manageMerchants": "Gérer les commerçants",
-    "of": "dont",
-    "open": "ouvertes",
-    "openTickets": "Tickets ouverts",
-    "orders": "Commandes",
-    "outOf": "sur",
-    "quickActions": "Actions rapides",
-    "revenue": "Revenu",
-    "stores": "Boutiques",
-    "subtitle": "Vue d'ensemble du système",
-    "supportPending": "Support en attente",
-    "suspendedMerchants": "Commerçants suspendus",
-    "systemSettings": "Paramètres système",
-    "title": "Tableau de bord",
-    "total": "total",
-    "viewSupport": "Voir le support"
-  },
   "addressAutocomplete": {
     "placeholder": "Saisissez une adresse",
     "suggestionsUnavailable": "Suggestions indisponibles — saisissez l'adresse manuellement."

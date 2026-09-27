@@ -118,7 +118,7 @@ export const PERMISSIONS_PAR_DEFAUT: Record<RolePlateforme, Permissions> = {
  * qui correspond l'emporte ; une route absente d'ici reste réservée au
  * superowner — c'est le cas de la gestion de l'équipe et des rôles.
  */
-export type Routeur = "superowner" | "admin" | "super-admin";
+export type Routeur = "superowner" | "admin";
 
 const ROUTES: Record<Routeur, [RegExp, string][]> = {
   superowner: [
@@ -159,12 +159,6 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
     [/^\/access-logs/, "access-logs"],
     [/^\/notifications/, "notifications"],
     [/^\/audit-logs/, "audit-logs"],
-  ],
-  "super-admin": [
-    [/^\/dashboard/, "dashboard"],
-    [/^\/merchants/, "organizations"],
-    [/^\/users/, "members"],
-    [/^\/access-logs/, "access-logs"],
   ],
 };
 

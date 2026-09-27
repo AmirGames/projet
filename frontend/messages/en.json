@@ -1968,30 +1968,6 @@
   "merchantAuth": {
     "myStores": "My store"
   },
-  "superadminDashboard": {
-    "accessDenied": "Access error",
-    "activeMerchants": "Active merchants",
-    "commission": "Commission:",
-    "investigate": "To investigate",
-    "loading": "Loading...",
-    "maintenanceEnabled": "Maintenance mode enabled",
-    "manageMerchants": "Manage merchants",
-    "of": "of which",
-    "open": "open",
-    "openTickets": "Open tickets",
-    "orders": "Orders",
-    "outOf": "out of",
-    "quickActions": "Quick actions",
-    "revenue": "Revenue",
-    "stores": "Stores",
-    "subtitle": "System overview",
-    "supportPending": "Pending support",
-    "suspendedMerchants": "Suspended merchants",
-    "systemSettings": "System settings",
-    "title": "Dashboard",
-    "total": "total",
-    "viewSupport": "View support"
-  },
   "addressAutocomplete": {
     "placeholder": "Enter an address",
     "suggestionsUnavailable": "Suggestions unavailable — enter the address manually."

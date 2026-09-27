@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Settings, Key, Copy, Save, Database, Webhook, Wrench } from 'lucide-react';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import SelecteurTheme from '@/components/SelecteurTheme';
 
 interface ApiKey {
   id: string;
@@ -547,6 +548,8 @@ export default function SystemConfigPage() {
           </div>
         </>
       )}
+
+      <SelecteurTheme />
     </div>
   );
 }

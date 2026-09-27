@@ -79,7 +79,7 @@ describe("permissions de l'équipe", () => {
 
   it("réserve l'équipe et les rôles au superowner", async () => {
     expect(await passer("superowner", membre("SUPER_ADMIN"), "GET", "/admins")).toBe(403);
-    expect(await passer("super-admin", membre("ADMIN"), "POST", "/admins")).toBe(403);
+    expect(await passer("admin", membre("ADMIN"), "POST", "/admins")).toBe(403);
   });
 
   it("refuse un administrateur sans rôle", async () => {

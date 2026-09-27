@@ -46,7 +46,6 @@ const CHEMINS_PUBLICS = [
 const CHEMINS_HORS_PORTEE = [
   "/api/superowner",
   "/api/admin",
-  "/api/super-admin",
   "/api/drivers",
   "/api/notifications",
   "/api/support",

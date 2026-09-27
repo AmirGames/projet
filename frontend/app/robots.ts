@@ -13,7 +13,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/merchant', '/driver', '/superowner', '/super-admin', '/admin', '/client', '/dashboard', '/checkout', '/track'],
+      disallow: ['/merchant', '/driver', '/superowner', '/client', '/dashboard', '/checkout', '/track'],
     },
     sitemap: new URL('/sitemap.xml', base).toString(),
   };

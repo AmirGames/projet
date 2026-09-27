@@ -39,7 +39,6 @@ import productMediaRouter from "./routes/product-media";
 import productSeoRouter from "./routes/product-seo";
 import productTagRouter from "./routes/product-tag";
 import adminRouter from "./routes/admin";
-import superAdminRouter from "./routes/super-admin";
 import superOwnerRouter from "./routes/superowner";
 import pagesLegalesRouter from "./routes/pages-legales";
 import clientRouter from "./routes/client";
@@ -224,7 +223,6 @@ export function createApp(): Express {
   app.use("/api/product-seo", productSeoRouter);
   app.use("/api/product-tags", productTagRouter);
   app.use("/api/admin", adminRouter);
-  app.use("/api/super-admin", superAdminRouter);
   app.use("/api/superowner", superOwnerRouter);
   app.use("/api/pages-legales", pagesLegalesRouter);
   app.use("/api/client", clientRouter);

@@ -57,7 +57,7 @@ export const CLOISONNEMENT_ACTIF = Boolean(
  * injoignable.
  */
 const SEGMENTS: Record<EspaceHeberge, string[]> = {
-  groupe: ['superowner', 'super-admin', 'admin'],
+  groupe: ['superowner'],
   pro: [
     'merchant',
     'signup', // inscription commerçant : elle crée une organisation
