@@ -41,6 +41,8 @@ interface DeliveryZone {
   opacity: number;
   baseFee: number;
   minOrder: number;
+  /** Livraison offerte dès ce montant d'articles ; nul pour jamais. */
+  freeAbove?: number | null;
   deliveryMinutes: number | null;
   isActive: boolean;
 }
@@ -63,6 +65,7 @@ export default function DeliveryZonesPage() {
     opacity: '0.35',
     baseFee: '',
     minOrder: '',
+    freeAbove: '',
     deliveryMinutes: '',
   });
   const [formError, setFormError] = useState('');
@@ -288,6 +291,8 @@ export default function DeliveryZonesPage() {
         opacity: parseFloat(formData.opacity),
         baseFee: parseFloat(formData.baseFee),
         minOrder: formData.minOrder ? parseFloat(formData.minOrder) : 0,
+        // Vide : la livraison n'est jamais offerte d'office.
+        freeAbove: formData.freeAbove ? parseFloat(formData.freeAbove) : null,
         deliveryMinutes: formData.deliveryMinutes ? parseInt(formData.deliveryMinutes, 10) : null,
       };
 
@@ -316,7 +321,7 @@ export default function DeliveryZonesPage() {
         await fetchZones();
         setShowForm(false);
         setEditingZone(null);
-        setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', deliveryMinutes: '' }); setDessin(null);
+        setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', freeAbove: '', deliveryMinutes: '' }); setDessin(null);
       } else {
         // Un refus muet laissait croire que la zone était enregistrée.
         setFormError(donnees?.error || t('saveError'));
@@ -360,6 +365,7 @@ export default function DeliveryZonesPage() {
       opacity: (zone.opacity ?? 0.35).toString(),
       baseFee: zone.baseFee.toString(),
       minOrder: zone.minOrder?.toString() || '',
+      freeAbove: zone.freeAbove != null ? zone.freeAbove.toString() : '',
       deliveryMinutes: zone.deliveryMinutes?.toString() || '',
     });
     // On ne repart pas en dessin : le tracé existant reste tel quel, sauf si
@@ -374,7 +380,7 @@ export default function DeliveryZonesPage() {
 
   const handleAddZone = () => {
     setEditingZone(null);
-    setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', deliveryMinutes: '' }); setDessin(null);
+    setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', freeAbove: '', deliveryMinutes: '' }); setDessin(null);
     setFormError('');
     setShowForm(true);
   };
@@ -626,6 +632,21 @@ export default function DeliveryZonesPage() {
                 />
               </div>
               <div>
+                <label htmlFor="zone-offerte" className="text-slate-300 text-sm block mb-2">
+                  Livraison offerte dès (€)
+                </label>
+                <input
+                  id="zone-offerte"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.freeAbove}
+                  onChange={(e) => setFormData({ ...formData, freeAbove: e.target.value })}
+                  placeholder="Jamais"
+                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
+                />
+              </div>
+              <div>
                 <label htmlFor="zone-duree" className="text-slate-300 text-sm block mb-2">
                   Durée annoncée (min)
                 </label>
@@ -686,7 +707,7 @@ export default function DeliveryZonesPage() {
                 onClick={() => {
                   setShowForm(false);
                   setEditingZone(null);
-                  setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', deliveryMinutes: '' }); setDessin(null);
+                  setFormData({ name: '', type: 'RADIUS', radiusKm: '', color: '#f59e0b', opacity: '0.35', baseFee: '', minOrder: '', freeAbove: '', deliveryMinutes: '' }); setDessin(null);
                 }}
                 className="px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 transition"
               >
@@ -755,6 +776,12 @@ export default function DeliveryZonesPage() {
                     <span className="text-slate-400">Commande Minimale</span>
                     <span className="text-white font-semibold">{zone.minOrder.toFixed(2)} €</span>
                   </div>
+                  {zone.freeAbove != null && zone.baseFee > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Livraison offerte dès</span>
+                      <span className="text-green-400 font-semibold">{zone.freeAbove.toFixed(2)} €</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">{zone.type === 'RADIUS' ? 'Rayon' : 'Sommets'}</span>
                     <span className="text-white font-semibold">

@@ -71,6 +71,8 @@ export interface DeliveryVerdict {
   livrable: boolean;
   frais: number;
   minimum: number;
+  /** Livraison offerte dès ce montant d'articles, si la zone en a un. */
+  gratuiteDes?: number | null;
   raison?: string | null;
   zone?: { deliveryMinutes?: number | null } | null;
 }

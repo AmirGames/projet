@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { ibanNormalise, ibanValide } from "../utils/sepa";
 import { z } from "zod";
 
 import { db } from "../services/db";
@@ -60,7 +61,15 @@ const profilSchema = z
     ownerEmail: z.string().max(150).nullable().optional(),
     ownerPhone: z.string().max(30).nullable().optional(),
     ownerBirthDate: z.string().max(40).nullable().optional(),
-    iban: z.string().max(40).nullable().optional(),
+    // Vérifié à la saisie : un IBAN faux écarterait le commerçant du virement
+    // groupé du lundi.
+    iban: z
+      .string()
+      .max(40)
+      .nullable()
+      .optional()
+      .refine((v) => !v || ibanValide(v), "Cet IBAN n'est pas valide : vérifiez-le.")
+      .transform((v) => (v ? ibanNormalise(v) : v)),
     bic: z.string().max(15).nullable().optional(),
     accountHolder: z.string().max(150).nullable().optional(),
   })

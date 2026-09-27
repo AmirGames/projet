@@ -45,6 +45,7 @@
       "stores": "Stores",
       "drivers": "Drivers",
       "payouts": "Payouts",
+      "sepaPayouts": "SEPA payouts",
       "analytics": "Analytics",
       "billing": "Billing",
       "formules": "Plans",

@@ -119,6 +119,7 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
         { label: 'Marketing', icon: Megaphone, href: `/merchant/${orgId}/marketing` },
         { label: 'Staff', icon: Users2, href: `/merchant/${orgId}/staff` },
         { label: 'Factures', icon: FileText, href: `/merchant/${orgId}/invoices` },
+        { label: 'Reversements', icon: Receipt, href: `/merchant/${orgId}/payouts` },
         { label: 'Notifications', icon: Bell, href: `/merchant/${orgId}/notifications` },
         { label: 'Support', icon: MessageCircle, href: `/merchant/${orgId}/support` },
         { label: 'Paramètres', icon: Settings, href: `/merchant/${orgId}/settings` },

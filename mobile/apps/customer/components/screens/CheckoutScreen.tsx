@@ -206,7 +206,11 @@ function CheckoutBody({
   }, [usable, methodId]);
 
   const subtotal = cartTotal(lines);
-  const deliveryFee = mode === 'DELIVERY' && verdict?.livrable ? verdict.frais : 0;
+  // Le seuil de la zone atteint, la livraison est offerte : le serveur
+  // l'applique de la même façon.
+  const freeDelivery = verdict?.gratuiteDes != null && subtotal >= verdict.gratuiteDes;
+  const missingForFree = verdict?.gratuiteDes != null && !freeDelivery ? verdict.gratuiteDes - subtotal : 0;
+  const deliveryFee = mode === 'DELIVERY' && verdict?.livrable && !freeDelivery ? verdict.frais : 0;
   const discountAmount = discount?.amount ?? 0;
   const total = Math.max(0, subtotal + deliveryFee + serviceFee - discountAmount);
   const belowMinimum = mode === 'DELIVERY' && Boolean(verdict?.livrable) && subtotal < (verdict?.minimum ?? 0);
@@ -436,10 +440,15 @@ function CheckoutBody({
               {verdict && (
                 <Text style={[styles.verdict, { color: verdict.livrable ? COLORS.success : '#B26A00' }]}>
                   {verdict.livrable
-                    ? `Livré · ${verdict.frais > 0 ? formatEuros(verdict.frais) : 'livraison offerte'}${
+                    ? `Livré · ${deliveryFee > 0 ? formatEuros(deliveryFee) : 'livraison offerte'}${
                         verdict.minimum > 0 ? ` · minimum ${formatEuros(verdict.minimum)}` : ''
                       }`
                     : verdict.raison || 'Ce commerce ne livre pas à cette adresse.'}
+                </Text>
+              )}
+              {verdict?.livrable && missingForFree > 0 && (
+                <Text style={[styles.verdict, { color: COLORS.success }]}>
+                  Encore {formatEuros(missingForFree)} pour la livraison offerte.
                 </Text>
               )}
               {belowMinimum && (

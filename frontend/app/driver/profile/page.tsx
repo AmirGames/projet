@@ -1,5 +1,6 @@
 'use client';
 
+import CompteVersementLivreur from '@/components/CompteVersementLivreur';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useCallback } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
@@ -13,6 +14,8 @@ import { useEffectChargement } from '@/lib/use-effect-chargement';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Driver {
+  /** Le compte des versements du lundi (jamais l'IBAN entier). */
+  compte?: { ibanFin: string; titulaire?: string | null; valide: boolean } | null;
   id: string;
   name: string;
   email?: string;
@@ -379,6 +382,8 @@ export default function DriverProfilePage() {
                 )}
               </form>
             </div>
+
+            <CompteVersementLivreur compte={driver?.compte} onSaved={loadDriverData} />
 
             {/* Quick Links */}
             <div className="mt-6 grid grid-cols-2 gap-4">
