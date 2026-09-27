@@ -1,11 +1,11 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
@@ -15,6 +15,10 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 # De quoi appliquer les migrations au démarrage.
 COPY prisma ./prisma
 COPY prisma.config.ts ./
+# Photos, documents et sauvegardes : montés en volumes pour survivre aux
+# reconstructions de l'image.
+RUN mkdir -p uploads backups
+ENV NODE_ENV=production
 EXPOSE 3001
 # Les migrations passent avant l'API : une migration en échec arrête le
 # conteneur au lieu de servir un code en avance sur la base.

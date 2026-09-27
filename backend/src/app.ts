@@ -58,6 +58,17 @@ export function createApp(): Express {
   const app = express();
   const env = getEnv();
 
+  // ===== Proxy =====
+  // Derrière un proxy (Caddy sur le VPS), `req.ip` rendait l'adresse du
+  // proxy : toutes les requêtes semblaient venir du même visiteur, et le
+  // limiteur de cadence les bloquait ensemble. TRUST_PROXY donne le nombre de
+  // proxys à traverser pour retrouver l'adresse du visiteur (1 avec Caddy).
+  // Vide : on n'en croit aucun, un en-tête X-Forwarded-For se forge.
+  const proxysDeConfiance = Number(process.env.TRUST_PROXY);
+  if (Number.isInteger(proxysDeConfiance) && proxysDeConfiance > 0) {
+    app.set("trust proxy", proxysDeConfiance);
+  }
+
   // ===== Security =====
   app.use(helmet());
 

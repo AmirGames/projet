@@ -1,0 +1,24 @@
+# Reverse proxy + HTTPS automatique (Let's Encrypt).
+# Les domaines viennent de .env.production (DOMAINES_SITE, DOMAINE_API) ;
+# chacun doit déjà pointer (enregistrement DNS A) vers l'IP du VPS.
+
+{
+	email {$EMAIL_LETSENCRYPT}
+}
+
+# L'API et le temps réel (Socket.IO : Caddy relaie les WebSockets tout seul).
+{$DOMAINE_API} {
+	encode zstd gzip
+	# Photos de produits, pièces justificatives : 10 Mo côté API, un peu de marge ici.
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy backend:3001
+}
+
+# Le site : un seul déploiement Next.js sert tous les domaines publics, le
+# proxy de l'application aiguille selon l'hôte demandé.
+{$DOMAINES_SITE} {
+	encode zstd gzip
+	reverse_proxy frontend:3000
+}
