@@ -219,8 +219,12 @@ export class OrderService {
       if (lignes.length > 0) {
         const produits = await db.product.findMany({
           where: { id: { in: lignes.map((l) => l.productId) } },
-          select: { id: true, name: true, storeId: true, isAvailable: true, deletedAt: true },
+          select: { id: true, name: true, storeId: true, isAvailable: true, deletedAt: true, categoryId: true },
         });
+
+        // Les prix saisis hors taxe sont facturés TTC, comme la carte les a
+        // montrés au client.
+        const tauxHT = await TaxService.tauxAAjouter(data.storeId, produits);
 
         for (const ligne of lignes) {
           const produit = produits.find((p) => p.id === ligne.productId);
@@ -243,7 +247,10 @@ export class OrderService {
 
           lignesTarifees.push({
             ...ligne,
-            price: await VariantService.prixDeLaLigne(ligne.productId, ligne.variantId),
+            price: ((prix) => {
+              const taux = tauxHT.get(ligne.productId);
+              return taux ? TaxService.ttc(prix, taux) : prix;
+            })(await VariantService.prixDeLaLigne(ligne.productId, ligne.variantId)),
           });
         }
       }
@@ -352,7 +359,9 @@ export class OrderService {
         lignesTarifees.map((ligne) => ({
           productId: ligne.productId,
           montant: ligne.price * ligne.quantity,
-        }))
+        })),
+        // Les prix des lignes sont déjà TTC : la taxe s'en extrait.
+        { prixTTC: true }
       );
 
       /**
