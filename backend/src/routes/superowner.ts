@@ -1956,6 +1956,7 @@ router.get("/drivers", authMiddleware, isSuperOwner, async (req: Request, res: R
           piecesValidees: validees.size,
           piecesAttendues: attendues.length,
           dossierComplet: attendues.every((type) => validees.has(type)),
+          suppressionDemandeeLe: livreur.suppressionDemandeeLe,
           createdAt: livreur.createdAt,
         };
       }),
@@ -1971,6 +1972,10 @@ router.get("/drivers", authMiddleware, isSuperOwner, async (req: Request, res: R
 router.get("/drivers/:driverId", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const dossier = await DriverApprovalService.dossier(req.params.driverId as string);
+    // Suppression demandée : ce qui reste à lui verser avant d'effacer quoi que ce soit.
+    const suppression = dossier.suppressionDemandeeLe
+      ? { demandeeLe: dossier.suppressionDemandeeLe, ...(await DriverPayoutService.soldeFinal(dossier.id)) }
+      : null;
 
     res.json({
       driver: {
@@ -1990,6 +1995,7 @@ router.get("/drivers/:driverId", authMiddleware, isSuperOwner, async (req: Reque
         totalEarnings: Number(dossier.totalEarnings),
         createdAt: dossier.createdAt,
       },
+      suppression,
       documents: dossier.documents.map((piece) => ({
         id: piece.id,
         type: piece.type,

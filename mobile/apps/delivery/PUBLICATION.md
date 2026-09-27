@@ -151,10 +151,12 @@ Recevez des courses près de vous, livrez, suivez vos gains. Pour livreurs Zupon
   - identifiants de l'appareil (jeton de notification) : notifications ;
   - chiffrement en transit : oui ; suppression sur demande : oui.
 - **Suppression du compte** : elle se fait dans l'application (Paramètres ›
-  Vos données). Google demande **en plus une page web** pour ceux qui n'ont
-  plus l'application : à créer sur le site (par exemple
-  `/suppression-compte`, qui explique la démarche et renvoie vers
-  dpo@zupone.com), puis à indiquer dans la Console.
+  Vos données) et sur le site, pour ceux qui n'ont plus l'application :
+  **`https://zupone.com/suppression-compte`** — l'adresse à indiquer dans la
+  Console. Dans les deux cas, ce qui reste dû au livreur n'est pas perdu :
+  ses courses de la semaine sont arrêtées le lundi suivant et versées sur son
+  IBAN (sans IBAN valide, la demande est refusée jusqu'à ce qu'il le donne) ;
+  ses données ne s'effacent qu'après ce dernier versement.
 - **Politique de confidentialité** : `https://zupone.com/confidentialite`.
 - **Accès pour l'examen** : un compte livreur de démonstration, déjà validé.
 

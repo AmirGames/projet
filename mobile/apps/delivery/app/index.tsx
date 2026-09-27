@@ -670,6 +670,7 @@ export default function DeliveryApp() {
           background={background}
           token={token}
           onAccountDeleted={() => handleLogout(true)}
+          onOpenAccount={() => setTab('account')}
           onBack={back}
         />
       );

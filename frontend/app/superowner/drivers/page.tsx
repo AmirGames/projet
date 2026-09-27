@@ -41,6 +41,8 @@ interface Livreur {
   piecesValidees: number;
   piecesAttendues: number;
   dossierComplet: boolean;
+  /** Le livreur a demandé la suppression de son compte. */
+  suppressionDemandeeLe?: string | null;
   createdAt: string;
 }
 
@@ -60,6 +62,14 @@ interface Dossier {
   piecesAttendues: { type: string; libelle: string }[];
   piecesManquantes: string[];
   dossierComplet: boolean;
+  /** Suppression demandée : ce qui reste à verser avant d'effacer quoi que ce soit. */
+  suppression: {
+    demandeeLe: string;
+    montantDu: number;
+    versementLe: string | null;
+    ibanValide: boolean;
+    ibanFin: string | null;
+  } | null;
 }
 
 const COULEURS: Record<string, string> = {
@@ -340,6 +350,9 @@ export default function LivreursPage() {
                     {livreur.statusReason && (
                       <p className="text-xs text-red-300 mt-2">{livreur.statusReason}</p>
                     )}
+                    {livreur.suppressionDemandeeLe && (
+                      <p className="text-xs text-amber-300 mt-1">🗑️ Suppression du compte demandée</p>
+                    )}
                   </div>
 
                   <span className="text-sm text-gray-400 flex-shrink-0">
@@ -349,6 +362,33 @@ export default function LivreursPage() {
 
                 {ouvert && dossier && (
                   <div className="border-t border-gray-700 p-5 space-y-4">
+                    {/* Supprimer son compte ne fait pas perdre ce qui est dû :
+                        les données attendent le dernier versement. */}
+                    {dossier.suppression && (
+                      <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+                        <p className="font-semibold text-amber-300">
+                          🗑️ Suppression demandée le{' '}
+                          {new Date(dossier.suppression.demandeeLe).toLocaleDateString('fr-FR')}
+                        </p>
+                        {dossier.suppression.montantDu > 0 ? (
+                          <p className="mt-1">
+                            Reste à verser : <strong>{euro(dossier.suppression.montantDu)}</strong>
+                            {dossier.suppression.versementLe &&
+                              `, avec l’arrêté du ${new Date(dossier.suppression.versementLe).toLocaleDateString('fr-FR', {
+                                weekday: 'long',
+                                day: 'numeric',
+                                month: 'long',
+                              })}`}
+                            {dossier.suppression.ibanValide
+                              ? ` (IBAN •••${dossier.suppression.ibanFin}).`
+                              : ' — IBAN manquant ou invalide.'}{' '}
+                            N’effacez pas ses données avant ce versement.
+                          </p>
+                        ) : (
+                          <p className="mt-1">Rien à lui verser : ses données peuvent être effacées.</p>
+                        )}
+                      </div>
+                    )}
                     <h4 className="font-semibold text-white">{t('documentsParts')}</h4>
 
                     {dossier.documents.length === 0 ? (

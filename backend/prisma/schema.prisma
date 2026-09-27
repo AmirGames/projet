@@ -984,6 +984,11 @@ model Driver {
   ratings         DriverRating[]
   supportMessages DriverSupportMessage[]
 
+  /// Le livreur a demandé la suppression de son compte (application ou
+  /// site). Le compte est désactivé aussitôt ; ses données ne s'effacent
+  /// qu'après le dernier versement de ses courses.
+  suppressionDemandeeLe DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

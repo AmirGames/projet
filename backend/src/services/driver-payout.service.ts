@@ -2,6 +2,8 @@ import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitNotification } from "../config/socket";
+import { debutDeSemaine } from "../utils/semaine-bruxelles";
+import { ibanNormalise, ibanValide } from "../utils/sepa";
 
 /**
  * Les versements aux livreurs.
@@ -60,6 +62,33 @@ export function semainePrecedente(reference = new Date()) {
 }
 
 export class DriverPayoutService {
+  /**
+   * Ce qui reste à verser à un livreur, et quand.
+   *
+   * Sert au livreur qui supprime son compte : ses courses de la semaine en
+   * cours (lundi 00 h 00 → dimanche 23 h 59, Bruxelles) sont arrêtées le
+   * lundi suivant avec celles de tout le monde, et versées sur son IBAN ;
+   * un relevé déjà arrêté attend le prochain lot de virements.
+   */
+  static async soldeFinal(driverId: string, maintenant = new Date()) {
+    const [dues, enAttente, livreur] = await Promise.all([
+      this.coursesDues(driverId),
+      db.driverPayout.findMany({ where: { driverId, status: "PENDING" }, select: { amount: true } }),
+      db.driver.findUnique({ where: { id: driverId }, select: { iban: true } }),
+    ]);
+    const nonArrete = dues.reduce((somme, course) => somme + gainDeLaCourse(course), 0);
+    const arrete = enAttente.reduce((somme, releve) => somme + Number(releve.amount), 0);
+    // Le lundi qui vient, 00 h 00 à Bruxelles : l'arrêté de la semaine.
+    const lundi = debutDeSemaine(new Date(debutDeSemaine(maintenant).getTime() + 8 * 86400000));
+    return {
+      montantDu: Math.round((nonArrete + arrete) * 100) / 100,
+      coursesNonArretees: dues.length,
+      versementLe: nonArrete + arrete > 0 ? lundi : null,
+      ibanValide: ibanValide(livreur?.iban),
+      ibanFin: livreur?.iban ? ibanNormalise(livreur.iban).slice(-4) : null,
+    };
+  }
+
   /**
    * Ce qui est dû à un livreur : les courses livrées qu'aucun relevé ne porte.
    */

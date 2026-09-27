@@ -420,6 +420,32 @@ router.get("/support/unread", authMiddleware, async (req: Request, res: Response
   }
 });
 
+const dateLongue = (d: Date) =>
+  d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Brussels" });
+const euros = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
+
+/** Ce que la suppression implique pour ce livreur : courses en cours, dernier versement. */
+async function apercuSuppression(livreurId: string) {
+  const [coursesEnCours, solde] = await Promise.all([
+    db.orderDelivery.count({ where: { driverId: livreurId, status: { in: STATUTS_EN_COURSE } } }),
+    DriverPayoutService.soldeFinal(livreurId),
+  ]);
+  return { coursesEnCours, ...solde };
+}
+
+// GET /drivers/me/suppression - Ce que la suppression implique, avant de confirmer
+router.get("/me/suppression", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    res.json({
+      success: true,
+      data: { ...(await apercuSuppression(livreur.id)), demandeeLe: livreur.suppressionDemandeeLe },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /**
  * POST /drivers/me/suppression - Le livreur demande la suppression de son compte
  *
@@ -429,27 +455,42 @@ router.get("/support/unread", authMiddleware, async (req: Request, res: Response
  * demande par le support : elle efface les données, sauf ce que la loi
  * oblige à garder (courses payées, pièces comptables), comme le dit la
  * politique de confidentialité.
+ *
+ * Ce qui est dû n'est pas perdu : les courses de la semaine sont arrêtées le
+ * lundi suivant (00 h 00, Bruxelles) avec celles de tout le monde, et
+ * versées sur l'IBAN du livreur. Sans IBAN, la demande attend qu'il le
+ * donne ; les données ne s'effacent qu'après ce dernier versement.
  */
 router.post("/me/suppression", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const livreur = await livreurConnecte(req);
     const { motif } = z.object({ motif: z.string().max(500).optional() }).parse(req.body ?? {});
 
-    const enCours = await db.orderDelivery.count({ where: { driverId: livreur.id, status: { in: STATUTS_EN_COURSE } } });
-    if (enCours > 0) {
+    const apercu = await apercuSuppression(livreur.id);
+    if (apercu.coursesEnCours > 0) {
       throw new ApiError(
         409,
         "Terminez ou annulez d'abord vos courses en cours, puis refaites la demande.",
         "DELIVERIES_IN_PROGRESS"
       );
     }
+    // Supprimer son compte ne fait pas perdre ce qui est dû : encore faut-il
+    // savoir où le verser. Sans IBAN, le virement serait écarté du lot.
+    if (apercu.montantDu > 0 && !apercu.ibanValide) {
+      throw new ApiError(
+        409,
+        `Il vous reste ${euros(apercu.montantDu)} à recevoir : ajoutez d'abord votre IBAN (Mon compte › Mes versements), puis refaites la demande.`,
+        "IBAN_REQUIRED"
+      );
+    }
 
-    const le = new Date();
+    const le = livreur.suppressionDemandeeLe ?? new Date();
     await db.driver.update({
       where: { id: livreur.id },
       data: {
         status: "INACTIVE",
         statusReason: `Suppression du compte demandée le ${le.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}.`,
+        suppressionDemandeeLe: le,
         isOnline: false,
         isAvailable: false,
         pausedUntil: null,
@@ -459,21 +500,26 @@ router.post("/me/suppression", authMiddleware, async (req: Request, res: Respons
     // Plus aucune notification vers ce téléphone.
     if (livreur.userId) await db.pushDevice.deleteMany({ where: { userId: livreur.userId } });
 
+    const versement = apercu.versementLe
+      ? `Dernier versement : ${euros(apercu.montantDu)}, arrêté le ${dateLongue(apercu.versementLe)} (IBAN •••${apercu.ibanFin}). Ne pas effacer les données avant ce versement.`
+      : "Rien à verser.";
     await DriverSupportService.envoyer(
       livreur.id,
       "DRIVER",
-      `🗑️ Je demande la suppression de mon compte livreur et de mes données (demande faite depuis l'application).${
+      `🗑️ Je demande la suppression de mon compte livreur et de mes données.${
         motif?.trim() ? `\nMotif : ${motif.trim()}` : ""
-      }`,
+      }\n${versement}`,
       { deliveryId: null }
     );
 
-    logger.warn("Suppression de compte demandée", { driverId: livreur.id });
+    logger.warn("Suppression de compte demandée", { driverId: livreur.id, montantDu: apercu.montantDu });
 
     res.json({
       success: true,
-      message:
-        "Votre compte est désactivé. Vos données seront supprimées sous 30 jours, sauf celles que la loi nous oblige à conserver.",
+      data: apercu,
+      message: apercu.versementLe
+        ? `Votre compte est désactivé. Vos ${euros(apercu.montantDu)} de courses vous seront versés avec les paiements du ${dateLongue(apercu.versementLe)}, sur votre compte •••${apercu.ibanFin}. Vos données seront ensuite supprimées sous 30 jours, sauf celles que la loi nous oblige à conserver.`
+        : "Votre compte est désactivé. Vos données seront supprimées sous 30 jours, sauf celles que la loi nous oblige à conserver.",
     });
   } catch (err) {
     next(err);

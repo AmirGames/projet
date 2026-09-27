@@ -41,8 +41,26 @@ const BACKGROUND_LABELS: Record<BackgroundState, { text: string; color: () => st
  * l'on peut y créer un compte. Le serveur désactive le compte sur-le-champ et
  * transmet la demande à la plateforme, qui efface les données.
  */
-function useAccountDeletion(token: string, onDeleted: () => void) {
+interface DeletionPreview {
+  coursesEnCours: number;
+  montantDu: number;
+  versementLe: string | null;
+  ibanValide: boolean;
+  ibanFin: string | null;
+}
+
+const euros = (n: number) => `${n.toFixed(2).replace('.', ',')} €`;
+const jour = (iso: string) =>
+  new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+function useAccountDeletion(token: string, onDeleted: () => void, onOpenAccount: () => void) {
   const [deleting, setDeleting] = useState(false);
+  const fail = (e: unknown) =>
+    Alert.alert(
+      'Suppression impossible',
+      isNetworkError(e) ? 'Pas de réseau : réessayez dès que vous captez.' : (e as ApiError).message || 'Réessayez plus tard.'
+    );
+
   const run = async () => {
     setDeleting(true);
     try {
@@ -50,23 +68,53 @@ function useAccountDeletion(token: string, onDeleted: () => void) {
       Alert.alert('Compte supprimé', res.message || 'Votre compte est désactivé et vos données seront supprimées.');
       onDeleted();
     } catch (e) {
-      Alert.alert(
-        'Suppression impossible',
-        isNetworkError(e) ? 'Pas de réseau : réessayez dès que vous captez.' : (e as ApiError).message || 'Réessayez plus tard.'
-      );
+      fail(e);
     } finally {
       setDeleting(false);
     }
   };
-  const ask = () =>
+
+  // Avant de confirmer : ce que la suppression implique, à commencer par le
+  // dernier versement, qui n'est pas perdu.
+  const ask = async () => {
+    setDeleting(true);
+    let preview: DeletionPreview;
+    try {
+      preview = (await apiFetch<{ data: DeletionPreview }>('/api/drivers/me/suppression', token)).data;
+    } catch (e) {
+      fail(e);
+      return;
+    } finally {
+      setDeleting(false);
+    }
+    if (preview.coursesEnCours > 0) {
+      Alert.alert('Course en cours', 'Terminez ou annulez d’abord votre course, puis refaites la demande.');
+      return;
+    }
+    if (preview.montantDu > 0 && !preview.ibanValide) {
+      Alert.alert(
+        'Ajoutez d’abord votre IBAN',
+        `Il vous reste ${euros(preview.montantDu)} à recevoir. Sans IBAN, nous ne pouvons pas vous les verser.`,
+        [
+          { text: 'Plus tard', style: 'cancel' },
+          { text: 'Ajouter mon IBAN', onPress: onOpenAccount },
+        ]
+      );
+      return;
+    }
+    const versement =
+      preview.montantDu > 0 && preview.versementLe
+        ? `Vos ${euros(preview.montantDu)} de courses vous seront versés avec les paiements du ${jour(preview.versementLe)}, sur votre compte •••${preview.ibanFin}. `
+        : '';
     Alert.alert(
       'Supprimer votre compte ?',
-      'Votre compte sera désactivé tout de suite : vous ne recevrez plus de courses. Vos données seront supprimées sous 30 jours, sauf celles que la loi nous oblige à garder (courses payées, pièces comptables). Cette action est définitive.',
+      `Votre compte sera désactivé tout de suite : vous ne recevrez plus de courses. ${versement}Vos données seront ensuite supprimées sous 30 jours, sauf celles que la loi nous oblige à garder (courses payées, pièces comptables). Cette action est définitive.`,
       [
         { text: 'Annuler', style: 'cancel' },
         { text: 'Supprimer mon compte', style: 'destructive', onPress: run },
       ]
     );
+  };
   return { deleting, ask };
 }
 
@@ -80,6 +128,7 @@ export default function SettingsScreen({
   background,
   token,
   onAccountDeleted,
+  onOpenAccount,
   onBack,
 }: {
   prefs: Prefs;
@@ -92,9 +141,11 @@ export default function SettingsScreen({
   token: string;
   /** Compte supprimé : la session se ferme et le téléphone est vidé. */
   onAccountDeleted: () => void;
+  /** Mon compte : pour ajouter l'IBAN qui manque au dernier versement. */
+  onOpenAccount: () => void;
   onBack: () => void;
 }) {
-  const deletion = useAccountDeletion(token, onAccountDeleted);
+  const deletion = useAccountDeletion(token, onAccountDeleted, onOpenAccount);
   return (
     <View style={{ flex: 1 }}>
       <ScreenHeader title="Paramètres ⚙️" onBack={onBack} />
