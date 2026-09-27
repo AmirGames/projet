@@ -27,7 +27,8 @@ interface Delivery {
   customerName: string;
   customerPhone: string;
   distance?: number;
-  totalAmount?: number;
+  /** Ce que la course rapporte au livreur. */
+  payout?: number;
   items?: any[];
 }
 
@@ -366,8 +367,8 @@ export default function DriverDashboard() {
                       <p className="text-white text-2xl font-bold">{activeDelivery.distance || 0} km</p>
                     </div>
                     <div className="bg-gray-700 rounded-lg p-4">
-                      <p className="text-gray-400 text-sm mb-2">{t('amount')}</p>
-                      <p className="text-white text-2xl font-bold">{euro((activeDelivery.totalAmount || 0))}</p>
+                      <p className="text-gray-400 text-sm mb-2">Votre gain</p>
+                      <p className="text-white text-2xl font-bold">{euro(activeDelivery.payout || 0)}</p>
                     </div>
                   </div>
 
@@ -411,7 +412,7 @@ export default function DriverDashboard() {
                             <p className="text-gray-400 text-sm">{delivery.customerName}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-orange-400 font-bold">{euro((delivery.totalAmount || 0))}</p>
+                            <p className="text-orange-400 font-bold">+ {euro(delivery.payout || 0)}</p>
                             {delivery.distance && (
                               <p className="text-gray-400 text-sm">{delivery.distance} km</p>
                             )}

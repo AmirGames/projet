@@ -72,7 +72,9 @@ function espacesDuCompte(donnees: RolesCompte): EspaceAccessible[] {
     merchant: !!donnees.roles?.merchant?.active,
     admin: !!donnees.user?.isSystemAdmin,
     'super-admin': !!donnees.user?.isSystemAdmin,
-    superowner: !!donnees.user?.isSuperOwner,
+    // L'équipe de la plateforme (SuperAdmin, Administrateur, Support) y entre
+    // aussi ; ce qu'elle y voit dépend des permissions de son groupe.
+    superowner: !!donnees.user?.isSuperOwner || !!donnees.user?.isSystemAdmin,
   };
   return (Object.keys(ESPACES) as Espace[])
     .filter((id) => ouverts[id])

@@ -11,6 +11,8 @@ export interface NewOrderEvent {
   customerName?: string;
   deliveryType?: string;
   totalAmount?: number;
+  /** Ce que le commerçant touche : ses articles, remise déduite. */
+  merchantAmount?: number;
   echeance?: string;
 }
 

@@ -45,6 +45,7 @@
       "stores": "Boutiques",
       "drivers": "Livreurs",
       "payouts": "Versements",
+      "sepaPayouts": "Versements SEPA",
       "analytics": "Analytics",
       "billing": "Facturation",
       "formules": "Formules",
@@ -72,7 +73,8 @@
       "accessLogs": "Connexions",
       "driverSupport": "Chat livreurs",
       "reviews": "Avis signalés",
-      "monitoring": "Surveillance"
+      "monitoring": "Surveillance",
+      "roles": "Rôles et accès"
     },
     "openMenu": "Ouvrir le menu",
     "toggleSidebar": "Replier ou déplier le menu"
@@ -487,8 +489,8 @@
     "genericError": "Une erreur s'est produite"
   },
   "superownerUserManagement": {
-    "title": "Gestion des Administrateurs",
-    "subtitle": "Gestion des utilisateurs avec accès superowner",
+    "title": "Équipe de la plateforme",
+    "subtitle": "Les membres de l'équipe et leur groupe. Ce que chaque groupe peut faire se règle dans « Rôles et accès ».",
     "addAdmin": "Ajouter Admin",
     "emailNameRequired": "Email et nom requis",
     "createError": "Erreur lors de la création",
@@ -499,7 +501,7 @@
     "name": "Nom",
     "namePlaceholder": "Nom complet",
     "role": "Rôle",
-    "roleAdmin": "Admin",
+    "roleAdmin": "Administrateur",
     "roleModerator": "Modérateur",
     "create": "Créer",
     "cancel": "Annuler",
@@ -515,7 +517,11 @@
     "previous": "Précédent",
     "next": "Suivant",
     "loadError": "Erreur lors du chargement des administrateurs",
-    "genericError": "Une erreur s'est produite"
+    "genericError": "Une erreur s'est produite",
+    "roleSuperAdmin": "SuperAdmin",
+    "roleSupport": "Support",
+    "roleSuperOwner": "SuperOwner",
+    "roleChangeError": "Impossible de changer le rôle"
   },
   "superownerFormules": {
     "loading": "Chargement des formules…",
@@ -2115,5 +2121,26 @@
     "submit": "Dupliquer",
     "submitting": "Duplication…",
     "error": "La duplication a échoué."
+  },
+  "superownerRoles": {
+    "title": "Rôles et accès",
+    "subtitle": "Cochez, pour chaque groupe, les sections qu'il peut consulter ou modifier. Le SuperOwner voit tout et reste le seul à pouvoir changer ces droits.",
+    "section": "Section",
+    "view": "Voir",
+    "edit": "Modifier",
+    "members": "{count, plural, =0 {aucun membre} one {# membre} other {# membres}}",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Permissions enregistrées",
+    "unsaved": "Modifications non enregistrées",
+    "reset": "Annuler les modifications",
+    "loadError": "Impossible de charger les rôles",
+    "saveError": "Impossible d'enregistrer",
+    "allView": "Tout voir",
+    "allEdit": "Tout modifier",
+    "none": "Tout retirer",
+    "deniedTitle": "Accès refusé",
+    "deniedText": "Votre rôle n'ouvre pas cette section. Demandez au SuperOwner de vous en donner l'accès.",
+    "yourRole": "Votre rôle : {role}"
   }
 }

@@ -50,6 +50,7 @@ import paymentMethodsApiRouter from "./routes/payment-methods-api";
 import supportRouter from "./routes/support";
 import plansRouter from "./routes/plans";
 import merchantProfileRouter from "./routes/merchant-profile";
+import merchantPayoutRouter from "./routes/merchant-payout";
 import pushDevicesRouter from "./routes/push-devices";
 import variantRouter from "./routes/variant";
 import addressRouter from "./routes/address";
@@ -234,6 +235,7 @@ export function createApp(): Express {
   app.use("/api/support", supportRouter);
   app.use("/api/plans", plansRouter);
   app.use("/api/merchant-profile", merchantProfileRouter);
+  app.use("/api/merchant-payouts", merchantPayoutRouter);
   app.use("/api/push-devices", pushDevicesRouter);
   app.use("/api/addresses", addressRouter);
 

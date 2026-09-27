@@ -6,6 +6,7 @@ import { pickPdf } from '../../lib/document';
 import { reducePhoto } from '../../lib/photo';
 import { uploadFile } from '../../lib/upload';
 import { Driver, DRIVER_STATUS_LABELS, VEHICLE_LABELS } from '../../lib/deliveries';
+import BankAccountCard from '../BankAccountCard';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 interface Documents {
@@ -170,6 +171,8 @@ export default function AccountScreen({
               last
             />
           </Card>
+
+          <BankAccountCard token={token} compte={driver?.compte} onSaved={() => load()} />
 
           {docs && (
             <Card title="Mon dossier">

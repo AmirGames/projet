@@ -12,6 +12,7 @@ import { OrderJobs } from "./jobs/order-jobs";
 import { DriverJobs } from "./jobs/driver-jobs";
 import { WebhookJobs } from "./jobs/webhook-jobs";
 import { MerchantJobs } from "./jobs/merchant-jobs";
+import { PayoutJobs } from "./jobs/payout-jobs";
 import { Vigie } from "./services/vigie.service";
 import { Disponibilite } from "./services/disponibilite.service";
 
@@ -57,6 +58,7 @@ const start = async () => {
     DriverJobs.start();
     WebhookJobs.start();
     MerchantJobs.start();
+    PayoutJobs.start();
     OrderJobs.start();
 
     // Après les tâches : la vigie les surveille dès son premier passage.
@@ -70,6 +72,7 @@ const start = async () => {
       DispatchJobs.stop();
       WebhookJobs.stop();
       MerchantJobs.stop();
+      PayoutJobs.stop();
       OrderJobs.stop();
       DriverJobs.stop();
       Vigie.arreter();

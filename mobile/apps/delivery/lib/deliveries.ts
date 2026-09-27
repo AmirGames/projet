@@ -9,6 +9,8 @@ export interface Driver {
   rating: number | null;
   avis: number;
   totalEarnings?: number | string;
+  /** Le compte des versements du lundi (jamais l'IBAN entier). */
+  compte?: { ibanFin: string; titulaire?: string | null; valide: boolean } | null;
   completedDeliveries?: number;
   /** Ce que le livreur a choisi : prendre des courses ou non. */
   isOnline: boolean;
@@ -92,7 +94,8 @@ export interface Delivery {
   deliveryAddress: string;
   customerName?: string;
   customerPhone?: string;
-  totalAmount?: number | string;
+  /** Ce que la course rapporte au livreur. Il n'a rien à encaisser. */
+  payout?: number | string;
   distance?: number;
   estimatedTime?: number | null;
   /** Point de livraison : exact une fois la course acceptée. */

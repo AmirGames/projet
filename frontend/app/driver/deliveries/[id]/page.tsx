@@ -86,7 +86,8 @@ interface Delivery {
   customerName: string;
   customerPhone: string;
   distance?: number;
-  totalAmount?: number;
+  /** Ce que la course rapporte au livreur. */
+  payout?: number;
   latitude?: number;
   longitude?: number;
   items?: any[];
@@ -832,8 +833,8 @@ export default function DeliveryTrackingPage() {
               </div>
 
               <div>
-                <p className="text-gray-400 text-sm mb-2">Montant</p>
-                <p className="text-green-400 text-2xl font-bold">{euro((delivery.totalAmount || 0))}</p>
+                <p className="text-gray-400 text-sm mb-2">Votre gain</p>
+                <p className="text-green-400 text-2xl font-bold">{euro(delivery.payout || 0)}</p>
               </div>
 
               {/* Chaque étape se valide à sa place : la prise en charge au

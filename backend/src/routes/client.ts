@@ -1,4 +1,5 @@
 import { finAttente } from "../services/delivery-proof.service";
+import { TaxService } from "../services/tax.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { fraisDeServiceEnVigueur } from "../services/delivery-mode.service";
@@ -374,6 +375,9 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
         { moyenne: Math.round((n._avg.rating ?? 0) * 10) / 10, nombre: n._count._all },
       ])
     );
+
+    // Des prix saisis hors taxe : le client les voit TTC.
+    store.products = await TaxService.prixAuClient(store.id, store.products);
 
     const categorizedProducts = regrouperParCategorie(
       store.products.map((produit: any) => ({ ...produit, note: noteDe.get(produit.id) ?? null }))

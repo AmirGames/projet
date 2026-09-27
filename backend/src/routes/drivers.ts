@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { ibanNormalise, ibanValide } from "../utils/sepa";
 import { db } from "../services/db";
 import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
 import { ApiError } from "../middleware/errorHandler";
@@ -157,6 +158,17 @@ router.post("/register", limiterInscriptions, async (req: Request, res: Response
   }
 });
 
+/**
+ * Le gain d'une course pour le livreur : figé à l'attribution, sinon celui de
+ * la proposition, sinon (courses anciennes) les frais de livraison.
+ */
+function gainAnnonce(
+  course: { driverPayout?: unknown; order?: { feesAmount?: unknown } | null },
+  offre?: { payout?: unknown } | null
+) {
+  return Number(course.driverPayout ?? offre?.payout ?? course.order?.feesAmount ?? 0);
+}
+
 // GET /drivers/earnings - Revenus du livreur connecté
 router.get("/earnings", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -164,7 +176,7 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
 
     const courses = await db.orderDelivery.findMany({
       where: { driverId: livreur.id, status: "DELIVERED" },
-      include: { order: { select: { totalAmount: true, feesAmount: true } } },
+      include: { order: { select: { feesAmount: true } } },
       orderBy: { deliveryTime: "desc" },
     });
 
@@ -198,7 +210,6 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
         id: c.id,
         orderId: c.orderId,
         deliveredAt: c.deliveryTime || c.updatedAt,
-        orderAmount: Number(c.order?.totalAmount || 0),
         earning: gain(c),
       })),
     });
@@ -470,6 +481,37 @@ router.post("/me/suppression", authMiddleware, async (req: Request, res: Respons
 });
 
 // GET /drivers/me - Get current driver info (protected)
+const compteSchema = z.object({
+  iban: z.string().min(15).max(40),
+  bic: z.string().max(11).optional().nullable(),
+  accountHolder: z.string().min(2).max(70),
+});
+
+// PUT /drivers/me/bank-account - Le compte où recevoir ses versements du lundi
+router.put("/me/bank-account", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const livreur = await livreurConnecte(req);
+    const corps = compteSchema.parse(req.body);
+
+    if (!ibanValide(corps.iban)) {
+      throw new ApiError(400, "Cet IBAN n'est pas valide : vérifiez-le.", "INVALID_IBAN");
+    }
+
+    await db.driver.update({
+      where: { id: livreur.id },
+      data: {
+        iban: ibanNormalise(corps.iban),
+        bic: corps.bic ? corps.bic.replace(/\s+/g, "").toUpperCase() : null,
+        accountHolder: corps.accountHolder.trim(),
+      },
+    });
+
+    res.json({ success: true, message: "Compte enregistré" });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/me", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.userId as string;
@@ -499,6 +541,10 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
         rating: driver.totalRatings > 0 ? Number(driver.rating) : null,
         avis: driver.totalRatings,
         totalEarnings: driver.totalEarnings,
+        // Le compte des versements : jamais l'IBAN entier.
+        compte: driver.iban
+          ? { ibanFin: ibanNormalise(driver.iban).slice(-4), titulaire: driver.accountHolder, valide: ibanValide(driver.iban) }
+          : null,
         completedDeliveries: driver.totalDeliveries,
         // isOnline est ce que le livreur a choisi, isAvailable ce que
         // l'attribution en a fait. L'application a besoin des deux.
@@ -715,7 +761,15 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
             },
             store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
           }
-        }
+        },
+        // Le gain annoncé à ce livreur : la proposition en cours, ou celle
+        // qu'il a acceptée.
+        offers: {
+          where: { driverId: livreur.id },
+          select: { payout: true },
+          orderBy: { offeredAt: "desc" },
+          take: 1,
+        },
       },
       take: 50,
       orderBy: { createdAt: "desc" }
@@ -733,7 +787,10 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
       deliveryAddress: adresseLivraison(d.order),
       customerName: d.order?.customerName || "",
       customerPhone: d.order?.customerPhone || "",
-      totalAmount: d.order?.totalAmount || 0,
+      // Ce que la course lui rapporte. Le total payé par le client (articles,
+      // livraison, frais de service) s'affichait à sa place : 20,25 € pour
+      // une course qui lui rapporte 5 €. Il n'a rien à encaisser.
+      payout: gainAnnonce(d, d.offers?.[0]),
       distance: d.distanceKm ?? undefined,
       estimatedTime: d.estimatedTime,
       items: d.order?.items || [],
@@ -855,7 +912,7 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
         deliveryAddress: adresseLivraison(delivery.order),
         customerName: delivery.order?.customerName,
         customerPhone: delivery.order?.customerPhone,
-        totalAmount: delivery.order?.totalAmount,
+        payout: gainAnnonce(delivery, delivery.offers[0]),
         distance: delivery.distanceKm ?? undefined,
         estimatedTime: delivery.estimatedTime,
         pickupLat: delivery.pickupLat ?? delivery.order?.store?.latitude ?? null,
@@ -1307,7 +1364,6 @@ router.get("/offers", authMiddleware, async (req: Request, res: Response, next: 
                 deliveryAddress: true,
                 deliveryCity: true,
                 deliveryPostal: true,
-                totalAmount: true,
                 store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
               },
             },

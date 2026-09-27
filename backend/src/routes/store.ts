@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { emailFacultatif } from "../utils/validation";
 import { StoreService } from "../services/store.service";
+import { TaxService } from "../services/tax.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, checkOrgStatus } from "../middleware/auth";
 import { logger } from "../config/logger";
@@ -154,6 +155,9 @@ router.get("/slug/:slug", async (req: Request, res: Response, next: NextFunction
     if (!store) {
       throw new ApiError(404, "Store non trouvée", "NOT_FOUND");
     }
+
+    // Route publique de la vitrine : des prix saisis hors taxe se montrent TTC.
+    store.products = await TaxService.prixAuClient(store.id, store.products) as typeof store.products;
 
     res.json({ store });
   } catch (err) {

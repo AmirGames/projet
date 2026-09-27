@@ -8,7 +8,7 @@ import { DeliveryZoneService } from "./delivery-zone.service";
 import { PromotionService } from "./promotion.service";
 import { emitWebhook } from "./webhook.service";
 import { TaxService } from "./tax.service";
-import { ModeDeLivraison, fraisDeServiceEnVigueur } from "./delivery-mode.service";
+import { ModeDeLivraison, fraisDeServiceEnVigueur, montantCommercant } from "./delivery-mode.service";
 import { promoSansCommissionActive } from "./plan.service";
 import { StoreHoursService } from "./store-hours.service";
 import { emitMerchantEvent } from "../config/socket";
@@ -219,8 +219,12 @@ export class OrderService {
       if (lignes.length > 0) {
         const produits = await db.product.findMany({
           where: { id: { in: lignes.map((l) => l.productId) } },
-          select: { id: true, name: true, storeId: true, isAvailable: true, deletedAt: true },
+          select: { id: true, name: true, storeId: true, isAvailable: true, deletedAt: true, categoryId: true },
         });
+
+        // Les prix saisis hors taxe sont facturés TTC, comme la carte les a
+        // montrés au client.
+        const tauxHT = await TaxService.tauxAAjouter(data.storeId, produits);
 
         for (const ligne of lignes) {
           const produit = produits.find((p) => p.id === ligne.productId);
@@ -243,7 +247,10 @@ export class OrderService {
 
           lignesTarifees.push({
             ...ligne,
-            price: await VariantService.prixDeLaLigne(ligne.productId, ligne.variantId),
+            price: ((prix) => {
+              const taux = tauxHT.get(ligne.productId);
+              return taux ? TaxService.ttc(prix, taux) : prix;
+            })(await VariantService.prixDeLaLigne(ligne.productId, ligne.variantId)),
           });
         }
       }
@@ -352,7 +359,9 @@ export class OrderService {
         lignesTarifees.map((ligne) => ({
           productId: ligne.productId,
           montant: ligne.price * ligne.quantity,
-        }))
+        })),
+        // Les prix des lignes sont déjà TTC : la taxe s'en extrait.
+        { prixTTC: true }
       );
 
       /**
@@ -522,6 +531,7 @@ export class OrderService {
       status: order.status,
       deliveryType: order.deliveryType,
       totalAmount: Number(order.totalAmount),
+      merchantAmount: montantCommercant(order),
       customerName: order.customerName,
       createdAt: order.createdAt,
     });
@@ -534,6 +544,8 @@ export class OrderService {
       customerName: order.customerName,
       deliveryType: order.deliveryType,
       totalAmount: Number(order.totalAmount),
+      // Ce que le commerçant touche : c'est ce montant que la sonnerie annonce.
+      merchantAmount: montantCommercant(order),
       echeance: echeanceDeReponse(order).toISOString(),
     });
 
@@ -543,7 +555,7 @@ export class OrderService {
         title: "🔔 Nouvelle commande",
         body: `${order.customerName || "Un client"} · ${
           order.deliveryType === "DELIVERY" ? "Livraison" : "Retrait"
-        } · ${Number(order.totalAmount).toFixed(2)} €`,
+        } · ${montantCommercant(order).toFixed(2)} €`,
         data: { type: "commande-nouvelle", orderId: order.id, storeId: order.storeId },
         channelId: "new-orders",
         sound: "new_order.wav",
@@ -794,13 +806,14 @@ export class OrderService {
 
     const somme = await db.order.aggregate({
       where,
-      _sum: { totalAmount: true },
+      _sum: { totalAmount: true, feesAmount: true, serviceFeeAmount: true },
       _count: true,
     });
 
     return {
       commandes: somme._count,
-      chiffreAffaires: Number(somme._sum.totalAmount || 0),
+      // Les articles vendus seulement : ni la livraison ni les frais de service.
+      chiffreAffaires: montantCommercant(somme._sum),
     };
   }
 

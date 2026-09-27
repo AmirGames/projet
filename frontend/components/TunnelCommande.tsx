@@ -59,6 +59,8 @@ interface Livraison {
   distanceKm: number | null;
   frais: number;
   minimum: number;
+  /** Livraison offerte dès ce montant d'articles, si la zone en a un. */
+  gratuiteDes?: number | null;
   raison: string;
   forfaitBoutique: boolean;
 }
@@ -356,8 +358,17 @@ export function TunnelCommande({
    * La vitrine ajoutait 10 % de « frais de service » qui n'existaient nulle part
    * ailleurs — ni réglables, ni prélevés par le serveur.
    */
+  // Le seuil de la zone atteint, la livraison est offerte : le serveur
+  // l'applique de la même façon.
+  const livraisonOfferte =
+    livraison?.gratuiteDes != null && sousTotal >= livraison.gratuiteDes;
   const fraisDeLivraison =
-    checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable ? livraison.frais : 0;
+    checkoutForm.deliveryType === 'DELIVERY' && livraison?.livrable && !livraisonOfferte
+      ? livraison.frais
+      : 0;
+  /** Ce qu'il manque au panier pour la livraison offerte. */
+  const manquePourOfferte =
+    livraison?.gratuiteDes != null && !livraisonOfferte ? livraison.gratuiteDes - sousTotal : 0;
   const montantRemise = remise?.montant ?? 0;
   const total = Math.max(0, sousTotal + fraisDeLivraison + fraisDeService - montantRemise);
 
@@ -769,12 +780,17 @@ export function TunnelCommande({
                           {livraison.distanceKm !== null && ` — ${livraison.distanceKm} km`}
                         </p>
                         <p>
-                          Livraison {euro(livraison.frais)}
+                          Livraison {livraisonOfferte ? 'offerte' : euro(livraison.frais)}
                           {livraison.zone?.deliveryMinutes
                             ? `, environ ${livraison.zone.deliveryMinutes} min`
                             : ''}
                           {livraison.minimum > 0 && ` — minimum ${euro(livraison.minimum)}`}
                         </p>
+                        {manquePourOfferte > 0 && (
+                          <p className="mt-1 text-green-300">
+                            Encore {euro(manquePourOfferte)} pour la livraison offerte.
+                          </p>
+                        )}
                         {sousTotal < livraison.minimum && (
                           <p className="mt-1">
                             Il vous manque {euro(livraison.minimum - sousTotal)} pour atteindre
@@ -969,7 +985,7 @@ export function TunnelCommande({
               </div>
               {livraison?.livrable && (
                 <span className="text-sm text-gray-300 whitespace-nowrap">
-                  {livraison.frais > 0 ? `+${euro(livraison.frais)}` : 'Offerte'}
+                  {livraison.frais > 0 && !livraisonOfferte ? `+${euro(livraison.frais)}` : 'Offerte'}
                 </span>
               )}
             </label>

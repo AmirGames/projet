@@ -27,6 +27,10 @@ model User {
   resetTokenExpiresAt DateTime?
   isSystemAdmin Boolean   @default(false)
   isSuperOwner  Boolean   @default(false)
+  /// Rôle dans l'équipe de la plateforme (SUPER_ADMIN, ADMIN, SUPPORT).
+  /// Ce qu'il ouvre se règle dans PlatformRole ; le superowner n'en a pas
+  /// besoin, il voit tout.
+  platformRole  String?
   status        String    @default("ACTIVE") // ACTIVE, BANNED, SUSPENDED
 
   // Relations
@@ -41,6 +45,18 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@index([email])
+}
+
+/// Un groupe de l'équipe de la plateforme et ce qu'il peut faire dans l'espace
+/// superowner. Les permissions se cochent depuis cet espace, par le superowner
+/// seul : `{ "<section>": "read" | "write" }`, une section absente est fermée.
+model PlatformRole {
+  code        String   @id
+  label       String
+  permissions Json     @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /// Téléphone sur lequel l'application mobile est installée et connectée.
@@ -170,6 +186,7 @@ model Organization {
 
   // Relations
   stores              Store[]
+  merchantPayouts     MerchantPayout[]
   memberships         Membership[]
   tickets             MerchantTicket[]
   commissionHistory   CommissionHistory[]
@@ -791,6 +808,10 @@ model Order {
   payments        Payment[]
   delivery        OrderDelivery?
   invoice         Invoice?
+  /// Le relevé de reversement qui porte cette commande : une commande n'est
+  /// reversée qu'une fois.
+  merchantPayoutId String?
+  merchantPayout   MerchantPayout? @relation(fields: [merchantPayoutId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -801,6 +822,7 @@ model Order {
   @@index([createdAt])
   @@index([deletedAt])
   @@index([submittedAt])
+  @@index([merchantPayoutId])
 }
 
 model OrderItem {
@@ -955,6 +977,10 @@ model Driver {
   offers          DeliveryOffer[]
   documents       DriverDocument[]
   payouts         DriverPayout[]
+  /// Le compte à créditer pour ses versements (virement SEPA groupé).
+  iban            String?
+  bic             String?
+  accountHolder   String?
   ratings         DriverRating[]
   supportMessages DriverSupportMessage[]
 
@@ -1127,6 +1153,49 @@ model OrderDelivery {
 /// `Driver.totalEarnings`, sans que rien ne les paie : ni période, ni relevé,
 /// ni trace de versement. Un livreur ne pouvait pas savoir si les 340 € qu'on
 /// lui annonçait étaient déjà sur son compte ou toujours dus.
+/// Le relevé de reversement d'un commerçant.
+///
+/// Les clients paient en ligne, l'argent arrive chez la plateforme : c'est
+/// elle qui doit au commerçant ses ventes, moins sa commission. Rien ne le
+/// calculait ni ne le traçait. Un relevé par semaine (lundi 00 h 00 → lundi
+/// 00 h 00, heure de Bruxelles), figé à sa création, ligne par ligne avec un
+/// code, comme une fiche de paie.
+model MerchantPayout {
+  id              String    @id @default(cuid())
+  orgId           String
+
+  periodStart     DateTime
+  periodEnd       DateTime
+
+  orderCount      Int       @default(0)
+  /// [{ code, libelle, montant, detail? }] — voir merchant-payout.service.ts.
+  lines           Json      @default("[]")
+  /// Le net à verser. Négatif : il est reporté sur le relevé suivant.
+  amount          Decimal   @default(0) @db.Decimal(10, 2)
+
+  /// PENDING (à verser), PAID (versé), CARRIED (négatif, reporté),
+  /// CANCELLED (annulé).
+  status          String    @default("PENDING")
+  /// Le relevé suivant, qui a repris ce solde négatif.
+  carriedToId     String?
+
+  method          String?
+  reference       String?
+  paidAt          DateTime?
+  paidBy          String?
+  note            String?
+
+  org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orders          Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([status])
+  @@index([periodStart])
+}
+
 model DriverPayout {
   id              String    @id @default(cuid())
   driverId        String
@@ -1260,6 +1329,9 @@ model DeliveryZone {
 
   baseFee   Decimal @db.Decimal(10, 2)
   minOrder  Decimal @db.Decimal(10, 2)
+  /// Livraison offerte dès ce montant d'articles. Vide : jamais offerte
+  /// d'office, les frais de la zone s'appliquent toujours.
+  freeAbove Decimal? @db.Decimal(10, 2)
 
   // Relations
   store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
