@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
+import { exigerPermission } from "../services/permissions-plateforme.service";
 import { authMiddleware } from "../middleware/auth";
 import { MerchantClosureService } from "../services/merchant-closure.service";
 import { TicketMessageService } from "../services/ticket-message.service";
@@ -43,13 +44,9 @@ const getQueryNumber = (value: any, defaultValue: number): number => {
 // Le compte est déjà lu par `authMiddleware`, qui refuse en 401 celui qui
 // n'existe plus : ici, un refus veut bien dire « pas administrateur », et non
 // « compte introuvable » — c'est ce que les traces laissaient croire.
-const isSystemAdmin = (req: Request, _res: Response, next: NextFunction) => {
-  if (!req.compte?.isSystemAdmin) {
-    return next(new ApiError(403, "Accès refusé", "FORBIDDEN"));
-  }
-
-  next();
-};
+// Le superowner passe partout ; un membre de l'équipe selon les permissions
+// de son groupe, cochées depuis l'espace superowner.
+const isSystemAdmin = exigerPermission("admin");
 
 // ============================================================================
 // SYSTEM CONFIGURATION

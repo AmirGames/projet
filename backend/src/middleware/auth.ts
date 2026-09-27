@@ -8,6 +8,8 @@ export interface Compte {
   id: string;
   isSuperOwner: boolean;
   isSystemAdmin: boolean;
+  /** Rôle dans l'équipe de la plateforme, s'il en a un. */
+  platformRole: string | null;
 }
 
 declare global {
@@ -50,7 +52,7 @@ export async function compteDuJeton(userId: string): Promise<Compte | null> {
 
   const utilisateur = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, isSuperOwner: true, isSystemAdmin: true },
+    select: { id: true, isSuperOwner: true, isSystemAdmin: true, platformRole: true },
   });
 
   comptes.set(userId, { compte: utilisateur ?? null, expireA: Date.now() + DUREE_CACHE_MS });

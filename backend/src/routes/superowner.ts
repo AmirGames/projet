@@ -4,6 +4,14 @@ import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, oublierCompte } from "../middleware/auth";
+import {
+  exigerPermission,
+  PermissionsPlateforme,
+  SECTIONS,
+  LIBELLES_ROLES,
+  ROLES_PLATEFORME,
+  estRolePlateforme,
+} from "../services/permissions-plateforme.service";
 import { ApiKeyService } from "../services/api-key.service";
 import { WebhookService, EVENEMENTS_WEBHOOK } from "../services/webhook.service";
 import { BackupService } from "../services/backup.service";
@@ -51,25 +59,30 @@ import { fraisDusALaPlateforme, fraisDeServiceDus } from "../services/delivery-m
 
 const router = Router();
 
-// Middleware to check if user is superowner
-const isSuperOwner = async (req: Request, _res: Response, next: NextFunction) => {
-  try {
-    const userId = (req as any).userId;
-    const user = await db.user.findUnique({
-      where: { id: userId },
-    });
+// Garde de l'espace : le superowner passe partout, un membre de l'équipe
+// selon les permissions de son groupe (voir permissions-plateforme.service).
+const gardeEquipe = exigerPermission("superowner");
 
-    if (!user || !user.isSuperOwner) {
-      throw new ApiError(403, "Accès refusé - Superowner requis", "FORBIDDEN");
+const isSuperOwner = (req: Request, res: Response, next: NextFunction) => {
+  gardeEquipe(req, res, async (err?: unknown) => {
+    if (err) return next(err);
+    try {
+      // Le jeton ne porte pas l'email : on l'expose pour les journaux.
+      const user = await db.user.findUnique({ where: { id: req.userId }, select: { email: true } });
+      (req as any).actorEmail = user?.email;
+      next();
+    } catch (e) {
+      next(e);
     }
+  });
+};
 
-    // Le jeton ne porte pas l'email : on l'expose pour les journaux.
-    (req as any).actorEmail = user.email;
-
-    next();
-  } catch (err) {
-    next(err);
+/** Réservé au superowner lui-même : l'équipe et ses droits. */
+const superOwnerSeul = (req: Request, _res: Response, next: NextFunction) => {
+  if (!req.compte?.isSuperOwner) {
+    return next(new ApiError(403, "Accès refusé - Superowner requis", "FORBIDDEN"));
   }
+  next();
 };
 
 // ============================================================================
@@ -2655,7 +2668,7 @@ router.post(
 // ============================================================================
 
 // GET /superowner/admins - Comptes disposant de droits d'administration
-router.get("/admins", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/admins", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const offset = parseInt(req.query.offset as string) || 0;
@@ -2671,7 +2684,7 @@ router.get("/admins", authMiddleware, isSuperOwner, async (req: Request, res: Re
         id: c.id,
         email: c.email,
         name: c.name || c.email,
-        role: c.isSuperOwner ? "SUPEROWNER" : "ADMIN",
+        role: c.isSuperOwner ? "SUPEROWNER" : c.platformRole || "ADMIN",
         status: c.status === "BANNED" ? "SUSPENDED" : c.status,
         lastLogin: c.updatedAt,
         createdAt: c.createdAt,
@@ -2686,12 +2699,12 @@ router.get("/admins", authMiddleware, isSuperOwner, async (req: Request, res: Re
 // POST /superowner/admins - Promouvoir un compte existant
 // Volontairement une promotion et non une création : créer un compte ici
 // imposerait un mot de passe que personne ne pourrait communiquer au titulaire.
-router.post("/admins", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/admins", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const schema = z.object({
       email: z.string().email(),
       name: z.string().optional(),
-      role: z.enum(["SUPEROWNER", "ADMIN", "MODERATOR"]).default("ADMIN"),
+      role: z.enum(["SUPEROWNER", ...ROLES_PLATEFORME]).default("ADMIN"),
     });
     const body = schema.parse(req.body);
 
@@ -2714,6 +2727,7 @@ router.post("/admins", authMiddleware, isSuperOwner, async (req: Request, res: R
       data: {
         isSystemAdmin: true,
         isSuperOwner: body.role === "SUPEROWNER",
+        platformRole: body.role === "SUPEROWNER" ? null : body.role,
         name: body.name || compte.name,
       },
     });
@@ -2737,7 +2751,7 @@ router.post("/admins", authMiddleware, isSuperOwner, async (req: Request, res: R
         id: promu.id,
         email: promu.email,
         name: promu.name || promu.email,
-        role: promu.isSuperOwner ? "SUPEROWNER" : "ADMIN",
+        role: promu.isSuperOwner ? "SUPEROWNER" : promu.platformRole,
         status: promu.status,
         lastLogin: promu.updatedAt,
         createdAt: promu.createdAt,
@@ -2749,7 +2763,7 @@ router.post("/admins", authMiddleware, isSuperOwner, async (req: Request, res: R
 });
 
 // DELETE /superowner/admins/:adminId - Retirer les droits (le compte est conservé)
-router.delete("/admins/:adminId", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/admins/:adminId", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const adminId = req.params.adminId as string;
 
@@ -2782,7 +2796,7 @@ router.delete("/admins/:adminId", authMiddleware, isSuperOwner, async (req: Requ
 
     await db.user.update({
       where: { id: adminId },
-      data: { isSystemAdmin: false, isSuperOwner: false },
+      data: { isSystemAdmin: false, isSuperOwner: false, platformRole: null },
     });
 
     oublierCompte(adminId);
@@ -2797,6 +2811,128 @@ router.delete("/admins/:adminId", authMiddleware, isSuperOwner, async (req: Requ
     });
 
     res.json({ success: true, message: "Droits d'administration retirés" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /superowner/admins/:adminId/role - Changer le groupe d'un membre de l'équipe
+router.patch("/admins/:adminId/role", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminId = req.params.adminId as string;
+    const { role } = z.object({ role: z.enum(ROLES_PLATEFORME) }).parse(req.body);
+
+    if (adminId === req.userId) {
+      throw new ApiError(400, "Vous ne pouvez pas changer votre propre rôle", "CANNOT_CHANGE_SELF");
+    }
+
+    const compte = await db.user.findUnique({ where: { id: adminId } });
+    if (!compte || !compte.isSystemAdmin) {
+      throw new ApiError(404, "Membre de l'équipe non trouvé", "NOT_FOUND");
+    }
+    if (compte.isSuperOwner) {
+      throw new ApiError(400, "Un superowner n'a pas de groupe : il voit tout", "IS_SUPEROWNER");
+    }
+
+    await db.user.update({ where: { id: adminId }, data: { platformRole: role } });
+    oublierCompte(adminId);
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "CHANGE_PLATFORM_ROLE",
+        target: adminId,
+        changes: { avant: compte.platformRole, apres: role } as any,
+      },
+    });
+
+    res.json({ success: true, role });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ============================================================================
+// RÔLES DE L'ÉQUIPE ET PERMISSIONS
+// ============================================================================
+
+// GET /superowner/me/permissions - Ce que le compte connecté peut voir et faire
+router.get("/me/permissions", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const compte = req.compte;
+    if (compte?.isSuperOwner) {
+      res.json({
+        isSuperOwner: true,
+        role: "SUPEROWNER",
+        permissions: Object.fromEntries(SECTIONS.map((s) => [s.id, "write"])),
+      });
+      return;
+    }
+    if (!compte?.isSystemAdmin || !estRolePlateforme(compte.platformRole)) {
+      throw new ApiError(403, "Accès refusé", "FORBIDDEN");
+    }
+    res.json({
+      isSuperOwner: false,
+      role: compte.platformRole,
+      roleLabel: LIBELLES_ROLES[compte.platformRole],
+      permissions: await PermissionsPlateforme.permissionsDu(compte.platformRole),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/roles - Les groupes, les sections et ce qui est coché
+router.get("/roles", authMiddleware, superOwnerSeul, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const roles = await PermissionsPlateforme.lister();
+    const effectifs = await db.user.groupBy({
+      by: ["platformRole"],
+      where: { isSystemAdmin: true, isSuperOwner: false },
+      _count: { _all: true },
+    });
+    const parRole = Object.fromEntries(effectifs.map((e) => [e.platformRole, e._count._all]));
+
+    res.json({
+      sections: SECTIONS,
+      roles: ROLES_PLATEFORME.map((code) => {
+        const role = roles.find((r) => r.code === code);
+        return {
+          code,
+          label: role?.label ?? LIBELLES_ROLES[code],
+          permissions: role?.permissions ?? {},
+          membres: parRole[code] ?? 0,
+        };
+      }),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /superowner/roles/:code - Cocher les permissions d'un groupe
+router.put("/roles/:code", authMiddleware, superOwnerSeul, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const code = req.params.code;
+    if (!estRolePlateforme(code)) {
+      throw new ApiError(404, "Rôle inconnu", "NOT_FOUND");
+    }
+    const { permissions } = z
+      .object({ permissions: z.record(z.string(), z.enum(["read", "write"])) })
+      .parse(req.body);
+
+    const role = await PermissionsPlateforme.modifier(code, permissions);
+
+    await db.systemAuditLog.create({
+      data: {
+        adminId: req.userId as string,
+        action: "UPDATE_PLATFORM_ROLE_PERMISSIONS",
+        target: code,
+        changes: { permissions: role.permissions } as any,
+      },
+    });
+
+    res.json({ success: true, role });
   } catch (err) {
     next(err);
   }
