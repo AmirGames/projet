@@ -293,6 +293,8 @@
     "cores": "{n} cores",
     "systemMemory": "Machine memory",
     "systemMemoryValue": "{free} MB free of {total} MB",
+    "diskSpace": "Disk space",
+    "diskSpaceValue": "{free} MB free of {total} MB",
     "dependenciesTitle": "External services",
     "tasksTitle": "Background jobs",
     "taskName": "Job",
