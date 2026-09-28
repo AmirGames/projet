@@ -32,6 +32,10 @@ SAUVEGARDES="${SAUVEGARDES:-$HOME/sauvegardes}"
 case "${1:-}" in
   up)
     dc up -d --build --remove-orphans
+    # Caddy ne relit pas son Caddyfile de lui-même : sans cela, une mise à
+    # jour de deploy/Caddyfile restait sans effet. Le rechargement ne coupe
+    # aucune connexion, et refuse une configuration invalide sans rien casser.
+    dc exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
     docker image prune -f >/dev/null
     dc ps
     ;;

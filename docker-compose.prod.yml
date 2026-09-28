@@ -94,7 +94,10 @@ services:
       DOMAINE_API: ${DOMAINE_API}
       EMAIL_LETSENCRYPT: ${EMAIL_LETSENCRYPT:?EMAIL_LETSENCRYPT manquant dans .env.production}
     volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Le dossier, pas le fichier seul : git remplace le Caddyfile à chaque
+      # mise à jour, et un fichier monté seul restait figé dans sa version du
+      # démarrage. deploy/zup.sh up demande ensuite à Caddy de le relire.
+      - ./deploy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config
 

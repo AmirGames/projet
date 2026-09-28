@@ -1,7 +1,6 @@
 # Reverse proxy + HTTPS automatique (Let's Encrypt).
 # Les domaines viennent de .env.production (DOMAINES_SITE, DOMAINE_API) ;
 # chacun doit déjà pointer (enregistrement DNS A) vers l'IP du VPS.
-
 {
 	email {$EMAIL_LETSENCRYPT}
 }
