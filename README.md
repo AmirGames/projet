@@ -294,7 +294,7 @@ la main.
 
 L'historique des migrations part d'une migration de référence,
 `0001_initial_schema`, qui crée tout le schéma sur une base vide ; chaque
-changement de schéma ajoute ensuite sa propre migration (`0002` à `0015`
+changement de schéma ajoute ensuite sa propre migration (`0002` à `0016`
 aujourd'hui, `npx prisma migrate dev --name <nom>`), à committer avec le
 schéma.
 
