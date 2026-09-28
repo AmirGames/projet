@@ -170,7 +170,11 @@ const contexte = await nav.newContext({
   geolocation: POSITION,
 });
 
-const pageClient = await contexte.newPage();
+// Le client suit sa commande dans son propre navigateur : dans celui du
+// livreur, la session du livreur voyagerait avec la lecture du suivi, et la
+// route la refuse au livreur de la course, jeton ou non (SEC-01).
+const contexteClient = await nav.newContext();
+const pageClient = await contexteClient.newPage();
 const erreursClient = [];
 // Les tuiles de la carte viennent d'OpenStreetMap : hors réseau, leur échec
 // de chargement n'est pas une erreur de la page.
