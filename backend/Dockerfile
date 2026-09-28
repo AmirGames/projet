@@ -1,14 +1,14 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --prefer-offline --no-audit
 COPY . .
 RUN npm run build
 
 FROM node:22-alpine
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --prefer-offline --no-audit
 COPY --from=builder /app/dist ./dist
 # Prisma 7 ne génère plus le client à l'installation : on reprend celui du build.
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
