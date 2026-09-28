@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Cpu,
   Gauge,
@@ -193,6 +194,7 @@ export default function SurveillancePage() {
   const [auto, setAuto] = useState(true);
   const [tri, setTri] = useState<TriRoutes>('requetes');
   const [ouverte, setOuverte] = useState<string | null>(null);
+  const [disponibiliteOuverte, setDisponibiliteOuverte] = useState(true);
 
   const charger = useCallback(
     async (relever = false) => {
@@ -382,7 +384,28 @@ export default function SurveillancePage() {
           </section>
 
           {/* Dans la durée : l'historique survit aux redémarrages. */}
-          <DisponibiliteSite />
+          <section className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setDisponibiliteOuverte(!disponibiliteOuverte)}
+              className="w-full flex items-center justify-between px-5 py-3 border-b border-gray-700 hover:bg-gray-700/50 transition"
+              aria-expanded={disponibiliteOuverte}
+            >
+              <h2 className="font-semibold flex items-center gap-2">
+                <Clock size={18} className="text-gray-400" />
+                {t('uptimeTitle')}
+              </h2>
+              <ChevronDown
+                size={20}
+                className={`text-gray-400 transition-transform ${disponibiliteOuverte ? '' : '-rotate-90'}`}
+              />
+            </button>
+            {disponibiliteOuverte && (
+              <div className="p-5">
+                <DisponibiliteSite />
+              </div>
+            )}
+          </section>
 
           {/* Les chiffres qui comptent */}
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
