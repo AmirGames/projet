@@ -9,6 +9,7 @@
 #   ./deploy/zup.sh backup    sauvegarde base + fichiers dans ~/sauvegardes
 #   ./deploy/zup.sh restore <fichier.sql.gz>
 #   ./deploy/zup.sh psql
+#   ./deploy/zup.sh vapid     crée les clés des notifications push navigateur
 set -euo pipefail
 
 RACINE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -67,8 +68,33 @@ case "${1:-}" in
     dc start backend
     echo "✅ Base restaurée."
     ;;
+  vapid)
+    # Les clés ne se changent pas à la légère : les abonnements déjà pris
+    # par les navigateurs sont liés à la clé publique et deviendraient muets.
+    if [ -n "$(valeur VAPID_PUBLIC_KEY)" ] && [ -n "$(valeur VAPID_PRIVATE_KEY)" ]; then
+      echo "ℹ️  Clés VAPID déjà présentes dans .env.production : rien à faire."
+      echo "   Pour les remplacer, videz d'abord les deux lignes (les abonnements existants seront perdus)."
+      exit 0
+    fi
+    cles="$(dc run --rm --no-deps -T backend node -e \
+      'const k=require("web-push").generateVAPIDKeys();console.log(k.publicKey+" "+k.privateKey)' | tail -n1)"
+    publique="${cles%% *}"; privee="${cles##* }"
+    [ -n "$publique" ] && [ -n "$privee" ] || { echo "❌ Génération des clés impossible"; exit 1; }
+    for ligne in "VAPID_PUBLIC_KEY=$publique" "VAPID_PRIVATE_KEY=$privee"; do
+      nom="${ligne%%=*}"
+      if grep -qE "^$nom=" .env.production; then
+        sed -i "s|^$nom=.*|$ligne|" .env.production
+      else
+        echo "$ligne" >> .env.production
+      fi
+    done
+    grep -qE '^VAPID_SUBJECT=.' .env.production || echo "VAPID_SUBJECT=mailto:$(valeur EMAIL_LETSENCRYPT)" >> .env.production
+    # env_file n'est lu qu'à la création du conteneur : on le recrée.
+    dc up -d --no-deps backend
+    echo "✅ Clés VAPID enregistrées, API redémarrée."
+    ;;
   *)
-    sed -n '2,12p' "$0"
+    sed -n '2,13p' "$0"
     exit 1
     ;;
 esac

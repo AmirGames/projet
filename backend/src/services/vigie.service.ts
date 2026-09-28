@@ -470,10 +470,11 @@ export const Vigie = {
    */
   async pret() {
     const base = await verifierBase();
+    const processus = Surveillance.processus();
     return {
       pret: base.etat !== "PANNE",
       base: { etat: base.etat, dureeMs: base.dureeMs ?? null, detail: base.detail },
-      dureeFonctionnementS: Surveillance.processus().dureeFonctionnementS,
+      dureeFonctionnementS: processus.dureeFonctionnementS,
     };
   },
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { MailCheck } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -17,6 +18,7 @@ export default function MotDePasseOublie() {
   const [envoye, setEnvoye] = useState(false);
   const [erreur, setErreur] = useState('');
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
 
   const envoyer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +46,22 @@ export default function MotDePasseOublie() {
       setEnvoiEnCours(false);
     }
   };
+
+  // Connecté, on connaît déjà son mot de passe : le changement se fait depuis
+  // le profil, pas par un lien envoyé par e-mail.
+  if (!isLoading && isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
+        <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg w-full max-w-md text-center space-y-4">
+          <h1 className="text-2xl font-bold text-slate-900">Vous êtes connecté</h1>
+          <p className="text-slate-600">Veuillez changer votre mot de passe depuis votre profil.</p>
+          <Link href="/" className="inline-block mt-2 text-primary hover:text-primary-hover font-medium transition">
+            Retour à l&apos;accueil
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">

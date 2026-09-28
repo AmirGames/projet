@@ -2,7 +2,8 @@
 #
 #   Internet ──443──> Caddy ──> frontend:3000   (site, tous les domaines publics)
 #                          └──> backend:3001    (API + temps réel, DOMAINE_API)
-#                                  └──> postgres:5432 (jamais exposé)
+#                                  ├──> postgres:5432 (jamais exposé)
+#                                  └──> redis:6379    (relie les instances du temps réel)
 #
 # Caddy obtient et renouvelle seul les certificats HTTPS (Let's Encrypt).
 # Seuls les ports 80 et 443 sont ouverts ; la base n'écoute que sur le réseau
@@ -29,6 +30,19 @@ services:
       timeout: 5s
       retries: 10
 
+  # Relie les instances de l'API pour le temps réel (adaptateur Socket.IO) :
+  # un événement émis par une instance atteint les navigateurs branchés sur
+  # les autres. Sans persistance : il ne transporte que des messages.
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: ./backend
@@ -36,11 +50,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file: .env.production
     environment:
       NODE_ENV: production
       PORT: 3001
       DATABASE_URL: postgresql://${POSTGRES_USER:-zupone}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-zupone}?schema=public
+      REDIS_URL: redis://redis:6379
       API_URL: https://${DOMAINE_API:?DOMAINE_API manquant dans .env.production}
       # Un seul proxy devant l'API : Caddy.
       TRUST_PROXY: 1

@@ -47,6 +47,8 @@ import {
   Briefcase,
   MessageCircle,
   ShieldCheck,
+  UserCircle,
+  Terminal,
 } from 'lucide-react';
 
 export default function SuperOwnerLayout({ children }: { children: React.ReactNode }) {
@@ -117,7 +119,10 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   const navSections = [
     {
       title: null,
-      items: [{ label: t('nav.dashboard'), icon: Home, href: '/superowner', section: 'dashboard' }],
+      items: [
+        { label: t('nav.dashboard'), icon: Home, href: '/superowner', section: 'dashboard' },
+        { label: t('nav.profile'), icon: UserCircle, href: '/superowner/profil', section: 'profil' },
+      ],
     },
     {
       title: t('nav.sectionActivity'),
@@ -170,6 +175,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       items: [
         { label: t('nav.health'), icon: Activity, href: '/superowner/health', section: 'health' },
         { label: t('nav.monitoring'), icon: Radio, href: '/superowner/monitoring', section: 'monitoring' },
+        { label: t('nav.console'), icon: Terminal, href: '/superowner/console', section: null },
         { label: t('nav.dataManagement'), icon: Database, href: '/superowner/data-management', section: 'data-management' },
         { label: t('nav.securityAudit'), icon: Shield, href: '/superowner/security-audit', section: 'security-audit' },
         { label: t('nav.auditLogs'), icon: FileText, href: '/superowner/audit-logs', section: 'audit-logs' },
@@ -178,8 +184,11 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
     },
   ];
 
+  // Chaque membre de l'équipe gère son propre compte, quelles que soient ses
+  // permissions.
   const autorise = (section: string | null) =>
-    acces.isSuperOwner || (section !== null && !!acces.permissions[section]);
+    acces.isSuperOwner ||
+    section === 'profil' || (section !== null && !!acces.permissions[section]);
   const sectionsVisibles = navSections
     .map((section) => ({ ...section, items: section.items.filter((item) => autorise(item.section)) }))
     .filter((section) => section.items.length > 0);

@@ -22,6 +22,13 @@ interface Jour {
   tempsReponseMs: number | null;
 }
 
+interface Heure {
+  heure: string;
+  disponibilite: number | null;
+  indisponibleMin: number;
+  tempsReponseMs: number | null;
+}
+
 interface CibleBilan {
   cle: string;
   libelle: string;
@@ -32,6 +39,7 @@ interface CibleBilan {
   derniereErreur?: string | null;
   disponibilite: Partial<Record<'24h' | '7j' | '30j' | '90j', number | null>>;
   jours: Jour[];
+  heures?: Heure[];
   incidents: { debut: string; fin: string | null; dureeS: number; cause: string }[];
 }
 
@@ -57,6 +65,7 @@ export function DisponibiliteSite() {
   const [erreur, setErreur] = useState('');
   const [survol, setSurvol] = useState<{ cible: string; index: number } | null>(null);
   const [ouverte, setOuverte] = useState<string | null>(null);
+  const [fenetreSelectionnee, setFenetreSelectionnee] = useState<'24h' | '7j' | '30j' | '90j'>('24h');
 
   const charger = useCallback(async () => {
     try {
@@ -93,6 +102,7 @@ export function DisponibiliteSite() {
 
   const dateHeure = (iso: string) => new Date(iso).toLocaleString(formatLocal, { dateStyle: 'short', timeStyle: 'short' });
   const date = (jour: string) => new Date(`${jour}T00:00:00Z`).toLocaleDateString(formatLocal, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const heure = (iso: string) => new Date(iso).toLocaleTimeString(formatLocal, { hour: '2-digit', minute: '2-digit' });
 
   const duree = (secondes: number) => {
     if (secondes < 60) return t('uptimeSeconds', { s: secondes });
@@ -101,6 +111,15 @@ export function DisponibiliteSite() {
     return t('durationHours', { h: Math.floor(minutes / 60), m: minutes % 60 });
   };
 
+  const donneesAffichees = (cible: CibleBilan) => {
+    if (fenetreSelectionnee === '24h' && cible.heures?.length) {
+      return { donnees: cible.heures, estHeures: true };
+    }
+    const nbreJours = { '24h': 1, '7j': 7, '30j': 30, '90j': 90 }[fenetreSelectionnee];
+    return { donnees: cible.jours.slice(-nbreJours), estHeures: false };
+  };
+
+
   return (
     <section className="bg-gray-800 border border-gray-700 rounded-lg">
       <header className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-700 flex-wrap">
@@ -108,11 +127,23 @@ export function DisponibiliteSite() {
           <Globe size={18} className="text-gray-400" />
           {t('uptimeTitle')}
         </h2>
-        {bilan && (
-          <p className="text-xs text-gray-500">
-            {t('uptimeSubtitle', { interval: Math.round(bilan.intervalleMs / 1000), days: bilan.conservationJours })}
-          </p>
-        )}
+        <div className="flex gap-1 text-xs">
+          {(['24h', '7j', '30j', '90j'] as const).map((fenetre) => (
+            <button
+              key={fenetre}
+              type="button"
+              onClick={() => setFenetreSelectionnee(fenetre)}
+              aria-pressed={fenetreSelectionnee === fenetre}
+              className={`px-2.5 py-1 rounded ${
+                fenetreSelectionnee === fenetre
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              {t(`uptimeWindow${fenetre}`)}
+            </button>
+          ))}
+        </div>
       </header>
 
       <div className="p-5 space-y-8">
@@ -161,21 +192,23 @@ export function DisponibiliteSite() {
               <p className="text-sm text-gray-500">{t('uptimeNoData')}</p>
             ) : (
               <div className="relative">
-                {/* Un trait par jour, le plus ancien à gauche. */}
+                {/* Un trait par jour/heure, le plus ancien à gauche. */}
                 <div className="flex gap-[2px] h-9 items-stretch" role="list" aria-label={t('uptimeTimelineLabel')}>
-                  {cible.jours.map((jour, index) => {
+                  {donneesAffichees(cible).donnees.map((item, index) => {
                     const actif = survol?.cible === cible.cle && survol.index === index;
+                    const estHeure = donneesAffichees(cible).estHeures;
+                    const cle = estHeure ? (item as Heure).heure : (item as Jour).jour;
                     return (
                       <div
-                        key={jour.jour}
+                        key={cle}
                         role="listitem"
                         tabIndex={0}
-                        aria-label={`${date(jour.jour)} : ${pourcent(jour.disponibilite)}`}
+                        aria-label={`${estHeure ? heure(cle) : date(cle)} : ${pourcent(item.disponibilite)}`}
                         onMouseEnter={() => setSurvol({ cible: cible.cle, index })}
                         onMouseLeave={() => setSurvol(null)}
                         onFocus={() => setSurvol({ cible: cible.cle, index })}
                         onBlur={() => setSurvol(null)}
-                        className={`flex-1 min-w-0 rounded-sm outline-none ${teinte(jour.disponibilite)} ${
+                        className={`flex-1 min-w-0 rounded-sm outline-none ${teinte(item.disponibilite)} ${
                           actif ? 'opacity-100 ring-1 ring-white/70' : survol?.cible === cible.cle ? 'opacity-60' : ''
                         }`}
                       />
@@ -183,28 +216,38 @@ export function DisponibiliteSite() {
                   })}
                 </div>
 
-                {survol?.cible === cible.cle && cible.jours[survol.index] && (
+                {survol?.cible === cible.cle && donneesAffichees(cible).donnees[survol.index] && (
                   <div
                     className={`absolute z-10 top-11 rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-xs shadow-lg pointer-events-none min-w-[11rem] ${
-                      survol.index > cible.jours.length / 2 ? 'right-0' : 'left-0'
+                      survol.index > donneesAffichees(cible).donnees.length / 2 ? 'right-0' : 'left-0'
                     }`}
                   >
-                    <p className="text-gray-400">{date(cible.jours[survol.index].jour)}</p>
-                    <p className={`font-semibold text-sm ${teinteTexte(cible.jours[survol.index].disponibilite)}`}>
-                      {cible.jours[survol.index].disponibilite == null ? t('uptimeNoDataDay') : pourcent(cible.jours[survol.index].disponibilite)}
-                    </p>
-                    {cible.jours[survol.index].indisponibleMin > 0 && (
-                      <p className="text-gray-300">{t('uptimeDowntime', { m: cible.jours[survol.index].indisponibleMin })}</p>
+                    {donneesAffichees(cible).estHeures ? (
+                      <>
+                        <p className="text-gray-400">{heure((donneesAffichees(cible).donnees[survol.index] as Heure).heure)}</p>
+                        <p className={`font-semibold text-sm ${teinteTexte(donneesAffichees(cible).donnees[survol.index].disponibilite)}`}>
+                          {donneesAffichees(cible).donnees[survol.index].disponibilite == null ? t('uptimeNoDataDay') : pourcent(donneesAffichees(cible).donnees[survol.index].disponibilite)}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-gray-400">{date((donneesAffichees(cible).donnees[survol.index] as Jour).jour)}</p>
+                        <p className={`font-semibold text-sm ${teinteTexte(donneesAffichees(cible).donnees[survol.index].disponibilite)}`}>
+                          {donneesAffichees(cible).donnees[survol.index].disponibilite == null ? t('uptimeNoDataDay') : pourcent(donneesAffichees(cible).donnees[survol.index].disponibilite)}
+                        </p>
+                      </>
                     )}
-                    {cible.jours[survol.index].tempsReponseMs != null && (
-                      <p className="text-gray-300">{t('uptimeResponse', { ms: cible.jours[survol.index].tempsReponseMs! })}</p>
+                    {donneesAffichees(cible).donnees[survol.index].indisponibleMin > 0 && (
+                      <p className="text-gray-300">{t('uptimeDowntime', { m: donneesAffichees(cible).donnees[survol.index].indisponibleMin })}</p>
                     )}
                   </div>
                 )}
 
                 <div className="flex justify-between text-[11px] text-gray-500 mt-1">
-                  <span>{t('uptimeDaysAgo', { n: cible.jours.length })}</span>
-                  <span>{t('uptimeToday')}</span>
+                  <span>
+                    {donneesAffichees(cible).estHeures ? '00:00' : t('uptimeDaysAgo', { n: donneesAffichees(cible).donnees.length })}
+                  </span>
+                  <span>{donneesAffichees(cible).estHeures ? '23:00' : t('uptimeToday')}</span>
                 </div>
               </div>
             )}

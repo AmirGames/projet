@@ -70,11 +70,13 @@
       "dataManagement": "Data",
       "securityAudit": "Security",
       "auditLogs": "Audit Log",
+      "profile": "My profile",
       "accessLogs": "Access Log",
       "driverSupport": "Driver chat",
       "reviews": "Reported reviews",
       "monitoring": "Monitoring",
-      "roles": "Roles & access"
+      "roles": "Roles & access",
+      "console": "Console"
     },
     "openMenu": "Open menu",
     "toggleSidebar": "Collapse or expand the menu"
@@ -291,6 +293,8 @@
     "cores": "{n} cores",
     "systemMemory": "Machine memory",
     "systemMemoryValue": "{free} MB free of {total} MB",
+    "diskSpace": "Disk space",
+    "diskSpaceValue": "{free} MB free of {total} MB",
     "dependenciesTitle": "External services",
     "tasksTitle": "Background jobs",
     "taskName": "Job",
@@ -2145,5 +2149,17 @@
     "respecte": "met",
     "manquant": "missing",
     "invalide": "The password must be at least 8 characters long and contain a digit, a lowercase letter and an uppercase letter."
+  },
+  "superownerConsole": {
+    "title": "Console",
+    "subtitle": "Live API server logs (last 2,000 lines, refreshed every 2 s).",
+    "back": "Back",
+    "pause": "Pause",
+    "resume": "Resume",
+    "clear": "Clear",
+    "search": "Search…",
+    "empty": "No lines.",
+    "loadError": "Unable to load the console.",
+    "serverUnreachable": "Server unreachable."
   }
 }

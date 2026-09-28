@@ -9,6 +9,7 @@ import { User, Mail, ShoppingBag, Wallet, Save } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import ChangerMotDePasse from '@/components/ChangerMotDePasse';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Profil {
@@ -249,6 +250,8 @@ export default function ProfilClientPage() {
               <Save size={16} /> {t('save')}
             </button>
           </form>
+
+          <ChangerMotDePasse />
         </>
       )}
     </div>

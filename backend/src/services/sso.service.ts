@@ -184,6 +184,23 @@ export const SsoService = {
     return { sid: session.id, userId: session.userId };
   },
 
+  /**
+   * Ferme toutes les sessions d'un compte, sauf éventuellement une.
+   *
+   * Après un changement de mot de passe, refuser les anciens jetons (voir
+   * jetonPerime) ne suffit pas : un navigateur qui gardait le cookie de
+   * zupone.com se ferait remettre des jetons neufs par la connexion unique.
+   * Ses sessions doivent donc fermer aussi — sauf celle du navigateur qui
+   * vient de changer le mot de passe.
+   */
+  async fermerToutes(userId: string, sauf?: string) {
+    const ouvertes = await db.sessionConnexion.findMany({
+      where: { userId, revokedAt: null, ...(sauf ? { id: { not: sauf } } : {}) },
+      select: { id: true },
+    });
+    for (const { id } of ouvertes) await this.fermer(id);
+  },
+
   /** Ferme la session : ses jetons cessent de valoir sur tous les domaines. */
   async fermer(sid: string) {
     await db.sessionConnexion.updateMany({

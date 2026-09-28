@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Cpu,
   Gauge,
@@ -85,7 +86,13 @@ interface Instantane {
     cpuPourcent: number;
     memoire: { residenteMo: number; tasUtiliseMo: number; tasLimiteMo: number; tasPourcent: number };
     boucle: { p99Ms: number; maxMs: number };
-    systeme: { charge: number[]; coeurs: number; memoireLibreMo: number; memoireTotaleMo: number };
+    systeme: {
+      charge: number[];
+      coeurs: number;
+      memoireLibreMo: number;
+      memoireTotaleMo: number;
+      disque: { libreMo: number; totaleMo: number; utiliseMo: number; pourcentUtilise: number };
+    };
   };
   tempsReel: { connexions: number; redis: { configure: boolean; relie: boolean; pret: boolean } };
   dependances: { cle: string; libelle: string; etat: EtatDependance; detail: string }[];
@@ -187,6 +194,8 @@ export default function SurveillancePage() {
   const [auto, setAuto] = useState(true);
   const [tri, setTri] = useState<TriRoutes>('requetes');
   const [ouverte, setOuverte] = useState<string | null>(null);
+  const [disponibiliteOuverte, setDisponibiliteOuverte] = useState(true);
+  const [slaOuvert, setSlaOuvert] = useState(true);
 
   const charger = useCallback(
     async (relever = false) => {
@@ -376,7 +385,81 @@ export default function SurveillancePage() {
           </section>
 
           {/* Dans la durée : l'historique survit aux redémarrages. */}
-          <DisponibiliteSite />
+          <section className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setDisponibiliteOuverte(!disponibiliteOuverte)}
+              className="w-full flex items-center justify-between px-5 py-3 border-b border-gray-700 hover:bg-gray-700/50 transition"
+              aria-expanded={disponibiliteOuverte}
+            >
+              <h2 className="font-semibold flex items-center gap-2">
+                <Clock size={18} className="text-gray-400" />
+                {t('uptimeTitle')}
+              </h2>
+              <ChevronDown
+                size={20}
+                className={`text-gray-400 transition-transform ${disponibiliteOuverte ? '' : '-rotate-90'}`}
+              />
+            </button>
+            {disponibiliteOuverte && (
+              <div className="p-5">
+                <DisponibiliteSite />
+              </div>
+            )}
+          </section>
+
+          {/* SLA Summary */}
+          {donnees && (
+            <section className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setSlaOuvert(!slaOuvert)}
+                className="w-full flex items-center justify-between px-5 py-3 border-b border-gray-700 hover:bg-gray-700/50 transition"
+                aria-expanded={slaOuvert}
+              >
+                <h2 className="font-semibold flex items-center gap-2">
+                  <Gauge size={18} className="text-gray-400" />
+                  Accord de Niveau de Service (SLA)
+                </h2>
+                <ChevronDown
+                  size={20}
+                  className={`text-gray-400 transition-transform ${slaOuvert ? '' : '-rotate-90'}`}
+                />
+              </button>
+              {slaOuvert && (
+                <div className="p-5 space-y-4">
+                  <p className="text-sm text-gray-300">
+                    Les SLA pour chaque cible sont calculés dans la section <strong>Disponibilité</strong> ci-dessus, en fonction de la fenêtre de temps sélectionnée (24h, 7j, 30j, 90j).
+                  </p>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3 border-t border-gray-700">
+                    <div>
+                      <h3 className="text-xs font-semibold text-gray-400 mb-2">Seuils SLA</h3>
+                      <ul className="space-y-1 text-xs text-gray-400">
+                        <li className="flex items-center gap-2">
+                          <span className="inline-block w-3 h-3 bg-green-500 rounded-sm"></span>
+                          <span>Vert : ≥ 99,9% (Optimal)</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="inline-block w-3 h-3 bg-amber-500 rounded-sm"></span>
+                          <span>Ambre : 99,5% - 99,9% (Attention)</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="inline-block w-3 h-3 bg-red-500 rounded-sm"></span>
+                          <span>Rouge : &lt; 99% (Critique)</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-semibold text-gray-400 mb-2">Cibles Principales</h3>
+                      <p className="text-xs text-gray-500">
+                        Sélectionnez une fenêtre de temps (24h, 7j, 30j, 90j) dans la section Disponibilité pour voir le SLA détaillé de chaque cible.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Les chiffres qui comptent */}
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -464,15 +547,27 @@ export default function SurveillancePage() {
                   <dd className="font-semibold tabular-nums">{processus.memoire.residenteMo} Mo</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-400">{t('eventLoop')}</dt>
-                  <dd className={`font-semibold tabular-nums ${processus.boucle.p99Ms >= 200 ? 'text-amber-400' : ''}`}>
-                    {t('eventLoopValue', { p99: processus.boucle.p99Ms, max: processus.boucle.maxMs })}
+                  <dt className="text-gray-400 flex items-center gap-1.5"><MemoryStick size={14} />{t('diskSpace')}</dt>
+                  <dd className={`text-lg font-semibold tabular-nums ${processus.systeme.disque.pourcentUtilise >= 85 ? 'text-amber-400' : ''}`}>
+                    {processus.systeme.disque.libreMo} / {processus.systeme.disque.totaleMo} Mo
                   </dd>
+                  <div className="mt-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${processus.systeme.disque.pourcentUtilise >= 85 ? 'bg-amber-500' : 'bg-green-500'}`}
+                      style={{ width: `${Math.min(100, processus.systeme.disque.pourcentUtilise)}%` }}
+                    />
+                  </div>
                 </div>
                 <div>
                   <dt className="text-gray-400">{t('load')}</dt>
                   <dd className="font-semibold tabular-nums">
                     {processus.systeme.charge.join(' · ')} <span className="text-gray-500 font-normal">({t('cores', { n: processus.systeme.coeurs })})</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">{t('eventLoop')}</dt>
+                  <dd className={`font-semibold tabular-nums ${processus.boucle.p99Ms >= 200 ? 'text-amber-400' : ''}`}>
+                    {t('eventLoopValue', { p99: processus.boucle.p99Ms, max: processus.boucle.maxMs })}
                   </dd>
                 </div>
                 <div>

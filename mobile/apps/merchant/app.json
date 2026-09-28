@@ -18,6 +18,14 @@
             "./assets/sounds/new_order.wav"
           ]
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 29
+          }
+        }
       ]
     ],
     "android": {

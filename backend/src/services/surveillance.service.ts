@@ -1,6 +1,7 @@
 import { monitorEventLoopDelay } from "perf_hooks";
 import { getHeapStatistics } from "v8";
 import os from "os";
+import { execSync } from "child_process";
 
 /**
  * Surveillance du site en fonctionnement.
@@ -229,6 +230,41 @@ let cpuPourcent = 0;
 let boucleP99Ms = 0;
 let boucleMaxMs = 0;
 
+// Cache disque : actualisé toutes les heures
+const CACHE_DISQUE_MS = 60 * 60 * 1000; // 1 heure
+let disqueCacheLe = 0;
+let disqueCachee = { libreMo: 0, totaleMo: 0, utiliseMo: 0, pourcentUtilise: 0 };
+
+/** Récupère les informations d'espace disque via df */
+function obtenirDisque() {
+  try {
+    const path = process.env.DISK_USAGE_PATH || "/";
+    // df -B1 pour obtenir les octets, | grep pour la ligne concernée
+    const output = execSync(`df -B1 "${path}" 2>/dev/null | tail -1`, {
+      encoding: "utf-8",
+      timeout: 5000,
+    }).trim();
+
+    const parties = output.split(/\s+/);
+    if (parties.length >= 4) {
+      const total = parseInt(parties[1], 10);
+      const utilise = parseInt(parties[2], 10);
+      const libre = parseInt(parties[3], 10);
+
+      return {
+        libreMo: Math.round(libre / 1024 / 1024),
+        totaleMo: Math.round(total / 1024 / 1024),
+        utiliseMo: Math.round(utilise / 1024 / 1024),
+        pourcentUtilise: total > 0 ? Math.round((utilise / total) * 1000) / 10 : 0,
+      };
+    }
+  } catch (err) {
+    // En cas d'erreur (Windows, droits insuffisants, etc.)
+  }
+
+  return { libreMo: 0, totaleMo: 0, utiliseMo: 0, pourcentUtilise: 0 };
+}
+
 /**
  * Le processeur et la boucle d'événements se mesurent sur un intervalle : on
  * relève toutes les cinq secondes, et on remet l'histogramme à zéro pour que
@@ -253,6 +289,14 @@ function etatProcessus() {
   const tas = getHeapStatistics();
   const mo = (octets: number) => Math.round(octets / 1024 / 1024);
 
+  // Vérifier le cache disque (actualisé toutes les heures)
+  let disque = disqueCachee;
+  if (Date.now() - disqueCacheLe > CACHE_DISQUE_MS) {
+    disque = obtenirDisque();
+    disqueCachee = disque;
+    disqueCacheLe = Date.now();
+  }
+
   return {
     demarreLe: new Date(demarrageLe).toISOString(),
     dureeFonctionnementS: Math.round((Date.now() - demarrageLe) / 1000),
@@ -274,6 +318,7 @@ function etatProcessus() {
       coeurs: os.cpus().length,
       memoireLibreMo: mo(os.freemem()),
       memoireTotaleMo: mo(os.totalmem()),
+      disque,
     },
   };
 }
@@ -423,7 +468,9 @@ export const Surveillance = {
     }
   },
 
-  processus: etatProcessus,
+  processus() {
+    return etatProcessus();
+  },
   fenetre: bilanFenetre,
   serie: serieMinutes,
 

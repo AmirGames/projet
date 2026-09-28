@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { RAISON_DECONNEXION, useAuth } from "@/lib/auth-context";
-import { accueilConnecte, confierSessionCentrale, demanderSessionCentrale } from "@/lib/sso";
+import { confierSessionCentrale, demanderSessionCentrale } from "@/lib/sso";
 import Link from "next/link";
+import { destinationApresConnexion } from "@/lib/espace-utilisateur";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -25,7 +26,7 @@ function lireRaison(): string | null {
 export default function LoginPage() {
   const t = useTranslations('auth.login');
   const router = useRouter();
-  const { refreshAuth } = useAuth();
+  const { refreshAuth, isAuthenticated, isLoading, user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -50,8 +51,10 @@ export default function LoginPage() {
    * une session qui vient d'expirer — elle l'est partout, et le message qui
    * l'explique se perdrait dans le détour.
    */
+  // Retour ici une fois la session reçue : l'effet « déjà connecté »
+  // ci-dessous choisit alors l'espace, selon le domaine et le compte.
   useEffect(() => {
-    if (!raisonStockee) demanderSessionCentrale(accueilConnecte());
+    if (!raisonStockee) demanderSessionCentrale(window.location.pathname + window.location.search);
   }, [raisonStockee]);
 
   useEffect(() => {
@@ -62,6 +65,16 @@ export default function LoginPage() {
       // Stockage refusé : rien à retirer.
     }
   }, [raisonStockee]);
+
+  // Déjà connecté : le formulaire n'a plus rien à offrir, on rejoint son espace.
+  useEffect(() => {
+    if (isLoading || !isAuthenticated) return;
+    router.replace(
+      destinationApresConnexion({
+        isSuperOwner: user?.isSuperOwner,
+      }),
+    );
+  }, [isLoading, isAuthenticated, user, router]);
 
   const renvoyerConfirmation = async () => {
     setLienRenvoye(t("resending"));
@@ -121,11 +134,11 @@ export default function LoginPage() {
       // protégées renvoient aussitôt vers /login.
       await refreshAuth();
 
-      // Redirect based on role — en passant par zupone.com, qui garde la
-      // session pour les autres domaines du site.
-      const destination = isSuperOwner ? "/superowner" : "/auth/role-selection";
+      // La destination dépend du domaine ; on y va en passant par zupone.com,
+      // qui garde la session pour les autres domaines du site.
+      const destination = destinationApresConnexion({ isSuperOwner });
       if (await confierSessionCentrale(result.accessToken, destination)) return;
-      router.push(destination);
+      router.replace(destination);
     } catch (err) {
       setError(t("errorConnection"));
       signalerErreur(err);

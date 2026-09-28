@@ -10,7 +10,7 @@ import { SsoService } from "../services/sso.service";
 import { compteConnecte } from "../services/compte-connecte";
 import { UserService } from "../services/user.service";
 import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware, compteDuJeton } from "../middleware/auth";
+import { authMiddleware, compteDuJeton, jetonPerime, oublierCompte } from "../middleware/auth";
 import {
   limiterCadence,
   limiterConnexions,
@@ -73,8 +73,15 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
     // Le lien de confirmation part à l'inscription. Il ne bloque rien : tant
     // que REQUIRE_EMAIL_VERIFICATION n'est pas activé, le compte est
     // utilisable immédiatement.
+    // Le courriel part sans faire attendre la réponse : l'aller-retour avec le
+    // serveur SMTP représentait l'essentiel de la durée de l'inscription.
     if (process.env.ENABLE_EMAIL_VERIFICATION !== "false") {
-      await envoyerConfirmation(user);
+      void envoyerConfirmation(user).catch((err) =>
+        logger.warn("Confirmation d'adresse non préparée", {
+          email: user.email,
+          error: err instanceof Error ? err.message : err,
+        })
+      );
     }
 
     /**
@@ -205,7 +212,7 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
     // une session à refaire : dit en 404, le navigateur réessayait sans fin.
     const compte = await compteDuJeton(decoded.userId);
 
-    if (!compte) {
+    if (!compte || jetonPerime(compte, decoded.iat)) {
       throw new ApiError(
         401,
         "Votre session n'est plus valable. Reconnectez-vous.",
@@ -742,7 +749,16 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
 const adresseDuSite = () =>
   (process.env.SITE_URL || process.env.FRONTEND_URL || "http://localhost:3000").replace(/\/$/, "");
 
-/** Envoie un lien de confirmation, sans jamais faire échouer l'appelant. */
+/**
+ * Enregistre un lien de confirmation et le fait partir, sans jamais faire
+ * échouer ni ralentir l'appelant.
+ *
+ * Seul le jeton est attendu : il doit exister en base avant que le lien
+ * puisse être cliqué. L'envoi, lui, part sans être attendu — un serveur de
+ * courriel injoignable retenait la réponse de l'inscription de longues
+ * secondes, et le visiteur qui réessayait tombait sur « adresse déjà
+ * utilisée » alors que son compte venait d'être créé.
+ */
 async function envoyerConfirmation(user: { id: string; email: string; name: string | null }) {
   const { jeton, empreinte, expireLe } = AccountTokenService.emettre(DUREE_CONFIRMATION_MS);
 
@@ -753,16 +769,14 @@ async function envoyerConfirmation(user: { id: string; email: string; name: stri
 
   const lien = `${adresseDuSite()}/verifier-email?jeton=${jeton}`;
 
-  try {
-    await EmailService.sendEmailVerification(user.email, user.name, lien);
-  } catch (err) {
+  EmailService.sendEmailVerification(user.email, user.name, lien).catch((err) => {
     // Un serveur de courriel indisponible ne doit pas empêcher l'inscription :
     // le message peut être redemandé plus tard.
     logger.warn("Envoi de la confirmation d'adresse impossible", {
       email: user.email,
       error: err instanceof Error ? err.message : err,
     });
-  }
+  });
 }
 
 // POST /auth/forgot-password - Demande de réinitialisation
@@ -808,14 +822,15 @@ router.post(
 
       const lien = `${adresseDuSite()}/reinitialiser?jeton=${jeton}`;
 
-      try {
-        await EmailService.sendPasswordReset(user.email, user.name, lien);
-      } catch (err) {
+      // Envoi non attendu : un serveur de courriel lent retiendrait la réponse,
+      // et cette attente trahirait, par sa seule durée, qu'un compte existe à
+      // cette adresse.
+      EmailService.sendPasswordReset(user.email, user.name, lien).catch((err) => {
         logger.error("Envoi du lien de réinitialisation impossible", {
           email,
           error: err instanceof Error ? err.message : err,
         });
-      }
+      });
 
       await SecurityEventService.record({
         action: "PASSWORD_RESET_REQUESTED",
@@ -890,6 +905,9 @@ router.post(
         where: { id: user.id },
         data: {
           passwordHash,
+          // Quelqu'un d'autre avait peut-être le mot de passe : ses sessions
+          // tombent avec lui.
+          passwordChangedAt: new Date(),
           // Un jeton ne sert qu'une fois.
           resetTokenHash: null,
           resetTokenExpiresAt: null,
@@ -907,9 +925,90 @@ router.post(
         details: "Mot de passe changé via un lien de réinitialisation",
       });
 
+      oublierCompte(user.id);
+      // Toutes les sessions, cookie de zupone.com compris : celui qui avait le
+      // mot de passe volé ne se fait plus remettre de jetons neufs.
+      await SsoService.fermerToutes(user.id);
       logger.info("Mot de passe réinitialisé", { userId: user.id });
 
       res.json({ message: "Mot de passe modifié. Vous pouvez vous connecter." });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /auth/change-password - Changement depuis le profil, session ouverte
+router.post(
+  "/change-password",
+  authMiddleware,
+  // Deviner l'ancien mot de passe depuis une session volée doit rester lent.
+  limiterCadence({
+    max: 10,
+    fenetreMs: 15 * 60 * 1000,
+    cle: (req) => `changement-mdp|${(req as any).userId || req.ip}`,
+  }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
+      }
+
+      const body = z
+        .object({
+          currentPassword: z.string().min(1),
+          newPassword: champMotDePasse(),
+        })
+        .parse(req.body);
+
+      const user = await db.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, passwordHash: true },
+      });
+
+      if (!user || !user.passwordHash || !(await AuthService.comparePassword(body.currentPassword, user.passwordHash))) {
+        throw new ApiError(400, "Mot de passe actuel incorrect.", "INVALID_CURRENT_PASSWORD");
+      }
+
+      if (body.currentPassword === body.newPassword) {
+        throw new ApiError(400, "Le nouveau mot de passe doit être différent de l'actuel.", "SAME_PASSWORD");
+      }
+
+      // Arrondi à la seconde, comme `iat` : les jetons remis ci-dessous, émis
+      // dans la même seconde, restent valables ; ceux d'avant ne le sont plus.
+      const changeLe = new Date(Math.floor(Date.now() / 1000) * 1000);
+
+      await db.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: await AuthService.hashPassword(body.newPassword),
+          // Ferme les sessions ouvertes ailleurs.
+          passwordChangedAt: changeLe,
+          // Un lien de réinitialisation en attente ne doit plus servir.
+          resetTokenHash: null,
+          resetTokenExpiresAt: null,
+        },
+      });
+
+      await SecurityEventService.record({
+        action: "PASSWORD_CHANGED",
+        actor: user.email,
+        severity: "MEDIUM",
+        details: "Mot de passe changé depuis le profil",
+      });
+
+      oublierCompte(user.id);
+      // Les autres sessions ferment aussi pour la connexion unique ; celle-ci
+      // reste ouverte, sur tous ses domaines, avec des jetons neufs.
+      await SsoService.fermerToutes(user.id, req.user?.sid);
+
+      // Cette session-ci reste ouverte avec des jetons neufs.
+      res.json({
+        message: "Mot de passe modifié. Vos autres sessions ont été déconnectées.",
+        accessToken: AuthService.generateAccessToken(user.id, req.user?.sid),
+        refreshToken: AuthService.generateRefreshToken(user.id, req.user?.sid),
+      });
     } catch (err) {
       next(err);
     }

@@ -28,6 +28,14 @@
           "merchantIdentifier": "merchant.com.amir_games.zupeatcustomer",
           "enableGooglePay": true
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 29
+          }
+        }
       ]
     ],
     "android": {

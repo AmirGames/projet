@@ -1,3 +1,4 @@
+import { lireConsole } from "../config/logger";
 import { Router, Request, Response, NextFunction } from "express";
 import { MerchantPayoutService, horsReversements, reversementsDepuis } from "../services/merchant-payout.service";
 import { z } from "zod";
@@ -175,6 +176,12 @@ router.get("/system-health", authMiddleware, isSuperOwner, async (_req: Request,
   } catch (err) {
     next(err);
   }
+});
+
+// GET /superowner/console?apres=<id> - Les dernières lignes de la console du serveur
+router.get("/console", authMiddleware, isSuperOwner, (req: Request, res: Response) => {
+  const apres = parseInt(String(req.query.apres ?? "0"), 10) || 0;
+  res.json({ success: true, data: lireConsole(apres) });
 });
 
 // GET /superowner/monitoring - Le site en fonctionnement, en direct
