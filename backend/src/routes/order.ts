@@ -6,10 +6,9 @@ import { OrderService } from "../services/order.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authFacultative, authMiddleware } from "../middleware/auth";
 import { limiterCadence } from "../middleware/throttle";
-import type { Appelant } from "../services/suivi-commande.service";
+import { courseVisible, type Appelant } from "../services/suivi-commande.service";
 import { logger } from "../config/logger";
 import { emitOrderUpdate } from "../config/socket";
-import { db } from "../services/db";
 import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
 
 import { DispatchService } from "../services/dispatch.service";
@@ -382,51 +381,21 @@ router.post("/:id/dispatch", authMiddleware, async (req: Request, res: Response,
   }
 });
 
-// GET /orders/:id/delivery - Get delivery tracking info
+// GET /orders/:id/delivery - Suivi de la course
 //
-// Mêmes droits que le suivi de la commande : la position du livreur ne se lit
-// pas avec le seul identifiant.
+// Mêmes droits que le suivi de la commande (plus le livreur de la course),
+// réponse en liste blanche : voir courseVisible().
 router.get("/:id/delivery", limiterSuivi, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const orderId = req.params.id as string;
-
     const appelant = await appelantFacultatif(req, res);
-    if (!(await OrderService.getOrderWithItems(orderId, appelant, jetonDeSuivi(req)))) {
+    const course = await courseVisible(req.params.id as string, appelant, jetonDeSuivi(req));
+
+    if (course === undefined) {
       throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
     }
 
-    const delivery = await db.orderDelivery.findUnique({
-      where: { orderId },
-      select: {
-        id: true,
-        orderId: true,
-        status: true,
-        pickupLat: true,
-        pickupLng: true,
-        deliveryLat: true,
-        deliveryLng: true,
-        // Coordonnées obfusquées pour le client
-        deliveryLatObfusquee: true,
-        deliveryLngObfusquee: true,
-        driverLat: true,
-        driverLng: true,
-        driver: { select: { name: true } },
-      },
-    });
-
-    if (!delivery) {
-      res.json({ data: null });
-      return;
-    }
-
-    res.json({
-      data: {
-        ...delivery,
-        // Utiliser coordonnées obfusquées pour le client
-        deliveryLat: delivery.deliveryLatObfusquee || delivery.deliveryLat,
-        deliveryLng: delivery.deliveryLngObfusquee || delivery.deliveryLng,
-      },
-    });
+    res.set("Cache-Control", "no-store");
+    res.json({ data: course });
   } catch (err) {
     next(err);
   }

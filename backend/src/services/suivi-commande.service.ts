@@ -322,6 +322,64 @@ export interface Appelant {
 const equipePlateforme = (compte?: Compte) =>
   Boolean(compte && (compte.isSuperOwner || compte.isSystemAdmin || Object.keys(compte.acces || {}).length > 0));
 
+/** Ce qu'une commande doit porter pour décider qui la lit. */
+interface Rattachement {
+  trackingTokenHash: string | null;
+  jetonsDeSuivi: { tokenHash: string }[];
+  store: { orgId: string };
+  customer: { userId: string | null } | null;
+  delivery: { driver: { userId: string | null } | null } | null;
+}
+
+/**
+ * Le droit de lecture de l'appelant :
+ * - `complete` : client propriétaire, équipe du commerce ou de la plateforme
+ *   (et, si `livreurAdmis`, le livreur de la course) ; `avecCode` dit s'il lit
+ *   le code de remise ;
+ * - `publique` : un visiteur qui présente un jeton de suivi valable ;
+ * - `null` : personne — la route répond 404.
+ *
+ * Seule source de vérité des routes de suivi (commande et course).
+ */
+export type Acces = { vue: "complete"; avecCode: boolean; livreur: boolean } | { vue: "publique" } | null;
+
+export async function evaluerAcces(
+  commande: Rattachement,
+  appelant: Appelant,
+  jeton: unknown,
+  options: { livreurAdmis?: boolean } = {}
+): Promise<Acces> {
+  if (appelant.userId) {
+    const livreur = commande.delivery?.driver?.userId === appelant.userId;
+    const proprietaire = Boolean(commande.customer?.userId) && commande.customer?.userId === appelant.userId;
+
+    // Le livreur de la course ne lit jamais le code ici, même s'il est aussi
+    // le client : il clôturerait la course sans passer à la porte.
+    if (proprietaire) return { vue: "complete", avecCode: !livreur, livreur };
+
+    if (equipePlateforme(appelant.compte)) return { vue: "complete", avecCode: false, livreur };
+
+    const membre = await db.membership.findFirst({
+      where: { userId: appelant.userId, orgId: commande.store.orgId },
+      select: { id: true },
+    });
+    if (membre) return { vue: "complete", avecCode: false, livreur };
+
+    // Le livreur suit sa course (position, destination), sans le code.
+    if (livreur && options.livreurAdmis) return { vue: "complete", avecCode: false, livreur };
+
+    // Connecté mais étranger à la commande : il lui reste le jeton de suivi,
+    // comme à un visiteur — sauf au livreur de la course, qui n'obtient jamais
+    // le code, quel que soit le chemin.
+    if (livreur) return null;
+  }
+
+  const empreintes = [commande.trackingTokenHash, ...commande.jetonsDeSuivi.map((j) => j.tokenHash)];
+  if (jetonReconnu(jeton, empreintes)) return { vue: "publique" };
+
+  return null;
+}
+
 /**
  * La commande telle que l'appelant a le droit de la voir, ou `null` — qu'elle
  * n'existe pas ou qu'il ne puisse pas la lire : la route répond 404 dans les
@@ -331,30 +389,79 @@ export async function commandeVisible(id: string, appelant: Appelant, jeton?: un
   const commande = await lireCommande(id);
   if (!commande) return null;
 
-  if (appelant.userId) {
-    const livreur = commande.delivery?.driver?.userId === appelant.userId;
-    const proprietaire = Boolean(commande.customer?.userId) && commande.customer?.userId === appelant.userId;
+  const acces = await evaluerAcces(commande, appelant, jeton);
+  if (!acces) return null;
+  return acces.vue === "complete" ? vueComplete(commande, acces.avecCode) : vuePublique(commande);
+}
 
-    // Le livreur de la course ne lit jamais le code ici, même s'il est aussi
-    // le client : il clôturerait la course sans passer à la porte.
-    if (proprietaire) return vueComplete(commande, !livreur);
+// ---------------------------------------------------------------------------
+// Suivi de la course
+// ---------------------------------------------------------------------------
 
-    if (equipePlateforme(appelant.compte)) return vueComplete(commande, false);
+/** ≈ 110 m : assez pour voir le livreur approcher, pas pour le pister. */
+export const arrondirPosition = (valeur: number | null | undefined) =>
+  typeof valeur === "number" && Number.isFinite(valeur) ? Math.round(valeur * 1000) / 1000 : null;
 
-    const membre = await db.membership.findFirst({
-      where: { userId: appelant.userId, orgId: commande.store.orgId },
-      select: { id: true },
-    });
-    if (membre) return vueComplete(commande, false);
+/** La position du livreur ne se montre qu'en route vers le client. */
+export const positionLivreurVisible = (statut: string | null | undefined) => statut === "PICKED_UP";
 
-    // Connecté mais étranger à la commande : il lui reste le jeton de suivi,
-    // comme à un visiteur — sauf au livreur de la course, qui n'obtient jamais
-    // le code, quel que soit le chemin.
-    if (livreur) return null;
-  }
+/**
+ * La course telle que l'appelant a le droit de la suivre, par liste blanche.
+ *
+ * - `undefined` : commande inconnue ou appelant non admis (404) ;
+ * - `null` : commande visible, pas encore de course.
+ *
+ * Un visiteur (jeton) ne lit jamais la destination réelle : seulement les
+ * coordonnées obfusquées, `null` si elles manquent — jamais de repli sur le GPS
+ * du domicile. La position du livreur n'est donnée qu'en PICKED_UP, arrondie
+ * pour un visiteur.
+ */
+export async function courseVisible(orderId: string, appelant: Appelant, jeton?: unknown) {
+  const commande = await db.order.findFirst({
+    where: { id: orderId, deletedAt: null },
+    select: {
+      trackingTokenHash: true,
+      jetonsDeSuivi: { select: { tokenHash: true } },
+      store: { select: { orgId: true } },
+      customer: { select: { userId: true } },
+      delivery: {
+        select: {
+          status: true,
+          pickupLat: true,
+          pickupLng: true,
+          deliveryLat: true,
+          deliveryLng: true,
+          deliveryLatObfusquee: true,
+          deliveryLngObfusquee: true,
+          driverLat: true,
+          driverLng: true,
+          driverLocationAt: true,
+          driver: { select: { userId: true, name: true } },
+        },
+      },
+    },
+  });
+  if (!commande) return undefined;
 
-  const empreintes = [commande.trackingTokenHash, ...commande.jetonsDeSuivi.map((j) => j.tokenHash)];
-  if (jetonReconnu(jeton, empreintes)) return vuePublique(commande);
+  const acces = await evaluerAcces(commande, appelant, jeton, { livreurAdmis: true });
+  if (!acces) return undefined;
 
-  return null;
+  const course = commande.delivery;
+  if (!course) return null;
+
+  const complet = acces.vue === "complete";
+  const enRoute = positionLivreurVisible(course.status);
+
+  return {
+    orderId,
+    status: course.status,
+    pickupLat: course.pickupLat,
+    pickupLng: course.pickupLng,
+    deliveryLat: complet ? course.deliveryLat : course.deliveryLatObfusquee ?? null,
+    deliveryLng: complet ? course.deliveryLng : course.deliveryLngObfusquee ?? null,
+    driverLat: enRoute ? (complet ? course.driverLat ?? null : arrondirPosition(course.driverLat)) : null,
+    driverLng: enRoute ? (complet ? course.driverLng ?? null : arrondirPosition(course.driverLng)) : null,
+    driverLocationAt: enRoute ? course.driverLocationAt ?? null : null,
+    driver: course.driver ? { name: course.driver.name } : null,
+  };
 }

@@ -93,6 +93,7 @@ export default function OrderScreen({
       if (!t) return t;
       const next = { ...t };
       if (u.location) next.position = { ...u.location, misAJourLe: new Date().toISOString() };
+      else if (u.location === null) next.position = null;
       if (typeof u.gpsLost === 'boolean') next.gpsPerdu = u.gpsLost;
       if (u.livreurProche) next.livreurProche = true;
       if (u.attenteFinLe) next.attenteFinLe = u.attenteFinLe;

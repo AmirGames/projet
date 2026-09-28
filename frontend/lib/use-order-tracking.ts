@@ -18,7 +18,7 @@ interface DeliveryUpdate {
   location?: {
     latitude: number;
     longitude: number;
-  };
+  } | null;
   eta?: number;
   /** Le livreur n'envoie plus sa position (true), ou elle est revenue (false). */
   gpsLost?: boolean;
@@ -84,6 +84,9 @@ export function useOrderTracking(orderId: string) {
         if (data.location) {
           setDeliveryLocation(data.location);
           setGpsPerdu(false);
+        } else if (data.location === null) {
+          // Le livreur n'est pas (ou plus) en route vers le client.
+          setDeliveryLocation(null);
         }
         if (typeof data.gpsLost === 'boolean') {
           setGpsPerdu(data.gpsLost);

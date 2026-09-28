@@ -72,15 +72,16 @@ interface Order {
 }
 
 interface Delivery {
-  id: string;
   orderId: string;
   status: string;
-  pickupLat: number;
-  pickupLng: number;
-  deliveryLat: number;
-  deliveryLng: number;
-  driverLat?: number;
-  driverLng?: number;
+  pickupLat: number | null;
+  pickupLng: number | null;
+  // Coordonnées approximatives pour un visiteur ; null si inconnues.
+  deliveryLat: number | null;
+  deliveryLng: number | null;
+  // Seulement quand le livreur est en route vers le client.
+  driverLat: number | null;
+  driverLng: number | null;
 }
 
 /**

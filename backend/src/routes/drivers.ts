@@ -1285,10 +1285,7 @@ router.patch(
         await DispatchService.liberer(livreur.id);
       }
 
-      emitDeliveryUpdate(delivery.orderId, {
-        driverId: delivery.driverId,
-        status
-      });
+      emitDeliveryUpdate(delivery.orderId, { status });
 
       // Le client est prévenu hors de l'application des étapes qui comptent.
       if ((status === "PICKED_UP" || status === "DELIVERED") && course.status !== status) {

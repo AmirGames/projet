@@ -14,7 +14,8 @@ export interface OrderUpdate {
 export interface DeliveryUpdate {
   orderId: string;
   status?: string;
-  location?: { latitude: number; longitude: number };
+  // null : le livreur n'est pas (ou plus) en route vers le client.
+  location?: { latitude: number; longitude: number } | null;
   eta?: number;
   gpsLost?: boolean;
   livreurProche?: boolean;
