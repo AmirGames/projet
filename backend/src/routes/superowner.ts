@@ -188,12 +188,8 @@ router.get("/console", authMiddleware, isSuperOwner, (req: Request, res: Respons
 //
 // Trafic, erreurs, temps de réponse, processus, dépendances, tâches de fond
 // et incidents ouverts : ce que la santé, tirée de la base, ne voit pas.
-router.get("/monitoring", authMiddleware, isSuperOwner, async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.json({ success: true, data: await Vigie.instantane() });
-  } catch (err) {
-    next(err);
-  }
+router.get("/monitoring", authMiddleware, isSuperOwner, (_req: Request, res: Response) => {
+  res.json({ success: true, data: Vigie.instantane() });
 });
 
 // GET /superowner/uptime - La disponibilité dans la durée : 24 h, 7, 30 et 90 jours
@@ -211,7 +207,7 @@ router.post("/monitoring/releve", authMiddleware, isSuperOwner, async (_req: Req
     // La disponibilité d'abord : la vigie lit son état pour ses alertes.
     await Disponibilite.passer();
     await Vigie.passer();
-    res.json({ success: true, data: await Vigie.instantane() });
+    res.json({ success: true, data: Vigie.instantane() });
   } catch (err) {
     next(err);
   }

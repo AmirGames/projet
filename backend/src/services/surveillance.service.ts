@@ -1,7 +1,7 @@
 import { monitorEventLoopDelay } from "perf_hooks";
 import { getHeapStatistics } from "v8";
 import os from "os";
-import { check as checkDiskUsage } from "diskusage";
+import { execSync } from "child_process";
 
 /**
  * Surveillance du site en fonctionnement.
@@ -235,6 +235,36 @@ const CACHE_DISQUE_MS = 60 * 60 * 1000; // 1 heure
 let disqueCacheLe = 0;
 let disqueCachee = { libreMo: 0, totaleMo: 0, utiliseMo: 0, pourcentUtilise: 0 };
 
+/** Récupère les informations d'espace disque via df */
+function obtenirDisque() {
+  try {
+    const path = process.env.DISK_USAGE_PATH || "/";
+    // df -B1 pour obtenir les octets, | grep pour la ligne concernée
+    const output = execSync(`df -B1 "${path}" 2>/dev/null | tail -1`, {
+      encoding: "utf-8",
+      timeout: 5000,
+    }).trim();
+
+    const parties = output.split(/\s+/);
+    if (parties.length >= 4) {
+      const total = parseInt(parties[1], 10);
+      const utilise = parseInt(parties[2], 10);
+      const libre = parseInt(parties[3], 10);
+
+      return {
+        libreMo: Math.round(libre / 1024 / 1024),
+        totaleMo: Math.round(total / 1024 / 1024),
+        utiliseMo: Math.round(utilise / 1024 / 1024),
+        pourcentUtilise: total > 0 ? Math.round((utilise / total) * 1000) / 10 : 0,
+      };
+    }
+  } catch (err) {
+    // En cas d'erreur (Windows, droits insuffisants, etc.)
+  }
+
+  return { libreMo: 0, totaleMo: 0, utiliseMo: 0, pourcentUtilise: 0 };
+}
+
 /**
  * Le processeur et la boucle d'événements se mesurent sur un intervalle : on
  * relève toutes les cinq secondes, et on remet l'histogramme à zéro pour que
@@ -254,7 +284,7 @@ const releveProcessus = setInterval(() => {
 }, 5000);
 releveProcessus.unref?.();
 
-async function etatProcessus() {
+function etatProcessus() {
   const memoire = process.memoryUsage();
   const tas = getHeapStatistics();
   const mo = (octets: number) => Math.round(octets / 1024 / 1024);
@@ -262,20 +292,9 @@ async function etatProcessus() {
   // Vérifier le cache disque (actualisé toutes les heures)
   let disque = disqueCachee;
   if (Date.now() - disqueCacheLe > CACHE_DISQUE_MS) {
-    try {
-      const path = process.env.DISK_USAGE_PATH || "/";
-      const info = await checkDiskUsage(path);
-      disque = {
-        libreMo: mo(info.free),
-        totaleMo: mo(info.total),
-        utiliseMo: mo(info.total - info.free),
-        pourcentUtilise: Math.round(((info.total - info.free) / info.total) * 1000) / 10,
-      };
-      disqueCachee = disque;
-      disqueCacheLe = Date.now();
-    } catch (err) {
-      // En cas d'erreur, on garde les valeurs en cache
-    }
+    disque = obtenirDisque();
+    disqueCachee = disque;
+    disqueCacheLe = Date.now();
   }
 
   return {

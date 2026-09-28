@@ -109,8 +109,8 @@ describe("Surveillance", () => {
     expect(erreur.pile?.split("\n")).toHaveLength(8);
   });
 
-  it("relève l'état du processus", async () => {
-    const p = await Surveillance.processus();
+  it("relève l'état du processus", () => {
+    const p = Surveillance.processus();
     expect(p.memoire.tasUtiliseMo).toBeGreaterThan(0);
     expect(p.dureeFonctionnementS).toBeGreaterThanOrEqual(0);
   });
