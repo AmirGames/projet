@@ -17,13 +17,11 @@ export interface AuthResponse {
     isSystemAdmin?: boolean;
     emailVerified?: boolean;
   };
-  // Nul à l'inscription quand une fiche née d'une commande sans compte existe
-  // à cette adresse : elle rejoint le compte une fois l'adresse confirmée.
   customer?: {
     id: string;
     name: string;
     email: string;
-  } | null;
+  };
   organization?: {
     id: string;
     name: string;

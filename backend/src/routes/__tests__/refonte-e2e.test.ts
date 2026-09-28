@@ -49,11 +49,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
         email: 'test@example.com',
         name: 'Test User',
       });
-      expect(res.body.customer).toEqual({
-        id: expect.any(String),
-        name: 'Test User',
-        email: 'test@example.com',
-      });
+      expect(res.body).not.toHaveProperty('customer');
 
       testAccessToken = res.body.accessToken;
       testUserId = res.body.user.id;

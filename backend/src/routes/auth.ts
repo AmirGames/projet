@@ -114,17 +114,20 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
      * non plus : s'inscrire ne prouve pas qu'on possède l'adresse, et la fiche
      * porte les commandes, adresses et codes de remise de celui qui a commandé.
      * Elle rejoint le compte à la confirmation de l'adresse (/verify-email).
+     *
+     * La réponse ne dit rien de la fiche : qu'elle diffère selon qu'une fiche
+     * existait révélerait qu'on a commandé avec cette adresse.
      */
     const ficheExistante = await db.customer.findUnique({ where: { email: user.email }, select: { id: true } });
-    const customer = ficheExistante
-      ? null
-      : await db.customer.create({
-          data: {
-            userId: user.id,
-            name: body.name || user.email.split("@")[0],
-            email: user.email,
-          },
-        });
+    if (!ficheExistante) {
+      await db.customer.create({
+        data: {
+          userId: user.id,
+          name: body.name || user.email.split("@")[0],
+          email: user.email,
+        },
+      });
+    }
 
     // Une session par connexion : les jetons la portent, et la fermer les
     // invalide sur tous les domaines (voir sso.service.ts).
@@ -141,13 +144,6 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
         email: user.email,
         name: user.name,
       },
-      customer: customer
-        ? {
-            id: customer.id,
-            name: customer.name,
-            email: customer.email,
-          }
-        : null,
     });
   } catch (err) {
     next(err);

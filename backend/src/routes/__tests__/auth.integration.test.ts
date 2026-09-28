@@ -148,7 +148,7 @@ describe("POST /auth/signup", () => {
     expect(res.body.user).toEqual({ id: expect.any(String), email: "nouveau@exemple.fr", name: "Nouvel inscrit" });
     expect(res.body.user).not.toHaveProperty("isSuperOwner");
     expect(res.body.user).not.toHaveProperty("isSystemAdmin");
-    expect(res.body.customer).toMatchObject({ email: "nouveau@exemple.fr" });
+    expect(res.body).not.toHaveProperty("customer");
     expect(customers.find((c) => c.email === "nouveau@exemple.fr")?.userId).toBe(res.body.user.id);
   });
 
@@ -158,11 +158,19 @@ describe("POST /auth/signup", () => {
     const res = await inscrire("victime@mail.com");
 
     expect(res.status).toBe(201);
-    expect(res.body.customer).toBeNull();
     expect(fiche.userId).toBeNull();
     expect(customers.filter((c) => c.email === "victime@mail.com")).toHaveLength(1);
     expect(db.customer.update).not.toHaveBeenCalled();
     expect(db.customer.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("répond pareil qu'une fiche invité existe ou non à cette adresse", async () => {
+    ficheInvite("victime@mail.com");
+    const avecFiche = await inscrire("victime@mail.com");
+    const sansFiche = await inscrire("inconnu@mail.com");
+
+    const forme = (corps: any) => ({ ...corps, user: { ...corps.user, id: "", email: "" } });
+    expect(forme(avecFiche.body)).toEqual(forme(sansFiche.body));
   });
 
   it("rattache la fiche invité une fois l'adresse confirmée", async () => {
