@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Navbar from './Navbar';
+import { separerRegion } from '@/i18n/chemins-regionaux';
 import SynchroPaniers from './SynchroPaniers';
 import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
 
@@ -83,9 +84,15 @@ export default function RootLayoutContent({
   // - les espaces qui ont déjà leur propre navigation (sidebar ou barre du
   //   haut) : sinon deux barres s'empilent en haut de page.
   // La navbar s'affiche partout ailleurs pour permettre la navigation.
-  const hideNavbar = pathname === '/' ||
-                     pathname?.startsWith('/impression') ||
-                     aSaPropreNavigation(pathname);
+  //
+  // Sur l'adresse sans sa région : /fr-fr est l'accueil du domaine public,
+  // réécrit en coulisse vers /client, qui a sa propre barre. Lue telle
+  // quelle, /fr-fr n'était reconnue par aucune règle, et la navbar s'empilait
+  // au-dessus de celle de l'espace client.
+  const chemin = pathname ? separerRegion(pathname).reste : pathname;
+  const hideNavbar = chemin === '/' ||
+                     chemin?.startsWith('/impression') ||
+                     aSaPropreNavigation(chemin);
 
   return (
     <>
