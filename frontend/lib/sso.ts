@@ -22,8 +22,21 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-/** La vérification auprès de zupone.com n'a lieu qu'une fois par onglet. */
+/**
+ * Quand zupone.com a été interrogé pour la dernière fois, dans cet onglet.
+ *
+ * Pas plus d'une vérification par minute : sans session nulle part, la page
+ * de connexion y renverrait sans fin. Mais pas une seule par onglet non plus :
+ * ouvert avant de se connecter sur un autre domaine, l'onglet ne revérifiait
+ * jamais, et l'on restait devant le formulaire.
+ */
 const DEJA_VERIFIE = 'sso-verifie';
+const DELAI_ENTRE_VERIFICATIONS_MS = 60 * 1000;
+
+function verifieRecemment(): boolean {
+  const quand = Number(lire(DEJA_VERIFIE, 'session'));
+  return Number.isFinite(quand) && Date.now() - quand < DELAI_ENTRE_VERIFICATIONS_MS;
+}
 
 export const SSO_ACTIF = CLOISONNEMENT_ACTIF && !!DOMAINE_VITRINE;
 
@@ -97,7 +110,7 @@ export async function confierSessionCentrale(accessToken: string, destination: s
 
     // Déjà connecté ici : inutile de redemander la session à zupone.com dans
     // cet onglet.
-    noter(DEJA_VERIFIE, '1');
+    noter(DEJA_VERIFIE, String(Date.now()));
     // Vers zupone.com, un autre domaine : le routeur de Next n'y va pas.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign(
@@ -122,9 +135,9 @@ export async function confierSessionCentrale(accessToken: string, destination: s
 export function demanderSessionCentrale(suite: string): boolean {
   if (!SSO_ACTIF) return false;
   if (lire('accessToken') || lire('driverToken')) return false;
-  if (lire(DEJA_VERIFIE, 'session')) return false;
+  if (verifieRecemment()) return false;
 
-  noter(DEJA_VERIFIE, '1');
+  noter(DEJA_VERIFIE, String(Date.now()));
 
   const arrivee = new URL('/sso/arrivee', window.location.origin);
   // Où aller si une session revient, et où revenir sinon : sans détour par
@@ -144,7 +157,7 @@ export function demanderSessionCentrale(suite: string): boolean {
 export async function fermerSessionPartout(): Promise<void> {
   const jeton = lire('accessToken') || lire('driverToken');
   // Déconnecté à dessein : ne pas se faire reconnecter aussitôt par zupone.com.
-  noter(DEJA_VERIFIE, '1');
+  noter(DEJA_VERIFIE, String(Date.now()));
   if (!jeton) return;
 
   try {
