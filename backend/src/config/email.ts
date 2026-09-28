@@ -12,6 +12,12 @@ const emailConfig = {
           pass: process.env.SMTP_PASSWORD,
         }
       : undefined,
+  // Délais courts : par défaut, nodemailer patiente deux minutes avant de
+  // renoncer à un serveur qui ne répond pas. Un SMTP en panne doit échouer
+  // vite, pour que l'échec soit journalisé sans laisser traîner l'envoi.
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 20_000,
 };
 
 export const emailTransporter = nodemailer.createTransport(emailConfig);

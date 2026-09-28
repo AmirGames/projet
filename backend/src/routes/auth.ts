@@ -794,7 +794,16 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
 const adresseDuSite = () =>
   (process.env.SITE_URL || process.env.FRONTEND_URL || "http://localhost:3000").replace(/\/$/, "");
 
-/** Envoie un lien de confirmation, sans jamais faire échouer l'appelant. */
+/**
+ * Enregistre un lien de confirmation et le fait partir, sans jamais faire
+ * échouer ni ralentir l'appelant.
+ *
+ * Seul le jeton est attendu : il doit exister en base avant que le lien
+ * puisse être cliqué. L'envoi, lui, part sans être attendu — un serveur de
+ * courriel injoignable retenait la réponse de l'inscription de longues
+ * secondes, et le visiteur qui réessayait tombait sur « adresse déjà
+ * utilisée » alors que son compte venait d'être créé.
+ */
 async function envoyerConfirmation(user: { id: string; email: string; name: string | null }) {
   const { jeton, empreinte, expireLe } = AccountTokenService.emettre(DUREE_CONFIRMATION_MS);
 
@@ -805,16 +814,14 @@ async function envoyerConfirmation(user: { id: string; email: string; name: stri
 
   const lien = `${adresseDuSite()}/verifier-email?jeton=${jeton}`;
 
-  try {
-    await EmailService.sendEmailVerification(user.email, user.name, lien);
-  } catch (err) {
+  EmailService.sendEmailVerification(user.email, user.name, lien).catch((err) => {
     // Un serveur de courriel indisponible ne doit pas empêcher l'inscription :
     // le message peut être redemandé plus tard.
     logger.warn("Envoi de la confirmation d'adresse impossible", {
       email: user.email,
       error: err instanceof Error ? err.message : err,
     });
-  }
+  });
 }
 
 // POST /auth/forgot-password - Demande de réinitialisation
@@ -860,14 +867,15 @@ router.post(
 
       const lien = `${adresseDuSite()}/reinitialiser?jeton=${jeton}`;
 
-      try {
-        await EmailService.sendPasswordReset(user.email, user.name, lien);
-      } catch (err) {
+      // Envoi non attendu : un serveur de courriel lent retiendrait la réponse,
+      // et cette attente trahirait, par sa seule durée, qu'un compte existe à
+      // cette adresse.
+      EmailService.sendPasswordReset(user.email, user.name, lien).catch((err) => {
         logger.error("Envoi du lien de réinitialisation impossible", {
           email,
           error: err instanceof Error ? err.message : err,
         });
-      }
+      });
 
       await SecurityEventService.record({
         action: "PASSWORD_RESET_REQUESTED",
