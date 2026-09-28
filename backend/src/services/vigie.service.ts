@@ -202,10 +202,10 @@ interface Constat {
   detail: string;
 }
 
-function evaluer(): Constat[] {
+async function evaluer(): Promise<Constat[]> {
   const constats: Constat[] = [];
   const fenetre = Surveillance.fenetre(5);
-  const processus = Surveillance.processus();
+  const processus = await Surveillance.processus();
 
   for (const dependance of dependances) {
     if (dependance.etat !== "PANNE") continue;
@@ -391,7 +391,7 @@ async function passer() {
     const [base, smtp] = await Promise.all([verifierBase(), verifierSmtp()]);
     dependances = [base, smtp, ...verifierConfigurations()];
 
-    const constats = evaluer();
+    const constats = await evaluer();
     const vus = new Set(constats.map((c) => c.cle));
 
     for (const constat of constats) {
@@ -470,15 +470,16 @@ export const Vigie = {
    */
   async pret() {
     const base = await verifierBase();
+    const processus = await Surveillance.processus();
     return {
       pret: base.etat !== "PANNE",
       base: { etat: base.etat, dureeMs: base.dureeMs ?? null, detail: base.detail },
-      dureeFonctionnementS: Surveillance.processus().dureeFonctionnementS,
+      dureeFonctionnementS: processus.dureeFonctionnementS,
     };
   },
 
   /** Tout ce que montre la page de surveillance. */
-  instantane() {
+  async instantane() {
     const incidents = [...ouverts.values()];
     const statut = incidents.some((i) => i.niveau === "CRITIQUE")
       ? "PANNE"
@@ -501,7 +502,7 @@ export const Vigie = {
         uneHeure: Surveillance.fenetre(60),
         serie: Surveillance.serie(60),
       },
-      processus: Surveillance.processus(),
+      processus: await Surveillance.processus(),
       tempsReel: etatTempsReel(),
       dependances,
       taches: Surveillance.taches(),

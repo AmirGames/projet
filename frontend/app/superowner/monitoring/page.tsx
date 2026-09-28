@@ -85,7 +85,13 @@ interface Instantane {
     cpuPourcent: number;
     memoire: { residenteMo: number; tasUtiliseMo: number; tasLimiteMo: number; tasPourcent: number };
     boucle: { p99Ms: number; maxMs: number };
-    systeme: { charge: number[]; coeurs: number; memoireLibreMo: number; memoireTotaleMo: number };
+    systeme: {
+      charge: number[];
+      coeurs: number;
+      memoireLibreMo: number;
+      memoireTotaleMo: number;
+      disque: { libreMo: number; totaleMo: number; utiliseMo: number; pourcentUtilise: number };
+    };
   };
   tempsReel: { connexions: number; redis: { configure: boolean; relie: boolean; pret: boolean } };
   dependances: { cle: string; libelle: string; etat: EtatDependance; detail: string }[];
@@ -480,6 +486,18 @@ export default function SurveillancePage() {
                   <dd className="font-semibold tabular-nums">
                     {t('systemMemoryValue', { free: processus.systeme.memoireLibreMo, total: processus.systeme.memoireTotaleMo })}
                   </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400 flex items-center gap-1.5"><MemoryStick size={14} />{t('diskSpace')}</dt>
+                  <dd className={`text-lg font-semibold tabular-nums ${processus.systeme.disque.pourcentUtilise >= 85 ? 'text-amber-400' : ''}`}>
+                    {processus.systeme.disque.libreMo} / {processus.systeme.disque.totaleMo} Mo
+                  </dd>
+                  <div className="mt-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${processus.systeme.disque.pourcentUtilise >= 85 ? 'bg-amber-500' : 'bg-green-500'}`}
+                      style={{ width: `${Math.min(100, processus.systeme.disque.pourcentUtilise)}%` }}
+                    />
+                  </div>
                 </div>
               </dl>
               <p className="text-xs text-gray-500 mt-4">

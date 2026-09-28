@@ -1,6 +1,7 @@
 import { monitorEventLoopDelay } from "perf_hooks";
 import { getHeapStatistics } from "v8";
 import os from "os";
+import { check as checkDiskUsage } from "diskusage";
 
 /**
  * Surveillance du site en fonctionnement.
@@ -248,10 +249,24 @@ const releveProcessus = setInterval(() => {
 }, 5000);
 releveProcessus.unref?.();
 
-function etatProcessus() {
+async function etatProcessus() {
   const memoire = process.memoryUsage();
   const tas = getHeapStatistics();
   const mo = (octets: number) => Math.round(octets / 1024 / 1024);
+
+  let disque = { libreMo: 0, totaleMo: 0, utiliseMo: 0, pourcentUtilise: 0 };
+  try {
+    const path = process.env.DISK_USAGE_PATH || "/";
+    const info = await checkDiskUsage(path);
+    disque = {
+      libreMo: mo(info.free),
+      totaleMo: mo(info.total),
+      utiliseMo: mo(info.total - info.free),
+      pourcentUtilise: Math.round(((info.total - info.free) / info.total) * 1000) / 10,
+    };
+  } catch (err) {
+    // En cas d'erreur, on garde les valeurs par défaut (0)
+  }
 
   return {
     demarreLe: new Date(demarrageLe).toISOString(),
@@ -274,6 +289,7 @@ function etatProcessus() {
       coeurs: os.cpus().length,
       memoireLibreMo: mo(os.freemem()),
       memoireTotaleMo: mo(os.totalmem()),
+      disque,
     },
   };
 }
@@ -423,7 +439,9 @@ export const Surveillance = {
     }
   },
 
-  processus: etatProcessus,
+  processus() {
+    return etatProcessus();
+  },
   fenetre: bilanFenetre,
   serie: serieMinutes,
 
