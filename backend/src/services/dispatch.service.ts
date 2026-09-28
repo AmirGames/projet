@@ -30,6 +30,7 @@ const COURSE_A_PROPOSER = {
       deliveryPostal: true,
       totalAmount: true,
       feesAmount: true,
+      tipAmount: true,
       deliveryMode: true,
       status: true,
       store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
@@ -592,6 +593,7 @@ export class DispatchService {
         deliveryCity: string | null;
         deliveryPostal: string | null;
         feesAmount: unknown;
+        tipAmount?: unknown;
         deliveryMode: string | null;
         store: { name: string; address: string | null; city: string | null; latitude: number | null; longitude: number | null } | null;
       } | null;
@@ -623,10 +625,17 @@ export class DispatchService {
      * livreur sur son relevé. Pour une commande antérieure à ce fonctionnement,
      * on retombe sur le barème du jour.
      */
-    const payout =
-      course.order?.deliveryMode === "PLATFORM"
-        ? Number(Number(course.order.feesAmount).toFixed(2))
-        : this.remuneration(distancePayee, reglages).payout;
+    /*
+     * Le pourboire du client revient en entier au livreur : il s'ajoute à sa
+     * rémunération dès la proposition, et la suit sur son relevé.
+     */
+    const payout = Number(
+      (
+        (course.order?.deliveryMode === "PLATFORM"
+          ? Number(course.order.feesAmount)
+          : this.remuneration(distancePayee, reglages).payout) + Number(course.order?.tipAmount || 0)
+      ).toFixed(2)
+    );
 
     // Une ligne par livreur et par course : un nouveau tour la rouvre.
     const proposition = await db.deliveryOffer.upsert({

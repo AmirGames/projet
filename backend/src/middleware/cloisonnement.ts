@@ -70,6 +70,9 @@ const GESTES_PUBLICS: { methode: string; chemin: RegExp }[] = [
   // Commander, et suivre sa commande.
   { methode: "POST", chemin: /^\/api\/orders\/?$/ },
   { methode: "GET", chemin: /^\/api\/orders\/[^/]+$/ },
+  // Le pourboire après livraison, depuis le lien de suivi.
+  { methode: "GET", chemin: /^\/api\/orders\/[^/]+\/pourboire$/ },
+  { methode: "POST", chemin: /^\/api\/orders\/[^/]+\/pourboire$/ },
   // Le menu et le détail d'un plat, tels que la vitrine les lit.
   { methode: "GET", chemin: /^\/api\/products\/[^/]+$/ },
   { methode: "GET", chemin: /^\/api\/products\/[^/]+\/variants$/ },

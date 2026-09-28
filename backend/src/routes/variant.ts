@@ -6,6 +6,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { VariantService } from "../services/variant.service";
+import { SupplementService, schemaGroupes } from "../services/supplement.service";
 
 const router = Router();
 
@@ -150,6 +151,40 @@ router.delete("/variants/:variantId", authMiddleware, async (req: Request, res: 
         : "Déclinaison supprimée",
       data: resultat,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /products/:productId/supplements - Les groupes de suppléments d'un plat
+//
+// Côté commerçant : les prix tels qu'il les a saisis (HT s'il travaille hors
+// taxe). La vitrine les reçoit TTC avec le menu (/api/client/stores/:id).
+router.get("/:productId/supplements", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const productId = req.params.productId as string;
+    await exigerLePlat(productId, req);
+
+    res.json({ success: true, data: await SupplementService.lister(productId) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /products/:productId/supplements - Remplace tous les groupes du plat
+router.put("/:productId/supplements", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const productId = req.params.productId as string;
+    await exigerLePlat(productId, req);
+
+    const groupes = schemaGroupes.parse(req.body?.groupes);
+    const enregistres = await SupplementService.remplacer(productId, groupes);
+
+    // La vitrine ouverte relit son menu : le relais (middleware/diffusion.ts)
+    // annonce toute écriture sous /api/products.
+    logger.info("Suppléments enregistrés", { productId, groupes: enregistres.length });
+
+    res.json({ message: "Suppléments enregistrés", data: enregistres });
   } catch (err) {
     next(err);
   }

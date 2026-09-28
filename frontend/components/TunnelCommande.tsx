@@ -47,6 +47,7 @@ import { useAdresseLivraisonEnregistree } from '@/lib/adresseLivraison';
 import { cleDeLigne, nombreDArticles, totalDuPanier, type LignePanier } from '@/lib/paniers';
 import { useAuth } from '@/lib/auth-context';
 import { StripePayment } from '@/components/stripe-payment';
+import { ChoixPourboire } from '@/components/ChoixPourboire';
 import { DelaiAnnulation } from '@/components/DelaiAnnulation';
 import AcceptationConditions from '@/components/AcceptationConditions';
 
@@ -63,7 +64,12 @@ interface Livraison {
   gratuiteDes?: number | null;
   raison: string;
   forfaitBoutique: boolean;
+  /** Qui livre : un livreur de la plateforme, ou le commerçant lui-même. */
+  mode?: 'PLATFORM' | 'OWN';
 }
+
+/** Sans clé Stripe, rien ne se paie en ligne : pas de pourboire possible. */
+const PAIEMENT_EN_LIGNE = Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 interface MoyenDePaiement {
   id: string;
@@ -370,7 +376,25 @@ export function TunnelCommande({
   const manquePourOfferte =
     livraison?.gratuiteDes != null && !livraisonOfferte ? livraison.gratuiteDes - sousTotal : 0;
   const montantRemise = remise?.montant ?? 0;
-  const total = Math.max(0, sousTotal + fraisDeLivraison + fraisDeService - montantRemise);
+  const commandeSeule = Math.max(0, sousTotal + fraisDeLivraison + fraisDeService - montantRemise);
+
+  /**
+   * Le pourboire du livreur.
+   *
+   * Proposé seulement quand il peut lui parvenir : une livraison assurée par
+   * un livreur de la plateforme, payée en ligne. Le serveur refuse les autres
+   * cas ; il revient en entier au livreur, sur son relevé.
+   */
+  const [pourboireChoisi, setPourboire] = useState(0);
+  const moyenRetenu = moyens.find((m) => m.id === moyenChoisi);
+  const pourboirePossible =
+    PAIEMENT_EN_LIGNE &&
+    checkoutForm.deliveryType === 'DELIVERY' &&
+    Boolean(livraison?.livrable) &&
+    livraison?.mode === 'PLATFORM' &&
+    moyenRetenu?.type !== 'CASH';
+  const pourboire = pourboirePossible ? pourboireChoisi : 0;
+  const total = Number((commandeSeule + pourboire).toFixed(2));
 
   /** Le panier atteint-il le minimum de la zone. */
   const sousLeMinimum =
@@ -497,12 +521,14 @@ export function TunnelCommande({
         // recalcule les prix et les frais de livraison.
         promoCode: remise?.code || undefined,
         paymentMethodId: moyenChoisi || undefined,
-        // L'API attend des euros (Decimal 10,2), pas des centimes.
-        totalAmount: Number(total.toFixed(2)),
+        // L'API attend des euros (Decimal 10,2), pas des centimes. Le total
+        // de la commande, pourboire à part.
+        totalAmount: Number(commandeSeule.toFixed(2)),
         taxAmount: 0,
         // Le serveur recalcule ces frais depuis la zone : on envoie ce qu'on a
         // affiché, il tranche.
         feesAmount: Number(fraisDeLivraison.toFixed(2)),
+        ...(pourboire > 0 ? { tipAmount: pourboire } : {}),
         // Le détail du panier : sans lui la commande n'enregistre qu'un montant,
         // et la facture comme le détail de commande restent vides.
         items: lignes.map((ligne) => ({
@@ -511,6 +537,8 @@ export function TunnelCommande({
           price: ligne.price,
           // La cuisine a besoin de savoir laquelle préparer.
           ...(ligne.variantId ? { variantId: ligne.variantId } : {}),
+          // Les suppléments, par identifiant : le serveur les tarife lui-même.
+          ...(ligne.supplements?.length ? { supplements: ligne.supplements.map((s) => s.id) } : {}),
         })),
       };
 
@@ -531,7 +559,11 @@ export function TunnelCommande({
       const commande = { id, numero: String(id).slice(-8).toUpperCase() };
 
       if (recue.order?.paiementEnLigne) {
-        setAPayer({ ...commande, montant: Number(recue.order.totalAmount) });
+        // Le pourboire se paie avec la commande.
+        setAPayer({
+          ...commande,
+          montant: Number(recue.order.totalAmount) + Number(recue.order.tipAmount || 0),
+        });
         return;
       }
 
@@ -1118,7 +1150,7 @@ export function TunnelCommande({
             <ul className="px-6 pb-5 space-y-3">
               {lignes.map((ligne) => (
                 <li
-                  key={cleDeLigne(ligne.productId, ligne.variantId)}
+                  key={cleDeLigne(ligne.productId, ligne.variantId, ligne.supplements)}
                   className="flex justify-between gap-4 text-sm"
                 >
                   <span className="min-w-0">
@@ -1128,6 +1160,11 @@ export function TunnelCommande({
                         seraient indistinguables. */}
                     {ligne.variantNom && (
                       <span className="text-gray-400"> — {ligne.variantNom}</span>
+                    )}
+                    {(ligne.supplements?.length ?? 0) > 0 && (
+                      <span className="block text-xs text-gray-400">
+                        + {ligne.supplements!.map((sup) => sup.label).join(', ')}
+                      </span>
                     )}
                   </span>
                   <span className="whitespace-nowrap">{euro(ligne.price * ligne.quantity)}</span>
@@ -1221,6 +1258,19 @@ export function TunnelCommande({
             <div className="flex justify-between text-green-300">
               <span>Remise — {remise.code}</span>
               <span>− {euro(remise.montant)}</span>
+            </div>
+          )}
+          {pourboirePossible && (
+            <div className="pt-1">
+              <div className="flex justify-between text-gray-300">
+                <span>Pourboire pour le livreur</span>
+                <span>{pourboire > 0 ? euro(pourboire) : '—'}</span>
+              </div>
+              <div className="mt-2">
+                {/* En % des articles, le montant écrit dessous. */}
+                <ChoixPourboire base={Math.max(0, sousTotal - montantRemise)} onChange={setPourboire} />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">Il revient en entier à votre livreur.</p>
             </div>
           )}
           <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-3">

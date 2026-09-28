@@ -22,6 +22,11 @@ const ligneSchema = z.object({
   quantity: z.number().int().min(1).max(99),
   description: z.string().max(1000).optional(),
   isAvailable: z.boolean().optional(),
+  // Les suppléments choisis : le prix de la ligne les inclut déjà.
+  supplements: z
+    .array(z.object({ id: z.string().min(1).max(64), label: z.string().max(200), price: z.number().nonnegative().max(10000) }))
+    .max(50)
+    .optional(),
 });
 
 export const panierSchema = z.object({

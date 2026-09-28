@@ -185,6 +185,9 @@ function DocumentImprimable() {
                     {ligne.category && <span className="surtitre">{ligne.category}</span>}
                     {ligne.description}
                     {ligne.variant && <span className="declinaison"> — {ligne.variant}</span>}
+                    {(ligne.supplements?.length ?? 0) > 0 && (
+                      <span className="declinaison"> + {ligne.supplements!.join(', ')}</span>
+                    )}
                   </td>
                   <td className="c">{ligne.quantity}</td>
                   <td className="d">{euro(ligne.unitPrice)}</td>
@@ -465,6 +468,8 @@ interface LigneFacture {
   description: string;
   category?: string | null;
   variant?: string | null;
+  /** Les suppléments payés : « Bacon », « Cheddar ». */
+  supplements?: string[];
   sku?: string | null;
   quantity: number;
   unitPrice: number;

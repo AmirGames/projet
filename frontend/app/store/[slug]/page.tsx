@@ -12,9 +12,11 @@ import { useParametreAdresse } from '@/lib/navigateur';
 import { useStoreLive } from '@/lib/use-store-live';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import {
+  cleDeLigne,
   enregistrerPanier,
   EVENEMENT_PANIER_DISTANT,
   lirePanier,
+  type SupplementPanier,
 } from '@/lib/paniers';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -52,6 +54,17 @@ interface Declinaison {
   isAvailable: boolean;
 }
 
+/** Un groupe de suppléments payants : « Suppléments », « Sauce ». */
+interface GroupeSupplements {
+  id: string;
+  name: string;
+  isRequired: boolean;
+  /** Vide : sans limite. */
+  maxChoices: number | null;
+  /** Prix TTC, tels que le client les paiera. */
+  choices: { id: string; label: string; price: number; isAvailable: boolean }[];
+}
+
 interface Product {
   id: string;
   name: string;
@@ -62,6 +75,7 @@ interface Product {
   /** La question posée : « Type de pâtes », « Taille ». */
   variantLabel?: string | null;
   variants?: Declinaison[];
+  supplements?: GroupeSupplements[];
   /** La note des clients, calculée sur les avis publiés. Nulle sans avis. */
   note?: { moyenne: number; nombre: number } | null;
 }
@@ -82,9 +96,39 @@ interface Category {
   products: Product[];
 }
 
-/** Le prix d'une ligne : celui de la déclinaison retenue, sinon du plat. */
-const prixDeLaLigne = (item: { product: Product; variante?: Declinaison }) =>
-  Number(item.variante?.prixEffectif ?? item.product.price ?? 0);
+/** Une ligne du panier en mémoire. */
+interface LigneVitrine {
+  product: Product;
+  quantity: number;
+  variante?: Declinaison;
+  supplements?: SupplementPanier[];
+}
+
+const sommeDesSupplements = (supplements?: SupplementPanier[]) =>
+  (supplements || []).reduce((somme, sup) => somme + sup.price, 0);
+
+/**
+ * Le prix d'une ligne : celui de la déclinaison retenue, sinon du plat, plus
+ * les suppléments choisis.
+ */
+const prixDeLaLigne = (item: LigneVitrine) =>
+  Number((Number(item.variante?.prixEffectif ?? item.product.price ?? 0) + sommeDesSupplements(item.supplements)).toFixed(2));
+
+const cleDeLItem = (item: LigneVitrine) => cleDeLigne(item.product.id, item.variante?.id, item.supplements);
+
+/** Les suppléments retenus pour un plat, lus dans ses groupes (seulement les disponibles). */
+const supplementsRetenus = (product: Product, ids: string[] = []): SupplementPanier[] =>
+  (product.supplements || []).flatMap((groupe) =>
+    groupe.choices
+      .filter((c) => c.isAvailable && ids.includes(c.id))
+      .map((c) => ({ id: c.id, label: c.label, price: c.price })),
+  );
+
+/** Le groupe obligatoire encore sans choix, s'il y en a un. */
+const groupeManquant = (product: Product, ids: string[] = []) =>
+  (product.supplements || []).find(
+    (groupe) => groupe.isRequired && !groupe.choices.some((c) => c.isAvailable && ids.includes(c.id)),
+  );
 
 export default function StorefrontPage() {
   const params = useParams();
@@ -94,11 +138,11 @@ export default function StorefrontPage() {
   const [store, setStore] = useState<Store | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState<
-    { product: Product; quantity: number; variante?: Declinaison }[]
-  >([]);
+  const [cart, setCart] = useState<LigneVitrine[]>([]);
   // La déclinaison retenue pour chaque plat, avant l'ajout au panier.
   const [choix, setChoix] = useState<Record<string, string>>({});
+  // Les suppléments cochés pour chaque plat, avant l'ajout au panier.
+  const [supChoisis, setSupChoisis] = useState<Record<string, string[]>>({});
   // Arrivé depuis le panier de l'accueil (?panier=1) : le panier s'ouvre
   // d'emblée, tant que le client n'y a pas touché.
   const panierDemande = useParametreAdresse('panier') === '1';
@@ -241,6 +285,9 @@ export default function StorefrontPage() {
     setCart(
       lignes.map((ligne) => {
         const produit = catalogue.find((candidat) => candidat.id === ligne.productId);
+        // Le prix gardé inclut les suppléments : la base s'en déduit, sans
+        // quoi ils seraient comptés deux fois.
+        const prixDeBase = Number((ligne.price - sommeDesSupplements(ligne.supplements)).toFixed(2));
 
         return {
           // Le catalogue peut avoir changé depuis : à défaut, on reconstitue le
@@ -250,7 +297,7 @@ export default function StorefrontPage() {
               id: ligne.productId,
               name: ligne.name,
               description: ligne.description || '',
-              price: ligne.price,
+              price: prixDeBase,
               isAvailable: ligne.isAvailable !== false,
               images: [],
             },
@@ -259,10 +306,11 @@ export default function StorefrontPage() {
             ? {
                 id: ligne.variantId,
                 label: ligne.variantNom || '',
-                prixEffectif: ligne.price,
+                prixEffectif: prixDeBase,
                 isAvailable: true,
               }
             : undefined,
+          supplements: ligne.supplements?.length ? ligne.supplements : undefined,
         };
       })
     );
@@ -302,6 +350,7 @@ export default function StorefrontPage() {
         quantity: item.quantity,
         isAvailable: item.product.isAvailable,
         ...(item.variante ? { variantId: item.variante.id, variantNom: item.variante.label } : {}),
+        ...(item.supplements?.length ? { supplements: item.supplements } : {}),
       })),
       store.name,
       store.slug
@@ -364,6 +413,18 @@ export default function StorefrontPage() {
                   prixEffectif: Number(variante.prixEffectif ?? produit.price),
                   isAvailable: variante.isAvailable !== false,
                 })),
+                supplements: (produit.supplements || []).map((groupe: any) => ({
+                  id: groupe.id,
+                  name: groupe.name,
+                  isRequired: Boolean(groupe.isRequired),
+                  maxChoices: groupe.maxChoices ?? null,
+                  choices: (groupe.choices || []).map((c: any) => ({
+                    id: c.id,
+                    label: c.label,
+                    price: Number(c.price) || 0,
+                    isAvailable: c.isAvailable !== false,
+                  })),
+                })),
                 images: (produit.media || produit.images || []).map((image: any) => ({
                   url: image.url,
                 })),
@@ -404,12 +465,19 @@ export default function StorefrontPage() {
         const frais = parId.get(ligne.product.id);
         if (!frais || !frais.isAvailable) return [];
 
-        if (!ligne.variante) return [{ ...ligne, product: frais }];
+        // Un supplément retiré ou épuisé sort la ligne entière : la garder sans
+        // lui servirait au client un plat qu'il n'a pas composé.
+        const ids = (ligne.supplements || []).map((sup) => sup.id);
+        const supplements = supplementsRetenus(frais, ids);
+        if (supplements.length !== ids.length || groupeManquant(frais, ids)) return [];
+        const avecSupplements = supplements.length > 0 ? supplements : undefined;
+
+        if (!ligne.variante) return [{ ...ligne, product: frais, supplements: avecSupplements }];
 
         const variante = frais.variants?.find((v) => v.id === ligne.variante!.id);
         if (!variante || !variante.isAvailable) return [];
 
-        return [{ ...ligne, product: frais, variante }];
+        return [{ ...ligne, product: frais, variante, supplements: avecSupplements }];
       })
     );
   };
@@ -425,15 +493,6 @@ export default function StorefrontPage() {
     { storeId: store?.id, delaiMs: 800, actif: Boolean(store?.id) }
   );
 
-  /**
-   * La clé d'une ligne de panier.
-   *
-   * Indexer par produit ferait de « penne » et « spaghetti » du même plat une
-   * seule ligne : le client en commanderait deux sans savoir lesquelles.
-   */
-  const cleDeLigne = (productId: string, variantId?: string) =>
-    variantId ? `${productId}:${variantId}` : productId;
-
   const addToCart = (product: Product) => {
     const declinaisons = product.variants || [];
     const choisie = declinaisons.find((v) => v.id === choix[product.id]);
@@ -441,30 +500,51 @@ export default function StorefrontPage() {
     // Un plat qui se décline attend un choix : le serveur refuserait la
     // commande, autant le dire avant.
     if (declinaisons.length > 0 && (!choisie || !choisie.isAvailable)) return;
+    // Un groupe obligatoire (« une sauce au choix ») attend aussi son choix.
+    if (groupeManquant(product, supChoisis[product.id])) return;
 
-    const cle = cleDeLigne(product.id, choisie?.id);
+    const supplements = supplementsRetenus(product, supChoisis[product.id]);
+    const nouvelle: LigneVitrine = {
+      product,
+      quantity: 1,
+      variante: choisie,
+      supplements: supplements.length > 0 ? supplements : undefined,
+    };
+    const cle = cleDeLItem(nouvelle);
 
     setCart((prev) => {
-      const existing = prev.find(
-        (item) => cleDeLigne(item.product.id, item.variante?.id) === cle
-      );
-
-      if (existing) {
+      if (prev.some((item) => cleDeLItem(item) === cle)) {
         return prev.map((item) =>
-          cleDeLigne(item.product.id, item.variante?.id) === cle
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+          cleDeLItem(item) === cle ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
 
-      return [...prev, { product, quantity: 1, variante: choisie }];
+      return [...prev, nouvelle];
+    });
+  };
+
+  /**
+   * Coche ou décoche un supplément. Dans un groupe à un seul choix, le
+   * nouveau remplace l'ancien ; ailleurs, le plafond du groupe est respecté.
+   */
+  const basculerSupplement = (product: Product, groupe: GroupeSupplements, id: string) => {
+    setSupChoisis((precedent) => {
+      const actuels = precedent[product.id] || [];
+      if (actuels.includes(id)) {
+        return { ...precedent, [product.id]: actuels.filter((x) => x !== id) };
+      }
+      const duGroupe = groupe.choices.map((c) => c.id);
+      const dejaDansLeGroupe = actuels.filter((x) => duGroupe.includes(x));
+      if (groupe.maxChoices === 1) {
+        return { ...precedent, [product.id]: [...actuels.filter((x) => !duGroupe.includes(x)), id] };
+      }
+      if (groupe.maxChoices != null && dejaDansLeGroupe.length >= groupe.maxChoices) return precedent;
+      return { ...precedent, [product.id]: [...actuels, id] };
     });
   };
 
   const removeFromCart = (cle: string) => {
-    setCart((prev) =>
-      prev.filter((item) => cleDeLigne(item.product.id, item.variante?.id) !== cle)
-    );
+    setCart((prev) => prev.filter((item) => cleDeLItem(item) !== cle));
   };
 
   const updateQuantity = (cle: string, quantity: number) => {
@@ -475,7 +555,7 @@ export default function StorefrontPage() {
 
     setCart((prev) =>
       prev.map((item) =>
-        cleDeLigne(item.product.id, item.variante?.id) === cle ? { ...item, quantity } : item
+        cleDeLItem(item) === cle ? { ...item, quantity } : item
       )
     );
   };
@@ -687,8 +767,10 @@ export default function StorefrontPage() {
                             <div>
                               <p className="text-2xl font-bold text-red-400">
                                 {euro(
-                                  (product.variants || []).find((v) => v.id === choix[product.id])
-                                    ?.prixEffectif ?? product.price
+                                  Number(
+                                    (product.variants || []).find((v) => v.id === choix[product.id])
+                                      ?.prixEffectif ?? product.price
+                                  ) + sommeDesSupplements(supplementsRetenus(product, supChoisis[product.id]))
                                 )}
                               </p>
                               <p className="text-xs text-gray-500">
@@ -754,13 +836,67 @@ export default function StorefrontPage() {
                             </div>
                           )}
 
+                          {/* Les suppléments payants : bacon, cheddar, sauce au choix. */}
+                          {(product.supplements || []).map((groupe) => {
+                            const coches = supChoisis[product.id] || [];
+                            const nbDansGroupe = groupe.choices.filter((c) => coches.includes(c.id)).length;
+                            const plein = groupe.maxChoices != null && groupe.maxChoices > 1 && nbDansGroupe >= groupe.maxChoices;
+
+                            return (
+                              <div key={groupe.id}>
+                                <p className="text-xs text-gray-400 mb-1.5">
+                                  {groupe.name}
+                                  {groupe.isRequired && <span className="text-red-400"> · obligatoire</span>}
+                                  {groupe.maxChoices != null && (
+                                    <span className="text-gray-500">
+                                      {' '}· {groupe.maxChoices === 1 ? '1 au choix' : `${groupe.maxChoices} au plus`}
+                                    </span>
+                                  )}
+                                </p>
+                                <div role="group" aria-label={`${groupe.name} de ${product.name}`} className="flex flex-wrap gap-2">
+                                  {groupe.choices.map((sup) => {
+                                    const coche = coches.includes(sup.id);
+                                    const indisponible = !sup.isAvailable || !product.isAvailable;
+                                    return (
+                                      <button
+                                        key={sup.id}
+                                        type="button"
+                                        aria-pressed={coche}
+                                        disabled={indisponible || (plein && !coche)}
+                                        onClick={() => basculerSupplement(product, groupe, sup.id)}
+                                        title={indisponible ? `${sup.label} n'est plus disponible` : undefined}
+                                        className={`px-3 py-1 rounded-full border text-sm transition ${
+                                          indisponible
+                                            ? 'border-gray-700 text-gray-600 line-through cursor-not-allowed'
+                                            : coche
+                                              ? 'border-red-500 bg-red-500/20 text-red-300'
+                                              : plein
+                                                ? 'border-gray-700 text-gray-500 cursor-not-allowed'
+                                                : 'border-gray-600 text-gray-300 hover:border-gray-400'
+                                        }`}
+                                      >
+                                        {sup.label}
+                                        <span className="text-xs opacity-70">
+                                          {' '}
+                                          {sup.price > 0 ? `+${euro(sup.price)}` : 'offert'}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+
                           {/* Add to Cart Button */}
                           {(() => {
                             const declinaisons = product.variants || [];
                             const choisie = declinaisons.find((v) => v.id === choix[product.id]);
+                            const manquant = groupeManquant(product, supChoisis[product.id]);
                             const bloque =
                               !product.isAvailable ||
-                              (declinaisons.length > 0 && (!choisie || !choisie.isAvailable));
+                              (declinaisons.length > 0 && (!choisie || !choisie.isAvailable)) ||
+                              Boolean(manquant);
 
                             return (
                               <button
@@ -776,7 +912,9 @@ export default function StorefrontPage() {
                                 <ShoppingCart size={18} />
                                 {declinaisons.length > 0 && !choisie
                                   ? `Choisissez : ${product.variantLabel || 'une option'}`
-                                  : 'Ajouter au panier'}
+                                  : manquant
+                                    ? `Choisissez : ${manquant.name}`
+                                    : 'Ajouter au panier'}
                               </button>
                             );
                           })()}
@@ -822,7 +960,7 @@ export default function StorefrontPage() {
               <>
                 <div className="space-y-4 mb-6">
                   {cart.map((item) => {
-                    const cle = cleDeLigne(item.product.id, item.variante?.id);
+                    const cle = cleDeLItem(item);
 
                     return (
                       <div key={cle} className="bg-gray-700 rounded-lg p-4 space-y-2">
@@ -832,6 +970,11 @@ export default function StorefrontPage() {
                               plat seraient indistinguables. */}
                           {item.variante && (
                             <span className="text-gray-400"> — {item.variante.label}</span>
+                          )}
+                          {item.supplements && item.supplements.length > 0 && (
+                            <span className="block text-xs font-normal text-gray-400">
+                              + {item.supplements.map((sup) => sup.label).join(', ')}
+                            </span>
                           )}
                         </h3>
                         <div className="flex items-center justify-between">

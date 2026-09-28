@@ -1407,7 +1407,17 @@
     "startSearching": "Start looking for restaurants →",
     "previousReview": "You gave {note}★ in {date}. Still agree?",
     "reviewWanted": "⭐ Your review",
-    "previousRemoved": "This review was removed by the platform. If you edit it, the platform will review it again."
+    "previousRemoved": "This review was removed by the platform. If you edit it, the platform will review it again.",
+    "statusReady": "Ready",
+    "statusCompleted": "Completed",
+    "statusRejected": "Declined",
+    "pickup": "Pickup",
+    "reorder": "Order again",
+    "reordering": "Preparing your basket…",
+    "reorderPartial": "{n, plural, one {# item is} other {# items are}} no longer available: {liste}. The rest is in your basket.",
+    "reorderNone": "None of these items is available today.",
+    "reorderUnavailable": "This shop can't be reached right now.",
+    "reorderSeeCart": "See basket"
   },
   "clientOrderDetail": {
     "statusPending": "Pending",
@@ -1994,6 +2004,31 @@
   "carteZones": {
     "dragRadius": "Drag to adjust the radius",
     "yourStore": "Your store — drag it to set its location"
+  },
+  "supplementsProduit": {
+    "title": "Add-ons",
+    "help": "Extras the customer can add to the dish, each with its own price (0 for a free choice). Enter the price the same way as the dish's. A required group needs at least one choice; \"at most\" caps the number of choices.",
+    "groupName": "Group name",
+    "groupPlaceholder": "Extras, Sauce…",
+    "defaultGroup": "Extras",
+    "maxChoices": "At most",
+    "unlimited": "Unlimited",
+    "required": "Required",
+    "removeGroup": "Delete group {nom}",
+    "choiceName": "Add-on name",
+    "choicePlaceholder": "Bacon, cheddar…",
+    "choicePrice": "Price of {nom}",
+    "free": "Free",
+    "depleted": "Sold out",
+    "restore": "Restore",
+    "removeChoice": "Remove {nom}",
+    "addChoice": "Add a choice",
+    "addGroup": "Add a group",
+    "save": "Save",
+    "saved": "Add-ons saved",
+    "invalidPrice": "A price is not a number.",
+    "actionRefused": "Save refused",
+    "serverError": "Server unreachable"
   },
   "declinaisonsProduit": {
     "actionRefused": "Action refused",

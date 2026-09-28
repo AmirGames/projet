@@ -3,6 +3,7 @@
 import { signalerErreur } from '@/lib/erreurs';
 import { PAGES_LEGALES } from '@/lib/editeur';
 import Link from '@/components/LienRegional';
+import { accueilDe } from '@/lib/domaines';
 import { useAuth } from "@/lib/auth-context";
 import { useState } from "react";
 import { useEffectChargement } from "@/lib/use-effect-chargement";
@@ -52,7 +53,7 @@ export default function Home() {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          <Link href="/restaurants" className="font-semibold text-slate-900 transition hover:text-primary">
+          <Link href={accueilDe('public')} className="font-semibold text-slate-900 transition hover:text-primary">
             Commerces
           </Link>
 
@@ -120,7 +121,7 @@ export default function Home() {
             Créer ma boutique gratuitement
           </Link>
           <Link
-            href="/restaurants"
+            href={accueilDe('public')}
             className="rounded-full border border-slate-200 bg-white px-8 py-4 font-bold text-slate-900 transition hover:border-slate-300"
           >
             Voir les commerces
@@ -137,7 +138,7 @@ export default function Home() {
             Une vitrine claire par commerce, un panier par boutique, et une commande
             possible sans créer de compte.
           </p>
-          <Link href="/restaurants" className="font-bold text-primary">
+          <Link href={accueilDe('public')} className="font-bold text-primary">
             Parcourir les commerces →
           </Link>
         </div>
@@ -261,7 +262,7 @@ export default function Home() {
           </div>
           <div>
             <h4 className="mb-3 text-lg font-bold">Plateforme</h4>
-            <Link href="/restaurants" className="mb-2 block text-slate-300 hover:text-white">
+            <Link href={accueilDe('public')} className="mb-2 block text-slate-300 hover:text-white">
               Commerces
             </Link>
             {!user || (!isMerchant && !rolesLoading) ? (

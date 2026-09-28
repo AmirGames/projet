@@ -1407,7 +1407,17 @@
     "startSearching": "Commencer à chercher des restaurants →",
     "previousReview": "Vous aviez mis {note}★ en {date}. Toujours d'accord ?",
     "reviewWanted": "⭐ Votre avis",
-    "previousRemoved": "Cet avis a été retiré par la plateforme. Si vous le modifiez, elle l'examinera à nouveau."
+    "previousRemoved": "Cet avis a été retiré par la plateforme. Si vous le modifiez, elle l'examinera à nouveau.",
+    "statusReady": "Prête",
+    "statusCompleted": "Terminée",
+    "statusRejected": "Refusée",
+    "pickup": "Retrait sur place",
+    "reorder": "Commander à nouveau",
+    "reordering": "Préparation du panier…",
+    "reorderPartial": "{n, plural, one {# article n'est plus disponible} other {# articles ne sont plus disponibles}} : {liste}. Le reste est dans votre panier.",
+    "reorderNone": "Aucun de ces articles n'est disponible aujourd'hui.",
+    "reorderUnavailable": "Ce commerce n'est pas joignable pour le moment.",
+    "reorderSeeCart": "Voir le panier"
   },
   "clientOrderDetail": {
     "statusPending": "En attente",
@@ -1994,6 +2004,31 @@
   "carteZones": {
     "dragRadius": "Tirez pour régler le rayon",
     "yourStore": "Votre boutique — déplacez-la pour la situer"
+  },
+  "supplementsProduit": {
+    "title": "Suppléments",
+    "help": "Des choix à ajouter au plat, chacun à son prix (0 pour un choix offert). Le prix se saisit comme celui du plat. Un groupe obligatoire impose au moins un choix ; « au plus » limite le nombre de choix.",
+    "groupName": "Nom du groupe",
+    "groupPlaceholder": "Suppléments, Sauce…",
+    "defaultGroup": "Suppléments",
+    "maxChoices": "Au plus",
+    "unlimited": "Illimité",
+    "required": "Obligatoire",
+    "removeGroup": "Supprimer le groupe {nom}",
+    "choiceName": "Nom du supplément",
+    "choicePlaceholder": "Bacon, cheddar…",
+    "choicePrice": "Prix de {nom}",
+    "free": "Offert",
+    "depleted": "Épuisé",
+    "restore": "Remettre",
+    "removeChoice": "Retirer {nom}",
+    "addChoice": "Ajouter un choix",
+    "addGroup": "Ajouter un groupe",
+    "save": "Enregistrer",
+    "saved": "Suppléments enregistrés",
+    "invalidPrice": "Un prix n'est pas un nombre.",
+    "actionRefused": "Enregistrement refusé",
+    "serverError": "Serveur injoignable"
   },
   "declinaisonsProduit": {
     "actionRefused": "Action refusée",

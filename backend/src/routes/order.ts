@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import { PourboireService } from "../services/pourboire.service";
 import { champEmail } from "../utils/validation";
 import { OrderService } from "../services/order.service";
 import { ApiError } from "../middleware/errorHandler";
@@ -74,6 +75,8 @@ const createOrderSchema = z.object({
   totalAmount: z.number().positive("Total doit être positif"),
   taxAmount: z.number().optional(),
   feesAmount: z.number().optional(),
+  // Le pourboire du livreur ; bornes et conditions vérifiées par le service.
+  tipAmount: z.number().nonnegative().max(1000).optional(),
   // Le code est repris tel quel ; c'est le serveur qui calcule la remise.
   promoCode: z.string().optional(),
   paymentMethodId: z.string().optional(),
@@ -87,7 +90,11 @@ const createOrderSchema = z.object({
         variantId: z.string().optional(),
         quantity: z.number().int().positive(),
         price: z.number().nonnegative(),
+        // Accepté pour les anciens appelants, jamais enregistré : la ligne
+        // garde la copie des suppléments relue par le serveur.
         selectedOptions: z.record(z.string(), z.string()).optional(),
+        // Les suppléments choisis, par identifiant ; tarifés par le serveur.
+        supplements: z.array(z.string().min(1).max(64)).max(50).optional(),
       })
     )
     .optional(),
@@ -123,6 +130,31 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // GET /orders/:id - Get order by ID
+/**
+ * GET /api/orders/:id/pourboire — le pourboire après livraison est-il proposé.
+ *
+ * Public comme le suivi : l'identifiant de la commande est le lien que reçoit
+ * un client sans compte.
+ */
+router.get("/:id/pourboire", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await PourboireService.situation(req.params.id as string) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/orders/:id/pourboire — l'intention de paiement du pourboire.
+router.post("/:id/pourboire", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { montant } = z.object({ montant: z.number().positive().max(1000) }).parse(req.body);
+    const intention = await PourboireService.creerIntention(req.params.id as string, montant);
+    res.status(201).json({ success: true, clientSecret: intention.clientSecret, montant: intention.montant });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;

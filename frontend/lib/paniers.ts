@@ -28,13 +28,23 @@ const CLE = 'zupeat-paniers';
 /** L'ancienne clé, dont le contenu n'est pas récupérable de façon fiable. */
 const CLE_HERITEE = 'cart';
 
+/** Un supplément payant retenu pour une ligne : bacon, cheddar. */
+export interface SupplementPanier {
+  id: string;
+  label: string;
+  /** TTC, en euros : déjà compté dans le prix de la ligne. */
+  price: number;
+}
+
 export interface LignePanier {
   productId: string;
   /** La déclinaison choisie, quand le plat se décline. */
   variantId?: string;
   name: string;
   variantNom?: string;
-  /** En euros, comme partout ailleurs dans l'application. */
+  /** Les suppléments choisis ; leur prix est inclus dans `price`. */
+  supplements?: SupplementPanier[];
+  /** En euros, comme partout ailleurs dans l'application : prix unitaire, suppléments compris. */
   price: number;
   quantity: number;
   description?: string;
@@ -54,13 +64,16 @@ export interface PanierBoutique {
 type Magasin = Record<string, PanierBoutique>;
 
 /**
- * La clé d'une ligne : produit et déclinaison.
+ * La clé d'une ligne : produit, déclinaison et suppléments.
  *
  * Indexer par produit seul ferait de « penne » et « spaghetti » du même plat
- * une seule ligne.
+ * une seule ligne — et d'un burger avec ou sans bacon aussi.
  */
-export const cleDeLigne = (productId: string, variantId?: string) =>
-  variantId ? `${productId}:${variantId}` : productId;
+export const cleDeLigne = (productId: string, variantId?: string, supplements?: { id: string }[]) => {
+  const base = variantId ? `${productId}:${variantId}` : productId;
+  if (!supplements || supplements.length === 0) return base;
+  return `${base}+${supplements.map((s) => s.id).sort().join(',')}`;
+};
 
 function lireMagasin(): Magasin {
   try {
@@ -104,7 +117,7 @@ export function lirePanier(storeId: string | undefined): LignePanier[] {
 
 /** Ce qui compte pour dire qu'un panier a changé : les plats, leurs choix, les quantités et les prix. */
 const empreinte = (lignes: LignePanier[]) =>
-  JSON.stringify(lignes.map((l) => [l.productId, l.variantId || '', l.quantity, l.price]));
+  JSON.stringify(lignes.map((l) => [cleDeLigne(l.productId, l.variantId, l.supplements), l.quantity, l.price]));
 
 /** Enregistre le panier d'une boutique. Un panier vide est effacé. */
 export function enregistrerPanier(
@@ -297,6 +310,9 @@ function ligneEnvoyee(ligne: LignePanier) {
     ...(ligne.variantId ? { variantId: ligne.variantId } : {}),
     name: ligne.name,
     ...(ligne.variantNom ? { variantNom: ligne.variantNom } : {}),
+    ...(ligne.supplements?.length
+      ? { supplements: ligne.supplements.map((s) => ({ id: s.id, label: s.label, price: s.price })) }
+      : {}),
     price: ligne.price,
     quantity: ligne.quantity,
     ...(ligne.description ? { description: ligne.description.slice(0, 1000) } : {}),

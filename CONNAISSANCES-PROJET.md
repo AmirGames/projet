@@ -630,15 +630,18 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 
 **Les régions (`/be-fr/`, `/fr-fr/`, `/gb-en/`…)**
 - Seules les pages publiques indexables portent le préfixe : accueil,
-  `/restaurants`, `/restaurant/*`, `/store/*` (sauf `/store/new`), pages
+  `/restaurant/*`, `/store/*` (sauf `/store/new`), pages
   légales, pages « devenir ». Liste dans `frontend/i18n/chemins-regionaux.ts`.
 - **Aucune page n'est déplacée** : le proxy (`frontend/proxy.ts`) retire le préfixe, réécrit
   vers la page d'origine et transmet la région par l'en-tête
   `x-zupeat-region`. Une page publique appelée sans préfixe est redirigée
   (307) vers la région du visiteur : cookie `ZUPEAT_REGION`, sinon langue
   choisie, sinon `Accept-Language`, sinon `fr-fr`.
-- Un script de vérification qui ouvre `/restaurants` atterrit donc sur
-  `/fr-fr/restaurants` : comparer les adresses sans le préfixe.
+- Un script de vérification qui ouvre `/store/<slug>` atterrit donc sur
+  `/fr-fr/store/<slug>` : comparer les adresses sans le préfixe.
+- `/restaurants`, l'ancienne liste des commerces, n'est plus qu'une
+  redirection vers l'accueil public (`/client`, la racine de zupeat.com) :
+  les liens « Commerces » passent par `accueilDe('public')`.
 - Sur les pages publiques, importer `Link` depuis `@/components/LienRegional`
   plutôt que `next/link`, pour éviter un détour par la redirection.
 - `usePathname()` renvoie l'adresse visible, préfixe compris.

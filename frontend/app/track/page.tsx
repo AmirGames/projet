@@ -1,6 +1,7 @@
 'use client';
 
 import DetailDuTotal from '@/components/DetailDuTotal';
+import { PourboireApresLivraison } from '@/components/PourboireApresLivraison';
 import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
@@ -509,6 +510,9 @@ export default function TrackOrderPage() {
                           <span className="text-red-400"> — {intituleDeLaLigne(item).declinaison}</span>
                         )}
                       </p>
+                      {intituleDeLaLigne(item).supplements && (
+                        <p className="text-xs text-gray-400">+ {intituleDeLaLigne(item).supplements}</p>
+                      )}
                       <p className="text-sm text-gray-400">Quantité: {item.quantity}</p>
                     </div>
                     <p className="text-red-400 font-semibold">
@@ -518,6 +522,14 @@ export default function TrackOrderPage() {
                 ))}
               </div>
             </div>
+
+            {/* Livrée par un livreur de la plateforme, sans pourboire : on le propose. */}
+            <PourboireApresLivraison
+              orderId={order.id}
+              customerEmail={order.customerEmail}
+              customerName={order.customerName}
+              cle={delivery?.status}
+            />
 
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
               <DetailDuTotal commande={order} couleurTotal="text-red-400" />

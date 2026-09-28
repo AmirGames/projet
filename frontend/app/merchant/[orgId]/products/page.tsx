@@ -25,6 +25,7 @@ import { useCurrentStore } from '@/lib/current-store';
 
 import { euro } from '@/lib/format';
 import { DeclinaisonsProduit } from '@/components/DeclinaisonsProduit';
+import { SupplementsProduit } from '@/components/SupplementsProduit';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -193,6 +194,9 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
       {/* Les déclinaisons du plat : « Pâtes 4 fromages » en penne, spaghetti
           ou tagliatelle. */}
       <DeclinaisonsProduit productId={product.id} prixDuPlat={Number(product.price)} />
+
+      {/* Les suppléments payants : bacon +1,50 €, sauce au choix. */}
+      <SupplementsProduit productId={product.id} />
 
       {product.status === 'ACTIVE' && (
         <div className="mt-4 pt-4 border-t border-gray-700 flex items-center gap-3">

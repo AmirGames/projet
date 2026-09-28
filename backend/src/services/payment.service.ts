@@ -1,4 +1,6 @@
 import Stripe from "stripe";
+import { montantAEncaisser } from "./delivery-mode.service";
+import { PourboireService } from "./pourboire.service";
 import { db } from "./db";
 import { stripe, STRIPE_CONFIG } from "../config/stripe";
 import { logger } from "../config/logger";
@@ -43,7 +45,8 @@ export const paymentService = {
       throw new ApiError(409, "Cette commande est déjà payée.", "ORDER_ALREADY_PAID");
     }
 
-    const montant = enCentimes(Number(commande.totalAmount));
+    // La commande et le pourboire du livreur, encaissés ensemble.
+    const montant = enCentimes(montantAEncaisser(commande));
     const existant = commande.payments[0];
 
     if (existant?.stripePaymentIntentId) {
@@ -65,14 +68,14 @@ export const paymentService = {
       where: { orderId: commande.id },
       create: {
         orderId: commande.id,
-        amount: commande.totalAmount,
+        amount: montantAEncaisser(commande),
         status: "PENDING",
         stripePaymentIntentId: intention.id,
         stripeClientSecret: intention.client_secret,
         stripeStatus: intention.status,
       },
       update: {
-        amount: commande.totalAmount,
+        amount: montantAEncaisser(commande),
         status: "PENDING",
         stripePaymentIntentId: intention.id,
         stripeClientSecret: intention.client_secret,
@@ -98,7 +101,8 @@ export const paymentService = {
   async confirmPayment(paymentIntentId: string) {
     const intention = await stripe.paymentIntents.retrieve(paymentIntentId);
     if (intention.status === "succeeded") {
-      await this.marquerPaye(intention);
+      if (PourboireService.estUnPourboire(intention)) await PourboireService.marquerPaye(intention);
+      else await this.marquerPaye(intention);
     }
     return intention;
   },
@@ -128,11 +132,21 @@ export const paymentService = {
     }
 
     switch (evenement.type) {
+      // Un pourboire laissé après la livraison porte aussi l'orderId : il
+      // passe à part, sans quoi il serait pris pour le paiement de la commande.
       case "payment_intent.succeeded":
-        await this.marquerPaye(evenement.data.object);
+        if (PourboireService.estUnPourboire(evenement.data.object)) {
+          await PourboireService.marquerPaye(evenement.data.object);
+        } else {
+          await this.marquerPaye(evenement.data.object);
+        }
         break;
       case "payment_intent.payment_failed":
-        await this.marquerEchec(evenement.data.object);
+        if (PourboireService.estUnPourboire(evenement.data.object)) {
+          await PourboireService.marquerEchec(evenement.data.object);
+        } else {
+          await this.marquerEchec(evenement.data.object);
+        }
         break;
       case "payment_intent.canceled":
         await db.payment.updateMany({
@@ -180,12 +194,12 @@ export const paymentService = {
     if (commande.paymentStatus === "REFUNDED") return commande;
 
     const recu = intention.amount_received ?? intention.amount;
-    if (recu !== enCentimes(Number(commande.totalAmount))) {
+    if (recu !== enCentimes(montantAEncaisser(commande))) {
       logger.error("Montant encaissé différent du total de la commande", {
         orderId: commande.id,
         paymentIntentId: intention.id,
         recu,
-        attendu: enCentimes(Number(commande.totalAmount)),
+        attendu: enCentimes(montantAEncaisser(commande)),
       });
     }
 
@@ -436,7 +450,7 @@ export const paymentService = {
       where: { orderId },
       create: {
         orderId,
-        amount: commande.totalAmount,
+        amount: montantAEncaisser(commande),
         status: "REFUNDED",
         stripePaymentIntentId: paymentIntentId,
         stripeRefundId: remboursement.id,

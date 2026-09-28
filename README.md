@@ -27,7 +27,9 @@ emporter ou à livrer.
 - **Une seule vitrine**, à l'adresse lisible du commerce (`/store/<slug>`) : les
   anciens liens par identifiant y mènent encore
 - Consulte un menu rangé par catégories, avec les plats épuisés signalés
-- Choisit une déclinaison quand un plat en a (taille, type de pâtes…)
+- Choisit une déclinaison quand un plat en a (taille, type de pâtes…), et
+  ses **suppléments** : bacon +1,50 €, une sauce au choix. Le prix affiché
+  les inclut, et un groupe obligatoire se choisit avant l'ajout au panier
 - Garde **un panier par commerce** : passer d'un commerce à l'autre ne mélange rien
 - Commande **sans créer de compte** : coordonnées, adresse de livraison avec
   suggestions, ou créneau de retrait tenu aux heures d'ouverture réelles
@@ -48,6 +50,15 @@ emporter ou à livrer.
   quand elle part du commerce (avec le code de remise) et quand elle est livrée
 - Retrouve une commande passée sans compte par son lien de suivi
 - Garde ses **commerces favoris**, d'un clic sur le cœur de leur carte
+- **Commande à nouveau** depuis « Mes commandes » : les plats d'une commande
+  terminée reviennent au panier, au prix du jour ; ceux qui ne sont plus à la
+  carte sont nommés
+- Laisse un **pourboire** à son livreur quand un livreur de la plateforme
+  livre une commande payée en ligne : 5, 10 ou 15 % des articles (le montant
+  écrit sous chaque pastille) ou le montant de son choix, 50 € au plus. En
+  commandant, il part dans le même paiement ; sinon, une fois la commande
+  livrée, le suivi le lui propose (7 jours durant), par un paiement à part.
+  Il revient en entier au livreur, hors commission
 - Dispose d'un **délai de 10 s** pour annuler une commande avant son envoi, et
   d'un bandeau « commande en cours » dans son espace
 - **Tout compte a un espace client**, commerçants et livreurs compris : ils
@@ -73,6 +84,10 @@ emporter ou à livrer.
   L'adresse web (slug) se déduit toute seule du nom
 - Catalogue : catégories et plats réordonnables au glisser-déposer, déclinaisons,
   disponibilité basculable en direct (le client la voit changer sans recharger)
+- **Suppléments payants** par plat, en groupes (« Suppléments », « Sauce ») :
+  un prix par choix (0 pour un choix offert), un groupe obligatoire ou plafonné,
+  un choix épuisé d'un clic. Le serveur les tarife à chaque commande, et la
+  fiche commande, le ticket et la facture les nomment
 - Commandes : liste, détail, changement d'état, facture imprimable. Il y lit
   **le montant de ses articles** (remise déduite), pas le total payé par le
   client : la livraison d'un livreur de la plateforme et les frais de service
@@ -131,7 +146,9 @@ emporter ou à livrer.
   il confirme ou appelle le 112, et le support est prévenu
 - **Payé sur la distance du commerce au client** : frais fixe plus un tarif au
   kilomètre, les mêmes pour tous — le trajet jusqu'au commerce est affiché,
-  pas payé
+  pas payé. Le **pourboire** laissé en commandant s'y ajoute dès la
+  proposition (« dont 2,00 € de pourboire ») ; celui laissé après la livraison
+  arrive par notification et part avec le relevé suivant
 - **Pause** de 5 minutes à 4 heures : il reste en ligne mais ne reçoit plus de
   course, et reprend quand il veut
 - **Perte du signal** : sans position depuis 2 minutes, il est prévenu, le
@@ -294,7 +311,7 @@ la main.
 
 L'historique des migrations part d'une migration de référence,
 `0001_initial_schema`, qui crée tout le schéma sur une base vide ; chaque
-changement de schéma ajoute ensuite sa propre migration (`0002` à `0016`
+changement de schéma ajoute ensuite sa propre migration (`0002` à `0019`
 aujourd'hui, `npx prisma migrate dev --name <nom>`), à committer avec le
 schéma.
 
@@ -368,7 +385,7 @@ scripts qui **pilotent un vrai navigateur**. Un contrôle n'affirme jamais un co
 HTTP : il relit la donnée pour vérifier qu'elle a bougé.
 
 ```bash
-# API : 1872 contrôles, 56 suites
+# API : 1912 contrôles, 57 suites
 cd backend
 createdb zupone_test
 DATABASE_URL="postgresql://.../zupone_test" npx prisma migrate deploy

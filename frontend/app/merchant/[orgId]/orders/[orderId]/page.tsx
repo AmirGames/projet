@@ -38,6 +38,8 @@ interface LigneCommande {
   } | null;
   /** La déclinaison préparée : pennes, grande taille. */
   variant?: { id: string; label: string; sku?: string | null } | null;
+  /** Les suppléments payés, figés à la commande. */
+  selectedOptions?: { supplements?: { label: string; price: number }[] } | null;
 }
 
 interface Commande {
@@ -286,6 +288,11 @@ export default function DetailCommandePage() {
                           <span className="text-orange-400">
                             {' '}
                             — {intituleDeLaLigne(ligne).declinaison}
+                          </span>
+                        )}
+                        {intituleDeLaLigne(ligne).supplements && (
+                          <span className="block text-xs text-gray-400">
+                            + {intituleDeLaLigne(ligne).supplements}
                           </span>
                         )}
                       </td>

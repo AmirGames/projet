@@ -232,7 +232,7 @@ check('celui du commerce 1 n’y est pas', !vitrineDeux.includes(un.plat), vitri
 
 titre('Le panier de la vitrine survit à la navigation');
 // Il n'était gardé qu'en mémoire : quitter la page le perdait.
-await page.goto(`${SITE}/restaurants`);
+await page.goto(`${SITE}/client`);
 await page.waitForTimeout(2000);
 await page.goto(`${SITE}/store/${deux.slug}`);
 await page.waitForTimeout(3500);

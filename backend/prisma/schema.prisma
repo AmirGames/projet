@@ -653,14 +653,21 @@ model Category {
   @@index([storeId])
 }
 
+/// Un groupe de suppléments d'un plat : « Suppléments », « Sauces ».
 model ProductOption {
   id          String  @id @default(cuid())
   productId   String
-  name        String  // "Taille", "Extra topping"
-  // choices is JSON array: ["S", "M", "L"]
+  name        String  // "Suppléments", "Sauce"
+  // Les choix : [{ id, label, price, isAvailable }]. Le prix se saisit comme
+  // celui du plat (HT si la boutique travaille hors taxe) ; 0 pour un choix
+  // offert. Voir SupplementService.
   choices     Json    @default("[]")
+  // Au moins un choix exigé (une sauce obligatoire, par exemple).
   isRequired  Boolean @default(false)
-  pricingType String  @default("none") // "none" | "fixed" | "percentage"
+  // Au plus tant de choix dans ce groupe ; vide, sans limite.
+  maxChoices  Int?
+  displayOrder Int    @default(0)
+  pricingType String  @default("fixed") // "fixed" : chaque choix a son prix
 
   // Relations
   product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -799,6 +806,12 @@ model Order {
   /// à la plateforme : hors du chiffre du commerçant et de l'assiette de sa
   /// commission, et réclamés sur son relevé tant qu'il encaisse pour elle.
   serviceFeeAmount  Decimal    @default(0) @db.Decimal(10, 2)
+  /// Le pourboire laissé au livreur de la plateforme. À part du total de la
+  /// commande (totalAmount) : il n'entre ni dans le chiffre d'affaires du
+  /// commerçant ni dans l'assiette de la commission, et revient en entier au
+  /// livreur (ajouté à sa rémunération à l'attribution). Le client paie
+  /// totalAmount + tipAmount.
+  tipAmount       Decimal      @default(0) @db.Decimal(10, 2)
 
   // Le code promo appliqué, et la remise qu'il a réellement accordée. Aucun des
   // deux n'était conservé : la remise disparaissait de la commande, et le
@@ -841,6 +854,8 @@ model Order {
   customer        Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   payments        Payment[]
   delivery        OrderDelivery?
+  /// Le pourboire laissé après la livraison, payé à part (voir DriverTip).
+  pourboireApres  DriverTip?
   invoice         Invoice?
   /// Le relevé de reversement qui porte cette commande : une commande n'est
   /// reversée qu'une fois.
@@ -1008,6 +1023,8 @@ model Driver {
   // Relations
   user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   deliveries      OrderDelivery[]
+  /// Les pourboires laissés après la livraison.
+  tips            DriverTip[]
   offers          DeliveryOffer[]
   documents       DriverDocument[]
   payouts         DriverPayout[]
@@ -1262,6 +1279,8 @@ model DriverPayout {
   // Relations
   driver          Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
   deliveries      OrderDelivery[]
+  /// Les pourboires laissés après la livraison, payés avec ce relevé.
+  tips            DriverTip[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2203,3 +2222,32 @@ model CodeConnexion {
   @@index([expiresAt])
 }
 
+/// Un pourboire laissé au livreur **après** la livraison.
+///
+/// Celui donné en commandant vit sur la commande (Order.tipAmount) et entre
+/// dans la rémunération de la course. Celui-ci arrive plus tard, par un
+/// paiement à part : la course peut déjà figurer sur un relevé arrêté. Il a
+/// donc sa propre ligne, due tant qu'aucun relevé ne la porte (payoutId), comme
+/// une course, et versée avec le relevé suivant.
+model DriverTip {
+  id              String    @id @default(cuid())
+  /// Un seul pourboire après livraison par commande.
+  orderId         String    @unique
+  driverId        String
+  amount          Decimal   @db.Decimal(10, 2)
+  /// PENDING (paiement en cours), PAID, FAILED
+  status          String    @default("PENDING")
+  stripePaymentIntentId String? @unique
+  paidAt          DateTime?
+  payoutId        String?
+
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driver          Driver        @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  payout          DriverPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([driverId, status, payoutId])
+  @@index([payoutId])
+}

@@ -151,6 +151,7 @@ continue.
 | `verif-compte-email.mjs` | Mot de passe oublié et confirmation d'adresse, courriel compris |
 | `verif-limites-connexion.mjs` | Connexion limitée à dix essais par quart d'heure et par compte ; inscriptions non limitées hors production |
 | `verif-declinaisons.mjs` | Déclinaisons d'un plat, et le prix d'une ligne calculé par le serveur |
+| `verif-supplements-pourboire.mjs` | Suppléments payants (groupes, tarification serveur, règles, historique client), pourboire du livreur en commandant (conditions, hors commission, ajouté à sa rémunération) et après la livraison (proposition, webhook signé à part du paiement de la commande, relevé suivant) et notifications de boutique réservées à ses membres. Le pourboire accepté demande une API lancée avec `ENABLE_STRIPE=true` et une `STRIPE_SECRET_KEY`, même factice ; le webhook, le même `STRIPE_WEBHOOK_SECRET` des deux côtés |
 | `verif-disponibilite.mjs` | Bouton disponible / épuisé |
 | `verif-formules.mjs` | Formules, quotas de boutiques, service d'adresses |
 | `verif-grille-formules.mjs` | Grille tarifaire réglable, quotas appliqués, demande de changement |

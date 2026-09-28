@@ -38,7 +38,7 @@ export default function AncienneVitrineClient() {
         const lu = await reponse.json();
         const slug = lu?.data?.slug;
 
-        router.replace(slug ? `/store/${slug}` : '/restaurants');
+        router.replace(slug ? `/store/${slug}` : '/client');
       } catch {
         setIntrouvable(true);
       }
@@ -50,7 +50,7 @@ export default function AncienneVitrineClient() {
       <div className="min-h-[60vh] flex items-center justify-center px-6">
         <div className="text-center">
           <p className="text-white font-semibold mb-2">{t('notFound')}</p>
-          <Link href="/restaurants" className="text-orange-500 hover:underline">
+          <Link href="/client" className="text-orange-500 hover:underline">
             {t('seeAll')}
           </Link>
         </div>

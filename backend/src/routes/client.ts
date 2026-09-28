@@ -1,4 +1,5 @@
 import { finAttente } from "../services/delivery-proof.service";
+import { SupplementService } from "../services/supplement.service";
 import { TaxService } from "../services/tax.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
@@ -380,6 +381,13 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
     // Des prix saisis hors taxe : le client les voit TTC.
     store.products = await TaxService.prixAuClient(store.id, store.products);
 
+    // Les suppléments payants de chaque plat, TTC comme le reste.
+    const supplements = await SupplementService.auClient(store.id, store.products);
+    store.products = store.products.map((produit: any) => ({
+      ...produit,
+      supplements: supplements.get(produit.id) || [],
+    }));
+
     const categorizedProducts = regrouperParCategorie(
       store.products.map((produit: any) => ({ ...produit, note: noteDe.get(produit.id) ?? null }))
     );
@@ -679,6 +687,12 @@ router.put("/me", authMiddleware, async (req: Request, res: Response, next: Next
   }
 });
 
+/** Les suppléments figés sur une ligne de commande (OrderService.create). */
+function supplementsDeLaLigne(selectedOptions: unknown): { id: string; groupe: string; label: string; price: number }[] {
+  const liste = (selectedOptions as { supplements?: unknown } | null)?.supplements;
+  return Array.isArray(liste) ? liste : [];
+}
+
 // GET /api/client/me/orders - Historique des commandes du client connecté
 router.get("/me/orders", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -690,7 +704,12 @@ router.get("/me/orders", authMiddleware, async (req: Request, res: Response, nex
       take: 50,
       include: {
         store: { select: { id: true, name: true, slug: true, city: true } },
-        items: { include: { product: { select: { name: true } } } },
+        items: {
+          include: {
+            product: { select: { name: true } },
+            variant: { select: { label: true } },
+          },
+        },
         delivery: { select: { status: true, deliveryTime: true } },
       },
     });
@@ -707,6 +726,8 @@ router.get("/me/orders", authMiddleware, async (req: Request, res: Response, nex
         status: c.status,
         paymentStatus: c.paymentStatus,
         deliveryType: c.deliveryType,
+        // La liste l'affiche : sans lui, la colonne « Adresse » restait vide.
+        deliveryAddress: c.deliveryAddress,
         totalAmount: Number(c.totalAmount),
         createdAt: c.createdAt,
         estimatedReadyAt: c.estimatedReadyAt,
@@ -716,6 +737,13 @@ router.get("/me/orders", authMiddleware, async (req: Request, res: Response, nex
         // plus de quinze jours et antérieur à cette commande.
         avisARedemander: avisARedemander(c, avisRestaurants.get(c.storeId)),
         items: c.items.map((i) => ({
+          // Le plat et sa déclinaison : « Commander à nouveau » les retrouve
+          // dans le menu du jour, au prix du jour.
+          productId: i.productId,
+          variantId: i.variantId,
+          variantLabel: i.variant?.label || null,
+          // Les suppléments tels qu'ils ont été payés (copie figée).
+          supplements: supplementsDeLaLigne(i.selectedOptions),
           name: i.product?.name || "Produit supprimé",
           quantity: i.quantity,
           price: Number(i.price),
