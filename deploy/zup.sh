@@ -77,7 +77,7 @@ case "${1:-}" in
       exit 0
     fi
     cles="$(dc run --rm --no-deps -T backend node -e \
-      'const k=require("web-push").generateVAPIDKeys();console.log(k.publicKey+" "+k.privateKey)')"
+      'const k=require("web-push").generateVAPIDKeys();console.log(k.publicKey+" "+k.privateKey)' | tail -n1)"
     publique="${cles%% *}"; privee="${cles##* }"
     [ -n "$publique" ] && [ -n "$privee" ] || { echo "❌ Génération des clés impossible"; exit 1; }
     for ligne in "VAPID_PUBLIC_KEY=$publique" "VAPID_PRIVATE_KEY=$privee"; do
