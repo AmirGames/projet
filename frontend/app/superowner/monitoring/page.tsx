@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Cpu,
   Gauge,
@@ -193,6 +194,7 @@ export default function SurveillancePage() {
   const [auto, setAuto] = useState(true);
   const [tri, setTri] = useState<TriRoutes>('requetes');
   const [ouverte, setOuverte] = useState<string | null>(null);
+  const [disponibiliteOuverte, setDisponibiliteOuverte] = useState(true);
 
   const charger = useCallback(
     async (relever = false) => {
@@ -382,7 +384,28 @@ export default function SurveillancePage() {
           </section>
 
           {/* Dans la durée : l'historique survit aux redémarrages. */}
-          <DisponibiliteSite />
+          <section className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setDisponibiliteOuverte(!disponibiliteOuverte)}
+              className="w-full flex items-center justify-between px-5 py-3 border-b border-gray-700 hover:bg-gray-700/50 transition"
+              aria-expanded={disponibiliteOuverte}
+            >
+              <h2 className="font-semibold flex items-center gap-2">
+                <Clock size={18} className="text-gray-400" />
+                {t('uptimeTitle')}
+              </h2>
+              <ChevronDown
+                size={20}
+                className={`text-gray-400 transition-transform ${disponibiliteOuverte ? '' : '-rotate-90'}`}
+              />
+            </button>
+            {disponibiliteOuverte && (
+              <div className="p-5">
+                <DisponibiliteSite />
+              </div>
+            )}
+          </section>
 
           {/* Les chiffres qui comptent */}
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -470,24 +493,6 @@ export default function SurveillancePage() {
                   <dd className="font-semibold tabular-nums">{processus.memoire.residenteMo} Mo</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-400">{t('eventLoop')}</dt>
-                  <dd className={`font-semibold tabular-nums ${processus.boucle.p99Ms >= 200 ? 'text-amber-400' : ''}`}>
-                    {t('eventLoopValue', { p99: processus.boucle.p99Ms, max: processus.boucle.maxMs })}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-gray-400">{t('load')}</dt>
-                  <dd className="font-semibold tabular-nums">
-                    {processus.systeme.charge.join(' · ')} <span className="text-gray-500 font-normal">({t('cores', { n: processus.systeme.coeurs })})</span>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-gray-400">{t('systemMemory')}</dt>
-                  <dd className="font-semibold tabular-nums">
-                    {t('systemMemoryValue', { free: processus.systeme.memoireLibreMo, total: processus.systeme.memoireTotaleMo })}
-                  </dd>
-                </div>
-                <div>
                   <dt className="text-gray-400 flex items-center gap-1.5"><MemoryStick size={14} />{t('diskSpace')}</dt>
                   <dd className={`text-lg font-semibold tabular-nums ${processus.systeme.disque.pourcentUtilise >= 85 ? 'text-amber-400' : ''}`}>
                     {processus.systeme.disque.libreMo} / {processus.systeme.disque.totaleMo} Mo
@@ -498,6 +503,24 @@ export default function SurveillancePage() {
                       style={{ width: `${Math.min(100, processus.systeme.disque.pourcentUtilise)}%` }}
                     />
                   </div>
+                </div>
+                <div>
+                  <dt className="text-gray-400">{t('load')}</dt>
+                  <dd className="font-semibold tabular-nums">
+                    {processus.systeme.charge.join(' · ')} <span className="text-gray-500 font-normal">({t('cores', { n: processus.systeme.coeurs })})</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">{t('eventLoop')}</dt>
+                  <dd className={`font-semibold tabular-nums ${processus.boucle.p99Ms >= 200 ? 'text-amber-400' : ''}`}>
+                    {t('eventLoopValue', { p99: processus.boucle.p99Ms, max: processus.boucle.maxMs })}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">{t('systemMemory')}</dt>
+                  <dd className="font-semibold tabular-nums">
+                    {t('systemMemoryValue', { free: processus.systeme.memoireLibreMo, total: processus.systeme.memoireTotaleMo })}
+                  </dd>
                 </div>
               </dl>
               <p className="text-xs text-gray-500 mt-4">
