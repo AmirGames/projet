@@ -20,5 +20,12 @@
 # proxy de l'application aiguille selon l'hôte demandé.
 {$DOMAINES_SITE} {
 	encode zstd gzip
+
+	# www.zupeat.com, www.zupone.com… : une seule adresse par site. Servi tel
+	# quel, www n'était reconnu par aucun espace et affichait la page des
+	# commerçants à la place de l'accueil.
+	@www header_regexp www Host ^www\.(.+)$
+	redir @www https://{re.www.1}{uri} permanent
+
 	reverse_proxy frontend:3000
 }

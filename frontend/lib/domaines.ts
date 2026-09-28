@@ -1,7 +1,7 @@
 /**
  * Répartition des pages entre les domaines du site.
  *
- * Un même code sert quatre publics qui n'ont rien à faire les uns chez les
+ * Un même code sert six publics qui n'ont rien à faire les uns chez les
  * autres :
  *   - le domaine du groupe (manager.zupone.com) : l'équipe du groupe
  *     (superowner, SuperAdmin, Administrateurs, Support), qui administre
@@ -10,7 +10,11 @@
  *   - le domaine livreur (livreur.monsite.fr) : les livreurs de la
  *     plateforme, avec leur propre panneau ;
  *   - le domaine public (monsite.fr) : la vitrine, les boutiques et les
- *     commandes des clients.
+ *     commandes des clients ;
+ *   - la vitrine du groupe (zupone.com) : la présentation de ZupOne et de ses
+ *     plateformes ;
+ *   - le domaine ZupDrive (zupdrive.com) : le service VTC à venir et le
+ *     recrutement des chauffeurs.
  *
  * Séparer les domaines donne des sessions cloisonnées (chaque domaine a son
  * propre stockage navigateur, un client et un commerçant ne se marchent plus
@@ -22,10 +26,10 @@
  * domaine unique.
  */
 
-export type Espace = 'groupe' | 'pro' | 'livreur' | 'public' | 'commun';
+export type Espace = 'groupe' | 'pro' | 'livreur' | 'public' | 'vitrine' | 'drive' | 'commun';
 
 /** Un espace qui possède son propre domaine. */
-export type EspaceHeberge = 'groupe' | 'pro' | 'livreur' | 'public';
+export type EspaceHeberge = 'groupe' | 'pro' | 'livreur' | 'public' | 'vitrine' | 'drive';
 
 const lire = (valeur: string | undefined) => (valeur || '').trim().toLowerCase();
 
@@ -33,12 +37,16 @@ export const DOMAINE_GROUPE = lire(process.env.NEXT_PUBLIC_DOMAINE_GROUPE);
 export const DOMAINE_PRO = lire(process.env.NEXT_PUBLIC_DOMAINE_PRO);
 export const DOMAINE_PUBLIC = lire(process.env.NEXT_PUBLIC_DOMAINE_PUBLIC);
 export const DOMAINE_LIVREUR = lire(process.env.NEXT_PUBLIC_DOMAINE_LIVREUR);
+export const DOMAINE_VITRINE = lire(process.env.NEXT_PUBLIC_DOMAINE_VITRINE);
+export const DOMAINE_DRIVE = lire(process.env.NEXT_PUBLIC_DOMAINE_DRIVE);
 
 export const DOMAINES: Record<EspaceHeberge, string> = {
   groupe: DOMAINE_GROUPE,
   pro: DOMAINE_PRO,
   livreur: DOMAINE_LIVREUR,
   public: DOMAINE_PUBLIC,
+  vitrine: DOMAINE_VITRINE,
+  drive: DOMAINE_DRIVE,
 };
 
 /**
@@ -46,7 +54,7 @@ export const DOMAINES: Record<EspaceHeberge, string> = {
  * professionnel : sans point de comparaison, il n'y a rien à répartir.
  */
 export const CLOISONNEMENT_ACTIF = Boolean(
-  DOMAINE_PUBLIC && (DOMAINE_PRO || DOMAINE_LIVREUR || DOMAINE_GROUPE),
+  DOMAINE_PUBLIC && (DOMAINE_PRO || DOMAINE_LIVREUR || DOMAINE_GROUPE || DOMAINE_VITRINE || DOMAINE_DRIVE),
 );
 
 /**
@@ -58,8 +66,11 @@ export const CLOISONNEMENT_ACTIF = Boolean(
  */
 const SEGMENTS: Record<EspaceHeberge, string[]> = {
   groupe: ['superowner'],
-  pro: ['merchant'],
-  livreur: ['driver'],
+  // Chaque page « Devenir … » vit sur le domaine de ceux qu'elle recrute :
+  // servie ailleurs, elle faisait changer de domaine au milieu de
+  // l'inscription.
+  pro: ['merchant', 'devenir-commercant'],
+  livreur: ['driver', 'devenir-livreur'],
   public: [
     'client',
     'store',
@@ -70,6 +81,8 @@ const SEGMENTS: Record<EspaceHeberge, string[]> = {
     'order-confirmation',
     'track',
   ],
+  vitrine: ['zupone'],
+  drive: ['zupdrive', 'devenir-chauffeur'],
 };
 
 /**
@@ -101,14 +114,16 @@ export const ACCUEIL: Record<EspaceHeberge, string> = {
   groupe: '/superowner',
   // La page d'accueil actuelle présente l'offre aux commerçants.
   pro: '/',
-  // Le livreur arrive sur son tableau de bord, qui le renvoie à la connexion
-  // s'il n'est pas identifié.
-  livreur: '/driver',
+  // Le visiteur découvre le métier de livreur ; un livreur déjà connecté sur
+  // ce domaine est envoyé à son tableau de bord (voir VersTableauDeBord).
+  livreur: '/devenir-livreur',
   // Côté public, la liste des commerces qui livrent chez le visiteur.
   public: '/client',
+  vitrine: '/zupone',
+  drive: '/zupdrive',
 };
 
-const ESPACES_HEBERGES: EspaceHeberge[] = ['groupe', 'pro', 'livreur', 'public'];
+const ESPACES_HEBERGES: EspaceHeberge[] = ['groupe', 'pro', 'livreur', 'public', 'vitrine', 'drive'];
 
 /** Un espace n'est cloisonné que si son domaine est renseigné. */
 export function espaceHeberge(espace: EspaceHeberge): boolean {
@@ -173,4 +188,17 @@ export function lienVersEspace(espace: EspaceHeberge, chemin: string): string {
 
   const port = window.location.port ? `:${window.location.port}` : '';
   return `${window.location.protocol}//${domaine}${port}${chemin}`;
+}
+
+/**
+ * L'accueil d'un espace, pour les liens d'un domaine à l'autre (« Commander
+ * sur ZupEat », « Découvrir ZupDrive »).
+ *
+ * Sur son domaine, l'accueil est la racine ; sans domaine propre, c'est la
+ * page qui en tient lieu, servie sur le domaine courant.
+ */
+export function accueilDe(espace: EspaceHeberge): string {
+  const domaine = DOMAINES[espace];
+  if (CLOISONNEMENT_ACTIF && domaine) return `https://${domaine}/`;
+  return ACCUEIL[espace];
 }

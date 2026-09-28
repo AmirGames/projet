@@ -443,10 +443,14 @@ Le site sait se répartir sur quatre domaines ou tenir sur un seul :
 | `NEXT_PUBLIC_DOMAINE_GROUPE` | `manager.zupone.com` | Le panneau de l'équipe (`/superowner`) |
 | `NEXT_PUBLIC_DOMAINE_PUBLIC` | `zupeat.com` | Les clients |
 | `NEXT_PUBLIC_DOMAINE_PRO` | `manager.zupeat.com` | Les commerçants |
-| `NEXT_PUBLIC_DOMAINE_LIVREUR` | `delivery.zupeat.com` | Les livreurs |
+| `NEXT_PUBLIC_DOMAINE_LIVREUR` | `delivery.zupeat.com` | Les livreurs, et « Devenir livreur » en accueil |
+| `NEXT_PUBLIC_DOMAINE_VITRINE` | `zupone.com` | La vitrine du groupe ZupOne |
+| `NEXT_PUBLIC_DOMAINE_DRIVE` | `zupdrive.com` | ZupDrive (bientôt) et « Devenir chauffeur » |
 
 Chaque page est alors servie par le domaine qui lui revient, et une page
-demandée au mauvais domaine redirige vers le bon. Laissez-les vides pour rester
+demandée au mauvais domaine redirige vers le bon. Les pages « Devenir … »
+vivent sur le domaine de ceux qu'elles recrutent : commerçant sur le domaine
+pro, livreur sur le domaine livreur, chauffeur sur ZupDrive. Laissez-les vides pour rester
 sur un domaine unique.
 
 ## Reversements et virements

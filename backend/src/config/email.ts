@@ -26,6 +26,6 @@ emailTransporter.verify((err, success) => {
 });
 
 export const EMAIL_CONFIG = {
-  from: process.env.EMAIL_FROM || "noreply@maisontamara.com",
+  from: process.env.EMAIL_FROM || "noreply@zupeat.com",
   siteUrl: process.env.SITE_URL || "http://localhost:3000",
 };

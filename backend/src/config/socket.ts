@@ -2,6 +2,7 @@ import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { createClient } from 'redis';
+import { originesAutorisees } from './origines-autorisees';
 import { logger } from './logger';
 import { verifyToken } from '../middleware/auth';
 import { AuthenticatedSocket } from '../types/socket';
@@ -74,7 +75,7 @@ export let io: SocketIOServer;
 export function initializeSocket(httpServer: HTTPServer) {
   io = new SocketIOServer(httpServer, {
     cors: {
-      origin: [process.env.FRONTEND_URL || 'http://localhost:3000'],
+      origin: originesAutorisees(),
       credentials: true,
     },
     transports: ['websocket', 'polling'],

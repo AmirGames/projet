@@ -9,6 +9,8 @@
  *   NEXT_PUBLIC_DOMAINE_PUBLIC=monsite.local \
  *   NEXT_PUBLIC_DOMAINE_PRO=commercant.monsite.local \
  *   NEXT_PUBLIC_DOMAINE_LIVREUR=livreur.monsite.local \
+ *   NEXT_PUBLIC_DOMAINE_VITRINE=groupe.local \
+ *   NEXT_PUBLIC_DOMAINE_DRIVE=drive.local \
  *   npm run dev
  *
  *   # puis, dans un autre terminal
@@ -26,6 +28,11 @@ const PORT = new URL(SITE).port ? `:${new URL(SITE).port}` : "";
 const PUBLIC = process.env.NEXT_PUBLIC_DOMAINE_PUBLIC || "monsite.local";
 const PRO = process.env.NEXT_PUBLIC_DOMAINE_PRO || "commercant.monsite.local";
 const LIVREUR = process.env.NEXT_PUBLIC_DOMAINE_LIVREUR || "livreur.monsite.local";
+const VITRINE = process.env.NEXT_PUBLIC_DOMAINE_VITRINE || "groupe.local";
+const DRIVE = process.env.NEXT_PUBLIC_DOMAINE_DRIVE || "drive.local";
+// Le domaine de l'équipe est facultatif : sans lui, /superowner reste servi
+// partout (lib/domaines.ts).
+const GROUPE = process.env.NEXT_PUBLIC_DOMAINE_GROUPE || "";
 
 let reussites = 0;
 const echecs = [];
@@ -61,7 +68,8 @@ function appeler(hote, chemin) {
         port: cible.port || 80,
         path: chemin,
         method: "GET",
-        headers: { Host: hote },
+        // Comme un navigateur : le port fait partie de l'en-tête Host.
+        headers: { Host: `${hote}${PORT}` },
       },
       (reponse) => {
         let corps = "";
@@ -132,8 +140,11 @@ check(
 
 // ===== Pages professionnelles =====
 titre("Pages commerçant appelées d'ailleurs");
-for (const chemin of ["/merchant", "/superowner"]) {
-  await renvoyee(`${chemin} depuis le public`, PUBLIC, chemin, PRO);
+await renvoyee("/merchant depuis le public", PUBLIC, "/merchant", PRO);
+if (GROUPE) {
+  await renvoyee("/superowner depuis le public", PUBLIC, "/superowner", GROUPE);
+} else {
+  await servie("/superowner servi partout sans domaine du groupe", PUBLIC, "/superowner");
 }
 await renvoyee("/store/new depuis le public", PUBLIC, "/store/new", PRO);
 await renvoyee("/merchant depuis le livreur", LIVREUR, "/merchant", PRO);
@@ -162,6 +173,19 @@ for (const [nom, hote] of [["pro", PRO], ["public", PUBLIC], ["livreur", LIVREUR
   await servie(`/signup servi par le domaine ${nom}`, hote, "/signup");
   await servie(`/dashboard servi par le domaine ${nom}`, hote, "/dashboard");
 }
+
+// ===== Vitrines et pages « Devenir … » =====
+titre("Vitrines et recrutement");
+await servie("la vitrine du groupe à la racine de son domaine", VITRINE, "/", "Des services de proximité");
+await servie("ZupDrive à la racine de son domaine", DRIVE, "/", "Vos trajets avec chauffeur");
+await servie("le domaine livreur accueille les candidats", LIVREUR, "/", "Livrez près de chez vous");
+await renvoyee("/devenir-livreur depuis le public", PUBLIC, "/devenir-livreur", LIVREUR);
+await renvoyee("/devenir-commercant depuis le public", PUBLIC, "/devenir-commercant", PRO);
+await renvoyee("/devenir-chauffeur depuis le public", PUBLIC, "/devenir-chauffeur", DRIVE);
+await servie("/devenir-chauffeur sur ZupDrive", DRIVE, "/devenir-chauffeur", "ZupDrive");
+await renvoyee("l'accueil du groupe demandé ailleurs mène à sa racine", PUBLIC, "/zupone", VITRINE, "/");
+await servie("les pages légales servies sur la vitrine", VITRINE, "/cgu");
+await renvoyee("/merchant depuis la vitrine", VITRINE, "/merchant", PRO);
 
 // ===== Paramètres et domaine inconnu =====
 titre("Détails qui comptent");

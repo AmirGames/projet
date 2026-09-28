@@ -71,28 +71,33 @@ function aiguillerDomaine(
   // gardant le chemin et les paramètres.
   const url = requete.nextUrl.clone();
   url.hostname = DOMAINES[espacePage as EspaceHeberge];
+  // Les vitrines n'ont d'autre adresse que la racine de leur domaine :
+  // zupeat.com/zupone mène à zupone.com, pas à zupone.com/zupone. (/client
+  // ou /devenir-livreur, eux, sont de vraies adresses et restent telles.)
+  if ((espacePage === 'vitrine' || espacePage === 'drive') && chemin === ACCUEIL[espacePage]) {
+    url.pathname = '/';
+  }
   adresserAuPublic(requete, url);
 
   return NextResponse.redirect(url);
 }
 
 /**
- * Derrière un proxy (Caddy en production), l'adresse vue par Next est celle
- * du conteneur : http, port 3000. En changeant de domaine, ce port restait
- * dans la redirection — https://manager.zupone.com:3000/…, injoignable.
- * Le proxy annonce le protocole public ; on s'y fie et on laisse le port par
- * défaut. Sans proxy (développement), l'adresse reste telle quelle.
+ * L'adresse publique d'une redirection vers un autre domaine.
  *
- * Pas pour les redirections sur le même domaine : Next les rend en chemin
- * relatif, sans port ; y toucher les ferait écrire l'adresse interne
- * (0.0.0.0) en toutes lettres.
+ * L'adresse vue par Next est celle du conteneur : http, port 3000. En
+ * changeant de domaine, ce port restait dans la redirection —
+ * https://manager.zupone.com:3000/…, injoignable derrière Caddy. Le port est
+ * donc celui que le navigateur a demandé (en-tête Host : aucun en production,
+ * :3000 en développement), et le protocole celui que le proxy annonce.
  */
 function adresserAuPublic(requete: NextRequest, url: NextRequest['nextUrl']) {
   const protocole = requete.headers.get('x-forwarded-proto')?.split(',')[0].trim();
-  if (protocole !== 'https' && protocole !== 'http') return;
+  if (protocole === 'https' || protocole === 'http') url.protocol = `${protocole}:`;
 
-  url.protocol = `${protocole}:`;
-  url.port = '';
+  const hote = requete.headers.get('x-forwarded-host') || requete.headers.get('host') || '';
+  const port = /:(\d+)$/.exec(hote)?.[1];
+  url.port = port || '';
 }
 
 /**

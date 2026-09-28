@@ -3,8 +3,10 @@ import { trouverRegion, type Region } from "./regions";
 /**
  * Les pages publiques servies sous un sous-répertoire de région
  * (/be-fr/restaurants, /fr-fr/store/…). Ce sont celles que les moteurs de
- * recherche indexent : l'accueil, les commerces, les pages légales et les
- * pages « devenir ». Les espaces derrière une connexion (commerçant,
+ * recherche indexent : l'accueil, les commerces et les pages légales. Les
+ * pages « devenir » vivent sur le domaine de ceux qu'elles recrutent
+ * (lib/domaines.ts), sans région : leur pays se choisit sur la page. Les
+ * espaces derrière une connexion (commerçant,
  * livreur, plateforme, compte client) et le tunnel de commande restent sans
  * préfixe — le cookie de région y suffit.
  *
@@ -25,9 +27,6 @@ const SEGMENTS_REGIONAUX = [
   "conditions-livreurs",
   "confidentialite",
   "cookies",
-  "devenir-commercant",
-  "devenir-livreur",
-  "devenir-chauffeur",
 ];
 
 /** La création de boutique vit sous /store mais appartient au commerçant. */

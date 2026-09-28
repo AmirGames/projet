@@ -340,7 +340,10 @@ async function alerter(incident: Incident, ouverture: boolean) {
   const texte = ouverture
     ? `${incident.detail}\n\nOuvert le ${new Date(incident.ouvertLe).toLocaleString("fr-FR")}.`
     : `L'incident est clos (ouvert le ${new Date(incident.ouvertLe).toLocaleString("fr-FR")}).`;
-  const lien = `${process.env.FRONTEND_URL || "http://localhost:3000"}/superowner/monitoring`;
+  // Le panneau de la plateforme a son propre domaine (manager.zupone.com) :
+  // passer par FRONTEND_URL imposait une redirection, et une session
+  // ouverte sur l'autre domaine.
+  const lien = `${process.env.PLATEFORME_URL || process.env.FRONTEND_URL || "http://localhost:3000"}/superowner/monitoring`;
 
   const webhook = process.env.MONITORING_WEBHOOK_URL;
   if (webhook) {
