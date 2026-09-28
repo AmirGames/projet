@@ -57,6 +57,7 @@ export function DisponibiliteSite() {
   const [erreur, setErreur] = useState('');
   const [survol, setSurvol] = useState<{ cible: string; index: number } | null>(null);
   const [ouverte, setOuverte] = useState<string | null>(null);
+  const [fenetreSelectionnee, setFenetreSelectionnee] = useState<'24h' | '7j' | '30j' | '90j'>('24h');
 
   const charger = useCallback(async () => {
     try {
@@ -101,6 +102,11 @@ export function DisponibiliteSite() {
     return t('durationHours', { h: Math.floor(minutes / 60), m: minutes % 60 });
   };
 
+  const joursAffichesTour = (jours: Jour[]) => {
+    const nbreJours = { '24h': 1, '7j': 7, '30j': 30, '90j': 90 }[fenetreSelectionnee];
+    return jours.slice(-nbreJours);
+  };
+
   return (
     <section className="bg-gray-800 border border-gray-700 rounded-lg">
       <header className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-700 flex-wrap">
@@ -108,11 +114,23 @@ export function DisponibiliteSite() {
           <Globe size={18} className="text-gray-400" />
           {t('uptimeTitle')}
         </h2>
-        {bilan && (
-          <p className="text-xs text-gray-500">
-            {t('uptimeSubtitle', { interval: Math.round(bilan.intervalleMs / 1000), days: bilan.conservationJours })}
-          </p>
-        )}
+        <div className="flex gap-1 text-xs">
+          {(['24h', '7j', '30j', '90j'] as const).map((fenetre) => (
+            <button
+              key={fenetre}
+              type="button"
+              onClick={() => setFenetreSelectionnee(fenetre)}
+              aria-pressed={fenetreSelectionnee === fenetre}
+              className={`px-2.5 py-1 rounded ${
+                fenetreSelectionnee === fenetre
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              {t(`uptimeWindow${fenetre}`)}
+            </button>
+          ))}
+        </div>
       </header>
 
       <div className="p-5 space-y-8">
@@ -163,7 +181,7 @@ export function DisponibiliteSite() {
               <div className="relative">
                 {/* Un trait par jour, le plus ancien à gauche. */}
                 <div className="flex gap-[2px] h-9 items-stretch" role="list" aria-label={t('uptimeTimelineLabel')}>
-                  {cible.jours.map((jour, index) => {
+                  {joursAffichesTour(cible.jours).map((jour, index) => {
                     const actif = survol?.cible === cible.cle && survol.index === index;
                     return (
                       <div
@@ -203,7 +221,7 @@ export function DisponibiliteSite() {
                 )}
 
                 <div className="flex justify-between text-[11px] text-gray-500 mt-1">
-                  <span>{t('uptimeDaysAgo', { n: cible.jours.length })}</span>
+                  <span>{t('uptimeDaysAgo', { n: joursAffichesTour(cible.jours).length })}</span>
                   <span>{t('uptimeToday')}</span>
                 </div>
               </div>
