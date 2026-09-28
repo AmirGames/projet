@@ -7,6 +7,7 @@ import { attenteClientEcoulee, inscription, declarerPrete,
   uniq,
   post,
   get,
+  lireSuivi,
   patch,
   terminer,
   sqlScalaire,
@@ -108,7 +109,7 @@ check('un code est posé', /^\d{4}$/.test(code), code);
 titre('Le client le lit, le livreur jamais');
 // Sans cette asymétrie, le code ne prouve rien : un livreur qui le lit n'a
 // besoin de personne pour clore la course.
-const vuClient = await j(await get(`/api/orders/${orderId}`));
+const vuClient = await j(await lireSuivi(orderId));
 check('le client voit son code', vuClient?.codeRemise === code, `${vuClient?.codeRemise}`);
 
 const vuLivreur = await j(await get(`/api/drivers/deliveries/${courseId}`, D));
@@ -177,7 +178,7 @@ check('la durée', typeof finie?.bilan?.durationMin === 'number', JSON.stringify
 check('et la preuve', finie?.bilan?.proofType === 'CODE', finie?.bilan?.proofType);
 
 titre('Le client sait comment sa commande a été remise');
-const suivi = await j(await get(`/api/orders/${orderId}`));
+const suivi = await j(await lireSuivi(orderId));
 check('la preuve lui est dite', suivi?.preuveDeLivraison === 'CODE', suivi?.preuveDeLivraison);
 // Le code n'a plus d'objet une fois la course remise : le garder à l'écran
 // laisserait croire qu'on peut encore s'en servir.
@@ -232,7 +233,7 @@ const note = await sqlScalaire(
 );
 check('l’endroit du dépôt est noté', note === 'Devant la porte, chez le gardien', note);
 
-const vuAbsent = await j(await get(`/api/orders/${absente.orderId}`));
+const vuAbsent = await j(await lireSuivi(absente.orderId));
 check('le client sait que c’est un dépôt', vuAbsent?.preuveDeLivraison === 'PHOTO', vuAbsent?.preuveDeLivraison);
 
 titre('Une photo qui n’est pas un lien est refusée');

@@ -16,6 +16,7 @@ import {
   uniq,
   post,
   get,
+  lireSuivi,
   patch,
   terminer,
   sqlScalaire,
@@ -139,7 +140,7 @@ await patch(`/api/drivers/deliveries/${courseId}/location`, auSudDuClient(250), 
 check('la marque est posée', (await prevenu()) === true, `${await prevenu()}`);
 check('un message dans sa cloche', (await messagesProchesArrives(1)) === 1, `${await messagesProches()}`);
 
-const suivi = await j(await get(`/api/orders/${orderId}`));
+const suivi = await j(await lireSuivi(orderId));
 check('son suivi le dit', suivi?.livreurProche === true, `${suivi?.livreurProche}`);
 
 titre('Une seule fois, même si le livreur tourne dans le quartier');
@@ -209,7 +210,7 @@ const cloture = await patch(
 );
 check('la remise passe', cloture.status === 200, `statut ${cloture.status}`);
 
-const apres = await j(await get(`/api/orders/${orderId}`));
+const apres = await j(await lireSuivi(orderId));
 check('le client voit la photo', apres?.photoDepot === photoUrl, `${apres?.photoDepot}`);
 check('et où elle a été déposée', apres?.noteDepot === 'Devant la porte', `${apres?.noteDepot}`);
 

@@ -20,7 +20,7 @@
  */
 
 import { chromium } from 'playwright';
-import { validerLivreur, codeDeRemise } from './outils-livreur.mjs';
+import { validerLivreur, codeDeRemise, retenirJetonDeSuivi } from './outils-livreur.mjs';
 import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
@@ -150,7 +150,7 @@ const course = async ({ remettre }) => {
     },
   });
 
-  const orderId = commande.donnees.order?.id || commande.donnees.id;
+  const orderId = retenirJetonDeSuivi(commande.donnees);
 
   await appeler('/api/drivers/availability', { method: 'PATCH', jeton: D, corps: { isOnline: true } });
   await appeler(`/api/orders/${orderId}/dispatch`, { method: 'POST', jeton: T });
