@@ -71,13 +71,16 @@ const notifications = (email, motif) =>
 
 // ===== La plateforme, validée d'office =====
 
-titre('La plateforme n’a personne pour la valider');
+titre('Même le premier inscrit attend la validation');
+// Le premier inscrit voyait son commerce validé d'office, comme s'il était la
+// plateforme (SEC-03) : aucune inscription ne valide plus rien. Ce compte
+// devient la plateforme par outils.mjs, pas par l'API.
 const plateforme = await inscrireCommerce('plateforme');
 const TP = plateforme.accessToken;
 check('la plateforme est inscrite', !!TP, JSON.stringify(plateforme)?.slice(0, 200));
 check(
-  'son commerce est validé d’office',
-  (await sqlScalaire(`SELECT "approvedAt" FROM "Organization" WHERE id = '${plateforme.organization?.id}'`)) !== ''
+  'son commerce n’est pas validé d’office',
+  (await sqlScalaire(`SELECT "approvedAt" FROM "Organization" WHERE id = '${plateforme.organization?.id}'`)) === ''
 );
 
 // ===== Un commerce qui s'inscrit =====
