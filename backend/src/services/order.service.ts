@@ -1,4 +1,4 @@
-import { finAttente } from "./delivery-proof.service";
+import { type Appelant, commandeVisible, genererJetonDeSuivi } from "./suivi-commande.service";
 import { db } from "./db";
 import { EmailService } from "./email.service";
 import { logger } from "../config/logger";
@@ -484,9 +484,14 @@ export class OrderService {
         );
       }
 
+      // Le jeton de suivi : rendu une seule fois, ici ; seule son empreinte
+      // est gardée.
+      const suivi = genererJetonDeSuivi();
+
       const order = await db.order.create({
         data: {
           storeId: data.storeId,
+          trackingTokenHash: suivi.empreinte,
           ...(enLigne ? { submittedAt: null } : {}),
           customerName: data.customerName,
           customerEmail: data.customerEmail,
@@ -546,7 +551,10 @@ export class OrderService {
         await this.annoncerAuCommercant(order);
       }
 
-      return { ...order, paiementEnLigne: enLigne };
+      // L'empreinte reste en base : le client n'a besoin que du jeton.
+      const { trackingTokenHash: _empreinte, ...commande } = order;
+
+      return { ...commande, paiementEnLigne: enLigne, trackingToken: suivi.jeton };
     } catch (error: any) {
       throw error;
     }
@@ -754,50 +762,14 @@ export class OrderService {
     });
   }
 
-  static async getOrderWithItems(id: string) {
-    const commande = await db.order.findUnique({
-      where: { id },
-      include: {
-        items: {
-          include: { product: { include: { category: { select: { name: true } } } }, variant: true },
-        },
-        payments: true,
-        delivery: {
-          select: {
-            status: true,
-            deliveryCode: true,
-            proofType: true,
-            proofAt: true,
-            proofPhoto: true,
-            proofNote: true,
-            nearCustomerNotifiedAt: true,
-            customerWaitStartedAt: true,
-          },
-        },
-      },
-    });
-
-    if (!commande) return null;
-
-    // Le code de remise se lit avec la commande : c'est ce que le client donne
-    // au livreur à la porte, et une commande suivie sans compte n'a pas
-    // d'autre endroit où le lire. Remise, il n'a plus d'objet.
-    const { delivery, ...reste } = commande;
-
-    return {
-      ...reste,
-      delivery,
-      codeRemise:
-        delivery && delivery.status !== "DELIVERED" ? delivery.deliveryCode : null,
-      preuveDeLivraison: delivery?.proofType ?? null,
-      photoDepot: delivery?.proofType === "PHOTO" ? delivery.proofPhoto : null,
-      noteDepot: delivery?.proofType === "PHOTO" ? delivery.proofNote : null,
-      livreurProche: Boolean(delivery?.nearCustomerNotifiedAt),
-      // Le livreur attend à la porte : passé cette heure, la commande est
-      // déposée en lieu sûr.
-      attenteFinLe: delivery?.status === "PICKED_UP" && delivery ? finAttente(delivery) : null,
-      maintenant: new Date(),
-    };
+  /**
+   * La commande, telle que l'appelant a le droit de la lire (voir
+   * suivi-commande.service.ts) : une liste blanche de champs, jamais la
+   * course ni les paiements bruts. `null` quand elle n'existe pas ou qu'il ne
+   * peut pas la lire.
+   */
+  static async getOrderWithItems(id: string, appelant: Appelant = {}, jeton?: unknown) {
+    return commandeVisible(id, appelant, jeton);
   }
 
   static async delete(id: string) {

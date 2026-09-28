@@ -5,6 +5,8 @@ import { champEmail } from "../utils/validation";
 import { OrderService } from "../services/order.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware } from "../middleware/auth";
+import { limiterCadence } from "../middleware/throttle";
+import type { Appelant } from "../services/suivi-commande.service";
 import { logger } from "../config/logger";
 import { emitOrderUpdate } from "../config/socket";
 import { db } from "../services/db";
@@ -129,7 +131,6 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// GET /orders/:id - Get order by ID
 /**
  * GET /api/orders/:id/pourboire — le pourboire après livraison est-il proposé.
  *
@@ -155,16 +156,60 @@ router.post("/:id/pourboire", async (req: Request, res: Response, next: NextFunc
   }
 });
 
-router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * L'appelant, s'il présente une session valable ; anonyme sinon.
+ *
+ * Le suivi reste ouvert sans compte (avec le jeton de suivi) : une session
+ * expirée ne doit pas en priver le client, elle compte simplement pour rien.
+ */
+async function appelantFacultatif(req: Request, res: Response): Promise<Appelant> {
+  if (!req.headers.authorization?.startsWith("Bearer ")) return {};
+
+  try {
+    await new Promise<void>((ok, ko) => {
+      authMiddleware(req, res, (err?: unknown) => (err ? ko(err) : ok()));
+    });
+    return { userId: req.userId, compte: req.compte };
+  } catch {
+    return {};
+  }
+}
+
+/** Le jeton de suivi, lu dans `?t=`. */
+const jetonDeSuivi = (req: Request) => (typeof req.query.t === "string" ? req.query.t : undefined);
+
+/**
+ * Le suivi se relit toutes les vingt secondes : soixante lectures par minute
+ * laissent de la marge à plusieurs onglets, pas à une énumération.
+ */
+const limiterSuivi = limiterCadence({
+  max: 60,
+  fenetreMs: 60 * 1000,
+  message: "Trop de lectures du suivi. Réessayez dans un instant.",
+  cle: (req) => `suivi|${req.ip || "inconnue"}`,
+});
+
+/**
+ * GET /api/orders/:id — la commande, selon qui la demande.
+ *
+ * Client propriétaire, équipe du commerce, équipe de la plateforme : la
+ * commande complète, sans secret de paiement ; le code de remise pour le seul
+ * client. Visiteur avec `?t=<jeton de suivi>` : la vue réduite du suivi.
+ * Tout autre appelant — le livreur compris — reçoit un 404, qui ne confirme
+ * pas que la commande existe (voir suivi-commande.service.ts).
+ */
+router.get("/:id", limiterSuivi, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
+    const appelant = await appelantFacultatif(req, res);
 
-    const order = await OrderService.getOrderWithItems(id);
+    const order = await OrderService.getOrderWithItems(id, appelant, jetonDeSuivi(req));
 
     if (!order) {
       throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
     }
 
+    res.set("Cache-Control", "no-store");
     res.json(order);
   } catch (err) {
     next(err);
@@ -336,9 +381,17 @@ router.post("/:id/dispatch", authMiddleware, async (req: Request, res: Response,
 });
 
 // GET /orders/:id/delivery - Get delivery tracking info
-router.get("/:id/delivery", async (req: Request, res: Response, next: NextFunction) => {
+//
+// Mêmes droits que le suivi de la commande : la position du livreur ne se lit
+// pas avec le seul identifiant.
+router.get("/:id/delivery", limiterSuivi, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const orderId = req.params.id as string;
+
+    const appelant = await appelantFacultatif(req, res);
+    if (!(await OrderService.getOrderWithItems(orderId, appelant, jetonDeSuivi(req)))) {
+      throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
+    }
 
     const delivery = await db.orderDelivery.findUnique({
       where: { orderId },

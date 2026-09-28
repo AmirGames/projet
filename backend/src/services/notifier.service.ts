@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { logger } from "../config/logger";
 import { EmailService } from "./email.service";
+import { lienDeSuivi } from "./suivi-commande.service";
 import { emitMerchantEvent } from "../config/socket";
 
 /**
@@ -385,7 +386,9 @@ export class Notifier {
     const depot = commande.delivery?.proofType === "PHOTO" ? commande.delivery : null;
     const lieu = depot?.proofNote ? ` Lieu : ${depot.proofNote}.` : "";
     const livreur = commande.delivery?.driver?.name?.split(" ")[0] || "Votre livreur";
-    const lien = `${process.env.SITE_URL || process.env.FRONTEND_URL || ""}/client/orders/${orderId}`;
+    // Le lien porte son propre jeton de suivi : un client invité n'a pas de
+    // compte pour ouvrir /client/orders.
+    const lien = await lienDeSuivi(orderId, process.env.SITE_URL || process.env.FRONTEND_URL || "");
     const code = commande.delivery?.deliveryCode;
 
     const messages = {
@@ -443,7 +446,9 @@ export class Notifier {
 
     const livreur = commande.delivery?.driver?.name?.split(" ")[0] || "Votre livreur";
     const heure = fin.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
-    const lien = `${process.env.SITE_URL || process.env.FRONTEND_URL || ""}/client/orders/${orderId}`;
+    // Le lien porte son propre jeton de suivi : un client invité n'a pas de
+    // compte pour ouvrir /client/orders.
+    const lien = await lienDeSuivi(orderId, process.env.SITE_URL || process.env.FRONTEND_URL || "");
     const sujet = "Votre livreur vous attend";
     const texte = `${livreur} est devant chez vous avec votre commande et n'arrive pas à vous joindre. Sans réponse d'ici ${heure} (6 minutes), il la déposera en lieu sûr.`;
 
@@ -511,7 +516,9 @@ export class Notifier {
 
     const livreur = commande.delivery?.driver?.name?.split(" ")[0] || "Votre livreur";
     const code = commande.delivery?.deliveryCode;
-    const lien = `${process.env.SITE_URL || process.env.FRONTEND_URL || ""}/client/orders/${orderId}`;
+    // Le lien porte son propre jeton de suivi : un client invité n'a pas de
+    // compte pour ouvrir /client/orders.
+    const lien = await lienDeSuivi(orderId, process.env.SITE_URL || process.env.FRONTEND_URL || "");
     const titre = "Votre livreur est bientôt là";
     const texte = `${livreur} arrive dans un instant : vous pouvez descendre devant la porte.${
       code ? ` Préparez votre code de remise : ${code}.` : ""
