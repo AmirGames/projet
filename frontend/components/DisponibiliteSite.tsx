@@ -119,24 +119,6 @@ export function DisponibiliteSite() {
     return { donnees: cible.jours.slice(-nbreJours), estHeures: false };
   };
 
-  const calculerSLA = (disponibilite: number | null | undefined) => {
-    if (disponibilite == null) return null;
-    return {
-      valeur: disponibilite,
-      niveau: disponibilite >= 99.95 ? '99.95%' : disponibilite >= 99.9 ? '99.9%' : disponibilite >= 99.5 ? '99.5%' : '99%',
-      menace: disponibilite < 99.5,
-      critique: disponibilite < 99,
-    };
-  };
-
-  const tempsIndisponible = (disponibilite: number | null | undefined) => {
-    if (disponibilite == null) return '—';
-    const indisponible = 100 - disponibilite;
-    const minutes = (indisponible / 100) * 60 * 24; // minutes par jour
-    if (minutes < 1) return Math.round(minutes * 60) + 's';
-    if (minutes < 60) return Math.round(minutes) + 'min';
-    return (minutes / 60).toFixed(1) + 'h';
-  };
 
   return (
     <section className="bg-gray-800 border border-gray-700 rounded-lg">
