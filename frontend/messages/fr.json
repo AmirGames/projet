@@ -75,7 +75,8 @@
       "driverSupport": "Chat livreurs",
       "reviews": "Avis signalés",
       "monitoring": "Surveillance",
-      "roles": "Rôles et accès"
+      "roles": "Rôles et accès",
+      "console": "Console"
     },
     "openMenu": "Ouvrir le menu",
     "toggleSidebar": "Replier ou déplier le menu"
@@ -2146,5 +2147,17 @@
     "respecte": "respecté",
     "manquant": "manquant",
     "invalide": "Le mot de passe doit contenir 8 caractères minimum, dont un chiffre, une minuscule et une majuscule."
+  },
+  "superownerConsole": {
+    "title": "Console",
+    "subtitle": "Les journaux du serveur API en direct (2 000 dernières lignes, actualisées toutes les 2 s).",
+    "back": "Retour",
+    "pause": "Pause",
+    "resume": "Reprendre",
+    "clear": "Effacer",
+    "search": "Rechercher…",
+    "empty": "Aucune ligne.",
+    "loadError": "Impossible de charger la console.",
+    "serverUnreachable": "Serveur injoignable."
   }
 }
