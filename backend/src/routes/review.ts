@@ -4,6 +4,7 @@ import { ReviewService } from "../services/review.service";
 import { authMiddleware } from "../middleware/auth";
 import { ApiError } from "../middleware/errorHandler";
 import { db } from "../services/db";
+import { ficheClientDuCompte } from "../services/fiche-client.service";
 import { logger } from "../config/logger";
 import { avisDuClientSurCommande } from "../services/avis-client.service";
 import { ReviewModerationService } from "../services/review-moderation.service";
@@ -27,19 +28,7 @@ const avisCommandeSchema = z.object({
 /** Le client connecté et sa commande, ou le refus qui convient. */
 async function commandeDuClient(req: Request, orderId: string) {
   const userId = req.userId || (req as any).user?.userId;
-  const utilisateur = userId
-    ? await db.user.findUnique({ where: { id: userId }, select: { email: true } })
-    : null;
-
-  if (!utilisateur) {
-    throw new ApiError(401, "Session invalide", "UNAUTHORIZED");
-  }
-
-  const client = await db.customer.findUnique({ where: { email: utilisateur.email } });
-
-  if (!client) {
-    throw new ApiError(404, "Aucune fiche client pour ce compte", "CUSTOMER_NOT_FOUND");
-  }
+  const client = await ficheClientDuCompte(userId, { creer: false });
 
   const commande = await db.order.findFirst({
     where: { id: orderId, customerId: client.id, deletedAt: null },

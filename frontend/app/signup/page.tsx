@@ -54,7 +54,10 @@ export default function SignupPage() {
       // Save tokens and user role
       localStorage.setItem("accessToken", result.accessToken);
       localStorage.setItem("refreshToken", result.refreshToken);
-      localStorage.setItem("isSuperOwner", result.user?.isSuperOwner ? "true" : "false");
+      // L'inscription ne dit pas les droits d'administration : /auth/me les
+      // donne à qui est connecté (le premier compte devient superowner).
+      const moi = await api.getMe().catch(() => null);
+      localStorage.setItem("isSuperOwner", moi?.user?.isSuperOwner ? "true" : "false");
 
       setError("");
 

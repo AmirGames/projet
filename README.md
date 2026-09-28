@@ -340,6 +340,14 @@ npm run dev              # http://localhost:3000
 en premier sur <http://localhost:3000/signup>, avant de créer des comptes
 commerçants. Les suivants sont des commerçants ordinaires.
 
+### La confirmation d'adresse
+
+`REQUIRE_EMAIL_VERIFICATION` décide si la connexion attend que l'adresse soit
+confirmée. Non définie, elle est exigée en production (`NODE_ENV=production`)
+et pas en développement ; `true` ou `false` l'imposent ou la suspendent
+partout. Quelle que soit sa valeur, une fiche client née d'une commande sans
+compte ne rejoint le compte de même adresse qu'après confirmation.
+
 ### Facultatif : les courriels en développement
 
 Confirmation d'adresse et mot de passe oublié envoient de vrais messages.

@@ -32,6 +32,7 @@ export class CustomerAccountService {
       select: {
         id: true,
         email: true,
+        emailVerified: true,
         isSuperOwner: true,
         isSystemAdmin: true,
         _count: { select: { memberships: true, accesEquipe: true } },
@@ -41,7 +42,16 @@ export class CustomerAccountService {
     if (!utilisateur) throw new ApiError(401, "Session invalide", "UNAUTHORIZED");
 
     const client = await db.customer.findFirst({
-      where: { OR: [{ userId }, { email: utilisateur.email }], deletedAt: null },
+      // Une fiche invité de même adresse n'est concernée qu'une fois l'adresse
+      // confirmée : sinon, supprimer son compte effacerait les données
+      // d'autrui (voir fiche-client.service.ts).
+      where: {
+        OR: [
+          { userId },
+          ...(utilisateur.emailVerified ? [{ email: utilisateur.email, userId: null }] : []),
+        ],
+        deletedAt: null,
+      },
       select: { id: true },
     });
 

@@ -29,8 +29,30 @@ import { db } from "../services/db";
 import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
 import { StoreService } from "../services/store.service";
 import { normaliserGenre } from "../services/store-type.service";
+import { rattacherFicheInvite } from "../services/fiche-client.service";
 
 const router = Router();
+
+/**
+ * Faut-il une adresse confirmée pour se connecter ?
+ *
+ * `REQUIRE_EMAIL_VERIFICATION=true|false` décide. Non définie, la
+ * confirmation est exigée en production et pas ailleurs : le développement
+ * local n'a pas toujours de serveur de courriel.
+ */
+export function confirmationExigee() {
+  const valeur = process.env.REQUIRE_EMAIL_VERIFICATION?.trim();
+  if (!valeur) return process.env.NODE_ENV === "production";
+  return valeur === "true";
+}
+
+/**
+ * Empreinte bcrypt d'un mot de passe que personne ne connaît. Comparée quand
+ * l'adresse n'a pas de compte, pour qu'un e-mail inconnu prenne autant de
+ * temps qu'un mauvais mot de passe : le temps de réponse ne dit pas si le
+ * compte existe.
+ */
+const EMPREINTE_FACTICE = "$2b$10$KyIUB44YPS.juBdZYLbXx.na0HtA3MZse8Orjd0anrbp2cTa8BVhW";
 
 // POST /auth/signup
 router.post("/signup", limiterInscriptions, async (req: Request, res: Response, next: NextFunction) => {
@@ -70,9 +92,9 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
       logger.info("First user created - marked as Super Owner", { userId: user.id });
     }
 
-    // Le lien de confirmation part à l'inscription. Il ne bloque rien : tant
-    // que REQUIRE_EMAIL_VERIFICATION n'est pas activé, le compte est
-    // utilisable immédiatement.
+    // Le lien de confirmation part à l'inscription. Il ne bloque la connexion
+    // que si la confirmation est exigée (voir confirmationExigee) ; dans tous
+    // les cas, il est nécessaire pour retrouver une fiche client invité.
     // Le courriel part sans faire attendre la réponse : l'aller-retour avec le
     // serveur SMTP représentait l'essentiel de la durée de l'inscription.
     if (process.env.ENABLE_EMAIL_VERIFICATION !== "false") {
@@ -88,22 +110,21 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
      * La fiche client du compte.
      *
      * Une commande passée sans compte a pu créer une fiche à cette adresse,
-     * unique elle aussi : la recréer échouait sur la contrainte, après la
-     * création du compte — l'inscrit lisait un refus alors que son compte
-     * existait. On la rattache au compte, comme le fait l'espace client à la
-     * première visite.
+     * unique elle aussi : on n'en crée pas une deuxième. On ne la rattache pas
+     * non plus : s'inscrire ne prouve pas qu'on possède l'adresse, et la fiche
+     * porte les commandes, adresses et codes de remise de celui qui a commandé.
+     * Elle rejoint le compte à la confirmation de l'adresse (/verify-email).
      */
-    const ficheInvite = await db.customer.findUnique({ where: { email: user.email } });
-    const customer =
-      ficheInvite && !ficheInvite.userId
-        ? await db.customer.update({ where: { id: ficheInvite.id }, data: { userId: user.id } })
-        : await db.customer.create({
-            data: {
-              userId: user.id,
-              name: body.name || user.email.split("@")[0],
-              email: user.email,
-            },
-          });
+    const ficheExistante = await db.customer.findUnique({ where: { email: user.email }, select: { id: true } });
+    const customer = ficheExistante
+      ? null
+      : await db.customer.create({
+          data: {
+            userId: user.id,
+            name: body.name || user.email.split("@")[0],
+            email: user.email,
+          },
+        });
 
     // Une session par connexion : les jetons la portent, et la fermer les
     // invalide sur tous les domaines (voir sso.service.ts).
@@ -113,18 +134,20 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
       message: "Compte créé avec succès",
       accessToken,
       refreshToken,
+      // Les droits d'administration ne se disent pas ici : /auth/me les donne
+      // à qui est connecté.
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        isSuperOwner: user.isSuperOwner,
-        isSystemAdmin: user.isSystemAdmin,
       },
-      customer: {
-        id: customer.id,
-        name: customer.name,
-        email: customer.email,
-      },
+      customer: customer
+        ? {
+            id: customer.id,
+            name: customer.name,
+            email: customer.email,
+          }
+        : null,
     });
   } catch (err) {
     next(err);
@@ -138,30 +161,40 @@ router.post("/login", limiterConnexions, async (req: Request, res: Response, nex
 
     logger.info("Login attempt", { email: body.email });
 
-    // Find user
-    const user = await UserService.getUserByEmail(body.email);
+    // Adresse inconnue et mauvais mot de passe reçoivent la même réponse, en
+    // autant de temps : ni le code ni la durée ne disent si le compte existe.
+    let user: Awaited<ReturnType<typeof UserService.getUserByEmail>> | null;
+    try {
+      user = await UserService.getUserByEmail(body.email);
+    } catch (err) {
+      if (!(err instanceof ApiError && err.code === "USER_NOT_FOUND")) throw err;
+      user = null;
+    }
 
     // Seule une empreinte bcrypt est comparée : les anciens mots de passe en
     // clair ont été convertis par la migration 0002, et la base refuse
     // désormais toute autre valeur.
-    const isPasswordValid = await AuthService.comparePassword(body.password, user.passwordHash);
+    const isPasswordValid = await AuthService.comparePassword(
+      body.password,
+      user?.passwordHash ?? EMPREINTE_FACTICE
+    );
 
-    if (!isPasswordValid) {
+    if (!user || !isPasswordValid) {
       SecurityEventService.record({
         action: "LOGIN_FAILED",
         actor: body.email,
-        severity: user.isSuperOwner || user.isSystemAdmin ? "HIGH" : "MEDIUM",
+        severity: user?.isSuperOwner || user?.isSystemAdmin ? "HIGH" : "MEDIUM",
         status: "FAILED",
-        details: "Mot de passe incorrect",
-        });
+        details: user ? "Mot de passe incorrect" : "Aucun compte à cette adresse",
+      });
 
       throw new ApiError(401, "Email ou mot de passe incorrect", "INVALID_CREDENTIALS");
     }
 
-    // L'exigence de confirmation est facultative et désactivée par défaut :
-    // l'activer d'office enfermerait dehors tous les comptes déjà créés, le
-    // vôtre compris. À activer une fois votre propre adresse confirmée.
-    if (process.env.REQUIRE_EMAIL_VERIFICATION === "true" && !user.emailVerified) {
+    // Exigée d'office en production (voir confirmationExigee). Une instance
+    // dont des comptes existants ne sont pas confirmés peut la suspendre avec
+    // REQUIRE_EMAIL_VERIFICATION=false, le temps que chacun confirme.
+    if (confirmationExigee() && !user.emailVerified) {
       throw new ApiError(
         403,
         "Confirmez votre adresse e-mail avant de vous connecter.",
@@ -918,6 +951,9 @@ router.post(
         },
       });
 
+      // L'adresse étant prouvée, la fiche client invité rejoint le compte.
+      await rattacherFicheInvite(user);
+
       await SecurityEventService.record({
         action: "PASSWORD_RESET",
         actor: user.email,
@@ -1047,6 +1083,10 @@ router.post("/verify-email", async (req: Request, res: Response, next: NextFunct
     });
 
     logger.info("Adresse confirmée", { userId: user.id });
+
+    // L'adresse est prouvée : la fiche client née d'une commande sans compte
+    // rejoint maintenant le compte.
+    await rattacherFicheInvite(user);
 
     res.json({ message: "Adresse confirmée.", email: user.email });
   } catch (err) {
