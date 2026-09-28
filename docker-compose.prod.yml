@@ -44,6 +44,10 @@ services:
       API_URL: https://${DOMAINE_API:?DOMAINE_API manquant dans .env.production}
       # Un seul proxy devant l'API : Caddy.
       TRUST_PROXY: 1
+      # Horaires d'ouverture, créneaux de retrait, arrêtés hebdomadaires : le
+      # code compte en heure locale. Sans ce réglage le conteneur compte en
+      # UTC, et une boutique ouverte « 11:00 » l'était à 13:00 à Paris.
+      TZ: ${TZ:-Europe/Paris}
     volumes:
       - uploads:/app/uploads
       - backups:/app/backups
@@ -67,6 +71,9 @@ services:
         NEXT_PUBLIC_DOMAINE_PRO: ${NEXT_PUBLIC_DOMAINE_PRO:-}
         NEXT_PUBLIC_DOMAINE_LIVREUR: ${NEXT_PUBLIC_DOMAINE_LIVREUR:-}
     restart: unless-stopped
+    environment:
+      # Même heure que l'API pour les pages rendues côté serveur.
+      TZ: ${TZ:-Europe/Paris}
     depends_on:
       - backend
 
