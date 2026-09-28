@@ -968,6 +968,67 @@ router.post(
   }
 );
 
+// POST /auth/change-password - Changement depuis le profil, session ouverte
+router.post(
+  "/change-password",
+  authMiddleware,
+  // Deviner l'ancien mot de passe depuis une session volée doit rester lent.
+  limiterCadence({
+    max: 10,
+    fenetreMs: 15 * 60 * 1000,
+    cle: (req) => `changement-mdp|${(req as any).userId || req.ip}`,
+  }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) {
+        throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
+      }
+
+      const body = z
+        .object({
+          currentPassword: z.string().min(1),
+          newPassword: champMotDePasse(),
+        })
+        .parse(req.body);
+
+      const user = await db.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, passwordHash: true },
+      });
+
+      if (!user || !user.passwordHash || !(await AuthService.comparePassword(body.currentPassword, user.passwordHash))) {
+        throw new ApiError(400, "Mot de passe actuel incorrect.", "INVALID_CURRENT_PASSWORD");
+      }
+
+      if (body.currentPassword === body.newPassword) {
+        throw new ApiError(400, "Le nouveau mot de passe doit être différent de l'actuel.", "SAME_PASSWORD");
+      }
+
+      await db.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: await AuthService.hashPassword(body.newPassword),
+          // Un lien de réinitialisation en attente ne doit plus servir.
+          resetTokenHash: null,
+          resetTokenExpiresAt: null,
+        },
+      });
+
+      await SecurityEventService.record({
+        action: "PASSWORD_CHANGED",
+        actor: user.email,
+        severity: "MEDIUM",
+        details: "Mot de passe changé depuis le profil",
+      });
+
+      res.json({ message: "Mot de passe modifié." });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // POST /auth/verify-email - Confirmation d'adresse via le lien reçu
 router.post("/verify-email", async (req: Request, res: Response, next: NextFunction) => {
   try {
