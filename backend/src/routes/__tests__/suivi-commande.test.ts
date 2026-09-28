@@ -280,21 +280,119 @@ describe("GET /api/orders/:id", () => {
 });
 
 describe("GET /api/orders/:id/delivery", () => {
+  /** La commande telle que la lit courseVisible(), avec sa course. */
+  function avecCourse(statut: string, course: Record<string, unknown> = {}) {
+    return {
+      ...commande(statut),
+      delivery: {
+        status: statut,
+        pickupLat: 48.8,
+        pickupLng: 2.3,
+        deliveryLat: 48.867891,
+        deliveryLng: 2.331234,
+        deliveryLatObfusquee: 48.869,
+        deliveryLngObfusquee: 2.335,
+        driverLat: 48.856789,
+        driverLng: 2.345678,
+        driverLocationAt: new Date(),
+        driver: { userId: "user-livreur", name: "Bob" },
+        ...course,
+      },
+    };
+  }
+
   beforeEach(() => {
-    db.order.findFirst.mockResolvedValue(commande());
+    db.order.findFirst.mockResolvedValue(avecCourse("PICKED_UP"));
     db.membership.findFirst.mockResolvedValue(null);
-    db.orderDelivery.findUnique.mockResolvedValue(null);
   });
 
   it("répond 404 sans jeton : la position du livreur ne se lit pas avec l'identifiant seul", async () => {
     const reponse = await request(app).get(`${URL_COMMANDE}/delivery`);
     expect(reponse.status).toBe(404);
-    expect(db.orderDelivery.findUnique).not.toHaveBeenCalled();
+    expect(JSON.stringify(reponse.body)).not.toContain("48.8");
   });
 
-  it("répond avec le bon jeton", async () => {
+  it("répond 404 à un mauvais jeton", async () => {
+    const autre = genererJetonDeSuivi().jeton;
+    const reponse = await request(app).get(`${URL_COMMANDE}/delivery?t=${autre}`);
+    expect(reponse.status).toBe(404);
+  });
+
+  it("ne donne que la destination obfusquée à un visiteur, jamais la vraie", async () => {
     const reponse = await request(app).get(`${URL_COMMANDE}/delivery?t=${jeton}`);
     expect(reponse.status).toBe(200);
+    expect(reponse.body.data.deliveryLat).toBe(48.869);
+    expect(reponse.body.data.deliveryLng).toBe(2.335);
+    const texte = JSON.stringify(reponse.body);
+    expect(texte).not.toContain("48.867891");
+    expect(texte).not.toContain("user-livreur");
+    expect(reponse.body.data.id).toBeUndefined();
+    expect(reponse.body.data.driverId).toBeUndefined();
+  });
+
+  it("rend null, et non le GPS du domicile, quand l'obfusquée est vide", async () => {
+    db.order.findFirst.mockResolvedValue(
+      avecCourse("PICKED_UP", { deliveryLatObfusquee: null, deliveryLngObfusquee: null })
+    );
+    const reponse = await request(app).get(`${URL_COMMANDE}/delivery?t=${jeton}`);
+    expect(reponse.status).toBe(200);
+    expect(reponse.body.data.deliveryLat).toBeNull();
+    expect(reponse.body.data.deliveryLng).toBeNull();
+    expect(JSON.stringify(reponse.body)).not.toContain("48.867891");
+  });
+
+  it("garde une obfusquée à 0 sans retomber sur le GPS réel", async () => {
+    db.order.findFirst.mockResolvedValue(avecCourse("PICKED_UP", { deliveryLatObfusquee: 0, deliveryLngObfusquee: 0 }));
+    const reponse = await request(app).get(`${URL_COMMANDE}/delivery?t=${jeton}`);
+    expect(reponse.body.data.deliveryLat).toBe(0);
+    expect(JSON.stringify(reponse.body)).not.toContain("48.867891");
+  });
+
+  it("ne montre pas le livreur tant que la course est ASSIGNED", async () => {
+    db.order.findFirst.mockResolvedValue(avecCourse("ASSIGNED"));
+    const reponse = await request(app).get(`${URL_COMMANDE}/delivery?t=${jeton}`);
+    expect(reponse.status).toBe(200);
+    expect(reponse.body.data.driverLat).toBeNull();
+    expect(reponse.body.data.driverLng).toBeNull();
+    expect(JSON.stringify(reponse.body)).not.toContain("48.856");
+  });
+
+  it("montre au visiteur une position arrondie en PICKED_UP", async () => {
+    const reponse = await request(app).get(`${URL_COMMANDE}/delivery?t=${jeton}`);
+    expect(reponse.body.data.driverLat).toBe(48.857);
+    expect(reponse.body.data.driverLng).toBe(2.346);
+    expect(JSON.stringify(reponse.body)).not.toContain("48.856789");
+  });
+
+  it("donne la position exacte et la vraie destination au client propriétaire", async () => {
+    const reponse = await request(app)
+      .get(`${URL_COMMANDE}/delivery`)
+      .set("Authorization", "Bearer user-client");
+    expect(reponse.status).toBe(200);
+    expect(reponse.body.data.driverLat).toBe(48.856789);
+    expect(reponse.body.data.deliveryLat).toBe(48.867891);
+  });
+
+  it("admet le livreur de la course", async () => {
+    const reponse = await request(app)
+      .get(`${URL_COMMANDE}/delivery`)
+      .set("Authorization", "Bearer user-livreur");
+    expect(reponse.status).toBe(200);
+    expect(reponse.body.data.deliveryLat).toBe(48.867891);
+  });
+
+  it("répond 404 à un compte étranger à la commande", async () => {
+    const reponse = await request(app)
+      .get(`${URL_COMMANDE}/delivery`)
+      .set("Authorization", "Bearer user-inconnu");
+    expect(reponse.status).toBe(404);
+  });
+
+  it("rend data: null quand la commande n'a pas encore de course", async () => {
+    db.order.findFirst.mockResolvedValue({ ...commande(), delivery: null });
+    const reponse = await request(app).get(`${URL_COMMANDE}/delivery?t=${jeton}`);
+    expect(reponse.status).toBe(200);
+    expect(reponse.body.data).toBeNull();
   });
 });
 

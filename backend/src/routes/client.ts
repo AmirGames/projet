@@ -1,4 +1,5 @@
 import { finAttente } from "../services/delivery-proof.service";
+import { positionLivreurVisible } from "../services/suivi-commande.service";
 import { presenter } from "../services/fichiers-prives.service";
 import { SupplementService } from "../services/supplement.service";
 import { TaxService } from "../services/tax.service";
@@ -761,7 +762,7 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
     // La distance restante est ce qui intéresse le client ; la distance totale
     // sert à situer l'avancement.
     const restante =
-      estUnPoint(livreur) && estUnPoint(destination) ? distanceKm(livreur, destination) : null;
+      positionLivreurVisible(course.status) && estUnPoint(livreur) && estUnPoint(destination) ? distanceKm(livreur, destination) : null;
     const totale =
       estUnPoint(retrait) && estUnPoint(destination) ? distanceKm(retrait, destination) : null;
 
@@ -776,7 +777,9 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         adresseLivraison: course.order?.deliveryAddress ?? null,
         retrait: estUnPoint(retrait) ? retrait : null,
         destination: estUnPoint(destination) ? destination : null,
-        position: estUnPoint(livreur)
+        // Même règle que GET /orders/:id/delivery : en route vers le client
+        // seulement.
+        position: positionLivreurVisible(course.status) && estUnPoint(livreur)
           ? { ...livreur, misAJourLe: course.driverLocationAt }
           : null,
         // Le livreur n'envoie plus sa position : la pastille est figée.

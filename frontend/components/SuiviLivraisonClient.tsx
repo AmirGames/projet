@@ -24,13 +24,12 @@ import 'leaflet/dist/leaflet.css';
 
 interface DeliveryTracking {
   orderId: string;
-  driverId?: string;
-  driverLat?: number;
-  driverLng?: number;
-  pickupLat: number;
-  pickupLng: number;
-  deliveryLat: number;
-  deliveryLng: number;
+  driverLat?: number | null;
+  driverLng?: number | null;
+  pickupLat: number | null;
+  pickupLng: number | null;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
   status: string;
   estimatedTimeLeft?: number;
 }
@@ -58,7 +57,14 @@ const distanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): num
 const estUneCoordonnee = (v: unknown): v is number =>
   typeof v === 'number' && Number.isFinite(v);
 
-const aDesCoordonnees = (d: DeliveryTracking | null | undefined): boolean =>
+type AvecCoordonnees = DeliveryTracking & {
+  pickupLat: number;
+  pickupLng: number;
+  deliveryLat: number;
+  deliveryLng: number;
+};
+
+const aDesCoordonnees = (d: DeliveryTracking | null | undefined): d is AvecCoordonnees =>
   !!d &&
   estUneCoordonnee(d.pickupLat) &&
   estUneCoordonnee(d.pickupLng) &&
@@ -78,7 +84,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
   const [error, setError] = useState('');
   const socketRef = useRef<Socket | null>(null);
   // La destination lue par le gestionnaire WebSocket, sans valeur figée.
-  const destinationRef = useDerniereValeur<[number, number]>([delivery.deliveryLat, delivery.deliveryLng]);
+  const destinationRef = useDerniereValeur<[number | null, number | null]>([delivery.deliveryLat, delivery.deliveryLng]);
 
   // Initialiser la carte
   useEffect(() => {
@@ -224,10 +230,11 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
                 mapRef.current.removeLayer(lineRef.current);
               }
 
-              lineRef.current = L.polyline(
+              const [destLat, destLng] = destinationRef.current;
+              if (estUneCoordonnee(destLat) && estUneCoordonnee(destLng)) lineRef.current = L.polyline(
                 [
                   [data.location.latitude, data.location.longitude],
-                  destinationRef.current,
+                  [destLat, destLng],
                 ],
                 { color: '#3b82f6', weight: 2, opacity: 0.7, dashArray: '5, 5' }
               ).addTo(mapRef.current);
