@@ -8,7 +8,7 @@ import { authMiddleware } from "../middleware/auth";
 import { uploadMiddleware } from "../middleware/file-upload";
 import { limiterInscriptions } from "../middleware/throttle";
 import { logger } from "../config/logger";
-import { emitDeliveryUpdate } from "../config/socket";
+import { emitDeliveryUpdate, emitNotification } from "../config/socket";
 import { DispatchService, STATUTS_EN_COURSE } from "../services/dispatch.service";
 import { ordonner, versCourseTournee } from "../services/tournee.service";
 import { AuthService } from "../services/auth.service";
@@ -178,7 +178,7 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
     const [courses, pourboires] = await Promise.all([
       db.orderDelivery.findMany({
         where: { driverId: livreur.id, status: "DELIVERED" },
-        include: { order: { select: { feesAmount: true } } },
+        include: { order: { select: { feesAmount: true, tipAmount: true } } },
         orderBy: { deliveryTime: "desc" },
       }),
       // Les pourboires laissés après la livraison : un revenu à part entière.
@@ -209,12 +209,29 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
         .reduce((somme, c) => somme + gain(c), 0) + pourboiresDepuis(date);
     const apresLivraison = new Map(pourboires.map((p) => [p.orderId, Number(p.amount)]));
 
+    // Les pourboires à part : celui laissé en commandant (déjà compris dans
+    // le gain de la course) compte au jour de la livraison, celui laissé
+    // après au jour où il est encaissé.
+    const pourboireCommande = (c: (typeof courses)[number]) => Number(c.order?.tipAmount ?? 0);
+    const tousPourboiresDepuis = (date: Date) =>
+      courses
+        .filter((c) => (c.deliveryTime || c.updatedAt) >= date)
+        .reduce((somme, c) => somme + pourboireCommande(c), 0) + pourboiresDepuis(date);
+    const arrondi = (n: number) => Math.round(n * 100) / 100;
+
     res.json({
       total: courses.reduce((somme, c) => somme + gain(c), 0) + pourboiresDepuis(new Date(0)),
       today: depuis(debutJour),
       week: depuis(debutSemaine),
       month: depuis(debutMois),
       deliveryCount: courses.length,
+      // Déjà compris dans les montants ci-dessus : le détail des pourboires.
+      pourboires: {
+        today: arrondi(tousPourboiresDepuis(debutJour)),
+        week: arrondi(tousPourboiresDepuis(debutSemaine)),
+        month: arrondi(tousPourboiresDepuis(debutMois)),
+        total: arrondi(tousPourboiresDepuis(new Date(0))),
+      },
       // Nulle tant que personne ne l'a noté : « 5,00 / 5 » s'affichait sur un
       // écran de revenus dès la première course.
       rating: livreur.totalRatings > 0 ? Number(livreur.rating) : null,
@@ -224,6 +241,8 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
         orderId: c.orderId,
         deliveredAt: c.deliveryTime || c.updatedAt,
         earning: gain(c),
+        // Laissé en commandant, déjà compris dans le gain de la course.
+        pourboire: pourboireCommande(c),
         // Laissé après la livraison, en plus du gain de la course.
         pourboireApres: apresLivraison.get(c.orderId) ?? 0,
       })),
@@ -1167,7 +1186,7 @@ router.patch(
           // L'heure de récupération sert à l'historique et aux statistiques.
           ...(status === "PICKED_UP" && course.status !== "PICKED_UP" && { pickupTime: effectueLe })
         },
-        include: { order: { select: { feesAmount: true } } }
+        include: { order: { select: { feesAmount: true, tipAmount: true } } }
       });
 
       // Un retrait de plus : l'ordre des remises se recalcule, depuis le
@@ -1203,6 +1222,27 @@ router.patch(
         // lui en reste d'autres dans sa tournée.
         await DispatchService.liberer(livreur.id);
 
+        // Le pourboire laissé en commandant lui est acquis à la remise : on
+        // le lui dit, comme pour celui laissé après la livraison.
+        const pourboire = Number(delivery.order?.tipAmount ?? 0);
+        if (pourboire > 0) {
+          try {
+            const notification = await db.notification.create({
+              data: {
+                type: "PLATFORM_ANNOUNCEMENT",
+                title: "Vous avez reçu un pourboire 🎉",
+                message: `${pourboire.toFixed(2).replace(".", ",")} € laissés par le client pour cette course. Ils sont compris dans votre gain.`,
+                recipientEmail: livreur.email,
+                link: "/driver/earnings",
+                relatedOrderId: delivery.orderId,
+              },
+            });
+            emitNotification(livreur.email, notification);
+          } catch (err) {
+            logger.warn("Pourboire : notification du livreur impossible", { error: (err as Error).message });
+          }
+        }
+
         // Notifier le client que la commande est livrée avec succès
         const order = await db.order.findUnique({
           where: { id: delivery.orderId },
@@ -1223,7 +1263,7 @@ router.patch(
           });
 
           // Notifier en temps réel via Socket.IO
-          const { emitNotification, emitOrderUpdate } = await import("../config/socket");
+          const { emitOrderUpdate } = await import("../config/socket");
           emitOrderUpdate(delivery.orderId, "COMPLETED", {
             message: "Votre commande a été livrée. Merci pour votre achat !",
             title: "Commande livrée avec succès",

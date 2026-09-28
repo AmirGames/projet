@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Wallet, Package, Star, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Wallet, Package, Star, CalendarDays, Gift } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { MesVersements } from '@/components/MesVersements';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -15,6 +15,10 @@ interface CourseRemuneree {
   orderId: string;
   deliveredAt: string;
   earning: number;
+  /** Laissé en commandant, compris dans le gain. */
+  pourboire?: number;
+  /** Laissé après la livraison, en plus du gain. */
+  pourboireApres?: number;
 }
 
 interface Revenus {
@@ -23,6 +27,8 @@ interface Revenus {
   week: number;
   month: number;
   deliveryCount: number;
+  /** Le détail des pourboires, compris dans les montants ci-dessus. */
+  pourboires?: { today: number; week: number; month: number; total: number };
   /** Nulle tant que personne ne l'a noté. */
   rating: number | null;
   avis?: number;
@@ -135,6 +141,31 @@ export default function RevenusLivreurPage() {
               </div>
             </div>
 
+            {revenus.pourboires && (
+              <div className="bg-gray-800 border border-yellow-700/50 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold flex items-center gap-2">
+                    <Gift size={20} className="text-yellow-400" />
+                    {t('tipsTitle')}
+                  </h2>
+                  <p className="text-xs text-gray-500">{t('tipsIncluded')}</p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {([
+                    ['today', revenus.pourboires.today],
+                    ['thisWeek', revenus.pourboires.week],
+                    ['thisMonth', revenus.pourboires.month],
+                    ['allTime', revenus.pourboires.total],
+                  ] as const).map(([cle, montant]) => (
+                    <div key={cle}>
+                      <p className="text-gray-400 text-sm mb-1">{t(cle)}</p>
+                      <p className="text-2xl font-bold text-yellow-400">{euro(montant)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
@@ -176,6 +207,7 @@ export default function RevenusLivreurPage() {
                       <tr>
                         <th className="text-left py-2">{t('order')}</th>
                         <th className="text-left py-2">{t('deliveredOn')}</th>
+                        <th className="text-right py-2">{t('tip')}</th>
                         <th className="text-right py-2">{t('yourEarning')}</th>
                       </tr>
                     </thead>
@@ -186,8 +218,13 @@ export default function RevenusLivreurPage() {
                           <td className="py-3 text-gray-400">
                             {new Date(course.deliveredAt).toLocaleString('fr-FR')}
                           </td>
+                          <td className="py-3 text-right text-yellow-400">
+                            {(course.pourboire ?? 0) + (course.pourboireApres ?? 0) > 0
+                              ? euro((course.pourboire ?? 0) + (course.pourboireApres ?? 0))
+                              : <span className="text-gray-600">—</span>}
+                          </td>
                           <td className="py-3 text-right font-bold text-green-400">
-                            {euro(course.earning)}
+                            {euro(course.earning + (course.pourboireApres ?? 0))}
                           </td>
                         </tr>
                       ))}

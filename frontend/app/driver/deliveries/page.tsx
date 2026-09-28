@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Clock, Package, CheckCircle, AlertCircle, Star, Navigation } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Package, CheckCircle, AlertCircle, Star, Navigation, Gift } from 'lucide-react';
 import { euro } from '@/lib/format';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -30,6 +30,8 @@ interface Course {
   durationMin: number | null;
   proofType: string | null;
   rating: { note: number; commentaire: string | null } | null;
+  /** Le pourboire du client, à la commande ou après la livraison. */
+  pourboire?: number;
   createdAt: string;
 }
 
@@ -273,6 +275,11 @@ export default function HistoriqueCoursesPage() {
                       <span className="inline-flex items-center gap-1 text-yellow-400">
                         <Star size={12} fill="currentColor" /> {c.rating.note}/5
                         {c.rating.commentaire && <span className="text-gray-400"> — « {c.rating.commentaire} »</span>}
+                      </span>
+                    )}
+                    {(c.pourboire ?? 0) > 0 && (
+                      <span className="inline-flex items-center gap-1 text-yellow-400 font-semibold">
+                        <Gift size={12} /> Pourboire ({euro(c.pourboire!)})
                       </span>
                     )}
                   </div>

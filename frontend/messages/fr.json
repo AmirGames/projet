@@ -1512,7 +1512,10 @@
     "orderAmount": "Montant commande",
     "reviews": "avis",
     "subtitle": "La rémunération annoncée à l'attribution de chaque course terminée",
-    "yourEarning": "Votre gain"
+    "yourEarning": "Votre gain",
+    "tipsTitle": "Mes pourboires",
+    "tipsIncluded": "Déjà compris dans vos revenus",
+    "tip": "Pourboire"
   },
   "driverProfile": {
     "title": "Mon Profil",
@@ -1542,6 +1545,7 @@
     "notRatedYet": "Pas encore noté",
     "reviews": "avis",
     "dailyEarnings": "Revenus du jour",
+    "dailyTips": "Pourboires du jour",
     "completedDeliveries": "Livraisons complétées",
     "status": "Statut",
     "online": "En ligne",
