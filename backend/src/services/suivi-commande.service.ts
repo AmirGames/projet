@@ -3,6 +3,7 @@ import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { db } from "./db";
 import { logger } from "../config/logger";
 import { finAttente } from "./delivery-proof.service";
+import { presenter } from "./fichiers-prives.service";
 import type { Compte } from "../middleware/auth";
 
 /**
@@ -193,7 +194,9 @@ function etatDeLaLivraison(commande: Lue, avecCode: boolean) {
     codeRemise:
       avecCode && course && course.status !== "DELIVERED" && course.deliveryCode ? course.deliveryCode : null,
     preuveDeLivraison: course?.proofType ?? null,
-    photoDepot: depose ? course?.proofPhoto ?? null : null,
+    // Adresse signée : la photo n'est plus servie sans contrôle, et une
+    // balise <img> n'envoie pas de jeton.
+    photoDepot: depose ? presenter(course?.proofPhoto) : null,
     noteDepot: depose ? course?.proofNote ?? null : null,
     livreurProche: Boolean(course?.nearCustomerNotifiedAt),
     // Le livreur attend à la porte : passé cette heure, la commande est

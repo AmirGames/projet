@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl';
 
 import { euro } from '@/lib/format';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
+import { LienPiece } from '@/components/LienPiece';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -479,15 +480,13 @@ export default function LivreursPage() {
                                 <Eye size={12} />
                                 {t('preview')}
                               </button>
-                              <a
-                                href={piece.documentUrl}
-                                target="_blank"
-                                rel="noreferrer"
+                              <LienPiece
+                                adresse={piece.documentUrl}
                                 className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-300"
                                 title={t('downloadDocument')}
                               >
                                 <ExternalLink size={12} />
-                              </a>
+                              </LienPiece>
                               <button
                                 onClick={() =>
                                   agir(`${livreur.id}/documents/${piece.id}`, { approuve: true })

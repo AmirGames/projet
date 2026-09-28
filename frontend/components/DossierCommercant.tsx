@@ -14,6 +14,7 @@
 import { useCallback, useState } from 'react';
 import { AlertTriangle, BadgeCheck, Check, Clock, Eye, FileText, Upload, X } from 'lucide-react';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
+import { LienPiece } from '@/components/LienPiece';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -488,14 +489,12 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                           <Eye size={12} />
                           Aperçu
                         </button>
-                        <a
-                          href={piece.documentUrl}
-                          target="_blank"
-                          rel="noreferrer"
+                        <LienPiece
+                          adresse={piece.documentUrl}
                           className="text-xs text-orange-400 hover:underline break-all"
                         >
                           {piece.fileName || piece.documentUrl}
-                        </a>
+                        </LienPiece>
                       </div>
                     </div>
                     <Icone size={18} className={`flex-shrink-0 ${marque.classe}`} />

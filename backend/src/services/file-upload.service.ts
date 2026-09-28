@@ -157,12 +157,10 @@ export class FileUploadService {
 
     logger.info("uploadLocal - Processing file:", { filename, mimeType, extractedExt: ext });
 
-    // Générer un nom de fichier sécurisé avec l'extension
-    // Tiré au hasard pour de bon : les fichiers se servent sans jeton, et une
-    // photo de dépôt montre la porte d'un client.
-    const randomId = randomBytes(8).toString("hex");
-    const timestamp = Date.now();
-    const safeFilename = `${timestamp}-${randomId}.${ext}`;
+    // Nom tiré au hasard (128 bits), sans horodatage : l'heure du dépôt ne
+    // doit rien laisser deviner, même si le contrôle d'accès de /api/files
+    // reste la vraie protection.
+    const safeFilename = `${randomBytes(16).toString("hex")}.${ext}`;
     const relativePath = join(folder, safeFilename);
     const fullPath = join(UPLOADS_DIR, relativePath);
 

@@ -16,6 +16,7 @@ import { limiterCadence } from "./middleware/throttle";
 import { Surveillance } from "./services/surveillance.service";
 import { Vigie } from "./services/vigie.service";
 import authRouter from "./routes/auth";
+import filesRouter from "./routes/files";
 import ssoRouter from "./routes/sso";
 import organizationRouter from "./routes/organization";
 import storeRouter from "./routes/store";
@@ -185,24 +186,33 @@ export function createApp(): Express {
   app.use(diffusionModifications);
 
   // ===== Static files (uploads) =====
+  // Seuls les visuels des boutiques (logos, bannières) sont publics. Permis,
+  // RIB, pièces des commerçants et photos de dépôt ne sortent que par
+  // /api/files, avec une session ou une adresse signée : servis ici, il
+  // suffisait de leur adresse pour les lire.
   const uploadsDir = join(process.cwd(), "uploads");
-  app.use("/uploads", (req, res, next) => {
+  app.use("/uploads/stores", (req, res, next) => {
     res.header("Access-Control-Allow-Origin", originesAutorisees.includes(req.get("origin") || "") ? req.get("origin") : originesAutorisees[0]);
     res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.header("Access-Control-Allow-Credentials", "true");
+    res.vary("Origin");
     // Helmet réserve les fichiers à la même origine : le site, servi sur un
-    // autre port ou un autre domaine, ne pouvait pas afficher une photo de
-    // dépôt dans une balise <img>.
+    // autre port ou un autre domaine, ne pouvait pas afficher un logo dans une
+    // balise <img>.
     res.header("Cross-Origin-Resource-Policy", "cross-origin");
     if (req.method === "OPTIONS") {
       return res.sendStatus(200);
     }
     return next();
-  }, express.static(uploadsDir));
+  }, express.static(join(uploadsDir, "stores")));
+  app.use("/uploads", (_req, res) => {
+    res.status(404).json({ error: "Fichier introuvable", code: "FILE_NOT_FOUND" });
+  });
 
   // ===== API Routes =====
   app.use("/api/auth", authRouter);
+  app.use("/api/files", filesRouter);
   app.use("/api/sso", ssoRouter);
   app.use("/api/organizations", organizationRouter);
   app.use("/api/stores", storeRouter);

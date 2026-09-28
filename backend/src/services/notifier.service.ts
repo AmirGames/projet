@@ -405,7 +405,7 @@ export class Notifier {
       DELIVERED: depot
         ? {
             sujet: "Commande déposée en lieu sûr",
-            texte: `Sans réponse de votre part, ${livreur} a déposé votre commande ${boutique} en lieu sûr.${lieu} La photo du dépôt est sur votre suivi${depot.proofPhoto ? ` : ${depot.proofPhoto}` : ""}.`,
+            texte: `Sans réponse de votre part, ${livreur} a déposé votre commande ${boutique} en lieu sûr.${lieu} La photo du dépôt est sur votre suivi${lien ? ` : ${lien}` : ""}.`,
             sms: `Commande ${boutique} déposée en lieu sûr.${lieu} Photo et suivi : ${lien}` as string | null,
           }
         : {
