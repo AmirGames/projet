@@ -34,6 +34,7 @@ import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import ChangerMotDePasse from '@/components/ChangerMotDePasse';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Piece {
@@ -887,6 +888,8 @@ export default function ProfilCommercantPage() {
           </button>
         </form>
       </section>
+
+      <ChangerMotDePasse />
     </div>
   );
 }

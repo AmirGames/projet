@@ -47,6 +47,7 @@ import {
   Briefcase,
   MessageCircle,
   ShieldCheck,
+  UserCircle,
 } from 'lucide-react';
 
 export default function SuperOwnerLayout({ children }: { children: React.ReactNode }) {
@@ -117,7 +118,10 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   const navSections = [
     {
       title: null,
-      items: [{ label: t('nav.dashboard'), icon: Home, href: '/superowner', section: 'dashboard' }],
+      items: [
+        { label: t('nav.dashboard'), icon: Home, href: '/superowner', section: 'dashboard' },
+        { label: t('nav.profile'), icon: UserCircle, href: '/superowner/profil', section: 'profil' },
+      ],
     },
     {
       title: t('nav.sectionActivity'),
@@ -178,8 +182,11 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
     },
   ];
 
+  // Chaque membre de l'équipe gère son propre compte, quelles que soient ses
+  // permissions.
   const autorise = (section: string | null) =>
-    acces.isSuperOwner || (section !== null && !!acces.permissions[section]);
+    acces.isSuperOwner ||
+    section === 'profil' || (section !== null && !!acces.permissions[section]);
   const sectionsVisibles = navSections
     .map((section) => ({ ...section, items: section.items.filter((item) => autorise(item.section)) }))
     .filter((section) => section.items.length > 0);

@@ -1,3 +1,5 @@
+import { espaceDuDomaine } from '@/lib/domaines';
+
 /**
  * Détermine l'espace d'accueil d'un compte.
  *
@@ -29,4 +31,21 @@ export function espaceDAccueilLocal(): string {
   } catch {
     return '/login';
   }
+}
+
+/**
+ * Où envoyer un compte qui vient de se connecter (ou qui arrive sur la page
+ * de connexion déjà connecté).
+ *
+ * Le domaine compte : un client connecté sur le domaine public attend ses
+ * commerces, pas le sélecteur de rôles. Sans cela, la connexion réussissait
+ * sur zupeat.com mais laissait l'utilisateur hors de son espace.
+ */
+export function destinationApresConnexion(options: { isSuperOwner?: boolean }): string {
+  const espace = typeof window === 'undefined' ? null : espaceDuDomaine(window.location.host);
+
+  if (espace === 'public') return '/client';
+  if (espace === 'livreur') return '/driver';
+  if (options.isSuperOwner) return '/superowner';
+  return '/auth/role-selection';
 }
