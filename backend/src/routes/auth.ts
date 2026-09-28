@@ -71,8 +71,15 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
     // Le lien de confirmation part à l'inscription. Il ne bloque rien : tant
     // que REQUIRE_EMAIL_VERIFICATION n'est pas activé, le compte est
     // utilisable immédiatement.
+    // Le courriel part sans faire attendre la réponse : l'aller-retour avec le
+    // serveur SMTP représentait l'essentiel de la durée de l'inscription.
     if (process.env.ENABLE_EMAIL_VERIFICATION !== "false") {
-      await envoyerConfirmation(user);
+      void envoyerConfirmation(user).catch((err) =>
+        logger.warn("Confirmation d'adresse non préparée", {
+          email: user.email,
+          error: err instanceof Error ? err.message : err,
+        })
+      );
     }
 
     /**
