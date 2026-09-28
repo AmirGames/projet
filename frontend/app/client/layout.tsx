@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, ShoppingCart, Heart, User, Menu, X, LogOut } from 'lucide-react';
+import { Home, ShoppingCart, Heart, User, Menu, X, LogOut, LogIn } from 'lucide-react';
 import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PaniersAccueil } from '@/components/PaniersAccueil';
@@ -18,14 +18,18 @@ export default function ClientLayout({
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, user, isLoading } = useAuth();
 
   // Un simple lien vers /login laissait la session ouverte : on revenait
   // connecté au premier clic sur « Accueil ».
+  //
+  // Retour direct à /client : « / » y menait aussi, mais après deux
+  // redirections (région, puis réécriture), d'où une déconnexion qui
+  // semblait lente.
   const seDeconnecter = () => {
     setMobileMenuOpen(false);
     logout();
-    router.push('/');
+    router.replace('/client');
   };
 
   const navItems = [
@@ -90,13 +94,27 @@ export default function ClientLayout({
                   </Link>
                 );
               })}
-              <button
-                onClick={seDeconnecter}
-                className="flex w-full items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 transition"
-              >
-                <LogOut size={20} />
-                Déconnexion
-              </button>
+              {/* Le bouton suit la session : toujours affiché, il laissait
+                  croire, une fois déconnecté, qu'on l'était encore. */}
+              {!isLoading && user && (
+                <button
+                  onClick={seDeconnecter}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 transition"
+                >
+                  <LogOut size={20} />
+                  Déconnexion
+                </button>
+              )}
+              {!isLoading && !user && (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-orange-400 hover:text-orange-300 transition"
+                >
+                  <LogIn size={20} />
+                  Connexion
+                </Link>
+              )}
             </div>
           )}
         </nav>
@@ -133,12 +151,22 @@ export default function ClientLayout({
 
             <div className="flex items-center gap-4">
               <PaniersAccueil />
-              <button
-                onClick={seDeconnecter}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition"
-              >
-                Déconnexion
-              </button>
+              {!isLoading && user && (
+                <button
+                  onClick={seDeconnecter}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition"
+                >
+                  Déconnexion
+                </button>
+              )}
+              {!isLoading && !user && (
+                <Link
+                  href="/login"
+                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-white font-semibold transition"
+                >
+                  Connexion
+                </Link>
+              )}
               <LanguageSwitcher />
             </div>
           </div>
