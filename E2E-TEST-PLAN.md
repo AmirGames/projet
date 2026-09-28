@@ -61,8 +61,9 @@ npm run dev                  # http://localhost:3000
 
 ### 4. Une base vide
 
-Le **premier compte inscrit devient la plateforme** (superowner). Le plan
-suppose donc une base vide au départ :
+Aucune inscription ne donne les droits de la plateforme : le superowner se
+crée en ligne de commande (`npm run create-superowner`, test 1.2). Le plan
+suppose une base vide au départ :
 
 ```bash
 cd backend
@@ -76,7 +77,7 @@ puis `npm run dev`.
 
 ## Phase 1 — Inscription
 
-### Test 1.1 : le premier compte devient la plateforme
+### Test 1.1 : le premier compte inscrit reste un compte ordinaire
 
 ```
 Étapes :
@@ -90,16 +91,30 @@ Attendu :
 ✅ L'espace client est actif ; « Devenir commerçant » et « Devenir livreur » proposés
 
 En base :
-✅ User : isSuperOwner = true, isSystemAdmin = true
+✅ User : isSuperOwner = false, isSystemAdmin = false (base vide ou non)
 ✅ Customer créé et relié (userId)
 ✅ AcceptationConditions : une ligne avec les versions de cgu, cgv, confidentialite
 ✅ Un courriel de confirmation dans Mailpit (si ENABLE_EMAIL_VERIFICATION n'est pas « false »)
 ```
 
-### Test 1.2 : les comptes suivants sont ordinaires
+### Test 1.2 : le superowner se crée en ligne de commande
+
+```bash
+cd backend
+SUPEROWNER_EMAIL=test-user-001@example.com SUPEROWNER_PASSWORD='TestPassword123!' npm run create-superowner
+SUPEROWNER_EMAIL=autre@example.com SUPEROWNER_PASSWORD='TestPassword123!' npm run create-superowner
+```
 
 ```
-Étapes :
+Attendu :
+✅ 1re commande : « Compte existant promu superowner : test-user-001@example.com »
+   (mot de passe inchangé)
+✅ 2e commande : « Un superowner existe déjà (test-user-001@example.com) : rien n'a changé. »
+✅ En base : un seul User avec isSuperOwner = true ; autre@example.com n'existe pas
+✅ UPDATE "User" SET "isSuperOwner" = true sur un autre compte est refusé
+   (index unique User_un_seul_superowner)
+
+Puis :
 1. Se déconnecter
 2. S'inscrire avec test-user-002@example.com
 
@@ -632,8 +647,8 @@ Organization.approvedAt est vide : la plateforme ne l'a pas encore validé (test
 ## Récapitulatif à cocher
 
 **Inscription et connexion**
-- [ ] Premier compte : superowner et admin système
-- [ ] Comptes suivants ordinaires
+- [ ] Aucune inscription n'est superowner, même la première
+- [ ] Superowner créé par `npm run create-superowner`, rejouable sans effet
 - [ ] Customer créé à l'inscription
 - [ ] Conditions exigées et acceptation enregistrée
 - [ ] Mot de passe : 8 caractères, chiffre, minuscule, majuscule (site et applis)
@@ -681,8 +696,8 @@ Testeur : [NOM]
 Environnement : local
 
 PHASE 1 — INSCRIPTION
-  1.1 Premier compte superowner ........ [OK / ÉCHEC]
-  1.2 Comptes suivants ordinaires ...... [OK / ÉCHEC]
+  1.1 Premier inscrit ordinaire ........ [OK / ÉCHEC]
+  1.2 Superowner en ligne de commande .. [OK / ÉCHEC]
   1.3 Conditions exigées ............... [OK / ÉCHEC]
   1.3 bis Mot de passe solide .......... [OK / ÉCHEC]
   1.4 Adresse déjà prise ............... [OK / ÉCHEC]

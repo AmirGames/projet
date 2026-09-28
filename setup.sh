@@ -38,8 +38,16 @@ else
 fi
 
 echo ""
-echo "5️⃣  Seeding database..."
-npx prisma db seed 2>/dev/null || echo "⚠️  No seed script found (optional)"
+echo "5️⃣  Superowner..."
+# Aucune inscription ne donne les droits de la plateforme : le superowner se
+# crée ici, depuis SUPEROWNER_EMAIL / SUPEROWNER_PASSWORD (environnement ou
+# backend/.env). Sans effet s'il existe déjà.
+if [ -n "${SUPEROWNER_EMAIL:-}" ] || grep -qE '^SUPEROWNER_EMAIL=.+' .env 2>/dev/null; then
+    npm run -s create-superowner || echo "⚠️  Superowner non créé (voir le message ci-dessus)"
+else
+    echo "ℹ️  SUPEROWNER_EMAIL absent : créez le compte plateforme plus tard avec"
+    echo "   SUPEROWNER_EMAIL=vous@exemple.fr SUPEROWNER_PASSWORD='MotDePasse123' npm run create-superowner"
+fi
 
 echo ""
 echo "=========================================="

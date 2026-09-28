@@ -14,7 +14,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia, ouvrirToutLeJour, baseDeDonnees } from './inscription.mjs';
+import { inscriptionVia, ouvrirToutLeJour, baseDeDonnees, plateformeSiAucune } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -53,7 +53,9 @@ const base = baseDeDonnees();
 
 // ===== Le décor =====
 
-await appeler('/api/auth/signup', { method: 'POST', corps: { conditionsAcceptees: true, email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` } });
+await plateformeSiAucune(
+  await appeler('/api/auth/signup', { method: 'POST', corps: { conditionsAcceptees: true, email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` } })
+);
 
 const commercant = await inscriptionVia(appeler, {
   method: 'POST',

@@ -23,5 +23,6 @@ RUN mkdir -p uploads backups
 ENV NODE_ENV=production
 EXPOSE 3001
 # Les migrations passent avant l'API : une migration en échec arrête le
-# conteneur au lieu de servir un code en avance sur la base.
-CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/server.js"]
+# conteneur au lieu de servir un code en avance sur la base. Le superowner est
+# créé ensuite si SUPEROWNER_EMAIL est fourni — sans effet s'il existe déjà.
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/create-superowner.js --si-configure && exec node dist/server.js"]

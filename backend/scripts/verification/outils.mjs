@@ -67,10 +67,12 @@ export const j = async (reponse) => {
   }
 };
 
+const INSCRIPTIONS = new Set(["/api/auth/signup", "/api/auth/merchant-register"]);
+
 const requete =
   (methode) =>
-  (chemin, corps, jeton) =>
-    fetch(API + chemin, {
+  async (chemin, corps, jeton) => {
+    const reponse = await fetch(API + chemin, {
       method: methode,
       headers: {
         "Content-Type": "application/json",
@@ -78,6 +80,9 @@ const requete =
       },
       ...(corps ? { body: JSON.stringify(corps) } : {}),
     });
+
+    return methode === "POST" && INSCRIPTIONS.has(chemin) ? plateformeSiAucune(reponse) : reponse;
+  };
 
 export const post = requete("POST");
 export const put = requete("PUT");
@@ -121,6 +126,35 @@ export async function attenteClientEcoulee(courseId) {
   return sqlExec(
     `UPDATE "OrderDelivery" SET "customerWaitStartedAt" = NOW() - INTERVAL '7 minutes' WHERE id = '${courseId}'`
   );
+}
+
+/**
+ * Le premier compte inscrit devient la plateforme — dans les vérifications
+ * seulement.
+ *
+ * L'API ne donne plus aucun droit à l'inscription (SEC-03) : le superowner se
+ * crée avec `npm run create-superowner`. Les suites, elles, ont toutes été
+ * écrites pour un premier inscrit qui est la plateforme, sur une base vidée
+ * avant chaque script. On le promeut donc ici, en base, et on corrige la
+ * réponse d'inscription pour qu'elle le dise.
+ */
+async function plateformeSiAucune(reponse) {
+  if (reponse.status !== 201) return reponse;
+
+  const donnees = await reponse.json();
+  const userId = donnees?.user?.id;
+
+  if (userId) {
+    const promu = await base()
+      .$executeRaw`UPDATE "User" SET "isSuperOwner" = true, "isSystemAdmin" = true
+        WHERE id = ${userId} AND NOT EXISTS (SELECT 1 FROM "User" WHERE "isSuperOwner" = true)`
+      // Deux inscriptions simultanées : l'index unique garde la première.
+      .catch(() => 0);
+
+    if (promu === 1) donnees.user = { ...donnees.user, isSuperOwner: true, isSystemAdmin: true };
+  }
+
+  return new Response(JSON.stringify(donnees), { status: reponse.status, headers: reponse.headers });
 }
 
 export async function fermerBase() {
@@ -194,8 +228,9 @@ export async function inscrire(prefixe) {
 }
 
 /**
- * Le premier compte inscrit devient la plateforme : plusieurs scripts ont
- * besoin qu'il existe avant de créer leur propre commerçant.
+ * Le premier compte inscrit devient la plateforme (voir plateformeSiAucune) :
+ * plusieurs scripts ont besoin qu'il existe avant de créer leur propre
+ * commerçant.
  */
 export async function inscrirePlateforme() {
   return inscrire("plateforme");

@@ -48,8 +48,9 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
         id: expect.any(String),
         email: 'test@example.com',
         name: 'Test User',
-        isSuperOwner: true, // First user
-        isSystemAdmin: true,
+        // L'inscription ne donne aucun droit sur la plateforme (SEC-03).
+        isSuperOwner: false,
+        isSystemAdmin: false,
       });
       expect(res.body.customer).toEqual({
         id: expect.any(String),
@@ -63,7 +64,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
       // Verify in database
       const user = await db.user.findUnique({ where: { id: testUserId } });
       expect(user).toBeDefined();
-      expect(user?.isSuperOwner).toBe(true);
+      expect(user?.isSuperOwner).toBe(false);
 
       const customer = await db.customer.findUnique({
         where: { userId: testUserId },

@@ -13,7 +13,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia, ouvrirToutLeJour, baseDeDonnees } from './inscription.mjs';
+import { inscriptionVia, ouvrirToutLeJour, baseDeDonnees, plateformeSiAucune } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -62,10 +62,12 @@ const attendre = async (page, condition, delaiMs = 6000) => {
 
 // ===== Le décor =====
 
-const plateforme = await appeler('/api/auth/signup', {
-  method: 'POST',
-  corps: { conditionsAcceptees: true, email: `p-${uniq}@t.fr`, password: MDP, name: `Plateforme ${uniq}` },
-});
+const plateforme = await plateformeSiAucune(
+  await appeler('/api/auth/signup', {
+    method: 'POST',
+    corps: { conditionsAcceptees: true, email: `p-${uniq}@t.fr`, password: MDP, name: `Plateforme ${uniq}` },
+  })
+);
 const TP = plateforme.donnees.accessToken;
 
 const commercant = await inscriptionVia(appeler, {

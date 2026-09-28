@@ -29,6 +29,9 @@ model User {
   /// ce qui ferme les sessions ouvertes ailleurs.
   passwordChangedAt DateTime?
   isSystemAdmin Boolean   @default(false)
+  /// Un seul compte au plus : index unique partiel "User_un_seul_superowner"
+  /// (migration 0020), que Prisma ne sait pas décrire ici. Jamais attribué à
+  /// l'inscription — voir src/cli/create-superowner.ts.
   isSuperOwner  Boolean   @default(false)
   /// Rôles dans l'équipe du groupe, un par plateforme (ZupEat, ZupDrive…).
   /// Ce qu'ils ouvrent se règle dans PlatformRole ; le superowner n'en a pas
