@@ -107,11 +107,13 @@ export async function creerSuperownerInitial(parametres: ParametresSuperowner): 
       const compte = await tx.user.findUnique({ where: { email: email.data }, select: { id: true } });
 
       // Le compte existe déjà (l'exploitant s'est inscrit avant) : on le promeut
-      // sans toucher à son mot de passe.
+      // sans toucher à son mot de passe. L'exploitant désigne lui-même cette
+      // adresse : elle vaut confirmée, sans quoi la confirmation exigée en
+      // production le laisserait dehors.
       if (compte) {
         await tx.user.update({
           where: { id: compte.id },
-          data: { isSuperOwner: true, isSystemAdmin: true },
+          data: { isSuperOwner: true, isSystemAdmin: true, emailVerified: true },
         });
         return { statut: "promu" as const, userId: compte.id, email: email.data };
       }

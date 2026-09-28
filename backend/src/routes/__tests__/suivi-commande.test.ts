@@ -47,6 +47,8 @@ jest.mock("../../middleware/auth", () => ({
     };
     next();
   },
+  // POST /orders : le jeton est facultatif, un visiteur passe sans.
+  authFacultative: (_req: any, _res: any, next: any) => next(),
 }));
 
 import ordersRouter from "../order";

@@ -536,9 +536,15 @@ export function TunnelCommande({
         })),
       };
 
+      // Connecté, le jeton range la commande dans son historique : l'adresse
+      // saisie seule ne suffit plus à la rattacher à un compte.
+      const jeton = user ? localStorage.getItem('accessToken') : null;
       const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}),
+        },
         body: JSON.stringify(orderData),
       });
 

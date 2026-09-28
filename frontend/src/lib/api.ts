@@ -13,8 +13,8 @@ export interface AuthResponse {
     id: string;
     email: string;
     name: string;
-    isSuperOwner: boolean;
-    isSystemAdmin: boolean;
+    isSuperOwner?: boolean;
+    isSystemAdmin?: boolean;
     emailVerified?: boolean;
   };
   customer?: {

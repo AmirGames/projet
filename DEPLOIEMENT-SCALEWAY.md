@@ -171,6 +171,16 @@ chmod 600 .env.production
 > Un seul domaine ? Mettez `DOMAINES_SITE=zupeat.com` et laissez les quatre
 > `NEXT_PUBLIC_DOMAINE_*` vides.
 
+**Confirmation d'adresse (`REQUIRE_EMAIL_VERIFICATION`).** En production, un
+compte ne peut se connecter qu'une fois son adresse confirmée par le lien reçu
+à l'inscription : c'est le comportement quand la variable n'est pas définie.
+`REQUIRE_EMAIL_VERIFICATION=false` suspend l'exigence, par exemple le temps
+que des comptes créés avant cette règle confirment leur adresse (« Renvoyer le
+lien » sur la page de connexion) ; `true` l'impose partout. Dans tous les cas,
+les commandes passées sans compte avec une adresse ne rejoignent le compte de
+même adresse qu'après confirmation. **Le SMTP doit donc fonctionner avant
+l'ouverture.**
+
 **Courriels.** Le port 25 sortant est généralement bloqué sur les VPS : passez
 par un service SMTP. Scaleway Transactional Email (`smtp.tem.scw.cloud`,
 port 465) fonctionne bien ; déclarez-y votre domaine et ajoutez les

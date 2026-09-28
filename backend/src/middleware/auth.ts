@@ -93,47 +93,68 @@ export function jetonPerime(compte: Compte, iat: number | undefined): boolean {
 
 export async function authMiddleware(req: Request, _res: Response, next: NextFunction) {
   try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new ApiError(401, "Missing or invalid authorization header", "MISSING_AUTH");
-    }
-
-    const token = authHeader.slice(7);
-    const payload = AuthService.verifyAccessToken(token);
-
-    // Un jeton signé pour un compte qui n'existe plus n'est pas une permission
-    // manquante : c'est une session à refaire, et le dire en 401 est la seule
-    // façon pour le navigateur de le comprendre.
-    const compte = await compteDuJeton(payload.userId);
-
-    if (!compte || jetonPerime(compte, payload.iat)) {
-      throw new ApiError(
-        401,
-        "Votre session n'est plus valable. Reconnectez-vous.",
-        "SESSION_INVALIDE"
-      );
-    }
-
-    // Une session fermée — déconnexion, sur ce domaine ou un autre — ne vaut
-    // plus nulle part. Les jetons émis avant le SSO n'en portent pas.
-    if (payload.sid && !(await SsoService.sessionActive(payload.sid))) {
-      throw new ApiError(
-        401,
-        "Votre session n'est plus valable. Reconnectez-vous.",
-        "SESSION_INVALIDE"
-      );
-    }
-
-    req.userId = payload.userId;
-    // orgId, storeIds, and role are no longer in JWT; routes must load them from DB
-    req.user = payload;
-    req.compte = compte;
-
+    await authentifier(req);
     next();
   } catch (err) {
     next(err);
   }
+}
+
+/**
+ * Jeton facultatif : un compte connecté est reconnu, un visiteur passe sans.
+ *
+ * Un jeton absent, expiré ou invalide ne bloque rien — la route se comporte
+ * comme pour un visiteur (`req.userId` reste vide).
+ */
+export async function authFacultative(req: Request, _res: Response, next: NextFunction) {
+  if (req.headers.authorization?.startsWith("Bearer ")) {
+    try {
+      await authentifier(req);
+    } catch {
+      // Visiteur.
+    }
+  }
+  next();
+}
+
+/** Vérifie le jeton de la requête et y range le compte, ou lève une 401. */
+async function authentifier(req: Request) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw new ApiError(401, "Missing or invalid authorization header", "MISSING_AUTH");
+  }
+
+  const token = authHeader.slice(7);
+  const payload = AuthService.verifyAccessToken(token);
+
+  // Un jeton signé pour un compte qui n'existe plus n'est pas une permission
+  // manquante : c'est une session à refaire, et le dire en 401 est la seule
+  // façon pour le navigateur de le comprendre.
+  const compte = await compteDuJeton(payload.userId);
+
+  if (!compte || jetonPerime(compte, payload.iat)) {
+    throw new ApiError(
+      401,
+      "Votre session n'est plus valable. Reconnectez-vous.",
+      "SESSION_INVALIDE"
+    );
+  }
+
+  // Une session fermée — déconnexion, sur ce domaine ou un autre — ne vaut
+  // plus nulle part. Les jetons émis avant le SSO n'en portent pas.
+  if (payload.sid && !(await SsoService.sessionActive(payload.sid))) {
+    throw new ApiError(
+      401,
+      "Votre session n'est plus valable. Reconnectez-vous.",
+      "SESSION_INVALIDE"
+    );
+  }
+
+  req.userId = payload.userId;
+  // orgId, storeIds, and role are no longer in JWT; routes must load them from DB
+  req.user = payload;
+  req.compte = compte;
 }
 
 export function requireRole(...roles: string[]) {

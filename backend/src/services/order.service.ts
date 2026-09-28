@@ -31,6 +31,8 @@ export interface OrderData {
   deliveryLat?: number;
   deliveryLng?: number;
   customerId?: string;
+  /** Le compte connecté qui passe la commande, s'il y en a un. */
+  userId?: string;
   /** Le code saisi par le client. La remise est calculée par le serveur. */
   promoCode?: string;
   /** Le moyen de paiement retenu, parmi ceux que le commerçant propose. */
@@ -50,13 +52,6 @@ export interface OrderData {
 }
 
 export class OrderService {
-  /**
-   * Rattache la commande à une fiche client, créée au besoin.
-   *
-   * Les clients sont globaux et identifiés par leur e-mail : une commande
-   * passée sans compte doit tout de même alimenter la clientèle du commerçant,
-   * sans quoi son carnet d'adresses reste vide.
-   */
   /**
    * Le taux de commission qui s'applique à cette commande, maintenant.
    *
@@ -118,19 +113,53 @@ export class OrderService {
     };
   }
 
+  /**
+   * Rattache la commande à une fiche client, créée au besoin.
+   *
+   * Les clients sont globaux et identifiés par leur e-mail : une commande
+   * passée sans compte doit tout de même alimenter la clientèle du commerçant,
+   * sans quoi son carnet d'adresses reste vide.
+   *
+   * La fiche d'un compte, elle, ne reçoit que les commandes de ce compte
+   * connecté : taper l'adresse d'autrui au passage de commande ajoutait la
+   * commande à son historique. Une telle commande reste sans fiche ; elle
+   * garde l'adresse saisie, qui reçoit les courriels de suivi.
+   */
   private static async resoudreClient(data: OrderData) {
     if (data.customerId) return data.customerId;
+
+    // Le compte connecté commande pour lui : sa propre fiche, quelle que soit
+    // l'adresse de contact saisie.
+    const compte = data.userId
+      ? await db.user.findUnique({ where: { id: data.userId }, select: { id: true, email: true } })
+      : null;
+
+    if (compte) {
+      const propre = await db.customer.findUnique({
+        where: { userId: compte.id },
+        select: { id: true, deletedAt: true },
+      });
+      if (propre && !propre.deletedAt) return propre.id;
+    }
+
     if (!data.customerEmail) return undefined;
 
     const existant = await db.customer.findUnique({
       where: { email: data.customerEmail },
-      select: { id: true },
+      select: { id: true, userId: true },
     });
 
-    if (existant) return existant.id;
+    if (existant) {
+      // Fiche invité : les commandes sans compte s'y regroupent. Fiche d'un
+      // autre compte : on n'y touche pas.
+      return !existant.userId || existant.userId === compte?.id ? existant.id : undefined;
+    }
 
     const cree = await db.customer.create({
       data: {
+        // Le compte connecté qui commande avec sa propre adresse : la fiche
+        // naît rattachée. Sinon, fiche invité.
+        userId: compte && compte.email === data.customerEmail ? compte.id : null,
         name: data.customerName,
         email: data.customerEmail,
         phone: data.customerPhone,

@@ -302,7 +302,8 @@ function CheckoutBody({
     try {
       const res = await apiFetch<{ order: { id: string; totalAmount: number | string; paiementEnLigne?: boolean } }>(
         '/api/orders',
-        null,
+        // Le jeton range la commande dans l'historique du compte.
+        token,
         {
           method: 'POST',
           body: {

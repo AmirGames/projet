@@ -358,6 +358,14 @@ rôles (SuperAdmin, Administrateur, Support…).
 > premier robot venu prenait la plateforme, et deux inscriptions simultanées en
 > créaient deux.
 
+### La confirmation d'adresse
+
+`REQUIRE_EMAIL_VERIFICATION` décide si la connexion attend que l'adresse soit
+confirmée. Non définie, elle est exigée en production (`NODE_ENV=production`)
+et pas en développement ; `true` ou `false` l'imposent ou la suspendent
+partout. Quelle que soit sa valeur, une fiche client née d'une commande sans
+compte ne rejoint le compte de même adresse qu'après confirmation.
+
 ### Facultatif : les courriels en développement
 
 Confirmation d'adresse et mot de passe oublié envoient de vrais messages.

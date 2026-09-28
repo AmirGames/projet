@@ -4,7 +4,7 @@ import { PourboireService } from "../services/pourboire.service";
 import { champEmail } from "../utils/validation";
 import { OrderService } from "../services/order.service";
 import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware } from "../middleware/auth";
+import { authFacultative, authMiddleware } from "../middleware/auth";
 import { limiterCadence } from "../middleware/throttle";
 import type { Appelant } from "../services/suivi-commande.service";
 import { logger } from "../config/logger";
@@ -108,14 +108,15 @@ const updateOrderStatusSchema = z.object({
   status: z.enum(["PENDING", "ACCEPTED", "PREPARING", "REJECTED", "READY", "COMPLETED"]),
 });
 
-// POST /orders - Create order (public, for guest checkout)
-router.post("/", async (req: Request, res: Response, next: NextFunction) => {
+// POST /orders - Create order (public, for guest checkout). Le jeton, s'il y
+// en a un, rattache la commande à la fiche du compte connecté.
+router.post("/", authFacultative, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { conditionsAcceptees: _accepte, ...body } = createOrderSchema.parse(req.body);
 
     logger.info("Creating order", { customerName: body.customerName, storeId: body.storeId });
 
-    const order = await OrderService.create(body);
+    const order = await OrderService.create({ ...body, userId: req.userId });
 
     await enregistrerAcceptation(req, {
       email: body.customerEmail,

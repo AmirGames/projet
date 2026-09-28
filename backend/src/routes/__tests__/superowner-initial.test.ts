@@ -140,6 +140,7 @@ decrire("SEC-03 — superowner initial", () => {
       expect(resultat.statut).toBe("promu");
       const apres = await db.user.findUniqueOrThrow({ where: { email: "boss@exemple.fr" } });
       expect(apres.isSuperOwner).toBe(true);
+      expect(apres.emailVerified).toBe(true);
       expect(apres.passwordHash).toBe(avant.passwordHash);
     });
 

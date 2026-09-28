@@ -48,15 +48,8 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
         id: expect.any(String),
         email: 'test@example.com',
         name: 'Test User',
-        // L'inscription ne donne aucun droit sur la plateforme (SEC-03).
-        isSuperOwner: false,
-        isSystemAdmin: false,
       });
-      expect(res.body.customer).toEqual({
-        id: expect.any(String),
-        name: 'Test User',
-        email: 'test@example.com',
-      });
+      expect(res.body).not.toHaveProperty('customer');
 
       testAccessToken = res.body.accessToken;
       testUserId = res.body.user.id;
@@ -114,7 +107,9 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
           password: 'TestPassword123!',
         });
 
-      expect(res.body.user.isSuperOwner).toBe(false);
+      // La réponse ne dit plus les droits d'administration : on les lit en base.
+      const second = await db.user.findUnique({ where: { id: res.body.user.id } });
+      expect(second?.isSuperOwner).toBe(false);
     });
   });
 

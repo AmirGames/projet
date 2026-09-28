@@ -14,6 +14,7 @@ import { trierProduitsSelonCategorie } from "../services/category.service";
 import { DeliveryZoneService } from "../services/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";
 import { CustomerAccountService } from "../services/customer-account.service";
+import { ficheClientDuCompte } from "../services/fiche-client.service";
 import { avisARedemander, avisRestaurantParCommerce } from "../services/avis-client.service";
 import { avecLaVraieNote } from "../services/review.service";
 import { CustomerCartService, panierSchema } from "../services/customer-cart.service";
@@ -533,54 +534,13 @@ router.get("/stores/:id/menu", async (req: Request, res: Response, next: NextFun
 
 // GET /api/client/me/favorites - Get customer favorites (protected)
 /**
- * Résout la fiche client du compte connecté.
- *
- * `User` et `Customer` sont deux tables distinctes sans clé étrangère entre
- * elles ; l'e-mail, unique des deux côtés, fait le lien — c'est aussi la clé
- * utilisée à la création d'une commande.
+ * La fiche client du compte connecté, créée à la première visite. Une fiche
+ * née d'une commande sans compte n'est rattachée qu'une fois l'adresse
+ * confirmée (voir fiche-client.service.ts).
  */
 async function clientConnecte(req: Request) {
   const userId = req.userId || (req as any).user?.userId;
-
-  const utilisateur = userId
-    ? await db.user.findUnique({ where: { id: userId }, select: { id: true, email: true, name: true } })
-    : null;
-
-  if (!utilisateur) {
-    throw new ApiError(401, "Session invalide", "UNAUTHORIZED");
-  }
-
-  const client = await db.customer.findUnique({ where: { email: utilisateur.email } });
-
-  /**
-   * Tout compte peut commander : seule l'inscription « client » créait la
-   * fiche, et un livreur ou un commerçant qui ouvrait l'espace client tombait
-   * sur « aucune fiche ». Elle est créée à la première visite.
-   */
-  if (!client) {
-    return db.customer.create({
-      data: {
-        userId: utilisateur.id,
-        name: utilisateur.name || utilisateur.email.split("@")[0],
-        email: utilisateur.email,
-      },
-    });
-  }
-
-  if (client.deletedAt) {
-    throw new ApiError(404, "Aucune fiche client pour ce compte", "CUSTOMER_NOT_FOUND");
-  }
-
-  // Fiche née d'une commande passée sans compte : on la rattache au compte,
-  // pour que /auth/me/roles la voie aussi.
-  if (!client.userId) {
-    const dejaLiee = await db.customer.findUnique({ where: { userId: utilisateur.id }, select: { id: true } });
-    if (!dejaLiee) {
-      return db.customer.update({ where: { id: client.id }, data: { userId: utilisateur.id } });
-    }
-  }
-
-  return client;
+  return ficheClientDuCompte(userId, { creer: true });
 }
 
 const profilSchema = z.object({
