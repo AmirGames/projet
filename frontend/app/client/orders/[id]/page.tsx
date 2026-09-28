@@ -1,6 +1,7 @@
 'use client';
 
 import DetailDuTotal from '@/components/DetailDuTotal';
+import { PourboireApresLivraison } from '@/components/PourboireApresLivraison';
 import { signalerErreur } from '@/lib/erreurs';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -21,6 +22,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Order {
   id: string;
   status: string;
+  customerName?: string;
+  customerEmail?: string;
+  /** Le pourboire laissé en commandant, payé avec la commande. */
+  tipAmount?: number | string;
   totalAmount: number;
   /** Les frais de service de la plateforme, compris dans le total. */
   serviceFeeAmount?: number | string;
@@ -432,6 +437,13 @@ export default function OrderTrackingPage() {
                   </p>
                 </div>
               )}
+
+              <PourboireApresLivraison
+                orderId={order.id}
+                customerEmail={order.customerEmail}
+                customerName={order.customerName}
+                cle={delivery?.status}
+              />
 
               <div className="pt-4 border-t border-gray-700">
                 <DetailDuTotal commande={order} />

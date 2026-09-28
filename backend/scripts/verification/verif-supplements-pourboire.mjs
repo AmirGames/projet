@@ -7,6 +7,7 @@
 // intention de paiement n'est créée ici).
 
 import { inscription,
+  API,
   titre,
   check,
   j,
@@ -325,6 +326,107 @@ if (avecPourboire.status === 400 && corpsPourboire?.code === 'TIP_NOT_AVAILABLE'
 
     const course = await j(await get(`/api/drivers/deliveries/${recherche.data.deliveryId}`, L));
     check('le livreur voit la part du pourboire', course?.data?.pourboire === 2, JSON.stringify(course?.data)?.slice(0, 200));
+  }
+
+  // ===== Le pourboire laissé après la livraison =====
+
+  titre('Le pourboire après la livraison n’est proposé qu’une fois livrée');
+  const situation = async () => (await j(await get(`/api/orders/${idPourboire}/pourboire`)))?.data;
+  const avantLivraison = await situation();
+  check('déjà donné en commandant : rien à proposer', avantLivraison?.possible === false && avantLivraison?.raison === 'DEJA_DONNE', JSON.stringify(avantLivraison));
+
+  // La commande livrée, sans pourboire en commandant : le cas à couvrir. Le
+  // parcours de livraison lui-même se vérifie dans verif-parcours-livreur.
+  await sqlExec(`UPDATE "Order" SET "tipAmount" = 0 WHERE id = '${idPourboire}'`);
+  const pasLivree = await situation();
+  check('pas encore livrée : pas encore proposé', pasLivree?.possible === false && pasLivree?.raison === 'PAS_LIVREE', JSON.stringify(pasLivree));
+
+  await sqlExec(`UPDATE "OrderDelivery" SET status = 'DELIVERED', "deliveryTime" = NOW() WHERE "orderId" = '${idPourboire}'`);
+  const livree = await situation();
+  check('livrée : le pourboire est proposé', livree?.possible === true, JSON.stringify(livree));
+  check('au nom du livreur', livree?.livreur === 'L', JSON.stringify(livree));
+  check('les pourcentages portent sur les 10 € d’articles', livree?.montantArticles === 10, JSON.stringify(livree));
+
+  const tropPetit = await post(`/api/orders/${idPourboire}/pourboire`, { montant: 0.2 });
+  check('20 centimes : refusé', tropPetit.status === 400 && (await j(tropPetit))?.code === 'INVALID_TIP', `${tropPetit.status}`);
+  const tropGrand = await post(`/api/orders/${idPourboire}/pourboire`, { montant: 60 });
+  check('60 € : refusé', tropGrand.status === 400 && (await j(tropGrand))?.code === 'INVALID_TIP', `${tropGrand.status}`);
+
+  titre('Le webhook encaisse le pourboire à part');
+  // L'intention elle-même se crée chez Stripe ; la ligne qu'elle laisse est
+  // posée ici, telle que PourboireService.creerIntention l'écrit.
+  const driverId = await sqlScalaire(`SELECT "driverId" FROM "OrderDelivery" WHERE "orderId" = '${idPourboire}'`);
+  const intention = `pi_pourboire_${uniq}`;
+  await sqlExec(
+    `INSERT INTO "DriverTip" (id, "orderId", "driverId", amount, status, "stripePaymentIntentId", "updatedAt")
+     VALUES ('tip_${uniq}', '${idPourboire}', '${driverId}', 1.5, 'PENDING', '${intention}', NOW())`
+  );
+  const gainsAvant = Number(await sqlScalaire(`SELECT "totalEarnings" FROM "Driver" WHERE id = '${driverId}'`));
+
+  const SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!SECRET) {
+    console.log('   (STRIPE_WEBHOOK_SECRET absent : le webhook n’est pas joué)');
+  } else {
+    const Stripe = (await import('stripe')).default;
+    const stripe = new Stripe('sk_test_verification');
+    const evenement = {
+      id: `evt_${uniq}`,
+      object: 'event',
+      type: 'payment_intent.succeeded',
+      data: {
+        object: {
+          id: intention,
+          object: 'payment_intent',
+          amount: 150,
+          amount_received: 150,
+          status: 'succeeded',
+          metadata: { orderId: idPourboire, pourboire: '1', driverId },
+        },
+      },
+    };
+    const corps = JSON.stringify(evenement);
+    const envoyer = () =>
+      fetch(`${API}/api/payments/webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'stripe-signature': stripe.webhooks.generateTestHeaderString({ payload: corps, secret: SECRET }),
+        },
+        body: corps,
+      });
+    const recu = await envoyer();
+    check('le webhook l’accepte', recu.status === 200, `${recu.status} ${await recu.text()}`);
+    await envoyer();
+
+    check('le pourboire est payé', (await sqlScalaire(`SELECT status FROM "DriverTip" WHERE id = 'tip_${uniq}'`)) === 'PAID', '');
+    check(
+      'il n’est pas pris pour le paiement de la commande',
+      (await sqlScalaire(`SELECT COUNT(*) FROM "Payment" WHERE "stripePaymentIntentId" = '${intention}'`)) === '0',
+      'un paiement de commande a été créé'
+    );
+    const gainsApres = Number(await sqlScalaire(`SELECT "totalEarnings" FROM "Driver" WHERE id = '${driverId}'`));
+    check('les gains du livreur grandissent une seule fois, webhook rejoué', Math.abs(gainsApres - gainsAvant - 1.5) < 0.001, `${gainsAvant} → ${gainsApres}`);
+
+    const apres = await situation();
+    check('il n’est plus proposé, et on remercie', apres?.possible === false && apres?.donne?.quand === 'APRES_LIVRAISON' && apres?.donne?.montant === 1.5, JSON.stringify(apres));
+    const encore = await post(`/api/orders/${idPourboire}/pourboire`, { montant: 2 });
+    check('un second pourboire est refusé', encore.status === 409, `${encore.status}`);
+
+    titre('Il rejoint le relevé du livreur');
+    const gains = await j(await get('/api/drivers/earnings', L));
+    const ligne = (gains?.deliveries || []).find((c) => c.orderId === idPourboire);
+    check('« Mes gains » le montre sur la course', ligne?.pourboireApres === 1.5, JSON.stringify(ligne));
+    const du = await j(await get('/api/drivers/payouts', L));
+    check('il est dû', (du?.data?.pourboires || du?.pourboires || []).some((p) => p.montant === 1.5), JSON.stringify(du)?.slice(0, 300));
+
+    const debut = new Date(Date.now() - 86400000).toISOString();
+    const fin = new Date(Date.now() + 60000).toISOString();
+    const arrete = await j(await post('/api/superowner/payouts/draw', { periodStart: debut, periodEnd: fin, driverId }, S));
+    check('un relevé est arrêté', arrete?.payouts === 1, JSON.stringify(arrete));
+    const releveId = await sqlScalaire(`SELECT id FROM "DriverPayout" WHERE "driverId" = '${driverId}' ORDER BY "createdAt" DESC LIMIT 1`);
+    check('le relevé porte le pourboire', (await sqlScalaire(`SELECT "payoutId" FROM "DriverTip" WHERE id = 'tip_${uniq}'`)) === releveId, JSON.stringify(arrete)?.slice(0, 300));
+    const montantReleve = Number(await sqlScalaire(`SELECT amount FROM "DriverPayout" WHERE id = '${releveId}'`));
+    check('et son montant l’inclut : course + 1,50 €', Math.abs(montantReleve - (fraisCommande + 2 + 1.5)) < 0.001, `${montantReleve}`);
   }
 }
 

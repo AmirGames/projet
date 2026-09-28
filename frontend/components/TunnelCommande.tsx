@@ -47,6 +47,7 @@ import { useAdresseLivraisonEnregistree } from '@/lib/adresseLivraison';
 import { cleDeLigne, nombreDArticles, totalDuPanier, type LignePanier } from '@/lib/paniers';
 import { useAuth } from '@/lib/auth-context';
 import { StripePayment } from '@/components/stripe-payment';
+import { ChoixPourboire } from '@/components/ChoixPourboire';
 import { DelaiAnnulation } from '@/components/DelaiAnnulation';
 import AcceptationConditions from '@/components/AcceptationConditions';
 
@@ -67,9 +68,6 @@ interface Livraison {
   mode?: 'PLATFORM' | 'OWN';
 }
 
-/** Les montants proposés d'un clic ; « Autre » laisse saisir le sien. */
-const POURBOIRES_PROPOSES = [0, 1, 2, 3, 5];
-const POURBOIRE_MAXIMUM = 50;
 /** Sans clé Stripe, rien ne se paie en ligne : pas de pourboire possible. */
 const PAIEMENT_EN_LIGNE = Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
@@ -388,7 +386,6 @@ export function TunnelCommande({
    * cas ; il revient en entier au livreur, sur son relevé.
    */
   const [pourboireChoisi, setPourboire] = useState(0);
-  const [pourboireLibre, setPourboireLibre] = useState(false);
   const moyenRetenu = moyens.find((m) => m.id === moyenChoisi);
   const pourboirePossible =
     PAIEMENT_EN_LIGNE &&
@@ -1269,58 +1266,9 @@ export function TunnelCommande({
                 <span>Pourboire pour le livreur</span>
                 <span>{pourboire > 0 ? euro(pourboire) : '—'}</span>
               </div>
-              <div role="group" aria-label="Pourboire pour le livreur" className="mt-2 flex flex-wrap gap-2">
-                {POURBOIRES_PROPOSES.map((montant) => {
-                  const retenu = !pourboireLibre && pourboireChoisi === montant;
-                  return (
-                    <button
-                      key={montant}
-                      type="button"
-                      aria-pressed={retenu}
-                      onClick={() => {
-                        setPourboireLibre(false);
-                        setPourboire(montant);
-                      }}
-                      className={`px-3 py-1.5 rounded-full border text-sm transition ${
-                        retenu
-                          ? 'border-red-500 bg-red-500/20 text-red-200'
-                          : 'border-gray-600 text-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      {montant === 0 ? 'Aucun' : euro(montant)}
-                    </button>
-                  );
-                })}
-                <button
-                  type="button"
-                  aria-pressed={pourboireLibre}
-                  onClick={() => setPourboireLibre(true)}
-                  className={`px-3 py-1.5 rounded-full border text-sm transition ${
-                    pourboireLibre
-                      ? 'border-red-500 bg-red-500/20 text-red-200'
-                      : 'border-gray-600 text-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  Autre
-                </button>
-                {pourboireLibre && (
-                  <input
-                    type="number"
-                    min={0}
-                    max={POURBOIRE_MAXIMUM}
-                    step="0.5"
-                    inputMode="decimal"
-                    aria-label="Montant du pourboire"
-                    value={pourboireChoisi || ''}
-                    onChange={(e) => {
-                      const saisi = Number(e.target.value.replace(',', '.'));
-                      setPourboire(
-                        Number.isFinite(saisi) ? Math.min(Math.max(saisi, 0), POURBOIRE_MAXIMUM) : 0
-                      );
-                    }}
-                    className="w-24 bg-gray-700 border border-gray-600 rounded-full px-3 py-1.5 text-sm text-white focus:outline-none focus:border-red-500"
-                  />
-                )}
+              <div className="mt-2">
+                {/* En % des articles, le montant écrit dessous. */}
+                <ChoixPourboire base={Math.max(0, sousTotal - montantRemise)} onChange={setPourboire} />
               </div>
               <p className="mt-1 text-xs text-gray-500">Il revient en entier à votre livreur.</p>
             </div>

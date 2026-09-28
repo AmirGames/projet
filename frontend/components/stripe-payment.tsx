@@ -21,6 +21,11 @@ interface StripePaymentProps {
    * quelques secondes pour se raviser, puis appelle `payer`.
    */
   demanderConfirmation?: (payer: () => void) => void;
+  /**
+   * Crée l'intention à payer et rend son secret. Par défaut, celle de la
+   * commande ; le pourboire après livraison passe sa propre route.
+   */
+  creerIntention?: () => Promise<string>;
 }
 
 function StripePaymentForm({
@@ -30,6 +35,7 @@ function StripePaymentForm({
   customerName,
   onPaymentComplete,
   demanderConfirmation,
+  creerIntention,
 }: StripePaymentProps) {
   const t = useTranslations('stripePayment');
   const stripe = useStripe();
@@ -65,18 +71,23 @@ function StripePaymentForm({
     setError('');
 
     try {
-      // Le serveur lit le montant sur la commande : seul son identifiant part.
-      const intentResponse = await fetch(`${API_URL}/api/payments/intent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId }),
-      });
+      let clientSecret: string;
+      if (creerIntention) {
+        clientSecret = await creerIntention();
+      } else {
+        // Le serveur lit le montant sur la commande : seul son identifiant part.
+        const intentResponse = await fetch(`${API_URL}/api/payments/intent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId }),
+        });
 
-      if (!intentResponse.ok) {
-        throw new Error(t('intentFailed'));
+        if (!intentResponse.ok) {
+          throw new Error(t('intentFailed'));
+        }
+
+        clientSecret = (await intentResponse.json()).clientSecret;
       }
-
-      const { clientSecret } = await intentResponse.json();
 
       // Confirm payment with Stripe
       const cardElement = elements.getElement(CardElement);

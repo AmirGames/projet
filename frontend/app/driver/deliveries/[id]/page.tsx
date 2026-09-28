@@ -90,6 +90,8 @@ interface Delivery {
   payout?: number;
   /** La part du gain laissée en pourboire par le client (déjà comprise). */
   pourboire?: number;
+  /** Laissé après la livraison, en plus du gain de la course. */
+  pourboireApres?: number;
   latitude?: number;
   longitude?: number;
   items?: any[];
@@ -839,6 +841,11 @@ export default function DeliveryTrackingPage() {
                 <p className="text-green-400 text-2xl font-bold">{euro(delivery.payout || 0)}</p>
                 {(delivery.pourboire ?? 0) > 0 && (
                   <p className="text-green-300 text-sm mt-1">dont {euro(delivery.pourboire!)} de pourboire 🙏</p>
+                )}
+                {(delivery.pourboireApres ?? 0) > 0 && (
+                  <p className="text-green-300 text-sm mt-1">
+                    + {euro(delivery.pourboireApres!)} de pourboire laissé après la livraison 🎉
+                  </p>
                 )}
               </div>
 
