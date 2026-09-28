@@ -93,6 +93,9 @@ services:
     environment:
       # Même heure que l'API pour les pages rendues côté serveur.
       TZ: ${TZ:-Europe/Paris}
+      # Côté serveur (connexion unique, plan du site), l'API se joint
+      # directement, sans ressortir par Internet.
+      API_INTERNAL_URL: http://backend:3001
     depends_on:
       - backend
 

@@ -7,6 +7,7 @@ import { telephoneInternational } from '@/lib/pays-infos';
 import AcceptationConditions from '@/components/AcceptationConditions';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { confierSessionCentrale } from '@/lib/sso';
 import { useTypesDeCommerce } from '@/lib/types-commerce';
 import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
@@ -209,15 +210,18 @@ export default function MerchantRegisterPage() {
       if (data.accessToken) {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('userEmail', formData.email);
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+        if (data.organizationId) localStorage.setItem('currentOrgId', data.organizationId);
       }
 
-      // Redirect after 2 seconds
-      setTimeout(() => {
-        if (data.user?.isSuperOwner) {
-          router.push('/superowner');
-        } else {
-          router.push(`/merchant/${data.organizationId}/dashboard`);
-        }
+      // Redirect after 2 seconds — en passant par zupone.com, qui garde la
+      // session pour les autres domaines du site.
+      setTimeout(async () => {
+        const destination = data.user?.isSuperOwner
+          ? '/superowner'
+          : `/merchant/${data.organizationId}/dashboard`;
+        if (data.accessToken && (await confierSessionCentrale(data.accessToken, destination))) return;
+        router.push(destination);
       }, 2000);
     } catch (error) {
       setApiError('Une erreur est survenue. Veuillez réessayer.');

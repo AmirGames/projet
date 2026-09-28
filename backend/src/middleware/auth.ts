@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { AuthService, JwtPayload } from "../services/auth.service";
 import { ApiError } from "./errorHandler";
 import { db } from "../services/db";
+import { SsoService } from "../services/sso.service";
 import type { Acces } from "../services/permissions-plateforme.service";
 
 /** Ce que le jeton ne dit pas : le compte existe-t-il encore, et qu'est-il. */
@@ -107,6 +108,16 @@ export async function authMiddleware(req: Request, _res: Response, next: NextFun
     const compte = await compteDuJeton(payload.userId);
 
     if (!compte || jetonPerime(compte, payload.iat)) {
+      throw new ApiError(
+        401,
+        "Votre session n'est plus valable. Reconnectez-vous.",
+        "SESSION_INVALIDE"
+      );
+    }
+
+    // Une session fermée — déconnexion, sur ce domaine ou un autre — ne vaut
+    // plus nulle part. Les jetons émis avant le SSO n'en portent pas.
+    if (payload.sid && !(await SsoService.sessionActive(payload.sid))) {
       throw new ApiError(
         401,
         "Votre session n'est plus valable. Reconnectez-vous.",

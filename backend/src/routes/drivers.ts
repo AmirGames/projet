@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { SsoService } from "../services/sso.service";
 import { ibanNormalise, ibanValide } from "../utils/sepa";
 import { db } from "../services/db";
 import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
@@ -145,8 +146,7 @@ router.post("/register", limiterInscriptions, async (req: Request, res: Response
 
     // Un livreur n'appartient à aucune organisation : le jeton ne porte donc
     // ni orgId ni boutique.
-    const accessToken = AuthService.generateAccessToken(utilisateur.id);
-    const refreshToken = AuthService.generateRefreshToken(utilisateur.id);
+    const { accessToken, refreshToken } = await SsoService.connecter(utilisateur.id);
 
     res.status(201).json({
       message: "Inscription réussie",

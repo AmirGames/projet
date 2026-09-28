@@ -5,6 +5,8 @@ import { ApiError } from "../middleware/errorHandler";
 
 export interface JwtPayload {
   userId: string;
+  /** La session de connexion (SessionConnexion) : absente des jetons émis avant le SSO. */
+  sid?: string;
   iat?: number;
   exp?: number;
 }
@@ -28,9 +30,9 @@ export class AuthService {
   /**
    * Generate access token (JWT)
    */
-  static generateAccessToken(userId: string): string {
+  static generateAccessToken(userId: string, sid?: string): string {
     const env = getEnv();
-    const token = (jwt.sign as any)({ userId }, env.JWT_SECRET, {
+    const token = (jwt.sign as any)(sid ? { userId, sid } : { userId }, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN,
       algorithm: "HS256",
     });
@@ -40,9 +42,9 @@ export class AuthService {
   /**
    * Generate refresh token (JWT)
    */
-  static generateRefreshToken(_userId: string): string {
+  static generateRefreshToken(userId: string, sid?: string): string {
     const env = getEnv();
-    const token = (jwt.sign as any)({ userId: _userId }, env.JWT_REFRESH_SECRET, {
+    const token = (jwt.sign as any)(sid ? { userId, sid } : { userId }, env.JWT_REFRESH_SECRET, {
       expiresIn: env.JWT_REFRESH_EXPIRES_IN,
       algorithm: "HS256",
     });
@@ -73,13 +75,13 @@ export class AuthService {
   /**
    * Verify and decode refresh token
    */
-  static verifyRefreshToken(token: string): { userId: string; iat?: number } {
+  static verifyRefreshToken(token: string): { userId: string; sid?: string; iat?: number } {
     const env = getEnv();
     try {
       const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET, {
         algorithms: ["HS256"],
       });
-      return decoded as { userId: string; iat?: number };
+      return decoded as { userId: string; sid?: string; iat?: number };
     } catch (err) {
       if (err instanceof jwt.TokenExpiredError) {
         throw new ApiError(401, "Refresh token expired", "REFRESH_TOKEN_EXPIRED");

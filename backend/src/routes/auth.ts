@@ -6,6 +6,8 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { champEmail, champMotDePasse, signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation";
 import { AuthService } from "../services/auth.service";
+import { SsoService } from "../services/sso.service";
+import { compteConnecte } from "../services/compte-connecte";
 import { UserService } from "../services/user.service";
 import { ApiError } from "../middleware/errorHandler";
 import { authMiddleware, compteDuJeton, jetonPerime, oublierCompte } from "../middleware/auth";
@@ -103,10 +105,9 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
             },
           });
 
-    // Generate tokens
-    const accessToken = AuthService.generateAccessToken(user.id);
-
-    const refreshToken = AuthService.generateRefreshToken(user.id);
+    // Une session par connexion : les jetons la portent, et la fermer les
+    // invalide sur tous les domaines (voir sso.service.ts).
+    const { accessToken, refreshToken } = await SsoService.connecter(user.id);
 
     res.status(201).json({
       message: "Compte créé avec succès",
@@ -175,47 +176,18 @@ router.post("/login", limiterConnexions, async (req: Request, res: Response, nex
       details: user.isSuperOwner ? "Connexion superowner" : "Connexion réussie",
     });
 
-    // Get user's organizations
-    const memberships = await UserService.getUserOrganizations(user.id);
+    // Le compte et ses espaces : refuse un compte rattaché à aucun espace.
+    const compteOuvert = await compteConnecte(user.id);
 
-    // Tous les comptes n'appartiennent pas à une organisation : un livreur,
-    // par exemple, n'en a aucune. Le refuser ici l'empêchait de se connecter.
-    const primaryMembership = memberships[0];
-
-    const livreur = primaryMembership
-      ? null
-      : await db.driver.findUnique({ where: { userId: user.id }, select: { id: true } });
-
-    // Check if user has a customer profile (all users get one at signup)
-    const customer = !primaryMembership && !livreur
-      ? await db.customer.findUnique({ where: { userId: user.id }, select: { id: true } })
-      : null;
-
-    if (!primaryMembership && !livreur && !customer && !user.isSuperOwner && !user.isSystemAdmin) {
-      throw new ApiError(403, "Ce compte n'est rattaché à aucun espace", "NO_WORKSPACE");
-    }
-
-    // Generate tokens
-    const accessToken = AuthService.generateAccessToken(user.id);
-
-    const refreshToken = AuthService.generateRefreshToken(user.id);
+    // Une session par connexion : les jetons la portent, et la fermer les
+    // invalide sur tous les domaines (voir sso.service.ts).
+    const { accessToken, refreshToken } = await SsoService.connecter(user.id);
 
     res.json({
       message: "Connexion réussie",
       accessToken,
       refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isSuperOwner: user.isSuperOwner,
-        isSystemAdmin: user.isSystemAdmin,
-        emailVerified: user.emailVerified,
-      },
-      organization: primaryMembership
-        ? { id: primaryMembership.org.id, name: primaryMembership.org.name }
-        : null,
-      driver: livreur ? { id: livreur.id } : null,
+      ...compteOuvert,
     });
   } catch (err) {
     next(err);
@@ -228,6 +200,12 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
     const body = refreshTokenSchema.parse(req.body);
 
     const decoded = AuthService.verifyRefreshToken(body.refreshToken);
+
+    // Session fermée (déconnexion, ici ou sur un autre domaine) : pas de
+    // nouveau jeton.
+    if (decoded.sid && !(await SsoService.sessionActive(decoded.sid))) {
+      throw new ApiError(401, "Votre session n'est plus valable. Reconnectez-vous.", "SESSION_INVALIDE");
+    }
 
     // Le compte a pu disparaître depuis la signature du jeton — base remise à
     // zéro, utilisateur supprimé. Ce n'est pas une ressource introuvable mais
@@ -244,28 +222,9 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
 
     logger.info("Token refreshed", { userId: decoded.userId });
 
-    // Get updated user info and orgs
-    const user = await UserService.getUserById(decoded.userId);
-    const memberships = await UserService.getUserOrganizations(decoded.userId);
+    const compteOuvert = await compteConnecte(decoded.userId);
 
-    // Tous les comptes n'appartiennent pas à une organisation : un livreur,
-    // par exemple, n'en a aucune. Le refuser ici l'empêchait de se connecter.
-    const primaryMembership = memberships[0];
-
-    const livreur = primaryMembership
-      ? null
-      : await db.driver.findUnique({ where: { userId: user.id }, select: { id: true } });
-
-    // Check if user has a customer profile (all users get one at signup)
-    const customer = !primaryMembership && !livreur
-      ? await db.customer.findUnique({ where: { userId: user.id }, select: { id: true } })
-      : null;
-
-    if (!primaryMembership && !livreur && !customer && !user.isSuperOwner && !user.isSystemAdmin) {
-      throw new ApiError(403, "Ce compte n'est rattaché à aucun espace", "NO_WORKSPACE");
-    }
-
-    const accessToken = AuthService.generateAccessToken(user.id);
+    const accessToken = AuthService.generateAccessToken(decoded.userId, decoded.sid);
 
     /**
      * Le compte accompagne le jeton.
@@ -276,18 +235,7 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
      */
     res.json({
       accessToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isSuperOwner: user.isSuperOwner,
-        isSystemAdmin: user.isSystemAdmin,
-        emailVerified: user.emailVerified,
-      },
-      organization: primaryMembership
-        ? { id: primaryMembership.org.id, name: primaryMembership.org.name }
-        : null,
-      driver: livreur ? { id: livreur.id } : null,
+      ...compteOuvert,
     });
   } catch (err) {
     next(err);
@@ -588,9 +536,10 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
       driverId: driver.id,
     });
 
-    // Generate new tokens to reflect driver status
-    const accessToken = AuthService.generateAccessToken(userId);
-    const refreshToken = AuthService.generateRefreshToken(userId);
+    // Generate new tokens to reflect driver status — dans la même session :
+    // devenir livreur n'est pas une nouvelle connexion.
+    const accessToken = AuthService.generateAccessToken(userId, req.user?.sid);
+    const refreshToken = AuthService.generateRefreshToken(userId, req.user?.sid);
 
     res.status(201).json({
       message: "Candidature de livreur soumise avec succès",
@@ -750,10 +699,9 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
       },
     });
 
-    // Generate tokens
-    const accessToken = AuthService.generateAccessToken(user.id);
-
-    const refreshToken = AuthService.generateRefreshToken(user.id);
+    // Une session par connexion : les jetons la portent, et la fermer les
+    // invalide sur tous les domaines (voir sso.service.ts).
+    const { accessToken, refreshToken } = await SsoService.connecter(user.id);
 
     logger.info("Merchant registered successfully", {
       userId: user.id,
@@ -978,6 +926,9 @@ router.post(
       });
 
       oublierCompte(user.id);
+      // Toutes les sessions, cookie de zupone.com compris : celui qui avait le
+      // mot de passe volé ne se fait plus remettre de jetons neufs.
+      await SsoService.fermerToutes(user.id);
       logger.info("Mot de passe réinitialisé", { userId: user.id });
 
       res.json({ message: "Mot de passe modifié. Vous pouvez vous connecter." });
@@ -1048,12 +999,15 @@ router.post(
       });
 
       oublierCompte(user.id);
+      // Les autres sessions ferment aussi pour la connexion unique ; celle-ci
+      // reste ouverte, sur tous ses domaines, avec des jetons neufs.
+      await SsoService.fermerToutes(user.id, req.user?.sid);
 
       // Cette session-ci reste ouverte avec des jetons neufs.
       res.json({
         message: "Mot de passe modifié. Vos autres sessions ont été déconnectées.",
-        accessToken: AuthService.generateAccessToken(user.id),
-        refreshToken: AuthService.generateRefreshToken(user.id),
+        accessToken: AuthService.generateAccessToken(user.id, req.user?.sid),
+        refreshToken: AuthService.generateRefreshToken(user.id, req.user?.sid),
       });
     } catch (err) {
       next(err);

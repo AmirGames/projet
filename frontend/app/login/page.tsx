@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { RAISON_DECONNEXION, useAuth } from "@/lib/auth-context";
+import { confierSessionCentrale, demanderSessionCentrale } from "@/lib/sso";
 import Link from "next/link";
 import { destinationApresConnexion } from "@/lib/espace-utilisateur";
 
@@ -43,6 +44,18 @@ export default function LoginPage() {
   const raisonStockee = useSyncExternalStore(sansAbonnement, lireRaison, () => null);
   const [raison, setRaison] = useState("");
   if (raisonStockee && raisonStockee !== raison) setRaison(raisonStockee);
+
+  /**
+   * Déjà connecté sur un autre domaine du site ? zupone.com le sait : un
+   * aller-retour éclair, et l'on arrive connecté, sans formulaire. Pas après
+   * une session qui vient d'expirer — elle l'est partout, et le message qui
+   * l'explique se perdrait dans le détour.
+   */
+  // Retour ici une fois la session reçue : l'effet « déjà connecté »
+  // ci-dessous choisit alors l'espace, selon le domaine et le compte.
+  useEffect(() => {
+    if (!raisonStockee) demanderSessionCentrale(window.location.pathname + window.location.search);
+  }, [raisonStockee]);
 
   useEffect(() => {
     if (!raisonStockee) return;
@@ -121,7 +134,11 @@ export default function LoginPage() {
       // protégées renvoient aussitôt vers /login.
       await refreshAuth();
 
-      router.replace(destinationApresConnexion({ isSuperOwner }));
+      // La destination dépend du domaine ; on y va en passant par zupone.com,
+      // qui garde la session pour les autres domaines du site.
+      const destination = destinationApresConnexion({ isSuperOwner });
+      if (await confierSessionCentrale(result.accessToken, destination)) return;
+      router.replace(destination);
     } catch (err) {
       setError(t("errorConnection"));
       signalerErreur(err);

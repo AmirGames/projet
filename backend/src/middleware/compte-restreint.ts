@@ -25,6 +25,7 @@ import { verifyToken } from "./auth";
 const CHEMINS_OUVERTS = [
   "/health",
   "/api/auth",
+  "/api/sso",
   "/api/support",
   "/api/notifications",
 ];

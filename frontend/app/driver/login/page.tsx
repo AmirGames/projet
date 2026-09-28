@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { confierSessionCentrale, demanderSessionCentrale } from '@/lib/sso';
 
 import { useTranslations } from 'next-intl';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -21,7 +22,10 @@ export default function DriverLoginPage() {
     const token = localStorage.getItem('driverToken');
     if (token) {
       router.push('/driver');
+      return;
     }
+    // Connecté sur un autre domaine du site : zupone.com transmet la session.
+    demanderSessionCentrale('/driver');
   }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -45,7 +49,10 @@ export default function DriverLoginPage() {
       localStorage.setItem('driverToken', data.accessToken);
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('driverUser', JSON.stringify(data.user));
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
 
+      // En passant par zupone.com, qui garde la session pour les autres domaines.
+      if (await confierSessionCentrale(data.accessToken, '/driver')) return;
       router.push('/driver');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de la connexion');

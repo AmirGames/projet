@@ -4,6 +4,7 @@ import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { fermerSessionPartout } from '@/lib/sso';
 
 interface User {
   id: string;
@@ -189,6 +190,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    // Ferme la session sur tous les domaines (le jeton est lu avant d'être
+    // effacé), puis l'efface d'ici.
+    fermerSessionPartout();
     oublierLaSession();
     setUser(null);
   };

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
+import { fermerSessionPartout } from '@/lib/sso';
 import Link from 'next/link';
 import { NotificationBell } from '@/components/NotificationBell';
 import { StoreSwitcher } from '@/components/StoreSwitcher';
@@ -60,6 +61,8 @@ export default function MerchantStoreLayout({ children }: { children: React.Reac
   const { statut: orgStatus, chargement: loadingStatus, restreint } = useStatutCompte(orgId);
 
   const handleLogout = () => {
+    // Ferme la session sur tous les domaines, puis l'efface d'ici.
+    fermerSessionPartout();
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('currentOrgId');
