@@ -141,7 +141,7 @@ await page.waitForTimeout(3500);
 const inconnu = await texte();
 check(
   'on le dit, ou on ramène à la liste',
-  /introuvable/i.test(inconnu) || page.url().includes('/restaurants'),
+  /introuvable/i.test(inconnu) || new URL(page.url()).pathname === '/client',
   `${page.url()} — ${inconnu.slice(0, 300)}`
 );
 
@@ -164,7 +164,7 @@ titre('L’accueil ne pointe plus vers la maquette');
 await page.goto(SITE);
 await page.waitForTimeout(2500);
 
-// Les liens publics portent la région du visiteur (/fr-fr/restaurants) :
+// Les liens publics portent la région du visiteur (/fr-fr/store/…) :
 // on la retire pour comparer les pages elles-mêmes.
 const sansRegion = (lien) => lien?.replace(/^\/[a-z]{2}-[a-z]{2}(?=\/|$)/, '') || lien;
 
@@ -172,10 +172,18 @@ const liens = (await page.locator('a[href]').evaluateAll((a) => a.map((l) => l.g
   sansRegion
 );
 check('aucun lien vers /store nu', !liens.includes('/store'), JSON.stringify(liens.filter((l) => l?.startsWith('/store'))));
-check('il mène à la liste des commerces', liens.includes('/restaurants'), JSON.stringify(liens));
+// Sur un domaine unique, l'accueil public est /client (ACCUEIL, lib/domaines.ts).
+check('il mène à la liste des commerces', liens.includes('/client'), JSON.stringify(liens));
+check('et plus à l’ancienne liste', !liens.includes('/restaurants'), JSON.stringify(liens));
+
+titre('L’ancienne liste des commerces redirige');
+// Elle doublait l'accueil client en moins bien ; ses anciens liens y mènent.
+await page.goto(`${SITE}/restaurants`);
+await page.waitForURL((url) => url.pathname === '/client', { timeout: 15000 });
+check('elle mène à l’accueil client', new URL(page.url()).pathname === '/client', page.url());
 
 titre('La liste des commerces mène à la vitrine unique');
-await page.goto(`${SITE}/restaurants`);
+await page.goto(`${SITE}/client`);
 await page.waitForTimeout(3000);
 
 const liensListe = (

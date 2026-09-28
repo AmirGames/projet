@@ -9,7 +9,6 @@ const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL 
 
 const PAGES_FIXES = [
   '/',
-  '/restaurants',
   '/devenir-commercant',
   '/devenir-livreur',
   '/devenir-chauffeur',

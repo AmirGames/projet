@@ -190,7 +190,7 @@ export default function ClientLayout({
               <div>
                 <h3 className="text-white font-bold mb-4">Commander</h3>
                 <ul className="space-y-2 text-gray-400 text-sm">
-                  <li><Link href="/restaurants" className="text-gray-400 hover:text-white">Commerces</Link></li>
+                  <li><Link href="/client" className="text-gray-400 hover:text-white">Commerces</Link></li>
                   <li><Link href="/client/orders" className="text-gray-400 hover:text-white">Mes commandes</Link></li>
                   <li><Link href="/track" className="text-gray-400 hover:text-white">Suivre une commande</Link></li>
                 </ul>

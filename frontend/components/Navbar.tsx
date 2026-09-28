@@ -1,6 +1,7 @@
 'use client';
 
 import Link from '@/components/LienRegional';
+import { accueilDe } from '@/lib/domaines';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth-context';
@@ -36,7 +37,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-6">
             {!user ? (
               <>
-                <Link href="/restaurants" className="text-gray-300 hover:text-white transition">
+                <Link href={accueilDe('public')} className="text-gray-300 hover:text-white transition">
                   {t('restaurants')}
                 </Link>
                 <Link href="/login" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">
@@ -87,7 +88,7 @@ export default function Navbar() {
             {!user ? (
               <>
                 <Link
-                  href="/restaurants"
+                  href={accueilDe('public')}
                   className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
                 >
                   {t('restaurants')}

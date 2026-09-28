@@ -135,8 +135,8 @@ page.on('console', (m) => {
   if (m.type() === 'error') erreurs.push(`${new URL(page.url()).pathname} : ${m.text()}`);
 });
 
-titre('Depuis la liste des restaurants');
-await page.goto(`${SITE}/restaurants`);
+titre('Depuis la liste des commerces');
+await page.goto(`${SITE}/client`);
 await page.waitForTimeout(3000);
 
 const liste = await page.locator('body').innerText();
