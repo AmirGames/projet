@@ -231,10 +231,11 @@ puis ouvrez `https://zupeat.com`.
 |---|---|
 | `./deploy/zup.sh update` | `git pull` puis reconstruction et redémarrage |
 | `./deploy/zup.sh up` | reconstruit et redémarre (après un changement de `.env.production`) |
-| `./deploy/zup.sh logs [service]` | journaux en direct (`backend`, `frontend`, `caddy`, `postgres`) |
+| `./deploy/zup.sh logs [service]` | journaux en direct (`backend`, `frontend`, `caddy`, `postgres`, `redis`) |
 | `./deploy/zup.sh ps` | état des services |
 | `./deploy/zup.sh restart backend` | redémarre un service |
 | `./deploy/zup.sh psql` | console SQL |
+| `./deploy/zup.sh vapid` | crée les clés du push navigateur dans `.env.production` (une seule fois : les changer rend muets les abonnements existants) |
 | `./deploy/zup.sh backup` | sauvegarde base + fichiers dans `~/sauvegardes` |
 | `./deploy/zup.sh restore ~/sauvegardes/base-….sql.gz` | restaure la base (demande confirmation) |
 
