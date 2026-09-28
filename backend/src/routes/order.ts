@@ -74,24 +74,24 @@ const createOrderSchema = z.object({
   deliveryPostal: z.string().optional(),
   deliveryLat: z.number().min(-90).max(90).optional(),
   deliveryLng: z.number().min(-180).max(180).optional(),
-  totalAmount: z.number().positive("Total doit être positif"),
-  taxAmount: z.number().optional(),
-  feesAmount: z.number().optional(),
+  // Aucun montant n'est lu du client : total, taxe, frais et prix des lignes
+  // sont recalculés par le serveur. Les anciens appelants peuvent encore
+  // envoyer `totalAmount`, `taxAmount`, `feesAmount` ou `items[].price` :
+  // zod écarte ces clés inconnues, elles n'atteignent jamais le service.
   // Le pourboire du livreur ; bornes et conditions vérifiées par le service.
   tipAmount: z.number().nonnegative().max(1000).optional(),
   // Le code est repris tel quel ; c'est le serveur qui calcule la remise.
   promoCode: z.string().optional(),
   paymentMethodId: z.string().optional(),
   notes: z.string().optional(),
-  // Le détail du panier : sans lui, la commande n'enregistrait qu'un montant,
-  // et la facture comme les statistiques de vente restaient vides.
+  // Le détail du panier, obligatoire : sans lui, le total retombait sur le
+  // montant annoncé par le navigateur (une commande à un centime passait).
   items: z
     .array(
       z.object({
         productId: z.string().min(1),
         variantId: z.string().optional(),
-        quantity: z.number().int().positive(),
-        price: z.number().nonnegative(),
+        quantity: z.number().int().positive().max(999),
         // Accepté pour les anciens appelants, jamais enregistré : la ligne
         // garde la copie des suppléments relue par le serveur.
         selectedOptions: z.record(z.string(), z.string()).optional(),
@@ -99,7 +99,8 @@ const createOrderSchema = z.object({
         supplements: z.array(z.string().min(1).max(64)).max(50).optional(),
       })
     )
-    .optional(),
+    .min(1, "Le panier est vide")
+    .max(100, "Trop d'articles dans le panier"),
   ...champAcceptation,
 });
 

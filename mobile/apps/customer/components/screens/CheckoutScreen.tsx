@@ -322,13 +322,10 @@ function CheckoutBody({
             // Le code part tel quel : le serveur recalcule la remise.
             promoCode: discount?.code,
             paymentMethodId: methodId || undefined,
-            totalAmount: Number(total.toFixed(2)),
-            taxAmount: 0,
-            feesAmount: Number(deliveryFee.toFixed(2)),
+            // Aucun montant envoyé : prix, frais et total sont calculés par le serveur.
             items: lines.map((l) => ({
               productId: l.productId,
               quantity: l.quantity,
-              price: l.price,
               ...(l.variantId ? { variantId: l.variantId } : {}),
             })),
           },

@@ -519,23 +519,16 @@ export function TunnelCommande({
         pickupTime: checkoutForm.pickupTime || undefined,
         notes: checkoutForm.notes || undefined,
         // Le code part tel quel : le serveur recalcule la remise, comme il
-        // recalcule les prix et les frais de livraison.
+        // calcule les prix, la taxe, les frais de livraison et le total —
+        // aucun montant n'est envoyé.
         promoCode: remise?.code || undefined,
         paymentMethodId: moyenChoisi || undefined,
-        // L'API attend des euros (Decimal 10,2), pas des centimes. Le total
-        // de la commande, pourboire à part.
-        totalAmount: Number(commandeSeule.toFixed(2)),
-        taxAmount: 0,
-        // Le serveur recalcule ces frais depuis la zone : on envoie ce qu'on a
-        // affiché, il tranche.
-        feesAmount: Number(fraisDeLivraison.toFixed(2)),
         ...(pourboire > 0 ? { tipAmount: pourboire } : {}),
         // Le détail du panier : sans lui la commande n'enregistre qu'un montant,
         // et la facture comme le détail de commande restent vides.
         items: lignes.map((ligne) => ({
           productId: ligne.productId,
           quantity: ligne.quantity,
-          price: ligne.price,
           // La cuisine a besoin de savoir laquelle préparer.
           ...(ligne.variantId ? { variantId: ligne.variantId } : {}),
           // Les suppléments, par identifiant : le serveur les tarife lui-même.
