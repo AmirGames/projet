@@ -10,6 +10,7 @@
 #   ./deploy/zup.sh restore <fichier.sql.gz>
 #   ./deploy/zup.sh psql
 #   ./deploy/zup.sh vapid     crée les clés des notifications push navigateur
+#   ./deploy/zup.sh superowner  crée le superowner (SUPEROWNER_* de .env.production)
 set -euo pipefail
 
 RACINE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -93,8 +94,13 @@ case "${1:-}" in
     dc up -d --no-deps backend
     echo "✅ Clés VAPID enregistrées, API redémarrée."
     ;;
+  superowner)
+    # Sans effet si un superowner existe déjà. Le conteneur le fait aussi à
+    # chaque démarrage : cette commande sert à le faire sans redémarrer.
+    dc exec -T backend node dist/create-superowner.js
+    ;;
   *)
-    sed -n '2,13p' "$0"
+    sed -n '2,14p' "$0"
     exit 1
     ;;
 esac

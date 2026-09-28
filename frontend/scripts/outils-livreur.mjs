@@ -45,10 +45,10 @@ export async function validerLivreur(API, jetonLivreur, jetonPlateforme) {
     body: JSON.stringify({}),
   });
 
-  // Seul le tout premier compte inscrit devient la plateforme. Sur une base
-  // déjà peuplée, le compte créé par le script ne l'est pas, la validation est
-  // refusée, et le script échouerait plus loin sur un « aucun livreur
-  // disponible » qui n'explique rien.
+  // Seul le tout premier compte inscrit devient la plateforme (promu par
+  // inscription.mjs, jamais par l'API). Sur une base déjà peuplée, le compte
+  // créé par le script ne l'est pas, la validation est refusée, et le script
+  // échouerait plus loin sur un « aucun livreur disponible » qui n'explique rien.
   if (validation.status === 403) {
     throw new Error(
       'La validation du livreur a été refusée : le compte plateforme du script ' +

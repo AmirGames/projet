@@ -25,7 +25,7 @@ describe('Auth Routes Integration Tests', () => {
       // 1. User is created with email, name, passwordHash
       // 2. Customer is created linked to user
       // 3. JWT token is returned with only userId
-      // 4. First user is marked as SuperOwner
+      // 4. No account is ever made SuperOwner by signing up (SEC-03)
       // Expected response structure:
       // {
       //   message: "Compte créé avec succès",
@@ -47,9 +47,8 @@ describe('Auth Routes Integration Tests', () => {
       // Should return 400 if email already exists
     });
 
-    it('should mark first user as SuperOwner', async () => {
-      // First user should have isSuperOwner=true
-      // Second user should have isSuperOwner=false
+    it('should never mark a user as SuperOwner', async () => {
+      // Covered by superowner-initial.test.ts
     });
 
     it('should send verification email', async () => {
@@ -204,8 +203,8 @@ describe('Auth Routes Integration Tests', () => {
       // Should create User, Organization, Store, Membership
     });
 
-    it('should mark first user as SuperOwner', async () => {
-      // Same as signup
+    it('should never mark a user as SuperOwner', async () => {
+      // Covered by superowner-initial.test.ts
     });
 
     it('should return complete org and store details', async () => {
@@ -288,7 +287,7 @@ describe('Auth Routes Integration Tests', () => {
  * ✓ Signup Flow
  *   - User creation with password hashing
  *   - Customer profile creation
- *   - SuperOwner flag for first user
+ *   - No SuperOwner flag at signup (see superowner-initial.test.ts)
  *   - Email verification token generation
  *   - JWT token generation with simplified payload
  *

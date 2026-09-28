@@ -8,9 +8,10 @@
  *   marchand@demo.fr  commerçant, formule Premium, deux boulangeries
  *   livreur@demo.fr   livreur, avec une course déjà livrée
  *
- * Suppose une API démarrée (VERIF_API_URL) et une base à part : le premier
- * compte inscrit devient la plateforme, ce qui n'arrive que sur une base
- * vierge. Remettre à zéro avec scripts/verification/reinitialiser.mjs.
+ * Suppose une API démarrée (VERIF_API_URL) et une base à part, vierge : le
+ * premier compte inscrit y est promu plateforme par les outils de
+ * vérification (outils.mjs), jamais par l'API. Remettre à zéro avec
+ * scripts/verification/reinitialiser.mjs.
  */
 
 import { j, post, patch, sqlExec, sqlScalaire, API, validerLivreur, codeDeRemise, inscription } from "./verification/outils.mjs";
