@@ -8,7 +8,7 @@ import { champEmail, champMotDePasse, signupSchema, loginSchema, refreshTokenSch
 import { AuthService } from "../services/auth.service";
 import { UserService } from "../services/user.service";
 import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware, compteDuJeton } from "../middleware/auth";
+import { authMiddleware, compteDuJeton, jetonPerime, oublierCompte } from "../middleware/auth";
 import {
   limiterCadence,
   limiterConnexions,
@@ -227,7 +227,7 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
     // une session à refaire : dit en 404, le navigateur réessayait sans fin.
     const compte = await compteDuJeton(decoded.userId);
 
-    if (!compte) {
+    if (!compte || jetonPerime(compte, decoded.iat)) {
       throw new ApiError(
         401,
         "Votre session n'est plus valable. Reconnectez-vous.",
@@ -942,6 +942,9 @@ router.post(
         where: { id: user.id },
         data: {
           passwordHash,
+          // Quelqu'un d'autre avait peut-être le mot de passe : ses sessions
+          // tombent avec lui.
+          passwordChangedAt: new Date(),
           // Un jeton ne sert qu'une fois.
           resetTokenHash: null,
           resetTokenExpiresAt: null,
@@ -959,6 +962,7 @@ router.post(
         details: "Mot de passe changé via un lien de réinitialisation",
       });
 
+      oublierCompte(user.id);
       logger.info("Mot de passe réinitialisé", { userId: user.id });
 
       res.json({ message: "Mot de passe modifié. Vous pouvez vous connecter." });
@@ -1005,10 +1009,16 @@ router.post(
         throw new ApiError(400, "Le nouveau mot de passe doit être différent de l'actuel.", "SAME_PASSWORD");
       }
 
+      // Arrondi à la seconde, comme `iat` : les jetons remis ci-dessous, émis
+      // dans la même seconde, restent valables ; ceux d'avant ne le sont plus.
+      const changeLe = new Date(Math.floor(Date.now() / 1000) * 1000);
+
       await db.user.update({
         where: { id: user.id },
         data: {
           passwordHash: await AuthService.hashPassword(body.newPassword),
+          // Ferme les sessions ouvertes ailleurs.
+          passwordChangedAt: changeLe,
           // Un lien de réinitialisation en attente ne doit plus servir.
           resetTokenHash: null,
           resetTokenExpiresAt: null,
@@ -1022,7 +1032,14 @@ router.post(
         details: "Mot de passe changé depuis le profil",
       });
 
-      res.json({ message: "Mot de passe modifié." });
+      oublierCompte(user.id);
+
+      // Cette session-ci reste ouverte avec des jetons neufs.
+      res.json({
+        message: "Mot de passe modifié. Vos autres sessions ont été déconnectées.",
+        accessToken: AuthService.generateAccessToken(user.id),
+        refreshToken: AuthService.generateRefreshToken(user.id),
+      });
     } catch (err) {
       next(err);
     }

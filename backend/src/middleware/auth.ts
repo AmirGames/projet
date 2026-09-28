@@ -11,6 +11,8 @@ export interface Compte {
   isSystemAdmin: boolean;
   /** Rôle dans l'équipe, sur chaque plateforme où il en a un. */
   acces: Acces;
+  /** Dernier changement de mot de passe, en secondes (comme `iat`). */
+  motDePasseChangeA?: number | null;
 }
 
 declare global {
@@ -58,6 +60,7 @@ export async function compteDuJeton(userId: string): Promise<Compte | null> {
       isSuperOwner: true,
       isSystemAdmin: true,
       accesEquipe: { select: { plateforme: true, role: true } },
+      passwordChangedAt: true,
     },
   });
 
@@ -67,12 +70,24 @@ export async function compteDuJeton(userId: string): Promise<Compte | null> {
         isSuperOwner: utilisateur.isSuperOwner,
         isSystemAdmin: utilisateur.isSystemAdmin,
         acces: Object.fromEntries(utilisateur.accesEquipe.map((a) => [a.plateforme, a.role])),
+        motDePasseChangeA: utilisateur.passwordChangedAt
+          ? Math.floor(utilisateur.passwordChangedAt.getTime() / 1000)
+          : null,
       }
     : null;
 
   comptes.set(userId, { compte, expireA: Date.now() + DUREE_CACHE_MS });
 
   return compte;
+}
+
+/**
+ * Un jeton émis avant le dernier changement de mot de passe appartient à une
+ * session que ce changement devait fermer.
+ */
+export function jetonPerime(compte: Compte, iat: number | undefined): boolean {
+  if (compte.motDePasseChangeA == null) return false;
+  return iat === undefined || iat < compte.motDePasseChangeA;
 }
 
 export async function authMiddleware(req: Request, _res: Response, next: NextFunction) {
@@ -91,7 +106,7 @@ export async function authMiddleware(req: Request, _res: Response, next: NextFun
     // façon pour le navigateur de le comprendre.
     const compte = await compteDuJeton(payload.userId);
 
-    if (!compte) {
+    if (!compte || jetonPerime(compte, payload.iat)) {
       throw new ApiError(
         401,
         "Votre session n'est plus valable. Reconnectez-vous.",

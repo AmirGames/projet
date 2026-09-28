@@ -73,13 +73,13 @@ export class AuthService {
   /**
    * Verify and decode refresh token
    */
-  static verifyRefreshToken(token: string): { userId: string } {
+  static verifyRefreshToken(token: string): { userId: string; iat?: number } {
     const env = getEnv();
     try {
       const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET, {
         algorithms: ["HS256"],
       });
-      return decoded as { userId: string };
+      return decoded as { userId: string; iat?: number };
     } catch (err) {
       if (err instanceof jwt.TokenExpiredError) {
         throw new ApiError(401, "Refresh token expired", "REFRESH_TOKEN_EXPIRED");
