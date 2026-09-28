@@ -493,24 +493,6 @@ export default function SurveillancePage() {
                   <dd className="font-semibold tabular-nums">{processus.memoire.residenteMo} Mo</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-400">{t('eventLoop')}</dt>
-                  <dd className={`font-semibold tabular-nums ${processus.boucle.p99Ms >= 200 ? 'text-amber-400' : ''}`}>
-                    {t('eventLoopValue', { p99: processus.boucle.p99Ms, max: processus.boucle.maxMs })}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-gray-400">{t('load')}</dt>
-                  <dd className="font-semibold tabular-nums">
-                    {processus.systeme.charge.join(' · ')} <span className="text-gray-500 font-normal">({t('cores', { n: processus.systeme.coeurs })})</span>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-gray-400">{t('systemMemory')}</dt>
-                  <dd className="font-semibold tabular-nums">
-                    {t('systemMemoryValue', { free: processus.systeme.memoireLibreMo, total: processus.systeme.memoireTotaleMo })}
-                  </dd>
-                </div>
-                <div>
                   <dt className="text-gray-400 flex items-center gap-1.5"><MemoryStick size={14} />{t('diskSpace')}</dt>
                   <dd className={`text-lg font-semibold tabular-nums ${processus.systeme.disque.pourcentUtilise >= 85 ? 'text-amber-400' : ''}`}>
                     {processus.systeme.disque.libreMo} / {processus.systeme.disque.totaleMo} Mo
@@ -521,6 +503,24 @@ export default function SurveillancePage() {
                       style={{ width: `${Math.min(100, processus.systeme.disque.pourcentUtilise)}%` }}
                     />
                   </div>
+                </div>
+                <div>
+                  <dt className="text-gray-400">{t('load')}</dt>
+                  <dd className="font-semibold tabular-nums">
+                    {processus.systeme.charge.join(' · ')} <span className="text-gray-500 font-normal">({t('cores', { n: processus.systeme.coeurs })})</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">{t('eventLoop')}</dt>
+                  <dd className={`font-semibold tabular-nums ${processus.boucle.p99Ms >= 200 ? 'text-amber-400' : ''}`}>
+                    {t('eventLoopValue', { p99: processus.boucle.p99Ms, max: processus.boucle.maxMs })}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-400">{t('systemMemory')}</dt>
+                  <dd className="font-semibold tabular-nums">
+                    {t('systemMemoryValue', { free: processus.systeme.memoireLibreMo, total: processus.systeme.memoireTotaleMo })}
+                  </dd>
                 </div>
               </dl>
               <p className="text-xs text-gray-500 mt-4">
