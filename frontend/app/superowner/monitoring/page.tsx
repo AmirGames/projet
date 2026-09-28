@@ -419,7 +419,7 @@ export default function SurveillancePage() {
               >
                 <h2 className="font-semibold flex items-center gap-2">
                   <Gauge size={18} className="text-gray-400" />
-                  Accord de Niveau de Service (SLA)
+                  {t('slaTitle')}
                 </h2>
                 <ChevronDown
                   size={20}
@@ -428,33 +428,24 @@ export default function SurveillancePage() {
               </button>
               {slaOuvert && (
                 <div className="p-5 space-y-4">
-                  <p className="text-sm text-gray-300">
-                    Les SLA pour chaque cible sont calculés dans la section <strong>Disponibilité</strong> ci-dessus, en fonction de la fenêtre de temps sélectionnée (24h, 7j, 30j, 90j).
-                  </p>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3 border-t border-gray-700">
-                    <div>
-                      <h3 className="text-xs font-semibold text-gray-400 mb-2">Seuils SLA</h3>
-                      <ul className="space-y-1 text-xs text-gray-400">
-                        <li className="flex items-center gap-2">
-                          <span className="inline-block w-3 h-3 bg-green-500 rounded-sm"></span>
-                          <span>Vert : ≥ 99,9% (Optimal)</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <span className="inline-block w-3 h-3 bg-amber-500 rounded-sm"></span>
-                          <span>Ambre : 99,5% - 99,9% (Attention)</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <span className="inline-block w-3 h-3 bg-red-500 rounded-sm"></span>
-                          <span>Rouge : &lt; 99% (Critique)</span>
-                        </li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-semibold text-gray-400 mb-2">Cibles Principales</h3>
-                      <p className="text-xs text-gray-500">
-                        Sélectionnez une fenêtre de temps (24h, 7j, 30j, 90j) dans la section Disponibilité pour voir le SLA détaillé de chaque cible.
-                      </p>
-                    </div>
+                  <p className="text-sm text-gray-300">{t('slaIntro')}</p>
+                  <div className="pt-3 border-t border-gray-700">
+                    <h3 className="text-xs font-semibold text-gray-400 mb-2">{t('slaThresholds')}</h3>
+                    {/* Mêmes seuils que les teintes de DisponibiliteSite. */}
+                    <ul className="space-y-1 text-xs text-gray-400">
+                      <li className="flex items-center gap-2">
+                        <span className="inline-block w-3 h-3 bg-green-500 rounded-sm"></span>
+                        <span>{t('slaGreen')}</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="inline-block w-3 h-3 bg-amber-500 rounded-sm"></span>
+                        <span>{t('slaAmber')}</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="inline-block w-3 h-3 bg-red-500 rounded-sm"></span>
+                        <span>{t('slaRed')}</span>
+                      </li>
+                    </ul>
                   </div>
                 </div>
               )}

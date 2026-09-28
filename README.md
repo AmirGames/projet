@@ -193,6 +193,9 @@ emporter ou à livrer.
   versement avec sa référence — une course payée ne l'est jamais deux fois
 - Santé du système : cinq relevés chiffrés, et ce qu'il faut faire pour chacun ;
   **Surveillance** du site en fonctionnement (voir plus bas)
+- **Console** : les journaux du serveur en direct (les 2 000 dernières lignes,
+  rafraîchies toutes les 2 s), avec filtre par niveau, recherche et pause
+- **Mon profil** : chaque membre de l'équipe y change son mot de passe
 - Annonces diffusées au public visé — commerçants, clients, livreurs — et
   reçues par chacun d'eux
 - Journal des actions administratives et journal des accès
@@ -209,6 +212,14 @@ emporter ou à livrer.
   majuscule ; les caractères spéciaux sont permis sans être exigés. Les
   critères se cochent pendant la saisie. Les comptes plus anciens se
   connectent toujours avec leur mot de passe
+- **Changer son mot de passe depuis son profil** (client, commerçant,
+  plateforme) : les autres sessions ouvertes sont aussitôt déconnectées, la
+  session courante reste ouverte. Une réinitialisation par courriel ferme
+  toutes les sessions
+- **Après la connexion, on arrive au bon endroit** selon le domaine visité ;
+  « mot de passe oublié » n'est plus proposé à qui est déjà connecté
+- **L'inscription répond sans attendre les courriels** : la confirmation
+  d'adresse part en arrière-plan
 - **Une adresse e-mail, quelle que soit sa casse** : « Test@Exemple.fr » et
   « test@exemple.fr » sont le même compte, à l'inscription comme à la
   connexion. Une adresse déjà prise est refusée clairement, et s'inscrire
@@ -235,7 +246,7 @@ emporter ou à livrer.
 | **Frontend** | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS |
 | **Backend** | Express 5, TypeScript, Prisma 7 (adaptateur `@prisma/adapter-pg`) |
 | **Base de données** | PostgreSQL |
-| **Temps réel** | Socket.IO (disponibilité des plats, notifications, suivi de livraison) |
+| **Temps réel** | Socket.IO (disponibilité des plats, notifications, suivi de livraison) ; en production, Redis relie les instances de l'API (`REDIS_URL`) |
 | **Authentification** | JWT (jeton d'accès + jeton de renouvellement) |
 | **Courriel** | SMTP par nodemailer (Mailpit en développement) |
 | **Notifications** | Web Push (clés VAPID) et SMS par Twilio, tous deux facultatifs : un canal non configuré est simplement sauté |
@@ -248,7 +259,7 @@ Un seul dépôt, deux applications :
 
 ```
 backend/    API REST — 40 fichiers de routes, 69 services (hors tests), 57 modèles Prisma
-frontend/   Next.js — 116 pages
+frontend/   Next.js — 120 pages
 mobile/     Expo — applications client, commerçant et livreur (apps/customer, merchant, delivery)
 ```
 
@@ -283,7 +294,7 @@ la main.
 
 L'historique des migrations part d'une migration de référence,
 `0001_initial_schema`, qui crée tout le schéma sur une base vide ; chaque
-changement de schéma ajoute ensuite sa propre migration (`0002` à `0014`
+changement de schéma ajoute ensuite sa propre migration (`0002` à `0015`
 aujourd'hui, `npx prisma migrate dev --name <nom>`), à committer avec le
 schéma.
 
@@ -397,8 +408,8 @@ toutes les 10 secondes :
 
 - **Trafic** : requêtes par minute, taux d'erreurs 4xx/5xx, temps de réponse
   (médiane, p95, p99), sur l'heure écoulée, et le détail route par route
-- **Serveur** : processeur, mémoire, retard de la boucle d'événements, charge,
-  connexions temps réel
+- **Serveur** : processeur, mémoire, espace disque (relevé toutes les heures),
+  retard de la boucle d'événements, charge, connexions temps réel
 - **Services externes** : base de données, SMTP, Redis, Stripe, SMS, push
 - **Tâches de fond** : dernier passage, durée, échecs — une tâche qui ne tourne
   plus se voit
@@ -413,8 +424,11 @@ renseignés —, puis signale le retour à la normale.
 
 **Disponibilité** : l'API (serveur et base) et le site public sont relevés
 chaque minute, et l'historique est gardé 90 jours en base. La page en tire la
-disponibilité sur 24 h, 7, 30 et 90 jours, une frise d'un trait par jour et la
-liste des indisponibilités. Un trou dans les relevés de l'API compte comme une
+disponibilité sur 24 h, 7, 30 et 90 jours, une frise — un trait par heure sur
+24 h, un par jour au-delà, selon la fenêtre choisie — et la liste des
+indisponibilités. Les couleurs suivent des seuils de niveau de service (SLA) :
+vert à partir de 99,9 %, orange à partir de 99 %, rouge en dessous ; un volet
+repliable les rappelle. Un trou dans les relevés de l'API compte comme une
 panne : un serveur arrêté ne relève rien. D'autres adresses se surveillent avec
 `UPTIME_URLS` (voir `backend/.env.example`).
 
