@@ -45,13 +45,16 @@ jobs:
         run: |
           echecs=0
           while IFS= read -r url; do
-            url="$(echo "$url" | xargs)"
+            # Une valeur collée depuis Windows finit chaque ligne par \r :
+            # curl refusait alors toutes les adresses.
+            url="$(printf '%s' "$url" | tr -d '\r' | xargs)"
             [ -z "$url" ] && continue
 
             # Trois essais espacés de 20 s : un seul raté n'est pas une panne.
             code=$(curl -sS -o /dev/null -w '%{http_code}' -L \
               --max-time 15 --retry 2 --retry-delay 20 --retry-all-errors \
-              -A "ZupEat-Disponibilite/1.0 (GitHub Actions)" "$url" || echo "000")
+              -A "ZupEat-Disponibilite/1.0 (GitHub Actions)" "$url" || true)
+            code="${code:-000}"
 
             if [ "$code" -ge 200 ] && [ "$code" -lt 400 ]; then
               echo "OK    $code  $url"
