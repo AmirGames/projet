@@ -220,7 +220,17 @@ export default function RoleSelectionPage() {
               <div className="space-y-2">
                 {roles.merchant.active && (
                   <button
-                    onClick={() => router.push("/merchant")}
+                    onClick={() => {
+                      // L'espace commerçant lit l'entreprise courante ; seule la
+                      // page de connexion la retenait, et un commerçant tout
+                      // juste créé ici était renvoyé vers la connexion.
+                      const organisations = roles.merchant.organizations;
+                      const courante = localStorage.getItem("currentOrgId");
+                      if (organisations.length && !organisations.some((org) => org.id === courante)) {
+                        localStorage.setItem("currentOrgId", organisations[0].id);
+                      }
+                      router.push("/merchant");
+                    }}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
                   >
                     Accéder

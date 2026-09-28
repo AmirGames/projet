@@ -132,7 +132,7 @@ check(
 
 // ===== Pages professionnelles =====
 titre("Pages commerçant appelées d'ailleurs");
-for (const chemin of ["/merchant", "/superowner", "/signup"]) {
+for (const chemin of ["/merchant", "/superowner"]) {
   await renvoyee(`${chemin} depuis le public`, PUBLIC, chemin, PRO);
 }
 await renvoyee("/store/new depuis le public", PUBLIC, "/store/new", PRO);
@@ -155,9 +155,11 @@ await renvoyee("/driver/signup depuis le public", PUBLIC, "/driver/signup", LIVR
 // ===== Pages communes =====
 titre("Pages communes");
 // /dashboard aussi : c'est le sélecteur de rôles des comptes multi-rôles
-// (SEGMENTS_COMMUNS, lib/domaines.ts).
+// (SEGMENTS_COMMUNS, lib/domaines.ts). /signup crée le compte unique, dont
+// le rôle se choisit ensuite : on s'inscrit depuis n'importe quel domaine.
 for (const [nom, hote] of [["pro", PRO], ["public", PUBLIC], ["livreur", LIVREUR]]) {
   await servie(`/login servi par le domaine ${nom}`, hote, "/login");
+  await servie(`/signup servi par le domaine ${nom}`, hote, "/signup");
   await servie(`/dashboard servi par le domaine ${nom}`, hote, "/dashboard");
 }
 

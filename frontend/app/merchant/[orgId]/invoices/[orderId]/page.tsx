@@ -58,6 +58,14 @@ interface Facture {
   notes?: string | null;
 }
 
+/** Le paiement de la commande, tel que la base le nomme (PaymentStatus). */
+const ETATS_PAIEMENT: Record<string, { libelle: string; classe: string }> = {
+  SUCCEEDED: { libelle: 'Payée', classe: 'bg-green-500/20 text-green-400' },
+  PENDING: { libelle: 'En attente de paiement', classe: 'bg-orange-500/20 text-orange-400' },
+  FAILED: { libelle: 'Paiement échoué', classe: 'bg-red-500/20 text-red-400' },
+  REFUNDED: { libelle: 'Remboursée', classe: 'bg-gray-500/20 text-gray-300' },
+};
+
 export default function FacturePage() {
   const params = useParams();
   const orgId = params?.orgId as string;
@@ -173,12 +181,10 @@ export default function FacturePage() {
           </div>
           <span
             className={`px-4 py-2 rounded-full text-sm font-medium ${
-              facture.paymentStatus === 'PAID'
-                ? 'bg-green-500/20 text-green-400'
-                : 'bg-orange-500/20 text-orange-400'
+              (ETATS_PAIEMENT[facture.paymentStatus] || ETATS_PAIEMENT.PENDING).classe
             }`}
           >
-            {facture.paymentStatus === 'PAID' ? 'Payée' : 'En attente de paiement'}
+            {(ETATS_PAIEMENT[facture.paymentStatus] || ETATS_PAIEMENT.PENDING).libelle}
           </span>
         </div>
 

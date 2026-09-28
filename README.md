@@ -344,6 +344,11 @@ En développement, l'application trouve seule l'API sur le PC qui la sert
 production. La préparation de la publication de l'application livreur est
 décrite dans `mobile/apps/delivery/PUBLICATION.md`.
 
+## Mise en production
+
+Un seul VPS (Scaleway, Ubuntu 24.04), Docker Compose et Caddy pour le HTTPS :
+voir [DEPLOIEMENT-SCALEWAY.md](DEPLOIEMENT-SCALEWAY.md).
+
 ## Vérifications
 
 Le projet ne se vérifie pas avec des tests unitaires à simulacres, mais avec des

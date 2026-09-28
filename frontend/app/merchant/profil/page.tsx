@@ -74,6 +74,7 @@ interface Profil {
   exempleTva: string | null;
   manquePourFacturer: string[];
   manquePourEtrePaye: string[];
+  suggestions?: Partial<Record<ChampSuggere, string | null>>;
   validation: {
     valide: boolean;
     piecesExigees: { type: string; libelle: string }[];
@@ -105,6 +106,27 @@ const pourChamp = (date: string | null) => {
   ).padStart(2, '0')}`;
 };
 
+/** Les champs que l'API sait proposer, d'après l'inscription. */
+type ChampSuggere =
+  | 'legalName'
+  | 'billingAddress'
+  | 'billingPostalCode'
+  | 'billingCity'
+  | 'billingCountry'
+  | 'ownerFirstName'
+  | 'ownerLastName'
+  | 'ownerEmail'
+  | 'ownerPhone'
+  | 'accountHolder';
+
+/**
+ * Un profil jamais rempli : rien de ce qui identifie le commerçant n'est
+ * enregistré. Les propositions ne valent que pour lui — une fois le profil
+ * enregistré, un champ laissé vide l'est volontairement.
+ */
+const jamaisRempli = (lu: Profil) =>
+  !lu.legalName && !lu.billingAddress && !lu.ownerFirstName && !lu.ownerLastName;
+
 const CHAMP =
   'w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-500';
 
@@ -116,6 +138,7 @@ export default function ProfilCommercantPage() {
   const [erreur, setErreur] = useState('');
   const [message, setMessage] = useState('');
   const [envoi, setEnvoi] = useState(false);
+  const [preRempli, setPreRempli] = useState(false);
 
   const [form, setForm] = useState({
     legalName: '',
@@ -141,23 +164,33 @@ export default function ProfilCommercantPage() {
 
   const remplir = (lu: Profil) => {
     setProfil(lu);
+
+    // Ce que l'inscription a déjà appris, proposé dans les champs vides d'un
+    // profil encore jamais rempli. Rien n'est enregistré sans le bouton.
+    const proposer = jamaisRempli(lu);
+    const valeur = (champ: ChampSuggere) =>
+      lu[champ] || (proposer ? lu.suggestions?.[champ] : null) || '';
+    setPreRempli(
+      proposer && Object.values(lu.suggestions || {}).some(Boolean)
+    );
+
     setForm({
-      legalName: lu.legalName || '',
+      legalName: valeur('legalName'),
       registrationNumber: lu.registrationNumber || '',
       vatNumber: lu.vatNumber || '',
-      billingAddress: lu.billingAddress || '',
-      billingPostalCode: lu.billingPostalCode || '',
-      billingCity: lu.billingCity || '',
-      billingCountry: lu.billingCountry || 'France',
-      ownerFirstName: lu.ownerFirstName || '',
-      ownerLastName: lu.ownerLastName || '',
-      ownerEmail: lu.ownerEmail || '',
-      ownerPhone: lu.ownerPhone || '',
+      billingAddress: valeur('billingAddress'),
+      billingPostalCode: valeur('billingPostalCode'),
+      billingCity: valeur('billingCity'),
+      billingCountry: valeur('billingCountry') || 'France',
+      ownerFirstName: valeur('ownerFirstName'),
+      ownerLastName: valeur('ownerLastName'),
+      ownerEmail: valeur('ownerEmail'),
+      ownerPhone: valeur('ownerPhone'),
       ownerBirthDate: pourChamp(lu.ownerBirthDate),
       // Jamais réaffiché : le champ reste vide, et seul un IBAN saisi part.
       iban: '',
       bic: lu.bic || '',
-      accountHolder: lu.accountHolder || '',
+      accountHolder: valeur('accountHolder'),
     });
   };
 
@@ -381,6 +414,17 @@ export default function ProfilCommercantPage() {
               {profil.validation.piecesAFournir.map((piece) => piece.libelle).join(', ')}.
             </p>
           )}
+          {/* Tout est déposé : le dire franchement. La liste « en cours
+              d'examen » seule laissait le commerçant se demander s'il lui
+              manquait encore quelque chose. */}
+          {profil.validation.piecesAFournir?.length === 0 &&
+            profil.validation.piecesEnExamen?.length > 0 && (
+              <p className="flex items-center gap-2 font-semibold text-green-300">
+                <Check size={16} aria-hidden />
+                Toutes vos pièces obligatoires sont déposées. La plateforme les examine et
+                vous prévient dans votre espace dès qu&apos;elles sont validées.
+              </p>
+            )}
           {profil.validation.piecesEnExamen?.length > 0 && (
             <p className="text-blue-200/80">
               En cours d&apos;examen :{' '}
@@ -425,6 +469,15 @@ export default function ProfilCommercantPage() {
       )}
 
       <form onSubmit={enregistrer} className="space-y-6">
+        {preRempli && (
+          <p className="text-sm text-sky-200 bg-sky-900/30 border border-sky-800 rounded-lg p-3">
+            Nous avons pré-rempli ce formulaire avec ce que vous avez donné à
+            l&apos;inscription. Vérifiez-le — la raison sociale et l&apos;adresse de
+            facturation peuvent différer de celles de la boutique — puis
+            enregistrez.
+          </p>
+        )}
+
         <section className="bg-gray-800 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Building2 size={20} className="text-orange-500" />
