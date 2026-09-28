@@ -9,6 +9,11 @@
 # Variables : UPTIME_URLS, une adresse par ligne, par exemple
 #   https://api.zupeat.com/health/ready
 #   https://zupeat.com
+#   https://manager.zupeat.com
+#   https://delivery.zupeat.com
+#   https://manager.zupone.com
+#   https://zupone.com
+#   https://zupdrive.com
 # Sans cette variable, la sonde ne fait rien.
 #
 # Bon à savoir : GitHub peut retarder un passage planifié de plusieurs minutes
