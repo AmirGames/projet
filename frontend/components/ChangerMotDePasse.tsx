@@ -51,7 +51,15 @@ export default function ChangerMotDePasse() {
         return;
       }
 
-      setMessage({ ok: true, texte: 'Mot de passe modifié.' });
+      // Les anciens jetons ne valent plus rien : on garde ceux de cette session.
+      try {
+        if (donnees.accessToken) localStorage.setItem('accessToken', donnees.accessToken);
+        if (donnees.refreshToken) localStorage.setItem('refreshToken', donnees.refreshToken);
+      } catch {
+        // Stockage refusé : la session se refera à la prochaine connexion.
+      }
+
+      setMessage({ ok: true, texte: donnees.message || 'Mot de passe modifié.' });
       setActuel('');
       setNouveau('');
       setConfirmation('');
