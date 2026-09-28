@@ -30,6 +30,7 @@ const statusColors: Record<string, string> = {
   SUCCEEDED: 'bg-green-600/20 text-green-400 border-green-600/50',
   PENDING: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50',
   FAILED: 'bg-red-600/20 text-red-400 border-red-600/50',
+  REFUNDED: 'bg-gray-600/20 text-gray-300 border-gray-600/50',
 };
 
 export default function InvoicesPage() {
@@ -62,6 +63,7 @@ export default function InvoicesPage() {
         skip: skip.toString(),
         take: itemsPerPage.toString(),
       });
+      if (filter !== 'ALL') query.set('status', filter);
 
       const response = await fetch(`${API_URL}/api/invoices/${storeId}?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -79,7 +81,7 @@ export default function InvoicesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, router, storeId]);
+  }, [page, router, storeId, filter]);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -290,6 +292,7 @@ export default function InvoicesPage() {
                           {invoice.status === 'SUCCEEDED' && t('statusSucceeded')}
                           {invoice.status === 'PENDING' && t('statusPending')}
                           {invoice.status === 'FAILED' && t('statusFailed')}
+                          {invoice.status === 'REFUNDED' && 'Remboursée'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-400">

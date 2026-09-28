@@ -14,7 +14,9 @@ router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next
 
     logger.info("Fetching invoices", { storeId, skip, take });
 
-    const result = await InvoiceService.getInvoices(storeId, { skip, take });
+    const paymentStatus = typeof req.query.status === "string" ? req.query.status : undefined;
+
+    const result = await InvoiceService.getInvoices(storeId, { skip, take, paymentStatus });
 
     res.json(result);
   } catch (err) {

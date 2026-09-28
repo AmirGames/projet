@@ -51,7 +51,7 @@ export class InvoiceService {
 
     // Si la facture existe déjà, on la retourne sans la modifier.
     if (order.invoice) {
-      return this._factureDepuisStockage(order.invoice);
+      return this._factureDepuisStockage(order.invoice, order.paymentStatus);
     }
 
     // ── Numéro séquentiel ───────────────────────────────────────────────────
@@ -151,11 +151,17 @@ export class InvoiceService {
       },
     });
 
-    return this._factureDepuisStockage(facture);
+    return this._factureDepuisStockage(facture, order.paymentStatus);
   }
 
-  /** Formate une ligne Invoice de la base en objet retourné à l'API. */
-  private static _factureDepuisStockage(facture: any) {
+  /**
+   * Formate une ligne Invoice de la base en objet retourné à l'API.
+   *
+   * Le statut du paiement vient de la commande, pas de la facture figée : il
+   * change après l'émission (webhook Stripe, remboursement). L'écran ne le
+   * recevait pas et affichait « En attente de paiement » sur une commande payée.
+   */
+  private static _factureDepuisStockage(facture: any, paymentStatus: string) {
     const emetteur:     any = facture.emetteurJson;
     const destinataire: any = facture.destinataireJson;
     const lignes:       any[] = facture.lignesJson as any[];
@@ -177,6 +183,7 @@ export class InvoiceService {
       fees:        parseFloat(facture.fees.toString()),
       discount:    parseFloat(facture.discount.toString()),
       total:       parseFloat(facture.total.toString()),
+      paymentStatus,
     };
   }
 
@@ -206,11 +213,20 @@ export class InvoiceService {
       }));
   }
 
-  static async getInvoices(storeId: string, options?: { skip?: number; take?: number; startDate?: Date; endDate?: Date }) {
+  static async getInvoices(
+    storeId: string,
+    options?: { skip?: number; take?: number; startDate?: Date; endDate?: Date; paymentStatus?: string }
+  ) {
     const skip = options?.skip || 0;
     const take = options?.take || 50;
 
     const whereClause: any = { storeId };
+
+    // Les filtres de l'écran (payées, en attente, échouées) portent sur le
+    // paiement de la commande.
+    if (options?.paymentStatus && ["PENDING", "SUCCEEDED", "FAILED", "REFUNDED"].includes(options.paymentStatus)) {
+      whereClause.order = { paymentStatus: options.paymentStatus };
+    }
 
     if (options?.startDate || options?.endDate) {
       whereClause.issuedAt = {};
@@ -223,6 +239,7 @@ export class InvoiceService {
         where: whereClause,
         skip, take,
         orderBy: { issuedAt: "desc" },
+        include: { order: { select: { paymentStatus: true } } },
       }),
       db.invoice.count({ where: whereClause }),
     ]);
@@ -235,7 +252,7 @@ export class InvoiceService {
         customerEmail: (inv.destinataireJson as any)?.email || "—",
         amount:        parseFloat(inv.total.toString()),
         itemCount:     ((inv.lignesJson as any[]) || []).length,
-        status:        "ISSUED",
+        status:        inv.order.paymentStatus,
         date:          inv.issuedAt,
       })),
       total, skip, take,
