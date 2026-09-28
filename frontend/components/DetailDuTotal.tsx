@@ -20,6 +20,8 @@ export default function DetailDuTotal({
     feesAmount?: Montant;
     serviceFeeAmount?: Montant;
     discountAmount?: Montant;
+    /** Le pourboire du livreur, payé en plus de la commande. */
+    tipAmount?: Montant;
     promoCode?: string | null;
     taxAmount?: Montant;
     taxRate?: Montant;
@@ -57,9 +59,18 @@ export default function DetailDuTotal({
           <span>− {euro(commande.discountAmount)}</span>
         </div>
       )}
+      {Number(commande.tipAmount) > 0 && (
+        <div className="flex justify-between text-gray-400">
+          <span>Pourboire du livreur</span>
+          <span>{euro(commande.tipAmount)}</span>
+        </div>
+      )}
       <div className="flex justify-between items-center pt-2 border-t border-gray-700 text-lg font-bold text-white">
         <span>Total</span>
-        <span className={`text-2xl ${couleurTotal}`}>{euro(commande.totalAmount)}</span>
+        {/* Ce que le client a payé : la commande et le pourboire, gardé à part. */}
+        <span className={`text-2xl ${couleurTotal}`}>
+          {euro(Number(commande.totalAmount || 0) + Number(commande.tipAmount || 0))}
+        </span>
       </div>
       {Number(commande.taxAmount) > 0 && (
         <div className="flex justify-between text-gray-500">

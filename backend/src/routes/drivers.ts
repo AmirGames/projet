@@ -857,6 +857,8 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
       // livraison, frais de service) s'affichait à sa place : 20,25 € pour
       // une course qui lui rapporte 5 €. Il n'a rien à encaisser.
       payout: gainAnnonce(d, d.offers?.[0]),
+      // La part du gain qui vient du pourboire du client (déjà comprise).
+      pourboire: Number(d.order?.tipAmount || 0),
       distance: d.distanceKm ?? undefined,
       estimatedTime: d.estimatedTime,
       items: d.order?.items || [],
@@ -979,6 +981,7 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
         customerName: delivery.order?.customerName,
         customerPhone: delivery.order?.customerPhone,
         payout: gainAnnonce(delivery, delivery.offers[0]),
+        pourboire: Number(delivery.order?.tipAmount || 0),
         distance: delivery.distanceKm ?? undefined,
         estimatedTime: delivery.estimatedTime,
         pickupLat: delivery.pickupLat ?? delivery.order?.store?.latitude ?? null,

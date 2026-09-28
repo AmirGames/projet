@@ -9,7 +9,7 @@ import { DeliveryZoneService } from "./delivery-zone.service";
 import { PromotionService } from "./promotion.service";
 import { emitWebhook } from "./webhook.service";
 import { TaxService } from "./tax.service";
-import { ModeDeLivraison, fraisDeServiceEnVigueur, montantCommercant } from "./delivery-mode.service";
+import { ModeDeLivraison, POURBOIRE_MAXIMUM, fraisDeServiceEnVigueur, montantCommercant } from "./delivery-mode.service";
 import { promoSansCommissionActive } from "./plan.service";
 import { StoreHoursService } from "./store-hours.service";
 import { emitMerchantEvent } from "../config/socket";
@@ -38,6 +38,8 @@ export interface OrderData {
   promoCode?: string;
   /** Le moyen de paiement retenu, parmi ceux que le commerçant propose. */
   paymentMethodId?: string;
+  /** Le pourboire laissé au livreur de la plateforme, en euros. */
+  tipAmount?: number;
   notes?: string;
   items?: {
     productId: string;
@@ -458,6 +460,30 @@ export class OrderService {
         getEnv().ENABLE_STRIPE && Boolean(process.env.STRIPE_SECRET_KEY)
       );
 
+      /**
+       * Le pourboire, pour le livreur de la plateforme seulement.
+       *
+       * Il n'a de sens que pour une livraison qu'un livreur de la plateforme
+       * assure, payée en ligne : la plateforme l'encaisse et le lui reverse
+       * sur son relevé. Un commerçant qui livre lui-même, un retrait sur place
+       * ou un paiement à la porte n'ont personne à qui le transmettre.
+       */
+      const pourboire = Number(Number(data.tipAmount || 0).toFixed(2));
+      if (pourboire < 0 || pourboire > POURBOIRE_MAXIMUM) {
+        throw new ApiError(
+          400,
+          `Le pourboire doit être compris entre 0 et ${POURBOIRE_MAXIMUM} €.`,
+          "INVALID_TIP"
+        );
+      }
+      if (pourboire > 0 && (data.deliveryType !== "DELIVERY" || modeLivraison !== "PLATFORM" || !enLigne)) {
+        throw new ApiError(
+          400,
+          "Le pourboire se laisse au livreur de la plateforme, pour une livraison payée en ligne.",
+          "TIP_NOT_AVAILABLE"
+        );
+      }
+
       const order = await db.order.create({
         data: {
           storeId: data.storeId,
@@ -475,6 +501,7 @@ export class OrderService {
           totalAmount: totalCalcule,
           feesAmount: fraisDeLivraison,
           serviceFeeAmount: fraisDeService,
+          tipAmount: pourboire,
           promoCode: codePromo,
           discountAmount: remise,
           paymentMethodId: moyenDePaiement?.id,

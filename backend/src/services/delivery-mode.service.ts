@@ -95,6 +95,19 @@ export function montantCommercant(commande: {
   return Math.max(0, Number(montant.toFixed(2)));
 }
 
+/**
+ * Ce que le client paie réellement : la commande et le pourboire.
+ *
+ * Le pourboire vit à part (Order.tipAmount) pour ne jamais se mêler au
+ * chiffre d'affaires du commerçant, calculé partout depuis totalAmount.
+ */
+export function montantAEncaisser(commande: { totalAmount: unknown; tipAmount?: unknown }) {
+  return Number((Number(commande.totalAmount || 0) + Number(commande.tipAmount || 0)).toFixed(2));
+}
+
+/** Le pourboire le plus élevé accepté, en euros. */
+export const POURBOIRE_MAXIMUM = 50;
+
 /** Somme des montants commerçant d'une liste de commandes, arrondie au centime. */
 export function totalCommercant(
   commandes: { totalAmount: unknown; feesAmount?: unknown; serviceFeeAmount?: unknown }[]

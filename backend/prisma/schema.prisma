@@ -806,6 +806,12 @@ model Order {
   /// à la plateforme : hors du chiffre du commerçant et de l'assiette de sa
   /// commission, et réclamés sur son relevé tant qu'il encaisse pour elle.
   serviceFeeAmount  Decimal    @default(0) @db.Decimal(10, 2)
+  /// Le pourboire laissé au livreur de la plateforme. À part du total de la
+  /// commande (totalAmount) : il n'entre ni dans le chiffre d'affaires du
+  /// commerçant ni dans l'assiette de la commission, et revient en entier au
+  /// livreur (ajouté à sa rémunération à l'attribution). Le client paie
+  /// totalAmount + tipAmount.
+  tipAmount       Decimal      @default(0) @db.Decimal(10, 2)
 
   // Le code promo appliqué, et la remise qu'il a réellement accordée. Aucun des
   // deux n'était conservé : la remise disparaissait de la commande, et le

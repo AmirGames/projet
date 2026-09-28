@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { montantAEncaisser } from "./delivery-mode.service";
 import { db } from "./db";
 import { stripe, STRIPE_CONFIG } from "../config/stripe";
 import { logger } from "../config/logger";
@@ -43,7 +44,8 @@ export const paymentService = {
       throw new ApiError(409, "Cette commande est déjà payée.", "ORDER_ALREADY_PAID");
     }
 
-    const montant = enCentimes(Number(commande.totalAmount));
+    // La commande et le pourboire du livreur, encaissés ensemble.
+    const montant = enCentimes(montantAEncaisser(commande));
     const existant = commande.payments[0];
 
     if (existant?.stripePaymentIntentId) {
@@ -65,14 +67,14 @@ export const paymentService = {
       where: { orderId: commande.id },
       create: {
         orderId: commande.id,
-        amount: commande.totalAmount,
+        amount: montantAEncaisser(commande),
         status: "PENDING",
         stripePaymentIntentId: intention.id,
         stripeClientSecret: intention.client_secret,
         stripeStatus: intention.status,
       },
       update: {
-        amount: commande.totalAmount,
+        amount: montantAEncaisser(commande),
         status: "PENDING",
         stripePaymentIntentId: intention.id,
         stripeClientSecret: intention.client_secret,
@@ -180,12 +182,12 @@ export const paymentService = {
     if (commande.paymentStatus === "REFUNDED") return commande;
 
     const recu = intention.amount_received ?? intention.amount;
-    if (recu !== enCentimes(Number(commande.totalAmount))) {
+    if (recu !== enCentimes(montantAEncaisser(commande))) {
       logger.error("Montant encaissé différent du total de la commande", {
         orderId: commande.id,
         paymentIntentId: intention.id,
         recu,
-        attendu: enCentimes(Number(commande.totalAmount)),
+        attendu: enCentimes(montantAEncaisser(commande)),
       });
     }
 
@@ -436,7 +438,7 @@ export const paymentService = {
       where: { orderId },
       create: {
         orderId,
-        amount: commande.totalAmount,
+        amount: montantAEncaisser(commande),
         status: "REFUNDED",
         stripePaymentIntentId: paymentIntentId,
         stripeRefundId: remboursement.id,

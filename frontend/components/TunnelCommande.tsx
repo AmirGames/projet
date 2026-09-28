@@ -63,7 +63,15 @@ interface Livraison {
   gratuiteDes?: number | null;
   raison: string;
   forfaitBoutique: boolean;
+  /** Qui livre : un livreur de la plateforme, ou le commerçant lui-même. */
+  mode?: 'PLATFORM' | 'OWN';
 }
+
+/** Les montants proposés d'un clic ; « Autre » laisse saisir le sien. */
+const POURBOIRES_PROPOSES = [0, 1, 2, 3, 5];
+const POURBOIRE_MAXIMUM = 50;
+/** Sans clé Stripe, rien ne se paie en ligne : pas de pourboire possible. */
+const PAIEMENT_EN_LIGNE = Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 interface MoyenDePaiement {
   id: string;
@@ -370,7 +378,26 @@ export function TunnelCommande({
   const manquePourOfferte =
     livraison?.gratuiteDes != null && !livraisonOfferte ? livraison.gratuiteDes - sousTotal : 0;
   const montantRemise = remise?.montant ?? 0;
-  const total = Math.max(0, sousTotal + fraisDeLivraison + fraisDeService - montantRemise);
+  const commandeSeule = Math.max(0, sousTotal + fraisDeLivraison + fraisDeService - montantRemise);
+
+  /**
+   * Le pourboire du livreur.
+   *
+   * Proposé seulement quand il peut lui parvenir : une livraison assurée par
+   * un livreur de la plateforme, payée en ligne. Le serveur refuse les autres
+   * cas ; il revient en entier au livreur, sur son relevé.
+   */
+  const [pourboireChoisi, setPourboire] = useState(0);
+  const [pourboireLibre, setPourboireLibre] = useState(false);
+  const moyenRetenu = moyens.find((m) => m.id === moyenChoisi);
+  const pourboirePossible =
+    PAIEMENT_EN_LIGNE &&
+    checkoutForm.deliveryType === 'DELIVERY' &&
+    Boolean(livraison?.livrable) &&
+    livraison?.mode === 'PLATFORM' &&
+    moyenRetenu?.type !== 'CASH';
+  const pourboire = pourboirePossible ? pourboireChoisi : 0;
+  const total = Number((commandeSeule + pourboire).toFixed(2));
 
   /** Le panier atteint-il le minimum de la zone. */
   const sousLeMinimum =
@@ -497,12 +524,14 @@ export function TunnelCommande({
         // recalcule les prix et les frais de livraison.
         promoCode: remise?.code || undefined,
         paymentMethodId: moyenChoisi || undefined,
-        // L'API attend des euros (Decimal 10,2), pas des centimes.
-        totalAmount: Number(total.toFixed(2)),
+        // L'API attend des euros (Decimal 10,2), pas des centimes. Le total
+        // de la commande, pourboire à part.
+        totalAmount: Number(commandeSeule.toFixed(2)),
         taxAmount: 0,
         // Le serveur recalcule ces frais depuis la zone : on envoie ce qu'on a
         // affiché, il tranche.
         feesAmount: Number(fraisDeLivraison.toFixed(2)),
+        ...(pourboire > 0 ? { tipAmount: pourboire } : {}),
         // Le détail du panier : sans lui la commande n'enregistre qu'un montant,
         // et la facture comme le détail de commande restent vides.
         items: lignes.map((ligne) => ({
@@ -533,7 +562,11 @@ export function TunnelCommande({
       const commande = { id, numero: String(id).slice(-8).toUpperCase() };
 
       if (recue.order?.paiementEnLigne) {
-        setAPayer({ ...commande, montant: Number(recue.order.totalAmount) });
+        // Le pourboire se paie avec la commande.
+        setAPayer({
+          ...commande,
+          montant: Number(recue.order.totalAmount) + Number(recue.order.tipAmount || 0),
+        });
         return;
       }
 
@@ -1228,6 +1261,68 @@ export function TunnelCommande({
             <div className="flex justify-between text-green-300">
               <span>Remise — {remise.code}</span>
               <span>− {euro(remise.montant)}</span>
+            </div>
+          )}
+          {pourboirePossible && (
+            <div className="pt-1">
+              <div className="flex justify-between text-gray-300">
+                <span>Pourboire pour le livreur</span>
+                <span>{pourboire > 0 ? euro(pourboire) : '—'}</span>
+              </div>
+              <div role="group" aria-label="Pourboire pour le livreur" className="mt-2 flex flex-wrap gap-2">
+                {POURBOIRES_PROPOSES.map((montant) => {
+                  const retenu = !pourboireLibre && pourboireChoisi === montant;
+                  return (
+                    <button
+                      key={montant}
+                      type="button"
+                      aria-pressed={retenu}
+                      onClick={() => {
+                        setPourboireLibre(false);
+                        setPourboire(montant);
+                      }}
+                      className={`px-3 py-1.5 rounded-full border text-sm transition ${
+                        retenu
+                          ? 'border-red-500 bg-red-500/20 text-red-200'
+                          : 'border-gray-600 text-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      {montant === 0 ? 'Aucun' : euro(montant)}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  aria-pressed={pourboireLibre}
+                  onClick={() => setPourboireLibre(true)}
+                  className={`px-3 py-1.5 rounded-full border text-sm transition ${
+                    pourboireLibre
+                      ? 'border-red-500 bg-red-500/20 text-red-200'
+                      : 'border-gray-600 text-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  Autre
+                </button>
+                {pourboireLibre && (
+                  <input
+                    type="number"
+                    min={0}
+                    max={POURBOIRE_MAXIMUM}
+                    step="0.5"
+                    inputMode="decimal"
+                    aria-label="Montant du pourboire"
+                    value={pourboireChoisi || ''}
+                    onChange={(e) => {
+                      const saisi = Number(e.target.value.replace(',', '.'));
+                      setPourboire(
+                        Number.isFinite(saisi) ? Math.min(Math.max(saisi, 0), POURBOIRE_MAXIMUM) : 0
+                      );
+                    }}
+                    className="w-24 bg-gray-700 border border-gray-600 rounded-full px-3 py-1.5 text-sm text-white focus:outline-none focus:border-red-500"
+                  />
+                )}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">Il revient en entier à votre livreur.</p>
             </div>
           )}
           <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-3">
