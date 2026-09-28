@@ -23,6 +23,16 @@ router.get("/", authMiddleware, async (req: Request, res: Response, next: NextFu
   }
 });
 
+// POST /payment-methods/setup-intent - Préparer l'ajout d'une carte
+router.post("/setup-intent", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req.user as any)?.userId;
+    res.status(201).json({ success: true, data: await paymentService.preparerEnregistrementCarte(userId) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /payment-methods - Save payment method
 router.post("/", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {

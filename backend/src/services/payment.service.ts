@@ -492,8 +492,65 @@ export const paymentService = {
     }
   },
 
+  /**
+   * Le client Stripe de l'utilisateur : celui déjà noté sur l'une de ses
+   * cartes, sinon un nouveau, marqué de son identifiant.
+   */
+  async clientStripe(userId: string) {
+    const connu = await db.paymentMethod.findFirst({
+      where: { userId, stripeCustomerId: { not: null } },
+      select: { stripeCustomerId: true },
+    });
+    if (connu?.stripeCustomerId) return connu.stripeCustomerId;
+
+    const client = await stripe.customers.create({ metadata: { userId } });
+    return client.id;
+  },
+
+  /**
+   * Prépare l'enregistrement d'une carte : la carte confirmée côté client avec
+   * ce SetupIntent est rattachée par Stripe au client de l'appelant, ce qui
+   * seul permet ensuite de l'enregistrer.
+   */
+  async preparerEnregistrementCarte(userId: string) {
+    const customer = await this.clientStripe(userId);
+    const intention = await stripe.setupIntents.create({
+      customer,
+      usage: "off_session",
+      metadata: { userId },
+    });
+    return { clientSecret: intention.client_secret };
+  },
+
+  /**
+   * Enregistre une carte au nom de l'appelant. Un `pm_...` ne prouve rien à
+   * lui seul : la carte doit déjà être rattachée chez Stripe à un client créé
+   * pour cet utilisateur. Une carte libre ou celle d'un autre répond 404.
+   */
   async savePaymentMethod(customerId: string, paymentMethodId: string, storeId: string, isDefault = false) {
-    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+    const boutique = await db.store.findUnique({
+      where: { id: storeId },
+      select: { deletedAt: true },
+    });
+    if (!boutique || boutique.deletedAt) {
+      throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
+    }
+
+    const introuvable = () => new ApiError(404, "Méthode de paiement introuvable", "NOT_FOUND");
+
+    let paymentMethod: Stripe.PaymentMethod;
+    try {
+      paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+    } catch {
+      throw introuvable();
+    }
+
+    const clientId =
+      typeof paymentMethod.customer === "string" ? paymentMethod.customer : paymentMethod.customer?.id;
+    if (!clientId) throw introuvable();
+
+    const client = await stripe.customers.retrieve(clientId);
+    if (client.deleted || client.metadata?.userId !== customerId) throw introuvable();
 
     const saved = await db.paymentMethod.create({
       data: {
@@ -501,7 +558,8 @@ export const paymentService = {
         userId: customerId,
         type: paymentMethod.type as any,
         name: paymentMethod.card?.brand || "Card",
-        stripePaymentMethodId: paymentMethodId,
+        stripePaymentMethodId: paymentMethod.id,
+        stripeCustomerId: clientId,
         config: {
           last4: paymentMethod.card?.last4,
           brand: paymentMethod.card?.brand,

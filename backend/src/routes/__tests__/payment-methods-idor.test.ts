@@ -6,11 +6,15 @@ type Fn = jest.Mock<(...args: any[]) => any>;
 const fn = () => jest.fn() as Fn;
 
 const db: any = {
-  paymentMethod: { findFirst: fn(), findUnique: fn(), delete: fn() },
+  paymentMethod: { findFirst: fn(), findUnique: fn(), delete: fn(), create: fn(), updateMany: fn() },
   store: { findUnique: fn() },
   membership: { findFirst: fn() },
 };
-const stripe: any = { paymentMethods: { detach: fn(), retrieve: fn() } };
+const stripe: any = {
+  paymentMethods: { detach: fn(), retrieve: fn() },
+  customers: { retrieve: fn(), create: fn() },
+  setupIntents: { create: fn() },
+};
 
 jest.mock("../../services/db", () => ({ db }));
 jest.mock("../../config/stripe", () => ({ stripe, STRIPE_CONFIG: { currency: "eur" } }));
@@ -32,8 +36,9 @@ import { errorHandler } from "../../middleware/errorHandler";
 
 const app = express();
 app.use(express.json());
-app.use("/api/payment-methods", paymentMethodRouter);
+// Même ordre que dans app.ts.
 app.use("/api/payment-methods", paymentMethodsApiRouter);
+app.use("/api/payment-methods", paymentMethodRouter);
 app.use(errorHandler);
 
 // pm_B appartient à B.
@@ -89,5 +94,83 @@ describe("routes /api/payment-methods/:storeId/…", () => {
 
     expect(res.status).toBe(200);
     expect(db.paymentMethod.delete).toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/payment-methods", () => {
+  const carte = (customer: string | null) => ({
+    id: "pm_X",
+    type: "card",
+    customer,
+    card: { brand: "visa", last4: "4242" },
+  });
+  const enregistre = (user: string) =>
+    request(app)
+      .post("/api/payment-methods")
+      .set("x-test-user", user)
+      .send({ paymentMethodId: "pm_X", storeId: "store-b" });
+
+  beforeEach(() => {
+    db.store.findUnique.mockResolvedValue({ deletedAt: null });
+    db.paymentMethod.create.mockImplementation(async ({ data }: any) => ({ id: "m-x", ...data }));
+    stripe.customers.retrieve.mockImplementation(async (id: string) => ({
+      id,
+      metadata: { userId: id === "cus_A" ? "user-a" : "user-b" },
+    }));
+  });
+
+  it("refuse la carte rattachée au client Stripe d'un autre", async () => {
+    stripe.paymentMethods.retrieve.mockResolvedValue(carte("cus_B"));
+
+    const res = await enregistre("user-a");
+
+    expect(res.status).toBe(404);
+    expect(db.paymentMethod.create).not.toHaveBeenCalled();
+  });
+
+  it("refuse une carte rattachée à aucun client", async () => {
+    stripe.paymentMethods.retrieve.mockResolvedValue(carte(null));
+
+    const res = await enregistre("user-a");
+
+    expect(res.status).toBe(404);
+    expect(db.paymentMethod.create).not.toHaveBeenCalled();
+  });
+
+  it("refuse une boutique inconnue", async () => {
+    db.store.findUnique.mockResolvedValue(null);
+    stripe.paymentMethods.retrieve.mockResolvedValue(carte("cus_A"));
+
+    const res = await enregistre("user-a");
+
+    expect(res.status).toBe(404);
+    expect(db.paymentMethod.create).not.toHaveBeenCalled();
+  });
+
+  it("enregistre la carte rattachée au client de l'appelant", async () => {
+    stripe.paymentMethods.retrieve.mockResolvedValue(carte("cus_A"));
+
+    const res = await enregistre("user-a");
+
+    expect(res.status).toBe(201);
+    expect(db.paymentMethod.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: "user-a", stripeCustomerId: "cus_A", stripePaymentMethodId: "pm_X" }),
+      })
+    );
+  });
+});
+
+describe("POST /api/payment-methods/setup-intent", () => {
+  it("crée un SetupIntent pour le client Stripe de l'appelant", async () => {
+    stripe.customers.create.mockResolvedValue({ id: "cus_A" });
+    stripe.setupIntents.create.mockResolvedValue({ client_secret: "seti_secret" });
+
+    const res = await request(app).post("/api/payment-methods/setup-intent").set("x-test-user", "user-a");
+
+    expect(res.status).toBe(201);
+    expect(res.body.data).toEqual({ clientSecret: "seti_secret" });
+    expect(stripe.customers.create).toHaveBeenCalledWith({ metadata: { userId: "user-a" } });
+    expect(stripe.setupIntents.create).toHaveBeenCalledWith(expect.objectContaining({ customer: "cus_A" }));
   });
 });
