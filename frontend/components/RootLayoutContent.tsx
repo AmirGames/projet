@@ -10,7 +10,17 @@ import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-const ESPACES_AVEC_NAVIGATION = ['/superowner', '/client'];
+const ESPACES_AVEC_NAVIGATION = [
+  '/superowner',
+  '/client',
+  // Vitrines et pages « Devenir … » : elles portent leur propre en-tête, la
+  // navbar s'empilait par-dessus.
+  '/zupone',
+  '/zupdrive',
+  '/devenir-commercant',
+  '/devenir-livreur',
+  '/devenir-chauffeur',
+];
 
 // Pages du livreur affichées sans session : le layout livreur n'y montre
 // aucune barre, la navbar globale reste donc la seule navigation.

@@ -114,7 +114,7 @@ export class EmailService {
               </div>
 
               <div class="footer">
-                <p>Maison Tamara | ${EMAIL_CONFIG.siteUrl}</p>
+                <p>ZupEat | ${EMAIL_CONFIG.siteUrl}</p>
                 <p>Cet email a été envoyé à ${order.customerEmail}</p>
               </div>
             </div>
@@ -177,7 +177,7 @@ export class EmailService {
                 </a>
               </div>
               <div class="footer">
-                <p>Maison Tamara | ${EMAIL_CONFIG.siteUrl}</p>
+                <p>ZupEat | ${EMAIL_CONFIG.siteUrl}</p>
               </div>
             </div>
           </body>

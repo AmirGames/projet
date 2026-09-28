@@ -5,6 +5,7 @@ import { join } from "path";
 import { getEnv } from "./config/env";
 import { requestLogger } from "./config/logger";
 import { middlewareOrigine } from "./config/origine";
+import { originesAutorisees as listerOriginesAutorisees } from "./config/origines-autorisees";
 import { setupErrorHandling } from "./middleware/errorHandler";
 import { maintenanceMiddleware } from "./middleware/maintenance";
 import { compteRestreint } from "./middleware/compte-restreint";
@@ -56,7 +57,8 @@ import addressRouter from "./routes/address";
 
 export function createApp(): Express {
   const app = express();
-  const env = getEnv();
+  // Valide la configuration avant de monter quoi que ce soit.
+  getEnv();
 
   // ===== Proxy =====
   // Derrière un proxy (Caddy sur le VPS), `req.ip` rendait l'adresse du
@@ -76,14 +78,7 @@ export function createApp(): Express {
   // Le site est servi depuis deux domaines (public et professionnel) : l'API
   // doit répondre aux deux. ALLOWED_ORIGINS les ajoute, séparés par des
   // virgules, sans toucher au code.
-  const originesSupplementaires = (env.ALLOWED_ORIGINS || "")
-    .split(",")
-    .map((origine) => origine.trim())
-    .filter(Boolean);
-
-  const originesAutorisees = Array.from(
-    new Set([env.FRONTEND_URL, "http://localhost:3000", ...originesSupplementaires])
-  );
+  const originesAutorisees = listerOriginesAutorisees();
 
   app.use(
     cors({

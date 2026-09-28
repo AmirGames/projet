@@ -141,6 +141,7 @@ export const COMMERCANT: ParPays = {
 // ─── Chauffeur VTC ──────────────────────────────────────────────────────────
 
 const chauffeurCommun = {
+  marque: 'ZupDrive',
   badge: 'Chauffeur VTC · Bientôt disponible',
   titre: 'Conduisez des passagers dans votre ville',
   accroche:
