@@ -70,27 +70,21 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
       throw new ApiError(409, "Cet email est déjà utilisé", "EMAIL_EXISTS");
     }
 
-    // Check if this is the first user
-    const userCount = await db.user.count();
-    const isFirstUser = userCount === 0;
-
-    // Create user with super owner flag if first
+    // Une inscription ne donne jamais de droits sur la plateforme. Le premier
+    // inscrit en devenait propriétaire : sur une base neuve, le premier robot
+    // venu prenait la plateforme, et deux inscriptions simultanées créaient
+    // deux superowners. Le superowner se crée hors de l'API, avec
+    // `npm run create-superowner` (src/cli/create-superowner.ts).
     const passwordHash = await AuthService.hashPassword(body.password);
     const user = await db.user.create({
       data: {
         email: body.email,
         name: body.name,
         passwordHash,
-        isSuperOwner: isFirstUser,
-        isSystemAdmin: isFirstUser,
       },
     });
 
     await enregistrerAcceptation(req, { email: user.email, userId: user.id, documents: ["cgu", "cgv", "confidentialite"] });
-
-    if (isFirstUser) {
-      logger.info("First user created - marked as Super Owner", { userId: user.id });
-    }
 
     // Le lien de confirmation part à l'inscription. Il ne bloque la connexion
     // que si la confirmation est exigée (voir confirmationExigee) ; dans tous
@@ -642,11 +636,7 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
     // Hash password
     const passwordHash = await AuthService.hashPassword(body.password);
 
-    // Check if this is the first user
-    const userCount = await db.user.count();
-    const isFirstUser = userCount === 0;
-
-    // Create user with super owner flag if first
+    // Aucun droit sur la plateforme à l'inscription (voir POST /signup).
     const user = await db.user.create({
       data: {
         email: body.email,
@@ -654,8 +644,6 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
         passwordHash,
         emailVerified: false,
         status: "ACTIVE",
-        isSuperOwner: isFirstUser,
-        isSystemAdmin: isFirstUser,
       },
     });
 
@@ -664,10 +652,6 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
       userId: user.id,
       documents: ["cgu", "conditions-commercants", "confidentialite"],
     });
-
-    if (isFirstUser) {
-      logger.info("First merchant user created - marked as Super Owner", { userId: user.id });
-    }
 
     // Create organization
     // Le commerce attend la validation de la plateforme (`approvedAt` vide) :
@@ -681,8 +665,7 @@ router.post("/merchant-register", limiterInscriptions, async (req: Request, res:
         plan: "STARTER",
         status: "ACTIVE",
         ...(body.country && { billingCountry: body.country === "BE" ? "Belgique" : "France" }),
-        // La plateforme elle-même n'a personne pour la valider.
-        approvedAt: isFirstUser ? new Date() : null,
+        approvedAt: null,
       },
     });
 

@@ -155,6 +155,7 @@ nano .env.production
 | `JWT_SECRET`, `JWT_REFRESH_SECRET` | deux `openssl rand -hex 32` **différents** |
 | `STRIPE_*` | clés **live** |
 | `SMTP_*`, `EMAIL_FROM` | votre service d'envoi de courriels |
+| `SUPEROWNER_EMAIL`, `SUPEROWNER_PASSWORD_HASH` | le compte propriétaire de la plateforme, créé au premier démarrage (empreinte bcrypt **entre apostrophes**, commande dans le fichier modèle) |
 
 Générer les secrets d'un coup :
 
@@ -212,13 +213,21 @@ puis ouvrez `https://zupeat.com`.
 
 ## 7. Juste après le lancement
 
-1. **Créez tout de suite le compte plateforme.** Le **premier compte inscrit
-   devient le superowner** : inscrivez-vous immédiatement sur
-   `https://manager.zupeat.com/signup` (l'inscription vit sur le domaine
-   professionnel), avant que quiconque d'autre ne le fasse, puis cliquez sur
-   le lien de confirmation reçu : sans lui, la connexion suivante est
-   refusée. Le panneau d'administration s'ouvre ensuite sur
-   `https://manager.zupone.com`.
+1. **Vérifiez le compte plateforme.** Aucune inscription ne donne les droits
+   de superowner : le conteneur de l'API le crée au démarrage à partir de
+   `SUPEROWNER_EMAIL` et `SUPEROWNER_PASSWORD_HASH` (ou `SUPEROWNER_PASSWORD`)
+   de `.env.production` (voir §5), et ne fait plus rien ensuite. Les journaux
+   le disent :
+
+   ```bash
+   ./deploy/zup.sh logs backend | grep -i superowner   # « Superowner créé : … »
+   ```
+
+   Variables oubliées : remplissez-les, puis `./deploy/zup.sh up` (ou
+   `./deploy/zup.sh superowner` après avoir recréé le conteneur). Une fois le
+   compte créé, videz ces lignes. Connectez-vous ensuite sur
+   `https://manager.zupone.com`. La base n'admet qu'un superowner : l'équipe
+   s'ajoute depuis le panneau, avec des rôles.
 2. **Webhook Stripe** : tableau de bord Stripe → *Développeurs* → *Webhooks* →
    endpoint `https://api.zupeat.com/api/payments/webhook`, événements
    `payment_intent.succeeded`, `payment_intent.payment_failed`,

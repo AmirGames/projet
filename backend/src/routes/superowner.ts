@@ -2781,7 +2781,16 @@ router.post("/admins", authMiddleware, superOwnerSeul, async (req: Request, res:
     });
     const body = schema.parse(req.body);
 
-    if (body.role !== "SUPEROWNER" && !(await PermissionsPlateforme.role(body.role, body.plateforme))) {
+    // La base n'admet qu'un superowner (migration 0020) : celui qui appelle.
+    if (body.role === "SUPEROWNER") {
+      throw new ApiError(
+        409,
+        "La plateforme n'a qu'un superowner : donnez à ce compte un rôle d'équipe",
+        "SUPEROWNER_UNIQUE"
+      );
+    }
+
+    if (!(await PermissionsPlateforme.role(body.role, body.plateforme))) {
       throw new ApiError(400, "Rôle inconnu", "UNKNOWN_ROLE");
     }
 
@@ -2803,14 +2812,12 @@ router.post("/admins", authMiddleware, superOwnerSeul, async (req: Request, res:
       );
     }
 
-    const superowner = body.role === "SUPEROWNER";
     const promu = await db.user.update({
       where: { id: compte.id },
       data: {
         isSystemAdmin: true,
-        isSuperOwner: superowner,
         name: body.name || compte.name,
-        ...(superowner ? {} : { accesEquipe: { create: { plateforme: body.plateforme, role: body.role } } }),
+        accesEquipe: { create: { plateforme: body.plateforme, role: body.role } },
       },
       include: { accesEquipe: { select: { plateforme: true, role: true } } },
     });
@@ -2824,7 +2831,7 @@ router.post("/admins", authMiddleware, superOwnerSeul, async (req: Request, res:
         adminId: req.userId as string,
         action: "GRANT_ADMIN",
         target: promu.id,
-        changes: { role: body.role, plateforme: superowner ? null : body.plateforme } as any,
+        changes: { role: body.role, plateforme: body.plateforme } as any,
       },
     });
 

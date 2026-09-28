@@ -17,6 +17,7 @@ import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
 
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { cheminCommande, jetonDeSuivi } from '@/lib/suivi-commande';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Order {
@@ -95,7 +96,9 @@ export default function OrderTrackingPage() {
     }
 
     try {
-      const orderResponse = await fetch(`${API_URL}/api/orders/${orderId}`, {
+      // Le compte ouvre la commande ; le jeton de suivi gardé à la commande
+      // couvre celle passée ici sans être connecté.
+      const orderResponse = await fetch(`${API_URL}${cheminCommande(orderId, jetonDeSuivi(orderId))}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

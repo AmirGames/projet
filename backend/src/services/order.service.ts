@@ -1,4 +1,4 @@
-import { finAttente } from "./delivery-proof.service";
+import { type Appelant, commandeVisible, genererJetonDeSuivi } from "./suivi-commande.service";
 import { db } from "./db";
 import { EmailService } from "./email.service";
 import { logger } from "../config/logger";
@@ -30,9 +30,6 @@ export interface OrderData {
   deliveryPostal?: string;
   deliveryLat?: number;
   deliveryLng?: number;
-  totalAmount: number;
-  taxAmount?: number;
-  feesAmount?: number;
   customerId?: string;
   /** Le compte connecté qui passe la commande, s'il y en a un. */
   userId?: string;
@@ -43,11 +40,11 @@ export interface OrderData {
   /** Le pourboire laissé au livreur de la plateforme, en euros. */
   tipAmount?: number;
   notes?: string;
-  items?: {
+  /** Le panier. Les prix sont relus du catalogue, jamais fournis par l'appelant. */
+  items: {
     productId: string;
     variantId?: string;
     quantity: number;
-    price: number;
     selectedOptions?: Record<string, string>;
     /** Les suppléments choisis, par identifiant (voir SupplementService). */
     supplements?: string[];
@@ -235,6 +232,12 @@ export class OrderService {
       // mieux vaut un message clair qu'une commande amputée en silence.
       const lignes = data.items || [];
 
+      // Pas de commande sans article : le total n'a pas d'autre source que
+      // les lignes tarifées ici.
+      if (lignes.length === 0) {
+        throw new ApiError(400, "Le panier est vide", "EMPTY_CART");
+      }
+
       /**
        * Les lignes, avec leur prix recalculé.
        *
@@ -313,10 +316,10 @@ export class OrderService {
        * commande facturait le forfait de la boutique et acceptait n'importe
        * quel montant, où que soit le client.
        */
-      let fraisDeLivraison = Number(data.feesAmount || 0);
+      let fraisDeLivraison = 0;
       let modeLivraison: ModeDeLivraison | null = null;
 
-      if (data.deliveryType === "DELIVERY" && lignesTarifees.length > 0) {
+      if (data.deliveryType === "DELIVERY") {
         const verdict = await DeliveryZoneService.controlerLaLivraison(
           data.storeId,
           {
@@ -347,7 +350,7 @@ export class OrderService {
       let remise = 0;
       let codePromo: string | null = null;
 
-      if (data.promoCode && lignesTarifees.length > 0) {
+      if (data.promoCode) {
         const validation = await PromotionService.validateAndApply(
           data.storeId,
           data.promoCode,
@@ -416,13 +419,11 @@ export class OrderService {
        * de l'assiette de sa commission et de son chiffre d'affaires.
        */
       const reglage = await db.systemConfig.findFirst({ select: { serviceFee: true } });
-      const fraisDeService = lignesTarifees.length > 0 ? fraisDeServiceEnVigueur(reglage) : 0;
+      const fraisDeService = fraisDeServiceEnVigueur(reglage);
 
-      const totalCalcule = lignesTarifees.length > 0
-        ? Number(
-            (totalDesLignes + taxe.aAjouter + fraisDeLivraison + fraisDeService - remise).toFixed(2)
-          )
-        : Number(data.totalAmount);
+      const totalCalcule = Number(
+        (totalDesLignes + taxe.aAjouter + fraisDeLivraison + fraisDeService - remise).toFixed(2)
+      );
 
       /**
        * La commission de la plateforme, figée sur la commande.
@@ -513,9 +514,14 @@ export class OrderService {
         );
       }
 
+      // Le jeton de suivi : rendu une seule fois, ici ; seule son empreinte
+      // est gardée.
+      const suivi = genererJetonDeSuivi();
+
       const order = await db.order.create({
         data: {
           storeId: data.storeId,
+          trackingTokenHash: suivi.empreinte,
           ...(enLigne ? { submittedAt: null } : {}),
           customerName: data.customerName,
           customerEmail: data.customerEmail,
@@ -575,7 +581,10 @@ export class OrderService {
         await this.annoncerAuCommercant(order);
       }
 
-      return { ...order, paiementEnLigne: enLigne };
+      // L'empreinte reste en base : le client n'a besoin que du jeton.
+      const { trackingTokenHash: _empreinte, ...commande } = order;
+
+      return { ...commande, paiementEnLigne: enLigne, trackingToken: suivi.jeton };
     } catch (error: any) {
       throw error;
     }
@@ -783,50 +792,14 @@ export class OrderService {
     });
   }
 
-  static async getOrderWithItems(id: string) {
-    const commande = await db.order.findUnique({
-      where: { id },
-      include: {
-        items: {
-          include: { product: { include: { category: { select: { name: true } } } }, variant: true },
-        },
-        payments: true,
-        delivery: {
-          select: {
-            status: true,
-            deliveryCode: true,
-            proofType: true,
-            proofAt: true,
-            proofPhoto: true,
-            proofNote: true,
-            nearCustomerNotifiedAt: true,
-            customerWaitStartedAt: true,
-          },
-        },
-      },
-    });
-
-    if (!commande) return null;
-
-    // Le code de remise se lit avec la commande : c'est ce que le client donne
-    // au livreur à la porte, et une commande suivie sans compte n'a pas
-    // d'autre endroit où le lire. Remise, il n'a plus d'objet.
-    const { delivery, ...reste } = commande;
-
-    return {
-      ...reste,
-      delivery,
-      codeRemise:
-        delivery && delivery.status !== "DELIVERED" ? delivery.deliveryCode : null,
-      preuveDeLivraison: delivery?.proofType ?? null,
-      photoDepot: delivery?.proofType === "PHOTO" ? delivery.proofPhoto : null,
-      noteDepot: delivery?.proofType === "PHOTO" ? delivery.proofNote : null,
-      livreurProche: Boolean(delivery?.nearCustomerNotifiedAt),
-      // Le livreur attend à la porte : passé cette heure, la commande est
-      // déposée en lieu sûr.
-      attenteFinLe: delivery?.status === "PICKED_UP" && delivery ? finAttente(delivery) : null,
-      maintenant: new Date(),
-    };
+  /**
+   * La commande, telle que l'appelant a le droit de la lire (voir
+   * suivi-commande.service.ts) : une liste blanche de champs, jamais la
+   * course ni les paiements bruts. `null` quand elle n'existe pas ou qu'il ne
+   * peut pas la lire.
+   */
+  static async getOrderWithItems(id: string, appelant: Appelant = {}, jeton?: unknown) {
+    return commandeVisible(id, appelant, jeton);
   }
 
   static async delete(id: string) {

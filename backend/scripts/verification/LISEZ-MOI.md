@@ -107,7 +107,9 @@ Contre une API sans Stripe, elle s'arrête d'emblée et le dit.
 ## La base est vidée à chaque script
 
 Tous les scripts partent du même postulat : **le premier compte inscrit devient
-la plateforme**. Sans remise à zéro, la deuxième exécution échoue partout avec
+la plateforme**. L'API ne le fait plus (aucune inscription n'est superowner,
+voir `npm run create-superowner`) : c'est `outils.mjs` qui promeut ce compte en
+base, juste après son inscription, tant qu'aucun superowner n'existe. Sans remise à zéro, la deuxième exécution échoue partout avec
 des « Accès refusé » qui ressemblent à des régressions sans en être une.
 
 `tout.mjs` vide donc la base avant *chaque* script, pas une fois au départ.

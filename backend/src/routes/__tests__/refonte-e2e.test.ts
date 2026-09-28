@@ -57,7 +57,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
       // Verify in database
       const user = await db.user.findUnique({ where: { id: testUserId } });
       expect(user).toBeDefined();
-      expect(user?.isSuperOwner).toBe(true);
+      expect(user?.isSuperOwner).toBe(false);
 
       const customer = await db.customer.findUnique({
         where: { userId: testUserId },

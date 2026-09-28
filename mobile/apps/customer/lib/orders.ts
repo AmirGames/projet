@@ -14,7 +14,12 @@ export interface OrderSummary {
   items: { name: string; quantity: number; price: number; total: number }[];
 }
 
-/** Le détail d'une commande (/api/orders/:id). */
+/**
+ * Le détail d'une commande (/api/orders/:id), lu avec la session du client :
+ * une liste blanche de champs, sans secret de paiement ni course brute. Le
+ * code de remise n'y figure que pour le client propriétaire, tant que la
+ * commande n'est pas remise.
+ */
 export interface OrderDetail {
   id: string;
   storeId: string;

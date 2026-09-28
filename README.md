@@ -311,7 +311,7 @@ la main.
 
 L'historique des migrations part d'une migration de référence,
 `0001_initial_schema`, qui crée tout le schéma sur une base vide ; chaque
-changement de schéma ajoute ensuite sa propre migration (`0002` à `0019`
+changement de schéma ajoute ensuite sa propre migration (`0002` à `0020`
 aujourd'hui, `npx prisma migrate dev --name <nom>`), à committer avec le
 schéma.
 
@@ -334,11 +334,29 @@ cp .env.example .env.local
 npm run dev              # http://localhost:3000
 ```
 
-### 4. Le premier compte
+### 4. Le compte plateforme (superowner)
 
-**Le premier compte inscrit devient la plateforme** (superowner) : inscrivez-vous
-en premier sur <http://localhost:3000/signup>, avant de créer des comptes
-commerçants. Les suivants sont des commerçants ordinaires.
+**Aucune inscription ne donne les droits de la plateforme.** Le superowner se
+crée en ligne de commande, à partir de l'environnement :
+
+```bash
+cd backend
+SUPEROWNER_EMAIL=vous@exemple.fr SUPEROWNER_PASSWORD='MotDePasse123' npm run create-superowner
+```
+
+Les deux variables peuvent aussi vivre dans `backend/.env`. Le mot de passe suit
+les règles de l'inscription ; `SUPEROWNER_PASSWORD_HASH` (empreinte bcrypt) le
+remplace pour ne jamais l'écrire en clair. Si l'adresse a déjà un compte, il est
+promu sans changer son mot de passe.
+
+Le script est **rejouable** : dès qu'un superowner existe, il ne fait rien. La
+base n'en admet d'ailleurs qu'un (index unique `User_un_seul_superowner`,
+migration `0020`) ; l'équipe se compose ensuite depuis `/superowner`, avec des
+rôles (SuperAdmin, Administrateur, Support…).
+
+> Avant, le premier compte inscrit devenait superowner : sur une base neuve, le
+> premier robot venu prenait la plateforme, et deux inscriptions simultanées en
+> créaient deux.
 
 ### La confirmation d'adresse
 

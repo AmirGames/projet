@@ -43,11 +43,40 @@ export const baseDeDonnees = base;
 
 const suffixe = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
+/**
+ * Le premier compte inscrit devient la plateforme — dans les vérifications
+ * seulement.
+ *
+ * L'API ne donne plus aucun droit à l'inscription (SEC-03) : le superowner se
+ * crée avec `npm run create-superowner`. Les suites ont été écrites pour un
+ * premier inscrit qui est la plateforme, sur une base vidée : on le promeut
+ * ici, en base, et on corrige la réponse pour qu'elle le dise. À appeler
+ * après chaque inscription qui peut être la première.
+ */
+export async function plateformeSiAucune(inscription) {
+  const userId = inscription.donnees?.user?.id;
+  if (!userId) return inscription;
+
+  const promu = await base()
+    .$executeRaw`UPDATE "User" SET "isSuperOwner" = true, "isSystemAdmin" = true
+      WHERE id = ${userId} AND NOT EXISTS (SELECT 1 FROM "User" WHERE "isSuperOwner" = true)`
+    // Deux inscriptions simultanées : l'index unique garde la première.
+    .catch(() => 0);
+
+  if (promu !== 1) return inscription;
+  return {
+    ...inscription,
+    donnees: { ...inscription.donnees, user: { ...inscription.donnees.user, isSuperOwner: true, isSystemAdmin: true } },
+  };
+}
+
 export async function inscriptionVia(appeler, options) {
-  const inscription = await appeler('/api/auth/signup', {
-    ...options,
-    corps: { conditionsAcceptees: true, ...options.corps },
-  });
+  const inscription = await plateformeSiAucune(
+    await appeler('/api/auth/signup', {
+      ...options,
+      corps: { conditionsAcceptees: true, ...options.corps },
+    })
+  );
   const jeton = inscription.donnees?.accessToken;
 
   if (!jeton) return inscription;

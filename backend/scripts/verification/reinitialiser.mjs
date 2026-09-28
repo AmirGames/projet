@@ -2,7 +2,7 @@
  * Vide la base de vérification.
  *
  * Les scripts partent tous du même postulat : le premier compte inscrit
- * devient la plateforme. Sans remise à zéro, la deuxième exécution échoue
+ * devient la plateforme (promu par outils.mjs, l'API ne le fait plus). Sans remise à zéro, la deuxième exécution échoue
  * partout avec des « Accès refusé » qui ressemblent à des régressions et n'en
  * sont pas.
  *

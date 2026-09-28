@@ -22,11 +22,14 @@ interface Analytics {
     retraitMoyenMin: number | null;
     gainsParHeure: number | null;
     annulees: number;
+    /** Compris dans les gains. */
+    pourboires: number;
+    coursesAvecPourboire: number;
   };
   precedente: { livrees: number; gains: number };
   offres: { recues: number; acceptees: number; refusees: number; expirees: number; tauxAcceptation: number | null };
   notes: { moyennePeriode: number | null; avisPeriode: number; moyenneGlobale: number | null; avisTotal: number };
-  parJour: { date: string; livrees: number; gains: number; distanceKm: number }[];
+  parJour: { date: string; livrees: number; gains: number; distanceKm: number; pourboires: number }[];
   parHeure: { heure: number; livrees: number; gains: number }[];
 }
 
@@ -128,7 +131,11 @@ export default function AnalyticsLivreurPage() {
             : '',
         labelComplet: date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
         valeur: j.gains,
-        details: [`${j.livrees} course${j.livrees > 1 ? 's' : ''}`, `${nombre(j.distanceKm, 1)} km`],
+        details: [
+          `${j.livrees} course${j.livrees > 1 ? 's' : ''}`,
+          `${nombre(j.distanceKm, 1)} km`,
+          ...(j.pourboires > 0 ? [`dont ${euro(j.pourboires)} de pourboires`] : []),
+        ],
       };
     });
   }, [donnees, jours]);
@@ -196,6 +203,9 @@ export default function AnalyticsLivreurPage() {
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
                 <p className="text-gray-400 text-sm">Gains sur {jours} jours</p>
                 <p className="text-white text-5xl font-semibold mt-1">{euro(r.gains)}</p>
+                {r.pourboires > 0 && (
+                  <p className="text-sm text-yellow-400 mt-2">dont {euro(r.pourboires)} de pourboires 🎉</p>
+                )}
                 {variation(r.gains, donnees.precedente.gains) != null && (
                   <p
                     className={`text-sm mt-2 ${
@@ -226,6 +236,15 @@ export default function AnalyticsLivreurPage() {
                   label="Durée moyenne d'une course"
                   valeur={r.dureeMoyenneMin != null ? `${r.dureeMoyenneMin} min` : '—'}
                   aide={r.retraitMoyenMin != null ? `dont ${r.retraitMoyenMin} min jusqu'au retrait` : undefined}
+                />
+                <Tuile
+                  label="Pourboires reçus"
+                  valeur={euro(r.pourboires ?? 0)}
+                  aide={
+                    r.coursesAvecPourboire
+                      ? `sur ${r.coursesAvecPourboire} course${r.coursesAvecPourboire > 1 ? 's' : ''}`
+                      : 'Aucun sur la période'
+                  }
                 />
                 <Tuile label="Courses annulées" valeur={nombre(r.annulees)} />
                 <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">

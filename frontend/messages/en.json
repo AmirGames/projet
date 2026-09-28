@@ -1512,7 +1512,10 @@
     "orderAmount": "Order amount",
     "reviews": "reviews",
     "subtitle": "The pay announced when each completed delivery was assigned",
-    "yourEarning": "Your earnings"
+    "yourEarning": "Your earnings",
+    "tipsTitle": "My tips",
+    "tipsIncluded": "Already included in your earnings",
+    "tip": "Tip"
   },
   "driverProfile": {
     "title": "My Profile",
@@ -1542,6 +1545,7 @@
     "notRatedYet": "Not yet rated",
     "reviews": "reviews",
     "dailyEarnings": "Today's earnings",
+    "dailyTips": "Today's tips",
     "completedDeliveries": "Completed deliveries",
     "status": "Status",
     "online": "Online",

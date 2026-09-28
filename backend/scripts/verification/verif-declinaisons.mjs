@@ -8,6 +8,7 @@ import { inscription,
   uniq,
   post,
   get,
+  lireSuivi,
   put,
   patch,
   del,
@@ -199,7 +200,7 @@ const ligne = await sqlScalaire(
 );
 check('la déclinaison choisie est enregistrée', ligne === tagliatelleId, ligne);
 
-const relue = await j(await get(`/api/orders/${orderId}`));
+const relue = await j(await lireSuivi(orderId));
 const articles = relue?.items || relue?.order?.items || [];
 check(
   'la commande nomme la déclinaison',

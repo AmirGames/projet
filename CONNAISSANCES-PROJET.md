@@ -102,9 +102,18 @@ frontend/   Next.js — 116 pages
 mobile/     trois applications Expo
 ```
 
-**Le premier compte inscrit devient la plateforme** (superowner). Tous les
-suivants sont des comptes ordinaires ; le superowner nomme ensuite son équipe.
-Cette règle gouverne aussi les scripts de vérification (voir §6).
+**Aucune inscription ne donne les droits de la plateforme.** Le superowner se
+crée en ligne de commande (`npm run create-superowner`, depuis
+`SUPEROWNER_EMAIL` et `SUPEROWNER_PASSWORD` ou `SUPEROWNER_PASSWORD_HASH`) ; le
+conteneur de production le fait au démarrage. Rejouable sans effet, et la base
+n'en admet qu'un (index unique partiel, migration `0020`). Le superowner nomme
+ensuite son équipe, avec des rôles.
+
+Avant, le premier compte inscrit devenait superowner : deux inscriptions
+simultanées sur une base vide en créaient deux, et sur un serveur neuf le
+premier robot venu prenait la plateforme. Les **scripts de vérification**
+gardent cette règle pour eux seuls : sur leur base vidée, ils promeuvent en SQL
+le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
 
 ---
 
@@ -484,7 +493,7 @@ détaillent chaque suite et ses prérequis.
 
 - **Base vierge** pour `verif:courses`, `verif:suivi`, `verif:livreurs`,
   `verif:versements`, `verif:preuve` et `verif:vitrine` : ces scripts créent leur propre compte
-  plateforme, et seul le premier compte inscrit est superowner. Lancer
+  plateforme, et seul le premier compte inscrit y est promu superowner. Lancer
   `node scripts/verification/reinitialiser.mjs` avant.
 - **Jeu de démonstration** pour `verif:admin` et `verif:menu` :
   `node scripts/seed-demo.mjs`.
@@ -527,7 +536,8 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
 **Scripts de vérification**
 - `sqlScalaire()` ne renvoie que **la première colonne**. Jamais
   `SELECT a, b` : faire deux appels.
-- Le premier compte inscrit est le seul superowner (voir §6).
+- Le premier compte inscrit y est le seul superowner : `plateformeSiAucune`
+  (outils.mjs, inscription.mjs) le promeut en base — l'API ne le fait plus.
 
 **Routes Express**
 - **Les segments littéraux doivent être déclarés avant les routes

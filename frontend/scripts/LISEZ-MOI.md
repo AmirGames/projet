@@ -62,7 +62,8 @@ VERIF_SITE_URL=http://localhost:3000 npm run verif:fiche        # fiche boutique
 Cinq scripts — `verif:courses`, `verif:suivi`, `verif:livreurs`,
 `verif:versements`, `verif:preuve` — montent leur propre décor et font valider
 un livreur par la plateforme. Ils supposent donc une **base vierge** : le
-premier compte inscrit est le seul à être superowner.
+premier compte inscrit y est le seul superowner (promu en base par
+`inscription.mjs` ; l'API ne donne ce droit à aucune inscription).
 
 ```bash
 cd backend && node scripts/verification/reinitialiser.mjs

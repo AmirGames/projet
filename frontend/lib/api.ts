@@ -1,3 +1,5 @@
+import { cheminCommande, jetonDeSuivi, memoriserJetonDeSuivi } from "./suivi-commande";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 const getAuthHeaders = () => {
@@ -194,6 +196,20 @@ export const api = {
         deliveryType,
         totalAmount,
       }),
+    });
+    const corps = await response.json();
+    // Le jeton de suivi n'est rendu qu'ici : il ouvre le suivi sans compte.
+    memoriserJetonDeSuivi(corps?.order?.id, corps?.order?.trackingToken);
+    return corps;
+  },
+
+  /**
+   * Une commande : avec la session si le client est connecté, sinon avec le
+   * jeton de suivi gardé dans ce navigateur. Sans l'un ni l'autre, 404.
+   */
+  getOrder: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}${cheminCommande(id, jetonDeSuivi(id))}`, {
+      headers: getAuthHeaders(),
     });
     return response.json();
   },
