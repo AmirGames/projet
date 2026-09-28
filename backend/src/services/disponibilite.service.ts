@@ -395,6 +395,21 @@ export const Disponibilite = {
           };
         });
 
+        // Frise horaire pour les 24 dernières heures
+        const HEURE = 60 * 60 * 1000;
+        const frisHeures = Array.from({ length: 24 }, (_, i) => {
+          const debut = maintenant - (24 - i) * HEURE;
+          const fin = Math.min(debut + HEURE, maintenant);
+          const valeur = disponibiliteSur(periodes, premierReleve, debut, fin);
+          const pannesDeLHeure = periodes.pannes.filter((p) => recouvrement(p, debut, fin) > 0);
+          return {
+            heure: new Date(debut).toISOString(),
+            disponibilite: valeur === null ? null : Math.round(valeur * 1000) / 1000,
+            indisponibleMin: Math.round(pannesDeLHeure.reduce((s, p) => s + recouvrement(p, debut, fin), 0) / 60000),
+            tempsReponseMs: null, // Pas de moyenne horaire pour simplifier
+          };
+        });
+
         return {
           ...cible,
           depuis: new Date(premierReleve).toISOString(),
@@ -409,6 +424,7 @@ export const Disponibilite = {
             "90j": sur(90 * JOUR),
           },
           jours: frise,
+          heures: frisHeures,
           incidents: periodes.pannes
             .map((p) => ({
               debut: new Date(p.debut).toISOString(),
