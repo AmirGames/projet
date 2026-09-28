@@ -17,7 +17,7 @@
  */
 
 import { chromium } from 'playwright';
-import { validerLivreur, codeDeRemise, declarerPrete } from './outils-livreur.mjs';
+import { validerLivreur, codeDeRemise, declarerPrete, retenirJetonDeSuivi, lienDeSuivi } from './outils-livreur.mjs';
 import { baseDeDonnees, inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
@@ -138,7 +138,7 @@ async function courseAuSeuil({ recuperee = true } = {}) {
     },
   });
 
-  const orderId = commande.donnees.order?.id || commande.donnees.id;
+  const orderId = retenirJetonDeSuivi(commande.donnees);
   const attribution = await appeler(`/api/orders/${orderId}/dispatch`, { method: 'POST', jeton: T });
   const courseId = attribution.donnees?.data?.deliveryId;
 
@@ -170,7 +170,11 @@ const contexte = await nav.newContext({
   geolocation: POSITION,
 });
 
-const pageClient = await contexte.newPage();
+// Le client suit sa commande dans son propre navigateur : dans celui du
+// livreur, la session du livreur voyagerait avec la lecture du suivi, et la
+// route la refuse au livreur de la course, jeton ou non (SEC-01).
+const contexteClient = await nav.newContext();
+const pageClient = await contexteClient.newPage();
 const erreursClient = [];
 // Les tuiles de la carte viennent d'OpenStreetMap : hors réseau, leur échec
 // de chargement n'est pas une erreur de la page.
@@ -180,7 +184,7 @@ pageClient.on('console', (m) => {
 });
 
 titre('Le client lit son code de remise');
-await pageClient.goto(`${SITE}/track?commande=${premiere.orderId}`);
+await pageClient.goto(lienDeSuivi(SITE, premiere.orderId));
 await pageClient.waitForTimeout(3000);
 
 const suivi = await pageClient.locator('body').innerText();
@@ -375,7 +379,7 @@ check(
 );
 
 titre('Le client sait que c’est un dépôt');
-await pageClient.goto(`${SITE}/track?commande=${seconde.orderId}`);
+await pageClient.goto(lienDeSuivi(SITE, seconde.orderId));
 await pageClient.waitForTimeout(3000);
 
 const vuDepot = await pageClient.locator('body').innerText();

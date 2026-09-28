@@ -10,7 +10,7 @@
  */
 
 import { chromium } from 'playwright';
-import { validerLivreur, codeDeRemise } from './outils-livreur.mjs';
+import { validerLivreur, codeDeRemise, retenirJetonDeSuivi } from './outils-livreur.mjs';
 import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
@@ -117,7 +117,7 @@ const commande = await appeler('/api/orders', {
   },
 });
 
-const orderId = commande.donnees.order?.id || commande.donnees.id;
+const orderId = retenirJetonDeSuivi(commande.donnees);
 
 // Le livreur, en ligne et positionné près de la boutique.
 const livreur = await appeler('/api/drivers/register', {

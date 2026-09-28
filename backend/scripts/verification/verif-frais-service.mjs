@@ -16,6 +16,7 @@ import {
   post,
   put,
   get,
+  lireSuivi,
   j,
   uniq,
   inscrire,
@@ -83,7 +84,7 @@ check("la commande est créée", typeof id === "string", `${id}`);
 check("le total les ajoute", (await lire(id, "totalAmount")) === "20.25", await lire(id, "totalAmount"));
 check("ils sont figés sur la commande", (await lire(id, "serviceFeeAmount")) === "0.25", await lire(id, "serviceFeeAmount"));
 
-const vu = await j(await get(`/api/orders/${id}`));
+const vu = await j(await lireSuivi(id));
 check("le client les voit sur son suivi", Number(vu?.serviceFeeAmount) === 0.25, `${vu?.serviceFeeAmount}`);
 
 titre("Ils ne comptent pas dans la commission");

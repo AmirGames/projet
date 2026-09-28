@@ -61,14 +61,44 @@ export async function validerLivreur(API, jetonLivreur, jetonPlateforme) {
 }
 
 /**
+ * Les jetons de suivi des commandes passées par les scripts.
+ *
+ * Le suivi (`GET /api/orders/:id`, page /track) demande le jeton remis à la
+ * commande : la réponse de `POST /api/orders` le donne une fois
+ * (`order.trackingToken`), et le site le garde dans le navigateur du client
+ * (lib/suivi-commande.ts). Les scripts le retiennent ici, juste après avoir
+ * commandé, et le présentent comme le ferait le lien du courriel de suivi.
+ */
+const jetonsDeSuivi = new Map();
+
+/** Retient le jeton d'une réponse de `POST /api/orders` ; rend l'identifiant de la commande. */
+export function retenirJetonDeSuivi(donnees) {
+  const commande = donnees?.order;
+  if (commande?.id && commande.trackingToken) jetonsDeSuivi.set(commande.id, commande.trackingToken);
+  return commande?.id || donnees?.id;
+}
+
+export function jetonDeSuivi(orderId) {
+  const jeton = jetonsDeSuivi.get(orderId);
+  if (!jeton) throw new Error(`Aucun jeton de suivi connu pour la commande ${orderId}`);
+  return jeton;
+}
+
+/** Le lien de suivi que reçoit le client : `/track?commande=…&t=…`. */
+export const lienDeSuivi = (SITE, orderId) =>
+  `${SITE}/track?commande=${encodeURIComponent(orderId)}&t=${encodeURIComponent(jetonDeSuivi(orderId))}`;
+
+/**
  * Le code de remise d'une commande.
  *
  * Il appartient au client : le livreur ne le voit jamais. Un script qui clôt
  * une course joue le rôle du client, et le lit donc là où celui-ci le lit —
- * sur le suivi de sa commande.
+ * sur le suivi de sa commande, avec son jeton.
  */
 export async function codeDeRemise(API, orderId) {
-  const commande = await lire(await fetch(`${API}/api/orders/${orderId}`));
+  const commande = await lire(
+    await fetch(`${API}/api/orders/${orderId}?t=${encodeURIComponent(jetonDeSuivi(orderId))}`)
+  );
 
   return commande?.codeRemise || null;
 }

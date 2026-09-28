@@ -212,14 +212,20 @@ check('un lien de suivi est proposé', /Suivre ma commande/.test(apres), apres.s
 
 titre('Ce que le serveur a réellement enregistré');
 // Le lien de suivi porte l'identifiant complet : c'est par lui qu'un invité
-// retrouve sa commande, et par lui qu'on la relit ici.
+// retrouve sa commande. Le suivi demande aussi le jeton remis à la commande,
+// que le navigateur de l'invité garde (lib/suivi-commande.ts).
 const lienDeSuivi = await page
   .locator('a', { hasText: 'Suivre ma commande' })
   .first()
   .getAttribute('href');
-const id = (lienDeSuivi || '').split('commande=')[1] || '';
+const id = new URLSearchParams((lienDeSuivi || '').split('?')[1] || '').get('commande') || '';
 
-const relue = (await appeler(`/api/orders/${id}`)).donnees;
+const jetonGarde = await page.evaluate((cle) => localStorage.getItem(cle), `suiviCommande:${id}`);
+check('le navigateur garde le jeton de suivi', /^[A-Za-z0-9_-]{43}$/.test(jetonGarde || ''), `${jetonGarde}`);
+
+// Relue par le commerce, qui voit la commande entière — le code postal compris,
+// que la vue du suivi ne donne pas.
+const relue = (await appeler(`/api/orders/${id}`, { jeton: T })).donnees;
 
 check('la commande est chez le bon commerce', relue?.storeId === storeId, `${relue?.storeId}`);
 check('elle est en livraison', relue?.deliveryType === 'DELIVERY', relue?.deliveryType);

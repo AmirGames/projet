@@ -23,6 +23,7 @@ import {
   terminer,
   post,
   get,
+  lireSuivi,
   j,
   uniq,
   inscrire,
@@ -156,7 +157,7 @@ check("ni en la cherchant directement", detail.status === 404, `statut ${detail.
 const accepter = await post(`/api/order-management/${storeId}/${id}/accept`, { preparationMinutes: 15 }, T);
 check("il ne peut pas l'accepter", accepter.status === 404, `statut ${accepter.status}`);
 
-const suivi = await get(`/api/orders/${id}`);
+const suivi = await lireSuivi(id);
 check("le client, lui, la suit", suivi.status === 200, `statut ${suivi.status}`);
 
 // ===== Le webhook =====

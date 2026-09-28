@@ -81,8 +81,39 @@ const requete =
       ...(corps ? { body: JSON.stringify(corps) } : {}),
     });
 
+    if (methode === "POST" && chemin === "/api/orders") await retenirJetonDeSuivi(reponse);
+
     return methode === "POST" && INSCRIPTIONS.has(chemin) ? plateformeSiAucune(reponse) : reponse;
   };
+
+/**
+ * Le suivi d'une commande, lu comme le client le lit.
+ *
+ * Le suivi (`GET /api/orders/:id`) demande le jeton remis à la commande : la
+ * réponse de `POST /api/orders` le donne une fois (`order.trackingToken`), et
+ * le site le garde dans le navigateur du client (lib/suivi-commande.ts). On
+ * fait de même : chaque commande passée ici retient son jeton, que `lireSuivi()`
+ * présente ensuite en `?t=`. Sans jeton, la route répond 404 — comme à un
+ * inconnu qui devinerait l'identifiant.
+ */
+const jetonsDeSuivi = new Map();
+
+async function retenirJetonDeSuivi(reponse) {
+  if (!reponse.ok) return;
+  const commande = (await j(reponse.clone()))?.order;
+  if (commande?.id && commande.trackingToken) jetonsDeSuivi.set(commande.id, commande.trackingToken);
+}
+
+/** Le jeton de suivi d'une commande passée par `post("/api/orders")`. */
+export function jetonDeSuivi(orderId) {
+  const jeton = jetonsDeSuivi.get(orderId);
+  if (!jeton) throw new Error(`Aucun jeton de suivi connu pour la commande ${orderId}`);
+  return jeton;
+}
+
+/** `GET /api/orders/:id` (ou `:id` + `suite`), avec le jeton de suivi du client. */
+export const lireSuivi = (orderId, suite = "") =>
+  get(`/api/orders/${orderId}${suite}?t=${encodeURIComponent(jetonDeSuivi(orderId))}`);
 
 export const post = requete("POST");
 export const put = requete("PUT");
