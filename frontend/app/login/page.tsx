@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { RAISON_DECONNEXION, useAuth } from "@/lib/auth-context";
 import Link from "next/link";
+import { destinationApresConnexion } from "@/lib/espace-utilisateur";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -24,7 +25,7 @@ function lireRaison(): string | null {
 export default function LoginPage() {
   const t = useTranslations('auth.login');
   const router = useRouter();
-  const { refreshAuth } = useAuth();
+  const { refreshAuth, isAuthenticated, isLoading, user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -51,6 +52,16 @@ export default function LoginPage() {
       // Stockage refusé : rien à retirer.
     }
   }, [raisonStockee]);
+
+  // Déjà connecté : le formulaire n'a plus rien à offrir, on rejoint son espace.
+  useEffect(() => {
+    if (isLoading || !isAuthenticated) return;
+    router.replace(
+      destinationApresConnexion({
+        isSuperOwner: user?.isSuperOwner,
+      }),
+    );
+  }, [isLoading, isAuthenticated, user, router]);
 
   const renvoyerConfirmation = async () => {
     setLienRenvoye(t("resending"));
@@ -110,12 +121,7 @@ export default function LoginPage() {
       // protégées renvoient aussitôt vers /login.
       await refreshAuth();
 
-      // Redirect based on role
-      if (isSuperOwner) {
-        router.push("/superowner");
-      } else {
-        router.push("/auth/role-selection");
-      }
+      router.replace(destinationApresConnexion({ isSuperOwner }));
     } catch (err) {
       setError(t("errorConnection"));
       signalerErreur(err);
