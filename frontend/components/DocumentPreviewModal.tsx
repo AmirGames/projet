@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 
+import { adresseLisible, ouvrirPiece } from '@/lib/fichiers-prives';
+
 interface DocumentPreviewModalProps {
   documentUrl: string;
   libelle: string;
@@ -34,15 +36,6 @@ function typeDuFichier(octets: Uint8Array, typeAnnonce: string): string {
 }
 
 export function DocumentPreviewModal({ documentUrl, libelle, onClose }: DocumentPreviewModalProps) {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-  // Convert static upload URLs to API proxy route for proper CORS handling
-  let fileUrl = documentUrl;
-  if (documentUrl.includes('/uploads/')) {
-    const uploadPath = documentUrl.split('/uploads/')[1];
-    fileUrl = `${API_URL}/api/drivers/documents/file/${uploadPath}`;
-  }
-
   const [apercu, setApercu] = useState<Apercu>({ etat: 'chargement' });
 
   // Le fichier est téléchargé puis affiché depuis une copie locale : les
@@ -54,7 +47,9 @@ export function DocumentPreviewModal({ documentUrl, libelle, onClose }: Document
 
     (async () => {
       try {
-        const reponse = await fetch(fileUrl);
+        // Une pièce privée ne se lit plus sans session : on demande d'abord
+        // une adresse signée, valable quelques minutes.
+        const reponse = await fetch(await adresseLisible(documentUrl));
         if (!reponse.ok) throw new Error(`HTTP ${reponse.status}`);
 
         const contenu = await reponse.arrayBuffer();
@@ -74,7 +69,7 @@ export function DocumentPreviewModal({ documentUrl, libelle, onClose }: Document
       annule = true;
       if (urlLocale) URL.revokeObjectURL(urlLocale);
     };
-  }, [fileUrl]);
+  }, [documentUrl]);
 
   return (
     <div
@@ -130,9 +125,14 @@ export function DocumentPreviewModal({ documentUrl, libelle, onClose }: Document
             <div className="p-8 text-center text-gray-300">
               <p>Impossible d&apos;afficher ce fichier ici.</p>
               <a
-                href={apercu.etat === 'pret' ? apercu.url : fileUrl}
+                href={apercu.etat === 'pret' ? apercu.url : documentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => {
+                  if (apercu.etat === 'pret') return;
+                  e.preventDefault();
+                  void ouvrirPiece(documentUrl);
+                }}
                 className="mt-2 inline-block text-blue-400 underline"
               >
                 Ouvrir dans un nouvel onglet

@@ -124,6 +124,8 @@ export default function DeliveryTrackingPage() {
   const [code, setCode] = useState('');
   const [modePhoto, setModePhoto] = useState(false);
   const [photoUrl, setPhotoUrl] = useState('');
+  // L'aperçu : une adresse signée, la photo n'étant plus servie sans contrôle.
+  const [apercuPhoto, setApercuPhoto] = useState('');
   const [envoiPhoto, setEnvoiPhoto] = useState(false);
   const [note, setNote] = useState('');
   const [refus, setRefus] = useState('');
@@ -385,6 +387,7 @@ export default function DeliveryTrackingPage() {
 
       if (reponse.ok && lu?.data?.photoUrl) {
         setPhotoUrl(lu.data.photoUrl);
+        setApercuPhoto(lu.data.apercuUrl || lu.data.photoUrl);
       } else {
         setRefus(lu?.error || "La photo n'a pas pu être envoyée, reprenez-la");
       }
@@ -722,7 +725,7 @@ export default function DeliveryTrackingPage() {
                         {photoUrl ? (
                           <div className="space-y-2">
                             <img
-                              src={photoUrl}
+                              src={apercuPhoto || photoUrl}
                               alt="Photo du dépôt"
                               className="w-full max-h-72 object-cover rounded-lg border border-gray-600"
                             />

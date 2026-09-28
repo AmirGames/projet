@@ -3,6 +3,7 @@ import { randomInt } from "node:crypto";
 import { db } from "./db";
 import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
+import { cheminRelatif, presenter } from "./fichiers-prives.service";
 
 /**
  * La preuve de la remise.
@@ -152,6 +153,26 @@ export class DeliveryProofService {
         throw new ApiError(400, "Donnez un lien vers la photo du dépôt", "INVALID_PHOTO");
       }
 
+      // Une pièce du stockage privé ne se rattache à la course que si c'est
+      // une photo de dépôt encore libre : sinon, pointer vers celle d'une autre
+      // course, ou vers le permis d'un livreur, en ouvrirait la lecture au
+      // client et au commerce de cette course.
+      if (photo.includes("/api/files/") || photo.includes("/documents/file/")) {
+        throw new ApiError(400, "Envoyez l'adresse rendue par l'envoi de la photo", "INVALID_PHOTO");
+      }
+      if (photo.includes("/uploads/")) {
+        const relatif = cheminRelatif(photo);
+        const dejaPrise =
+          relatif?.startsWith("deliveries/") &&
+          (await db.orderDelivery.findFirst({
+            where: { id: { not: deliveryId }, proofPhoto: { endsWith: `/uploads/${relatif}` } },
+            select: { id: true },
+          }));
+        if (!relatif || !relatif.startsWith("deliveries/") || dejaPrise) {
+          throw new ApiError(400, "Cette photo ne correspond pas à un dépôt", "INVALID_PHOTO");
+        }
+      }
+
       // Le dépôt se photographie quand le client n'est pas venu, pas avant.
       exigerAttenteTerminee(course);
 
@@ -199,7 +220,7 @@ export class DeliveryProofService {
         ? Math.max(0, ESSAIS_MAX - course.codeAttempts)
         : 0,
       preuve: course.proofType,
-      photo: course.proofPhoto,
+      photo: presenter(course.proofPhoto),
       prouveeLe: course.proofAt,
       // L'attente du client injoignable : l'heure du serveur fait foi, le
       // téléphone s'en sert pour son compte à rebours.

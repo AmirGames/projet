@@ -30,8 +30,8 @@ import { z } from "zod";
 import { champEmail, champMotDePasse } from "../utils/validation";
 import { distanceKm, estUnPoint } from "../utils/geo";
 import { Prisma } from "@prisma/client";
-import fs from "fs";
-import { join } from "path";
+import { adresseSignee, cheminRelatif } from "../services/fichiers-prives.service";
+import { servirFichierPrive } from "./files";
 
 const router = Router();
 
@@ -1346,7 +1346,14 @@ router.post(
         req.file.mimetype
       );
 
-      res.status(201).json({ success: true, data: { photoUrl: url } });
+      // photoUrl est l'adresse à transmettre à la remise ; apercuUrl, signée
+      // et valable cinq minutes, s'affiche tout de suite dans une balise <img>
+      // (la pièce n'est pas encore rattachée à la course).
+      const relatif = cheminRelatif(url);
+      res.status(201).json({
+        success: true,
+        data: { photoUrl: url, apercuUrl: relatif ? adresseSignee(relatif) : url },
+      });
     } catch (err) {
       next(err);
     }
@@ -1741,72 +1748,15 @@ router.patch(
 );
 
 /**
- * Le type d'une pièce enregistrée sans extension utile (.bin), lu dans ses
- * premiers octets : les commerçants déposaient toutes leurs pièces en .bin, et
- * le navigateur, à qui helmet interdit de deviner, refusait de les ouvrir.
+ * GET /drivers/documents/file/<dossier>/<fichier> - L'ancienne adresse des
+ * pièces, gardée pour les écrans qui s'en servent encore. Elle était publique
+ * et répondait « Access-Control-Allow-Origin: * » : n'importe quel site lisait
+ * un permis ou un RIB. Elle passe maintenant par le même contrôle que
+ * /api/files (voir routes/files.ts).
  */
-function typeLuDansLeFichier(chemin: string): string | null {
-  const debut = Buffer.alloc(12);
-  const fd = fs.openSync(chemin, "r");
-  try {
-    fs.readSync(fd, debut, 0, 12, 0);
-  } finally {
-    fs.closeSync(fd);
-  }
-  if (debut.subarray(0, 4).toString("latin1") === "%PDF") return "application/pdf";
-  if (debut[0] === 0x89 && debut.subarray(1, 4).toString("latin1") === "PNG") return "image/png";
-  if (debut[0] === 0xff && debut[1] === 0xd8 && debut[2] === 0xff) return "image/jpeg";
-  if (debut.subarray(0, 4).toString("latin1") === "RIFF" && debut.subarray(8, 12).toString("latin1") === "WEBP") {
-    return "image/webp";
-  }
-  return null;
-}
-
-// Serve document files with proper CORS headers for preview modal
-router.options(/^\/documents\/file\/(.+)$/, (_req: Request, res: Response) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.sendStatus(200);
-});
-
-router.get(/^\/documents\/file\/(.+)$/, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const filePath = (req.params as any)[0];
-    const fullPath = join(process.cwd(), "uploads", filePath);
-
-    // Security: prevent directory traversal
-    if (!fullPath.startsWith(join(process.cwd(), "uploads"))) {
-      return res.status(403).send("Access denied");
-    }
-
-    if (!fs.existsSync(fullPath)) {
-      return res.status(404).send("File not found");
-    }
-
-    // Set CORS headers explicitly
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    // Helmet réserve les réponses à la même origine : le back-office, servi sur
-    // un autre port, ne pouvait pas afficher la pièce dans une balise <img>.
-    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-
-    // Determine content type
-    const ext = fullPath.split(".").pop()?.toLowerCase();
-    let contentType = "application/octet-stream";
-    if (ext === "jpg" || ext === "jpeg") contentType = "image/jpeg";
-    else if (ext === "png") contentType = "image/png";
-    else if (ext === "webp") contentType = "image/webp";
-    else if (ext === "pdf") contentType = "application/pdf";
-    else contentType = typeLuDansLeFichier(fullPath) || contentType;
-
-    res.setHeader("Content-Type", contentType);
-    return res.sendFile(fullPath);
-  } catch (err) {
-    return next(err);
-  }
-});
+router.get(/^\/documents\/file\/(.+)$/, (req: Request, res: Response, next: NextFunction) =>
+  servirFichierPrive(cheminRelatif((req.params as any)[0]), req, res, next)
+);
 
 // GET /drivers/available - Get available delivery drivers within radius
 router.get("/available", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {

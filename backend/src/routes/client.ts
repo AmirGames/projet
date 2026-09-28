@@ -1,4 +1,5 @@
 import { finAttente } from "../services/delivery-proof.service";
+import { presenter } from "../services/fichiers-prives.service";
 import { SupplementService } from "../services/supplement.service";
 import { TaxService } from "../services/tax.service";
 import { Router, Request, Response, NextFunction } from "express";
@@ -806,7 +807,7 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         prouveeLe: course.proofAt,
         // La photo du dépôt, quand le client était absent : c'est à lui
         // qu'elle sert, pour retrouver son repas.
-        photoDepot: course.proofType === "PHOTO" ? course.proofPhoto : null,
+        photoDepot: course.proofType === "PHOTO" ? presenter(course.proofPhoto) : null,
         noteDepot: course.proofType === "PHOTO" ? course.proofNote : null,
         // Le livreur est à moins de 300 m : il peut descendre.
         livreurProche: Boolean(course.nearCustomerNotifiedAt),

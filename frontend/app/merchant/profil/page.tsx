@@ -35,6 +35,7 @@ import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { useTranslations } from 'next-intl';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import ChangerMotDePasse from '@/components/ChangerMotDePasse';
+import { LienPiece } from '@/components/LienPiece';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 interface Piece {
@@ -773,14 +774,12 @@ export default function ProfilCommercantPage() {
                     {document.reviewNote && (
                       <p className="text-xs text-red-300 mt-1">{document.reviewNote}</p>
                     )}
-                    <a
-                      href={document.documentUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                    <LienPiece
+                      adresse={document.documentUrl}
                       className="text-xs text-orange-400 hover:underline break-all"
                     >
                       {document.fileName || document.documentUrl}
-                    </a>
+                    </LienPiece>
                   </div>
 
                   <div className="flex items-center gap-3 flex-shrink-0">
