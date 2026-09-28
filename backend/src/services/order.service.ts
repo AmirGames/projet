@@ -30,9 +30,6 @@ export interface OrderData {
   deliveryPostal?: string;
   deliveryLat?: number;
   deliveryLng?: number;
-  totalAmount: number;
-  taxAmount?: number;
-  feesAmount?: number;
   customerId?: string;
   /** Le code saisi par le client. La remise est calculée par le serveur. */
   promoCode?: string;
@@ -41,11 +38,11 @@ export interface OrderData {
   /** Le pourboire laissé au livreur de la plateforme, en euros. */
   tipAmount?: number;
   notes?: string;
-  items?: {
+  /** Le panier. Les prix sont relus du catalogue, jamais fournis par l'appelant. */
+  items: {
     productId: string;
     variantId?: string;
     quantity: number;
-    price: number;
     selectedOptions?: Record<string, string>;
     /** Les suppléments choisis, par identifiant (voir SupplementService). */
     supplements?: string[];
@@ -206,6 +203,12 @@ export class OrderService {
       // mieux vaut un message clair qu'une commande amputée en silence.
       const lignes = data.items || [];
 
+      // Pas de commande sans article : le total n'a pas d'autre source que
+      // les lignes tarifées ici.
+      if (lignes.length === 0) {
+        throw new ApiError(400, "Le panier est vide", "EMPTY_CART");
+      }
+
       /**
        * Les lignes, avec leur prix recalculé.
        *
@@ -284,10 +287,10 @@ export class OrderService {
        * commande facturait le forfait de la boutique et acceptait n'importe
        * quel montant, où que soit le client.
        */
-      let fraisDeLivraison = Number(data.feesAmount || 0);
+      let fraisDeLivraison = 0;
       let modeLivraison: ModeDeLivraison | null = null;
 
-      if (data.deliveryType === "DELIVERY" && lignesTarifees.length > 0) {
+      if (data.deliveryType === "DELIVERY") {
         const verdict = await DeliveryZoneService.controlerLaLivraison(
           data.storeId,
           {
@@ -318,7 +321,7 @@ export class OrderService {
       let remise = 0;
       let codePromo: string | null = null;
 
-      if (data.promoCode && lignesTarifees.length > 0) {
+      if (data.promoCode) {
         const validation = await PromotionService.validateAndApply(
           data.storeId,
           data.promoCode,
@@ -387,13 +390,11 @@ export class OrderService {
        * de l'assiette de sa commission et de son chiffre d'affaires.
        */
       const reglage = await db.systemConfig.findFirst({ select: { serviceFee: true } });
-      const fraisDeService = lignesTarifees.length > 0 ? fraisDeServiceEnVigueur(reglage) : 0;
+      const fraisDeService = fraisDeServiceEnVigueur(reglage);
 
-      const totalCalcule = lignesTarifees.length > 0
-        ? Number(
-            (totalDesLignes + taxe.aAjouter + fraisDeLivraison + fraisDeService - remise).toFixed(2)
-          )
-        : Number(data.totalAmount);
+      const totalCalcule = Number(
+        (totalDesLignes + taxe.aAjouter + fraisDeLivraison + fraisDeService - remise).toFixed(2)
+      );
 
       /**
        * La commission de la plateforme, figée sur la commande.
