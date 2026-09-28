@@ -137,6 +137,9 @@ export function AddressAutocomplete({
   // d'écrire dans le champ.
   const ignorerProchaineRecherche = useRef(false);
   const indice = useRef<Indice>({});
+  // La recherche en cours : une réponse plus ancienne, arrivée en retard,
+  // n'écrase pas celle de la saisie actuelle.
+  const rechercheEnCours = useRef<AbortController | null>(null);
 
   useEffect(() => {
     let actif = true;
@@ -149,16 +152,23 @@ export function AddressAutocomplete({
   }, [pays]);
 
   const rechercher = useCallback(async (requete: string) => {
+    rechercheEnCours.current?.abort();
+    rechercheEnCours.current = null;
+
     if (requete.trim().length < 3) {
       setSuggestions([]);
+      setChargement(false);
       return;
     }
 
+    const controleur = new AbortController();
+    rechercheEnCours.current = controleur;
     setChargement(true);
 
     try {
       const reponse = await fetch(
-        `${API_URL}/api/addresses/search?q=${encodeURIComponent(requete)}${parametresIndice(indice.current)}`
+        `${API_URL}/api/addresses/search?q=${encodeURIComponent(requete)}${parametresIndice(indice.current)}`,
+        { signal: controleur.signal }
       );
 
       if (!reponse.ok) {
@@ -167,13 +177,18 @@ export function AddressAutocomplete({
       }
 
       const donnees = await reponse.json();
+      if (controleur.signal.aborted) return;
       setSuggestions(donnees.suggestions || []);
       setServiceIndisponible(donnees.available === false);
     } catch {
+      if (controleur.signal.aborted) return;
       setSuggestions([]);
       setServiceIndisponible(true);
     } finally {
-      setChargement(false);
+      if (rechercheEnCours.current === controleur) {
+        rechercheEnCours.current = null;
+        setChargement(false);
+      }
     }
   }, []);
 

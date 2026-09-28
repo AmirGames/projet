@@ -79,6 +79,21 @@ const DUREE_CACHE_MS = 5 * 60 * 1000;
 const TAILLE_MAX_CACHE = 500;
 
 /**
+ * En mode mixte, ce qu'on accorde encore à Photon une fois la BAN servie.
+ *
+ * Le Photon public répond souvent en une à deux secondes, la BAN en une
+ * centaine de millisecondes : attendre les deux faisait patienter près de deux
+ * secondes chaque saisie française pour des adresses belges qu'elle ne
+ * cherchait pas. Photon continue en arrière-plan et complète le cache.
+ */
+const DELAI_PHOTON_APRES_BAN_MS = 400;
+
+/** Deux onglets, ou un double appel, ne déclenchent qu'une requête sortante. */
+const enVol = new Map<string, Promise<{ suggestions: Suggestion[]; available: boolean }>>();
+
+type Reponse = { suggestions: Suggestion[]; joignable: boolean };
+
+/**
  * Le fournisseur d'adresses.
  *
  * - `ban` : la Base Adresse Nationale, la plus précise — mais **elle ne connaît
@@ -512,6 +527,32 @@ export class AddressService {
       return { suggestions: enCache.resultats, available: true };
     }
 
+    const dejaEnVol = enVol.get(cle);
+    if (dejaEnVol) return dejaEnVol;
+
+    const promesse = this.chercherChezFournisseurs(fournisseur, cle, requete, limite, indice).finally(
+      () => enVol.delete(cle)
+    );
+    enVol.set(cle, promesse);
+
+    return promesse;
+  }
+
+  private static async chercherChezFournisseurs(
+    fournisseur: Fournisseur,
+    cle: string,
+    requete: string,
+    limite: number,
+    indice: Indice
+  ): Promise<{ suggestions: Suggestion[]; available: boolean }> {
+    if (fournisseur === "google") {
+      return this.assembler([await this.interrogerGoogle(requete, limite, indice)], cle, limite, indice);
+    }
+
+    if (fournisseur !== "ban+photon") {
+      return this.assembler([await this.interroger(fournisseur, requete, limite, indice)], cle, limite, indice);
+    }
+
     /**
      * En mode mixte, les deux fournisseurs sont interrogés de front.
      *
@@ -519,16 +560,51 @@ export class AddressService {
      * Photon, et c'est le gros des saisies. Photon apporte ce qu'elle ne
      * connaît pas — la Belgique, notamment.
      */
-    const reponses =
-      fournisseur === "google"
-        ? [await this.interrogerGoogle(requete, limite, indice)]
-        : await Promise.all(
-            (fournisseur === "ban+photon"
-              ? (["ban", "photon"] as const)
-              : ([fournisseur] as const)
-            ).map((lequel) => this.interroger(lequel, requete, limite, indice))
-          );
+    const banPromise = this.interroger("ban", requete, limite, indice);
+    const photonPromise = this.interroger("photon", requete, limite, indice);
 
+    const ban = await banPromise;
+
+    // Photon n'est attendu jusqu'au bout que lorsqu'il est indispensable : la
+    // BAN n'a rien donné, ou la personne cherche hors de France.
+    const photonIndispensable =
+      !ban.joignable || ban.suggestions.length === 0 || (!!indice.pays && indice.pays !== "fr");
+
+    if (photonIndispensable) {
+      return this.assembler([ban, await photonPromise], cle, limite, indice);
+    }
+
+    const TROP_TARD = Symbol("trop tard");
+    let minuteur: ReturnType<typeof setTimeout> | undefined;
+    const photon = await Promise.race([
+      photonPromise,
+      new Promise<typeof TROP_TARD>((resoudre) => {
+        minuteur = setTimeout(() => resoudre(TROP_TARD), DELAI_PHOTON_APRES_BAN_MS);
+      }),
+    ]);
+    clearTimeout(minuteur);
+
+    if (photon !== TROP_TARD) {
+      return this.assembler([ban, photon], cle, limite, indice);
+    }
+
+    // La BAN seule répond tout de suite, sans être mise en cache : la réponse
+    // complète l'y remplacera dès que Photon aura parlé.
+    photonPromise.then((tardif) => this.assembler([ban, tardif], cle, limite, indice));
+
+    return this.assembler([ban], null, limite, indice);
+  }
+
+  /**
+   * Fusionne les réponses des fournisseurs, dans leur ordre, et met le
+   * résultat en cache sous `cle` (sauf si elle est nulle).
+   */
+  private static assembler(
+    reponses: Reponse[],
+    cle: string | null,
+    limite: number,
+    indice: Indice
+  ): { suggestions: Suggestion[]; available: boolean } {
     // Une même adresse peut revenir des deux côtés : on garde la première, donc
     // celle de la BAN.
     const vues = new Set<string>();
@@ -565,8 +641,10 @@ export class AddressService {
 
     const retenues = suggestions.slice(0, limite);
 
-    if (cache.size > TAILLE_MAX_CACHE) cache.clear();
-    cache.set(cle, { expireA: Date.now() + DUREE_CACHE_MS, resultats: retenues });
+    if (cle !== null) {
+      if (cache.size > TAILLE_MAX_CACHE) cache.clear();
+      cache.set(cle, { expireA: Date.now() + DUREE_CACHE_MS, resultats: retenues });
+    }
 
     return { suggestions: retenues, available: true };
   }
