@@ -12,7 +12,18 @@
 	request_body {
 		max_size 25MB
 	}
-	reverse_proxy backend:3001
+	# Toutes les instances de l'API (docker compose up --scale backend=N),
+	# retrouvées par le DNS de Docker. Un navigateur reste sur la même
+	# instance (cookie) : sans cela, le repli de Socket.IO en long-polling
+	# enverrait ses requêtes à une instance qui ne connaît pas la session.
+	# Redis relie ensuite les instances pour la diffusion des événements.
+	reverse_proxy {
+		dynamic a backend 3001 {
+			refresh 10s
+		}
+		lb_policy cookie zup_api
+		lb_retries 2
+	}
 }
 
 # Le site : un seul déploiement Next.js sert tous les domaines publics, le
