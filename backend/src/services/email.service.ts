@@ -1,5 +1,6 @@
 import { emailTransporter, EMAIL_CONFIG } from "../config/email";
 import { logger } from "../config/logger";
+import { lienDeSuivi } from "./suivi-commande.service";
 
 export interface EmailData {
   to: string;
@@ -33,6 +34,9 @@ export class EmailService {
   // Order confirmation email
   static async sendOrderConfirmation(order: any) {
     try {
+      // Le lien porte un jeton de suivi : sans lui, le client invité ne peut
+      // plus lire sa commande.
+      const lien = await lienDeSuivi(order.id, EMAIL_CONFIG.siteUrl);
       const html = `
         <!DOCTYPE html>
         <html>
@@ -108,7 +112,7 @@ export class EmailService {
               </div>
 
               <div style="text-align: center;">
-                <a href="${EMAIL_CONFIG.siteUrl}/track?commande=${order.id}" class="button">
+                <a href="${lien}" class="button">
                   Voir ma commande
                 </a>
               </div>
@@ -143,6 +147,7 @@ export class EmailService {
     order: { id: string; customerName: string; customerEmail: string; totalAmount: unknown },
     contenu: { titre: string; message: string }
   ) {
+    const lien = await lienDeSuivi(order.id, EMAIL_CONFIG.siteUrl);
     const echappe = (texte: string) =>
       texte.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
 
@@ -172,7 +177,7 @@ export class EmailService {
                 <p><strong>Montant :</strong> €${Number(order.totalAmount).toFixed(2)}</p>
               </div>
               <div style="text-align: center;">
-                <a href="${EMAIL_CONFIG.siteUrl}/track?commande=${order.id}" class="button">
+                <a href="${lien}" class="button">
                   Voir ma commande
                 </a>
               </div>

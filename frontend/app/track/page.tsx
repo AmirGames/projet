@@ -13,6 +13,7 @@ import { intituleDeLaLigne } from '@/lib/ligne-commande';
 import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
 import { useParametreAdresse } from '@/lib/navigateur';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { cheminCommande, jetonDeSuivi, memoriserJetonDeSuivi } from '@/lib/suivi-commande';
 
 // Leaflet touche `window` dès l'import : la carte ne se charge que côté navigateur.
 const SuiviLivraisonClient = dynamic(
@@ -34,9 +35,10 @@ interface OrderItem {
 interface Order {
   id: string;
   status: 'PENDING' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'REJECTED';
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
+  /** Absents de la vue réduite du suivi sans compte. */
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
   totalAmount: number;
   /** La taxe figée à la commande, et le taux qui valait ce jour-là. */
   taxAmount?: number | string;
@@ -81,6 +83,22 @@ interface Delivery {
   driverLng?: number;
 }
 
+/**
+ * Lire la commande avec ce qui l'ouvre : le jeton de suivi gardé pour elle, et
+ * la session du client s'il est connecté. Sans l'un ni l'autre, l'API répond
+ * 404 — le numéro de commande seul ne suffit plus.
+ */
+function lireSuivi(orderId: string, suite = '') {
+  let session: string | null = null;
+  try {
+    session = localStorage.getItem('accessToken');
+  } catch {}
+
+  return fetch(`${API_URL}${cheminCommande(orderId, jetonDeSuivi(orderId), suite)}`, {
+    headers: session ? { Authorization: `Bearer ${session}` } : undefined,
+  });
+}
+
 const statusSteps = [
   { status: 'PENDING', label: 'En Attente', icon: Clock, color: 'text-yellow-400' },
   { status: 'ACCEPTED', label: 'Acceptée', icon: CheckCircle, color: 'text-blue-400' },
@@ -114,18 +132,20 @@ export default function TrackOrderPage() {
     setLoading(true);
 
     try {
-      const query = valeur.trim().toLowerCase();
+      const query = valeur.trim();
       if (!query) {
-        setError('Veuillez entrer un numéro de commande ou un email');
+        setError('Veuillez entrer votre numéro de commande');
         setLoading(false);
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/orders/${query}`);
+      const response = await lireSuivi(query);
 
       if (!response.ok) {
         if (response.status === 404) {
-          setError("Commande non trouvée. Vérifiez le numéro de commande ou l\'email.");
+          setError(
+            'Commande introuvable. Ouvrez le lien de suivi reçu par e-mail ou SMS, ou connectez-vous au compte qui a passé la commande.'
+          );
         } else {
           setError('Erreur lors de la recherche. Veuillez réessayer.');
         }
@@ -140,9 +160,7 @@ export default function TrackOrderPage() {
       // Charger les données de livraison si c'est une livraison
       if (foundOrder?.deliveryType === 'DELIVERY' && foundOrder?.id) {
         try {
-          const deliveryResponse = await fetch(
-            `${API_URL}/api/orders/${foundOrder.id}/delivery`
-          );
+          const deliveryResponse = await lireSuivi(foundOrder.id, '/delivery');
           if (deliveryResponse.ok) {
             const deliveryData = await deliveryResponse.json();
             // L'API répond `{ data: null }` tant qu'aucune course n'existe :
@@ -177,6 +195,9 @@ export default function TrackOrderPage() {
    * La requête est lue sans `useSearchParams` (voir lib/navigateur.ts).
    */
   const demandee = useParametreAdresse('commande');
+  // Le jeton de suivi du lien : gardé pour les relectures et les visites
+  // suivantes, avant la première lecture.
+  const jetonDuLien = useParametreAdresse('t');
   const [demandeeVue, setDemandeeVue] = useState<string | null>(null);
   if (demandee && demandee !== demandeeVue) {
     setDemandeeVue(demandee);
@@ -184,8 +205,10 @@ export default function TrackOrderPage() {
   }
 
   useEffectChargement(() => {
-    if (demandee) rechercher(demandee);
-  }, [demandee, rechercher]);
+    if (!demandee) return;
+    if (jetonDuLien) memoriserJetonDeSuivi(demandee, jetonDuLien);
+    rechercher(demandee);
+  }, [demandee, jetonDuLien, rechercher]);
 
   /**
    * Tant que la commande avance, la page se relit d'elle-même.
@@ -198,7 +221,7 @@ export default function TrackOrderPage() {
 
     const minuteur = setInterval(async () => {
       try {
-        const reponse = await fetch(`${API_URL}/api/orders/${order.id}`);
+        const reponse = await lireSuivi(order.id);
         if (reponse.ok) setOrder(await reponse.json());
       } catch {
         // Hors ligne : on réessaiera au prochain passage.
@@ -220,7 +243,7 @@ export default function TrackOrderPage() {
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold">📍 Suivre Ma Commande</h1>
-          <p className="text-gray-400">Entrez votre numéro de commande ou email pour suivre votre commande en temps réel</p>
+          <p className="text-gray-400">Ouvrez le lien reçu par e-mail ou SMS, ou entrez votre numéro de commande</p>
         </div>
 
         {/* Search Form */}
@@ -232,7 +255,7 @@ export default function TrackOrderPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Numéro de commande (ex: ABC123DE) ou Email..."
+                placeholder="Numéro de commande..."
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-red-500 placeholder-gray-500"
               />
             </div>
@@ -473,24 +496,27 @@ export default function TrackOrderPage() {
               )}
             </div>
 
-            {/* Customer Information */}
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <h2 className="text-lg font-bold mb-4">Vos Informations</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Nom</p>
-                  <p className="font-semibold">{order.customerName}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Email</p>
-                  <p className="font-semibold text-sm">{order.customerEmail}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Téléphone</p>
-                  <p className="font-semibold">{order.customerPhone}</p>
+            {/* Customer Information — lue seulement par le compte du client :
+                le suivi par lien ne transporte ni e-mail ni téléphone. */}
+            {(order.customerName || order.customerEmail || order.customerPhone) && (
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+                <h2 className="text-lg font-bold mb-4">Vos Informations</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-gray-400 text-sm mb-1">Nom</p>
+                    <p className="font-semibold">{order.customerName}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm mb-1">Email</p>
+                    <p className="font-semibold text-sm">{order.customerEmail}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm mb-1">Téléphone</p>
+                    <p className="font-semibold">{order.customerPhone}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Order Items */}
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">

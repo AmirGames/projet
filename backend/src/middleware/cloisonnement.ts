@@ -67,9 +67,12 @@ const CHEMINS_HORS_PORTEE = [
  * `authMiddleware`, pas dans cette liste.
  */
 const GESTES_PUBLICS: { methode: string; chemin: RegExp }[] = [
-  // Commander, et suivre sa commande.
+  // Commander, et suivre sa commande. Le suivi n'est pas ouvert pour autant :
+  // la route vérifie elle-même l'appelant ou le jeton de suivi, et répond 404
+  // à tout autre (voir services/suivi-commande.service.ts).
   { methode: "POST", chemin: /^\/api\/orders\/?$/ },
   { methode: "GET", chemin: /^\/api\/orders\/[^/]+$/ },
+  { methode: "GET", chemin: /^\/api\/orders\/[^/]+\/delivery$/ },
   // Le pourboire après livraison, depuis le lien de suivi.
   { methode: "GET", chemin: /^\/api\/orders\/[^/]+\/pourboire$/ },
   { methode: "POST", chemin: /^\/api\/orders\/[^/]+\/pourboire$/ },

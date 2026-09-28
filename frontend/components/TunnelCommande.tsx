@@ -50,6 +50,7 @@ import { StripePayment } from '@/components/stripe-payment';
 import { ChoixPourboire } from '@/components/ChoixPourboire';
 import { DelaiAnnulation } from '@/components/DelaiAnnulation';
 import AcceptationConditions from '@/components/AcceptationConditions';
+import { memoriserJetonDeSuivi } from '@/lib/suivi-commande';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -556,6 +557,9 @@ export function TunnelCommande({
 
       const recue = await response.json();
       const id = recue.order?.id || recue.id;
+      // Rendu une seule fois : sans lui, un client invité ne peut plus suivre
+      // sa commande depuis ce navigateur.
+      memoriserJetonDeSuivi(id, recue.order?.trackingToken);
       const commande = { id, numero: String(id).slice(-8).toUpperCase() };
 
       if (recue.order?.paiementEnLigne) {

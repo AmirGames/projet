@@ -827,6 +827,15 @@ model Order {
 
   notes           String?
 
+  /// L'empreinte SHA-256 du jeton de suivi remis au client à la commande.
+  ///
+  /// Le suivi public se lisait avec le seul identifiant de la commande, qui
+  /// n'a rien de secret (URL, SMS, journaux, réponses de l'espace livreur) :
+  /// n'importe qui en lisait le code de remise et les coordonnées du client.
+  /// Le jeton en clair n'est rendu qu'une fois, à la création ; seule son
+  /// empreinte est gardée. Nul pour les commandes passées avant.
+  trackingTokenHash String?
+
   /// L'acceptation par le commerçant.
   ///
   /// Une commande passée n'est qu'une demande : le client n'est fixé que
@@ -856,6 +865,8 @@ model Order {
   delivery        OrderDelivery?
   /// Le pourboire laissé après la livraison, payé à part (voir DriverTip).
   pourboireApres  DriverTip?
+  /// Les jetons des liens de suivi envoyés par e-mail et SMS (empreintes).
+  jetonsDeSuivi   OrderTrackingToken[]
   invoice         Invoice?
   /// Le relevé de reversement qui porte cette commande : une commande n'est
   /// reversée qu'une fois.
@@ -872,6 +883,23 @@ model Order {
   @@index([deletedAt])
   @@index([submittedAt])
   @@index([merchantPayoutId])
+}
+
+/// Un jeton de suivi porté par un lien envoyé au client (e-mail, SMS).
+///
+/// Ces messages partent parfois bien après la commande — à l'encaissement, à
+/// l'acceptation, pendant la course — quand le jeton remis au navigateur n'est
+/// plus connu du serveur, qui n'en garde que l'empreinte. Chaque lien reçoit
+/// donc son propre jeton, dont seule l'empreinte SHA-256 est enregistrée ici.
+model OrderTrackingToken {
+  id        String   @id @default(cuid())
+  orderId   String
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }
 
 model OrderItem {
