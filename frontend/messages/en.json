@@ -1407,7 +1407,17 @@
     "startSearching": "Start looking for restaurants →",
     "previousReview": "You gave {note}★ in {date}. Still agree?",
     "reviewWanted": "⭐ Your review",
-    "previousRemoved": "This review was removed by the platform. If you edit it, the platform will review it again."
+    "previousRemoved": "This review was removed by the platform. If you edit it, the platform will review it again.",
+    "statusReady": "Ready",
+    "statusCompleted": "Completed",
+    "statusRejected": "Declined",
+    "pickup": "Pickup",
+    "reorder": "Order again",
+    "reordering": "Preparing your basket…",
+    "reorderPartial": "{n, plural, one {# item is} other {# items are}} no longer available: {liste}. The rest is in your basket.",
+    "reorderNone": "None of these items is available today.",
+    "reorderUnavailable": "This shop can't be reached right now.",
+    "reorderSeeCart": "See basket"
   },
   "clientOrderDetail": {
     "statusPending": "Pending",

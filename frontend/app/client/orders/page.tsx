@@ -5,9 +5,10 @@ import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Clock, MapPin, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, ChevronRight, RotateCcw } from 'lucide-react';
 
 import { euro } from '@/lib/format';
+import { remettreAuPanier, type LigneCommandee } from '@/lib/recommander';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -16,33 +17,38 @@ interface Order {
   id: string;
   status: string;
   totalAmount: number;
-  deliveryAddress: string;
+  deliveryAddress: string | null;
   createdAt: string;
-  storeName?: string;
+  store?: { id: string; name: string; slug: string } | null;
+  items?: LigneCommandee[];
   /** Avis jamais donné, ou vieux de plus de quinze jours. */
   avisARedemander?: boolean;
 }
 
+/**
+ * Les états d'une commande (enum OrderStatus du serveur). La page attendait
+ * DELIVERED et CANCELLED, qui n'existent pas : l'onglet « Terminées » restait
+ * vide et les étiquettes affichaient le code brut.
+ */
 const statusColors: Record<string, string> = {
   PENDING: 'yellow',
-  CONFIRMED: 'blue',
+  ACCEPTED: 'blue',
   PREPARING: 'orange',
   READY: 'green',
-  PICKED_UP: 'purple',
-  DELIVERED: 'green',
-  CANCELLED: 'red'
+  COMPLETED: 'green',
+  REJECTED: 'red'
 };
 
-// Status keys for translation - values will be translated using useTranslations
 const statusTranslationKeys: Record<string, string> = {
   PENDING: 'statusPending',
-  CONFIRMED: 'statusConfirmed',
+  ACCEPTED: 'statusConfirmed',
   PREPARING: 'statusPreparing',
   READY: 'statusReady',
-  PICKED_UP: 'statusPickedUp',
-  DELIVERED: 'statusDelivered',
-  CANCELLED: 'statusCancelled'
+  COMPLETED: 'statusCompleted',
+  REJECTED: 'statusRejected'
 };
+
+const TERMINEES = ['COMPLETED', 'REJECTED'];
 
 export default function OrdersPage() {
   const t = useTranslations('clientOrders');
@@ -50,6 +56,38 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+  // « Commander à nouveau » : la commande en cours de reprise, et ce qu'on en dit.
+  const [reprise, setReprise] = useState<{ orderId: string; message?: string; slug?: string } | null>(null);
+
+  const commanderANouveau = async (e: React.MouseEvent, order: Order) => {
+    // Le bouton vit dans le lien de la carte : sans cela, il ouvrirait le détail.
+    e.preventDefault();
+    e.stopPropagation();
+    if (!order.store || !order.items?.length) return;
+
+    setReprise({ orderId: order.id });
+    try {
+      const { reprises, absents } = await remettreAuPanier(
+        order.store.id,
+        order.store.name,
+        order.store.slug,
+        order.items,
+      );
+      if (reprises === 0) {
+        setReprise({ orderId: order.id, message: t('reorderNone') });
+      } else if (absents.length > 0) {
+        setReprise({
+          orderId: order.id,
+          slug: order.store.slug,
+          message: t('reorderPartial', { n: absents.length, liste: absents.join(', ') }),
+        });
+      } else {
+        router.push(`/store/${order.store.slug}?panier=1`);
+      }
+    } catch {
+      setReprise({ orderId: order.id, message: t('reorderUnavailable') });
+    }
+  };
 
   // silencieux : une relecture en direct ne vide pas la liste le temps de la
   // réponse.
@@ -86,10 +124,10 @@ export default function OrdersPage() {
 
   const filteredOrders = orders.filter(order => {
     if (filter === 'active') {
-      return !['DELIVERED', 'CANCELLED'].includes(order.status);
+      return !TERMINEES.includes(order.status);
     }
     if (filter === 'completed') {
-      return ['DELIVERED', 'CANCELLED'].includes(order.status);
+      return TERMINEES.includes(order.status);
     }
     return true;
   });
@@ -174,7 +212,7 @@ export default function OrdersPage() {
                         <p className="text-gray-400 text-sm mb-1">{t('address')}</p>
                         <p className="text-white flex items-center gap-2">
                           <MapPin size={14} />
-                          <span className="line-clamp-1">{order.deliveryAddress}</span>
+                          <span className="line-clamp-1">{order.deliveryAddress || t('pickup')}</span>
                         </p>
                       </div>
                       <div className="text-right">
@@ -197,9 +235,41 @@ export default function OrdersPage() {
                         </span>
                       )}
                       <span className="text-gray-500 text-xs">
-                        {order.storeName && `${order.storeName}`}
+                        {order.store?.name}
                       </span>
                     </div>
+
+                    {TERMINEES.includes(order.status) && order.store && (order.items?.length ?? 0) > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-700 flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={(e) => commanderANouveau(e, order)}
+                          disabled={reprise?.orderId === order.id && !reprise.message}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-sm font-semibold transition"
+                        >
+                          <RotateCcw size={16} />
+                          {reprise?.orderId === order.id && !reprise.message ? t('reordering') : t('reorder')}
+                        </button>
+                        {reprise?.orderId === order.id && reprise.message && (
+                          <p role="status" className="text-sm text-amber-300 flex-1 min-w-[12rem]">
+                            {reprise.message}{' '}
+                            {reprise.slug && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  router.push(`/store/${reprise.slug}?panier=1`);
+                                }}
+                                className="underline text-orange-400 hover:text-orange-300"
+                              >
+                                {t('reorderSeeCart')}
+                              </button>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </Link>
               );

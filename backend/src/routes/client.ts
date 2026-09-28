@@ -690,7 +690,12 @@ router.get("/me/orders", authMiddleware, async (req: Request, res: Response, nex
       take: 50,
       include: {
         store: { select: { id: true, name: true, slug: true, city: true } },
-        items: { include: { product: { select: { name: true } } } },
+        items: {
+          include: {
+            product: { select: { name: true } },
+            variant: { select: { label: true } },
+          },
+        },
         delivery: { select: { status: true, deliveryTime: true } },
       },
     });
@@ -707,6 +712,8 @@ router.get("/me/orders", authMiddleware, async (req: Request, res: Response, nex
         status: c.status,
         paymentStatus: c.paymentStatus,
         deliveryType: c.deliveryType,
+        // La liste l'affiche : sans lui, la colonne « Adresse » restait vide.
+        deliveryAddress: c.deliveryAddress,
         totalAmount: Number(c.totalAmount),
         createdAt: c.createdAt,
         estimatedReadyAt: c.estimatedReadyAt,
@@ -716,6 +723,11 @@ router.get("/me/orders", authMiddleware, async (req: Request, res: Response, nex
         // plus de quinze jours et antérieur à cette commande.
         avisARedemander: avisARedemander(c, avisRestaurants.get(c.storeId)),
         items: c.items.map((i) => ({
+          // Le plat et sa déclinaison : « Commander à nouveau » les retrouve
+          // dans le menu du jour, au prix du jour.
+          productId: i.productId,
+          variantId: i.variantId,
+          variantLabel: i.variant?.label || null,
           name: i.product?.name || "Produit supprimé",
           quantity: i.quantity,
           price: Number(i.price),
