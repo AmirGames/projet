@@ -29,6 +29,7 @@ import { compteDuJeton, verifyToken } from "./auth";
 const CHEMINS_PUBLICS = [
   "/health",
   "/api/auth",
+  "/api/sso",
   "/api/client",
   "/api/address",
   "/api/maps",

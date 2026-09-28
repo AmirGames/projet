@@ -450,7 +450,15 @@ Le site sait se répartir sur quatre domaines ou tenir sur un seul :
 Chaque page est alors servie par le domaine qui lui revient, et une page
 demandée au mauvais domaine redirige vers le bon. Les pages « Devenir … »
 vivent sur le domaine de ceux qu'elles recrutent : commerçant sur le domaine
-pro, livreur sur le domaine livreur, chauffeur sur ZupDrive. Laissez-les vides pour rester
+pro, livreur sur le domaine livreur, chauffeur sur ZupDrive.
+
+**Connexion unique.** Se connecter sur un domaine connecte partout : la vitrine
+du groupe (`SSO_ORIGIN`, zupone.com) garde la session dans un cookie qu'elle
+seule lit, et la transmet aux autres domaines par un code à usage unique,
+valable une minute et pour un seul domaine. La vérification n'a lieu que sur
+les pages de connexion : les pages publiques ne font aucun détour. Se
+déconnecter ferme la session sur tous les domaines. Sans `SSO_ORIGIN` (API) ni
+`NEXT_PUBLIC_DOMAINE_VITRINE` (site), chaque domaine garde sa propre session. Laissez-les vides pour rester
 sur un domaine unique.
 
 ## Reversements et virements

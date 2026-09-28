@@ -2,6 +2,7 @@
 
 import { signalerErreur } from '@/lib/erreurs';
 import { useCallback, useState } from 'react';
+import { fermerSessionPartout } from '@/lib/sso';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -97,6 +98,8 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
   }, [auNiveauDuChoix, charger]);
 
   const seDeconnecter = () => {
+    // Ferme la session sur tous les domaines, puis l'efface d'ici.
+    fermerSessionPartout();
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('currentOrgId');

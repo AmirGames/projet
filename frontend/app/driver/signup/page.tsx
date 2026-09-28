@@ -6,6 +6,7 @@ import AcceptationConditions from '@/components/AcceptationConditions';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { confierSessionCentrale } from '@/lib/sso';
 import { Bike, Car, Truck } from 'lucide-react';
 import { SelecteurPays } from '@/components/SelecteurPays';
 import { usePays } from '@/lib/pays-client';
@@ -81,6 +82,8 @@ export default function InscriptionLivreurPage() {
       // L'espace livreur lit son jeton sous une clé dédiée.
       localStorage.setItem('driverToken', donnees.accessToken);
       localStorage.setItem('accessToken', donnees.accessToken);
+      if (donnees.refreshToken) localStorage.setItem('refreshToken', donnees.refreshToken);
+      if (await confierSessionCentrale(donnees.accessToken, '/driver')) return;
       router.push('/driver');
     } catch {
       setErreur('Erreur de connexion au serveur');

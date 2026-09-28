@@ -21,6 +21,8 @@ const ESPACES_AVEC_NAVIGATION = [
   '/devenir-commercant',
   '/devenir-livreur',
   '/devenir-chauffeur',
+  // Le passage éclair de la connexion unique.
+  '/sso',
 ];
 
 // Pages du livreur affichées sans session : le layout livreur n'y montre

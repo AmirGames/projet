@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import ReglesMotDePasse from "@/components/ReglesMotDePasse";
 import { motDePasseValide } from "@/lib/mot-de-passe";
 import { api } from "@/lib/api";
+import { confierSessionCentrale } from "@/lib/sso";
 import Link from "next/link";
 import { SelecteurPays } from "@/components/SelecteurPays";
 import { usePays } from "@/lib/pays-client";
@@ -57,7 +58,9 @@ export default function SignupPage() {
 
       setError("");
 
-      // Redirect to role selection to choose customer/merchant/driver roles
+      // Redirect to role selection to choose customer/merchant/driver roles —
+      // en passant par zupone.com, qui garde la session pour les autres domaines.
+      if (await confierSessionCentrale(result.accessToken, "/auth/role-selection")) return;
       router.push("/auth/role-selection");
     } catch (err) {
       setError(t("error"));

@@ -19,6 +19,9 @@ const CHEMINS_AUTORISES = [
   "/api/auth/login",
   "/api/auth/refresh",
   "/api/auth/me",
+  // La connexion unique : l'équipe passe d'un domaine à l'autre pour
+  // rejoindre le panneau d'administration.
+  "/api/sso",
   "/api/superowner",
   "/api/admin",
 ];

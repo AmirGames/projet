@@ -1,0 +1,195 @@
+import crypto from "crypto";
+import { db } from "./db";
+import { AuthService } from "./auth.service";
+import { ApiError } from "../middleware/errorHandler";
+import { originesAutorisees } from "../config/origines-autorisees";
+
+/**
+ * Connexion unique entre les domaines (SSO).
+ *
+ * Chaque domaine du site garde sa session dans son propre stockage : le
+ * navigateur interdit à manager.zupeat.com de lire celle de zupeat.com, et
+ * plus encore à zupone.com celle de zupdrive.com. On se reconnectait donc à
+ * chaque changement de domaine.
+ *
+ * Désormais :
+ * - chaque connexion ouvre une **session** (SessionConnexion), que tous les
+ *   jetons émis pour elle portent (`sid`) ;
+ * - zupone.com (SSO_ORIGIN) garde, dans un cookie qui n'est lisible que de
+ *   lui, un **jeton central** rattaché à cette session ;
+ * - un autre domaine obtient la session par un **code à usage unique**,
+ *   valable une minute et pour lui seul, qu'il échange contre ses jetons ;
+ * - se déconnecter **ferme la session** : ses jetons cessent de valoir sur
+ *   tous les domaines, et le jeton central avec eux.
+ *
+ * Seules des empreintes sont conservées : ni le jeton central, ni les codes ne
+ * sont lisibles dans la base.
+ */
+
+const MINUTE = 60 * 1000;
+const DUREE_CODE_MS = 1 * MINUTE;
+/** Celle des jetons de renouvellement : au-delà, il faut se reconnecter. */
+const DUREE_SESSION_MS = 30 * 24 * 60 * MINUTE;
+/** Une session fermée cesse de valoir partout en trente secondes au plus. */
+const DUREE_CACHE_MS = 30 * 1000;
+
+const empreinte = (valeur: string) => crypto.createHash("sha256").update(valeur).digest("hex");
+const aleatoire = () => crypto.randomBytes(32).toString("base64url");
+
+/** L'origine qui tient le cookie central (https://zupone.com), ou null : SSO éteint. */
+export function origineCentrale(): string | null {
+  const brute = (process.env.SSO_ORIGIN || "").trim();
+  if (!brute) return null;
+  try {
+    return new URL(brute).origin;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Un domaine du site, à qui l'on peut confier un code.
+ *
+ * Sans cette liste, un code pourrait être envoyé à n'importe quelle adresse,
+ * et la session avec lui.
+ */
+export function audienceAutorisee(origine: string | undefined | null): origine is string {
+  if (!origine) return false;
+  const centrale = origineCentrale();
+  return origine === centrale || originesAutorisees().includes(origine);
+}
+
+const sessions = new Map<string, { active: boolean; expireA: number }>();
+
+export const SsoService = {
+  /** Ouvre une session et émet les jetons qui la portent. */
+  async connecter(userId: string) {
+    const session = await db.sessionConnexion.create({
+      data: { userId, expiresAt: new Date(Date.now() + DUREE_SESSION_MS) },
+      select: { id: true },
+    });
+
+    return {
+      sid: session.id,
+      accessToken: AuthService.generateAccessToken(userId, session.id),
+      refreshToken: AuthService.generateRefreshToken(userId, session.id),
+    };
+  },
+
+  /** La session est-elle encore ouverte ? Gardé trente secondes par processus. */
+  async sessionActive(sid: string): Promise<boolean> {
+    const connue = sessions.get(sid);
+    if (connue && Date.now() < connue.expireA) return connue.active;
+
+    const session = await db.sessionConnexion.findUnique({
+      where: { id: sid },
+      select: { revokedAt: true, expiresAt: true },
+    });
+    const active = !!session && !session.revokedAt && session.expiresAt > new Date();
+
+    // Les entrées périmées partent de temps en temps : une par session vue,
+    // la mémoire grossirait sans fin.
+    if (sessions.size > 10000) {
+      const maintenant = Date.now();
+      for (const [cle, valeur] of sessions) if (valeur.expireA < maintenant) sessions.delete(cle);
+    }
+    sessions.set(sid, { active, expireA: Date.now() + DUREE_CACHE_MS });
+    return active;
+  },
+
+  /** Un code pour transmettre la session à un domaine du site. */
+  async creerCode(sid: string, audience: string): Promise<string> {
+    if (!audienceAutorisee(audience)) {
+      throw new ApiError(400, "Domaine inconnu", "SSO_AUDIENCE");
+    }
+    if (!(await this.sessionActive(sid))) {
+      throw new ApiError(401, "Votre session n'est plus valable. Reconnectez-vous.", "SESSION_INVALIDE");
+    }
+
+    const code = aleatoire();
+    await db.codeConnexion.create({
+      data: {
+        codeHash: empreinte(code),
+        sessionId: sid,
+        audience,
+        expiresAt: new Date(Date.now() + DUREE_CODE_MS),
+      },
+    });
+
+    // Au passage, les codes périmés depuis plus d'une heure : la table ne
+    // garde que ce qui peut encore servir ou vient de servir.
+    db.codeConnexion
+      .deleteMany({ where: { expiresAt: { lt: new Date(Date.now() - 60 * MINUTE) } } })
+      .catch(() => undefined);
+
+    return code;
+  },
+
+  /**
+   * Consomme un code : une seule fois, dans la minute, par le domaine à qui
+   * il était destiné. Rend la session qu'il transmet.
+   */
+  async echangerCode(code: string, audience: string | undefined | null) {
+    const invalide = () =>
+      new ApiError(401, "Lien de connexion expiré ou déjà utilisé.", "SSO_CODE_INVALIDE");
+
+    if (!code || !audience) throw invalide();
+
+    const trouve = await db.codeConnexion.findUnique({
+      where: { codeHash: empreinte(code) },
+      select: { id: true, audience: true, expiresAt: true, usedAt: true, sessionId: true },
+    });
+
+    if (!trouve || trouve.usedAt || trouve.expiresAt < new Date() || trouve.audience !== audience) {
+      throw invalide();
+    }
+
+    // Marqué utilisé seulement s'il ne l'était pas : deux échanges simultanés
+    // du même code, un seul passe.
+    const { count } = await db.codeConnexion.updateMany({
+      where: { id: trouve.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    if (count !== 1) throw invalide();
+
+    const session = await db.sessionConnexion.findUnique({
+      where: { id: trouve.sessionId },
+      select: { id: true, userId: true, revokedAt: true, expiresAt: true },
+    });
+    if (!session || session.revokedAt || session.expiresAt < new Date()) throw invalide();
+
+    return { sid: session.id, userId: session.userId };
+  },
+
+  /** Rattache un jeton central à la session, pour le cookie de zupone.com. */
+  async poserJetonCentral(sid: string): Promise<string> {
+    const jeton = aleatoire();
+    await db.sessionConnexion.update({
+      where: { id: sid },
+      data: { jetonCentralHash: empreinte(jeton) },
+    });
+    return jeton;
+  },
+
+  /** La session d'un jeton central, si elle est encore ouverte. */
+  async sessionDuJetonCentral(jeton: string) {
+    if (!jeton) return null;
+
+    const session = await db.sessionConnexion.findUnique({
+      where: { jetonCentralHash: empreinte(jeton) },
+      select: { id: true, userId: true, revokedAt: true, expiresAt: true },
+    });
+
+    if (!session || session.revokedAt || session.expiresAt < new Date()) return null;
+    return { sid: session.id, userId: session.userId };
+  },
+
+  /** Ferme la session : ses jetons cessent de valoir sur tous les domaines. */
+  async fermer(sid: string) {
+    await db.sessionConnexion.updateMany({
+      where: { id: sid, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    sessions.set(sid, { active: false, expireA: Date.now() + DUREE_CACHE_MS });
+  },
+};

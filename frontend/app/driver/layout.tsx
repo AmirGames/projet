@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
 import { useStockageLocal } from '@/lib/navigateur';
+import { fermerSessionPartout } from '@/lib/sso';
 
 export default function DriverLayout({
   children,
@@ -41,7 +42,12 @@ export default function DriverLayout({
     href === '/driver' ? pathname === href : pathname === href || pathname?.startsWith(href + '/');
 
   const handleLogout = () => {
+    // Ferme la session sur tous les domaines, puis l'efface d'ici — jeton de
+    // compte compris : laissé en place, il gardait l'espace ouvert ailleurs.
+    fermerSessionPartout();
     localStorage.removeItem('driverToken');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     router.push('/driver/login');
   };
 

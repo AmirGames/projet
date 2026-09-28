@@ -40,6 +40,7 @@ model User {
   customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
   ticketMessages TicketMessage[]
   pushDevices   PushDevice[]
+  sessionsConnexion SessionConnexion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2156,3 +2157,46 @@ model UptimeCheck {
   @@index([target, createdAt])
   @@index([createdAt])
 }
+
+// ============================================================================
+// SESSIONS ET CONNEXION UNIQUE (SSO)
+// ============================================================================
+
+/// Une connexion d'un navigateur.
+///
+/// Les jetons émis lors de cette connexion la portent (`sid`), sur chaque
+/// domaine où elle a été transmise. La fermer les invalide tous : la
+/// déconnexion vaut pour zupeat.com, manager.zupeat.com, delivery.zupeat.com,
+/// manager.zupone.com et zupdrive.com à la fois. Voir sso.service.ts.
+model SessionConnexion {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Empreinte du jeton rangé dans le cookie central (zupone.com), une fois
+  /// ce cookie posé. Le jeton lui-même n'est jamais conservé.
+  jetonCentralHash String?   @unique
+  createdAt        DateTime  @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  codes            CodeConnexion[]
+
+  @@index([userId])
+}
+
+/// Un code à usage unique qui fait passer une session d'un domaine à l'autre.
+///
+/// Valable une minute, pour un seul domaine (`audience`), et une seule fois :
+/// il voyage dans une adresse, jamais les jetons eux-mêmes.
+model CodeConnexion {
+  id        String           @id @default(cuid())
+  codeHash  String           @unique
+  sessionId String
+  session   SessionConnexion @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  audience  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([expiresAt])
+}
+

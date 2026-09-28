@@ -16,6 +16,7 @@ import { limiterCadence } from "./middleware/throttle";
 import { Surveillance } from "./services/surveillance.service";
 import { Vigie } from "./services/vigie.service";
 import authRouter from "./routes/auth";
+import ssoRouter from "./routes/sso";
 import organizationRouter from "./routes/organization";
 import storeRouter from "./routes/store";
 import storeSettingsRouter from "./routes/store-settings";
@@ -202,6 +203,7 @@ export function createApp(): Express {
 
   // ===== API Routes =====
   app.use("/api/auth", authRouter);
+  app.use("/api/sso", ssoRouter);
   app.use("/api/organizations", organizationRouter);
   app.use("/api/stores", storeRouter);
   app.use("/api/store-settings", storeSettingsRouter);

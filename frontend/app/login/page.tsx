@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { RAISON_DECONNEXION, useAuth } from "@/lib/auth-context";
+import { accueilConnecte, confierSessionCentrale, demanderSessionCentrale } from "@/lib/sso";
 import Link from "next/link";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -42,6 +43,16 @@ export default function LoginPage() {
   const raisonStockee = useSyncExternalStore(sansAbonnement, lireRaison, () => null);
   const [raison, setRaison] = useState("");
   if (raisonStockee && raisonStockee !== raison) setRaison(raisonStockee);
+
+  /**
+   * Déjà connecté sur un autre domaine du site ? zupone.com le sait : un
+   * aller-retour éclair, et l'on arrive connecté, sans formulaire. Pas après
+   * une session qui vient d'expirer — elle l'est partout, et le message qui
+   * l'explique se perdrait dans le détour.
+   */
+  useEffect(() => {
+    if (!raisonStockee) demanderSessionCentrale(accueilConnecte());
+  }, [raisonStockee]);
 
   useEffect(() => {
     if (!raisonStockee) return;
@@ -110,12 +121,11 @@ export default function LoginPage() {
       // protégées renvoient aussitôt vers /login.
       await refreshAuth();
 
-      // Redirect based on role
-      if (isSuperOwner) {
-        router.push("/superowner");
-      } else {
-        router.push("/auth/role-selection");
-      }
+      // Redirect based on role — en passant par zupone.com, qui garde la
+      // session pour les autres domaines du site.
+      const destination = isSuperOwner ? "/superowner" : "/auth/role-selection";
+      if (await confierSessionCentrale(result.accessToken, destination)) return;
+      router.push(destination);
     } catch (err) {
       setError(t("errorConnection"));
       signalerErreur(err);

@@ -7,6 +7,7 @@ import { logger } from './logger';
 import { verifyToken } from '../middleware/auth';
 import { AuthenticatedSocket } from '../types/socket';
 import { db } from '../services/db';
+import { SsoService } from '../services/sso.service';
 
 // Les notifications sont adressées par e-mail : chaque connexion rejoint donc
 // un salon nominatif, ce qui permet de la pousser au bon destinataire.
@@ -81,7 +82,7 @@ export function initializeSocket(httpServer: HTTPServer) {
     transports: ['websocket', 'polling'],
   });
 
-  io.use((socket: AuthenticatedSocket, next) => {
+  io.use(async (socket: AuthenticatedSocket, next) => {
     const token = socket.handshake.auth.token;
 
     // Une connexion sans jeton est acceptée, mais reste anonyme : la vitrine
@@ -94,6 +95,10 @@ export function initializeSocket(httpServer: HTTPServer) {
 
     try {
       const decoded = verifyToken(token);
+      // Une session fermée (déconnexion) ne suit plus rien en direct.
+      if (decoded.sid && !(await SsoService.sessionActive(decoded.sid))) {
+        return next(new Error('Invalid token'));
+      }
       socket.userId = decoded.userId;
       // userRole and organizationId are no longer in JWT; load from DB if needed
       next();
