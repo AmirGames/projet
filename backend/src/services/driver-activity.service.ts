@@ -33,6 +33,8 @@ function coursesDuLivreur(driverId: string) {
   };
 }
 
+const arrondi = (n: number) => Math.round(n * 100) / 100;
+
 /** Minutes entre deux instants, ou null s'il en manque un. */
 function minutesEntre(debut?: Date | null, fin?: Date | null) {
   if (!debut || !fin) return null;
@@ -118,6 +120,8 @@ export class DriverActivityService {
               deliveryCity: true,
               deliveryPostal: true,
               totalAmount: true,
+              tipAmount: true,
+              pourboireApres: { select: { status: true, amount: true, driverId: true } },
               store: { select: { name: true, address: true, city: true } },
             },
           },
@@ -161,6 +165,17 @@ export class DriverActivityService {
         deliveryCity: [c.order?.deliveryPostal, c.order?.deliveryCity].filter(Boolean).join(" "),
         ...bilanCourse(aMoi ? c : { ...c, status: "CANCELLED" }, offre),
         rating: c.rating ? { note: c.rating.note, commentaire: c.rating.commentaire } : null,
+        // Le pourboire du client, à la commande ou après : seulement pour la
+        // course qu'il a menée au bout.
+        pourboire:
+          aMoi && c.status === "DELIVERED"
+            ? arrondi(
+                Number(c.order?.tipAmount ?? 0) +
+                  (c.order?.pourboireApres?.status === "PAID" && c.order.pourboireApres.driverId === driverId
+                    ? Number(c.order.pourboireApres.amount)
+                    : 0)
+              )
+            : 0,
         createdAt: c.createdAt,
       };
     });
@@ -187,7 +202,7 @@ export class DriverActivityService {
     const depuis = new Date(maintenant.getTime() - jours * 86400000);
     const avant = new Date(depuis.getTime() - jours * 86400000);
 
-    const [livrees, precedentes, offres, notes, livreur] = await Promise.all([
+    const [livrees, precedentes, offres, notes, livreur, pourboiresApres] = await Promise.all([
       db.orderDelivery.findMany({
         where: { driverId, status: "DELIVERED", deliveryTime: { gte: depuis } },
         select: {
@@ -196,7 +211,7 @@ export class DriverActivityService {
           pickupTime: true,
           distanceKm: true,
           driverPayout: true,
-          order: { select: { feesAmount: true } },
+          order: { select: { feesAmount: true, tipAmount: true } },
         },
       }),
       db.orderDelivery.aggregate({
@@ -217,6 +232,11 @@ export class DriverActivityService {
         _count: true,
       }),
       db.driver.findUnique({ where: { id: driverId }, select: { rating: true, totalRatings: true } }),
+      // Les pourboires laissés après la livraison, au jour de leur encaissement.
+      db.driverTip.findMany({
+        where: { driverId, status: "PAID", paidAt: { gte: depuis } },
+        select: { amount: true, paidAt: true },
+      }),
     ]);
 
     const gain = (c: (typeof livrees)[number]) => Number(c.driverPayout ?? c.order?.feesAmount ?? 0);
@@ -225,22 +245,28 @@ export class DriverActivityService {
     const jourDe = new Intl.DateTimeFormat("fr-CA", { timeZone: fuseau, year: "numeric", month: "2-digit", day: "2-digit" });
     const heureDe = new Intl.DateTimeFormat("fr-FR", { timeZone: fuseau, hour: "2-digit", hourCycle: "h23" });
 
-    const parJour = new Map<string, { date: string; livrees: number; gains: number; distanceKm: number }>();
+    const parJour = new Map<string, { date: string; livrees: number; gains: number; distanceKm: number; pourboires: number }>();
     for (let i = jours - 1; i >= 0; i--) {
       const cle = jourDe.format(new Date(maintenant.getTime() - i * 86400000));
-      parJour.set(cle, { date: cle, livrees: 0, gains: 0, distanceKm: 0 });
+      parJour.set(cle, { date: cle, livrees: 0, gains: 0, distanceKm: 0, pourboires: 0 });
     }
 
     const parHeure = Array.from({ length: 24 }, (_, heure) => ({ heure, livrees: 0, gains: 0 }));
 
     let gains = 0;
+    let pourboires = 0;
+    let coursesAvecPourboire = 0;
     let distance = 0;
     const durees: number[] = [];
     const retraits: number[] = [];
 
     for (const c of livrees) {
       const montant = gain(c);
+      // Déjà compris dans le gain de la course.
+      const pourboire = Number(c.order?.tipAmount ?? 0);
       gains += montant;
+      pourboires += pourboire;
+      if (pourboire > 0) coursesAvecPourboire += 1;
       distance += c.distanceKm ?? 0;
 
       if (c.deliveryTime) {
@@ -249,6 +275,7 @@ export class DriverActivityService {
           jour.livrees += 1;
           jour.gains += montant;
           jour.distanceKm += c.distanceKm ?? 0;
+          jour.pourboires += pourboire;
         }
         // formatToParts : le format français donne « 20 h », pas « 20 ».
         const valeurHeure = heureDe.formatToParts(c.deliveryTime).find((p) => p.type === "hour")?.value;
@@ -261,6 +288,19 @@ export class DriverActivityService {
       if (duree != null) durees.push(duree);
       const retrait = minutesEntre(c.assignedAt, c.pickupTime);
       if (retrait != null) retraits.push(retrait);
+    }
+
+    // Le pourboire laissé après la livraison s'ajoute au gain de la course.
+    for (const p of pourboiresApres) {
+      const montant = Number(p.amount);
+      gains += montant;
+      pourboires += montant;
+      coursesAvecPourboire += 1;
+      const jour = p.paidAt ? parJour.get(jourDe.format(p.paidAt)) : undefined;
+      if (jour) {
+        jour.gains += montant;
+        jour.pourboires += montant;
+      }
     }
 
     const moyenne = (valeurs: number[]) =>
@@ -279,7 +319,6 @@ export class DriverActivityService {
     const repondues = compte.ACCEPTED + compte.DECLINED + compte.EXPIRED;
 
     const minutesEnCourse = durees.reduce((a, b) => a + b, 0);
-    const arrondi = (n: number) => Math.round(n * 100) / 100;
 
     return {
       periode: { jours, depuis, jusqua: maintenant, fuseau },
@@ -293,6 +332,9 @@ export class DriverActivityService {
         // Gains rapportés au temps passé en course, pas au temps connecté.
         gainsParHeure: minutesEnCourse > 0 ? arrondi(gains / (minutesEnCourse / 60)) : null,
         annulees: annuleesParLui,
+        // Compris dans les gains : ce que les clients ont laissé en plus.
+        pourboires: arrondi(pourboires),
+        coursesAvecPourboire,
       },
       precedente: {
         livrees: precedentes._count,
@@ -311,7 +353,12 @@ export class DriverActivityService {
         moyenneGlobale: livreur && livreur.totalRatings > 0 ? Number(livreur.rating) : null,
         avisTotal: livreur?.totalRatings ?? 0,
       },
-      parJour: [...parJour.values()].map((j) => ({ ...j, gains: arrondi(j.gains), distanceKm: arrondi(j.distanceKm) })),
+      parJour: [...parJour.values()].map((j) => ({
+        ...j,
+        gains: arrondi(j.gains),
+        distanceKm: arrondi(j.distanceKm),
+        pourboires: arrondi(j.pourboires),
+      })),
       parHeure: parHeure.map((h) => ({ ...h, gains: arrondi(h.gains) })),
     };
   }

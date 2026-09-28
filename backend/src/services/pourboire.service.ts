@@ -217,6 +217,7 @@ export class PourboireService {
           message: `${montant.toFixed(2).replace(".", ",")} € laissés par un client après sa livraison. Ils vous seront versés avec votre prochain relevé.`,
           recipientEmail: pourboire.driver.email,
           link: "/driver/earnings",
+          relatedOrderId: pourboire.orderId,
         },
       });
       emitNotification(pourboire.driver.email, notification);

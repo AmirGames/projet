@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Package, Clock, DollarSign } from 'lucide-react';
+import { MapPin, Package, Clock, DollarSign, Gift } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { PropositionsCourses } from '@/components/PropositionsCourses';
@@ -61,6 +61,7 @@ export default function DriverDashboard() {
   const [pausedUntil, setPausedUntil] = useState<string | null>(null);
   const [pauseReason, setPauseReason] = useState<string | null>(null);
   const [earnings, setEarnings] = useState(0);
+  const [pourboiresDuJour, setPourboiresDuJour] = useState(0);
 
   // silencieux : une relecture en direct qui échoue (réseau coupé un instant)
   // ne renvoie pas le livreur à la connexion ; la suivante corrigera.
@@ -80,7 +81,6 @@ export default function DriverDashboard() {
       if (driverResponse.ok) {
         const driverData = await driverResponse.json();
         setDriver(driverData.data);
-        setEarnings(Number(driverData.data.totalEarnings || 0));
         // isOnline: ce que le livreur a choisi (envoyer la position)
         // isAvailable: disponibilité actuelle (pas de course en cours)
         setIsOnline(driverData.data.isOnline === true);
@@ -89,6 +89,17 @@ export default function DriverDashboard() {
         setPauseReason(driverData.data.pauseReason || null);
       } else {
         throw new Error('Failed to load driver info');
+      }
+
+      // Les revenus et les pourboires du jour : `totalEarnings` est le cumul
+      // depuis le début, pas la journée.
+      const revenusResponse = await fetch(`${API_URL}/api/drivers/earnings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (revenusResponse.ok) {
+        const revenus = await revenusResponse.json();
+        setEarnings(Number(revenus.today || 0));
+        setPourboiresDuJour(Number(revenus.pourboires?.today || 0));
       }
 
       // La course en cours (acceptée ou récupérée). Sans ce relevé, une course
@@ -259,7 +270,7 @@ export default function DriverDashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           <div className="bg-gray-800 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -292,6 +303,18 @@ export default function DriverDashboard() {
               <DollarSign size={32} className="text-green-500" />
             </div>
           </div>
+
+          <Link href="/driver/earnings" className="block bg-gray-800 rounded-lg p-6 hover:ring-1 hover:ring-yellow-600">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">{t('dailyTips')}</p>
+                <p className={`text-3xl font-bold ${pourboiresDuJour > 0 ? 'text-yellow-400' : 'text-white'}`}>
+                  {euro(pourboiresDuJour)}
+                </p>
+              </div>
+              <Gift size={32} className="text-yellow-400" />
+            </div>
+          </Link>
 
           <div className="bg-gray-800 rounded-lg p-6">
             <div className="flex items-center justify-between">
