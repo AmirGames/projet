@@ -194,45 +194,16 @@ export function DisponibiliteSite() {
                 )}
               </div>
 
-              <div className="space-y-3">
-                <dl className="grid grid-cols-4 gap-4 text-right">
-                  {(['24h', '7j', '30j', '90j'] as const).map((fenetre) => (
-                    <div key={fenetre}>
-                      <dt className="text-[11px] uppercase tracking-wide text-gray-500">{t(`uptimeWindow${fenetre}`)}</dt>
-                      <dd className={`font-semibold tabular-nums text-sm ${teinteTexte(cible.disponibilite[fenetre])}`}>
-                        {pourcent(cible.disponibilite[fenetre])}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-
-                {/* SLA Tracking */}
-                {cible.disponibilite[fenetreSelectionnee] != null && (
-                  <div className={`rounded-lg px-3 py-2 text-sm ${
-                    calculerSLA(cible.disponibilite[fenetreSelectionnee])?.critique
-                      ? 'bg-red-900/30 border border-red-700'
-                      : calculerSLA(cible.disponibilite[fenetreSelectionnee])?.menace
-                        ? 'bg-amber-900/30 border border-amber-700'
-                        : 'bg-green-900/30 border border-green-700'
-                  }`}>
-                    <p className="text-xs text-gray-400 mb-1">SLA</p>
-                    <div className="flex items-center justify-between">
-                      <span className={`font-semibold ${
-                        calculerSLA(cible.disponibilite[fenetreSelectionnee])?.critique
-                          ? 'text-red-400'
-                          : calculerSLA(cible.disponibilite[fenetreSelectionnee])?.menace
-                            ? 'text-amber-400'
-                            : 'text-green-400'
-                      }`}>
-                        {calculerSLA(cible.disponibilite[fenetreSelectionnee])?.niveau}
-                      </span>
-                      <span className="text-gray-400">
-                        {tempsIndisponible(cible.disponibilite[fenetreSelectionnee])} indisponible
-                      </span>
-                    </div>
+              <dl className="grid grid-cols-4 gap-4 text-right">
+                {(['24h', '7j', '30j', '90j'] as const).map((fenetre) => (
+                  <div key={fenetre}>
+                    <dt className="text-[11px] uppercase tracking-wide text-gray-500">{t(`uptimeWindow${fenetre}`)}</dt>
+                    <dd className={`font-semibold tabular-nums text-sm ${teinteTexte(cible.disponibilite[fenetre])}`}>
+                      {pourcent(cible.disponibilite[fenetre])}
+                    </dd>
                   </div>
-                )}
-              </div>
+                ))}
+              </dl>
             </div>
 
             {cible.jours.length === 0 ? (

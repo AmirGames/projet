@@ -195,6 +195,7 @@ export default function SurveillancePage() {
   const [tri, setTri] = useState<TriRoutes>('requetes');
   const [ouverte, setOuverte] = useState<string | null>(null);
   const [disponibiliteOuverte, setDisponibiliteOuverte] = useState(true);
+  const [slaOuvert, setSlaOuvert] = useState(true);
 
   const charger = useCallback(
     async (relever = false) => {
@@ -406,6 +407,38 @@ export default function SurveillancePage() {
               </div>
             )}
           </section>
+
+          {/* SLA Summary */}
+          {donnees && (
+            <section className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setSlaOuvert(!slaOuvert)}
+                className="w-full flex items-center justify-between px-5 py-3 border-b border-gray-700 hover:bg-gray-700/50 transition"
+                aria-expanded={slaOuvert}
+              >
+                <h2 className="font-semibold flex items-center gap-2">
+                  <Gauge size={18} className="text-gray-400" />
+                  Accord de Niveau de Service (SLA)
+                </h2>
+                <ChevronDown
+                  size={20}
+                  className={`text-gray-400 transition-transform ${slaOuvert ? '' : '-rotate-90'}`}
+                />
+              </button>
+              {slaOuvert && (
+                <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {donnees.incidents.ouverts.length === 0 && (
+                      <p className="text-xs text-gray-500 col-span-full">
+                        Les données de disponibilité sont chargées à partir de la section Disponibilité ci-dessus.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Les chiffres qui comptent */}
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
