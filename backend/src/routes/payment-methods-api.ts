@@ -45,7 +45,8 @@ router.post("/", authMiddleware, async (req: Request, res: Response, next: NextF
 // DELETE /payment-methods/:id - Delete payment method
 router.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await paymentService.deletePaymentMethod(req.params.id as string);
+    const userId = (req.user as any)?.userId;
+    await paymentService.deletePaymentMethod(req.params.id as string, userId);
     res.json({ success: true, message: "Méthode de paiement supprimée" });
   } catch (err) {
     next(err);

@@ -527,10 +527,22 @@ export const paymentService = {
     });
   },
 
-  async deletePaymentMethod(paymentMethodId: string) {
-    await stripe.paymentMethods.detach(paymentMethodId);
-    return db.paymentMethod.delete({
-      where: { stripePaymentMethodId: paymentMethodId },
+  /**
+   * Retire un moyen de paiement de son propriétaire. Il est d'abord cherché
+   * en base au nom de l'appelant : le moyen d'un autre répond 404, comme un
+   * inconnu, et seul l'identifiant vérifié part chez Stripe.
+   */
+  async deletePaymentMethod(paymentMethodId: string, userId: string) {
+    const moyen = await db.paymentMethod.findFirst({
+      where: { stripePaymentMethodId: paymentMethodId, userId },
+      select: { id: true, stripePaymentMethodId: true },
     });
+
+    if (!moyen?.stripePaymentMethodId) {
+      throw new ApiError(404, "Méthode de paiement introuvable", "NOT_FOUND");
+    }
+
+    await stripe.paymentMethods.detach(moyen.stripePaymentMethodId);
+    return db.paymentMethod.delete({ where: { id: moyen.id } });
   },
 };
