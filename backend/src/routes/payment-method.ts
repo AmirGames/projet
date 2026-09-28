@@ -3,8 +3,38 @@ import { z } from "zod";
 import { PaymentMethodService } from "../services/payment-method.service";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
+import { db } from "../services/db";
+import { ApiError } from "../middleware/errorHandler";
 
 const router = Router();
+
+/**
+ * La boutique de l'URL doit appartenir à une organisation dont l'appelant est
+ * membre. Une boutique d'autrui répond 404, comme une boutique inconnue.
+ */
+async function exigerLaBoutique(req: Request, _res: Response, next: NextFunction) {
+  try {
+    const boutique = await db.store.findUnique({
+      where: { id: req.params.storeId as string },
+      select: { orgId: true, deletedAt: true },
+    });
+
+    const appartenance =
+      boutique && !boutique.deletedAt
+        ? await db.membership.findFirst({
+            where: { userId: req.userId, orgId: boutique.orgId },
+            select: { id: true },
+          })
+        : null;
+
+    if (!appartenance) {
+      throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
 
 const createPaymentMethodSchema = z.object({
   type: z.enum(["CREDIT_CARD", "DEBIT_CARD", "PAYPAL", "STRIPE", "BANK_TRANSFER", "CASH", "APPLE_PAY", "GOOGLE_PAY"]),
@@ -23,7 +53,7 @@ const updatePaymentMethodSchema = z.object({
   fixedFee: z.number().min(0).optional(),
 });
 
-router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:storeId", authMiddleware, exigerLaBoutique, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const skip = req.query.skip ? parseInt(req.query.skip as string) : 0;
@@ -41,7 +71,7 @@ router.get("/:storeId", authMiddleware, async (req: Request, res: Response, next
 // « default » et « active » avant `/:storeId/:methodId` : déclarées après, elles
 // étaient lues comme des identifiants de moyen de paiement et ne répondaient
 // jamais.
-router.get("/:storeId/default", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:storeId/default", authMiddleware, exigerLaBoutique, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
 
@@ -54,7 +84,7 @@ router.get("/:storeId/default", authMiddleware, async (req: Request, res: Respon
   }
 });
 
-router.get("/:storeId/active", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:storeId/active", authMiddleware, exigerLaBoutique, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
 
@@ -67,7 +97,7 @@ router.get("/:storeId/active", authMiddleware, async (req: Request, res: Respons
   }
 });
 
-router.get("/:storeId/:methodId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:storeId/:methodId", authMiddleware, exigerLaBoutique, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const methodId = req.params.methodId as string;
@@ -81,7 +111,7 @@ router.get("/:storeId/:methodId", authMiddleware, async (req: Request, res: Resp
   }
 });
 
-router.post("/:storeId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/:storeId", authMiddleware, exigerLaBoutique, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const body = createPaymentMethodSchema.parse(req.body);
@@ -98,7 +128,7 @@ router.post("/:storeId", authMiddleware, async (req: Request, res: Response, nex
   }
 });
 
-router.patch("/:storeId/:methodId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.patch("/:storeId/:methodId", authMiddleware, exigerLaBoutique, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const methodId = req.params.methodId as string;
@@ -116,7 +146,7 @@ router.patch("/:storeId/:methodId", authMiddleware, async (req: Request, res: Re
   }
 });
 
-router.patch("/:storeId/:methodId/toggle", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.patch("/:storeId/:methodId/toggle", authMiddleware, exigerLaBoutique, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const methodId = req.params.methodId as string;
@@ -133,7 +163,7 @@ router.patch("/:storeId/:methodId/toggle", authMiddleware, async (req: Request, 
   }
 });
 
-router.delete("/:storeId/:methodId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:storeId/:methodId", authMiddleware, exigerLaBoutique, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const storeId = req.params.storeId as string;
     const methodId = req.params.methodId as string;

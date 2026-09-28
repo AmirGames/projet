@@ -233,6 +233,9 @@ export function createApp(): Express {
   app.use("/api/reviews", reviewRouter);
   app.use("/api/marketing", marketingRouter);
   app.use("/api/tax-settings", taxRouter);
+  // Les cartes du client d'abord : sinon POST /setup-intent serait lu comme
+  // POST /:storeId du routeur des boutiques.
+  app.use("/api/payment-methods", paymentMethodsApiRouter);
   app.use("/api/payment-methods", paymentMethodRouter);
   app.use("/api/payments", paymentRouter);
   app.use("/api/promotions", promotionRouter);
@@ -247,7 +250,6 @@ export function createApp(): Express {
   app.use("/api/maps", mapsRouter);
   app.use("/api/drivers", driversRouter);
   app.use("/api/notifications", notificationsApiRouter);
-  app.use("/api/payment-methods", paymentMethodsApiRouter);
   app.use("/api/support", supportRouter);
   app.use("/api/plans", plansRouter);
   app.use("/api/merchant-profile", merchantProfileRouter);
