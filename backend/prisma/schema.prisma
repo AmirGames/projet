@@ -854,6 +854,8 @@ model Order {
   customer        Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   payments        Payment[]
   delivery        OrderDelivery?
+  /// Le pourboire laissé après la livraison, payé à part (voir DriverTip).
+  pourboireApres  DriverTip?
   invoice         Invoice?
   /// Le relevé de reversement qui porte cette commande : une commande n'est
   /// reversée qu'une fois.
@@ -1021,6 +1023,8 @@ model Driver {
   // Relations
   user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   deliveries      OrderDelivery[]
+  /// Les pourboires laissés après la livraison.
+  tips            DriverTip[]
   offers          DeliveryOffer[]
   documents       DriverDocument[]
   payouts         DriverPayout[]
@@ -1275,6 +1279,8 @@ model DriverPayout {
   // Relations
   driver          Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
   deliveries      OrderDelivery[]
+  /// Les pourboires laissés après la livraison, payés avec ce relevé.
+  tips            DriverTip[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2216,3 +2222,32 @@ model CodeConnexion {
   @@index([expiresAt])
 }
 
+/// Un pourboire laissé au livreur **après** la livraison.
+///
+/// Celui donné en commandant vit sur la commande (Order.tipAmount) et entre
+/// dans la rémunération de la course. Celui-ci arrive plus tard, par un
+/// paiement à part : la course peut déjà figurer sur un relevé arrêté. Il a
+/// donc sa propre ligne, due tant qu'aucun relevé ne la porte (payoutId), comme
+/// une course, et versée avec le relevé suivant.
+model DriverTip {
+  id              String    @id @default(cuid())
+  /// Un seul pourboire après livraison par commande.
+  orderId         String    @unique
+  driverId        String
+  amount          Decimal   @db.Decimal(10, 2)
+  /// PENDING (paiement en cours), PAID, FAILED
+  status          String    @default("PENDING")
+  stripePaymentIntentId String? @unique
+  paidAt          DateTime?
+  payoutId        String?
+
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driver          Driver        @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  payout          DriverPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([driverId, status, payoutId])
+  @@index([payoutId])
+}

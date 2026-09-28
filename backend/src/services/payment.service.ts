@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { montantAEncaisser } from "./delivery-mode.service";
+import { PourboireService } from "./pourboire.service";
 import { db } from "./db";
 import { stripe, STRIPE_CONFIG } from "../config/stripe";
 import { logger } from "../config/logger";
@@ -100,7 +101,8 @@ export const paymentService = {
   async confirmPayment(paymentIntentId: string) {
     const intention = await stripe.paymentIntents.retrieve(paymentIntentId);
     if (intention.status === "succeeded") {
-      await this.marquerPaye(intention);
+      if (PourboireService.estUnPourboire(intention)) await PourboireService.marquerPaye(intention);
+      else await this.marquerPaye(intention);
     }
     return intention;
   },
@@ -130,11 +132,21 @@ export const paymentService = {
     }
 
     switch (evenement.type) {
+      // Un pourboire laissé après la livraison porte aussi l'orderId : il
+      // passe à part, sans quoi il serait pris pour le paiement de la commande.
       case "payment_intent.succeeded":
-        await this.marquerPaye(evenement.data.object);
+        if (PourboireService.estUnPourboire(evenement.data.object)) {
+          await PourboireService.marquerPaye(evenement.data.object);
+        } else {
+          await this.marquerPaye(evenement.data.object);
+        }
         break;
       case "payment_intent.payment_failed":
-        await this.marquerEchec(evenement.data.object);
+        if (PourboireService.estUnPourboire(evenement.data.object)) {
+          await PourboireService.marquerEchec(evenement.data.object);
+        } else {
+          await this.marquerEchec(evenement.data.object);
+        }
         break;
       case "payment_intent.canceled":
         await db.payment.updateMany({

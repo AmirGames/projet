@@ -175,11 +175,18 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
   try {
     const livreur = await livreurConnecte(req);
 
-    const courses = await db.orderDelivery.findMany({
-      where: { driverId: livreur.id, status: "DELIVERED" },
-      include: { order: { select: { feesAmount: true } } },
-      orderBy: { deliveryTime: "desc" },
-    });
+    const [courses, pourboires] = await Promise.all([
+      db.orderDelivery.findMany({
+        where: { driverId: livreur.id, status: "DELIVERED" },
+        include: { order: { select: { feesAmount: true } } },
+        orderBy: { deliveryTime: "desc" },
+      }),
+      // Les pourboires laissés après la livraison : un revenu à part entière.
+      db.driverTip.findMany({
+        where: { driverId: livreur.id, status: "PAID" },
+        select: { orderId: true, amount: true, paidAt: true },
+      }),
+    ]);
 
     const maintenant = new Date();
     const debutJour = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate());
@@ -192,13 +199,18 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
     // antérieures au barème, qui n'ont pas de montant figé.
     const gain = (c: (typeof courses)[number]) =>
       Number(c.driverPayout ?? c.order?.feesAmount ?? 0);
+    const pourboiresDepuis = (date: Date) =>
+      pourboires
+        .filter((p) => p.paidAt && p.paidAt >= date)
+        .reduce((somme, p) => somme + Number(p.amount), 0);
     const depuis = (date: Date) =>
       courses
         .filter((c) => (c.deliveryTime || c.updatedAt) >= date)
-        .reduce((somme, c) => somme + gain(c), 0);
+        .reduce((somme, c) => somme + gain(c), 0) + pourboiresDepuis(date);
+    const apresLivraison = new Map(pourboires.map((p) => [p.orderId, Number(p.amount)]));
 
     res.json({
-      total: courses.reduce((somme, c) => somme + gain(c), 0),
+      total: courses.reduce((somme, c) => somme + gain(c), 0) + pourboiresDepuis(new Date(0)),
       today: depuis(debutJour),
       week: depuis(debutSemaine),
       month: depuis(debutMois),
@@ -212,6 +224,8 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
         orderId: c.orderId,
         deliveredAt: c.deliveryTime || c.updatedAt,
         earning: gain(c),
+        // Laissé après la livraison, en plus du gain de la course.
+        pourboireApres: apresLivraison.get(c.orderId) ?? 0,
       })),
     });
   } catch (err) {
@@ -826,6 +840,7 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
               include: { product: true }
             },
             store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
+            pourboireApres: { select: { status: true, amount: true } },
           }
         },
         // Le gain annoncé à ce livreur : la proposition en cours, ou celle
@@ -859,6 +874,7 @@ router.get("/deliveries", authMiddleware, async (req: Request, res: Response, ne
       payout: gainAnnonce(d, d.offers?.[0]),
       // La part du gain qui vient du pourboire du client (déjà comprise).
       pourboire: Number(d.order?.tipAmount || 0),
+      pourboireApres: d.order?.pourboireApres?.status === "PAID" ? Number(d.order.pourboireApres.amount) : 0,
       distance: d.distanceKm ?? undefined,
       estimatedTime: d.estimatedTime,
       items: d.order?.items || [],
@@ -940,6 +956,7 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
           include: {
             items: { include: { product: true } },
             store: { select: { name: true, address: true, city: true, latitude: true, longitude: true } },
+            pourboireApres: { select: { status: true, amount: true } },
           }
         },
         offers: {
@@ -982,6 +999,8 @@ router.get("/deliveries/:id", authMiddleware, async (req: Request, res: Response
         customerPhone: delivery.order?.customerPhone,
         payout: gainAnnonce(delivery, delivery.offers[0]),
         pourboire: Number(delivery.order?.tipAmount || 0),
+        pourboireApres:
+          delivery.order?.pourboireApres?.status === "PAID" ? Number(delivery.order.pourboireApres.amount) : 0,
         distance: delivery.distanceKm ?? undefined,
         estimatedTime: delivery.estimatedTime,
         pickupLat: delivery.pickupLat ?? delivery.order?.store?.latitude ?? null,

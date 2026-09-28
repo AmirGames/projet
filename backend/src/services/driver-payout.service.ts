@@ -44,6 +44,10 @@ export const libelleDuMoyen = (moyen: string | null) =>
 const gainDeLaCourse = (course: { driverPayout: unknown; order?: { feesAmount: unknown } | null }) =>
   Number((course.driverPayout as number | null) ?? (course.order?.feesAmount as number | null) ?? 0);
 
+/** La somme de pourboires laissés après la livraison. */
+const totalDesPourboires = (pourboires: { amount: unknown }[]) =>
+  pourboires.reduce((somme, pourboire) => somme + Number(pourboire.amount), 0);
+
 /**
  * La semaine écoulée, du lundi au lundi.
  *
@@ -71,12 +75,14 @@ export class DriverPayoutService {
    * un relevé déjà arrêté attend le prochain lot de virements.
    */
   static async soldeFinal(driverId: string, maintenant = new Date()) {
-    const [dues, enAttente, livreur] = await Promise.all([
+    const [dues, pourboires, enAttente, livreur] = await Promise.all([
       this.coursesDues(driverId),
+      this.pourboiresDus(driverId),
       db.driverPayout.findMany({ where: { driverId, status: "PENDING" }, select: { amount: true } }),
       db.driver.findUnique({ where: { id: driverId }, select: { iban: true } }),
     ]);
-    const nonArrete = dues.reduce((somme, course) => somme + gainDeLaCourse(course), 0);
+    const nonArrete =
+      dues.reduce((somme, course) => somme + gainDeLaCourse(course), 0) + totalDesPourboires(pourboires);
     const arrete = enAttente.reduce((somme, releve) => somme + Number(releve.amount), 0);
     // Le lundi qui vient, 00 h 00 à Bruxelles : l'arrêté de la semaine.
     const lundi = debutDeSemaine(new Date(debutDeSemaine(maintenant).getTime() + 8 * 86400000));
@@ -112,10 +118,37 @@ export class DriverPayoutService {
     });
   }
 
+  /**
+   * Les pourboires laissés après la livraison, encaissés et qu'aucun relevé
+   * ne porte encore. Ils se rattachent à la période où ils ont été payés : un
+   * pourboire arrivé lundi matin pour une course de dimanche part avec le
+   * relevé suivant, pas avec celui déjà arrêté.
+   */
+  static async pourboiresDus(driverId: string, bornes?: { debut?: Date; fin?: Date }) {
+    return db.driverTip.findMany({
+      where: {
+        driverId,
+        status: "PAID",
+        payoutId: null,
+        ...(bornes?.debut || bornes?.fin
+          ? {
+              paidAt: {
+                ...(bornes.debut ? { gte: bornes.debut } : {}),
+                ...(bornes.fin ? { lt: bornes.fin } : {}),
+              },
+            }
+          : {}),
+      },
+      select: { id: true, orderId: true, amount: true, paidAt: true },
+      orderBy: { paidAt: "asc" },
+    });
+  }
+
   /** Le relevé d'un livreur : ce qui est dû, et l'historique de ses versements. */
   static async situation(driverId: string) {
-    const [dues, releves] = await Promise.all([
+    const [dues, pourboires, releves] = await Promise.all([
       this.coursesDues(driverId),
+      this.pourboiresDus(driverId),
       db.driverPayout.findMany({
         where: { driverId, status: { not: "CANCELLED" } },
         orderBy: { periodStart: "desc" },
@@ -135,7 +168,8 @@ export class DriverPayoutService {
       // Trois montants, et non un seul « total gagné » qui ne disait pas s'il
       // était payé : ce qui n'est pas encore arrêté, ce qui l'est et attend le
       // virement, ce qui est arrivé.
-      duNonArrete: dues.reduce((somme, course) => somme + gainDeLaCourse(course), 0),
+      duNonArrete:
+        dues.reduce((somme, course) => somme + gainDeLaCourse(course), 0) + totalDesPourboires(pourboires),
       enAttenteDeVersement: arretes,
       verse: verses,
       coursesDues: dues.length,
@@ -144,6 +178,13 @@ export class DriverPayoutService {
         orderId: course.orderId,
         deliveredAt: course.deliveryTime || course.updatedAt,
         montant: gainDeLaCourse(course),
+      })),
+      // Les pourboires laissés après la livraison, dus avec le prochain relevé.
+      pourboires: pourboires.map((pourboire) => ({
+        id: pourboire.id,
+        orderId: pourboire.orderId,
+        paidAt: pourboire.paidAt,
+        montant: Number(pourboire.amount),
       })),
       releves: releves.map((releve) => ({
         id: releve.id,
@@ -171,6 +212,7 @@ export class DriverPayoutService {
           include: { order: { select: { id: true, totalAmount: true, feesAmount: true } } },
           orderBy: { deliveryTime: "asc" },
         },
+        tips: { select: { id: true, orderId: true, amount: true, paidAt: true }, orderBy: { paidAt: "asc" } },
       },
     });
 
@@ -188,6 +230,12 @@ export class DriverPayoutService {
         deliveredAt: course.deliveryTime || course.updatedAt,
         distanceKm: course.distanceKm,
         montant: gainDeLaCourse(course),
+      })),
+      pourboires: releve.tips.map((pourboire) => ({
+        id: pourboire.id,
+        orderId: pourboire.orderId,
+        paidAt: pourboire.paidAt,
+        montant: Number(pourboire.amount),
       })),
     };
   }
@@ -209,9 +257,12 @@ export class DriverPayoutService {
       throw new ApiError(404, "Livreur introuvable", "DRIVER_NOT_FOUND");
     }
 
-    const courses = await this.coursesDues(driverId, { debut: periodStart, fin: periodEnd });
+    const [courses, pourboires] = await Promise.all([
+      this.coursesDues(driverId, { debut: periodStart, fin: periodEnd }),
+      this.pourboiresDus(driverId, { debut: periodStart, fin: periodEnd }),
+    ]);
 
-    if (courses.length === 0) {
+    if (courses.length === 0 && pourboires.length === 0) {
       throw new ApiError(
         400,
         "Aucune course à payer sur cette période : rien à arrêter",
@@ -219,7 +270,9 @@ export class DriverPayoutService {
       );
     }
 
-    const montant = courses.reduce((somme, course) => somme + gainDeLaCourse(course), 0);
+    const montant = Number(
+      (courses.reduce((somme, course) => somme + gainDeLaCourse(course), 0) + totalDesPourboires(pourboires)).toFixed(2)
+    );
 
     // La création du relevé et le rattachement des courses vont ensemble : un
     // relevé sans ses courses laisserait celles-ci payables une seconde fois.
@@ -239,6 +292,11 @@ export class DriverPayoutService {
         where: { id: { in: courses.map((course) => course.id) } },
         data: { payoutId: cree.id },
       });
+      // Les pourboires aussi : sans ce lien, ils seraient versés deux fois.
+      await tx.driverTip.updateMany({
+        where: { id: { in: pourboires.map((pourboire) => pourboire.id) } },
+        data: { payoutId: cree.id },
+      });
 
       return cree;
     });
@@ -248,7 +306,9 @@ export class DriverPayoutService {
     await this.prevenir(
       driverId,
       "Votre relevé est arrêté",
-      `${courses.length} course${courses.length > 1 ? "s" : ""} pour ${montant.toFixed(2)} €. Le versement suit.`
+      `${courses.length} course${courses.length > 1 ? "s" : ""}${
+        pourboires.length ? ` et ${pourboires.length} pourboire${pourboires.length > 1 ? "s" : ""}` : ""
+      } pour ${montant.toFixed(2)} €. Le versement suit.`
     );
 
     return releve;
@@ -273,12 +333,21 @@ export class DriverPayoutService {
       },
     });
 
+    // Un livreur sans course sur la période peut avoir reçu un pourboire.
+    const pourboires = await db.driverTip.groupBy({
+      by: ["driverId"],
+      where: { status: "PAID", payoutId: null, paidAt: { gte: periodStart, lt: periodEnd } },
+    });
+
+    const livreurs = new Set<string>([
+      ...aPayer.map((ligne) => ligne.driverId).filter((id): id is string => Boolean(id)),
+      ...pourboires.map((ligne) => ligne.driverId),
+    ]);
+
     const releves = [];
 
-    for (const ligne of aPayer) {
-      if (!ligne.driverId) continue;
-
-      releves.push(await this.arreter(ligne.driverId, periodStart, periodEnd));
+    for (const driverId of livreurs) {
+      releves.push(await this.arreter(driverId, periodStart, periodEnd));
     }
 
     return releves;
@@ -367,6 +436,10 @@ export class DriverPayoutService {
         where: { payoutId },
         data: { payoutId: null },
       });
+      await tx.driverTip.updateMany({
+        where: { payoutId },
+        data: { payoutId: null },
+      });
 
       return tx.driverPayout.update({
         where: { id: payoutId },
@@ -431,15 +504,22 @@ export class DriverPayoutService {
    * et à combien de livreurs.
    */
   static async resteADevoir() {
-    const dues = await db.orderDelivery.findMany({
-      where: { status: "DELIVERED", payoutId: null, driverId: { not: null } },
-      select: { driverId: true, driverPayout: true, order: { select: { feesAmount: true } } },
-    });
+    const [dues, pourboires] = await Promise.all([
+      db.orderDelivery.findMany({
+        where: { status: "DELIVERED", payoutId: null, driverId: { not: null } },
+        select: { driverId: true, driverPayout: true, order: { select: { feesAmount: true } } },
+      }),
+      db.driverTip.findMany({
+        where: { status: "PAID", payoutId: null },
+        select: { driverId: true, amount: true },
+      }),
+    ]);
 
     return {
-      montant: dues.reduce((somme, course) => somme + gainDeLaCourse(course), 0),
+      montant: dues.reduce((somme, course) => somme + gainDeLaCourse(course), 0) + totalDesPourboires(pourboires),
       courses: dues.length,
-      livreurs: new Set(dues.map((course) => course.driverId)).size,
+      pourboires: pourboires.length,
+      livreurs: new Set([...dues.map((course) => course.driverId), ...pourboires.map((p) => p.driverId)]).size,
     };
   }
 
