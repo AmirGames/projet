@@ -4,6 +4,7 @@ import { EmailService } from "./email.service";
 import { logger } from "../config/logger";
 import { ApiError } from "../middleware/errorHandler";
 import { VariantService } from "./variant.service";
+import { SupplementService, type SupplementRetenu } from "./supplement.service";
 import { DeliveryZoneService } from "./delivery-zone.service";
 import { PromotionService } from "./promotion.service";
 import { emitWebhook } from "./webhook.service";
@@ -44,6 +45,8 @@ export interface OrderData {
     quantity: number;
     price: number;
     selectedOptions?: Record<string, string>;
+    /** Les suppléments choisis, par identifiant (voir SupplementService). */
+    supplements?: string[];
   }[];
 }
 
@@ -212,8 +215,9 @@ export class OrderService {
         productId: string;
         variantId?: string;
         quantity: number;
+        /** Prix unitaire TTC, suppléments compris. */
         price: number;
-        selectedOptions?: Record<string, string>;
+        supplements: SupplementRetenu[];
       }[] = [];
 
       if (lignes.length > 0) {
@@ -245,12 +249,22 @@ export class OrderService {
             throw new ApiError(400, "Une quantité doit être un entier positif", "INVALID_QUANTITY");
           }
 
+          const taux = tauxHT.get(ligne.productId);
+          const base = await VariantService.prixDeLaLigne(ligne.productId, ligne.variantId);
+          // Chaque supplément passe TTC séparément, comme la vitrine l'affiche.
+          const supplements = await SupplementService.tarifer(
+            ligne.productId,
+            produit.name,
+            ligne.supplements,
+            taux
+          );
+
           lignesTarifees.push({
-            ...ligne,
-            price: ((prix) => {
-              const taux = tauxHT.get(ligne.productId);
-              return taux ? TaxService.ttc(prix, taux) : prix;
-            })(await VariantService.prixDeLaLigne(ligne.productId, ligne.variantId)),
+            productId: ligne.productId,
+            variantId: ligne.variantId,
+            quantity: ligne.quantity,
+            price: Number(((taux ? TaxService.ttc(base, taux) : base) + supplements.montant).toFixed(2)),
+            supplements: supplements.retenus,
           });
         }
       }
@@ -483,7 +497,9 @@ export class OrderService {
               quantity: ligne.quantity,
               price: ligne.price,
               total: Number((ligne.price * ligne.quantity).toFixed(2)),
-              selectedOptions: ligne.selectedOptions || {},
+              // La copie des suppléments payés : un supplément retiré ou
+              // renommé plus tard ne change pas ce qui a été commandé.
+              selectedOptions: ligne.supplements.length > 0 ? ({ supplements: ligne.supplements } as any) : {},
               // La taxe de cette ligne, figée au moment de la commande.
               // Permet le récapitulatif multi-taux (6 % nourriture + 21 % boissons)
               // sur le ticket, sans avoir à recalculer après coup.

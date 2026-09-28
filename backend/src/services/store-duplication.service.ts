@@ -178,6 +178,8 @@ export class StoreDuplicationService {
                   choices: o.choices as any,
                   isRequired: o.isRequired,
                   pricingType: o.pricingType,
+                  maxChoices: o.maxChoices,
+                  displayOrder: o.displayOrder,
                 },
               });
               options.set(o.id, opt.id);

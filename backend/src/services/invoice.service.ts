@@ -100,6 +100,8 @@ export class InvoiceService {
       description: item.product.name,
       category:    item.product.category?.name || null,
       variant:     item.variant?.label         || null,
+      // Les suppléments payés, figés sur la ligne : « Bacon », « Cheddar ».
+      supplements: (((item.selectedOptions as any)?.supplements || []) as { label: string }[]).map((x) => x.label),
       sku:         item.variant?.sku || item.product.sku,
       quantity:    item.quantity,
       unitPrice:   parseFloat(item.price.toString()),

@@ -105,6 +105,7 @@ export function DelaiAnnulation({
                 <li key={`${ligne.productId}-${ligne.variantId ?? ''}-${i}`}>
                   {ligne.quantity}x&nbsp;&nbsp;{ligne.name}
                   {ligne.variantNom ? ` (${ligne.variantNom})` : ''}
+                  {ligne.supplements?.length ? ` + ${ligne.supplements.map((sup) => sup.label).join(', ')}` : ''}
                 </li>
               ))}
             </ul>

@@ -1,6 +1,6 @@
 'use client';
 
-import { cleDeLigne, enregistrerPanier, lirePanier, type LignePanier } from '@/lib/paniers';
+import { cleDeLigne, enregistrerPanier, lirePanier, type LignePanier, type SupplementPanier } from '@/lib/paniers';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -11,6 +11,8 @@ export interface LigneCommandee {
   variantLabel?: string | null;
   name: string;
   quantity: number;
+  /** Les suppléments payés, tels que la commande les a figés. */
+  supplements?: { id: string; label: string }[];
 }
 
 export interface Reprise {
@@ -72,16 +74,37 @@ export async function remettreAuPanier(
       continue;
     }
 
-    const cle = cleDeLigne(plat.id, ligne.variantId || undefined);
+    // Les suppléments, au prix du jour. Un seul disparu écarte la ligne : le
+    // plat sans lui n'est pas celui que le client avait composé.
+    const voulus = ligne.supplements || [];
+    const choix = new Map<string, SupplementPanier>(
+      (plat.supplements || []).flatMap((groupe: any) =>
+        (groupe.choices || [])
+          .filter((c: any) => c.isAvailable !== false)
+          .map((c: any) => [c.id, { id: c.id, label: c.label, price: Number(c.price) || 0 }]),
+      ),
+    );
+    const supplements = voulus.map((sup) => choix.get(sup.id)).filter((sup): sup is SupplementPanier => Boolean(sup));
+    const obligatoireManquant = (plat.supplements || []).some(
+      (groupe: any) => groupe.isRequired && !(groupe.choices || []).some((c: any) => supplements.some((sup) => sup.id === c.id)),
+    );
+    if (supplements.length !== voulus.length || obligatoireManquant) {
+      absents.push(voulus.length ? `${nom} + ${voulus.map((sup) => sup.label).join(', ')}` : nom);
+      continue;
+    }
+    prix += supplements.reduce((somme, sup) => somme + sup.price, 0);
+
+    const cle = cleDeLigne(plat.id, ligne.variantId || undefined, supplements);
     const deja = panier.get(cle);
     const nouvelle: LignePanier = {
       productId: plat.id,
       name: plat.name,
       description: plat.description || undefined,
-      price: prix,
+      price: Number(prix.toFixed(2)),
       quantity: (deja?.quantity || 0) + ligne.quantity,
       isAvailable: true,
       ...(ligne.variantId ? { variantId: ligne.variantId, variantNom } : {}),
+      ...(supplements.length ? { supplements } : {}),
     };
     panier.set(cle, nouvelle);
     reprises += 1;

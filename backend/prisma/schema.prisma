@@ -653,14 +653,21 @@ model Category {
   @@index([storeId])
 }
 
+/// Un groupe de suppléments d'un plat : « Suppléments », « Sauces ».
 model ProductOption {
   id          String  @id @default(cuid())
   productId   String
-  name        String  // "Taille", "Extra topping"
-  // choices is JSON array: ["S", "M", "L"]
+  name        String  // "Suppléments", "Sauce"
+  // Les choix : [{ id, label, price, isAvailable }]. Le prix se saisit comme
+  // celui du plat (HT si la boutique travaille hors taxe) ; 0 pour un choix
+  // offert. Voir SupplementService.
   choices     Json    @default("[]")
+  // Au moins un choix exigé (une sauce obligatoire, par exemple).
   isRequired  Boolean @default(false)
-  pricingType String  @default("none") // "none" | "fixed" | "percentage"
+  // Au plus tant de choix dans ce groupe ; vide, sans limite.
+  maxChoices  Int?
+  displayOrder Int    @default(0)
+  pricingType String  @default("fixed") // "fixed" : chaque choix a son prix
 
   // Relations
   product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)

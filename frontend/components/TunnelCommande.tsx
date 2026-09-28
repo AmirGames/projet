@@ -511,6 +511,8 @@ export function TunnelCommande({
           price: ligne.price,
           // La cuisine a besoin de savoir laquelle préparer.
           ...(ligne.variantId ? { variantId: ligne.variantId } : {}),
+          // Les suppléments, par identifiant : le serveur les tarife lui-même.
+          ...(ligne.supplements?.length ? { supplements: ligne.supplements.map((s) => s.id) } : {}),
         })),
       };
 
@@ -1118,7 +1120,7 @@ export function TunnelCommande({
             <ul className="px-6 pb-5 space-y-3">
               {lignes.map((ligne) => (
                 <li
-                  key={cleDeLigne(ligne.productId, ligne.variantId)}
+                  key={cleDeLigne(ligne.productId, ligne.variantId, ligne.supplements)}
                   className="flex justify-between gap-4 text-sm"
                 >
                   <span className="min-w-0">
@@ -1128,6 +1130,11 @@ export function TunnelCommande({
                         seraient indistinguables. */}
                     {ligne.variantNom && (
                       <span className="text-gray-400"> — {ligne.variantNom}</span>
+                    )}
+                    {(ligne.supplements?.length ?? 0) > 0 && (
+                      <span className="block text-xs text-gray-400">
+                        + {ligne.supplements!.map((sup) => sup.label).join(', ')}
+                      </span>
                     )}
                   </span>
                   <span className="whitespace-nowrap">{euro(ligne.price * ligne.quantity)}</span>

@@ -509,6 +509,9 @@ export default function TrackOrderPage() {
                           <span className="text-red-400"> — {intituleDeLaLigne(item).declinaison}</span>
                         )}
                       </p>
+                      {intituleDeLaLigne(item).supplements && (
+                        <p className="text-xs text-gray-400">+ {intituleDeLaLigne(item).supplements}</p>
+                      )}
                       <p className="text-sm text-gray-400">Quantité: {item.quantity}</p>
                     </div>
                     <p className="text-red-400 font-semibold">

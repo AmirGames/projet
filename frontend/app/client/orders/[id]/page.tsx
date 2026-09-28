@@ -395,6 +395,9 @@ export default function OrderTrackingPage() {
                             </span>
                           )}
                         </p>
+                        {intituleDeLaLigne(item).supplements && (
+                          <p className="text-gray-400 text-xs">+ {intituleDeLaLigne(item).supplements}</p>
+                        )}
                         <p className="text-gray-400 text-sm">x{item.quantity}</p>
                       </div>
                       <p className="text-orange-400 font-bold">

@@ -87,7 +87,11 @@ const createOrderSchema = z.object({
         variantId: z.string().optional(),
         quantity: z.number().int().positive(),
         price: z.number().nonnegative(),
+        // Accepté pour les anciens appelants, jamais enregistré : la ligne
+        // garde la copie des suppléments relue par le serveur.
         selectedOptions: z.record(z.string(), z.string()).optional(),
+        // Les suppléments choisis, par identifiant ; tarifés par le serveur.
+        supplements: z.array(z.string().min(1).max(64)).max(50).optional(),
       })
     )
     .optional(),
