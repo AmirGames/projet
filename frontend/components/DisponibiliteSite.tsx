@@ -107,6 +107,25 @@ export function DisponibiliteSite() {
     return jours.slice(-nbreJours);
   };
 
+  const calculerSLA = (disponibilite: number | null | undefined) => {
+    if (disponibilite == null) return null;
+    return {
+      valeur: disponibilite,
+      niveau: disponibilite >= 99.95 ? '99.95%' : disponibilite >= 99.9 ? '99.9%' : disponibilite >= 99.5 ? '99.5%' : '99%',
+      menace: disponibilite < 99.5,
+      critique: disponibilite < 99,
+    };
+  };
+
+  const tempsIndisponible = (disponibilite: number | null | undefined) => {
+    if (disponibilite == null) return '—';
+    const indisponible = 100 - disponibilite;
+    const minutes = (indisponible / 100) * 60 * 24; // minutes par jour
+    if (minutes < 1) return Math.round(minutes * 60) + 's';
+    if (minutes < 60) return Math.round(minutes) + 'min';
+    return (minutes / 60).toFixed(1) + 'h';
+  };
+
   return (
     <section className="bg-gray-800 border border-gray-700 rounded-lg">
       <header className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-700 flex-wrap">
@@ -163,16 +182,45 @@ export function DisponibiliteSite() {
                 )}
               </div>
 
-              <dl className="grid grid-cols-4 gap-4 text-right">
-                {(['24h', '7j', '30j', '90j'] as const).map((fenetre) => (
-                  <div key={fenetre}>
-                    <dt className="text-[11px] uppercase tracking-wide text-gray-500">{t(`uptimeWindow${fenetre}`)}</dt>
-                    <dd className={`font-semibold tabular-nums text-sm ${teinteTexte(cible.disponibilite[fenetre])}`}>
-                      {pourcent(cible.disponibilite[fenetre])}
-                    </dd>
+              <div className="space-y-3">
+                <dl className="grid grid-cols-4 gap-4 text-right">
+                  {(['24h', '7j', '30j', '90j'] as const).map((fenetre) => (
+                    <div key={fenetre}>
+                      <dt className="text-[11px] uppercase tracking-wide text-gray-500">{t(`uptimeWindow${fenetre}`)}</dt>
+                      <dd className={`font-semibold tabular-nums text-sm ${teinteTexte(cible.disponibilite[fenetre])}`}>
+                        {pourcent(cible.disponibilite[fenetre])}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+
+                {/* SLA Tracking */}
+                {cible.disponibilite[fenetreSelectionnee] != null && (
+                  <div className={`rounded-lg px-3 py-2 text-sm ${
+                    calculerSLA(cible.disponibilite[fenetreSelectionnee])?.critique
+                      ? 'bg-red-900/30 border border-red-700'
+                      : calculerSLA(cible.disponibilite[fenetreSelectionnee])?.menace
+                        ? 'bg-amber-900/30 border border-amber-700'
+                        : 'bg-green-900/30 border border-green-700'
+                  }`}>
+                    <p className="text-xs text-gray-400 mb-1">SLA</p>
+                    <div className="flex items-center justify-between">
+                      <span className={`font-semibold ${
+                        calculerSLA(cible.disponibilite[fenetreSelectionnee])?.critique
+                          ? 'text-red-400'
+                          : calculerSLA(cible.disponibilite[fenetreSelectionnee])?.menace
+                            ? 'text-amber-400'
+                            : 'text-green-400'
+                      }`}>
+                        {calculerSLA(cible.disponibilite[fenetreSelectionnee])?.niveau}
+                      </span>
+                      <span className="text-gray-400">
+                        {tempsIndisponible(cible.disponibilite[fenetreSelectionnee])} indisponible
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </dl>
+                )}
+              </div>
             </div>
 
             {cible.jours.length === 0 ? (
