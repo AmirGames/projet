@@ -92,15 +92,38 @@ export const paymentService = {
   },
 
   /**
-   * L'état d'une intention, relu chez Stripe — et reporté sur la commande.
-   *
-   * Le webhook reste la source qui fait foi, mais il peut arriver après que
-   * le client a vu « paiement réussi » : ce relevé évite que la commande
-   * s'affiche encore « en attente » dans l'intervalle.
+   * L'intention appartient-elle à cette commande ? Celle du paiement de la
+   * commande, ou celle du pourboire laissé après la livraison — enregistrées
+   * en base à leur création. Un identifiant quelconque ne suffit pas.
    */
-  async confirmPayment(paymentIntentId: string) {
+  async intentionDeLaCommande(orderId: string, paymentIntentId: string) {
+    const [paiement, pourboire] = await Promise.all([
+      db.payment.findFirst({ where: { orderId, stripePaymentIntentId: paymentIntentId }, select: { id: true } }),
+      db.driverTip.findFirst({ where: { orderId, stripePaymentIntentId: paymentIntentId }, select: { id: true } }),
+    ]);
+    return Boolean(paiement || pourboire);
+  },
+
+  /**
+   * L'état d'une intention de cette commande, relu chez Stripe.
+   *
+   * Le webhook est la source qui fait foi. Le rattrapage (reporter le succès
+   * sur la commande) n'a lieu que là où aucun webhook n'est configuré, et il
+   * est idempotent : `marquerPaye` ne transmet la commande qu'une fois. Une
+   * intention d'une autre commande répond 404, sans appel à Stripe.
+   */
+  async confirmPayment(orderId: string, paymentIntentId: string) {
+    if (!(await this.intentionDeLaCommande(orderId, paymentIntentId))) {
+      throw new ApiError(404, "Paiement introuvable", "PAYMENT_NOT_FOUND");
+    }
+
     const intention = await stripe.paymentIntents.retrieve(paymentIntentId);
-    if (intention.status === "succeeded") {
+    // La métadonnée posée par le serveur doit dire la même chose que la base.
+    if (intention.metadata?.orderId && intention.metadata.orderId !== orderId) {
+      throw new ApiError(404, "Paiement introuvable", "PAYMENT_NOT_FOUND");
+    }
+
+    if (intention.status === "succeeded" && !STRIPE_CONFIG.webhookSecret) {
       if (PourboireService.estUnPourboire(intention)) await PourboireService.marquerPaye(intention);
       else await this.marquerPaye(intention);
     }

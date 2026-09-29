@@ -139,7 +139,7 @@ function CheckoutBody({
   // Le délai de repentir court : rien n'est encore parti.
   const [pending, setPending] = useState(false);
   /** Commande créée, en attente du paiement en ligne : elle n'est pas encore chez le commerçant. */
-  const [toPay, setToPay] = useState<{ id: string; amount: number } | null>(null);
+  const [toPay, setToPay] = useState<{ id: string; amount: number; trackingToken?: string } | null>(null);
 
   // Le profil pré-remplit le contact.
   useEffect(() => {
@@ -243,13 +243,15 @@ function CheckoutBody({
     }
   };
 
-  const payOnline = async (order: { id: string; amount: number }) => {
+  const payOnline = async (order: { id: string; amount: number; trackingToken?: string }) => {
     if (!pay) return;
     setSubmitting(true);
     try {
-      const intent = await apiFetch<{ clientSecret: string }>('/api/payments/intent', null, {
+      // Le serveur exige une preuve que la commande est la nôtre : la session,
+      // et le jeton de suivi remis à la création.
+      const intent = await apiFetch<{ clientSecret: string }>('/api/payments/intent', token, {
         method: 'POST',
-        body: { orderId: order.id },
+        body: { orderId: order.id, trackingToken: order.trackingToken },
       });
       const result = await pay(intent.clientSecret);
       if (result === 'paid') {
@@ -300,7 +302,9 @@ function CheckoutBody({
   const submit = async () => {
     setSubmitting(true);
     try {
-      const res = await apiFetch<{ order: { id: string; totalAmount: number | string; paiementEnLigne?: boolean } }>(
+      const res = await apiFetch<{
+        order: { id: string; totalAmount: number | string; paiementEnLigne?: boolean; trackingToken?: string };
+      }>(
         '/api/orders',
         // Le jeton range la commande dans l'historique du compte.
         token,
@@ -333,7 +337,11 @@ function CheckoutBody({
         }
       );
 
-      const order = { id: res.order.id, amount: Number(res.order.totalAmount) };
+      const order = {
+        id: res.order.id,
+        amount: Number(res.order.totalAmount),
+        trackingToken: res.order.trackingToken,
+      };
       if (res.order.paiementEnLigne) {
         setToPay(order);
         setSubmitting(false);

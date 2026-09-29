@@ -33,7 +33,10 @@ const CHEMINS_PUBLICS = [
   "/api/client",
   "/api/address",
   "/api/maps",
-  "/api/payments",
+  // Seuls la configuration et le webhook (signé) sont publics ; les autres
+  // routes de paiement vérifient elles-mêmes l'appelant (GESTES_PUBLICS).
+  "/api/payments/config",
+  "/api/payments/webhook",
 ];
 
 /**
@@ -76,6 +79,10 @@ const GESTES_PUBLICS: { methode: string; chemin: RegExp }[] = [
   // Le pourboire après livraison, depuis le lien de suivi.
   { methode: "GET", chemin: /^\/api\/orders\/[^/]+\/pourboire$/ },
   { methode: "POST", chemin: /^\/api\/orders\/[^/]+\/pourboire$/ },
+  // Payer sa commande : la route exige la session du client ou le jeton de
+  // suivi, et répond 404 à tout autre (voir routes/payment.ts).
+  { methode: "POST", chemin: /^\/api\/payments\/(intent|confirm)$/ },
+  { methode: "GET", chemin: /^\/api\/payments\/status\/[^/]+$/ },
   // Le menu et le détail d'un plat, tels que la vitrine les lit.
   { methode: "GET", chemin: /^\/api\/products\/[^/]+$/ },
   { methode: "GET", chemin: /^\/api\/products\/[^/]+\/variants$/ },
