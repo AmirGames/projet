@@ -1,6 +1,6 @@
 import { lireConsole } from "../config/logger";
 import { Router, Request, Response, NextFunction } from "express";
-import { MerchantPayoutService, horsReversements, reversementsDepuis } from "../services/merchant-payout.service";
+import { MerchantPayoutService, horsReversements, reversementsDepuis } from "../modules/payouts/merchant-payout.service";
 import { z } from "zod";
 import { champEmail } from "../utils/validation";
 import { db } from "../services/db";
@@ -32,7 +32,7 @@ import {
   DriverPayoutService,
   MOYENS_VERSEMENT,
   semainePrecedente,
-} from "../services/driver-payout.service";
+} from "../modules/payouts/driver-payout.service";
 import { StoreSupportService, libelleDuChamp } from "../services/store-support.service";
 import { MerchantProfileService } from "../services/merchant-profile.service";
 import { MerchantApprovalService } from "../services/merchant-approval.service";

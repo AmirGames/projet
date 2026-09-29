@@ -12,7 +12,7 @@ import { OrderJobs } from "./jobs/order-jobs";
 import { DriverJobs } from "./jobs/driver-jobs";
 import { WebhookJobs } from "./jobs/webhook-jobs";
 import { MerchantJobs } from "./jobs/merchant-jobs";
-import { PayoutJobs } from "./jobs/payout-jobs";
+import { PayoutJobs } from "./modules/payouts/payout.jobs";
 import { Vigie } from "./services/vigie.service";
 import { Disponibilite } from "./services/disponibilite.service";
 

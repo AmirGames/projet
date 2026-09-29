@@ -53,7 +53,7 @@ import paymentMethodsApiRouter from "./routes/payment-methods-api";
 import supportRouter from "./routes/support";
 import plansRouter from "./routes/plans";
 import merchantProfileRouter from "./routes/merchant-profile";
-import merchantPayoutRouter from "./routes/merchant-payout";
+import merchantPayoutRouter from "./modules/payouts/merchant-payout.routes";
 import pushDevicesRouter from "./routes/push-devices";
 import variantRouter from "./routes/variant";
 import addressRouter from "./routes/address";

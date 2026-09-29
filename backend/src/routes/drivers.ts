@@ -18,7 +18,7 @@ import {
   libelleDuDocument,
   piecesAttendues,
 } from "../services/driver-approval.service";
-import { DriverPayoutService } from "../services/driver-payout.service";
+import { DriverPayoutService } from "../modules/payouts/driver-payout.service";
 import { DeliveryProofService, exigerAttenteTerminee, finAttente } from "../services/delivery-proof.service";
 import { FileUploadService } from "../services/file-upload.service";
 import { notesDuLivreur } from "../services/driver-rating.service";

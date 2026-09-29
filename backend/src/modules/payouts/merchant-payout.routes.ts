@@ -1,8 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { db } from "../services/db";
-import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware } from "../middleware/auth";
-import { MerchantPayoutService } from "../services/merchant-payout.service";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { authMiddleware } from "../../middleware/auth";
+import { MerchantPayoutService } from "./merchant-payout.service";
 
 const router = Router();
 
