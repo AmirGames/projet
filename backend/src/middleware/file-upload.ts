@@ -1,39 +1,58 @@
 import multer from "multer";
+import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { ApiError } from "./errorHandler";
+import { detecterType, normaliserTypeAnnonce, type TypeFichier } from "../utils/file-type";
 
-const ALLOWED_MIME_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "application/pdf",
-];
+const MESSAGE_TYPE = "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou PDF.";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MO = 1024 * 1024;
 
-const storage = multer.memoryStorage();
-
-const fileFilter = (
-  _req: Express.Request,
-  file: Express.Multer.File,
-  cb: multer.FileFilterCallback
-) => {
-  if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-    cb(
-      new ApiError(
-        400,
-        "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou PDF.",
-        "INVALID_FILE_TYPE"
-      )
-    );
-  } else {
-    cb(null, true);
-  }
+/** Taille maximale par type, contrôlée une fois le vrai type connu. */
+export const TAILLE_MAX: Record<TypeFichier, number> = {
+  "image/jpeg": 2 * MO,
+  "image/png": 2 * MO,
+  "image/webp": 2 * MO,
+  "application/pdf": 5 * MO,
 };
 
-export const uploadMiddleware = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: MAX_FILE_SIZE,
-  },
+// Multer voit passer le fichier avant qu'on en connaisse le type : sa limite
+// est le maximum, le contrôle par type vient ensuite.
+const MAX_FILE_SIZE = Math.max(...Object.values(TAILLE_MAX));
+
+const multerBase = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_FILE_SIZE },
 });
+
+/**
+ * Après Multer : le contenu réel doit être un type autorisé, égal au type
+ * déclaré, et tenir dans la limite de ce type. Le type détecté remplace celui
+ * du client.
+ */
+export function verifierContenu(req: Request, _res: Response, next: NextFunction) {
+  const fichiers: Express.Multer.File[] = [];
+  if (req.file) fichiers.push(req.file);
+  if (Array.isArray(req.files)) fichiers.push(...req.files);
+  else if (req.files) fichiers.push(...Object.values(req.files).flat());
+
+  for (const fichier of fichiers) {
+    const detecte = detecterType(fichier.buffer);
+    if (!detecte || normaliserTypeAnnonce(fichier.mimetype) !== detecte) {
+      return next(new ApiError(400, MESSAGE_TYPE, "INVALID_FILE_TYPE"));
+    }
+    if (fichier.size > TAILLE_MAX[detecte]) {
+      const limite = TAILLE_MAX[detecte] / MO;
+      return next(
+        new ApiError(413, `Fichier trop lourd : ${limite} Mo maximum pour ce type.`, "LIMIT_FILE_SIZE")
+      );
+    }
+    fichier.mimetype = detecte;
+  }
+  next();
+}
+
+/** Mêmes méthodes que Multer ; chacune renvoie Multer suivi du contrôle du contenu. */
+export const uploadMiddleware = {
+  single: (champ: string): RequestHandler[] => [multerBase.single(champ), verifierContenu],
+  array: (champ: string, max?: number): RequestHandler[] => [multerBase.array(champ, max), verifierContenu],
+};

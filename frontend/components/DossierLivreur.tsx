@@ -12,6 +12,7 @@
 import { useCallback, useState } from 'react';
 import { AlertCircle, Check, Clock, FileText, Upload, X } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { erreurDeTaille, reduireImage } from '@/lib/reduire-image';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -127,16 +128,23 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
       return;
     }
 
+    const aEnvoyer = modeUpload === 'file' ? await reduireImage(fichier!) : null;
+    const trop = aEnvoyer && erreurDeTaille(aEnvoyer);
+    if (trop) {
+      setErreur(trop);
+      return;
+    }
+
     setEnvoi(true);
 
     try {
       const token = localStorage.getItem('driverToken');
       let reponse: Response;
 
-      if (modeUpload === 'file') {
+      if (modeUpload === 'file' && aEnvoyer) {
         const formData = new FormData();
         formData.append('type', formulaire.type);
-        formData.append('file', fichier!);
+        formData.append('file', aEnvoyer, fichier!.name);
         if (formulaire.expiryDate) {
           formData.append('expiryDate', formulaire.expiryDate);
         }

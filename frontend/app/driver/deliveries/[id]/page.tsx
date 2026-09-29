@@ -12,6 +12,7 @@ import { AnnulerCourse } from '@/components/AnnulerCourse';
 import { AlerteSignal, useSignalGps } from '@/components/AlerteSignal';
 import { GlisserPourValider } from '@/components/GlisserPourValider';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { reduireImage } from '@/lib/reduire-image';
 import { AttenteDepotLivreur } from '@/components/AttenteDepotLivreur';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -42,26 +43,6 @@ function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
   const h =
     Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-}
-
-/**
- * Réduit la photo avant l'envoi : celle d'un téléphone pèse plusieurs
- * mégaoctets, et le livreur l'envoie sur le réseau mobile, devant la porte.
- */
-async function reduirePhoto(fichier: File): Promise<Blob> {
-  try {
-    const image = await createImageBitmap(fichier);
-    const echelle = Math.min(1, 1600 / Math.max(image.width, image.height));
-    const toile = document.createElement('canvas');
-    toile.width = Math.round(image.width * echelle);
-    toile.height = Math.round(image.height * echelle);
-    toile.getContext('2d')?.drawImage(image, 0, 0, toile.width, toile.height);
-    return await new Promise<Blob>((resoudre) =>
-      toile.toBlob((blob) => resoudre(blob || fichier), 'image/jpeg', 0.8)
-    );
-  } catch {
-    return fichier;
-  }
 }
 
 /** Itinéraire GPS dans l'application de navigation du téléphone. */
@@ -374,7 +355,7 @@ export default function DeliveryTrackingPage() {
     setEnvoiPhoto(true);
     setRefus('');
     try {
-      const photo = await reduirePhoto(fichier);
+      const photo = await reduireImage(fichier);
       const formulaire = new FormData();
       formulaire.append('photo', photo, 'depot.jpg');
 

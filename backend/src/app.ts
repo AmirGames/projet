@@ -7,6 +7,7 @@ import { requestLogger } from "./config/logger";
 import { middlewareOrigine } from "./config/origine";
 import { originesAutorisees as listerOriginesAutorisees } from "./config/origines-autorisees";
 import { setupErrorHandling } from "./middleware/errorHandler";
+import { lecteursDeCorps } from "./middleware/corps";
 import { maintenanceMiddleware } from "./middleware/maintenance";
 import { compteRestreint } from "./middleware/compte-restreint";
 import { cloisonnement } from "./middleware/cloisonnement";
@@ -102,8 +103,7 @@ export function createApp(): Express {
   app.post("/api/payments/webhook", express.raw({ type: "application/json" }), stripeWebhookHandler);
 
   // ===== Body parsing =====
-  app.use(express.json({ limit: "10mb" }));
-  app.use(express.urlencoded({ limit: "10mb", extended: true }));
+  app.use(lecteursDeCorps);
 
   // ===== Logging =====
   app.use(requestLogger);

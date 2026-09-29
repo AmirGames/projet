@@ -5,6 +5,7 @@ import { resolve, sep } from "path";
 import type { Plateforme } from "@prisma/client";
 import { getEnv } from "../config/env";
 import type { Compte } from "../middleware/auth";
+import { detecterType, OCTETS_DE_SIGNATURE } from "../utils/file-type";
 import { db } from "./db";
 import { PermissionsPlateforme } from "./permissions-plateforme.service";
 
@@ -233,20 +234,14 @@ export async function peutLire(
  * le navigateur, à qui helmet interdit de deviner, refusait de les ouvrir.
  */
 function typeLuDansLeFichier(chemin: string): string | null {
-  const debut = Buffer.alloc(12);
+  const debut = Buffer.alloc(OCTETS_DE_SIGNATURE);
   const fd = fs.openSync(chemin, "r");
   try {
-    fs.readSync(fd, debut, 0, 12, 0);
+    fs.readSync(fd, debut, 0, OCTETS_DE_SIGNATURE, 0);
   } finally {
     fs.closeSync(fd);
   }
-  if (debut.subarray(0, 4).toString("latin1") === "%PDF") return "application/pdf";
-  if (debut[0] === 0x89 && debut.subarray(1, 4).toString("latin1") === "PNG") return "image/png";
-  if (debut[0] === 0xff && debut[1] === 0xd8 && debut[2] === 0xff) return "image/jpeg";
-  if (debut.subarray(0, 4).toString("latin1") === "RIFF" && debut.subarray(8, 12).toString("latin1") === "WEBP") {
-    return "image/webp";
-  }
-  return null;
+  return detecterType(debut);
 }
 
 const TYPES_PAR_EXTENSION: Record<string, string> = {

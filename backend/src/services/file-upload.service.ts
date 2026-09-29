@@ -3,20 +3,14 @@ import { join } from "path";
 import { randomBytes } from "crypto";
 import { getEnv } from "../config/env";
 import { logger } from "../config/logger";
+import { ApiError } from "../middleware/errorHandler";
+import { detecterType, extensionDuType } from "../utils/file-type";
 
 const env = getEnv();
 const UPLOADS_DIR = join(process.cwd(), "uploads");
 const API_URL = env.API_URL || "http://localhost:3001";
 
 let cloudinary: any = null;
-
-const MIME_TO_EXT: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/jpg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'application/pdf': 'pdf',
-};
 
 // Lazy-load cloudinary seulement si configuré
 async function getCloudinary() {
@@ -49,28 +43,15 @@ async function ensureUploadsDir() {
 }
 
 /**
- * Extrait l'extension correcte du MIME type, avec fallback sur le nom du fichier.
+ * L'extension vient du contenu du fichier, jamais du nom ni du type annoncés
+ * par le client : ils se forgent.
  */
-function extractExtension(mimeType: string | undefined, originalName: string): string {
-  // Essayer d'abord via MIME type
-  if (mimeType && MIME_TO_EXT[mimeType]) {
-    return MIME_TO_EXT[mimeType];
+function extractExtension(buffer: Buffer): string {
+  const type = detecterType(buffer);
+  if (!type) {
+    throw new ApiError(400, "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou PDF.", "INVALID_FILE_TYPE");
   }
-
-  // Fallback: extraire de originalName si présent
-  if (originalName && originalName.trim()) {
-    const trimmed = originalName.trim();
-    const lastDot = trimmed.lastIndexOf(".");
-    if (lastDot > 0 && lastDot < trimmed.length - 1) {
-      const potentialExt = trimmed.substring(lastDot + 1).toLowerCase();
-      if (/^[a-z0-9]{2,10}$/.test(potentialExt)) {
-        return potentialExt;
-      }
-    }
-  }
-
-  // Default fallback
-  return "bin";
+  return extensionDuType(type);
 }
 
 export class FileUploadService {
@@ -152,8 +133,7 @@ export class FileUploadService {
   ): Promise<{ url: string; publicId: string }> {
     await ensureUploadsDir();
 
-    // Extraire l'extension correcte (fixe le bug du .bin)
-    const ext = extractExtension(mimeType, filename);
+    const ext = extractExtension(buffer);
 
     logger.info("uploadLocal - Processing file:", { filename, mimeType, extractedExt: ext });
 

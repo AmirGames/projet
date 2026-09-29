@@ -16,6 +16,7 @@ import { AlertTriangle, BadgeCheck, Check, Clock, Eye, FileText, Upload, X } fro
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { LienPiece } from '@/components/LienPiece';
 import { useDonneesModifiees } from '@/lib/temps-reel';
+import { erreurDeTaille, reduireImage } from '@/lib/reduire-image';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -219,13 +220,20 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       return;
     }
 
+    const aEnvoyer = await reduireImage(fichier);
+    const trop = erreurDeTaille(aEnvoyer);
+    if (trop) {
+      setErreurUpload(trop);
+      return;
+    }
+
     setEnvoi(true);
 
     try {
       const jeton = localStorage.getItem('accessToken');
       const formData = new FormData();
       formData.append('type', typePiece);
-      formData.append('file', fichier);
+      formData.append('file', aEnvoyer, fichier.name);
 
       const reponse = await fetch(
         `${API_URL}/api/merchant-profile/${orgId}/documents/upload`,
@@ -381,7 +389,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
 
             <div>
               <label htmlFor="fichier-piece" className="block text-sm text-gray-400 mb-1">
-                Fichier (JPG, PNG, PDF max 10MB)
+                Fichier (JPG, PNG, WebP : 2 Mo, PDF : 5 Mo)
               </label>
               <input
                 id="fichier-piece"
