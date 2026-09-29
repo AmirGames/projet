@@ -4,6 +4,7 @@ import type { Request } from "express";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { AuthService } from "../auth/auth.service";
+import { OrderService } from "../orders/order.service";
 import { oublierStatut } from "./compte-restreint.middleware";
 
 /**
@@ -320,6 +321,9 @@ export class DemoMerchantService {
         return { productId: produit.id, quantity: quantite, price: prix, total: Math.round(prix * quantite * 100) / 100 };
       });
       const total = Math.round(lignes.reduce((somme, l) => somme + l.total, 0) * 100) / 100;
+      // Figée comme pour une vraie commande : sans elle, la facturation la
+      // recalculait au taux du jour et changer la formule réécrivait le passé.
+      const commission = await OrderService.commissionDeLaBoutique(boutique.id, total, null);
 
       await db.order.create({
         data: {
@@ -332,6 +336,10 @@ export class DemoMerchantService {
           totalAmount: total,
           taxAmount: 0,
           feesAmount: 0,
+          commissionPercent: commission.taux,
+          commissionAmount: commission.montant,
+          tierAtOrder: commission.tier,
+          commissionWaived: commission.offerte,
           items: { create: lignes },
         },
       });

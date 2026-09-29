@@ -62,7 +62,7 @@ export class OrderService {
    *
    * Le taux est donc lu ici, une fois, et gardé sur la commande.
    */
-  private static async commissionDeLaBoutique(
+  static async commissionDeLaBoutique(
     storeId: string,
     montant: number,
     mode: ModeDeLivraison | null
