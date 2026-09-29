@@ -54,6 +54,7 @@ const db: any = {
 
 jest.mock("../db", () => ({ db }));
 jest.mock("../../services/db", () => ({ db }));
+jest.mock("../compte-connecte", () => ({ compteConnecte: jest.fn(async (id: string) => ({ user: { id } })) }));
 
 import { SsoService } from "../sso.service";
 import { AuthService } from "../auth.service";
@@ -168,5 +169,88 @@ describe("jetons sans session (sid)", () => {
     const ancien = AuthService.generateRefreshToken("u1", sid);
     expect(await code(SsoService.renouveler(ancien))).toBe("SESSION_INVALIDE");
     expect(sessions[0].revokedAt).not.toBeNull();
+  });
+});
+
+describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
+  // Les routes réelles sont montées ici : seule la base est simulée.
+  const auth = express();
+  auth.use(express.json());
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  auth.use("/api/auth", require("../../routes/auth").default);
+  auth.use(errorHandler);
+
+  beforeEach(() => {
+    sessions = [];
+    jetons = [];
+    process.env.NODE_ENV = "test";
+    process.env.FRONTEND_URL = "https://zupone.com";
+  });
+
+  const cookieDe = (res: request.Response) =>
+    (res.headers["set-cookie"] as unknown as string[] | undefined)?.find((c) => c.startsWith("zup_refresh="));
+
+  it("refuse par cookie une origine étrangère (403 CSRF_ORIGINE) sans consommer le jeton", async () => {
+    const { refreshToken } = await SsoService.connecter("u1");
+    const res = await request(auth)
+      .post("/api/auth/refresh")
+      .set("Cookie", `zup_refresh=${refreshToken}`)
+      .set("Origin", "https://evil.example");
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("CSRF_ORIGINE");
+    expect(jetons.every((j) => !j.usedAt)).toBe(true);
+  });
+
+  it("refuse par cookie une requête sans Origin ni Referer", async () => {
+    const { refreshToken } = await SsoService.connecter("u1");
+    const res = await request(auth).post("/api/auth/refresh").set("Cookie", `zup_refresh=${refreshToken}`);
+    expect(res.status).toBe(403);
+  });
+
+  it("renouvelle par cookie depuis une origine autorisée : nouveau cookie roté, refresh absent du corps", async () => {
+    const { refreshToken } = await SsoService.connecter("u1");
+    const res = await request(auth)
+      .post("/api/auth/refresh")
+      .set("Cookie", `zup_refresh=${refreshToken}`)
+      .set("Origin", "https://zupone.com");
+
+    expect(res.status).toBe(200);
+    expect(res.body.accessToken).toBeTruthy();
+    expect(res.body.refreshToken).toBeUndefined();
+    const cookie = cookieDe(res)!;
+    expect(cookie).toMatch(/HttpOnly/i);
+    expect(cookie).toMatch(/SameSite=Lax/i);
+    expect(cookie).toMatch(/Path=\/api\/auth/);
+    expect(cookie.split(";")[0]).not.toContain(refreshToken);
+  });
+
+  it("logout par cookie : ferme la session, efface le cookie, CSRF contrôlé", async () => {
+    const { refreshToken, accessToken, sid } = await SsoService.connecter("u1");
+
+    const refuse = await request(auth)
+      .post("/api/auth/logout")
+      .set("Cookie", `zup_refresh=${refreshToken}`)
+      .set("Origin", "https://evil.example");
+    expect(refuse.status).toBe(403);
+    expect(sessions.find((s) => s.id === sid)!.revokedAt).toBeNull();
+
+    const ok = await request(auth)
+      .post("/api/auth/logout")
+      .set("Cookie", `zup_refresh=${refreshToken}`)
+      .set("Origin", "https://zupone.com");
+    expect(ok.status).toBe(200);
+    expect(cookieDe(ok)).toMatch(/zup_refresh=;/);
+
+    expect((await request(app).get("/protege").set("Authorization", `Bearer ${accessToken}`)).status).toBe(401);
+    expect(await code(SsoService.renouveler(refreshToken))).toBe("SESSION_INVALIDE");
+  });
+
+  it("le mobile garde le refresh dans le corps (rotation comprise)", async () => {
+    const { refreshToken } = await SsoService.connecter("u1");
+    const res = await request(auth).post("/api/auth/refresh").send({ refreshToken });
+    expect(res.status).toBe(200);
+    expect(res.body.refreshToken).toBeTruthy();
+    expect(res.body.refreshToken).not.toBe(refreshToken);
+    expect(cookieDe(res)).toBeUndefined();
   });
 });
