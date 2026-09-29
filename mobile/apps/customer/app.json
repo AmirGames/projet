@@ -4,6 +4,7 @@
     "slug": "zupeat-customer",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
     "scheme": "zupeat-customer",
     "updates": {
@@ -11,9 +12,19 @@
     },
     "plugins": [
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#2563EB"
+        }
+      ],
+      [
         "expo-notifications",
         {
-          "color": "#007AFF"
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#2563EB"
         }
       ],
       [
@@ -40,10 +51,20 @@
     ],
     "android": {
       "package": "com.amir_games.zupeatcustomer",
+      "package": "com.amir_games.zupeatcustomer",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png",
+        "backgroundColor": "#2563EB"
+      }
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png"
     },
     "extra": {
       "eas": {
