@@ -1,7 +1,7 @@
 'use client';
 
 import { signalerErreur, estErreurReseau } from '@/lib/erreurs';
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { Suspense, createContext, use, useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { fermerSessionPartout } from '@/lib/sso';
@@ -75,6 +75,29 @@ function connexionDeLEspace(chemin: string): string | null {
   }
   if (sous('/merchant') || sous('/superowner') || sous('/dashboard')) return '/login';
   return null;
+}
+
+// Une seule promesse par chargement de page : `use` doit revoir la même à
+// chaque tentative, sinon la page resterait suspendue.
+let attenteSession: Promise<void> | null = null;
+
+/**
+ * Retient les pages jusqu'à ce que la session soit retrouvée, sans casser
+ * l'hydratation.
+ *
+ * Rendre `null` à la place des pages, côté navigateur seulement, ne
+ * correspondait plus au HTML du serveur : React abandonnait l'hydratation et
+ * refaisait la page à côté de la première, d'où l'en-tête affiché deux fois
+ * pour un visiteur déjà connecté. Suspendre dans une frontière Suspense
+ * laisse au contraire le HTML du serveur en place, jusqu'à ce que la session
+ * soit prête.
+ */
+function AttendreSession({ pret, children }: { pret: boolean; children: React.ReactNode }) {
+  if (!pret) {
+    attenteSession ??= sessionPrete();
+    use(attenteSession);
+  }
+  return <>{children}</>;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -195,7 +218,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshAuth,
       }}
     >
-      {sessionOk ? children : null}
+      <Suspense fallback={null}>
+        <AttendreSession pret={sessionOk}>{children}</AttendreSession>
+      </Suspense>
     </AuthContext.Provider>
   );
 }
