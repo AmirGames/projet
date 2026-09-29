@@ -34,6 +34,27 @@ const envSchema = z.object({
   // automatique ne tourne pas. Les commandes d'avant ne sont jamais reprises —
   // elles ont été réglées à l'ancienne, sans relevé.
   PAYOUTS_START_DATE: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  // L'émetteur des factures électroniques Peppol : la société qui exploite la
+  // plateforme. Sans son numéro de TVA et son adresse, aucune facture n'est émise.
+  PLATFORM_LEGAL_NAME: z.string().optional(),
+  PLATFORM_VAT_NUMBER: z.string().optional(),
+  PLATFORM_REGISTRATION_NUMBER: z.string().optional(),
+  PLATFORM_ADDRESS: z.string().optional(),
+  PLATFORM_POSTAL_CODE: z.string().optional(),
+  PLATFORM_CITY: z.string().optional(),
+  PLATFORM_COUNTRY: z.string().length(2).default("BE"),
+  PLATFORM_EMAIL: z.string().email().optional(),
+  // Le compte où les commerçants paient leur facture (SEPA_DEBTOR_IBAN à défaut).
+  PLATFORM_IBAN: z.string().optional(),
+  // TVA appliquée aux services de la plateforme (commission, livraison, frais).
+  PLATFORM_VAT_RATE: z.coerce.number().min(0).max(100).default(21),
+  // Les commissions et frais sont-ils déjà TTC ? Faux (défaut) : ce sont des
+  // montants hors taxe, la TVA s'y ajoute. Vrai : la TVA y est incluse — ce qui
+  // est retenu sur un reversement est alors tout ce que le commerçant doit.
+  PLATFORM_AMOUNTS_INCLUDE_VAT: z.string().default("false").transform((v) => v === "true"),
+  // Le fournisseur d'Access Point Peppol. Vide : les factures sont générées mais
+  // s'envoient à la main (téléchargement du XML).
+  PEPPOL_PROVIDER: z.string().optional(),
   ENABLE_STRIPE: z.string().default("true").transform((v) => v === "true"),
   ENABLE_EMAIL_VERIFICATION: z.string().default("true").transform((v) => v === "true"),
 });
