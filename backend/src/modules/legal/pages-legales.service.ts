@@ -1,6 +1,6 @@
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { PAGES_LEGALES_DEFAUT, SLUGS_LEGAUX, VERSION_INITIALE, type SlugLegal } from "../contenus/pages-legales.defaut";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { PAGES_LEGALES_DEFAUT, SLUGS_LEGAUX, VERSION_INITIALE, type SlugLegal } from "../../contenus/pages-legales.defaut";
 
 export type PageLegale = {
   slug: SlugLegal;

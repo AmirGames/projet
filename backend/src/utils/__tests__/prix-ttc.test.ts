@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { ttc } from "../../utils/prix-ttc";
+import { ttc } from "../prix-ttc";
 
 describe("ttc", () => {
   it("passe un prix HT en TTC", () => {

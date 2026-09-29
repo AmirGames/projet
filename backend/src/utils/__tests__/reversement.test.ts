@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
-import { lignesDuReversement } from "../../utils/reversement";
-import { debutDeSemaine, semaineEcoulee } from "../../utils/semaine-bruxelles";
-import { fichierSepa, ibanValide, texteSepa } from "../../utils/sepa";
+import { lignesDuReversement } from "../reversement";
+import { debutDeSemaine, semaineEcoulee } from "../semaine-bruxelles";
+import { fichierSepa, ibanValide, texteSepa } from "../sepa";
 
 const commande = (champs: Partial<Parameters<typeof lignesDuReversement>[0][number]>) => ({
   totalAmount: 0,

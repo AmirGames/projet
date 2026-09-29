@@ -1,8 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { authMiddleware } from "../middleware/auth";
-import { notificationService } from "../services/notification.service";
-import { db } from "../services/db";
-import { ApiError } from "../middleware/errorHandler";
+import { authMiddleware } from "../../middleware/auth";
+import { notificationService } from "./notification.service";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
 
 const router = Router();
 

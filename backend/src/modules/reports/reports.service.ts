@@ -1,6 +1,6 @@
-import { db } from "./db";
-import { montantCommercant, totalCommercant } from "../modules/delivery/delivery-mode.service";
-import { TRANSMISE } from "../utils/commande-transmise";
+import { db } from "../../services/db";
+import { montantCommercant, totalCommercant } from "../delivery/delivery-mode.service";
+import { TRANSMISE } from "../../utils/commande-transmise";
 
 export interface ReportFilters {
   storeId?: string;

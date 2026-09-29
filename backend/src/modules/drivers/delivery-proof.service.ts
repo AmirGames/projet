@@ -3,7 +3,7 @@ import { randomInt } from "node:crypto";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
-import { cheminRelatif, presenter } from "../../services/fichiers-prives.service";
+import { cheminRelatif, presenter } from "../files/fichiers-prives.service";
 
 /**
  * La preuve de la remise.

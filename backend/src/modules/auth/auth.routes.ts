@@ -27,7 +27,7 @@ import {
   DUREE_REINITIALISATION_MS,
 } from "./account-token.service";
 import { db } from "../../services/db";
-import { champAcceptation, enregistrerAcceptation } from "../../services/acceptation-conditions.service";
+import { champAcceptation, enregistrerAcceptation } from "../legal/acceptation-conditions.service";
 import { StoreService } from "../stores/store.service";
 import { normaliserGenre } from "../stores/store-type.service";
 import { rattacherFicheInvite } from "../customers/fiche-client.service";

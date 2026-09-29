@@ -1,10 +1,10 @@
 import { promises as fs } from "fs";
 import { join } from "path";
 import { randomBytes } from "crypto";
-import { getEnv } from "../config/env";
-import { logger } from "../config/logger";
-import { ApiError } from "../middleware/errorHandler";
-import { detecterType, extensionDuType } from "../utils/file-type";
+import { getEnv } from "../../config/env";
+import { logger } from "../../config/logger";
+import { ApiError } from "../../middleware/errorHandler";
+import { detecterType, extensionDuType } from "../../utils/file-type";
 
 const env = getEnv();
 const UPLOADS_DIR = join(process.cwd(), "uploads");

@@ -1,8 +1,8 @@
 import fs from "fs";
 import { Router, Request, Response, NextFunction } from "express";
 
-import { authMiddleware } from "../middleware/auth";
-import { ApiError } from "../middleware/errorHandler";
+import { authMiddleware } from "../../middleware/auth";
+import { ApiError } from "../../middleware/errorHandler";
 import {
   DUREE_SIGNATURE_S,
   adresseSignee,
@@ -11,11 +11,11 @@ import {
   peutLire,
   signatureValable,
   typeDuFichier,
-} from "../services/fichiers-prives.service";
+} from "./fichiers-prives.service";
 
 /**
  * Les pièces privées du stockage local : permis et RIB des livreurs, pièces
- * des commerçants, photos de dépôt. Voir services/fichiers-prives.service.ts.
+ * des commerçants, photos de dépôt. Voir fichiers-prives.service.ts.
  *
  * Aucune n'est servie sans session ou adresse signée, et jamais avec
  * « Access-Control-Allow-Origin: * » : le CORS de l'application ne renvoie

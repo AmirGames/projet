@@ -1,6 +1,6 @@
 import type { Request } from "express";
 import { z } from "zod";
-import { db } from "./db";
+import { db } from "../../services/db";
 import { PagesLegalesService } from "./pages-legales.service";
 
 export type DocumentLegal = "cgu" | "cgv" | "conditions-commercants" | "conditions-livreurs" | "confidentialite";

@@ -3,11 +3,11 @@ import fs from "fs";
 import { resolve, sep } from "path";
 
 import type { Plateforme } from "@prisma/client";
-import { getEnv } from "../config/env";
-import type { Compte } from "../middleware/auth";
-import { detecterType, OCTETS_DE_SIGNATURE } from "../utils/file-type";
-import { db } from "./db";
-import { PermissionsPlateforme } from "../modules/auth/permissions-plateforme.service";
+import { getEnv } from "../../config/env";
+import type { Compte } from "../../middleware/auth";
+import { detecterType, OCTETS_DE_SIGNATURE } from "../../utils/file-type";
+import { db } from "../../services/db";
+import { PermissionsPlateforme } from "../auth/permissions-plateforme.service";
 
 /**
  * Les pièces déposées sur le serveur (stockage local), et qui peut les lire.

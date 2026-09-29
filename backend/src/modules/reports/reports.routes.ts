@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { ReportsService } from "../services/reports.service";
-import { montantCommercant } from "../modules/delivery/delivery-mode.service";
-import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware } from "../middleware/auth";
-import { logger } from "../config/logger";
+import { ReportsService } from "./reports.service";
+import { montantCommercant } from "../delivery/delivery-mode.service";
+import { ApiError } from "../../middleware/errorHandler";
+import { authMiddleware } from "../../middleware/auth";
+import { logger } from "../../config/logger";
 
 const router = Router();
 

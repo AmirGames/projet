@@ -4,7 +4,7 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../../middleware/auth";
 import { MerchantClosureService } from "./merchant-closure.service";
-import { PlanService, promoSansCommissionActive } from "../../services/plan.service";
+import { PlanService, promoSansCommissionActive } from "../plans/plan.service";
 import { MerchantProfileService } from "./merchant-profile.service";
 import { MerchantApprovalService } from "./merchant-approval.service";
 import { logger } from "../../config/logger";

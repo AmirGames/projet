@@ -3,7 +3,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { emitDeliveryUpdate, emitDriverEvent, emitNotification } from "../../config/socket";
 import { DispatchService } from "./dispatch.service";
-import { Notifier, enArrierePlan } from "../../services/notifier.service";
+import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 
 /**
  * Pause temporaire d'un livreur.

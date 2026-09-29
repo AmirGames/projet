@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { PagesLegalesService } from "../services/pages-legales.service";
+import { PagesLegalesService } from "./pages-legales.service";
 
 /** Lecture publique des pages légales en vigueur. */
 const router = Router();

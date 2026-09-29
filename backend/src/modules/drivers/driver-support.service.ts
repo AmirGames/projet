@@ -1,7 +1,7 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { emitDriverEvent, emitSupportEvent } from "../../config/socket";
-import { Notifier, enArrierePlan } from "../../services/notifier.service";
+import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 
 /**
  * Chat en direct entre les livreurs et le support de la plateforme.

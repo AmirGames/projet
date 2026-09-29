@@ -6,7 +6,7 @@ import { TaxService } from "../catalog/tax.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware, checkOrgStatus } from "../../middleware/auth";
 import { logger } from "../../config/logger";
-import { PlanService } from "../../services/plan.service";
+import { PlanService } from "../plans/plan.service";
 import { StoreDuplicationService } from "./store-duplication.service";
 import {
   TYPES_ETABLISSEMENT,

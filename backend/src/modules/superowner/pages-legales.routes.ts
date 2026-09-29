@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../../middleware/auth";
-import { PagesLegalesService } from "../../services/pages-legales.service";
+import { PagesLegalesService } from "../legal/pages-legales.service";
 import { isSuperOwner, journaliser } from "./shared";
 
 const router = Router();

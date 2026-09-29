@@ -83,7 +83,7 @@ jest.mock("../security-event.service", () => ({
 jest.mock("../../../services/email.service", () => ({
   EmailService: { sendEmailVerification: (...args: any[]) => sendEmailVerification(...args) },
 }));
-jest.mock("../../../services/acceptation-conditions.service", () => {
+jest.mock("../../legal/acceptation-conditions.service", () => {
   const { z } = jest.requireActual("zod") as typeof import("zod");
   return {
     champAcceptation: { conditionsAcceptees: z.literal(true) },

@@ -1,10 +1,10 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { notificationService } from "../services/notification.service";
-import { authMiddleware } from "../middleware/auth";
-import { ApiError } from "../middleware/errorHandler";
-import { db } from "../services/db";
-import { logger } from "../config/logger";
+import { notificationService } from "./notification.service";
+import { authMiddleware } from "../../middleware/auth";
+import { ApiError } from "../../middleware/errorHandler";
+import { db } from "../../services/db";
+import { logger } from "../../config/logger";
 
 /**
  * Les notifications d'une boutique, vues de l'espace commerçant.

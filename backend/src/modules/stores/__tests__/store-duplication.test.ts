@@ -29,7 +29,7 @@ const compteDuJeton: any = jest.fn();
 
 jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../store.service", () => ({ StoreService: { create } }));
-jest.mock("../../../services/plan.service", () => ({ PlanService: { verifierCreationBoutique } }));
+jest.mock("../../plans/plan.service", () => ({ PlanService: { verifierCreationBoutique } }));
 jest.mock("../../../middleware/auth", () => ({ compteDuJeton }));
 jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },

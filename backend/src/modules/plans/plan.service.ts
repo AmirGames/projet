@@ -1,5 +1,5 @@
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
 
 /**
  * Règles liées à la formule d'abonnement d'un commerçant.

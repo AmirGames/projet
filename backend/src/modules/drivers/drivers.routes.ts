@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { SsoService } from "../auth/sso.service";
 import { ibanNormalise, ibanValide } from "../../utils/sepa";
 import { db } from "../../services/db";
-import { champAcceptation, enregistrerAcceptation } from "../../services/acceptation-conditions.service";
+import { champAcceptation, enregistrerAcceptation } from "../legal/acceptation-conditions.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../../middleware/auth";
 import { uploadMiddleware } from "../../middleware/file-upload";
@@ -20,18 +20,18 @@ import {
 } from "./driver-approval.service";
 import { DriverPayoutService } from "../payouts/driver-payout.service";
 import { DeliveryProofService, exigerAttenteTerminee, finAttente } from "./delivery-proof.service";
-import { FileUploadService } from "../../services/file-upload.service";
+import { FileUploadService } from "../files/file-upload.service";
 import { notesDuLivreur } from "./driver-rating.service";
 import { bilanCourse, DriverActivityService, FiltreHistorique } from "./driver-activity.service";
 import { DriverAvailabilityService } from "./driver-availability.service";
-import { Notifier, enArrierePlan } from "../../services/notifier.service";
+import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { DriverSupportService, LONGUEUR_MAX } from "./driver-support.service";
 import { z } from "zod";
 import { champEmail, champMotDePasse } from "../../utils/validation";
 import { distanceKm, estUnPoint } from "../../utils/geo";
 import { Prisma } from "@prisma/client";
-import { adresseSignee, cheminRelatif } from "../../services/fichiers-prives.service";
-import { servirFichierPrive } from "../../routes/files";
+import { adresseSignee, cheminRelatif } from "../files/fichiers-prives.service";
+import { servirFichierPrive } from "../files/files.routes";
 
 const router = Router();
 
@@ -1749,7 +1749,7 @@ router.patch(
  * pièces, gardée pour les écrans qui s'en servent encore. Elle était publique
  * et répondait « Access-Control-Allow-Origin: * » : n'importe quel site lisait
  * un permis ou un RIB. Elle passe maintenant par le même contrôle que
- * /api/files (voir routes/files.ts).
+ * /api/files (voir modules/files/files.routes.ts).
  */
 router.get(/^\/documents\/file\/(.+)$/, (req: Request, res: Response, next: NextFunction) =>
   servirFichierPrive(cheminRelatif((req.params as any)[0]), req, res, next)

@@ -32,7 +32,7 @@ jest.mock("../../../config/socket", () => ({
 jest.mock("../../../config/env", () => ({ getEnv: () => ({ ENABLE_STRIPE: false }) }));
 jest.mock("../../../services/webhook.service", () => ({ emitWebhook: jest.fn() }));
 jest.mock("../../../services/email.service", () => ({ EmailService: { sendOrderConfirmation: jest.fn() } }));
-jest.mock("../../../services/notifier.service", () => ({
+jest.mock("../../notifications/notifier.service", () => ({
   Notifier: { pushEquipeBoutique: jest.fn(async () => 0) },
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
@@ -58,7 +58,7 @@ jest.mock("../../delivery/delivery-zone.service", () => ({
   },
 }));
 jest.mock("../../marketing/promotion.service", () => ({ PromotionService: {} }));
-jest.mock("../../../services/acceptation-conditions.service", () => {
+jest.mock("../../legal/acceptation-conditions.service", () => {
   const { z } = jest.requireActual<typeof import("zod")>("zod");
   return {
     champAcceptation: { conditionsAcceptees: z.literal(true) },

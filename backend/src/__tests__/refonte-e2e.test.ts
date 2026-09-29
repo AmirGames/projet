@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import { createApp } from '../../app';
-import { db } from '../../services/db';
-// import { AuthService } from '../../modules/auth/auth.service';
+import { createApp } from '../app';
+import { db } from '../services/db';
+// import { AuthService } from '../modules/auth/auth.service';
 
 describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
   let app: any;

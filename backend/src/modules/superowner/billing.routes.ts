@@ -3,7 +3,7 @@ import { horsReversements, reversementsDepuis } from "../payouts/merchant-payout
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../../middleware/auth";
-import { PlanService } from "../../services/plan.service";
+import { PlanService } from "../plans/plan.service";
 import { fraisDusALaPlateforme, fraisDeServiceDus } from "../delivery/delivery-mode.service";
 import { isSuperOwner } from "./shared";
 

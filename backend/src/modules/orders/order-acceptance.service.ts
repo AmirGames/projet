@@ -4,7 +4,7 @@ import { logger } from "../../config/logger";
 import { emitWebhook } from "../../services/webhook.service";
 import { EmailService } from "../../services/email.service";
 import { DispatchService } from "../drivers/dispatch.service";
-import { Notifier, enArrierePlan } from "../../services/notifier.service";
+import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { paymentService } from "../payments/payment.service";
 import { emitOrderUpdate, emitNotification, emitMerchantEvent } from "../../config/socket";
 import { arriveeChezLeCommercant } from "../../utils/commande-transmise";

@@ -9,7 +9,7 @@ import { limiterCadence } from "../../middleware/throttle";
 import { courseVisible, type Appelant } from "./suivi-commande.service";
 import { logger } from "../../config/logger";
 import { emitOrderUpdate } from "../../config/socket";
-import { champAcceptation, enregistrerAcceptation } from "../../services/acceptation-conditions.service";
+import { champAcceptation, enregistrerAcceptation } from "../legal/acceptation-conditions.service";
 
 import { DispatchService } from "../drivers/dispatch.service";
 

@@ -25,7 +25,7 @@ jest.mock("../../../services/webhook.service", () => ({ emitWebhook: jest.fn() }
 jest.mock("../../../services/email.service", () => ({
   EmailService: { sendOrderStatusUpdate: jest.fn() },
 }));
-jest.mock("../../../services/notifier.service", () => ({
+jest.mock("../../notifications/notifier.service", () => ({
   Notifier: { pushLivreur: jest.fn(async () => true), pushClient: jest.fn(async () => 0) },
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
@@ -46,7 +46,7 @@ import {
 } from "../order-acceptance.service";
 import { EmailService } from "../../../services/email.service";
 import { DispatchService } from "../../drivers/dispatch.service";
-import { Notifier } from "../../../services/notifier.service";
+import { Notifier } from "../../notifications/notifier.service";
 import { paymentService } from "../../payments/payment.service";
 
 const MINUTE = 60 * 1000;

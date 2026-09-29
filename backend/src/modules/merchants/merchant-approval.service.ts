@@ -2,7 +2,7 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { emitNotification } from "../../config/socket";
-import { notifierPlateforme } from "../../services/notification.service";
+import { notifierPlateforme } from "../notifications/notification.service";
 import { EmailService } from "../../services/email.service";
 import {
   PIECES_EXIGEES,

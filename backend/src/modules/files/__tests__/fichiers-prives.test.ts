@@ -35,9 +35,9 @@ const db: any = {
   platformRole: { findMany: jest.fn(async () => []), createMany: jest.fn() },
 };
 
-jest.mock("../../services/db", () => ({ db }));
-jest.mock("../../config/env", () => ({ getEnv: () => env, loadEnv: () => env }));
-jest.mock("../../config/logger", () => {
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../config/env", () => ({ getEnv: () => env, loadEnv: () => env }));
+jest.mock("../../../config/logger", () => {
   const passe = (_req: any, _res: any, next: any) => next();
   return {
     logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
@@ -46,10 +46,10 @@ jest.mock("../../config/logger", () => {
   };
 });
 // Aucun verrou de compte ni de cloisonnement ici : ils ont leurs propres tests.
-jest.mock("../../middleware/compte-restreint", () => ({
+jest.mock("../../../middleware/compte-restreint", () => ({
   compteRestreint: (_req: any, _res: any, next: any) => next(),
 }));
-jest.mock("../../middleware/cloisonnement", () => ({
+jest.mock("../../../middleware/cloisonnement", () => ({
   cloisonnement: (_req: any, _res: any, next: any) => next(),
 }));
 
@@ -57,8 +57,8 @@ jest.mock("../../middleware/cloisonnement", () => ({
  * La session, réduite à ce qui compte ici : « Bearer <userId> ». Le compte
  * « user-plateforme » est le superowner.
  */
-jest.mock("../../middleware/auth", () => {
-  const { ApiError } = jest.requireActual("../../middleware/errorHandler") as any;
+jest.mock("../../../middleware/auth", () => {
+  const { ApiError } = jest.requireActual("../../../middleware/errorHandler") as any;
   const authentifier = (req: any, _res: any, next: any) => {
     const entete: string | undefined = req.headers.authorization;
     if (!entete?.startsWith("Bearer ")) {
@@ -70,14 +70,14 @@ jest.mock("../../middleware/auth", () => {
     next();
   };
   return {
-    ...(jest.requireActual("../../middleware/auth") as object),
+    ...(jest.requireActual("../../../middleware/auth") as object),
     authMiddleware: authentifier,
     authFacultative: (_req: any, _res: any, next: any) => next(),
   };
 });
 
-import { createApp } from "../../app";
-import { FileUploadService } from "../../services/file-upload.service";
+import { createApp } from "../../../app";
+import { FileUploadService } from "../file-upload.service";
 
 const RACINE = join(process.cwd(), "uploads");
 const PERMIS = "drivers/0123456789abcdef0123456789abcdef.jpg";

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../../middleware/auth";
-import { TicketMessageService } from "../../services/ticket-message.service";
+import { TicketMessageService } from "../support/ticket-message.service";
 import { getQueryString, getQueryNumber, isSystemAdmin } from "./shared";
 
 const router = Router();

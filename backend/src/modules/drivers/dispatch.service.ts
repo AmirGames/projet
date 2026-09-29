@@ -6,7 +6,7 @@ import { emitDeliveryUpdate, emitDriverEvent } from "../../config/socket";
 import { positionLivreurVisible } from "../orders/suivi-commande.service";
 import { genererCode } from "./delivery-proof.service";
 import { obfusquerAdresse } from "../../utils/address-obfuscation";
-import { Notifier, enArrierePlan } from "../../services/notifier.service";
+import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { randomUUID } from "crypto";
 import {
   detourPourRejoindre,

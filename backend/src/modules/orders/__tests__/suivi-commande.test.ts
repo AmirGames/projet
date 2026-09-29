@@ -24,7 +24,7 @@ jest.mock("../../../config/env", () => ({
   loadEnv: () => ({ NODE_ENV: "test", ENABLE_STRIPE: false }),
 }));
 jest.mock("../../../services/email.service", () => ({ EmailService: {} }));
-jest.mock("../../../services/notifier.service", () => ({
+jest.mock("../../notifications/notifier.service", () => ({
   Notifier: {},
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));

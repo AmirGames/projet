@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../../middleware/auth";
-import { PlanService } from "../../services/plan.service";
+import { PlanService } from "../plans/plan.service";
 import { isSuperOwner, journaliser } from "./shared";
 
 const router = Router();

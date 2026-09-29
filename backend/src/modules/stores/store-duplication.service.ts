@@ -2,7 +2,7 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { StoreService } from "./store.service";
-import { PlanService } from "../../services/plan.service";
+import { PlanService } from "../plans/plan.service";
 import { compteDuJeton } from "../../middleware/auth";
 
 /**

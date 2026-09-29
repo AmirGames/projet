@@ -5,12 +5,12 @@ const db: any = {
   pushDevice: { findMany: jest.fn(), deleteMany: jest.fn() },
 };
 
-jest.mock("../db", () => ({ db }));
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
-jest.mock("../../config/socket", () => ({ emitMerchantEvent: jest.fn() }));
-jest.mock("../email.service", () => ({ EmailService: { sendEmail: jest.fn() } }));
+jest.mock("../../../config/socket", () => ({ emitMerchantEvent: jest.fn() }));
+jest.mock("../../../services/email.service", () => ({ EmailService: { sendEmail: jest.fn() } }));
 
 import { Notifier } from "../notifier.service";
 

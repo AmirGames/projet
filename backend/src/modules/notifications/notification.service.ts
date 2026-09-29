@@ -1,6 +1,6 @@
-import { db } from "./db";
-import { emitNotification } from "../config/socket";
-import { logger } from "../config/logger";
+import { db } from "../../services/db";
+import { emitNotification } from "../../config/socket";
+import { logger } from "../../config/logger";
 
 /**
  * Prévient l'équipe de la plateforme (superowners et admins système actifs) :

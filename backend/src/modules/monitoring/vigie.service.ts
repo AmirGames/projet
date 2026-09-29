@@ -3,7 +3,7 @@ import { logger } from "../../config/logger";
 import { emailTransporter } from "../../config/email";
 import { etatTempsReel } from "../../config/socket";
 import { EmailService } from "../../services/email.service";
-import { Notifier } from "../../services/notifier.service";
+import { Notifier } from "../notifications/notifier.service";
 import { Surveillance, resumeErreur } from "./surveillance.service";
 import { Disponibilite } from "./disponibilite.service";
 
