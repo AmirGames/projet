@@ -1,4 +1,5 @@
 import Link from '@/components/LienRegional';
+import { LienConnexion } from '@/components/LienConnexion';
 import { PAYS, type Pays } from '@/lib/pays-infos';
 
 export interface Etape {
@@ -87,9 +88,7 @@ export function PageDevenir({
               </Link>
             ))}
           </nav>
-          <Link href="/login" className="hidden font-semibold text-slate-900 hover:text-primary sm:inline">
-            Connexion
-          </Link>
+          <LienConnexion />
         </div>
       </header>
 
