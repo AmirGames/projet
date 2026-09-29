@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 
-import { db } from "../services/db";
-import { logger } from "../config/logger";
-import { compteDuJeton, verifyToken } from "./auth";
+import { db } from "../../services/db";
+import { logger } from "../../config/logger";
+import { compteDuJeton, verifyToken } from "./auth.middleware";
 
 /**
  * Chacun chez soi.

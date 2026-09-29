@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../../services/db";
 import { voitLesFinances } from "../auth/permissions-plateforme.service";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { getQueryString, getQueryNumber, isSystemAdmin } from "./shared";
 
 const router = Router();

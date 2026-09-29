@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { logger } from "./logger";
+import { logger } from "../../config/logger";
 
 const emailConfig = {
   host: process.env.SMTP_HOST || "localhost",

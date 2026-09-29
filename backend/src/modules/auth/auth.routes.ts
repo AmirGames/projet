@@ -11,7 +11,7 @@ import { effacerCookieRefresh, exigerOrigine, lireCookieRefresh, livrerRefresh }
 import { compteConnecte } from "./compte-connecte";
 import { UserService } from "./user.service";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware, compteDuJeton, jetonPerime, oublierCompte } from "../../middleware/auth";
+import { authMiddleware, compteDuJeton, jetonPerime, oublierCompte } from "./auth.middleware";
 import {
   limiterCadence,
   limiterConnexions,
@@ -20,7 +20,7 @@ import {
 } from "../../middleware/throttle";
 import { logger } from "../../config/logger";
 import { SecurityEventService } from "./security-event.service";
-import { EmailService } from "../../services/email.service";
+import { EmailService } from "../notifications/email.service";
 import {
   AccountTokenService,
   DUREE_CONFIRMATION_MS,

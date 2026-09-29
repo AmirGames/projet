@@ -3,7 +3,7 @@ import { z } from "zod";
 import { champEmail } from "../../utils/validation";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware, oublierCompte } from "../../middleware/auth";
+import { authMiddleware, oublierCompte } from "./auth.middleware";
 import { PermissionsPlateforme, SECTIONS, estRoleDeBase, PLATEFORMES, LIBELLES_PLATEFORMES } from "./permissions-plateforme.service";
 import { Plateforme } from "@prisma/client";
 

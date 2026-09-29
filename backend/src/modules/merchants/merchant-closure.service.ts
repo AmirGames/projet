@@ -2,8 +2,8 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { emitWebhook } from "../webhooks/webhook.service";
-import { emitOrgStatus, emitNotification } from "../../config/socket";
-import { oublierStatut } from "../../middleware/compte-restreint";
+import { emitOrgStatus, emitNotification } from "../realtime/socket";
+import { oublierStatut } from "./compte-restreint.middleware";
 
 
 const HARD_DELETE_DELAY_DAYS = 60;

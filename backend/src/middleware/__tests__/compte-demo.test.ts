@@ -8,14 +8,14 @@ jest.mock("../../config/logger", () => ({
 
 const findFirst = jest.fn<(...args: any[]) => Promise<any>>();
 jest.mock("../../services/db", () => ({ db: { membership: { findFirst: (...a: any[]) => findFirst(...a) } } }));
-jest.mock("../auth", () => ({
+jest.mock("../../modules/auth/auth.middleware", () => ({
   verifyToken: (jeton: string) => {
     if (jeton === "invalide") throw new Error("jeton invalide");
     return { userId: jeton };
   },
 }));
 
-import { compteDemo } from "../compte-demo";
+import { compteDemo } from "../../modules/merchants/compte-demo.middleware";
 
 const app = express();
 app.use(compteDemo);

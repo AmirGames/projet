@@ -1,9 +1,9 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
-import { emitNotification } from "../../config/socket";
+import { emitNotification } from "../realtime/socket";
 import { notifierPlateforme } from "../notifications/notification.service";
-import { EmailService } from "../../services/email.service";
+import { EmailService } from "../notifications/email.service";
 import {
   PIECES_EXIGEES,
   etatDeValidation,

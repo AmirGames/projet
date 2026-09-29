@@ -4,7 +4,7 @@ import { emailFacultatif } from "../../utils/validation";
 import { StoreService } from "./store.service";
 import { TaxService } from "../catalog/tax.service";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware, checkOrgStatus } from "../../middleware/auth";
+import { authMiddleware, checkOrgStatus } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
 import { PlanService } from "../plans/plan.service";
 import { StoreDuplicationService } from "./store-duplication.service";

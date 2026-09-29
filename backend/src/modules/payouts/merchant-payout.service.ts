@@ -2,7 +2,7 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { getEnv } from "../../config/env";
-import { emitNotification } from "../../config/socket";
+import { emitNotification } from "../realtime/socket";
 import { LIBELLES_REVERSEMENT, LigneReversement, lignesDuReversement } from "../../utils/reversement";
 import { dateBruxelles, fichierSepa, ibanNormalise, ibanValide, VirementSepa } from "../../utils/sepa";
 import { debutDeSemaine, semaineEcoulee } from "../../utils/semaine-bruxelles";

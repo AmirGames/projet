@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { db } from "../../services/db";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { voitLesFinances } from "../auth/permissions-plateforme.service";
 import { SystemHealthService } from "../monitoring/system-health.service";
 import { isSuperOwner } from "./shared";

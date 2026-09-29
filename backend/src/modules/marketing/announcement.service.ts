@@ -1,6 +1,6 @@
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
-import { emitNotification } from "../../config/socket";
+import { emitNotification } from "../realtime/socket";
 
 /**
  * Les annonces de la plateforme.

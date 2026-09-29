@@ -1,6 +1,6 @@
 import { type Appelant, commandeVisible, genererJetonDeSuivi } from "./suivi-commande.service";
 import { db } from "../../services/db";
-import { EmailService } from "../../services/email.service";
+import { EmailService } from "../notifications/email.service";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/errorHandler";
 import { VariantService } from "../catalog/variant.service";
@@ -12,7 +12,7 @@ import { TaxService } from "../catalog/tax.service";
 import { ModeDeLivraison, POURBOIRE_MAXIMUM, fraisDeServiceEnVigueur, montantCommercant } from "../delivery/delivery-mode.service";
 import { promoSansCommissionActive } from "../plans/plan.service";
 import { StoreHoursService } from "../delivery/store-hours.service";
-import { emitMerchantEvent } from "../../config/socket";
+import { emitMerchantEvent } from "../realtime/socket";
 import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { OrderAcceptanceService, echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
 import { getEnv } from "../../config/env";

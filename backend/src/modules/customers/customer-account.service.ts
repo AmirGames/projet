@@ -1,7 +1,7 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
-import { oublierCompte } from "../../middleware/auth";
+import { oublierCompte } from "../auth/auth.middleware";
 
 /**
  * Supprimer son compte client ZupEat.

@@ -2,7 +2,7 @@ import Stripe from "stripe";
 import { montantAEncaisser } from "../delivery/delivery-mode.service";
 import { PourboireService } from "../orders/pourboire.service";
 import { db } from "../../services/db";
-import { stripe, STRIPE_CONFIG } from "../../config/stripe";
+import { stripe, STRIPE_CONFIG } from "./stripe";
 import { logger } from "../../config/logger";
 import { ApiError } from "../../middleware/errorHandler";
 

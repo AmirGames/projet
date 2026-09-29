@@ -58,7 +58,7 @@ jest.mock("../compte-connecte", () => ({ compteConnecte: jest.fn(async (id: stri
 
 import { SsoService } from "../sso.service";
 import { AuthService } from "../auth.service";
-import { authMiddleware } from "../../../middleware/auth";
+import { authMiddleware } from "../auth.middleware";
 import { errorHandler } from "../../../middleware/errorHandler";
 
 const app = express();

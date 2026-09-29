@@ -1,7 +1,7 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
-import { emitNotification } from "../../config/socket";
+import { emitNotification } from "../realtime/socket";
 import { FileUploadService } from "../files/file-upload.service";
 import { notifierPlateforme } from "../notifications/notification.service";
 

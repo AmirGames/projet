@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { notificationService } from "./notification.service";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";

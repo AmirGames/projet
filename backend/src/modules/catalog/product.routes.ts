@@ -2,10 +2,10 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ProductService } from "./product.service";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware, checkOrgStatus } from "../../middleware/auth";
+import { authMiddleware, checkOrgStatus } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
 
-import { emitStoreEvent } from "../../config/socket";
+import { emitStoreEvent } from "../realtime/socket";
 
 const router = Router();
 

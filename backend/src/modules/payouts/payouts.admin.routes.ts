@@ -3,7 +3,7 @@ import { MerchantPayoutService } from "./merchant-payout.service";
 import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { DriverPayoutService, MOYENS_VERSEMENT, semainePrecedente } from "./driver-payout.service";
 import { isSuperOwner } from "../superowner/shared";
 

@@ -1,7 +1,7 @@
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { AuthService } from "../auth/auth.service";
-import { oublierStatut } from "../../middleware/compte-restreint";
+import { oublierStatut } from "./compte-restreint.middleware";
 
 /**
  * Le commerce de démonstration.
