@@ -43,7 +43,7 @@ import productMediaRouter from "./modules/catalog/product-media.routes";
 import productSeoRouter from "./modules/catalog/product-seo.routes";
 import productTagRouter from "./modules/catalog/product-tag.routes";
 import adminRouter from "./routes/admin";
-import superOwnerRouter from "./routes/superowner";
+import superOwnerRouter from "./modules/superowner/superowner.routes";
 import pagesLegalesRouter from "./routes/pages-legales";
 import clientRouter from "./modules/customers/client.routes";
 import mapsRouter from "./routes/maps";
