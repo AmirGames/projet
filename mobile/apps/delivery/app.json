@@ -11,7 +11,9 @@
       "policy": "appVersion"
     },
     "updates": {
-      "enabled": false
+      "url": "https://u.expo.dev/face34d3-1569-4bfa-ab6f-2b830dffa311",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     },
     "ios": {
       "bundleIdentifier": "com.amirgames.zupeatdelivery",
