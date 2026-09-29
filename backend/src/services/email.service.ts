@@ -277,6 +277,31 @@ export class EmailService {
     });
   }
 
+  /** Premier superowner : lien pour choisir son mot de passe. */
+  static async sendSuperownerInvitation(email: string, lien: string) {
+    return this.sendEmail({
+      to: email,
+      subject: "Votre compte superowner est prêt",
+      html: this.gabaritAction({
+        titre: "🔐 Compte superowner",
+        corps: `
+          <p>Bonjour,</p>
+          <p>Le compte superowner de la plateforme vient d'être créé pour cette
+             adresse. Choisissez son mot de passe avec le lien ci-dessous, valable
+             48 heures et utilisable une seule fois.</p>
+        `,
+        libelleBouton: "Choisir mon mot de passe",
+        lien,
+        apres:
+          "Passé ce délai, utilisez « Mot de passe oublié » sur la page de connexion avec cette adresse.",
+      }),
+      text:
+        `Le compte superowner de la plateforme est créé.\n\n` +
+        `Choisissez son mot de passe (valable 48 h, usage unique) : ${lien}\n\n` +
+        `Passé ce délai, utilisez « Mot de passe oublié » avec cette adresse.`,
+    });
+  }
+
   /** Lien de confirmation d'adresse. */
   static async sendEmailVerification(email: string, nom: string | null, lien: string) {
     return this.sendEmail({

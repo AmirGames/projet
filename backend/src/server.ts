@@ -15,6 +15,7 @@ import { MerchantJobs } from "./jobs/merchant-jobs";
 import { PayoutJobs } from "./jobs/payout-jobs";
 import { Vigie } from "./services/vigie.service";
 import { Disponibilite } from "./services/disponibilite.service";
+import { amorcerSuperowner } from "./services/amorcer-superowner.service";
 
 // Load environment variables
 const env = loadEnv();
@@ -39,6 +40,9 @@ const start = async () => {
     logger.info("Testing database connection...");
     await db.$queryRaw`SELECT 1`;
     logger.info("✅ Database connected");
+
+    // Base vide : le premier superowner naît ici et reçoit son lien par courriel.
+    await amorcerSuperowner();
 
     // Avant d'écouter : un événement émis entre-temps n'atteindrait que les
     // connexions de cette instance.
