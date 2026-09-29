@@ -1,7 +1,7 @@
 // Vérifie l'espace client : historique, suivi de livraison, avis, favoris.
 // Plateforme
 
-import { inscription, check, j, uniq, post, get, patch, del, sqlExec, terminer, validerLivreur } from './outils.mjs';
+import { inscription, check, j, uniq, post, get, patch, del, sqlExec, ouvrirBoutiqueLivrante, declarerPrete, terminer, validerLivreur } from './outils.mjs';
 
 const plateforme = await j(
   await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` })
@@ -20,16 +20,16 @@ const emailClient = `client-${uniq}@t.fr`;
 const compteClient = await j(await inscription({ email: emailClient, password: 'Password123!', name: 'Client Test' }));
 const cToken = compteClient.accessToken;
 
+await ouvrirBoutiqueLivrante(storeId, m.organization.id);
 const commande = await j(await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client Test', customerEmail: emailClient, customerPhone: '0600000000',
-  deliveryType: 'DELIVERY', deliveryAddress: '9 rue Client', deliveryCity: 'Lyon',
-  totalAmount: 24, feesAmount: 3,
-}));
+  deliveryType: 'DELIVERY', deliveryAddress: '9 rue Client', deliveryCity: 'Lyon', deliveryLat: 45.765, deliveryLng: 4.836,
+  items: [{ productId, quantity: 2 }],
+}, cToken));
 const orderId = commande?.order?.id;
 check('commande créée pour ce client', !!orderId, JSON.stringify(commande)?.slice(0, 120));
 
-// Une ligne de commande, pour que l'avis ait un produit sur lequel porter.
-await sqlExec(`INSERT INTO "OrderItem" (id, "orderId", "productId", quantity, "selectedOptions", price, total, "createdAt") VALUES ('item-${uniq}', '${orderId}', '${productId}', 2, '{}', 12, 24, NOW())`);
+// Le panier porte déjà la ligne : l'avis a un produit sur lequel porter.
 
 console.log('\n[Historique des commandes]');
 const historique = await get('/api/client/me/orders', cToken);
@@ -37,7 +37,8 @@ const historiqueData = await j(historique);
 check('route accessible (404 auparavant)', historique.status === 200, `status=${historique.status} ${JSON.stringify(historiqueData)?.slice(0, 150)}`);
 check('la commande apparaît', (historiqueData?.data || []).length === 1, `n=${historiqueData?.data?.length}`);
 const ligne = historiqueData?.data?.[0];
-check('montant en euros', ligne?.totalAmount === 24, `=${ligne?.totalAmount}`);
+// Le serveur recalcule le total (articles + livraison + frais de service) : on le compare à celui que la commande a annoncé.
+check('montant en euros', ligne?.totalAmount === Number(commande?.order?.totalAmount) && ligne?.totalAmount > 24, `=${ligne?.totalAmount}`);
 check('boutique rappelée', !!ligne?.store?.name, JSON.stringify(ligne?.store));
 check('articles listés', (ligne?.items || []).length === 1, `n=${ligne?.items?.length}`);
 
@@ -81,7 +82,10 @@ check('la boutique de départ est nommée', !!suiviData?.data?.boutique, JSON.st
 check('le point de retrait est donné', suiviData?.data?.retrait?.latitude > 45, JSON.stringify(suiviData?.data?.retrait));
 check('aucune position tant que le livreur n a pas bougé', suiviData?.data?.position === null, JSON.stringify(suiviData?.data?.position));
 
-// Le livreur avance : le client doit voir la position et la distance restante.
+// Le client ne suit le livreur qu'une fois la commande récupérée : le commerçant
+// la prépare, le livreur la prend, puis il avance.
+await declarerPrete(storeId, orderId, m.accessToken);
+await patch(`/api/drivers/deliveries/${suiviData?.data?.id}`, { status: 'PICKED_UP' }, livreur.accessToken);
 await patch('/api/drivers/location', { latitude: 45.77, longitude: 4.85 }, livreur.accessToken);
 const enRoute = await j(await get(`/api/client/deliveries/${orderId}`, cToken));
 

@@ -2,7 +2,7 @@
 // et la nouvelle liste des boutiques côté administration.
 // --- Plateforme : superowner + commerçant + boutique + commande livrable ---
 
-import { inscription, check, j, uniq, post, get, patch, sqlExec, terminer, API, validerLivreur, codeDeRemise } from './outils.mjs';
+import { inscription, check, j, uniq, post, get, patch, sqlExec, ouvrirBoutiqueLivrante, terminer, API, validerLivreur, codeDeRemise } from './outils.mjs';
 
 const sup = await j(await inscription({ email: `s-${uniq}@t.fr`, password: 'Password123!', name: `S ${uniq}` }));
 const superToken = sup.accessToken;
@@ -12,10 +12,12 @@ const b = await j(await post('/api/stores', {
   address: '1 rue', city: 'Lyon', postalCode: '69001', phone: '0400000000',
 }, m.accessToken));
 const storeId = b.store?.id || b.id;
+await ouvrirBoutiqueLivrante(storeId, m.organization.id);
+const plat = await j(await post('/api/products', { storeId, name: 'Plat', price: 30, stock: 20, status: 'ACTIVE' }, m.accessToken));
 const commande = await j(await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000',
-  deliveryType: 'DELIVERY', deliveryAddress: '5 rue Test', deliveryCity: 'Lyon',
-  totalAmount: 30, feesAmount: 4.5,
+  deliveryType: 'DELIVERY', deliveryAddress: '5 rue Test', deliveryCity: 'Lyon', deliveryLat: 45.765, deliveryLng: 4.836,
+  items: [{ productId: plat?.product?.id, quantity: 1 }],
 }));
 const orderId = commande?.order?.id;
 check('commande livrable créée', !!orderId, JSON.stringify(commande)?.slice(0, 150));

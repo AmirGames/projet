@@ -56,7 +56,7 @@ const surveiller = () =>
       '--import',
       'dotenv/config',
       '-e',
-      `import('./src/services/merchant-approval.service.ts').then(async ({ MerchantApprovalService }) => {
+      `import('./src/modules/merchants/merchant-approval.service.ts').then(async ({ MerchantApprovalService }) => {
          console.log(JSON.stringify(await MerchantApprovalService.surveillerExpirations()));
          process.exit(0);
        })`,

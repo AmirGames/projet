@@ -58,8 +58,9 @@ decrire("SEC-03 — superowner initial", () => {
 
       for (const reponse of reponses) {
         expect(reponse.status).toBe(201);
-        expect(reponse.body.user.isSuperOwner).toBe(false);
-        expect(reponse.body.user.isSystemAdmin).toBe(false);
+        // La réponse ne dit rien des droits d'administration : /auth/me les donne.
+        expect(reponse.body.user.isSuperOwner).toBeUndefined();
+        expect(reponse.body.user.isSystemAdmin).toBeUndefined();
       }
       expect(await superowners()).toBe(0);
       expect(await db.user.count({ where: { isSystemAdmin: true } })).toBe(0);

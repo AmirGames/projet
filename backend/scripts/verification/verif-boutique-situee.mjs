@@ -9,9 +9,6 @@ import { ouvrirApiGeocodante } from './api-geocodante.mjs';
 
 const MDP = 'Password123!';
 
-const api = await ouvrirApiGeocodante();
-const { post, get } = api;
-
 const j = async (reponse) => {
   try {
     return await reponse.json();
@@ -20,10 +17,15 @@ const j = async (reponse) => {
   }
 };
 
+// La plateforme s'inscrit avant que la seconde API démarre : au démarrage, une
+// API crée un superowner sur une base vide, et le premier inscrit n'en serait plus un.
 const plateforme = await j(
   await inscription({ email: `p-${uniq}@t.fr`, password: MDP, name: `P ${uniq}` })
 );
 const TP = plateforme.accessToken;
+
+const api = await ouvrirApiGeocodante();
+const { post, get } = api;
 
 const commercant = await j(
   await inscription({ email: `m-${uniq}@t.fr`, password: MDP, name: `M ${uniq}` })
@@ -65,7 +67,7 @@ check('et une longitude', longitude.startsWith('4.8'), longitude);
 
 titre('La plateforme ne la signale plus');
 const fiche = await j(await get(`/api/superowner/stores/${storeId}`, TP));
-check('la fiche la dit située', fiche?.store?.situee === true, `${fiche?.store?.situee}`);
+check('la fiche la dit située', fiche?.store?.situee === true, JSON.stringify(fiche)?.slice(0, 200));
 
 titre('Elle reçoit donc une course');
 // C'est tout l'enjeu : l'attribution écarte une boutique sans coordonnées.

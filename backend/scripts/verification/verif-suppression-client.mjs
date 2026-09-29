@@ -42,7 +42,8 @@ const profil = await get('/api/client/me', lea.jeton);
 check('le profil client existe', profil.status === 200, `statut ${profil.status}`);
 await post('/api/push-devices', { token: `ExponentPushToken[lea-${uniq}]`, platform: 'android', app: 'customer' }, lea.jeton);
 
-// Une commande en cours bloque la suppression.
+// Une commande en cours bloque la suppression. Passée avec le jeton de Léa :
+// une commande sans compte ne rejoint le compte qu'à la confirmation de l'adresse.
 const commande = await j(
   await post('/api/orders', {
     conditionsAcceptees: true,
@@ -51,9 +52,8 @@ const commande = await j(
     customerEmail: lea.email,
     customerPhone: '0600000000',
     deliveryType: 'PICKUP',
-    totalAmount: 12,
-    items: [{ productId: produit.product?.id || produit.id, quantity: 1, price: 12 }],
-  })
+    items: [{ productId: produit.product?.id || produit.id, quantity: 1 }],
+  }, lea.jeton)
 );
 const orderId = commande.order?.id || commande.id;
 await post(`/api/order-management/${storeId}/${orderId}/accept`, { preparationMinutes: 20 }, T);

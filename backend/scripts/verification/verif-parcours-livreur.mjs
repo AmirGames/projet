@@ -193,14 +193,10 @@ const envoi = await envoyerPhoto(PIXEL, 'image/png');
 const photoUrl = (await j(envoi))?.data?.photoUrl;
 check('la photo est reçue', envoi.status === 201 && Boolean(photoUrl), `statut ${envoi.status}`);
 
-// L'adresse rendue suit l'API_URL du serveur, qui n'est pas forcément le
-// port visé par la suite : on garde son chemin, servi par l'API testée.
-const servie = photoUrl ? await fetch(new URL(new URL(photoUrl).pathname, API)) : null;
-check('et se sert telle quelle', servie?.status === 200, `statut ${servie?.status}`);
-check(
-  'au même octet près',
-  servie ? Buffer.from(await servie.arrayBuffer()).equals(PIXEL) : false
-);
+// Le dossier de dépôt est privé : le chemin brut renvoyé à l'envoi ne se sert
+// plus publiquement. La photo ne se lit que par l'adresse signée du suivi.
+const brute = photoUrl ? await fetch(new URL(new URL(photoUrl).pathname, API)) : null;
+check('le chemin brut du dépôt n’est pas servi publiquement', brute !== null && brute.status !== 200, `statut ${brute?.status} ${photoUrl}`);
 
 titre('Elle clôt la course, et le client la voit');
 const cloture = await patch(
@@ -211,7 +207,19 @@ const cloture = await patch(
 check('la remise passe', cloture.status === 200, `statut ${cloture.status}`);
 
 const apres = await j(await lireSuivi(orderId));
-check('le client voit la photo', apres?.photoDepot === photoUrl, `${apres?.photoDepot}`);
+// Le suivi rend une adresse signée à chaque lecture (expiration et signature
+// changent) : on compare le nom du fichier, pas la signature.
+const fichier = (url) => (url ? new URL(url).pathname.split('/').pop() : null);
+check('le client voit la photo', fichier(apres?.photoDepot) === fichier(photoUrl), `${apres?.photoDepot}`);
+check('l adresse que voit le client est signée', Boolean(apres?.photoDepot && new URL(apres.photoDepot).searchParams.get('sig')), `${apres?.photoDepot}`);
+
+// L'adresse suit l'API_URL du serveur, qui n'est pas forcément le port visé par
+// la suite : on garde son chemin et sa signature, servis par l'API testée.
+const servie = apres?.photoDepot
+  ? await fetch(new URL(new URL(apres.photoDepot).pathname + new URL(apres.photoDepot).search, API))
+  : null;
+check('la photo se sert par son adresse signée', servie?.status === 200, `statut ${servie?.status}`);
+check('au même octet près', servie ? Buffer.from(await servie.arrayBuffer()).equals(PIXEL) : false);
 check('et où elle a été déposée', apres?.noteDepot === 'Devant la porte', `${apres?.noteDepot}`);
 
 const tard = await envoyerPhoto(PIXEL, 'image/png');
