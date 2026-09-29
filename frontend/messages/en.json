@@ -1428,6 +1428,15 @@
     "reviewPromptButton": "Leave a review",
     "reviewEdit": "Edit my review"
   },
+  "bandeauDemo": {
+    "message": "Demo environment: no real payments or emails, data is wiped every night.",
+    "voir": "Show demo accounts",
+    "masquer": "Hide",
+    "comptes": { "plateforme": "Platform", "commercant": "Merchant", "livreur": "Driver" },
+    "motDePasse": "Password (same for all):",
+    "copier": "Copy",
+    "copie": "Copied ✓"
+  },
   "maintenanceGate": {
     "title": "Maintenance in progress",
     "message": "The platform is under maintenance. Please try again in a few minutes."

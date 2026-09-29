@@ -1428,6 +1428,15 @@
     "reviewPromptButton": "Donner mon avis",
     "reviewEdit": "Modifier mon avis"
   },
+  "bandeauDemo": {
+    "message": "Environnement de démonstration : aucun paiement ni courriel réel, données effacées chaque nuit.",
+    "voir": "Voir les comptes d'essai",
+    "masquer": "Masquer",
+    "comptes": { "plateforme": "Plateforme", "commercant": "Commerçant", "livreur": "Livreur" },
+    "motDePasse": "Mot de passe (identique pour tous) :",
+    "copier": "Copier",
+    "copie": "Copié ✓"
+  },
   "maintenanceGate": {
     "title": "Maintenance en cours",
     "message": "La plateforme est en maintenance. Veuillez réessayer dans quelques minutes."

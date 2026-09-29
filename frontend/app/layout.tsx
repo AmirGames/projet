@@ -8,6 +8,7 @@ import { alternatesRegionales, baseDuSite } from "@/lib/seo-regional";
 import { AuthProvider } from "@/lib/auth-context";
 import { TempsReelProvider } from "@/lib/temps-reel";
 import RootLayoutContent from "@/components/RootLayoutContent";
+import BandeauDemo from "@/components/BandeauDemo";
 import { MaintenanceGate } from "@/components/MaintenanceGate";
 import "./globals.css";
 
@@ -56,6 +57,7 @@ export default async function RootLayout({
             <AuthProvider>
               <TempsReelProvider>
                 <MaintenanceGate />
+                <BandeauDemo />
                 <RootLayoutContent>{children}</RootLayoutContent>
               </TempsReelProvider>
             </AuthProvider>
