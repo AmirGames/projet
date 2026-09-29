@@ -254,10 +254,28 @@ Selon l'espace visé :
    le journal d'audit (**à appeler pour toute action qui modifie quelque chose**).
 3. **Enregistrez le sous-routeur** dans
    `modules/superowner/superowner.routes.ts` (import + `router.use(...)`).
+4. **Déclarez les droits** dans `modules/auth/permissions-plateforme.service.ts` :
+   - ajoutez la **section** dans `SECTIONS` (identifiant, libellé, groupe) ;
+   - associez le chemin de la route à cette section dans `ROUTES.superowner`
+     (`[/^\/campagnes/, "campagnes"]`) ;
+   - cochez la section dans les permissions par défaut des rôles qui doivent
+     l'ouvrir.
+
+   ⚠️ **Une route absente de `ROUTES` reste réservée au superowner lui-même**
+   (c'est voulu pour la gestion de l'équipe) : l'équipe recevra un `403`.
+5. **Temps réel** : les écritures de la route sont annoncées automatiquement aux
+   écrans (`modules/realtime/diffusion.middleware.ts`), sous la famille « premier
+   segment après `/api/` », soit `superowner` pour toute cette section. Ajoutez
+   une entrée dans le tableau `ROUTES` de ce fichier pour lui donner un vrai nom
+   (`{ prefixe: "/api/superowner/campagnes", ressource: "campagnes" }`), sans
+   quoi un écran ne peut pas savoir quelle donnée a changé.
+6. **Le frontend** : la page, le lien de menu et les traductions sont décrits
+   dans `frontend/ARCHITECTURE.md` (recette A).
 
 **Espace admin** (`/api/admin/...`) : même principe avec
 `modules/admin/`, la garde `isSystemAdmin` de `modules/admin/shared.ts`, et
-l'enregistrement dans `modules/admin/admin.routes.ts`.
+l'enregistrement dans `modules/admin/admin.routes.ts`. Les droits se déclarent
+dans `ROUTES.admin` du fichier de permissions.
 
 ### 4. Ajouter une tâche de fond (job)
 
@@ -349,29 +367,18 @@ relancez `npx prisma generate`.
 
 ## Et côté frontend ?
 
-Le frontend (`frontend/`) est une application **Next.js** avec le routeur
-`app/` : **une page = un dossier avec un `page.tsx`**.
+Le frontend (`frontend/`) est une application **Next.js 16** : une page est un
+dossier avec un `page.tsx`, rangé par **espace** (`merchant`, `superowner`,
+`driver`, client…). Un même code sert plusieurs domaines, et une page doit vivre
+sous le bon segment d'URL.
 
-```
-frontend/app/
-├── merchant/         espace commerçant
-├── superowner/       espace superowner (une page par écran : billing, analytics…)
-├── driver/           espace livreur
-├── store/, restaurant/, checkout/…   côté client final
-└── layout.tsx        gabarit commun
-```
-
-Créer une page : ajouter `frontend/app/<chemin>/page.tsx`. Les appels au
-backend passent par `frontend/lib/api.ts` (une fonction par appel, avec
-l'URL de base `NEXT_PUBLIC_API_URL`) ; ajoutez-y la fonction qui appelle votre
-nouvelle route.
-
-⚠️ `frontend/AGENTS.md` prévient que cette version de Next.js a des
-changements incompatibles : lisez la documentation livrée dans
-`frontend/node_modules/next/dist/docs/` avant d'écrire du code de page.
+➡️ **Le guide détaillé est dans `frontend/ARCHITECTURE.md`** : espaces et
+domaines, anatomie d'une page, une recette par type de page (superowner,
+commerçant, livreur, publique), traductions, appels à l'API, temps réel,
+vérifications.
 
 Un nouvel écran complet, c'est donc : **une route backend** (recette 1 ou 3) **+
-une fonction dans `lib/api.ts` + une page `page.tsx`**.
+une page `page.tsx`** (avec son lien de menu et ses traductions).
 
 ---
 
