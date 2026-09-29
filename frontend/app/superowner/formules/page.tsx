@@ -37,7 +37,7 @@ export default function FormulesPage() {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState('');
   const [message, setMessage] = useState('');
-  const [enregistrement, setEnregistrement] = useState('');
+  const [enregistrement, setEnregistrement] = useState(false);
 
   const charger = useCallback(async () => {
     setChargement(true);
@@ -76,51 +76,59 @@ export default function FormulesPage() {
     }));
   };
 
-  const enregistrer = async (code: string) => {
-    const brouillon = brouillons[code];
-    if (!brouillon) return;
+  const modifiee = (code: string) =>
+    JSON.stringify(brouillons[code]) !== JSON.stringify(formules.find((f) => f.code === code));
 
-    setEnregistrement(code);
+  const codesModifies = formules.map((f) => f.code).filter(modifiee);
+
+  // Un seul bouton pour toute la grille : chaque formule modifiée est envoyée
+  // à la suite ; on s'arrête à la première erreur pour ne pas la masquer.
+  const enregistrer = async () => {
+    if (codesModifies.length === 0) return;
+
+    setEnregistrement(true);
     setMessage('');
     setErreur('');
 
     try {
       const jeton = localStorage.getItem('accessToken');
-      const reponse = await fetch(`${API_URL}/api/superowner/plans/${code}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${jeton}`,
-        },
-        body: JSON.stringify({
-          libelle: brouillon.libelle,
-          maxBoutiques: Number(brouillon.maxBoutiques),
-          prixMensuel: Number(brouillon.prixMensuel),
-          commission: Number(brouillon.commission),
-          commissionLivreursPlateforme: Number(brouillon.commissionLivreursPlateforme),
-          // Les lignes vides du formulaire ne sont pas des arguments de vente.
-          avantages: brouillon.avantages.map((ligne) => ligne.trim()).filter(Boolean),
-        }),
-      });
+      for (const code of codesModifies) {
+        const brouillon = brouillons[code]!;
+        const reponse = await fetch(`${API_URL}/api/superowner/plans/${code}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${jeton}`,
+          },
+          body: JSON.stringify({
+            libelle: brouillon.libelle,
+            maxBoutiques: Number(brouillon.maxBoutiques),
+            prixMensuel: Number(brouillon.prixMensuel),
+            commission: Number(brouillon.commission),
+            commissionLivreursPlateforme: Number(brouillon.commissionLivreursPlateforme),
+            // Les lignes vides du formulaire ne sont pas des arguments de vente.
+            avantages: brouillon.avantages.map((ligne) => ligne.trim()).filter(Boolean),
+          }),
+        });
 
-      const donnees = await reponse.json();
+        const donnees = await reponse.json();
 
-      if (!reponse.ok) {
-        setErreur(donnees.error || t('saveError'));
-        return;
+        if (!reponse.ok) {
+          // Pas de rechargement : les brouillons en échec restent éditables ;
+          // les formules déjà envoyées seront renvoyées à l'identique (PATCH).
+          setErreur(donnees.error || t('saveError'));
+          return;
+        }
       }
 
-      setMessage(donnees.message || t('saved'));
+      setMessage(t('saved'));
       await charger();
     } catch {
       setErreur(t('serverUnreachable'));
     } finally {
-      setEnregistrement('');
+      setEnregistrement(false);
     }
   };
-
-  const modifiee = (code: string) =>
-    JSON.stringify(brouillons[code]) !== JSON.stringify(formules.find((f) => f.code === code));
 
   if (chargement) {
     return (
@@ -317,20 +325,6 @@ export default function FormulesPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => enregistrer(formule.code)}
-                disabled={!modifiee(formule.code) || enregistrement === formule.code}
-                className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg font-semibold transition ${
-                  modifiee(formule.code)
-                    ? 'bg-red-600 hover:bg-red-700'
-                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                <Save size={18} />
-                {enregistrement === formule.code ? t('saving') : t('save')}
-              </button>
-
               <p className="text-xs text-gray-500">
                 {t('merchantView', {
                   name: brouillon.libelle,
@@ -345,6 +339,20 @@ export default function FormulesPage() {
           );
         })}
       </div>
+
+      <button
+        type="button"
+        onClick={enregistrer}
+        disabled={codesModifies.length === 0 || enregistrement}
+        className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition ${
+          codesModifies.length > 0
+            ? 'bg-red-600 hover:bg-red-700'
+            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+        }`}
+      >
+        <Save size={18} />
+        {enregistrement ? t('saving') : t('save')}
+      </button>
 
       <p className="text-sm text-gray-500">
         {t('footerNote')}
