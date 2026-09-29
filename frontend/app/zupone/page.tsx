@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { accueilDe, lienVersEspace } from '@/lib/domaines';
 
-export const metadata: Metadata = {
-  title: 'ZupOne — Des services de proximité, un seul compte',
-  description:
-    'ZupOne réunit ZupEat, pour commander chez les commerces de votre quartier, et ZupDrive, le transport avec chauffeur à venir.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('vitrineZupone');
+  return { title: t('metaTitle'), description: t('metaDescription') };
+}
 
 /**
  * La vitrine du groupe, servie à la racine de zupone.com (voir ACCUEIL dans
@@ -16,52 +16,57 @@ export const metadata: Metadata = {
  * vers ZupEat, le commerçant, le livreur et le chauffeur vers la page qui les
  * recrute, sur leur propre domaine. Rien ne s'y passe derrière une connexion.
  */
-export default function VitrineZupOne() {
+export default async function VitrineZupOne() {
+  const t = await getTranslations('vitrineZupone');
+
   const plateformes = [
     {
       nom: 'ZupEat',
-      etat: 'Disponible',
-      texte:
-        'Commandez chez les restaurants et les commerces de votre quartier, livrés par des livreurs proches ou à retirer sur place.',
+      etat: t('available'),
+      texte: t('eatText'),
       lien: accueilDe('public'),
-      action: 'Commander sur ZupEat',
+      action: t('eatAction'),
       disponible: true,
     },
     {
       nom: 'ZupDrive',
-      etat: 'Bientôt disponible',
-      texte:
-        'Le transport de personnes avec chauffeur (VTC), réservé depuis le même compte que vos commandes.',
+      etat: t('comingSoon'),
+      texte: t('driveText'),
       lien: accueilDe('drive'),
-      action: 'Découvrir ZupDrive',
+      action: t('driveAction'),
       disponible: false,
     },
+  ];
+
+  const atouts = [
+    { titre: t('singleSignupTitle'), texte: t('singleSignupText') },
+    { titre: t('localTitle'), texte: t('localText') },
+    { titre: t('paymentTitle'), texte: t('paymentText') },
   ];
 
   const rejoindre = [
     {
       icone: '🏪',
-      titre: 'Commerçant',
-      texte: 'Ouvrez votre boutique en ligne et recevez des commandes livrées dans votre quartier.',
+      titre: t('merchantTitle'),
+      texte: t('merchantText'),
       lien: lienVersEspace('pro', '/devenir-commercant'),
-      action: 'Devenir commerçant',
+      action: t('merchantAction'),
     },
     {
       icone: '🛵',
-      titre: 'Livreur',
-      texte: 'Livrez les commandes des commerces proches, aux heures qui vous conviennent.',
+      titre: t('courierTitle'),
+      texte: t('courierText'),
       lien: lienVersEspace('livreur', '/devenir-livreur'),
-      action: 'Devenir livreur',
+      action: t('courierAction'),
     },
     {
       icone: '🚗',
-      titre: 'Chauffeur VTC',
-      texte: 'Faites-vous connaître dès maintenant pour conduire avec ZupDrive à son ouverture.',
+      titre: t('driverTitle'),
+      texte: t('driverText'),
       lien: lienVersEspace('drive', '/devenir-chauffeur'),
-      action: 'Devenir chauffeur',
+      action: t('driverAction'),
     },
   ];
-
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -69,28 +74,25 @@ export default function VitrineZupOne() {
         <span className="text-2xl font-black text-primary md:text-3xl">ZupOne</span>
         <nav className="flex items-center gap-6 text-sm font-semibold md:text-base">
           <a href="#plateformes" className="hidden hover:text-primary sm:inline">
-            Nos plateformes
+            {t('navPlatforms')}
           </a>
           <a href="#rejoindre" className="hidden hover:text-primary sm:inline">
-            Nous rejoindre
+            {t('navJoin')}
           </a>
           <Link href={accueilDe('public')} className="rounded-full bg-accent px-5 py-2 text-white hover:bg-accent-hover">
-            Commander
+            {t('navOrder')}
           </Link>
         </nav>
       </header>
 
       <section className="bg-gradient-to-b from-white to-slate-100 px-6 py-16 text-center md:py-24">
         <span className="mb-6 inline-block rounded-full bg-blue-100 px-4 py-2 font-bold text-primary">
-          Le groupe ZupOne
+          {t('badge')}
         </span>
         <h1 className="mx-auto mb-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
-          Des services de proximité, un seul compte
+          {t('heroTitle')}
         </h1>
-        <p className="mx-auto max-w-2xl text-lg text-slate-500">
-          ZupOne réunit des plateformes qui relient les habitants d&apos;un quartier à ceux qui y
-          travaillent : commerçants, livreurs et, bientôt, chauffeurs.
-        </p>
+        <p className="mx-auto max-w-2xl text-lg text-slate-500">{t('heroText')}</p>
       </section>
 
       <section id="plateformes" className="mx-auto grid max-w-5xl grid-cols-1 gap-6 px-6 py-16 md:grid-cols-2">
@@ -118,22 +120,9 @@ export default function VitrineZupOne() {
       </section>
 
       <section className="bg-slate-50 px-6 py-16 md:px-10">
-        <h2 className="mb-10 text-center text-3xl font-black">Un compte pour tout</h2>
+        <h2 className="mb-10 text-center text-3xl font-black">{t('oneAccountTitle')}</h2>
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
-          {[
-            {
-              titre: 'Une seule inscription',
-              texte: 'Le même compte sert sur chaque plateforme du groupe, comme client, commerçant ou livreur.',
-            },
-            {
-              titre: 'Des gens du quartier',
-              texte: 'Les commandes vont aux commerces proches et chaque course au livreur disponible le plus près.',
-            },
-            {
-              titre: 'Paiement sécurisé',
-              texte: 'Les paiements par carte passent par Stripe : vos coordonnées bancaires ne nous parviennent jamais.',
-            },
-          ].map((point) => (
+          {atouts.map((point) => (
             <div key={point.titre} className="rounded-3xl border border-slate-200 bg-white p-6">
               <h3 className="mb-2 font-bold">{point.titre}</h3>
               <p className="text-sm text-slate-500">{point.texte}</p>
@@ -143,7 +132,7 @@ export default function VitrineZupOne() {
       </section>
 
       <section id="rejoindre" className="px-6 py-16 md:px-10">
-        <h2 className="mb-10 text-center text-3xl font-black">Travailler avec nous</h2>
+        <h2 className="mb-10 text-center text-3xl font-black">{t('joinTitle')}</h2>
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
           {rejoindre.map((r) => (
             <div key={r.titre} className="flex flex-col rounded-3xl border border-slate-200 p-8">
