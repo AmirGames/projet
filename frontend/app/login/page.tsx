@@ -9,6 +9,7 @@ import { RAISON_DECONNEXION, useAuth } from "@/lib/auth-context";
 import { confierSessionCentrale, demanderSessionCentrale } from "@/lib/sso";
 import Link from "next/link";
 import { destinationApresConnexion } from "@/lib/espace-utilisateur";
+import AccesDemo from "@/components/AccesDemo";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -183,6 +184,13 @@ export default function LoginPage() {
             )}
           </div>
         )}
+
+        <AccesDemo
+          onUtiliser={(courriel, motDePasse) => {
+            setEmail(courriel);
+            setPassword(motDePasse);
+          }}
+        />
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>

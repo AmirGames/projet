@@ -69,7 +69,7 @@ function commandesAReverser(orgId: string, fin: Date) {
   const debut = debutDesReversements();
   return db.order.findMany({
     where: {
-      store: { orgId },
+      store: { orgId, org: { isDemo: false } },
       status: "COMPLETED",
       merchantPayoutId: null,
       deletedAt: null,
@@ -149,6 +149,7 @@ export class MerchantPayoutService {
     const [avecCommandes, avecReport] = await Promise.all([
       db.order.findMany({
         where: {
+          store: { org: { isDemo: false } },
           status: "COMPLETED",
           merchantPayoutId: null,
           deletedAt: null,

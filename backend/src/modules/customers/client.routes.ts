@@ -56,7 +56,7 @@ router.get("/stores", async (req: Request, res: Response, next: NextFunction) =>
       // boutique, il ne vend pas encore.
       where: {
         deletedAt: null,
-        org: { status: "ACTIVE", approvedAt: { not: null } },
+        org: { status: "ACTIVE", approvedAt: { not: null }, isDemo: false },
         ...(pays && { OR: [{ countryCode: pays }, { countryCode: null }] }),
       },
       include: {

@@ -24,7 +24,6 @@ Fichiers utilisés :
 | `deploy/env.production.example` | Modèle de `.env.production` (toutes les variables) |
 | `deploy/installer-serveur.sh` | Prépare un VPS neuf (Docker, pare-feu, swap…) |
 | `deploy/zup.sh` | Démarrer, mettre à jour, journaux, sauvegarder, restaurer |
-| `docker-compose.demo.yml`, `deploy/demo.sh` | Environnement de démonstration, sur un serveur à part (voir la fin de ce guide) |
 
 ---
 
@@ -282,38 +281,33 @@ puis ouvrez `https://zupeat.com`.
 
 ---
 
-## Environnement de démonstration (sandbox)
+## Compte démo commerçant
 
-Un second déploiement, **sur son propre petit VPS**, pour montrer le produit
-sans toucher à la production. Il n'a rien en commun avec elle : autre base,
-autres secrets, autres domaines.
+Un compte commerçant public, pour qu'un prospect essaie l'espace pro sans
+s'inscrire. Ses identifiants s'affichent sur la page de connexion, avec un
+bouton qui remplit le formulaire.
 
-Rien n'y part pour de vrai : Stripe est coupé, les courriels tombent dans
-Mailpit, ni SMS, ni push, ni virement. L'adresse n'a pas à être confirmée : un
-visiteur s'inscrit et entre aussitôt. Chaque nuit à 3 h, la base est vidée et
-le jeu d'essai recréé.
+Dans `.env.production`, puis `./deploy/zup.sh up` :
 
-1. DNS : `demo.…`, `manager.demo.…`, `delivery.demo.…` et `api.demo.…` vers
-   l'IP du VPS de démo.
-2. Sur ce VPS (préparé avec `installer-serveur.sh`, dépôt cloné) :
-   ```bash
-   cp deploy/env.demo.example .env.demo && nano .env.demo   # domaines et secrets
-   ./deploy/demo.sh up      # construit, démarre, crée le jeu d'essai
-   ./deploy/demo.sh cron    # remise à zéro chaque nuit
-   ```
-3. Comptes créés, mot de passe `Password123!` : `super@demo.fr` (plateforme),
-   `marchand@demo.fr` (deux boulangeries, formule Premium), `livreur@demo.fr`
-   (dossier validé, une course livrée).
+```
+DEMO_MERCHANT_ENABLED=true
+DEMO_MERCHANT_EMAIL=demo@zupeat.com
+DEMO_MERCHANT_PASSWORD=<un mot de passe à part : il est public>
+```
 
-| Commande | Effet |
-|---|---|
-| `./deploy/demo.sh reset` | vide la base et recrée le jeu d'essai |
-| `./deploy/demo.sh update` | git pull + reconstruction |
-| `./deploy/demo.sh logs [service]` | journaux |
+Au démarrage de l'API, puis chaque nuit à 3 h, le commerce est recréé : une
+boulangerie d'exemple avec ses catégories, ses produits et quelques commandes.
+Ce que les visiteurs y ont changé disparaît.
 
-Les courriels de la démo se lisent dans Mailpit, ouvert seulement en local sur
-le serveur : `ssh -L 8025:127.0.0.1:8025 <serveur>`, puis
-`http://localhost:8025`.
+Il reste hors du réel :
 
-`demo.sh` refuse de tourner si un `.env.production` existe sur la machine : la
-remise à zéro efface la base, elle ne doit jamais viser la production.
+- la boutique n'est jamais listée aux clients et refuse toute commande ;
+- les reversements l'ignorent ;
+- coordonnées bancaires, pièces justificatives, envois marketing, équipe,
+  support, fichiers et changement de mot de passe sont fermés en écriture
+  (réponse `403`, code `DEMO_ACCOUNT`) ;
+- les clients d'exemple ont une adresse en `.invalid` : aucun courriel n'y part.
+
+Il apparaît dans la liste des commerçants de la plateforme (organisation
+« Boulangerie Démo », slug `commerce-demo`). Pour le retirer : retirer
+`DEMO_MERCHANT_ENABLED`, puis le supprimer depuis l'espace plateforme.

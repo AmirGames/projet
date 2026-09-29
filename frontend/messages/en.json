@@ -1428,14 +1428,12 @@
     "reviewPromptButton": "Leave a review",
     "reviewEdit": "Edit my review"
   },
-  "bandeauDemo": {
-    "message": "Demo environment: no real payments or emails, data is wiped every night.",
-    "voir": "Show demo accounts",
-    "masquer": "Hide",
-    "comptes": { "plateforme": "Platform", "commercant": "Merchant", "livreur": "Driver" },
-    "motDePasse": "Password (same for all):",
-    "copier": "Copy",
-    "copie": "Copied ✓"
+  "accesDemo": {
+    "titre": "Try the merchant space",
+    "description": "A demo account open to everyone: nothing in it is real and it is reset every night.",
+    "email": "Email",
+    "motDePasse": "Password",
+    "utiliser": "Fill in the form"
   },
   "maintenanceGate": {
     "title": "Maintenance in progress",
