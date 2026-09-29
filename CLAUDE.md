@@ -36,52 +36,7 @@ Elle permet :
 
 ZupDrive est le domaine lié à la gestion des chauffeurs disposant d'une licence LVC ou d'une licence de transport rémunéré de personnes.
 
-Marche à suivre pour ZupDrive :
-
-1. Inscrivez-vous en ligne pour créer un compte ZupDrive.
-
-
-2. Enregistrez votre entreprise et demandez un numéro de TVA auprès de la Banque Carrefour des Entreprises (BCE)
-    Prenez un rendez-vous auprès d'un guichet d'entreprise et obtenez votre numéro d'entreprise. Faites la demande pour un numéro de TVA auprès d'un guichet d'entreprise compétent via un formulaire.
-
-    Durée: 1 à 3 semaines
-    Coût: 89,50 EUR
-
-- Enregistrez votre entreprise à la BCE
-
-3. Trouvez un véhicule qui répond aux exigences
-    Obtenez une assurance voiture professionnelle. Pour obtenir votre licence, vous devrez avoir une assurance qui couvre le transport rémunéré.
-
-    Temps nécessaire: quelques semaines
-    Coût: dépend de la voiture et du risque du partenaire
-
-    Obtenir une plaque d'immatriculation T-X (Flandre) ou T-L (Bruxelles et Wallonie): 35 EUR
-
-    Exigences du véhicule
-
-4. Faire la demande de licence LVC ou licence pour transport rémunéré de personnes
-    Une fois que vous possédez le véhicule, l'assurance et le numéro de TVA, vous pouvez faire la demande de licence LVC ou licence pour transport rémunéré de personnes:
-
-        Bruxelles: Bruxelles Mobilité (650€/an)
-
-        Wallonie: SPF Mobilité et Transport (350€/an)
-
-        Flandre: Commune (250-350€/an) 
-
-
-5. Téléchargez ces documents via l'application ou le site Internet drive.zupdrive.com :
-
-        Carte d'identité
-        Bestuurderspas (Flandre)
-        Permis de conduire avec sélection médicale
-        Numéro de TVA
-        Une licence LVC ou un vergunning voor individueel bezoldigd personenvervoer
-        Document de contrôle technique
-        Assurance automobile pour transport rémunéré
-        Certificat d'immatriculation (recto/verso)
-        Documents d'identité de toutes les personnes possédant des parts dans la société
-        Extrait de casier judiciaire (Bruxelles)
-        Des documents supplémentaires peuvent être requis en fonction de votre licence.
+Procédure d'inscription des chauffeurs (BCE, licence, documents) : voir `docs/zupdrive.md`.
 
 Architecture prévue :
 
