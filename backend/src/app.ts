@@ -42,7 +42,7 @@ import notificationRouter from "./routes/notification";
 import productMediaRouter from "./modules/catalog/product-media.routes";
 import productSeoRouter from "./modules/catalog/product-seo.routes";
 import productTagRouter from "./modules/catalog/product-tag.routes";
-import adminRouter from "./routes/admin";
+import adminRouter from "./modules/admin/admin.routes";
 import superOwnerRouter from "./modules/superowner/superowner.routes";
 import pagesLegalesRouter from "./routes/pages-legales";
 import clientRouter from "./modules/customers/client.routes";
