@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
-import { DELIVERY_STATUS, hhmm, isActive, OrderSummary, orderStatus, shortId } from '../../lib/orders';
+import { DELIVERY_STATUS, reorderLines, hhmm, isActive, OrderSummary, orderStatus, shortId } from '../../lib/orders';
 import { useRealtimeEvent } from '../../lib/realtime';
+import type { CartLine } from '../../lib/carts';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
 
 const FILTERS = [
@@ -16,12 +17,19 @@ export default function OrdersScreen({
   onBack,
   onOpenOrder,
   onReview,
+  cartLines,
+  onReorder,
 }: {
   token: string;
   onBack: () => void;
   onOpenOrder: (orderId: string) => void;
   onReview: (orderId: string) => void;
+  /** Les lignes déjà au panier d'un commerce. */
+  cartLines: (storeId: string) => CartLine[];
+  /** Remet des lignes au panier de ce commerce et ouvre sa vitrine. */
+  onReorder: (store: { id: string; name: string }, lines: CartLine[]) => void;
 }) {
+  const [reordering, setReordering] = useState<string | null>(null);
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [filter, setFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
@@ -50,6 +58,25 @@ export default function OrdersScreen({
     if (u?.status) load();
   });
   useRealtimeEvent('reconnecte', load);
+
+  const reorder = async (order: OrderSummary) => {
+    if (!order.store) return;
+    setReordering(order.id);
+    try {
+      const { lines, absent, added } = await reorderLines(order, cartLines(order.store.id));
+      if (added > 0) onReorder({ id: order.store.id, name: order.store.name }, lines);
+      if (absent.length > 0) {
+        Alert.alert(
+          added > 0 ? 'Certains plats manquent' : 'Rien à remettre au panier',
+          `Plus disponibles aujourd’hui : ${absent.join(', ')}.`
+        );
+      }
+    } catch (e: any) {
+      Alert.alert('Commande impossible', e.message || 'Ce commerce n’est pas joignable pour le moment.');
+    } finally {
+      setReordering(null);
+    }
+  };
 
   const visible = orders.filter((o) =>
     filter === 'ALL' ? true : filter === 'ACTIVE' ? isActive(o) : !isActive(o)
@@ -99,13 +126,24 @@ export default function OrdersScreen({
                 </Text>
                 {deliveryStep ? <Text style={styles.step}>{deliveryStep}</Text> : null}
                 <Text style={styles.items} numberOfLines={2}>
-                  {item.items.map((i) => `${i.quantity}× ${i.name}`).join(', ')}
+                  {item.items
+                    .map((i) => `${i.quantity}× ${i.name}${i.supplements?.length ? ` (+ ${i.supplements.map((s) => s.label).join(', ')})` : ''}`)
+                    .join(', ')}
                 </Text>
                 <View style={styles.footer}>
                   <Text style={styles.total}>{formatEuros(item.totalAmount)}</Text>
                   {item.avisARedemander && item.status === 'COMPLETED' ? (
                     <TouchableOpacity onPress={() => onReview(item.id)}>
                       <Text style={styles.review}>⭐ Donner mon avis</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                  {item.status === 'COMPLETED' && item.store ? (
+                    <TouchableOpacity onPress={() => reorder(item)} disabled={reordering === item.id}>
+                      {reordering === item.id ? (
+                        <ActivityIndicator color={COLORS.primary} />
+                      ) : (
+                        <Text style={styles.review}>🔁 Commander à nouveau</Text>
+                      )}
                     </TouchableOpacity>
                   ) : null}
                 </View>
@@ -140,7 +178,7 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12, color: COLORS.muted },
   step: { fontSize: 13, color: COLORS.primary, fontWeight: '600', marginTop: 4 },
   items: { fontSize: 13, color: '#555', marginTop: 6 },
-  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8, flexWrap: 'wrap' },
   total: { fontSize: 15, fontWeight: '700', color: COLORS.text },
   review: { color: COLORS.primary, fontWeight: '700' },
   empty: { textAlign: 'center', color: COLORS.muted, marginTop: 40 },

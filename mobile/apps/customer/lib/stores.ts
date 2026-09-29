@@ -44,6 +44,24 @@ export interface Variant {
   isAvailable: boolean;
 }
 
+/** Un choix de supplément : prix TTC, grisé quand il est épuisé. */
+export interface SupplementChoice {
+  id: string;
+  label: string;
+  price: number;
+  isAvailable: boolean;
+}
+
+/** Un groupe de suppléments d'un plat (« Sauce », « Suppléments »). */
+export interface SupplementGroup {
+  id: string;
+  name: string;
+  isRequired: boolean;
+  /** Nombre de choix au plus dans le groupe ; null : sans limite. */
+  maxChoices: number | null;
+  choices: SupplementChoice[];
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -52,6 +70,7 @@ export interface Product {
   isAvailable: boolean;
   variantLabel?: string | null;
   variants: Variant[];
+  supplements?: SupplementGroup[];
   media?: { url: string }[];
   images?: { url: string }[];
   note?: { moyenne: number; nombre: number } | null;
@@ -74,6 +93,8 @@ export interface DeliveryVerdict {
   /** Livraison offerte dès ce montant d'articles, si la zone en a un. */
   gratuiteDes?: number | null;
   raison?: string | null;
+  /** Qui livre : un livreur de la plateforme, ou le commerçant lui-même. */
+  mode?: 'PLATFORM' | 'OWN';
   zone?: { deliveryMinutes?: number | null } | null;
 }
 

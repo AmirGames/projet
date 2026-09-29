@@ -347,6 +347,14 @@ export default function CustomerApp() {
   }, [page, carts]);
 
   const clearUnread = useCallback((n: number) => setUnreadCount(n), []);
+  // Le serveur ferme les autres sessions et remet des jetons neufs à celle-ci.
+  const onPasswordChanged = useCallback((tokens: { accessToken: string; refreshToken: string }) => {
+    const current = sessionRef.current;
+    if (!current) return;
+    const renewed = { ...current, ...tokens };
+    setSession(renewed);
+    saveSession(renewed);
+  }, []);
   const onProfileLoaded = useCallback((p: CustomerProfile) => setProfile(p), []);
 
   if (booting) {
@@ -576,6 +584,11 @@ export default function CustomerApp() {
           onBack={back}
           onOpenOrder={(orderId) => pushPage({ kind: 'order', orderId })}
           onReview={(orderId) => pushPage({ kind: 'review', orderId })}
+          cartLines={(storeId) => carts[storeId]?.lines || []}
+          onReorder={(store, lines) => {
+            setLines(store, lines);
+            pushPage({ kind: 'store', storeId: store.id });
+          }}
         />
       );
     }
@@ -613,7 +626,7 @@ export default function CustomerApp() {
         />
       );
     }
-    if (tab === 'account') return <AccountScreen token={token} onBack={back} onProfileLoaded={onProfileLoaded} />;
+    if (tab === 'account') return <AccountScreen token={token} onBack={back} onProfileLoaded={onProfileLoaded} onPasswordChanged={onPasswordChanged} />;
     if (tab === 'carts') {
       return (
         <CartsScreen

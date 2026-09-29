@@ -16,7 +16,7 @@ import { apiFetch, formatEuros } from '../../lib/api';
 import { useRealtimeEvent } from '../../lib/realtime';
 import { Card, COLORS, Row, ScreenHeader, ui } from '../ui';
 import { PREPARATION_CHOICES } from './SettingsScreen';
-import { deliveryStep, displayStatus, itemsByCategory, montantCommercant, Order } from '../../lib/orders';
+import { deliveryStep, displayStatus, itemLabel, itemsByCategory, montantCommercant, Order } from '../../lib/orders';
 
 const REJECT_REASONS: { code: string; label: string }[] = [
   { code: 'TOO_BUSY', label: 'Trop de commandes en cours' },
@@ -164,7 +164,7 @@ export default function OrderDetailScreen({
               {group.items.map((item, i) => (
                 <Row
                   key={item.id}
-                  label={`${item.quantity} × ${item.product?.name || 'Produit'}`}
+                  label={`${item.quantity} × ${itemLabel(item)}`}
                   value={formatEuros(item.total)}
                   last={i === group.items.length - 1}
                 />

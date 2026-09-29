@@ -17,6 +17,8 @@ interface HistoryItem {
   durationMin?: number | null;
   proofType?: string | null;
   rating?: { note: number; commentaire?: string | null } | null;
+  /** Le pourboire du client, à la commande ou après la livraison. */
+  pourboire?: number;
   createdAt: string;
 }
 
@@ -151,6 +153,7 @@ export default function HistoryScreen({
                 </Text>
                 {item.cancellationReason ? <Text style={styles.meta}>Motif : {item.cancellationReason}</Text> : null}
                 {item.payout > 0 && <Text style={styles.payout}>{formatEuros(item.payout)}</Text>}
+                {(item.pourboire ?? 0) > 0 && <Text style={styles.tip}>🎁 Pourboire ({formatEuros(item.pourboire)})</Text>}
               </TouchableOpacity>
             );
           }}
@@ -186,5 +189,6 @@ const styles = themedStyles(() => ({
   line: { fontSize: 13, color: COLORS.secondary },
   meta: { fontSize: 12, color: COLORS.muted, marginTop: 4 },
   payout: { fontSize: 15, fontWeight: '600', color: COLORS.link, marginTop: 6 },
+  tip: { fontSize: 13, fontWeight: '600', color: COLORS.warning, marginTop: 2 },
   empty: { textAlign: 'center', color: COLORS.muted, marginTop: 40 },
 }));

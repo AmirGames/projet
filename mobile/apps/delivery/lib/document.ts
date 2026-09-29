@@ -1,8 +1,8 @@
 import { Platform } from 'react-native';
 import type * as DocumentPickerModule from 'expo-document-picker';
 
-/** Le plafond du serveur : au-delà, l'envoi serait refusé après le transfert. */
-const MAX_SIZE = 10 * 1024 * 1024;
+/** Le plafond du serveur pour un PDF (2 Mo pour une image) : au-delà, l'envoi serait refusé après le transfert. */
+const MAX_SIZE = 5 * 1024 * 1024;
 
 /**
  * Chargé à la demande, comme expo-image-manipulator : une application compilée
@@ -58,7 +58,7 @@ export async function pickPdf(): Promise<{ uri: string; type: string; name: stri
 
   const asset = result.assets[0];
   if (asset.size && asset.size > MAX_SIZE) {
-    throw new Error('Ce fichier dépasse 10 Mo.');
+    throw new Error('Ce fichier dépasse 5 Mo.');
   }
 
   let uri = asset.uri;

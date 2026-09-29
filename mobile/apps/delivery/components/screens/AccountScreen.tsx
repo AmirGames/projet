@@ -7,6 +7,7 @@ import { reducePhoto } from '../../lib/photo';
 import { uploadFile } from '../../lib/upload';
 import { Driver, DRIVER_STATUS_LABELS, VEHICLE_LABELS } from '../../lib/deliveries';
 import BankAccountCard from '../BankAccountCard';
+import ChangePasswordCard, { NewTokens } from '../ChangePasswordCard';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 interface Documents {
@@ -37,10 +38,12 @@ export default function AccountScreen({
   token,
   onBack,
   onDriverLoaded,
+  onPasswordChanged,
 }: {
   token: string;
   onBack: () => void;
   onDriverLoaded: (driver: Driver) => void;
+  onPasswordChanged: (tokens: NewTokens) => void;
 }) {
   const [driver, setDriver] = useState<Driver | null>(null);
   const [docs, setDocs] = useState<Documents | null>(null);
@@ -216,6 +219,8 @@ export default function AccountScreen({
               })}
             </Card>
           )}
+
+          <ChangePasswordCard token={token} onChanged={onPasswordChanged} />
         </ScrollView>
       )}
     </View>

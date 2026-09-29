@@ -25,7 +25,7 @@ function manipulator(): typeof ManipulatorModule | null {
  * Réduit une photo avant l'envoi.
  *
  * Celle d'un téléphone récent pèse plusieurs mégaoctets, jusqu'à dépasser les
- * 10 Mo que le serveur accepte : l'envoi échouait devant la porte du client,
+ * 2 Mo que le serveur accepte pour une image : l'envoi échouait devant la porte du client,
  * sur le réseau mobile. Réduite à 1600 px de côté en JPEG, elle en pèse
  * quelques centaines de Ko.
  *

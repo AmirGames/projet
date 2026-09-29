@@ -21,6 +21,7 @@ import {
   productImage,
   StoreDetail,
   storeLogo,
+  SupplementGroup,
   Variant,
 } from '../../lib/stores';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
@@ -291,19 +292,35 @@ function ProductSheet({
 }) {
   const [variantId, setVariantId] = useState<string | undefined>(undefined);
   const [quantity, setQuantity] = useState(1);
+  const [chosen, setChosen] = useState<string[]>([]);
 
   useEffect(() => {
     if (!product) return;
     setQuantity(1);
+    setChosen([]);
     setVariantId(product.variants.find((v) => v.isAvailable)?.id);
   }, [product]);
+
+  const groups = product?.supplements || [];
+  /** Cocher ou décocher un choix ; un groupe plafonné à un seul choix se comporte en liste à choix unique. */
+  const toggle = (group: SupplementGroup, choiceId: string) =>
+    setChosen((current) => {
+      if (current.includes(choiceId)) return current.filter((id) => id !== choiceId);
+      const inGroup = group.choices.filter((c) => current.includes(c.id));
+      if (group.maxChoices === 1) return [...current.filter((id) => !inGroup.some((c) => c.id === id)), choiceId];
+      if (group.maxChoices != null && inGroup.length >= group.maxChoices) return current;
+      return [...current, choiceId];
+    });
 
   if (!product) return null;
   const image = productImage(product);
   const variant = product.variants.find((v) => v.id === variantId);
   const needsVariant = product.variants.length > 0;
-  const unit = variant ? variant.prixEffectif : Number(product.price);
-  const canAdd = product.isAvailable && (!needsVariant || (variant && variant.isAvailable));
+  const retained = groups.flatMap((g) => g.choices.filter((c) => chosen.includes(c.id)).map((c) => ({ id: c.id, label: c.label, price: c.price })));
+  const unit = (variant ? variant.prixEffectif : Number(product.price)) + retained.reduce((n, c) => n + c.price, 0);
+  // Un groupe obligatoire bloque l'ajout tant qu'il est vide.
+  const missingGroup = groups.find((g) => g.isRequired && !g.choices.some((c) => chosen.includes(c.id)));
+  const canAdd = product.isAvailable && (!needsVariant || (variant && variant.isAvailable)) && !missingGroup;
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
@@ -336,6 +353,34 @@ function ProductSheet({
               </View>
             )}
 
+            {groups.map((g) => (
+              <View key={g.id} style={{ marginTop: 14 }}>
+                <Text style={styles.sectionTitle}>
+                  {g.name}
+                  {g.isRequired ? ' · obligatoire' : ''}
+                  {g.maxChoices != null ? ` · ${g.maxChoices === 1 ? '1 choix' : `jusqu'à ${g.maxChoices}`}` : ''}
+                </Text>
+                {g.choices.map((c) => {
+                  const on = chosen.includes(c.id);
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[styles.variant, on && styles.variantActive, !c.isAvailable && { opacity: 0.4 }]}
+                      disabled={!c.isAvailable}
+                      onPress={() => toggle(g, c.id)}
+                    >
+                      <Text style={styles.radio}>{g.maxChoices === 1 ? (on ? '◉' : '○') : on ? '☑' : '☐'}</Text>
+                      <Text style={styles.variantLabel}>
+                        {c.label}
+                        {!c.isAvailable ? ' — épuisé' : ''}
+                      </Text>
+                      <Text style={styles.variantPrice}>{c.price > 0 ? `+ ${formatEuros(c.price)}` : 'offert'}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
+
             <View style={styles.qtyRow}>
               <TouchableOpacity style={styles.qtyButton} onPress={() => setQuantity((q) => Math.max(1, q - 1))}>
                 <Text style={styles.qtyButtonText}>−</Text>
@@ -356,12 +401,15 @@ function ProductSheet({
                 variantId: variant?.id,
                 name: product.name,
                 variantName: variant?.label,
+                ...(retained.length ? { supplements: retained } : {}),
                 price: unit,
                 quantity,
               })
             }
           >
-            <Text style={styles.addButtonText}>Ajouter · {formatEuros(unit * quantity)}</Text>
+            <Text style={styles.addButtonText}>
+              {missingGroup ? `Choisissez : ${missingGroup.name}` : `Ajouter · ${formatEuros(unit * quantity)}`}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

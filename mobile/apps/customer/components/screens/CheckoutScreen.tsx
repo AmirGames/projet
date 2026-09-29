@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { StripeProvider, useStripe } from '@stripe/stripe-react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
-import { Cart, CartLine, cartTotal, changeQuantity, lineKey } from '../../lib/carts';
+import { Cart, CartLine, cartTotal, changeQuantity, keyOf } from '../../lib/carts';
 import type { DeliveryAddress } from '../../lib/session';
 import type { DeliveryVerdict } from '../../lib/stores';
 import { Card, COLORS, Loading, Row, ScreenHeader, ui } from '../ui';
@@ -36,6 +36,10 @@ interface SlotDay {
   libelle: string;
   creneaux: { valeur: string; libelle: string }[];
 }
+
+/** Les montants proposés d'un clic ; « Autre » laisse saisir le sien. */
+const TIP_CHOICES = [0, 1, 2, 3, 5];
+const TIP_MAX = 50;
 
 type Pay = (clientSecret: string) => Promise<'paid' | 'canceled' | string>;
 
@@ -135,6 +139,8 @@ function CheckoutBody({
   const [checkingCode, setCheckingCode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
+  const [tipChosen, setTipChosen] = useState(0);
+  const [tipFree, setTipFree] = useState(false);
   const [error, setError] = useState('');
   // Le délai de repentir court : rien n'est encore parti.
   const [pending, setPending] = useState(false);
@@ -212,7 +218,18 @@ function CheckoutBody({
   const missingForFree = verdict?.gratuiteDes != null && !freeDelivery ? verdict.gratuiteDes - subtotal : 0;
   const deliveryFee = mode === 'DELIVERY' && verdict?.livrable && !freeDelivery ? verdict.frais : 0;
   const discountAmount = discount?.amount ?? 0;
-  const total = Math.max(0, subtotal + deliveryFee + serviceFee - discountAmount);
+  const orderTotal = Math.max(0, subtotal + deliveryFee + serviceFee - discountAmount);
+  // Le pourboire n'a de sens que pour un livreur de la plateforme, sur une
+  // commande payée en ligne : le serveur refuse les autres cas.
+  const tipPossible =
+    Boolean(pay) &&
+    mode === 'DELIVERY' &&
+    Boolean(verdict?.livrable) &&
+    verdict?.mode === 'PLATFORM' &&
+    Boolean(methodId) &&
+    usable.find((m) => m.id === methodId)?.type !== 'CASH';
+  const tip = tipPossible ? tipChosen : 0;
+  const total = Number((orderTotal + tip).toFixed(2));
   const belowMinimum = mode === 'DELIVERY' && Boolean(verdict?.livrable) && subtotal < (verdict?.minimum ?? 0);
 
   // Le panier change : la remise calculée ne vaut plus.
@@ -303,7 +320,13 @@ function CheckoutBody({
     setSubmitting(true);
     try {
       const res = await apiFetch<{
-        order: { id: string; totalAmount: number | string; paiementEnLigne?: boolean; trackingToken?: string };
+        order: {
+          id: string;
+          totalAmount: number | string;
+          tipAmount?: number | string;
+          paiementEnLigne?: boolean;
+          trackingToken?: string;
+        };
       }>(
         '/api/orders',
         // Le jeton range la commande dans l'historique du compte.
@@ -327,11 +350,14 @@ function CheckoutBody({
             // Le code part tel quel : le serveur recalcule la remise.
             promoCode: discount?.code,
             paymentMethodId: methodId || undefined,
+            ...(tip > 0 ? { tipAmount: tip } : {}),
             // Aucun montant envoyé : prix, frais et total sont calculés par le serveur.
             items: lines.map((l) => ({
               productId: l.productId,
               quantity: l.quantity,
               ...(l.variantId ? { variantId: l.variantId } : {}),
+              // Le serveur relit et tarife chaque supplément désigné.
+              ...(l.supplements?.length ? { supplements: l.supplements.map((s) => s.id) } : {}),
             })),
           },
         }
@@ -339,7 +365,8 @@ function CheckoutBody({
 
       const order = {
         id: res.order.id,
-        amount: Number(res.order.totalAmount),
+        // Le pourboire se paie avec la commande.
+        amount: Number(res.order.totalAmount) + Number(res.order.tipAmount || 0),
         trackingToken: res.order.trackingToken,
       };
       if (res.order.paiementEnLigne) {
@@ -391,12 +418,15 @@ function CheckoutBody({
       <ScrollView contentContainerStyle={ui.content} keyboardShouldPersistTaps="handled">
         <Card title="Mon panier">
           {lines.map((l, i) => {
-            const key = lineKey(l.productId, l.variantId);
+            const key = keyOf(l);
             return (
               <View key={key} style={[styles.line, i === lines.length - 1 && { borderBottomWidth: 0 }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.lineName}>{l.name}</Text>
                   {l.variantName ? <Text style={styles.lineVariant}>{l.variantName}</Text> : null}
+                  {l.supplements?.length ? (
+                    <Text style={styles.lineVariant}>+ {l.supplements.map((s) => s.label).join(', ')}</Text>
+                  ) : null}
                   <Text style={styles.linePrice}>{formatEuros(l.price * l.quantity)}</Text>
                 </View>
                 <View style={styles.qtyRow}>
@@ -578,6 +608,45 @@ function CheckoutBody({
           {mode === 'DELIVERY' && <Row label="Livraison" value={verdict?.livrable ? formatEuros(deliveryFee) : '—'} />}
           {serviceFee > 0 && <Row label="Frais de service" value={formatEuros(serviceFee)} />}
           {discount && <Row label={`Code ${discount.code}`} value={`− ${formatEuros(discount.amount)}`} />}
+          {tipPossible && (
+            <View style={styles.tipBlock}>
+              <Row label="Pourboire pour le livreur" value={tip > 0 ? formatEuros(tip) : '—'} last />
+              <View style={[styles.chips, { flexWrap: 'wrap', marginTop: 6 }]}>
+                {TIP_CHOICES.map((amount) => {
+                  const on = !tipFree && tipChosen === amount;
+                  return (
+                    <TouchableOpacity
+                      key={amount}
+                      style={[styles.chip, on && styles.chipActive]}
+                      onPress={() => {
+                        setTipFree(false);
+                        setTipChosen(amount);
+                      }}
+                    >
+                      <Text style={[styles.chipText, on && styles.chipTextActive]}>{amount === 0 ? 'Aucun' : formatEuros(amount)}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                <TouchableOpacity style={[styles.chip, tipFree && styles.chipActive]} onPress={() => setTipFree(true)}>
+                  <Text style={[styles.chipText, tipFree && styles.chipTextActive]}>Autre</Text>
+                </TouchableOpacity>
+              </View>
+              {tipFree && (
+                <TextInput
+                  style={[styles.input, { marginTop: 8, width: 120 }]}
+                  placeholder="Montant"
+                  placeholderTextColor="#999"
+                  keyboardType="decimal-pad"
+                  value={tipChosen ? String(tipChosen) : ''}
+                  onChangeText={(t) => {
+                    const typed = Number(t.replace(',', '.'));
+                    setTipChosen(Number.isFinite(typed) ? Math.min(Math.max(typed, 0), TIP_MAX) : 0);
+                  }}
+                />
+              )}
+              <Text style={styles.help}>Il revient en entier à votre livreur.</Text>
+            </View>
+          )}
           <Row label="Total" value={<Text style={styles.total}>{formatEuros(total)}</Text>} last />
         </Card>
 
@@ -680,6 +749,7 @@ const styles = StyleSheet.create({
   link: { color: COLORS.primary, fontWeight: '600' },
   verdict: { fontSize: 13, fontWeight: '600' },
   chips: { flexDirection: 'row', gap: 8 },
+  tipBlock: { marginTop: 4, marginBottom: 8 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 7,

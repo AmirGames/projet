@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { apiFetch } from '../lib/api';
+import SupplementsEditor from './SupplementsEditor';
 import { COLORS } from './ui';
 
 export interface EditableProduct {
@@ -140,6 +141,8 @@ export default function ProductEditor({
                 </View>
               </>
             )}
+
+            <SupplementsEditor productId={product.id} token={token} />
 
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>

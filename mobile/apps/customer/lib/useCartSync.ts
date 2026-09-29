@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { apiFetch } from './api';
-import { Cart, CartLine, Carts, saveCarts } from './carts';
+import { Cart, CartLine, Carts, keyOf, saveCarts } from './carts';
 import { useRealtimeEvent } from './realtime';
 
 /** Une ligne telle que le serveur et le site la gardent (`frontend/lib/paniers.ts`). */
@@ -9,6 +9,7 @@ interface RemoteLine {
   variantId?: string;
   name: string;
   variantNom?: string;
+  supplements?: { id: string; label: string; price: number }[];
   price: number;
   quantity: number;
 }
@@ -32,6 +33,7 @@ const fromRemote = (l: RemoteLine): CartLine => ({
   ...(l.variantId ? { variantId: l.variantId } : {}),
   name: l.name,
   ...(l.variantNom ? { variantName: l.variantNom } : {}),
+  ...(l.supplements?.length ? { supplements: l.supplements } : {}),
   price: Number(l.price) || 0,
   quantity: l.quantity,
 });
@@ -41,13 +43,15 @@ const toRemote = (l: CartLine): RemoteLine => ({
   ...(l.variantId ? { variantId: l.variantId } : {}),
   name: l.name,
   ...(l.variantName ? { variantNom: l.variantName } : {}),
+  ...(l.supplements?.length ? { supplements: l.supplements } : {}),
   price: l.price,
   quantity: l.quantity,
 });
 
 /** Ce qui compte pour dire qu'un panier a changé : plats, choix, quantités, prix. */
-const fingerprint = (lines: { productId: string; variantId?: string; quantity: number; price: number }[] = []) =>
-  JSON.stringify(lines.map((l) => [l.productId, l.variantId || '', l.quantity, Number(l.price)]));
+const fingerprint = (
+  lines: { productId: string; variantId?: string; supplements?: { id: string }[]; quantity: number; price: number }[] = []
+) => JSON.stringify(lines.map((l) => [keyOf(l), l.quantity, Number(l.price)]));
 
 const toCart = (r: RemoteCart, local?: Cart): Cart => ({
   storeId: r.storeId,

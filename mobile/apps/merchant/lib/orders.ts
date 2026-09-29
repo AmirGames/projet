@@ -32,6 +32,18 @@ export interface OrderItem {
   product?: { name: string; category?: { name: string; displayOrder?: number } | null };
   quantity: number;
   total: number | string;
+  /** La déclinaison préparée : pennes, grande taille. */
+  variant?: { id: string; label: string } | null;
+  /** Les suppléments payés, figés à la commande. */
+  selectedOptions?: { supplements?: { label: string; price: number }[] } | null;
+}
+
+/** « Burger — grand + Bacon, Cheddar » : le plat, sa déclinaison et ses suppléments. */
+export function itemLabel(item: OrderItem) {
+  const supplements = (item.selectedOptions?.supplements || []).map((s) => s.label).filter(Boolean).join(', ');
+  return [item.product?.name || 'Produit', item.variant?.label && `— ${item.variant.label}`, supplements && `+ ${supplements}`]
+    .filter(Boolean)
+    .join(' ');
 }
 
 export interface OrderDelivery {
