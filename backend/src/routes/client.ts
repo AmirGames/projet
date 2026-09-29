@@ -17,8 +17,8 @@ import { DeliveryZoneService } from "../services/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";
 import { CustomerAccountService } from "../services/customer-account.service";
 import { ficheClientDuCompte } from "../services/fiche-client.service";
-import { avisARedemander, avisRestaurantParCommerce } from "../services/avis-client.service";
-import { avecLaVraieNote } from "../services/review.service";
+import { avisARedemander, avisRestaurantParCommerce } from "../modules/reviews/avis-client.service";
+import { avecLaVraieNote } from "../modules/reviews/review.service";
 import { CustomerCartService, panierSchema } from "../services/customer-cart.service";
 import {
   COMMENTAIRE_MAX,

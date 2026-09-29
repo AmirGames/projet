@@ -34,7 +34,7 @@ import invoiceRouter from "./routes/invoice";
 import paymentRouter, { stripeWebhookHandler } from "./routes/payment";
 import promotionRouter from "./routes/promotion";
 import customerRouter from "./routes/customer";
-import reviewRouter from "./routes/review";
+import reviewRouter from "./modules/reviews/review.routes";
 import marketingRouter from "./routes/marketing";
 import taxRouter from "./routes/tax";
 import paymentMethodRouter from "./routes/payment-method";

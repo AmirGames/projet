@@ -1,15 +1,15 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { ReviewService } from "../services/review.service";
-import { authMiddleware } from "../middleware/auth";
-import { ApiError } from "../middleware/errorHandler";
-import { db } from "../services/db";
-import { ficheClientDuCompte } from "../services/fiche-client.service";
-import { logger } from "../config/logger";
-import { avisDuClientSurCommande } from "../services/avis-client.service";
-import { ReviewModerationService } from "../services/review-moderation.service";
+import { ReviewService } from "./review.service";
+import { authMiddleware } from "../../middleware/auth";
+import { ApiError } from "../../middleware/errorHandler";
+import { db } from "../../services/db";
+import { ficheClientDuCompte } from "../../services/fiche-client.service";
+import { logger } from "../../config/logger";
+import { avisDuClientSurCommande } from "./avis-client.service";
+import { ReviewModerationService } from "./review-moderation.service";
 
-import { emitMerchantEvent } from "../config/socket";
+import { emitMerchantEvent } from "../../config/socket";
 
 const router = Router();
 

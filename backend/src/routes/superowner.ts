@@ -39,7 +39,7 @@ import { MerchantApprovalService } from "../services/merchant-approval.service";
 import { SystemHealthService } from "../services/system-health.service";
 import { Vigie } from "../services/vigie.service";
 import { Disponibilite } from "../services/disponibilite.service";
-import { ReviewModerationService } from "../services/review-moderation.service";
+import { ReviewModerationService } from "../modules/reviews/review-moderation.service";
 
 const LIBELLES_STATUT: Record<string, string> = {
   OPEN: "rouvert",

@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db } from "../../services/db";
 
 /**
  * Un client a un seul avis par restaurant et par plat, qu'il met à jour au fil
