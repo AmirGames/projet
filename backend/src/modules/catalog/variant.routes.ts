@@ -1,12 +1,12 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 
-import { db } from "../services/db";
-import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware } from "../middleware/auth";
-import { logger } from "../config/logger";
-import { VariantService } from "../services/variant.service";
-import { SupplementService, schemaGroupes } from "../services/supplement.service";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { authMiddleware } from "../../middleware/auth";
+import { logger } from "../../config/logger";
+import { VariantService } from "./variant.service";
+import { SupplementService, schemaGroupes } from "./supplement.service";
 
 const router = Router();
 

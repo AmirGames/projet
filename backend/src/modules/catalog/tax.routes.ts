@@ -1,8 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { TaxService } from "../services/tax.service";
-import { authMiddleware } from "../middleware/auth";
-import { logger } from "../config/logger";
+import { TaxService } from "./tax.service";
+import { authMiddleware } from "../../middleware/auth";
+import { logger } from "../../config/logger";
 
 const router = Router();
 

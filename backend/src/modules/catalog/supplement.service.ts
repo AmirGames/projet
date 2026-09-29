@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
 import { z } from "zod";
 
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
 import { TaxService } from "./tax.service";
 
 /**

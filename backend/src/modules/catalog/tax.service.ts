@@ -1,7 +1,7 @@
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
 import { Prisma } from "@prisma/client";
-import { ttc } from "../utils/prix-ttc";
+import { ttc } from "../../utils/prix-ttc";
 
 const { Decimal } = Prisma;
 

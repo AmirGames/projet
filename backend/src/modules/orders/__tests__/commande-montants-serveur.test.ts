@@ -39,13 +39,13 @@ jest.mock("../../../services/notifier.service", () => ({
 jest.mock("../../drivers/dispatch.service", () => ({ DispatchService: {} }));
 jest.mock("../pourboire.service", () => ({ PourboireService: {} }));
 jest.mock("../../delivery/store-hours.service", () => ({ StoreHoursService: { isOpenNow: () => true } }));
-jest.mock("../../../services/variant.service", () => ({
+jest.mock("../../catalog/variant.service", () => ({
   VariantService: { prixDeLaLigne: jest.fn(async () => 12.5) },
 }));
-jest.mock("../../../services/supplement.service", () => ({
+jest.mock("../../catalog/supplement.service", () => ({
   SupplementService: { tarifer: jest.fn(async () => ({ montant: 0, retenus: [] })) },
 }));
-jest.mock("../../../services/tax.service", () => ({
+jest.mock("../../catalog/tax.service", () => ({
   TaxService: {
     tauxAAjouter: jest.fn(async () => new Map()),
     ttc: (montant: number) => montant,
