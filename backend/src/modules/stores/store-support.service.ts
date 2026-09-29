@@ -3,7 +3,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { emitNotification } from "../../config/socket";
 import { AddressService, paysDeLAdresse } from "../../services/address.service";
-import { MerchantApprovalService } from "../../services/merchant-approval.service";
+import { MerchantApprovalService } from "../merchants/merchant-approval.service";
 import { TRANSMISE } from "../../utils/commande-transmise";
 
 /**

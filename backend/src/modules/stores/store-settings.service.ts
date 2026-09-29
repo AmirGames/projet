@@ -1,7 +1,7 @@
 import { db } from "../../services/db";
 import { AddressService } from "../../services/address.service";
 import { ApiError } from "../../middleware/errorHandler";
-import { verifierLaTva } from "../../services/merchant-profile.service";
+import { verifierLaTva } from "../merchants/merchant-profile.service";
 import {
   libelleDeLEtablissement,
   libelleDeLaCuisine,

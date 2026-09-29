@@ -6,7 +6,7 @@ import { authMiddleware } from "../middleware/auth";
 import { logger } from "../config/logger";
 import { TicketMessageService } from "../services/ticket-message.service";
 import { emitWebhook } from "../services/webhook.service";
-import { MerchantApprovalService } from "../services/merchant-approval.service";
+import { MerchantApprovalService } from "../modules/merchants/merchant-approval.service";
 import { emitOrgEvent } from "../config/socket";
 
 const router = Router();

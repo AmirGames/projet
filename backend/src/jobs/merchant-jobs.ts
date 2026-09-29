@@ -1,4 +1,4 @@
-import { MerchantApprovalService } from "../services/merchant-approval.service";
+import { MerchantApprovalService } from "../modules/merchants/merchant-approval.service";
 import { logger } from "../config/logger";
 import { Surveillance } from "../services/surveillance.service";
 

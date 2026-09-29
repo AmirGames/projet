@@ -1,17 +1,17 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { ibanNormalise, ibanValide } from "../utils/sepa";
+import { ibanNormalise, ibanValide } from "../../utils/sepa";
 import { z } from "zod";
 
-import { db } from "../services/db";
-import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware } from "../middleware/auth";
-import { uploadMiddleware } from "../middleware/file-upload";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { authMiddleware } from "../../middleware/auth";
+import { uploadMiddleware } from "../../middleware/file-upload";
 import {
   MerchantProfileService,
   TYPES_DOCUMENT_COMMERCANT,
   libelleDuDocumentCommercant,
-} from "../services/merchant-profile.service";
-import { MerchantApprovalService } from "../services/merchant-approval.service";
+} from "./merchant-profile.service";
+import { MerchantApprovalService } from "./merchant-approval.service";
 
 const router = Router();
 

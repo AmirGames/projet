@@ -1,4 +1,4 @@
-import { MerchantClosureService } from "../services/merchant-closure.service";
+import { MerchantClosureService } from "../modules/merchants/merchant-closure.service";
 import { logger } from "../config/logger";
 import { Surveillance } from "../services/surveillance.service";
 

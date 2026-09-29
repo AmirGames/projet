@@ -1,9 +1,9 @@
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { logger } from "../config/logger";
-import { emitNotification } from "../config/socket";
-import { FileUploadService } from "./file-upload.service";
-import { notifierPlateforme } from "./notification.service";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { logger } from "../../config/logger";
+import { emitNotification } from "../../config/socket";
+import { FileUploadService } from "../../services/file-upload.service";
+import { notifierPlateforme } from "../../services/notification.service";
 
 /**
  * Le profil du commerçant : son identité de facturation, son propriétaire, son

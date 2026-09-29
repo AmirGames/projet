@@ -1,6 +1,6 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { MerchantApprovalService } from "../../services/merchant-approval.service";
+import { MerchantApprovalService } from "../merchants/merchant-approval.service";
 
 /**
  * Les horaires d'ouverture d'une boutique.

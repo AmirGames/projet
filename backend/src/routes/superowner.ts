@@ -21,7 +21,7 @@ import { WebhookService, EVENEMENTS_WEBHOOK } from "../services/webhook.service"
 import { BackupService } from "../services/backup.service";
 import { SecurityEventService } from "../services/security-event.service";
 import { invalidateMaintenanceCache } from "../middleware/maintenance";
-import { MerchantClosureService } from "../services/merchant-closure.service";
+import { MerchantClosureService } from "../modules/merchants/merchant-closure.service";
 import { PlanService, promoSansCommissionActive } from "../services/plan.service";
 import {
   DriverApprovalService,
@@ -34,8 +34,8 @@ import {
   semainePrecedente,
 } from "../modules/payouts/driver-payout.service";
 import { StoreSupportService, libelleDuChamp } from "../modules/stores/store-support.service";
-import { MerchantProfileService } from "../services/merchant-profile.service";
-import { MerchantApprovalService } from "../services/merchant-approval.service";
+import { MerchantProfileService } from "../modules/merchants/merchant-profile.service";
+import { MerchantApprovalService } from "../modules/merchants/merchant-approval.service";
 import { SystemHealthService } from "../services/system-health.service";
 import { Vigie } from "../services/vigie.service";
 import { Disponibilite } from "../services/disponibilite.service";

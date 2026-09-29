@@ -4,7 +4,7 @@ import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
 import { exigerPermission, voitLesFinances } from "../services/permissions-plateforme.service";
 import { authMiddleware } from "../middleware/auth";
-import { MerchantClosureService } from "../services/merchant-closure.service";
+import { MerchantClosureService } from "../modules/merchants/merchant-closure.service";
 import { TicketMessageService } from "../services/ticket-message.service";
 import { AnnouncementService, PUBLICS_CONNUS } from "../services/announcement.service";
 
