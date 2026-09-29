@@ -22,6 +22,12 @@
     ],
     "android": {
       "package": "com.amir_games.zuponeadmin"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c84bc43e-03d6-4556-8a40-f33012aa0c84"
+      }
+    },
+    "owner": "zupone"
   }
 }
