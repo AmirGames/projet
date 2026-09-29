@@ -48,10 +48,12 @@ describe('AuthService', () => {
       expect(token.split('.').length).toBe(3); // JWT format: header.payload.signature
     });
 
-    it('should generate different tokens for the same userId', () => {
+    it('should generate different tokens for different sessions of the same userId', () => {
+      // Un jeton ne porte que l'identifiant et l'horodatage à la seconde : deux
+      // jetons émis dans la même seconde sont identiques, seule la session les distingue.
       const userId = 'user-123';
-      const token1 = AuthService.generateAccessToken(userId);
-      const token2 = AuthService.generateAccessToken(userId);
+      const token1 = AuthService.generateAccessToken(userId, 'session-1');
+      const token2 = AuthService.generateAccessToken(userId, 'session-2');
 
       expect(token1).not.toBe(token2);
     });

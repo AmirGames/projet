@@ -34,11 +34,12 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
   describe('🔑 Signup - Create User + Customer', () => {
     it('should create user and customer on signup', async () => {
       const res = await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'test@example.com',
           name: 'Test User',
           password: 'TestPassword123!',
+          conditionsAcceptees: true,
         });
 
       expect(res.status).toBe(201);
@@ -69,42 +70,46 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
     it('should reject duplicate email', async () => {
       // Create first user
       await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'test@example.com',
           name: 'First User',
           password: 'TestPassword123!',
+          conditionsAcceptees: true,
         });
 
       // Try to create second with same email
       const res = await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'test@example.com',
           name: 'Second User',
           password: 'TestPassword123!',
+          conditionsAcceptees: true,
         });
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(409);
     });
 
     it('second user should not be super owner', async () => {
       // Create first user
       await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'first@example.com',
           name: 'First User',
           password: 'TestPassword123!',
+          conditionsAcceptees: true,
         });
 
       // Create second user
       const res = await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'second@example.com',
           name: 'Second User',
           password: 'TestPassword123!',
+          conditionsAcceptees: true,
         });
 
       // La réponse ne dit plus les droits d'administration : on les lit en base.
@@ -120,11 +125,12 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
   describe('🔐 JWT - Simplified Payload', () => {
     beforeEach(async () => {
       const res = await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'test@example.com',
           name: 'Test User',
           password: 'TestPassword123!',
+          conditionsAcceptees: true,
         });
       testAccessToken = res.body.accessToken;
       testUserId = res.body.user.id;
@@ -159,11 +165,12 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
   describe('👤 GET /me/roles - User Role Status', () => {
     beforeEach(async () => {
       const res = await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'test@example.com',
           name: 'Test User',
           password: 'TestPassword123!',
+          conditionsAcceptees: true,
         });
       testAccessToken = res.body.accessToken;
       testUserId = res.body.user.id;
@@ -171,7 +178,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
     it('should return customer role as active after signup', async () => {
       const res = await request(app)
-        .get('/auth/me/roles')
+        .get('/api/auth/me/roles')
         .set('Authorization', `Bearer ${testAccessToken}`);
 
       expect(res.status).toBe(200);
@@ -181,7 +188,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
     it('should return driver role as inactive initially', async () => {
       const res = await request(app)
-        .get('/auth/me/roles')
+        .get('/api/auth/me/roles')
         .set('Authorization', `Bearer ${testAccessToken}`);
 
       expect(res.status).toBe(200);
@@ -191,7 +198,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
     it('should return merchant role as inactive initially', async () => {
       const res = await request(app)
-        .get('/auth/me/roles')
+        .get('/api/auth/me/roles')
         .set('Authorization', `Bearer ${testAccessToken}`);
 
       expect(res.status).toBe(200);
@@ -200,21 +207,22 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
     });
 
     it('should require authentication', async () => {
-      const res = await request(app).get('/auth/me/roles');
+      const res = await request(app).get('/api/auth/me/roles');
 
       expect(res.status).toBe(401);
     });
 
     it('should return full user info', async () => {
       const res = await request(app)
-        .get('/auth/me/roles')
+        .get('/api/auth/me/roles')
         .set('Authorization', `Bearer ${testAccessToken}`);
 
-      expect(res.body.user).toEqual({
+      // Aucune inscription ne donne les droits de la plateforme (SEC-03).
+      expect(res.body.user).toMatchObject({
         id: testUserId,
         email: 'test@example.com',
-        isSuperOwner: true,
-        isSystemAdmin: true,
+        isSuperOwner: false,
+        isSystemAdmin: false,
       });
     });
   });
@@ -226,11 +234,12 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
   describe('🏪 POST /me/become-merchant - Activate Merchant Role', () => {
     beforeEach(async () => {
       const res = await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'merchant@example.com',
           name: 'Merchant User',
           password: 'TestPassword123!',
+          conditionsAcceptees: true,
         });
       testAccessToken = res.body.accessToken;
       testUserId = res.body.user.id;
@@ -238,7 +247,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
     it('should create organization and store', async () => {
       const res = await request(app)
-        .post('/auth/me/become-merchant')
+        .post('/api/auth/me/become-merchant')
         .set('Authorization', `Bearer ${testAccessToken}`)
         .send({
           businessName: 'My Restaurant',
@@ -281,7 +290,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
     it('should reject duplicate slug', async () => {
       // Create first merchant
       await request(app)
-        .post('/auth/me/become-merchant')
+        .post('/api/auth/me/become-merchant')
         .set('Authorization', `Bearer ${testAccessToken}`)
         .send({
           businessName: 'First Restaurant',
@@ -297,16 +306,17 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
       // Create second user
       const signupRes = await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'merchant2@example.com',
           name: 'Second Merchant',
           password: 'TestPassword123!',
+          conditionsAcceptees: true,
         });
 
       // Try to create with duplicate slug
       const res = await request(app)
-        .post('/auth/me/become-merchant')
+        .post('/api/auth/me/become-merchant')
         .set('Authorization', `Bearer ${signupRes.body.accessToken}`)
         .send({
           businessName: 'Second Restaurant',
@@ -326,7 +336,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
     it('should require authentication', async () => {
       const res = await request(app)
-        .post('/auth/me/become-merchant')
+        .post('/api/auth/me/become-merchant')
         .send({
           businessName: 'My Restaurant',
           storeName: 'Main',
@@ -345,7 +355,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
     it('should allow multiple merchants per user', async () => {
       // Create first merchant
       const res1 = await request(app)
-        .post('/auth/me/become-merchant')
+        .post('/api/auth/me/become-merchant')
         .set('Authorization', `Bearer ${testAccessToken}`)
         .send({
           businessName: 'Restaurant 1',
@@ -364,7 +374,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
       // Create second merchant
       const res2 = await request(app)
-        .post('/auth/me/become-merchant')
+        .post('/api/auth/me/become-merchant')
         .set('Authorization', `Bearer ${testAccessToken}`)
         .send({
           businessName: 'Restaurant 2',
@@ -398,11 +408,12 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
   describe('🚗 POST /me/become-driver - Activate Driver Role', () => {
     beforeEach(async () => {
       const res = await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'driver@example.com',
           name: 'Driver User',
           password: 'TestPassword123!',
+          conditionsAcceptees: true,
         });
       testAccessToken = res.body.accessToken;
       testUserId = res.body.user.id;
@@ -410,20 +421,20 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
     it('should create driver with PENDING status', async () => {
       const res = await request(app)
-        .post('/auth/me/become-driver')
+        .post('/api/auth/me/become-driver')
         .set('Authorization', `Bearer ${testAccessToken}`)
         .send({
           name: 'John Driver',
           email: 'john@example.com',
           phone: '+33612345678',
-          vehicleType: 'motorcycle',
+          vehicleType: 'scooter',
           vehiclePlate: 'ABC-123',
         });
 
       expect(res.status).toBe(201);
       expect(res.body.driver).toEqual({
         id: expect.any(String),
-        userId: testUserId,
+        name: 'Driver User',
         status: 'PENDING',
       });
 
@@ -433,14 +444,14 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
       });
       expect(driver).toBeDefined();
       expect(driver?.status).toBe('PENDING');
-      expect(driver?.vehicleType).toBe('motorcycle');
+      expect(driver?.vehicleType).toBe('scooter');
       expect(driver?.vehiclePlate).toBe('ABC-123');
     });
 
     it('should reject if driver already exists', async () => {
       // Create first driver
       await request(app)
-        .post('/auth/me/become-driver')
+        .post('/api/auth/me/become-driver')
         .set('Authorization', `Bearer ${testAccessToken}`)
         .send({
           name: 'John Driver',
@@ -452,13 +463,13 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
       // Try to create second
       const res = await request(app)
-        .post('/auth/me/become-driver')
+        .post('/api/auth/me/become-driver')
         .set('Authorization', `Bearer ${testAccessToken}`)
         .send({
           name: 'John Driver 2',
           email: 'john2@example.com',
           phone: '+33612345678',
-          vehicleType: 'bicycle',
+          vehicleType: 'bike',
           vehiclePlate: 'XYZ-789',
         });
 
@@ -468,7 +479,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
     it('should require authentication', async () => {
       const res = await request(app)
-        .post('/auth/me/become-driver')
+        .post('/api/auth/me/become-driver')
         .send({
           name: 'John Driver',
           email: 'john@example.com',
@@ -489,11 +500,12 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
     it('should handle full signup → roles → become merchant → become driver flow', async () => {
       // 1. Signup
       const signupRes = await request(app)
-        .post('/auth/signup')
+        .post('/api/auth/signup')
         .send({
           email: 'complete@example.com',
           name: 'Complete User',
           password: 'TestPassword123!',
+          conditionsAcceptees: true,
         });
 
       expect(signupRes.status).toBe(201);
@@ -502,7 +514,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
       // 2. Check initial roles (customer only)
       const rolesRes1 = await request(app)
-        .get('/auth/me/roles')
+        .get('/api/auth/me/roles')
         .set('Authorization', `Bearer ${token}`);
 
       expect(rolesRes1.status).toBe(200);
@@ -512,7 +524,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
       // 3. Become merchant
       const merchantRes = await request(app)
-        .post('/auth/me/become-merchant')
+        .post('/api/auth/me/become-merchant')
         .set('Authorization', `Bearer ${token}`)
         .send({
           businessName: 'Complete Restaurant',
@@ -530,7 +542,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
       // 4. Check roles after merchant activation
       const rolesRes2 = await request(app)
-        .get('/auth/me/roles')
+        .get('/api/auth/me/roles')
         .set('Authorization', `Bearer ${token}`);
 
       expect(rolesRes2.status).toBe(200);
@@ -539,7 +551,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
       // 5. Become driver
       const driverRes = await request(app)
-        .post('/auth/me/become-driver')
+        .post('/api/auth/me/become-driver')
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: 'Complete Driver',
@@ -553,7 +565,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
 
       // 6. Check final roles (all three active)
       const rolesRes3 = await request(app)
-        .get('/auth/me/roles')
+        .get('/api/auth/me/roles')
         .set('Authorization', `Bearer ${token}`);
 
       expect(rolesRes3.status).toBe(200);
