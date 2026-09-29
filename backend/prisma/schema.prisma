@@ -192,6 +192,10 @@ model Organization {
   billingCity         String?
   billingCountry      String?     @default("France")
 
+  /// Son adresse sur le réseau Peppol, « 0208:0123456789 » (schéma:valeur).
+  /// Vide : on la déduit de son numéro de TVA belge ou de son numéro BCE.
+  peppolId            String?
+
   /// Le propriétaire du commerce, la personne physique derrière la société.
   ownerFirstName      String?
   ownerLastName       String?
@@ -235,6 +239,7 @@ model Organization {
   commissionHistory   CommissionHistory[]
   archive             MerchantArchive?
   documents           OrganizationDocument[]
+  platformInvoices    PlatformInvoice[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -242,6 +247,57 @@ model Organization {
   @@index([slug])
   @@index([status])
   @@index([closedUntil])
+}
+
+/// La facture que la plateforme émet à un commerçant pour un mois : commission,
+/// frais de livraison et frais de service qu'il a encaissés pour elle.
+///
+/// Facture B2B entre deux assujettis belges : elle doit partir en UBL sur le
+/// réseau Peppol. Figée à l'émission, comme `Invoice` — le vendeur, l'acheteur,
+/// les lignes et le XML ne se réécrivent pas.
+model PlatformInvoice {
+  id          String   @id @default(cuid())
+  /// Numéro légal, sans trou : ZE-2026-000001
+  number      String   @unique
+  orgId       String
+  /// Le mois facturé, « 2026-08 ». Une seule facture par commerçant et par mois.
+  period      String
+  issuedAt    DateTime
+  dueAt       DateTime
+
+  sellerJson  Json
+  buyerJson   Json
+  linesJson   Json
+  vatRate     Decimal  @db.Decimal(5, 2)
+  totalExcl   Decimal  @db.Decimal(10, 2)
+  vatAmount   Decimal  @db.Decimal(10, 2)
+  totalIncl   Decimal  @db.Decimal(10, 2)
+
+  /// La facture UBL (Peppol BIS 3.0) telle qu'elle est transmise.
+  ublXml      String
+
+  /// GENERATED (prête à envoyer), SENT (remise à l'Access Point), DELIVERED
+  /// (accusée par le destinataire), FAILED (à corriger ou à renvoyer).
+  peppolStatus    String    @default("GENERATED")
+  peppolMessageId String?
+  peppolError     String?
+  peppolSentAt    DateTime?
+  peppolAttempts  Int       @default(0)
+
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, period])
+  @@index([peppolStatus])
+  @@index([issuedAt])
+}
+
+/// Le compteur des factures de la plateforme, par année.
+model PlatformInvoiceSeq {
+  year Int @id
+  last Int @default(0)
 }
 
 /// Une pièce justificative du commerçant : Kbis, statuts, pièce d'identité.
