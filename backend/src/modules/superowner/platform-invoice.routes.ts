@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { authMiddleware } from "../../middleware/auth";
 import { isSuperOwner } from "./shared";
-import { PlatformInvoiceService } from "../invoicing/platform-invoice.service";
+import { PlatformInvoiceService, moisPrecedent } from "../invoicing/platform-invoice.service";
 
 const router = Router();
 
@@ -9,6 +9,24 @@ const router = Router();
 router.get("/platform-invoices", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
   try {
     res.json({ invoices: await PlatformInvoiceService.lister(req.query.orgId as string | undefined) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /superowner/platform-invoices/overview?period=AAAA-MM - L'état de chaque commerçant pour un mois
+router.get("/platform-invoices/overview", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(await PlatformInvoiceService.apercu((req.query.period as string) || moisPrecedent()));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /superowner/platform-invoices/issue-month { period } - Émet tout ce qui est facturable
+router.post("/platform-invoices/issue-month", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(await PlatformInvoiceService.emettreLeMois(String(req.body?.period || moisPrecedent())));
   } catch (err) {
     next(err);
   }

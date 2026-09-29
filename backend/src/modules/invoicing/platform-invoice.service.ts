@@ -9,7 +9,7 @@ import { transportPeppol } from "./peppol-transport";
 const DELAI_PAIEMENT_JOURS = 30;
 
 /** L'émetteur : la société qui exploite la plateforme, lue dans l'environnement. */
-function emetteur(): PartieFacture {
+export function identitePlateforme(): { partie: PartieFacture | null; manque: string[] } {
   const env = getEnv();
   const tva = tvaBelge(env.PLATFORM_VAT_NUMBER);
   const manque = [
@@ -18,27 +18,42 @@ function emetteur(): PartieFacture {
     !env.PLATFORM_ADDRESS && "PLATFORM_ADDRESS",
     !env.PLATFORM_POSTAL_CODE && "PLATFORM_POSTAL_CODE",
     !env.PLATFORM_CITY && "PLATFORM_CITY",
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
 
-  if (manque.length || !tva) {
+  if (manque.length || !tva) return { partie: null, manque };
+
+  return {
+    manque,
+    partie: {
+      nom: env.PLATFORM_LEGAL_NAME!,
+      tva,
+      numeroEntreprise: numeroBce(env.PLATFORM_REGISTRATION_NUMBER) || tva.slice(2),
+      adresse: env.PLATFORM_ADDRESS!,
+      codePostal: env.PLATFORM_POSTAL_CODE!,
+      ville: env.PLATFORM_CITY!,
+      pays: env.PLATFORM_COUNTRY,
+      email: env.PLATFORM_EMAIL,
+      peppol: { schema: "0208", valeur: tva.slice(2) },
+    },
+  };
+}
+
+function emetteur(): PartieFacture {
+  const { partie, manque } = identitePlateforme();
+  if (!partie) {
     throw new ApiError(
       409,
       `Identité de la plateforme incomplète, à renseigner dans l'environnement : ${manque.join(", ")}`,
       "PLATFORM_IDENTITY_INCOMPLETE"
     );
   }
+  return partie;
+}
 
-  return {
-    nom: env.PLATFORM_LEGAL_NAME!,
-    tva,
-    numeroEntreprise: numeroBce(env.PLATFORM_REGISTRATION_NUMBER) || tva.slice(2),
-    adresse: env.PLATFORM_ADDRESS!,
-    codePostal: env.PLATFORM_POSTAL_CODE!,
-    ville: env.PLATFORM_CITY!,
-    pays: env.PLATFORM_COUNTRY,
-    email: env.PLATFORM_EMAIL,
-    peppol: { schema: "0208", valeur: tva.slice(2) },
-  };
+/** Le dernier mois écoulé, « 2026-08 » le 12 septembre 2026. */
+export function moisPrecedent(maintenant = new Date()): string {
+  const d = new Date(maintenant.getFullYear(), maintenant.getMonth() - 1, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function libellePeriode(periode: string) {
@@ -71,58 +86,35 @@ export class PlatformInvoiceService {
     const existante = await db.platformInvoice.findUnique({ where: { orgId_period: { orgId, period: periode } } });
     if (existante) return existante;
 
-    const detail = await detailFacturation(orgId, periode);
-    const org = detail.organization;
-
-    if (org.manquePourFacturer.length) {
-      throw new ApiError(
-        409,
-        `Impossible de facturer : il manque ${org.manquePourFacturer.join(", ")}`,
-        "BILLING_IDENTITY_INCOMPLETE"
-      );
-    }
-
-    const destinataire = identifiantPeppol(org);
-    const tvaAcheteur = tvaBelge(org.vatNumber);
-    if (!destinataire || !tvaAcheteur) {
-      throw new ApiError(
-        409,
-        "Le commerçant n'a pas de numéro de TVA belge ni d'identifiant Peppol : impossible de lui adresser une facture électronique",
-        "PEPPOL_ID_MISSING"
-      );
-    }
-
-    const lignes: LigneFacture[] = [
-      { libelle: `Commission sur ${detail.summary.ordersCount} commande(s), ${libellePeriode(periode)}`, montantHt: detail.summary.commission },
-      { libelle: `Frais de livraison encaissés pour la plateforme, ${libellePeriode(periode)}`, montantHt: detail.summary.deliveryFees },
-      { libelle: `Frais de service encaissés pour la plateforme, ${libellePeriode(periode)}`, montantHt: detail.summary.serviceFees },
-    ].filter((ligne) => ligne.montantHt > 0);
-
-    if (!lignes.length) {
-      throw new ApiError(409, "Rien à facturer sur ce mois", "NOTHING_TO_INVOICE");
-    }
-
-    const vendeur = emetteur();
-    const env = getEnv();
-    const tauxTva = env.PLATFORM_VAT_RATE;
-    const acheteur: PartieFacture = {
-      nom: org.legalName!,
-      tva: tvaAcheteur,
-      numeroEntreprise: numeroBce(org.registrationNumber) || tvaAcheteur.slice(2),
-      adresse: org.billingAddress!,
-      codePostal: org.billingPostalCode || "",
-      ville: org.billingCity || "",
-      pays: "BE",
-      email: org.email,
-      peppol: destinataire,
-    };
+    const { lignes, vendeur, acheteur, tauxTva } = await this.preparer(orgId, periode);
 
     const emiseLe = new Date();
     const echeance = new Date(emiseLe.getTime() + DELAI_PAIEMENT_JOURS * 24 * 3600 * 1000);
-    const annee = emiseLe.getFullYear();
 
     // Le numéro et la facture naissent dans la même transaction : un échec à
     // l'écriture ne doit pas laisser un numéro consommé, donc un trou.
+    try {
+      return await this.creer({ orgId, periode, emiseLe, echeance, vendeur, acheteur, lignes, tauxTva });
+    } catch (err) {
+      // Deux émissions simultanées (tâche du jour et bouton) : la seconde perd
+      // la course sur l'unicité (commerçant, mois). Sa transaction est annulée,
+      // son numéro n'est pas consommé ; on rend la facture de la première.
+      if ((err as { code?: string })?.code === "P2002") {
+        const gagnante = await db.platformInvoice.findUnique({ where: { orgId_period: { orgId, period: periode } } });
+        if (gagnante) return gagnante;
+      }
+      throw err;
+    }
+  }
+
+  private static creer(a: {
+    orgId: string; periode: string; emiseLe: Date; echeance: Date;
+    vendeur: PartieFacture; acheteur: PartieFacture; lignes: LigneFacture[]; tauxTva: number;
+  }) {
+    const { orgId, periode, emiseLe, echeance, vendeur, acheteur, lignes, tauxTva } = a;
+    const env = getEnv();
+    const annee = emiseLe.getFullYear();
+
     return db.$transaction(async (tx) => {
       const seq = await tx.platformInvoiceSeq.upsert({
         where: { year: annee },
@@ -165,6 +157,60 @@ export class PlatformInvoiceService {
         },
       });
     });
+  }
+
+  /**
+   * Tout ce qu'il faut pour facturer un mois, ou l'erreur qui l'en empêche.
+   * Partagé par l'émission et par l'aperçu : ce que l'écran annonce facturable
+   * est exactement ce que l'émission acceptera.
+   */
+  private static async preparer(orgId: string, periode: string) {
+    const detail = await detailFacturation(orgId, periode);
+    const org = detail.organization;
+
+    if (org.manquePourFacturer.length) {
+      throw new ApiError(
+        409,
+        `Impossible de facturer : il manque ${org.manquePourFacturer.join(", ")}`,
+        "BILLING_IDENTITY_INCOMPLETE"
+      );
+    }
+
+    const destinataire = identifiantPeppol(org);
+    const tvaAcheteur = tvaBelge(org.vatNumber);
+    if (!destinataire || !tvaAcheteur) {
+      throw new ApiError(
+        409,
+        "Le commerçant n'a pas de numéro de TVA belge ni d'identifiant Peppol : impossible de lui adresser une facture électronique",
+        "PEPPOL_ID_MISSING"
+      );
+    }
+
+    const lignes: LigneFacture[] = [
+      { libelle: `Commission sur ${detail.summary.ordersCount} commande(s), ${libellePeriode(periode)}`, montantHt: detail.summary.commission },
+      { libelle: `Frais de livraison encaissés pour la plateforme, ${libellePeriode(periode)}`, montantHt: detail.summary.deliveryFees },
+      { libelle: `Frais de service encaissés pour la plateforme, ${libellePeriode(periode)}`, montantHt: detail.summary.serviceFees },
+    ].filter((ligne) => ligne.montantHt > 0);
+
+    if (!lignes.length) {
+      throw new ApiError(409, "Rien à facturer sur ce mois", "NOTHING_TO_INVOICE");
+    }
+
+    const vendeur = emetteur();
+    const tauxTva = getEnv().PLATFORM_VAT_RATE;
+    const acheteur: PartieFacture = {
+      nom: org.legalName!,
+      tva: tvaAcheteur,
+      numeroEntreprise: numeroBce(org.registrationNumber) || tvaAcheteur.slice(2),
+      adresse: org.billingAddress!,
+      codePostal: org.billingPostalCode || "",
+      ville: org.billingCity || "",
+      pays: "BE",
+      email: org.email,
+      peppol: destinataire,
+    };
+
+    return { lignes, vendeur, acheteur, tauxTva, totaux: totaux(lignes, tauxTva) };
   }
 
   /**
@@ -217,6 +263,87 @@ export class PlatformInvoiceService {
         },
       });
     }
+  }
+
+  /**
+   * Où en est chaque commerçant pour un mois : facturé, facturable, sans rien à
+   * facturer, ou bloqué — avec la raison, pour que l'écran dise quoi corriger.
+   */
+  static async apercu(periode: string) {
+    if (!/^\d{4}-\d{2}$/.test(periode)) {
+      throw new ApiError(400, "Période attendue au format AAAA-MM", "INVALID_PERIOD");
+    }
+
+    const [organisations, factures] = await Promise.all([
+      db.organization.findMany({ where: { isDemo: false }, select: { id: true, name: true, legalName: true }, orderBy: { name: "asc" } }),
+      db.platformInvoice.findMany({ where: { period: periode }, select: { id: true, orgId: true, number: true, totalIncl: true, peppolStatus: true } }),
+    ]);
+    const parOrg = new Map(factures.map((f) => [f.orgId, f]));
+
+    const lignes = [];
+    for (const org of organisations) {
+      const nom = org.legalName || org.name;
+      const facture = parOrg.get(org.id);
+      if (facture) {
+        lignes.push({
+          orgId: org.id, nom, etat: "FACTUREE" as const, invoiceId: facture.id, numero: facture.number,
+          totalTtc: Number(facture.totalIncl), peppolStatus: facture.peppolStatus,
+        });
+        continue;
+      }
+      try {
+        const prete = await this.preparer(org.id, periode);
+        lignes.push({ orgId: org.id, nom, etat: "FACTURABLE" as const, totalTtc: prete.totaux.ttcCentimes / 100 });
+      } catch (err) {
+        if (!(err instanceof ApiError)) throw err;
+        lignes.push({
+          orgId: org.id, nom,
+          etat: err.code === "NOTHING_TO_INVOICE" ? ("RIEN" as const) : ("BLOQUEE" as const),
+          raison: err.message, code: err.code,
+        });
+      }
+    }
+
+    const { manque } = identitePlateforme();
+    return {
+      periode,
+      // Tant que l'identité de la plateforme est incomplète, rien ne s'émet.
+      plateformeManque: manque,
+      fournisseurPeppol: transportPeppol()?.nom ?? null,
+      lignes,
+    };
+  }
+
+  /**
+   * Émet, puis envoie si un fournisseur est branché, toutes les factures
+   * facturables d'un mois. Idempotent : ce qui est déjà facturé est ignoré, un
+   * commerçant bloqué est signalé sans arrêter les autres.
+   */
+  static async emettreLeMois(periode: string) {
+    const bilan = { periode, emises: 0, envoyees: 0, dejaFacturees: 0, rienAFacturer: 0, bloquees: [] as { orgId: string; code: string; raison: string }[] };
+
+    const organisations = await db.organization.findMany({ where: { isDemo: false }, select: { id: true } });
+    const transport = transportPeppol();
+
+    for (const { id } of organisations) {
+      try {
+        const avant = await db.platformInvoice.findUnique({ where: { orgId_period: { orgId: id, period: periode } }, select: { id: true } });
+        const facture = await this.emettre(id, periode);
+        if (avant) bilan.dejaFacturees += 1;
+        else bilan.emises += 1;
+
+        if (transport && facture.peppolStatus !== "SENT" && facture.peppolStatus !== "DELIVERED") {
+          const envoyee = await this.envoyer(facture.id);
+          if (envoyee.peppolStatus === "SENT") bilan.envoyees += 1;
+        }
+      } catch (err) {
+        if (!(err instanceof ApiError)) throw err;
+        if (err.code === "NOTHING_TO_INVOICE") bilan.rienAFacturer += 1;
+        else bilan.bloquees.push({ orgId: id, code: err.code ?? "ERROR", raison: err.message });
+      }
+    }
+
+    return bilan;
   }
 
   static async lister(orgId?: string) {
