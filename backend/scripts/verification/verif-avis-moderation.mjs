@@ -22,9 +22,8 @@ const emailClient = `c-${uniq}@t.fr`;
 const TC = (await j(await inscription({ email: emailClient, password: MDP, name: 'Client Test' }))).accessToken;
 const orderId = (await j(await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client Test', customerEmail: emailClient, customerPhone: '0600000000',
-  deliveryType: 'PICKUP', totalAmount: 12, feesAmount: 0,
-}))).order.id;
-await sqlExec(`INSERT INTO "OrderItem" (id, "orderId", "productId", quantity, "selectedOptions", price, total, "createdAt") VALUES ('item-${uniq}', '${orderId}', '${productId}', 1, '{}', 12, 12, NOW())`);
+  deliveryType: 'PICKUP', items: [{ productId, quantity: 1 }],
+}, TC))).order.id;
 await sqlExec(`UPDATE "Order" SET status = 'COMPLETED' WHERE id = '${orderId}'`);
 
 await post('/api/reviews', { orderId, type: 'STORE', rating: 1, comment: 'Nul' }, TC);

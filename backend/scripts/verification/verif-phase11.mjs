@@ -41,17 +41,18 @@ check('deux boutiques créées', !!idA && !!idB, JSON.stringify([boutiqueA, bout
 
 // Produits et commandes réparties entre les deux boutiques.
 const prodA = await j(await post('/api/products', { storeId: idA, name: 'Pain A', price: 2.5, stock: 10, status: 'ACTIVE' }, marchandToken));
-const prodB1 = await j(await post('/api/products', { storeId: idB, name: 'Pain B1', price: 3, stock: 10, status: 'ACTIVE' }, marchandToken));
-const prodB2 = await j(await post('/api/products', { storeId: idB, name: 'Pain B2', price: 4, stock: 10, status: 'ACTIVE' }, marchandToken));
+const prodB1 = await j(await post('/api/products', { storeId: idB, name: 'Pain B1', price: 10, stock: 10, status: 'ACTIVE' }, marchandToken));
+const prodB2 = await j(await post('/api/products', { storeId: idB, name: 'Pain B2', price: 10, stock: 10, status: 'ACTIVE' }, marchandToken));
 check('produits créés', !!(prodA?.product?.id && prodB1?.product?.id && prodB2?.product?.id));
 
-const cmd = async (storeId, montant, email) => j(await post('/api/orders', { conditionsAcceptees: true,
+// Le serveur recalcule le total depuis le panier : 4 × 2,50 = 10 ; 2 × 10 = 20 ; 3 × 10 = 30.
+const cmd = async (storeId, produit, quantite, email) => j(await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client Test', customerEmail: email, customerPhone: '0600000000',
-  deliveryType: 'PICKUP', totalAmount: montant,
+  deliveryType: 'PICKUP', items: [{ productId: produit.product.id, quantity: quantite }],
 }));
-await cmd(idA, 10, `a1-${uniq}@test.fr`);
-await cmd(idB, 20, `b1-${uniq}@test.fr`);
-await cmd(idB, 30, `b2-${uniq}@test.fr`);
+await cmd(idA, prodA, 4, `a1-${uniq}@test.fr`);
+await cmd(idB, prodB1, 2, `b1-${uniq}@test.fr`);
+await cmd(idB, prodB2, 3, `b2-${uniq}@test.fr`);
 
 // ---------- 1. Le dashboard marchand suit la boutique ----------
 console.log('\n[1] Portée par boutique (dashboard marchand)');

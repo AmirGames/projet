@@ -29,11 +29,17 @@ await sqlExec(
 const apresCommande = await inscrire(emailInvite, 'Invité Inscrit');
 const apresCommandeData = await j(apresCommande);
 check('l inscription passe', apresCommande.status === 201, `status=${apresCommande.status} ${JSON.stringify(apresCommandeData)}`);
-check('la fiche existante est reprise', apresCommandeData?.customer?.id === `invite-${uniq}`, JSON.stringify(apresCommandeData?.customer));
+// La réponse ne dit rien de la fiche : qu'elle diffère selon qu'une fiche existait
+// révélerait qu'on a commandé avec cette adresse.
+check('la réponse ne dit rien de la fiche', apresCommandeData?.customer === undefined, JSON.stringify(apresCommandeData?.customer));
+check('la fiche existante est conservée', (await sqlScalaire(`SELECT id FROM "Customer" WHERE email = '${emailInvite}'`)) === `invite-${uniq}`);
 check('toujours une seule fiche', (await fiches(emailInvite)) === '1', `fiches=${await fiches(emailInvite)}`);
+// S'inscrire ne prouve pas qu'on possède l'adresse : la fiche porte les
+// commandes et codes de remise de celui qui a commandé. Elle ne rejoint le
+// compte qu'à la confirmation de l'adresse.
 check(
-  'rattachée au nouveau compte',
-  (await sqlScalaire(`SELECT "userId" FROM "Customer" WHERE email = '${emailInvite}'`)) === apresCommandeData?.user?.id,
+  'pas rattachée avant la confirmation de l adresse',
+  (await sqlScalaire(`SELECT COALESCE("userId", 'aucun') FROM "Customer" WHERE email = '${emailInvite}'`)) === 'aucun',
   await sqlScalaire(`SELECT "userId" FROM "Customer" WHERE email = '${emailInvite}'`)
 );
 
@@ -96,7 +102,7 @@ const enMajuscules = await inscrire(`  Casse-${uniq.toUpperCase()}@Test.FR `, 'C
 const enMajusculesData = await j(enMajuscules);
 check('l inscription en majuscules passe', enMajuscules.status === 201, `status=${enMajuscules.status} ${JSON.stringify(enMajusculesData)}`);
 check('l adresse est enregistrée en minuscules, sans espaces', (await sqlScalaire(`SELECT email FROM "User" WHERE id = '${enMajusculesData?.user?.id}'`)) === casse, await sqlScalaire(`SELECT email FROM "User" WHERE id = '${enMajusculesData?.user?.id}'`));
-check('la fiche client aussi', enMajusculesData?.customer?.email === casse, JSON.stringify(enMajusculesData?.customer));
+check('la fiche client aussi, en minuscules', (await sqlScalaire(`SELECT email FROM "Customer" WHERE "userId" = '${enMajusculesData?.user?.id}'`)) === casse);
 
 const memeEnMinuscules = await inscrire(casse, 'Casse Bis');
 const memeEnMinusculesData = await j(memeEnMinuscules);
@@ -118,7 +124,7 @@ await sqlExec(
   `INSERT INTO "Customer" (id, name, email, "createdAt", "updatedAt") VALUES ('invite2-${uniq}', 'Invité', '${emailInvite2}', NOW(), NOW())`
 );
 const inviteMajuscules = await j(await inscrire(emailInvite2.toUpperCase(), 'Invité Deux'));
-check('commande puis inscription en majuscules : fiche reprise', inviteMajuscules?.customer?.id === `invite2-${uniq}`, JSON.stringify(inviteMajuscules?.customer));
+check('commande puis inscription en majuscules : fiche conservée, une seule', (await fiches(emailInvite2)) === '1' && (await sqlScalaire(`SELECT id FROM "Customer" WHERE email = '${emailInvite2}'`)) === `invite2-${uniq}`, JSON.stringify(inviteMajuscules));
 
 titre('Un compte enregistré avant la conversion');
 // La migration 0014 ne convertit pas un doublon à la casse près : la

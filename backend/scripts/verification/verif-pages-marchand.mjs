@@ -18,7 +18,7 @@ check('produit enregistré à 2.50', Number(p?.product?.price) === 2.5, JSON.str
 
 await post('/api/orders', { conditionsAcceptees: true,
   storeId, customerName: 'Client', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000',
-  deliveryType: 'PICKUP', totalAmount: 12.5,
+  deliveryType: 'PICKUP', items: [{ productId: p?.product?.id, quantity: 5 }],
 });
 
 console.log('\n[Routes appelées par les pages réparées]');

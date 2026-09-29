@@ -145,6 +145,21 @@ export async function sqlScalaire(requeteSql) {
 }
 
 /** Exécute une requête qui ne renvoie rien (INSERT, UPDATE, DELETE). */
+/**
+ * Rend une boutique prête à livrer : organisation validée, ouverte, située.
+ *
+ * Le serveur refuse une commande en livraison d'une boutique qui n'a pas situé
+ * son adresse ou que la plateforme n'a pas validée ; les suites qui ne testent
+ * pas ces verrous-là passent par ici.
+ */
+export async function ouvrirBoutiqueLivrante(storeId, orgId, position = { latitude: 45.764, longitude: 4.8357 }) {
+  await sqlExec(`UPDATE "Organization" SET "approvedAt" = NOW(), tier = 'FREE' WHERE id = '${orgId}'`);
+  await sqlExec(
+    `UPDATE "Store" SET "isOpen" = true, "acceptsDelivery" = true, "minDeliveryAmount" = 0,
+       latitude = ${position.latitude}, longitude = ${position.longitude} WHERE id = '${storeId}'`
+  );
+}
+
 export async function sqlExec(requeteSql) {
   return base().$executeRawUnsafe(requeteSql);
 }

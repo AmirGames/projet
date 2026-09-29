@@ -75,7 +75,9 @@ const reglages = await put(`/api/store-settings/${storeId}`, { acceptsDelivery: 
 check('Paramètres de boutique — enregistrement', reglages.status < 300, `status=${reglages.status} ${JSON.stringify(await j(reglages))?.slice(0, 150)}`);
 
 console.log('\n=== VENTES ===');
-await post('/api/orders', { conditionsAcceptees: true, storeId, customerName: 'Client', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000', deliveryType: 'PICKUP', totalAmount: 25 });
+// Le panier est obligatoire : le serveur recalcule le total depuis les lignes.
+const baguette = await j(await post('/api/products', { storeId, name: 'Baguette', price: 5, stock: 50, status: 'ACTIVE' }, T));
+await post('/api/orders', { conditionsAcceptees: true, storeId, customerName: 'Client', customerEmail: `c-${uniq}@t.fr`, customerPhone: '0600000000', deliveryType: 'PICKUP', items: [{ productId: baguette?.product?.id, quantity: 5 }] });
 const cmds = await j(await get(`/api/order-management/${storeId}`, T));
 const cmdId = (cmds?.data || cmds?.orders || [])[0]?.id;
 check('Commande — visible côté commerçant', !!cmdId, JSON.stringify(cmds)?.slice(0, 150));
