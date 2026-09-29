@@ -181,4 +181,29 @@ decrire("SEC-03 — superowner initial", () => {
       ).rejects.toMatchObject({ code: "P2002" });
     });
   });
+  describe("invitation par lien", () => {
+    it("crée le compte sans mot de passe connu et le lien permet d'en choisir un", async () => {
+      const resultat = await creerSuperownerInitial({ email: "noreply@zupone.com", invitation: true });
+      expect(resultat.statut).toBe("cree");
+      const jeton = resultat.statut === "cree" ? resultat.jeton : undefined;
+      expect(jeton).toBeDefined();
+
+      const reponse = await request(app)
+        .post("/api/auth/reset-password")
+        .send({ jeton, password: MOT_DE_PASSE });
+      expect(reponse.status).toBe(200);
+
+      const connexion = await request(app)
+        .post("/api/auth/login")
+        .send({ email: "noreply@zupone.com", password: MOT_DE_PASSE });
+      expect(connexion.status).toBe(200);
+      expect(await superowners()).toBe(1);
+    });
+
+    it("ne réémet rien quand un superowner existe déjà", async () => {
+      await creerSuperownerInitial({ email: "noreply@zupone.com", invitation: true });
+      const encore = await creerSuperownerInitial({ email: "noreply@zupone.com", invitation: true });
+      expect(encore.statut).toBe("existant");
+    });
+  });
 });

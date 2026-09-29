@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { accueilDe } from '@/lib/domaines';
-import { EMAIL_CONTACT, PAGES_LEGALES } from '@/lib/editeur';
+import { EMAIL_CONTACT } from '@/lib/editeur';
 
 export const metadata: Metadata = {
   title: 'ZupDrive — Transport avec chauffeur, bientôt disponible',
@@ -98,29 +98,6 @@ export default function AccueilZupDrive() {
           Découvrir ZupEat
         </Link>
       </section>
-
-      <footer className="bg-slate-900 px-6 py-12 text-white md:px-10">
-        <div className="mx-auto flex max-w-5xl flex-col gap-8 md:flex-row md:justify-between">
-          <div>
-            <h4 className="mb-3 text-lg font-bold">ZupDrive</h4>
-            <p className="mb-3 text-slate-300">Une plateforme du groupe ZupOne.</p>
-            <Link href={accueilDe('vitrine')} className="mb-2 block text-slate-300 hover:text-white">
-              Le groupe ZupOne
-            </Link>
-            <a href={`mailto:${EMAIL_CONTACT}`} className="text-slate-300 hover:text-white">
-              {EMAIL_CONTACT}
-            </a>
-          </div>
-          <div>
-            <h4 className="mb-3 text-lg font-bold">Informations légales</h4>
-            {PAGES_LEGALES.map((page) => (
-              <Link key={page.href} href={page.href} className="mb-2 block text-slate-300 hover:text-white">
-                {page.titre}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

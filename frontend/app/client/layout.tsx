@@ -176,40 +176,6 @@ export default function ClientLayout({
 
         {/* Main Content */}
         <main>{children}</main>
-
-        {/* Footer : seulement des pages qui existent. */}
-        <footer className="bg-gray-800 border-t border-gray-700 mt-20">
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
-              <div>
-                <h3 className="text-white font-bold mb-4">ZupEat</h3>
-                <p className="text-gray-400 text-sm">
-                  La plateforme qui relie commerçants, clients et livreurs de proximité.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-white font-bold mb-4">Commander</h3>
-                <ul className="space-y-2 text-gray-400 text-sm">
-                  <li><Link href="/client" className="text-gray-400 hover:text-white">Commerces</Link></li>
-                  <li><Link href="/client/orders" className="text-gray-400 hover:text-white">Mes commandes</Link></li>
-                  <li><Link href="/track" className="text-gray-400 hover:text-white">Suivre une commande</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-white font-bold mb-4">Rejoindre</h3>
-                <ul className="space-y-2 text-gray-400 text-sm">
-                  <li><Link href="/devenir-commercant" className="text-gray-400 hover:text-white">Devenir commerçant</Link></li>
-                  <li><Link href="/devenir-livreur" className="text-gray-400 hover:text-white">Devenir livreur</Link></li>
-                  <li><Link href="/devenir-chauffeur" className="text-gray-400 hover:text-white">Devenir chauffeur</Link></li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-700 pt-8 text-center text-gray-400 text-sm">
-              <p>&copy; {new Date().getFullYear()} ZupEat. Tous droits réservés.</p>
-            </div>
-          </div>
-        </footer>
       </div>
     </>
   );

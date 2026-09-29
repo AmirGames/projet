@@ -1,6 +1,8 @@
 import bcrypt from "bcrypt";
+import { randomBytes } from "crypto";
 
 import { db } from "../../services/db";
+import { AccountTokenService } from "./account-token.service";
 import { champEmail, champMotDePasse } from "../../utils/validation";
 
 /**
@@ -23,7 +25,7 @@ import { champEmail, champMotDePasse } from "../../utils/validation";
  */
 
 export type ResultatSuperowner =
-  | { statut: "cree"; userId: string; email: string }
+  | { statut: "cree"; userId: string; email: string; jeton?: string }
   | { statut: "promu"; userId: string; email: string }
   | { statut: "existant"; userId: string; email: string };
 
@@ -32,7 +34,16 @@ const EMPREINTE_BCRYPT = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 
 export class ConfigurationSuperownerInvalide extends Error {}
 
+/** Le lien de définition du mot de passe du premier superowner : 48 h. */
+export const DUREE_INVITATION_SUPEROWNER_MS = 48 * 60 * 60 * 1000;
+
 export interface ParametresSuperowner {
+  /**
+   * Sans mot de passe ni empreinte : le compte naît avec un mot de passe
+   * aléatoire que personne ne connaît, et un jeton de réinitialisation est
+   * émis (résultat `jeton`) pour que le destinataire choisisse le sien.
+   */
+  invitation?: boolean;
   email?: string;
   password?: string;
   passwordHash?: string;
@@ -100,7 +111,11 @@ export async function creerSuperownerInitial(parametres: ParametresSuperowner): 
     throw new ConfigurationSuperownerInvalide("SUPEROWNER_EMAIL manque ou n'est pas une adresse valide.");
   }
 
-  const passwordHash = await empreinte(parametres);
+  const invitation = Boolean(parametres.invitation && !parametres.password && !parametres.passwordHash);
+  const passwordHash = invitation
+    ? await bcrypt.hash(randomBytes(32).toString("hex"), 10)
+    : await empreinte(parametres);
+  const invite = invitation ? AccountTokenService.emettre(DUREE_INVITATION_SUPEROWNER_MS) : null;
 
   try {
     return await db.$transaction(async (tx) => {
@@ -126,6 +141,7 @@ export async function creerSuperownerInitial(parametres: ParametresSuperowner): 
           emailVerified: true,
           isSuperOwner: true,
           isSystemAdmin: true,
+          ...(invite && { resetTokenHash: invite.empreinte, resetTokenExpiresAt: invite.expireLe }),
         },
       });
 
@@ -137,7 +153,7 @@ export async function creerSuperownerInitial(parametres: ParametresSuperowner): 
         await tx.customer.create({ data: { userId: cree.id, name: "Superowner", email: cree.email } });
       }
 
-      return { statut: "cree" as const, userId: cree.id, email: cree.email };
+      return { statut: "cree" as const, userId: cree.id, email: cree.email, jeton: invite?.jeton };
     });
   } catch (err) {
     if (doublonDeSuperowner(err)) {
