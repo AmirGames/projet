@@ -97,7 +97,7 @@ jest.mock("../compte-connecte", () => ({
 import authRouter, { confirmationExigee } from "../auth.routes";
 import { errorHandler } from "../../../middleware/errorHandler";
 import { AuthService } from "../auth.service";
-import { ficheClientDuCompte } from "../../../services/fiche-client.service";
+import { ficheClientDuCompte } from "../../customers/fiche-client.service";
 
 const app = express();
 app.use(express.json());

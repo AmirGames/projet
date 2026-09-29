@@ -1,31 +1,31 @@
-import { finAttente } from "../modules/drivers/delivery-proof.service";
-import { positionLivreurVisible } from "../modules/orders/suivi-commande.service";
-import { presenter } from "../services/fichiers-prives.service";
-import { SupplementService } from "../modules/catalog/supplement.service";
-import { TaxService } from "../modules/catalog/tax.service";
+import { finAttente } from "../drivers/delivery-proof.service";
+import { positionLivreurVisible } from "../orders/suivi-commande.service";
+import { presenter } from "../../services/fichiers-prives.service";
+import { SupplementService } from "../catalog/supplement.service";
+import { TaxService } from "../catalog/tax.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { fraisDeServiceEnVigueur } from "../modules/delivery/delivery-mode.service";
-import { db } from "../services/db";
-import { ApiError } from "../middleware/errorHandler";
-import { distanceKm, estUnPoint } from "../utils/geo";
-import { boutiqueVisible, livreVraiment } from "../utils/visibilite-boutique";
-import { StoreHoursService } from "../modules/delivery/store-hours.service";
-import { genreDuCommerce } from "../modules/stores/store-type.service";
-import { trierProduitsSelonCategorie } from "../modules/catalog/category.service";
-import { DeliveryZoneService } from "../modules/delivery/delivery-zone.service";
-import { authMiddleware } from "../middleware/auth";
-import { CustomerAccountService } from "../services/customer-account.service";
-import { ficheClientDuCompte } from "../services/fiche-client.service";
-import { avisARedemander, avisRestaurantParCommerce } from "../modules/reviews/avis-client.service";
-import { avecLaVraieNote } from "../modules/reviews/review.service";
-import { CustomerCartService, panierSchema } from "../modules/orders/customer-cart.service";
+import { fraisDeServiceEnVigueur } from "../delivery/delivery-mode.service";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { distanceKm, estUnPoint } from "../../utils/geo";
+import { boutiqueVisible, livreVraiment } from "../../utils/visibilite-boutique";
+import { StoreHoursService } from "../delivery/store-hours.service";
+import { genreDuCommerce } from "../stores/store-type.service";
+import { trierProduitsSelonCategorie } from "../catalog/category.service";
+import { DeliveryZoneService } from "../delivery/delivery-zone.service";
+import { authMiddleware } from "../../middleware/auth";
+import { CustomerAccountService } from "./customer-account.service";
+import { ficheClientDuCompte } from "./fiche-client.service";
+import { avisARedemander, avisRestaurantParCommerce } from "../reviews/avis-client.service";
+import { avecLaVraieNote } from "../reviews/review.service";
+import { CustomerCartService, panierSchema } from "../orders/customer-cart.service";
 import {
   COMMENTAIRE_MAX,
   NOTE_MAX,
   NOTE_MIN,
   noterLivreur,
-} from "../modules/drivers/driver-rating.service";
+} from "../drivers/driver-rating.service";
 
 const router = Router();
 

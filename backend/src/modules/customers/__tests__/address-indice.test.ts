@@ -1,4 +1,4 @@
-jest.mock("../../config/logger", () => ({ logger: { warn: jest.fn(), info: jest.fn(), error: jest.fn() } }));
+jest.mock("../../../config/logger", () => ({ logger: { warn: jest.fn(), info: jest.fn(), error: jest.fn() } }));
 
 import { AddressService, indiceValide, paysDeLAdresse, paysDuTexte } from "../address.service";
 

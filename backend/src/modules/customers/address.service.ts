@@ -1,4 +1,4 @@
-import { logger } from "../config/logger";
+import { logger } from "../../config/logger";
 
 /**
  * Recherche d'adresses, avec des fournisseurs interchangeables.

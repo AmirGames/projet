@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { AddressService, completerIndice, fournisseurActif, indiceValide } from "../services/address.service";
+import { AddressService, completerIndice, fournisseurActif, indiceValide } from "./address.service";
 
 const router = Router();
 

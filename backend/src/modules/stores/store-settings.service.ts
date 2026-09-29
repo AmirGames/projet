@@ -1,5 +1,5 @@
 import { db } from "../../services/db";
-import { AddressService } from "../../services/address.service";
+import { AddressService } from "../customers/address.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { verifierLaTva } from "../merchants/merchant-profile.service";
 import {

@@ -33,7 +33,7 @@ import orderManagementRouter from "./modules/orders/order-management.routes";
 import invoiceRouter from "./modules/orders/invoice.routes";
 import paymentRouter, { stripeWebhookHandler } from "./modules/payments/payment.routes";
 import promotionRouter from "./routes/promotion";
-import customerRouter from "./routes/customer";
+import customerRouter from "./modules/customers/customer.routes";
 import reviewRouter from "./modules/reviews/review.routes";
 import marketingRouter from "./routes/marketing";
 import taxRouter from "./modules/catalog/tax.routes";
@@ -45,7 +45,7 @@ import productTagRouter from "./modules/catalog/product-tag.routes";
 import adminRouter from "./routes/admin";
 import superOwnerRouter from "./routes/superowner";
 import pagesLegalesRouter from "./routes/pages-legales";
-import clientRouter from "./routes/client";
+import clientRouter from "./modules/customers/client.routes";
 import mapsRouter from "./routes/maps";
 import driversRouter from "./modules/drivers/drivers.routes";
 import notificationsApiRouter from "./routes/notifications-api";
@@ -56,7 +56,7 @@ import merchantProfileRouter from "./modules/merchants/merchant-profile.routes";
 import merchantPayoutRouter from "./modules/payouts/merchant-payout.routes";
 import pushDevicesRouter from "./routes/push-devices";
 import variantRouter from "./modules/catalog/variant.routes";
-import addressRouter from "./routes/address";
+import addressRouter from "./modules/customers/address.routes";
 
 export function createApp(): Express {
   const app = express();

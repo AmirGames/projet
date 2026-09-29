@@ -1,7 +1,7 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { distanceKm, estUnPoint, pointDansPolygone, airePolygone, Point } from "../../utils/geo";
-import { AddressService, paysDeLAdresse } from "../../services/address.service";
+import { AddressService, paysDeLAdresse } from "../customers/address.service";
 import { modeDeLivraison, ModeDeLivraison } from "./delivery-mode.service";
 import { DispatchService } from "../drivers/dispatch.service";
 

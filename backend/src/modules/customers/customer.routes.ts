@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { champEmail } from "../utils/validation";
-import { CustomerService } from "../services/customer.service";
-import { authMiddleware } from "../middleware/auth";
-import { logger } from "../config/logger";
+import { champEmail } from "../../utils/validation";
+import { CustomerService } from "./customer.service";
+import { authMiddleware } from "../../middleware/auth";
+import { logger } from "../../config/logger";
 
 const router = Router();
 

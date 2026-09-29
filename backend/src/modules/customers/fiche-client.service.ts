@@ -1,6 +1,6 @@
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { logger } from "../config/logger";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { logger } from "../../config/logger";
 
 /**
  * La fiche client d'un compte, et les fiches « invité ».

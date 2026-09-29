@@ -4,7 +4,7 @@ import { ReviewService } from "./review.service";
 import { authMiddleware } from "../../middleware/auth";
 import { ApiError } from "../../middleware/errorHandler";
 import { db } from "../../services/db";
-import { ficheClientDuCompte } from "../../services/fiche-client.service";
+import { ficheClientDuCompte } from "../customers/fiche-client.service";
 import { logger } from "../../config/logger";
 import { avisDuClientSurCommande } from "./avis-client.service";
 import { ReviewModerationService } from "./review-moderation.service";

@@ -30,7 +30,7 @@ import { db } from "../../services/db";
 import { champAcceptation, enregistrerAcceptation } from "../../services/acceptation-conditions.service";
 import { StoreService } from "../stores/store.service";
 import { normaliserGenre } from "../stores/store-type.service";
-import { rattacherFicheInvite } from "../../services/fiche-client.service";
+import { rattacherFicheInvite } from "../customers/fiche-client.service";
 
 const router = Router();
 
