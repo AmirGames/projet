@@ -117,12 +117,18 @@ export const errorHandler = (
   if (err instanceof MulterError) {
     const message =
       err.code === "LIMIT_FILE_SIZE"
-        ? "Fichier trop lourd (10 Mo au plus) : reprenez la photo ou choisissez-en une plus légère."
+        ? "Fichier trop lourd (2 Mo pour une image, 5 Mo pour un PDF) : reprenez la photo ou choisissez-en une plus légère."
         : err.code === "LIMIT_UNEXPECTED_FILE"
           ? "Fichier envoyé sous un nom de champ inattendu."
           : "Fichier refusé à l'envoi.";
     logger.warn("Requête refusée", { name: err.name, code: err.code, path: req.path, method: req.method });
     return res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: message, code: err.code });
+  }
+
+  /** Un corps JSON au-delà de la limite de l'API : body-parser le signale par un type, pas une classe. */
+  if ((err as { type?: unknown }).type === "entity.too.large") {
+    logger.warn("Requête refusée", { name: err.name, path: req.path, method: req.method });
+    return res.status(413).json({ error: "Requête trop volumineuse.", code: "PAYLOAD_TOO_LARGE" });
   }
 
   /**

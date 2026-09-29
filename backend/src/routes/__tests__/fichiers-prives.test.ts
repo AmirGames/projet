@@ -285,9 +285,15 @@ describe("GET /api/drivers/documents/file/* (ancienne route)", () => {
 
 describe("noms de fichiers", () => {
   it("128 bits aléatoires, sans horodatage", async () => {
-    const { url } = await FileUploadService.uploadDocument(Buffer.from("x"), "permis.jpg", "drivers", "image/jpeg");
+    const { url } = await FileUploadService.uploadDocument(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00]), "permis.jpg", "drivers", "image/jpeg");
     const nom = url.split("/").pop()!;
     crees.push(join(RACINE, "drivers", nom));
     expect(nom).toMatch(/^[a-f0-9]{32}\.jpg$/);
+  });
+
+  it("refuse un contenu qui n'est ni image ni PDF, quel que soit son nom", async () => {
+    await expect(
+      FileUploadService.uploadDocument(Buffer.from("<html>"), "permis.jpg", "drivers", "image/jpeg")
+    ).rejects.toMatchObject({ code: "INVALID_FILE_TYPE" });
   });
 });
