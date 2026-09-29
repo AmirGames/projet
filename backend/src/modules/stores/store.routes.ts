@@ -1,20 +1,20 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { emailFacultatif } from "../utils/validation";
-import { StoreService } from "../services/store.service";
-import { TaxService } from "../modules/catalog/tax.service";
-import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware, checkOrgStatus } from "../middleware/auth";
-import { logger } from "../config/logger";
-import { PlanService } from "../services/plan.service";
-import { StoreDuplicationService } from "../services/store-duplication.service";
+import { emailFacultatif } from "../../utils/validation";
+import { StoreService } from "./store.service";
+import { TaxService } from "../catalog/tax.service";
+import { ApiError } from "../../middleware/errorHandler";
+import { authMiddleware, checkOrgStatus } from "../../middleware/auth";
+import { logger } from "../../config/logger";
+import { PlanService } from "../../services/plan.service";
+import { StoreDuplicationService } from "./store-duplication.service";
 import {
   TYPES_ETABLISSEMENT,
   TYPES_CUISINE,
   FAMILLES_AFFICHEES,
   CODES_ETABLISSEMENT,
   CODES_CUISINE,
-} from "../services/store-type.service";
+} from "./store-type.service";
 
 const router = Router();
 

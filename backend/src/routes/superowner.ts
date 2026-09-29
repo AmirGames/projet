@@ -33,7 +33,7 @@ import {
   MOYENS_VERSEMENT,
   semainePrecedente,
 } from "../modules/payouts/driver-payout.service";
-import { StoreSupportService, libelleDuChamp } from "../services/store-support.service";
+import { StoreSupportService, libelleDuChamp } from "../modules/stores/store-support.service";
 import { MerchantProfileService } from "../services/merchant-profile.service";
 import { MerchantApprovalService } from "../services/merchant-approval.service";
 import { SystemHealthService } from "../services/system-health.service";

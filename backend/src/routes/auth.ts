@@ -28,8 +28,8 @@ import {
 } from "../services/account-token.service";
 import { db } from "../services/db";
 import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
-import { StoreService } from "../services/store.service";
-import { normaliserGenre } from "../services/store-type.service";
+import { StoreService } from "../modules/stores/store.service";
+import { normaliserGenre } from "../modules/stores/store-type.service";
 import { rattacherFicheInvite } from "../services/fiche-client.service";
 
 const router = Router();

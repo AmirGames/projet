@@ -11,7 +11,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { distanceKm, estUnPoint } from "../utils/geo";
 import { boutiqueVisible, livreVraiment } from "../utils/visibilite-boutique";
 import { StoreHoursService } from "../modules/delivery/store-hours.service";
-import { genreDuCommerce } from "../services/store-type.service";
+import { genreDuCommerce } from "../modules/stores/store-type.service";
 import { trierProduitsSelonCategorie } from "../modules/catalog/category.service";
 import { DeliveryZoneService } from "../modules/delivery/delivery-zone.service";
 import { authMiddleware } from "../middleware/auth";

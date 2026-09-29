@@ -27,11 +27,11 @@ const create: any = jest.fn();
 const verifierCreationBoutique: any = jest.fn();
 const compteDuJeton: any = jest.fn();
 
-jest.mock("../db", () => ({ db }));
+jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../store.service", () => ({ StoreService: { create } }));
-jest.mock("../plan.service", () => ({ PlanService: { verifierCreationBoutique } }));
-jest.mock("../../middleware/auth", () => ({ compteDuJeton }));
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../services/plan.service", () => ({ PlanService: { verifierCreationBoutique } }));
+jest.mock("../../../middleware/auth", () => ({ compteDuJeton }));
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 

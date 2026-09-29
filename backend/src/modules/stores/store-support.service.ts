@@ -1,10 +1,10 @@
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { logger } from "../config/logger";
-import { emitNotification } from "../config/socket";
-import { AddressService, paysDeLAdresse } from "./address.service";
-import { MerchantApprovalService } from "./merchant-approval.service";
-import { TRANSMISE } from "../utils/commande-transmise";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { logger } from "../../config/logger";
+import { emitNotification } from "../../config/socket";
+import { AddressService, paysDeLAdresse } from "../../services/address.service";
+import { MerchantApprovalService } from "../../services/merchant-approval.service";
+import { TRANSMISE } from "../../utils/commande-transmise";
 
 /**
  * La fiche d'une boutique vue par la plateforme, et les rares champs qu'elle

@@ -1,12 +1,12 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { emailFacultatif } from "../utils/validation";
-import { StoreSettingsService } from "../services/store-settings.service";
-import { authMiddleware } from "../middleware/auth";
-import { uploadMiddleware } from "../middleware/file-upload";
-import { ApiError } from "../middleware/errorHandler";
-import { FileUploadService } from "../services/file-upload.service";
-import { logger } from "../config/logger";
+import { emailFacultatif } from "../../utils/validation";
+import { StoreSettingsService } from "./store-settings.service";
+import { authMiddleware } from "../../middleware/auth";
+import { uploadMiddleware } from "../../middleware/file-upload";
+import { ApiError } from "../../middleware/errorHandler";
+import { FileUploadService } from "../../services/file-upload.service";
+import { logger } from "../../config/logger";
 
 const router = Router();
 

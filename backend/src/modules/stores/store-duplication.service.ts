@@ -1,9 +1,9 @@
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { logger } from "../config/logger";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { logger } from "../../config/logger";
 import { StoreService } from "./store.service";
-import { PlanService } from "./plan.service";
-import { compteDuJeton } from "../middleware/auth";
+import { PlanService } from "../../services/plan.service";
+import { compteDuJeton } from "../../middleware/auth";
 
 /**
  * Ouvrir une boutique de plus sur le modèle d'une autre.

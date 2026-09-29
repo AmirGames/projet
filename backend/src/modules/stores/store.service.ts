@@ -1,7 +1,7 @@
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { AddressService, paysDeLAdresse } from "./address.service";
-import { logger } from "../config/logger";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { AddressService, paysDeLAdresse } from "../../services/address.service";
+import { logger } from "../../config/logger";
 
 export class StoreService {
   static async create(data: {
