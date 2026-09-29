@@ -88,6 +88,10 @@ export default function DriverDashboard() {
         setPausedUntil(driverData.data.pausedUntil || null);
         setPauseReason(driverData.data.pauseReason || null);
       } else {
+        // Pas de profil livreur (404) : ce jeton ne sert à rien ici. Le
+        // garder ferait rebondir /driver/login (« déjà connecté ») vers
+        // /driver, en boucle.
+        if (driverResponse.status === 404) localStorage.removeItem('driverToken');
         throw new Error('Failed to load driver info');
       }
 
