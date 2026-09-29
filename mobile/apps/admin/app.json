@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "ZupOne Admin",
+    "slug": "zupone-admin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "zupone-admin",
+    "updates": {
+      "enabled": false
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 29
+          }
+        }
+      ]
+    ],
+    "android": {
+      "package": "com.amir_games.zuponeadmin"
+    }
+  }
+}
