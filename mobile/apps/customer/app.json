@@ -39,7 +39,16 @@
       ]
     ],
     "android": {
-      "package": "com.amir_games.zupeatcustomer"
+      "package": "com.amir_games.zupeatcustomer",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e1aaa610-2a48-49d8-a12a-e91038759c29"
+      }
     }
   }
 }

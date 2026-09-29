@@ -30,6 +30,11 @@
     ],
     "android": {
       "package": "com.amir_games.zupeatmerchant"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "81b56021-ed27-46e6-b921-d0495d3755ee"
+      }
     }
   }
 }
