@@ -6,6 +6,7 @@ export interface Session {
   accessToken: string;
   refreshToken: string;
   email: string;
+  userId: string;
 }
 
 export async function loadSession(): Promise<Session | null> {

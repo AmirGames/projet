@@ -11,6 +11,8 @@ import MerchantsScreen from '../components/screens/MerchantsScreen';
 import DriversScreen from '../components/screens/DriversScreen';
 import SupportScreen from '../components/screens/SupportScreen';
 import AccountScreen from '../components/screens/AccountScreen';
+import PayoutsScreen from '../components/screens/PayoutsScreen';
+import TeamScreen from '../components/screens/TeamScreen';
 
 /**
  * L'application de l'équipe d'administration (superowner et membres de
@@ -19,20 +21,30 @@ import AccountScreen from '../components/screens/AccountScreen';
  * actions. Les onglets sont masqués selon /me/permissions par simple confort.
  */
 
-type Onglet = 'dashboard' | 'merchants' | 'drivers' | 'support' | 'account';
+type Onglet = 'dashboard' | 'merchants' | 'drivers' | 'payouts' | 'support' | 'team' | 'account';
 
-const ONGLETS: { id: Onglet; label: string; icone: string; section?: string }[] = [
+// `superOwnerSeul` : l'équipe n'est réglable que par le superowner (le serveur
+// refuse tout autre compte, voir team.admin.routes).
+const ONGLETS: { id: Onglet; label: string; icone: string; section?: string; superOwnerSeul?: boolean }[] = [
   { id: 'dashboard', label: 'Accueil', icone: '📊', section: 'dashboard' },
   { id: 'merchants', label: 'Commerces', icone: '🏪', section: 'organizations' },
   { id: 'drivers', label: 'Livreurs', icone: '🛵', section: 'drivers' },
+  { id: 'payouts', label: 'Versements', icone: '💶', section: 'payouts' },
   { id: 'support', label: 'Support', icone: '💬', section: 'support-tickets' },
+  { id: 'team', label: 'Équipe', icone: '🛡️', superOwnerSeul: true },
   { id: 'account', label: 'Compte', icone: '👤' },
 ];
 
 interface ReponseConnexion {
   accessToken: string;
   refreshToken?: string;
-  user?: { email: string; isSuperOwner: boolean; isSystemAdmin: boolean };
+  user?: { id: string; email: string; isSuperOwner: boolean; isSystemAdmin: boolean };
+}
+
+/** Un onglet s'affiche si le rôle ouvre sa section (confort : le serveur tranche). */
+function visible(o: (typeof ONGLETS)[number], perms: MesPermissions) {
+  if (o.superOwnerSeul) return perms.isSuperOwner;
+  return !o.section || peutLire(perms, o.section);
 }
 
 async function postAuth(path: string, body: unknown) {
@@ -76,7 +88,7 @@ export default function AdminApp() {
       setPermissions(perms);
       setSession(next);
       setEmail(next.email);
-      const premier = ONGLETS.find((o) => !o.section || peutLire(perms, o.section));
+      const premier = ONGLETS.find((o) => visible(o, perms));
       setOnglet(premier?.id ?? 'account');
       return true;
     } catch (e) {
@@ -102,6 +114,7 @@ export default function AdminApp() {
             accessToken: data.accessToken,
             // Le jeton de renouvellement tourne : l'ancien ne vaut plus.
             refreshToken: data.refreshToken || stored.refreshToken,
+            userId: data.user?.id ?? stored.userId,
           });
         } catch (e) {
           if (e instanceof ApiError && (e.status === 401 || e.status === 403)) await clearSession();
@@ -134,7 +147,7 @@ export default function AdminApp() {
         Alert.alert('Accès refusé', 'Ce compte ne fait pas partie de l’équipe d’administration.');
         return;
       }
-      await ouvrir({ accessToken: data.accessToken, refreshToken: data.refreshToken || '', email: data.user.email });
+      await ouvrir({ accessToken: data.accessToken, refreshToken: data.refreshToken || '', email: data.user.email, userId: data.user.id });
     } catch (e) {
       Alert.alert('Connexion impossible', e instanceof Error ? e.message : 'Impossible de joindre le serveur');
     } finally {
@@ -185,7 +198,7 @@ export default function AdminApp() {
   }
 
   const token = session.accessToken;
-  const visibles = ONGLETS.filter((o) => !o.section || peutLire(permissions, o.section));
+  const visibles = ONGLETS.filter((o) => visible(o, permissions));
   const courant = visibles.find((o) => o.id === onglet) ?? visibles[0];
 
   return (
@@ -202,6 +215,8 @@ export default function AdminApp() {
             <SupportScreen token={token} modifiable={peutModifier(permissions, 'support-tickets')} />
           </>
         )}
+        {courant.id === 'payouts' && <PayoutsScreen token={token} modifiable={peutModifier(permissions, 'payouts')} />}
+        {courant.id === 'team' && <TeamScreen token={token} monId={session.userId} />}
         {courant.id === 'account' && <AccountScreen email={email} permissions={permissions} onLogout={handleLogout} />}
       </View>
       <SafeAreaView edges={['bottom']} style={styles.tabBar}>
@@ -227,5 +242,5 @@ const styles = StyleSheet.create({
   tabBar: { flexDirection: 'row', backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: COLORS.border },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 8 },
   tabIcon: { fontSize: 20 },
-  tabLabel: { fontSize: 11, color: '#666', marginTop: 2 },
+  tabLabel: { fontSize: 10, color: '#666', marginTop: 2 },
 });
