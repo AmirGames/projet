@@ -108,6 +108,15 @@ export default function MerchantApp() {
     await loadStores(next.accessToken, next.orgId, storedPrefs.storeId);
   };
 
+  // Le serveur ferme les autres sessions et remet des jetons neufs à celle-ci.
+  const onPasswordChanged = useCallback((tokens: { accessToken: string; refreshToken: string }) => {
+    const current = sessionRef.current;
+    if (!current) return;
+    const renewed = { ...current, ...tokens };
+    setSession(renewed);
+    saveSession(renewed);
+  }, []);
+
   const handleLogout = useCallback(() => {
     const current = sessionRef.current;
     if (current && pushTokenRef.current) unregisterPush(current.accessToken, pushTokenRef.current);
@@ -482,7 +491,7 @@ export default function MerchantApp() {
       );
     }
     if (tab === 'support' && session) return <SupportScreen token={token} orgId={session.orgId} onBack={back} />;
-    if (tab === 'account') return <AccountScreen token={token} onBack={back} />;
+    if (tab === 'account') return <AccountScreen token={token} onBack={back} onPasswordChanged={onPasswordChanged} />;
     if (tab === 'commandes-jour') {
       return (
         <>

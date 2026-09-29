@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros, mediaUrl } from '../../lib/api';
 import {
+  amountPaid,
   callPhone,
   DELIVERY_STATUS,
   hhmm,
@@ -14,6 +15,7 @@ import {
   VEHICLE_LABELS,
 } from '../../lib/orders';
 import { useRealtimeEvent, useRoom } from '../../lib/realtime';
+import TipAfterDelivery from '../TipAfterDelivery';
 import LiveMap, { RouteInfo } from '../LiveMap';
 import type { DeliveryUpdate, OrderUpdate } from '../../lib/useCustomerRealtime';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
@@ -273,6 +275,8 @@ export default function OrderScreen({
           </TouchableOpacity>
         ) : null}
 
+        {order.status === 'COMPLETED' && delivery ? <TipAfterDelivery orderId={order.id} refreshKey={String(order.tipAmount ?? '')} /> : null}
+
         <Card title={delivery ? 'Livrée à' : 'Retrait'}>
           <Text style={styles.address}>
             {delivery ? [order.deliveryAddress, order.deliveryCity].filter(Boolean).join(', ') || '—' : tracking?.boutique || 'Au commerce'}
@@ -290,7 +294,8 @@ export default function OrderScreen({
           {Number(order.discountAmount) > 0 && (
             <Row label={`Remise${order.promoCode ? ` (${order.promoCode})` : ''}`} value={`− ${formatEuros(order.discountAmount)}`} />
           )}
-          <Row label="Total" value={<Text style={styles.total}>{formatEuros(order.totalAmount)}</Text>} />
+          {Number(order.tipAmount) > 0 && <Row label="Pourboire du livreur" value={formatEuros(order.tipAmount)} />}
+          <Row label="Total" value={<Text style={styles.total}>{formatEuros(amountPaid(order))}</Text>} />
           <Row label="Paiement" value={order.paymentMethodName || '—'} last />
         </Card>
       </ScrollView>

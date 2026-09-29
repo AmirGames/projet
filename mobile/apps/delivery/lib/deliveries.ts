@@ -96,6 +96,8 @@ export interface Delivery {
   customerPhone?: string;
   /** Ce que la course rapporte au livreur. Il n'a rien à encaisser. */
   payout?: number | string;
+  /** La part du gain laissée en pourboire par le client (déjà comprise dans `payout`). */
+  pourboire?: number;
   distance?: number;
   estimatedTime?: number | null;
   /** Point de livraison : exact une fois la course acceptée. */

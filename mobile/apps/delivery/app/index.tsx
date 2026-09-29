@@ -163,6 +163,15 @@ export default function DeliveryApp() {
     await loadAll(next.accessToken);
   };
 
+  // Le serveur ferme les autres sessions et remet des jetons neufs à celle-ci.
+  const onPasswordChanged = useCallback((tokens: { accessToken: string; refreshToken: string }) => {
+    const current = sessionRef.current;
+    if (!current) return;
+    const renewed = { ...current, ...tokens };
+    setSession(renewed);
+    saveSession(renewed);
+  }, []);
+
   /**
    * forget : déconnexion voulue, les données du livreur quittent le
    * téléphone. Une session expirée les garde : les étapes en attente
@@ -675,7 +684,7 @@ export default function DeliveryApp() {
         />
       );
     }
-    if (tab === 'account') return <AccountScreen token={token} onBack={back} onDriverLoaded={onDriverLoaded} />;
+    if (tab === 'account') return <AccountScreen token={token} onBack={back} onDriverLoaded={onDriverLoaded} onPasswordChanged={onPasswordChanged} />;
     if (tab === 'course') {
       const others = visibleDeliveries.filter((d) => d.id !== courseTabId).length;
       if (courseTabId) {

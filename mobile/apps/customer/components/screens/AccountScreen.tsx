@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { apiFetch, formatEuros } from '../../lib/api';
+import ChangePasswordCard, { NewTokens } from '../ChangePasswordCard';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
 
 export interface CustomerProfile {
@@ -40,10 +41,12 @@ export default function AccountScreen({
   token,
   onBack,
   onProfileLoaded,
+  onPasswordChanged,
 }: {
   token: string;
   onBack: () => void;
   onProfileLoaded: (profile: CustomerProfile) => void;
+  onPasswordChanged: (tokens: NewTokens) => void;
 }) {
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
@@ -143,6 +146,8 @@ export default function AccountScreen({
               {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>Enregistrer</Text>}
             </TouchableOpacity>
           </Card>
+
+          <ChangePasswordCard token={token} onChanged={onPasswordChanged} />
         </ScrollView>
       )}
     </KeyboardAvoidingView>

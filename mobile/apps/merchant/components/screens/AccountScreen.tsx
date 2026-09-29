@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
+import ChangePasswordCard, { NewTokens } from '../ChangePasswordCard';
 import { Card, COLORS, ErrorBox, Loading, Row, ScreenHeader, ui } from '../ui';
 
 interface Me {
@@ -22,7 +23,15 @@ const ORG_STATUS_LABELS: Record<string, string> = {
   CLOSED: 'Fermé',
 };
 
-export default function AccountScreen({ token, onBack }: { token: string; onBack: () => void }) {
+export default function AccountScreen({
+  token,
+  onBack,
+  onPasswordChanged,
+}: {
+  token: string;
+  onBack: () => void;
+  onPasswordChanged: (tokens: NewTokens) => void;
+}) {
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -85,6 +94,8 @@ export default function AccountScreen({ token, onBack }: { token: string; onBack
               <Row label="Statut" value={ORG_STATUS_LABELS[org.status || ''] || org.status || '—'} last />
             </Card>
           ))}
+
+          <ChangePasswordCard token={token} onChanged={onPasswordChanged} />
         </ScrollView>
       )}
     </View>

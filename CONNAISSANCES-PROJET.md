@@ -566,6 +566,14 @@ Chacun a déjà coûté du temps. À relire avant d'écrire un script ou une rou
   sinon, en développement, la machine qui sert Metro (port 3001), sinon
   `localhost`. Ne jamais écrire `localhost` en dur : sur un téléphone, c'est le
   téléphone.
+- **Rattrapage du 29 septembre** : les trois applications suivent le site sur
+  les suppléments payants (client : choix sur la fiche du plat, ligne de panier
+  par combinaison, `supplements` envoyé à la commande ; commerçant : éditeur sur
+  la fiche produit, suppléments et déclinaison sur la commande), le pourboire
+  (client : au tunnel et après la livraison ; livreur : tableau de bord,
+  revenus, historique, course), « Commander à nouveau » et le changement de mot
+  de passe (les trois profils ; le serveur remet des jetons neufs à conserver).
+  Pièces déposées : 2 Mo pour une image, 5 Mo pour un PDF.
 - Les modules natifs ajoutés (`expo-task-manager`, `expo-file-system`,
   `expo-image-manipulator`…) exigent une recompilation ; ceux qui peuvent
   manquer dans une ancienne version sont chargés à la demande.

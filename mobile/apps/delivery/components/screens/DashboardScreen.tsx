@@ -15,6 +15,8 @@ export interface EarningsSummary {
   month: number;
   total: number;
   deliveryCount: number;
+  /** Déjà compris dans les gains : ce que les clients ont laissé en plus. */
+  pourboires?: { today: number; week: number; month: number; total: number };
   rating: number | null;
   avis: number;
 }
@@ -282,6 +284,9 @@ export default function DashboardScreen({
         <TouchableOpacity style={styles.hero} onPress={onSeeEarnings} activeOpacity={0.85}>
           <Text style={styles.heroLabel}>Gains du jour</Text>
           <Text style={styles.heroValue}>{formatEuros(earnings?.today ?? 0)}</Text>
+          {(earnings?.pourboires?.today ?? 0) > 0 && (
+            <Text style={styles.muted}>🎁 dont {formatEuros(earnings?.pourboires?.today)} de pourboires</Text>
+          )}
           <Text style={styles.muted}>Cette semaine : {formatEuros(earnings?.week ?? 0)} · Détail ›</Text>
         </TouchableOpacity>
 

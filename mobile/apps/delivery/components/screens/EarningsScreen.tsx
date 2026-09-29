@@ -10,7 +10,18 @@ interface Earnings {
   week: number;
   month: number;
   deliveryCount: number;
-  deliveries: { id: string; orderId: string; deliveredAt: string; earning: number }[];
+  /** Déjà compris dans les montants ci-dessus : le détail des pourboires. */
+  pourboires?: { today: number; week: number; month: number; total: number };
+  deliveries: {
+    id: string;
+    orderId: string;
+    deliveredAt: string;
+    earning: number;
+    /** Laissé en commandant, déjà compris dans le gain de la course. */
+    pourboire?: number;
+    /** Laissé après la livraison, en plus du gain de la course. */
+    pourboireApres?: number;
+  }[];
 }
 
 interface Payouts {
@@ -92,6 +103,16 @@ export default function EarningsScreen({ token, onBack }: { token: string; onBac
             </View>
           </View>
 
+          {(earnings?.pourboires?.total ?? 0) > 0 && (
+            <Card title="Pourboires 🎁">
+              <Row label="Aujourd’hui" value={formatEuros(earnings?.pourboires?.today)} />
+              <Row label="Cette semaine" value={formatEuros(earnings?.pourboires?.week)} />
+              <Row label="Ce mois-ci" value={formatEuros(earnings?.pourboires?.month)} />
+              <Row label="Depuis le début" value={formatEuros(earnings?.pourboires?.total)} last />
+              <Text style={styles.empty}>Compris dans vos gains : ils vous reviennent en entier.</Text>
+            </Card>
+          )}
+
           {payouts && (
             <Card title="Mes versements">
               <Row
@@ -136,8 +157,12 @@ export default function EarningsScreen({ token, onBack }: { token: string; onBac
               earnings!.deliveries.map((d, i, list) => (
                 <Row
                   key={d.id}
-                  label={`${shortId(d.orderId)} · ${day(d.deliveredAt)}`}
-                  value={formatEuros(d.earning)}
+                  label={`${shortId(d.orderId)} · ${day(d.deliveredAt)}${
+                    (d.pourboire ?? 0) + (d.pourboireApres ?? 0) > 0
+                      ? ` · 🎁 ${formatEuros((d.pourboire ?? 0) + (d.pourboireApres ?? 0))}`
+                      : ''
+                  }`}
+                  value={formatEuros(d.earning + (d.pourboireApres ?? 0))}
                   last={i === list.length - 1}
                 />
               ))

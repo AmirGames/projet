@@ -8,13 +8,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEY = 'zupeat.customer.carts';
 
+/** Un supplément payant retenu pour une ligne : bacon, cheddar. */
+export interface CartSupplement {
+  id: string;
+  label: string;
+  /** TTC, en euros. */
+  price: number;
+}
+
 export interface CartLine {
   productId: string;
   /** La déclinaison choisie, quand le plat se décline. */
   variantId?: string;
   name: string;
   variantName?: string;
-  /** En euros. */
+  /** Les suppléments choisis ; leur prix est déjà compté dans `price`. */
+  supplements?: CartSupplement[];
+  /** En euros, prix unitaire suppléments compris. */
   price: number;
   quantity: number;
 }
@@ -29,8 +39,19 @@ export interface Cart {
 
 export type Carts = Record<string, Cart>;
 
-/** Produit et déclinaison : « penne » et « spaghetti » du même plat font deux lignes. */
-export const lineKey = (productId: string, variantId?: string) => (variantId ? `${productId}:${variantId}` : productId);
+/**
+ * Produit, déclinaison et suppléments : « penne » et « spaghetti » du même
+ * plat font deux lignes, un burger avec ou sans bacon aussi (comme
+ * `cleDeLigne` du site).
+ */
+export const lineKey = (productId: string, variantId?: string, supplements?: { id: string }[]) => {
+  const base = variantId ? `${productId}:${variantId}` : productId;
+  if (!supplements || supplements.length === 0) return base;
+  return `${base}+${supplements.map((s) => s.id).sort().join(',')}`;
+};
+
+export const keyOf = (l: { productId: string; variantId?: string; supplements?: { id: string }[] }) =>
+  lineKey(l.productId, l.variantId, l.supplements);
 
 export async function loadCarts(): Promise<Carts> {
   try {
@@ -68,15 +89,15 @@ export function withLines(carts: Carts, store: { id: string; name: string; logo?
 }
 
 export function addLine(lines: CartLine[], line: CartLine): CartLine[] {
-  const key = lineKey(line.productId, line.variantId);
-  const existing = lines.find((l) => lineKey(l.productId, l.variantId) === key);
+  const key = keyOf(line);
+  const existing = lines.find((l) => keyOf(l) === key);
   if (!existing) return [...lines, line];
   return lines.map((l) => (l === existing ? { ...l, quantity: l.quantity + line.quantity } : l));
 }
 
 export function changeQuantity(lines: CartLine[], key: string, delta: number): CartLine[] {
   return lines
-    .map((l) => (lineKey(l.productId, l.variantId) === key ? { ...l, quantity: l.quantity + delta } : l))
+    .map((l) => (keyOf(l) === key ? { ...l, quantity: l.quantity + delta } : l))
     .filter((l) => l.quantity > 0);
 }
 
