@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "crypto";
 
 import { db } from "./db";
 import { logger } from "../config/logger";
-import { finAttente } from "./delivery-proof.service";
+import { finAttente } from "../modules/drivers/delivery-proof.service";
 import { presenter } from "./fichiers-prives.service";
 import type { Compte } from "../middleware/auth";
 

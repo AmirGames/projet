@@ -36,7 +36,7 @@ jest.mock("../notifier.service", () => ({
   Notifier: { pushEquipeBoutique: jest.fn(async () => 0) },
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
-jest.mock("../dispatch.service", () => ({ DispatchService: {} }));
+jest.mock("../../modules/drivers/dispatch.service", () => ({ DispatchService: {} }));
 jest.mock("../pourboire.service", () => ({ PourboireService: {} }));
 jest.mock("../../modules/delivery/store-hours.service", () => ({ StoreHoursService: { isOpenNow: () => true } }));
 jest.mock("../variant.service", () => ({

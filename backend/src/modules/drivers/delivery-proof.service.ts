@@ -1,9 +1,9 @@
 import { randomInt } from "node:crypto";
 
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { logger } from "../config/logger";
-import { cheminRelatif, presenter } from "./fichiers-prives.service";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { logger } from "../../config/logger";
+import { cheminRelatif, presenter } from "../../services/fichiers-prives.service";
 
 /**
  * La preuve de la remise.

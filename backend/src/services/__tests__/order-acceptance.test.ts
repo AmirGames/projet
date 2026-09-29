@@ -32,7 +32,7 @@ jest.mock("../notifier.service", () => ({
 jest.mock("../payment.service", () => ({
   paymentService: { rembourserCommande: jest.fn(async () => null) },
 }));
-jest.mock("../dispatch.service", () => ({
+jest.mock("../../modules/drivers/dispatch.service", () => ({
   DispatchService: {
     creerCourse: jest.fn(async () => ({ id: "course-1", driverId: null })),
     proposerAuSuivant: jest.fn(),
@@ -45,7 +45,7 @@ import {
   verifierTransition,
 } from "../order-acceptance.service";
 import { EmailService } from "../email.service";
-import { DispatchService } from "../dispatch.service";
+import { DispatchService } from "../../modules/drivers/dispatch.service";
 import { Notifier } from "../notifier.service";
 import { paymentService } from "../payment.service";
 

@@ -11,7 +11,7 @@ import { logger } from "../config/logger";
 import { emitOrderUpdate } from "../config/socket";
 import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
 
-import { DispatchService } from "../services/dispatch.service";
+import { DispatchService } from "../modules/drivers/dispatch.service";
 
 const router = Router();
 

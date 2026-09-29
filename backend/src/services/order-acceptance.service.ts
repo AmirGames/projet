@@ -3,7 +3,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { logger } from "../config/logger";
 import { emitWebhook } from "./webhook.service";
 import { EmailService } from "./email.service";
-import { DispatchService } from "./dispatch.service";
+import { DispatchService } from "../modules/drivers/dispatch.service";
 import { Notifier, enArrierePlan } from "./notifier.service";
 import { paymentService } from "./payment.service";
 import { emitOrderUpdate, emitNotification, emitMerchantEvent } from "../config/socket";

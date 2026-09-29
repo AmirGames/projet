@@ -1,37 +1,37 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { SsoService } from "../services/sso.service";
-import { ibanNormalise, ibanValide } from "../utils/sepa";
-import { db } from "../services/db";
-import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
-import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware } from "../middleware/auth";
-import { uploadMiddleware } from "../middleware/file-upload";
-import { limiterInscriptions } from "../middleware/throttle";
-import { logger } from "../config/logger";
-import { emitDeliveryUpdate, emitNotification } from "../config/socket";
-import { DispatchService, STATUTS_EN_COURSE } from "../services/dispatch.service";
-import { ordonner, versCourseTournee } from "../services/tournee.service";
-import { AuthService } from "../services/auth.service";
+import { SsoService } from "../../services/sso.service";
+import { ibanNormalise, ibanValide } from "../../utils/sepa";
+import { db } from "../../services/db";
+import { champAcceptation, enregistrerAcceptation } from "../../services/acceptation-conditions.service";
+import { ApiError } from "../../middleware/errorHandler";
+import { authMiddleware } from "../../middleware/auth";
+import { uploadMiddleware } from "../../middleware/file-upload";
+import { limiterInscriptions } from "../../middleware/throttle";
+import { logger } from "../../config/logger";
+import { emitDeliveryUpdate, emitNotification } from "../../config/socket";
+import { DispatchService, STATUTS_EN_COURSE } from "./dispatch.service";
+import { ordonner, versCourseTournee } from "./tournee.service";
+import { AuthService } from "../../services/auth.service";
 import {
   DriverApprovalService,
   TYPES_DOCUMENT,
   libelleDuDocument,
   piecesAttendues,
-} from "../services/driver-approval.service";
-import { DriverPayoutService } from "../modules/payouts/driver-payout.service";
-import { DeliveryProofService, exigerAttenteTerminee, finAttente } from "../services/delivery-proof.service";
-import { FileUploadService } from "../services/file-upload.service";
-import { notesDuLivreur } from "../services/driver-rating.service";
-import { bilanCourse, DriverActivityService, FiltreHistorique } from "../services/driver-activity.service";
-import { DriverAvailabilityService } from "../services/driver-availability.service";
-import { Notifier, enArrierePlan } from "../services/notifier.service";
-import { DriverSupportService, LONGUEUR_MAX } from "../services/driver-support.service";
+} from "./driver-approval.service";
+import { DriverPayoutService } from "../payouts/driver-payout.service";
+import { DeliveryProofService, exigerAttenteTerminee, finAttente } from "./delivery-proof.service";
+import { FileUploadService } from "../../services/file-upload.service";
+import { notesDuLivreur } from "./driver-rating.service";
+import { bilanCourse, DriverActivityService, FiltreHistorique } from "./driver-activity.service";
+import { DriverAvailabilityService } from "./driver-availability.service";
+import { Notifier, enArrierePlan } from "../../services/notifier.service";
+import { DriverSupportService, LONGUEUR_MAX } from "./driver-support.service";
 import { z } from "zod";
-import { champEmail, champMotDePasse } from "../utils/validation";
-import { distanceKm, estUnPoint } from "../utils/geo";
+import { champEmail, champMotDePasse } from "../../utils/validation";
+import { distanceKm, estUnPoint } from "../../utils/geo";
 import { Prisma } from "@prisma/client";
-import { adresseSignee, cheminRelatif } from "../services/fichiers-prives.service";
-import { servirFichierPrive } from "./files";
+import { adresseSignee, cheminRelatif } from "../../services/fichiers-prives.service";
+import { servirFichierPrive } from "../../routes/files";
 
 const router = Router();
 
@@ -1263,7 +1263,7 @@ router.patch(
           });
 
           // Notifier en temps réel via Socket.IO
-          const { emitOrderUpdate } = await import("../config/socket");
+          const { emitOrderUpdate } = await import("../../config/socket");
           emitOrderUpdate(delivery.orderId, "COMPLETED", {
             message: "Votre commande a été livrée. Merci pour votre achat !",
             title: "Commande livrée avec succès",
@@ -1723,7 +1723,7 @@ router.patch(
           },
         });
 
-        const { emitNotification } = await import("../config/socket");
+        const { emitNotification } = await import("../../config/socket");
         emitNotification(order.customerEmail, {
           type: "delivery_cancelled",
           orderId: course.orderId,

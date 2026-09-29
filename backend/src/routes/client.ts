@@ -1,4 +1,4 @@
-import { finAttente } from "../services/delivery-proof.service";
+import { finAttente } from "../modules/drivers/delivery-proof.service";
 import { positionLivreurVisible } from "../services/suivi-commande.service";
 import { presenter } from "../services/fichiers-prives.service";
 import { SupplementService } from "../services/supplement.service";
@@ -25,7 +25,7 @@ import {
   NOTE_MAX,
   NOTE_MIN,
   noterLivreur,
-} from "../services/driver-rating.service";
+} from "../modules/drivers/driver-rating.service";
 
 const router = Router();
 

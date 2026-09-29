@@ -47,7 +47,7 @@ import superOwnerRouter from "./routes/superowner";
 import pagesLegalesRouter from "./routes/pages-legales";
 import clientRouter from "./routes/client";
 import mapsRouter from "./routes/maps";
-import driversRouter from "./routes/drivers";
+import driversRouter from "./modules/drivers/drivers.routes";
 import notificationsApiRouter from "./routes/notifications-api";
 import paymentMethodsApiRouter from "./routes/payment-methods-api";
 import supportRouter from "./routes/support";

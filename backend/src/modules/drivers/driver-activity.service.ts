@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db } from "../../services/db";
 import type { Prisma } from "@prisma/client";
 
 /**
