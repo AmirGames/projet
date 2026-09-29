@@ -3,7 +3,7 @@ import { getEnv } from "../../config/env";
 import { ApiError } from "../../middleware/errorHandler";
 import { detailFacturation } from "../superowner/billing-detail.service";
 import { identifiantPeppol, numeroBce, tvaBelge, IdentifiantPeppol } from "./peppol-id";
-import { genererUbl, totaux, PartieFacture, LigneFacture } from "./ubl";
+import { genererUbl, totaux, partReglee, PartieFacture, LigneFacture } from "./ubl";
 import { transportPeppol } from "./peppol-transport";
 
 const DELAI_PAIEMENT_JOURS = 30;
@@ -86,7 +86,7 @@ export class PlatformInvoiceService {
     const existante = await db.platformInvoice.findUnique({ where: { orgId_period: { orgId, period: periode } } });
     if (existante) return existante;
 
-    const { lignes, vendeur, acheteur, tauxTva } = await this.preparer(orgId, periode);
+    const { lignes, vendeur, acheteur, tauxTva, dejaRegle } = await this.preparer(orgId, periode);
 
     const emiseLe = new Date();
     const echeance = new Date(emiseLe.getTime() + DELAI_PAIEMENT_JOURS * 24 * 3600 * 1000);
@@ -94,7 +94,7 @@ export class PlatformInvoiceService {
     // Le numéro et la facture naissent dans la même transaction : un échec à
     // l'écriture ne doit pas laisser un numéro consommé, donc un trou.
     try {
-      return await this.creer({ orgId, periode, emiseLe, echeance, vendeur, acheteur, lignes, tauxTva });
+      return await this.creer({ orgId, periode, emiseLe, echeance, vendeur, acheteur, lignes, tauxTva, dejaRegle });
     } catch (err) {
       // Deux émissions simultanées (tâche du jour et bouton) : la seconde perd
       // la course sur l'unicité (commerçant, mois). Sa transaction est annulée,
@@ -109,9 +109,9 @@ export class PlatformInvoiceService {
 
   private static creer(a: {
     orgId: string; periode: string; emiseLe: Date; echeance: Date;
-    vendeur: PartieFacture; acheteur: PartieFacture; lignes: LigneFacture[]; tauxTva: number;
+    vendeur: PartieFacture; acheteur: PartieFacture; lignes: LigneFacture[]; tauxTva: number; dejaRegle: number;
   }) {
-    const { orgId, periode, emiseLe, echeance, vendeur, acheteur, lignes, tauxTva } = a;
+    const { orgId, periode, emiseLe, echeance, vendeur, acheteur, lignes, tauxTva, dejaRegle } = a;
     const env = getEnv();
     const annee = emiseLe.getFullYear();
 
@@ -128,12 +128,15 @@ export class PlatformInvoiceService {
         emiseLe,
         echeance,
         referenceAcheteur: `COMMISSION-${periode}`,
-        note: `Facture de la plateforme pour ${libellePeriode(periode)}`,
+        note:
+          `Facture de la plateforme pour ${libellePeriode(periode)}` +
+          (dejaRegle > 0 ? `. Dont ${dejaRegle.toFixed(2)} EUR déjà réglés par retenue sur vos reversements.` : ""),
         vendeur,
         acheteur,
         iban: env.PLATFORM_IBAN || env.SEPA_DEBTOR_IBAN,
         bic: env.SEPA_DEBTOR_BIC,
         lignes,
+        dejaRegle,
         tauxTva,
       });
 
@@ -153,6 +156,7 @@ export class PlatformInvoiceService {
           totalExcl: t.htCentimes / 100,
           vatAmount: t.tvaCentimes / 100,
           totalIncl: t.ttcCentimes / 100,
+          prepaidAmount: dejaRegle,
           ublXml: xml,
         },
       });
@@ -186,10 +190,22 @@ export class PlatformInvoiceService {
       );
     }
 
+    const env = getEnv();
+    const mois = libellePeriode(periode);
+    const r = detail.retenues;
+    // Montants saisis hors taxe (défaut) ou déjà TTC : dans ce cas on en tire le HT.
+    const enHt = (montant: number) =>
+      env.PLATFORM_AMOUNTS_INCLUDE_VAT ? Math.round((montant / (1 + env.PLATFORM_VAT_RATE / 100)) * 100) / 100 : montant;
+
     const lignes: LigneFacture[] = [
-      { libelle: `Commission sur ${detail.summary.ordersCount} commande(s), ${libellePeriode(periode)}`, montantHt: detail.summary.commission },
-      { libelle: `Frais de livraison encaissés pour la plateforme, ${libellePeriode(periode)}`, montantHt: detail.summary.deliveryFees },
-      { libelle: `Frais de service encaissés pour la plateforme, ${libellePeriode(periode)}`, montantHt: detail.summary.serviceFees },
+      // Ce que la plateforme réclame au commerçant, à payer.
+      { libelle: `Commission sur ${detail.summary.ordersCount} commande(s), ${mois}`, montantHt: enHt(detail.summary.commission) },
+      { libelle: `Frais de livraison encaissés pour la plateforme, ${mois}`, montantHt: enHt(detail.summary.deliveryFees) },
+      { libelle: `Frais de service encaissés pour la plateforme, ${mois}`, montantHt: enHt(detail.summary.serviceFees) },
+      // Ce que les reversements du lundi ont déjà retenu : facturé aussi, déjà réglé.
+      { libelle: `Commission sur ${r.ordersCount} commande(s), retenue sur vos reversements, ${mois}`, montantHt: enHt(r.commission) },
+      { libelle: `Frais de livraison retenus sur vos reversements, ${mois}`, montantHt: enHt(r.deliveryFees) },
+      { libelle: `Frais de service retenus sur vos reversements, ${mois}`, montantHt: enHt(r.serviceFees) },
     ].filter((ligne) => ligne.montantHt > 0);
 
     if (!lignes.length) {
@@ -197,7 +213,7 @@ export class PlatformInvoiceService {
     }
 
     const vendeur = emetteur();
-    const tauxTva = getEnv().PLATFORM_VAT_RATE;
+    const tauxTva = env.PLATFORM_VAT_RATE;
     const acheteur: PartieFacture = {
       nom: org.legalName!,
       tva: tvaAcheteur,
@@ -210,7 +226,11 @@ export class PlatformInvoiceService {
       peppol: destinataire,
     };
 
-    return { lignes, vendeur, acheteur, tauxTva, totaux: totaux(lignes, tauxTva) };
+    const t = totaux(lignes, tauxTva);
+    // Ce qui est déjà réglé ne dépasse jamais le TTC (voir partReglee).
+    const { prepayeCentimes, aPayerCentimes } = partReglee(t.ttcCentimes, Math.round(r.total * 100));
+
+    return { lignes, vendeur, acheteur, tauxTva, totaux: t, dejaRegle: prepayeCentimes / 100, aPayer: aPayerCentimes / 100 };
   }
 
   /**
@@ -276,7 +296,7 @@ export class PlatformInvoiceService {
 
     const [organisations, factures] = await Promise.all([
       db.organization.findMany({ where: { isDemo: false }, select: { id: true, name: true, legalName: true }, orderBy: { name: "asc" } }),
-      db.platformInvoice.findMany({ where: { period: periode }, select: { id: true, orgId: true, number: true, totalIncl: true, peppolStatus: true } }),
+      db.platformInvoice.findMany({ where: { period: periode }, select: { id: true, orgId: true, number: true, totalIncl: true, prepaidAmount: true, peppolStatus: true } }),
     ]);
     const parOrg = new Map(factures.map((f) => [f.orgId, f]));
 
@@ -287,13 +307,13 @@ export class PlatformInvoiceService {
       if (facture) {
         lignes.push({
           orgId: org.id, nom, etat: "FACTUREE" as const, invoiceId: facture.id, numero: facture.number,
-          totalTtc: Number(facture.totalIncl), peppolStatus: facture.peppolStatus,
+          totalTtc: Number(facture.totalIncl), dejaRegle: Number(facture.prepaidAmount), peppolStatus: facture.peppolStatus,
         });
         continue;
       }
       try {
         const prete = await this.preparer(org.id, periode);
-        lignes.push({ orgId: org.id, nom, etat: "FACTURABLE" as const, totalTtc: prete.totaux.ttcCentimes / 100 });
+        lignes.push({ orgId: org.id, nom, etat: "FACTURABLE" as const, totalTtc: prete.totaux.ttcCentimes / 100, dejaRegle: prete.dejaRegle });
       } catch (err) {
         if (!(err instanceof ApiError)) throw err;
         lignes.push({
@@ -353,7 +373,7 @@ export class PlatformInvoiceService {
       take: 200,
       select: {
         id: true, number: true, orgId: true, period: true, issuedAt: true, dueAt: true,
-        totalExcl: true, vatAmount: true, totalIncl: true,
+        totalExcl: true, vatAmount: true, totalIncl: true, prepaidAmount: true,
         peppolStatus: true, peppolError: true, peppolSentAt: true, peppolAttempts: true,
         org: { select: { name: true, legalName: true } },
       },

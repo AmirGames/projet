@@ -27,6 +27,8 @@ interface Ligne {
   invoiceId?: string;
   numero?: string;
   totalTtc?: number;
+  /** La part déjà réglée par retenue sur les reversements. */
+  dejaRegle?: number;
   peppolStatus?: string;
   raison?: string;
   code?: string;
@@ -271,6 +273,12 @@ export default function FacturesPeppolPage() {
                       <td className="px-6 py-4 text-sm text-gray-400">{ligne.numero ?? '—'}</td>
                       <td className="px-6 py-4 text-right text-sm text-gray-300">
                         {ligne.totalTtc !== undefined ? euro(ligne.totalTtc) : '—'}
+                        {(ligne.dejaRegle ?? 0) > 0 && (
+                          <span className="block text-xs text-gray-500">
+                            dont {euro(ligne.dejaRegle ?? 0)} retenus sur les reversements
+                            {ligne.totalTtc !== undefined && ` · reste ${euro(Math.max(0, ligne.totalTtc - (ligne.dejaRegle ?? 0)))}`}
+                          </span>
+                        )}
                       </td>
                       <td className={`px-6 py-4 text-sm ${peppol?.classe ?? 'text-gray-500'}`}>
                         {peppol?.libelle ?? '—'}

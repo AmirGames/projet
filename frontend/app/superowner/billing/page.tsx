@@ -193,7 +193,8 @@ export default function BillingPage() {
         <div className="p-4 bg-blue-900/20 text-blue-300 rounded-lg border border-blue-500/20 text-sm">
           Depuis le {new Date(reversementsDepuis).toLocaleDateString('fr-FR')}, la commission et les frais
           sont retenus chaque semaine sur les reversements (page Versements SEPA). Cette page ne compte
-          plus que les commandes d&apos;avant cette date.
+          plus que les commandes d&apos;avant cette date. Les montants retenus sont facturés quand même,
+          comme « déjà réglés », sur la facture Peppol mensuelle.
         </div>
       )}
 

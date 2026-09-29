@@ -48,6 +48,10 @@ const envSchema = z.object({
   PLATFORM_IBAN: z.string().optional(),
   // TVA appliquée aux services de la plateforme (commission, livraison, frais).
   PLATFORM_VAT_RATE: z.coerce.number().min(0).max(100).default(21),
+  // Les commissions et frais sont-ils déjà TTC ? Faux (défaut) : ce sont des
+  // montants hors taxe, la TVA s'y ajoute. Vrai : la TVA y est incluse — ce qui
+  // est retenu sur un reversement est alors tout ce que le commerçant doit.
+  PLATFORM_AMOUNTS_INCLUDE_VAT: z.string().default("false").transform((v) => v === "true"),
   // Le fournisseur d'Access Point Peppol. Vide : les factures sont générées mais
   // s'envoient à la main (téléchargement du XML).
   PEPPOL_PROVIDER: z.string().optional(),

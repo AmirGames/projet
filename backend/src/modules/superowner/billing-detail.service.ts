@@ -95,6 +95,38 @@ export async function detailFacturation(orgId: string, periodeDemandee?: string)
       })
     : [];
 
+  /**
+   * Ce que les reversements du lundi ont déjà retenu ce mois-ci.
+   *
+   * La commission et les frais s'y retirent directement de ce que la plateforme
+   * doit au commerçant : il ne paie rien de plus, mais la plateforme lui doit
+   * quand même une facture. On lit les montants sur les relevés eux-mêmes, où
+   * ils sont figés (codes 200, 230, 240) — la facture ne peut pas s'écarter de
+   * ce que le commerçant a vu sur son relevé. Le mois est celui de l'arrêté et
+   * non celui de la commande : une commande passée le 31 et terminée le 2 est
+   * retenue en septembre, et doit se facturer en septembre.
+   */
+  const releves = await db.merchantPayout.findMany({
+    where: { orgId, status: { not: "CANCELLED" }, periodEnd: { gte: debutMois, lt: finMois } },
+    select: { lines: true },
+  });
+
+  const retenues = { releves: releves.length, ordersCount: 0, commission: 0, deliveryFees: 0, serviceFees: 0, total: 0 };
+  for (const releve of releves) {
+    for (const ligne of (releve.lines as { code: string; montant: number; nombre?: number }[]) || []) {
+      const montant = Math.abs(Number(ligne.montant || 0));
+      if (ligne.code === "200") {
+        retenues.commission += montant;
+        retenues.ordersCount += ligne.nombre ?? 0;
+      } else if (ligne.code === "230") retenues.serviceFees += montant;
+      else if (ligne.code === "240") retenues.deliveryFees += montant;
+    }
+  }
+  retenues.commission = Number(retenues.commission.toFixed(2));
+  retenues.deliveryFees = Number(retenues.deliveryFees.toFixed(2));
+  retenues.serviceFees = Number(retenues.serviceFees.toFixed(2));
+  retenues.total = Number((retenues.commission + retenues.deliveryFees + retenues.serviceFees).toFixed(2));
+
   const lignes = commandes.map((commande) => {
     const montant = Number(commande.totalAmount);
     // La commission figée à la commande fait foi — son taux dépend de la
@@ -168,6 +200,7 @@ export async function detailFacturation(orgId: string, periodeDemandee?: string)
     commissionPercent: taux,
     tierLabel: formule.libelle,
     orders: lignes,
+    retenues,
     summary: {
       ordersCount: lignes.length,
       revenue: Number(chiffreAffaires.toFixed(2)),

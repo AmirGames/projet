@@ -272,6 +272,9 @@ model PlatformInvoice {
   totalExcl   Decimal  @db.Decimal(10, 2)
   vatAmount   Decimal  @db.Decimal(10, 2)
   totalIncl   Decimal  @db.Decimal(10, 2)
+  /// Ce qui a déjà été réglé par retenue sur les reversements du lundi. Le reste
+  /// (totalIncl - prepaidAmount) est ce que le commerçant doit encore payer.
+  prepaidAmount Decimal @default(0) @db.Decimal(10, 2)
 
   /// La facture UBL (Peppol BIS 3.0) telle qu'elle est transmise.
   ublXml      String

@@ -42,6 +42,8 @@ export interface EntreeFacture {
   iban?: string | null;
   bic?: string | null;
   lignes: LigneFacture[];
+  /** Déjà réglé, en euros : ce que les reversements ont retenu. */
+  dejaRegle?: number;
   /** Taux de TVA en pourcentage (21 en Belgique pour ce type de service). */
   tauxTva: number;
 }
@@ -50,6 +52,16 @@ export interface TotauxFacture {
   htCentimes: number;
   tvaCentimes: number;
   ttcCentimes: number;
+}
+
+/**
+ * Ce qui reste à payer : le total TTC moins ce qui a été retenu. Jamais négatif
+ * ni supérieur au TTC — une facture ne peut pas être « plus que payée », et
+ * l'écart d'un centime d'arrondi entre une retenue et un TTC recalculé s'absorbe ici.
+ */
+export function partReglee(ttcCentimes: number, dejaRegleCentimes: number) {
+  const prepaye = Math.min(Math.max(0, dejaRegleCentimes), ttcCentimes);
+  return { prepayeCentimes: prepaye, aPayerCentimes: ttcCentimes - prepaye };
 }
 
 const CUSTOMIZATION_ID = "urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0";
@@ -107,6 +119,7 @@ function partie(p: PartieFacture, role: "AccountingSupplierParty" | "AccountingC
 
 export function genererUbl(entree: EntreeFacture): string {
   const t = totaux(entree.lignes, entree.tauxTva);
+  const { prepayeCentimes, aPayerCentimes } = partReglee(t.ttcCentimes, enCentimes(entree.dejaRegle ?? 0));
   const taux = entree.tauxTva.toFixed(2);
   const devise = 'currencyID="EUR"';
   const categorieTva = (indent: string) =>
@@ -136,7 +149,8 @@ ${indent}</cac:TaxCategory>`;
     })
     .join("\n");
 
-  const paiement = entree.iban
+  // Rien à payer : pas de coordonnées bancaires à afficher.
+  const paiement = entree.iban && aPayerCentimes > 0
     ? `  <cac:PaymentMeans>
     <cbc:PaymentMeansCode>30</cbc:PaymentMeansCode>
     <cbc:PaymentID>${echapper(entree.numero)}</cbc:PaymentID>
@@ -180,7 +194,7 @@ ${categorieTva("      ")}
     <cbc:LineExtensionAmount ${devise}>${montant(t.htCentimes)}</cbc:LineExtensionAmount>
     <cbc:TaxExclusiveAmount ${devise}>${montant(t.htCentimes)}</cbc:TaxExclusiveAmount>
     <cbc:TaxInclusiveAmount ${devise}>${montant(t.ttcCentimes)}</cbc:TaxInclusiveAmount>
-    <cbc:PayableAmount ${devise}>${montant(t.ttcCentimes)}</cbc:PayableAmount>
+${prepayeCentimes > 0 ? `    <cbc:PrepaidAmount ${devise}>${montant(prepayeCentimes)}</cbc:PrepaidAmount>\n` : ""}    <cbc:PayableAmount ${devise}>${montant(aPayerCentimes)}</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
 ${lignes}
 </Invoice>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import { identifiantPeppol, numeroBce, tvaBelge } from "../peppol-id";
-import { genererUbl, totaux, PartieFacture } from "../ubl";
+import { genererUbl, totaux, partReglee, PartieFacture } from "../ubl";
 
 describe("identifiant Peppol", () => {
   it("normalise un numéro de TVA belge", () => {
@@ -64,5 +64,46 @@ describe("facture UBL", () => {
     expect(xml).toContain('<cbc:PayableAmount currencyID="EUR">133.71</cbc:PayableAmount>');
     expect(xml).toContain("<cbc:ID>BE68539007547034</cbc:ID>");
     expect((xml.match(/<cac:InvoiceLine>/g) || []).length).toBe(2);
+  });
+
+  it("montre ce qui est déjà retenu sur les reversements", () => {
+    const xml = genererUbl({
+      numero: "ZE-2026-000002",
+      emiseLe: new Date("2026-09-01T10:00:00Z"),
+      echeance: new Date("2026-10-01T10:00:00Z"),
+      referenceAcheteur: "COMMISSION-2026-08",
+      vendeur, acheteur, iban: "BE68539007547034",
+      lignes: [{ libelle: "Commission retenue", montantHt: 100 }],
+      dejaRegle: 100,
+      tauxTva: 21,
+    });
+
+    // 121,00 TTC dont 100,00 retenus : il reste la TVA, 21,00, à payer.
+    expect(xml).toContain('<cbc:TaxInclusiveAmount currencyID="EUR">121.00</cbc:TaxInclusiveAmount>');
+    expect(xml).toContain('<cbc:PrepaidAmount currencyID="EUR">100.00</cbc:PrepaidAmount>');
+    expect(xml).toContain('<cbc:PayableAmount currencyID="EUR">21.00</cbc:PayableAmount>');
+  });
+
+  it("n'affiche ni prépayé ni coordonnées bancaires quand tout est retenu", () => {
+    const xml = genererUbl({
+      numero: "ZE-2026-000003",
+      emiseLe: new Date("2026-09-01T10:00:00Z"),
+      echeance: new Date("2026-10-01T10:00:00Z"),
+      referenceAcheteur: "COMMISSION-2026-08",
+      vendeur, acheteur, iban: "BE68539007547034",
+      lignes: [{ libelle: "Commission retenue", montantHt: 100 }],
+      dejaRegle: 121,
+      tauxTva: 21,
+    });
+
+    expect(xml).toContain('<cbc:PayableAmount currencyID="EUR">0.00</cbc:PayableAmount>');
+    expect(xml).not.toContain("<cac:PaymentMeans>");
+  });
+
+  it("borne la part réglée entre zéro et le TTC", () => {
+    expect(partReglee(12100, 5000)).toEqual({ prepayeCentimes: 5000, aPayerCentimes: 7100 });
+    // Un centime d'écart d'arrondi entre la retenue et le TTC recalculé.
+    expect(partReglee(12099, 12100)).toEqual({ prepayeCentimes: 12099, aPayerCentimes: 0 });
+    expect(partReglee(12100, -5)).toEqual({ prepayeCentimes: 0, aPayerCentimes: 12100 });
   });
 });
