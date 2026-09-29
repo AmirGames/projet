@@ -1,0 +1,15 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "app/**/{page,layout,loading,error,not-found,route,template,default}.{ts,tsx}",
+    "app/**/{opengraph-image,sitemap,robots}.{ts,tsx}",
+    "proxy.ts",
+    "instrumentation-client.ts",
+    "i18n/request.ts",
+    "next.config.js",
+    "scripts/**/*.{mjs,js}",
+    "public/sw.js"
+  ],
+  "project": ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}", "src/**/*.{ts,tsx}", "i18n/**/*.ts", "scripts/**/*.{mjs,js}", "public/sw.js"],
+  "ignoreDependencies": ["playwright"]
+}
