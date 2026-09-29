@@ -1,23 +1,19 @@
 import { Request, Response, NextFunction } from "express";
 import { ApiError } from "./errorHandler";
+import { Stockage, StockageMemoire, stockageRedis } from "./throttle-stockage";
 
 /**
- * Limitation de cadence, en mémoire.
+ * Limitation de cadence.
  *
  * Elle protège les routes qui envoient un courriel : sans elle, n'importe qui
  * peut faire expédier des centaines de messages à une adresse qui ne lui
  * appartient pas, et faire classer le domaine comme indésirable.
  *
- * En mémoire signifie « par processus » : derrière plusieurs instances, la
- * limite est multipliée d'autant. C'est suffisant contre un abus ordinaire,
- * pas contre une attaque distribuée — celle-ci relève du pare-feu applicatif,
- * en amont.
+ * Les compteurs vivent dans Redis quand REDIS_URL est défini (partagés entre
+ * les instances), sinon en mémoire — « par processus » : la limite est alors
+ * multipliée par le nombre d'instances, ce qui suffit en développement. Une
+ * attaque distribuée relève du pare-feu applicatif, en amont.
  */
-
-interface Fenetre {
-  compte: number;
-  reprendLe: number;
-}
 
 interface Options {
   max: number;
@@ -35,6 +31,10 @@ interface Options {
    * d'environnement ne sont pas forcément chargées à ce moment-là.
    */
   active?: () => boolean;
+  /** Nom stable du limiteur, pour ses clés Redis (par défaut : son rang de création). */
+  nom?: string;
+  /** Stockage imposé (tests). Par défaut : Redis si REDIS_URL est défini, sinon la mémoire. */
+  stockage?: Stockage;
 }
 
 /** Par adresse IP et par destinataire, pour les routes qui envoient un courriel. */
@@ -45,35 +45,32 @@ export const parDestinataire = (req: Request) => {
   return `${req.ip}|${email}`;
 };
 
+let numero = 0;
+
 export function limiterCadence(options: Options) {
-  const compteurs = new Map<string, Fenetre>();
+  // Chaque limiteur a son espace : sans préfixe, deux routes qui comptent la
+  // même clé (la même IP) partageraient leur compteur dans Redis.
+  const espace = `rl:${options.nom ?? ++numero}:`;
+  const memoire = new StockageMemoire();
 
-  // Sans purge, la table grandit indéfiniment au fil des adresses vues.
-  const purger = (maintenant: number) => {
-    for (const [cle, fenetre] of compteurs) {
-      if (fenetre.reprendLe <= maintenant) compteurs.delete(cle);
-    }
-  };
-
-  return (req: Request, _res: Response, next: NextFunction) => {
+  return async (req: Request, _res: Response, next: NextFunction) => {
     if (options.active && !options.active()) return next();
 
-    const maintenant = Date.now();
-
-    if (compteurs.size > 5000) purger(maintenant);
-
     const cle = options.cle(req);
-    const fenetre = compteurs.get(cle);
+    let fenetre: { compte: number; reprendLe: number };
 
-    if (!fenetre || fenetre.reprendLe <= maintenant) {
-      compteurs.set(cle, { compte: 1, reprendLe: maintenant + options.fenetreMs });
-      return next();
+    try {
+      const partage = options.stockage ?? stockageRedis();
+      fenetre = partage
+        ? await partage.incrementer(espace + cle, options.fenetreMs)
+        : await memoire.incrementer(cle, options.fenetreMs);
+    } catch {
+      // Redis a lâché en cours de route : la mémoire prend le relais.
+      fenetre = await memoire.incrementer(cle, options.fenetreMs);
     }
 
-    fenetre.compte++;
-
     if (fenetre.compte > options.max) {
-      const secondes = Math.ceil((fenetre.reprendLe - maintenant) / 1000);
+      const secondes = Math.max(1, Math.ceil((fenetre.reprendLe - Date.now()) / 1000));
 
       return next(
         new ApiError(
