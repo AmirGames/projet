@@ -1,8 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { MarketingService } from "../services/marketing.service";
-import { authMiddleware } from "../middleware/auth";
-import { logger } from "../config/logger";
+import { MarketingService } from "./marketing.service";
+import { authMiddleware } from "../../middleware/auth";
+import { logger } from "../../config/logger";
 
 const router = Router();
 

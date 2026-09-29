@@ -57,7 +57,7 @@ jest.mock("../../delivery/delivery-zone.service", () => ({
     controlerLaLivraison: jest.fn(async () => ({ frais: 3.5, mode: "OWN" })),
   },
 }));
-jest.mock("../../../services/promotion.service", () => ({ PromotionService: {} }));
+jest.mock("../../marketing/promotion.service", () => ({ PromotionService: {} }));
 jest.mock("../../../services/acceptation-conditions.service", () => {
   const { z } = jest.requireActual<typeof import("zod")>("zod");
   return {

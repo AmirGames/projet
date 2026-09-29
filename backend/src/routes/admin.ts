@@ -6,7 +6,7 @@ import { exigerPermission, voitLesFinances } from "../modules/auth/permissions-p
 import { authMiddleware } from "../middleware/auth";
 import { MerchantClosureService } from "../modules/merchants/merchant-closure.service";
 import { TicketMessageService } from "../services/ticket-message.service";
-import { AnnouncementService, PUBLICS_CONNUS } from "../services/announcement.service";
+import { AnnouncementService, PUBLICS_CONNUS } from "../modules/marketing/announcement.service";
 
 const LIBELLES_STATUT_TICKET: Record<string, string> = {
   OPEN: "rouvert",
