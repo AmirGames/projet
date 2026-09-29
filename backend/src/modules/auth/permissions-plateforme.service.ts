@@ -79,6 +79,7 @@ export const SECTIONS: Section[] = [
   { id: "security-audit", label: "Audit de sécurité", groupe: "Supervision" },
   { id: "audit-logs", label: "Journal d'audit", groupe: "Supervision" },
   { id: "access-logs", label: "Journal des connexions", groupe: "Supervision" },
+  { id: "chauffeurs", label: "Chauffeurs (dossiers LVC)", groupe: "ZupDrive" },
 ];
 
 const IDS_SECTIONS = new Set(SECTIONS.map((s) => s.id));
@@ -111,6 +112,7 @@ export const PERMISSIONS_PAR_DEFAUT: Record<RolePlateforme, Permissions> = {
     organizations: "read",
     stores: "read",
     drivers: "read",
+    chauffeurs: "read",
     members: "read",
     "support-tickets": "write",
     "driver-support": "write",
@@ -124,7 +126,7 @@ export const PERMISSIONS_PAR_DEFAUT: Record<RolePlateforme, Permissions> = {
  * qui correspond l'emporte ; une route absente d'ici reste réservée au
  * superowner — c'est le cas de la gestion de l'équipe et des rôles.
  */
-export type Routeur = "superowner" | "admin";
+export type Routeur = "superowner" | "admin" | "zupdrive";
 
 const ROUTES: Record<Routeur, [RegExp, string][]> = {
   superowner: [
@@ -156,6 +158,7 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
     [/^\/security-audit/, "security-audit"],
     [/^\/audit-logs/, "audit-logs"],
   ],
+  zupdrive: [[/^\/chauffeurs/, "chauffeurs"]],
   admin: [
     [/^\/config/, "system-config"],
     [/^\/merchants\/[^/]+\/(close|restore-from-backup)/, "organizations-close"],
@@ -342,7 +345,8 @@ export async function voitLesFinances(
  * modification sinon. Sans rôle sur cette plateforme, ou sur une route
  * qu'aucune section ne couvre, c'est non.
  *
- * Les routeurs d'administration actuels sont ceux de ZupEat.
+ * Les routeurs superowner et admin sont ceux de ZupEat ; le routeur zupdrive
+ * (administration des chauffeurs) se garde avec la plateforme DRIVE.
  */
 export function exigerPermission(routeur: Routeur, plateforme: Plateforme = "EAT") {
   return async (req: Request, _res: Response, next: NextFunction) => {

@@ -51,3 +51,59 @@ Via l'application ou le site `driver.zupdrive.com` :
 - Extrait de casier judiciaire (Bruxelles)
 
 Des documents supplémentaires peuvent être requis en fonction de la licence.
+
+---
+
+## Côté technique — inscription et validation des chauffeurs
+
+Module backend : `backend/src/modules/zupdrive/` (service `chauffeur-onboarding.service.ts`).
+Modèles Prisma : `ChauffeurDrive` (un par compte ZupOne) et `DocumentChauffeurDrive` (une pièce par type), migration `0027_zupdrive_chauffeurs`.
+
+**Compte unique ZupOne.** Le dossier chauffeur est rattaché au compte ZupOne (`User`). Il est distinct du profil livreur ZupEat (`Driver`) : un chauffeur qui veut aussi livrer passe par « Devenir livreur » et remplit ce formulaire, validé séparément.
+
+### États du dossier
+
+```text
+BROUILLON ──soumettre──▶ SOUMIS ──valider──▶ VALIDE ──suspendre──▶ SUSPENDU
+    ▲                      │                   ▲                      │
+    └──(corrige)── REFUSE ◀┘ refuser           └──────réactiver───────┘
+```
+
+- Le chauffeur modifie son profil en `BROUILLON` ou `REFUSE`. En `SOUMIS`, le dossier est figé.
+- La soumission exige un profil complet : téléphone, région, numéro BCE valide (contrôle modulo 97), numéro de licence et véhicule. Toutes les pièces exigées doivent aussi être déposées.
+- La validation exige un dossier `SOUMIS` dont toutes les pièces exigées sont `APPROVED`. Tout refus (de pièce ou de dossier) porte un motif.
+- Un chauffeur `VALIDE` peut renouveler une pièce (assurance, contrôle technique…). Elle repart en examen, mais son compte reste validé.
+
+### Pièces exigées
+
+Pour toutes les régions : `identite`, `permis`, `tva`, `licence`, `controle_technique`, `assurance`, `immatriculation`.
+
+S'y ajoutent `bestuurderspas` en Flandre et `casier_judiciaire` à Bruxelles. La pièce `actionnaires` est facultative.
+
+Les fichiers sont stockés dans le dossier privé `chauffeurs/`. Ils sont servis par `/api/files` au chauffeur lui-même et à l'équipe ayant la section « chauffeurs ».
+
+### API chauffeur — `driver.zupdrive.com`
+
+Toutes les routes exigent une session. Le dossier manipulé est toujours celui du compte connecté : aucune route ne prend d'identifiant de dossier.
+
+| Méthode | Route | Effet |
+|---|---|---|
+| GET | `/api/zupdrive/chauffeur/me` | Dossier + ce qui manque (`null` si pas commencé) |
+| POST | `/api/zupdrive/chauffeur/me` | Ouvre le dossier (idempotent) |
+| PATCH | `/api/zupdrive/chauffeur/me` | Met à jour le profil |
+| POST | `/api/zupdrive/chauffeur/me/documents` | Dépose une pièce (multipart `file`, `type`, `dateExpiration?`) |
+| POST | `/api/zupdrive/chauffeur/me/submit` | Soumet le dossier (idempotent) |
+
+### API équipe ZupDrive
+
+Gardée par les permissions de la **plateforme DRIVE** (section `chauffeurs`) : un rôle ZupEat seul n'y donne pas accès. Le Support peut lire, l'Administrateur peut décider. Chaque décision est journalisée (`ZUPDRIVE_*`).
+
+| Méthode | Route | Effet |
+|---|---|---|
+| GET | `/api/zupdrive/admin/chauffeurs?statut=` | Liste paginée |
+| GET | `/api/zupdrive/admin/chauffeurs/:id` | Dossier complet |
+| PATCH | `/api/zupdrive/admin/chauffeurs/:id/documents/:documentId` | `{ approuve, note? }` |
+| POST | `/api/zupdrive/admin/chauffeurs/:id/approve` | Valide le dossier |
+| POST | `/api/zupdrive/admin/chauffeurs/:id/reject` | `{ motif }` |
+| POST | `/api/zupdrive/admin/chauffeurs/:id/suspend` | `{ motif }` |
+| POST | `/api/zupdrive/admin/chauffeurs/:id/reactivate` | Rétablit un chauffeur suspendu |

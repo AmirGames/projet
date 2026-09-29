@@ -45,12 +45,14 @@ const CHEMINS_PUBLICS = [
  * L'administration de la plateforme travaille par définition sur les données
  * des autres ; ses routeurs ont leur propre contrôle (`isSuperOwner`,
  * `isSystemAdmin`). L'espace livreur est cloisonné par le livreur, pas par une
- * organisation.
+ * organisation ; de même le dossier chauffeur ZupDrive, toujours celui du
+ * compte connecté, et son administration (permissions de la plateforme DRIVE).
  */
 const CHEMINS_HORS_PORTEE = [
   "/api/superowner",
   "/api/admin",
   "/api/drivers",
+  "/api/zupdrive",
   "/api/notifications",
   "/api/support",
 ];

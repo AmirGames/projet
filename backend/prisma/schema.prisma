@@ -43,6 +43,10 @@ model User {
   memberships   Membership[]
   auditLogs     SystemAuditLog[]
   driver        Driver?
+  /// Le dossier chauffeur ZupDrive (licence LVC). Distinct du profil livreur
+  /// ZupEat : un même compte ZupOne peut avoir les deux, chacun avec son
+  /// propre formulaire et sa propre validation.
+  chauffeurDrive ChauffeurDrive?
   customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
   ticketMessages TicketMessage[]
   pushDevices   PushDevice[]
@@ -2381,4 +2385,79 @@ model DriverTip {
 
   @@index([driverId, status, payoutId])
   @@index([payoutId])
+}
+
+// ============================================================================
+// ZUPDRIVE — CHAUFFEURS (licence LVC / transport rémunéré de personnes)
+// ============================================================================
+
+/// Le dossier d'un chauffeur ZupDrive : son entreprise (BCE/TVA), sa licence,
+/// son véhicule, et où en est sa validation. Voir docs/zupdrive.md et
+/// src/modules/zupdrive/chauffeur-onboarding.service.ts.
+///
+/// Rattaché à un compte ZupOne unique. Ce n'est pas un livreur ZupEat : un
+/// chauffeur qui veut livrer passe par « Devenir livreur » (modèle Driver).
+model ChauffeurDrive {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  nomComplet String
+  telephone  String?
+  /// BRUXELLES, WALLONIE ou FLANDRE : décide de l'organisme qui délivre la
+  /// licence et des pièces exigées.
+  region     String?
+
+  /// Entreprise : numéro BCE (10 chiffres, sans points) et raison sociale.
+  /// Le numéro de TVA belge s'en déduit (« BE » + numéro BCE).
+  numeroEntreprise String?
+  raisonSociale    String?
+
+  numeroLicence String?
+
+  vehiculeMarque String?
+  vehiculeModele String?
+  /// Plaque d'immatriculation, en majuscules, sans espaces ni tirets.
+  vehiculePlaque String?
+
+  /// BROUILLON, SOUMIS, VALIDE, REFUSE, SUSPENDU.
+  statut      String    @default("BROUILLON")
+  /// Pourquoi le dossier a été refusé ou le compte suspendu, dit au chauffeur.
+  motifStatut String?
+  soumisLe    DateTime?
+  valideLe    DateTime?
+  /// Le membre de l'équipe qui a validé le dossier.
+  validePar   String?
+
+  user      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents DocumentChauffeurDrive[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([statut])
+}
+
+/// Une pièce du dossier d'un chauffeur ZupDrive. Une seule par type : la
+/// redéposer remplace l'ancienne et la remet en examen.
+model DocumentChauffeurDrive {
+  id             String    @id @default(cuid())
+  chauffeurId    String
+  /// Voir TYPES_PIECE dans chauffeur-onboarding.service.ts.
+  type           String
+  /// Stockage privé (dossier « chauffeurs »), servi par /api/files.
+  url            String
+  dateExpiration DateTime?
+  /// PENDING, APPROVED, REJECTED, EXPIRED.
+  statut         String    @default("PENDING")
+  /// Le motif d'un refus, que le chauffeur doit pouvoir lire.
+  noteExamen     String?
+  examineLe      DateTime?
+
+  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chauffeurId, type])
+  @@index([statut])
 }

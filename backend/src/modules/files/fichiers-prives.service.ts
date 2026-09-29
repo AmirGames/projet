@@ -22,10 +22,11 @@ import { PermissionsPlateforme } from "../auth/permissions-plateforme.service";
  *   une balise <img>, qui n'envoie pas de jeton.
  *
  * Le propriétaire se retrouve par la table qui référence la pièce :
- * DriverDocument, OrganizationDocument, OrderDelivery.proofPhoto.
+ * DriverDocument, OrganizationDocument, OrderDelivery.proofPhoto,
+ * DocumentChauffeurDrive (ZupDrive).
  */
 
-export const DOSSIERS_PRIVES = ["drivers", "merchants", "deliveries"] as const;
+export const DOSSIERS_PRIVES = ["drivers", "merchants", "deliveries", "chauffeurs"] as const;
 export type DossierPrive = (typeof DOSSIERS_PRIVES)[number];
 
 /** Durée de vie d'une adresse signée. */
@@ -160,6 +161,7 @@ const SECTIONS_DU_DOSSIER: Record<DossierPrive, string[]> = {
   drivers: ["drivers", "driver-support"],
   merchants: ["organizations", "stores"],
   deliveries: ["billing", "support-tickets", "driver-support", "drivers"],
+  chauffeurs: ["chauffeurs"],
 };
 
 /** L'équipe de la plateforme, avec une section qui couvre ce dossier. */
@@ -193,6 +195,14 @@ export async function peutLire(
   if (dossier === "drivers") {
     const piece = await db.driverDocument.findFirst({
       where: { documentUrl: reference(relatif), driver: { userId } },
+      select: { id: true },
+    });
+    return Boolean(piece);
+  }
+
+  if (dossier === "chauffeurs") {
+    const piece = await db.documentChauffeurDrive.findFirst({
+      where: { url: reference(relatif), chauffeur: { userId } },
       select: { id: true },
     });
     return Boolean(piece);
