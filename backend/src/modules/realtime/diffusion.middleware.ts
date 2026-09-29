@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 
-import { db, surEcritureCommande, EcritureCommande } from "../services/db";
-import { logger } from "../config/logger";
-import { signalerModification, Destinataires, Modification } from "../config/socket";
-import { verifyToken } from "./auth";
+import { db, surEcritureCommande, EcritureCommande } from "../../services/db";
+import { logger } from "../../config/logger";
+import { signalerModification, Destinataires, Modification } from "./socket";
+import { verifyToken } from "../auth/auth.middleware";
 
 /**
  * Le site en temps réel.

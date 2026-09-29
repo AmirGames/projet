@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 
-import { db } from "../services/db";
-import { logger } from "../config/logger";
-import { verifyToken } from "./auth";
-import { DemoMerchantService, empreinteVisiteur } from "../modules/merchants/demo.service";
+import { db } from "../../services/db";
+import { logger } from "../../config/logger";
+import { verifyToken } from "../auth/auth.middleware";
+import { DemoMerchantService, empreinteVisiteur } from "./demo.service";
 
 /**
  * Le compte démo peut tout essayer sauf ce qui sortirait de la démonstration.

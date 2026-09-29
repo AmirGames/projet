@@ -4,8 +4,8 @@ import { z } from "zod";
 
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../../middleware/auth";
-import { uploadMiddleware } from "../../middleware/file-upload";
+import { authMiddleware } from "../auth/auth.middleware";
+import { uploadMiddleware } from "../files/file-upload.middleware";
 import {
   MerchantProfileService,
   TYPES_DOCUMENT_COMMERCANT,

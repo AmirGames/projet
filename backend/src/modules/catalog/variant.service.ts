@@ -1,6 +1,6 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { emitStoreEvent } from "../../config/socket";
+import { emitStoreEvent } from "../realtime/socket";
 
 /**
  * Les déclinaisons d'un plat.

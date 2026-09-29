@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { ReviewService } from "./review.service";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { ApiError } from "../../middleware/errorHandler";
 import { db } from "../../services/db";
 import { ficheClientDuCompte } from "../customers/fiche-client.service";
@@ -9,7 +9,7 @@ import { logger } from "../../config/logger";
 import { avisDuClientSurCommande } from "./avis-client.service";
 import { ReviewModerationService } from "./review-moderation.service";
 
-import { emitMerchantEvent } from "../../config/socket";
+import { emitMerchantEvent } from "../realtime/socket";
 
 const router = Router();
 

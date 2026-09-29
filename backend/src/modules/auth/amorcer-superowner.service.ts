@@ -1,5 +1,5 @@
 import { logger } from "../../config/logger";
-import { EmailService } from "../../services/email.service";
+import { EmailService } from "../notifications/email.service";
 import {
   ConfigurationSuperownerInvalide,
   creerSuperownerInitial,

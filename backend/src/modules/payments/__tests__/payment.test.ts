@@ -19,7 +19,7 @@ const stripe: any = {
 };
 
 jest.mock("../../../services/db", () => ({ db }));
-jest.mock("../../../config/stripe", () => ({
+jest.mock("../stripe", () => ({
   stripe,
   STRIPE_CONFIG: { currency: "eur", webhookSecret: SECRET },
 }));

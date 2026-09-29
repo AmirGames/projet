@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { horsReversements, reversementsDepuis } from "../payouts/merchant-payout.service";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { PlanService } from "../plans/plan.service";
 import { fraisDusALaPlateforme, fraisDeServiceDus } from "../delivery/delivery-mode.service";
 import { isSuperOwner } from "./shared";

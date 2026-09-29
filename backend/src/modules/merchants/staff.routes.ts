@@ -3,7 +3,7 @@ import { z } from "zod";
 import { champEmail, emailFacultatif } from "../../utils/validation";
 import { StaffService } from "./staff.service";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
 
 const router = Router();

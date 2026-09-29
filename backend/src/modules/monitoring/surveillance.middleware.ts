@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Surveillance } from "../modules/monitoring/surveillance.service";
+import { Surveillance } from "./surveillance.service";
 
 /**
  * Un chemin ramené à sa forme générique.

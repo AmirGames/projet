@@ -34,7 +34,7 @@ jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
-jest.mock("../../../config/socket", () => ({
+jest.mock("../../realtime/socket", () => ({
   emitOrderUpdate: jest.fn(),
   emitNotification: jest.fn(),
   emitMerchantEvent: jest.fn(),

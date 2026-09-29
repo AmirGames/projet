@@ -4,7 +4,7 @@ import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { finAttente } from "../drivers/delivery-proof.service";
 import { presenter } from "../files/fichiers-prives.service";
-import type { Compte } from "../../middleware/auth";
+import type { Compte } from "../auth/auth.middleware";
 
 /**
  * Le suivi d'une commande, et qui a le droit de le lire.

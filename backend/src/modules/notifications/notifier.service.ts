@@ -3,9 +3,9 @@ import { Prisma } from "@prisma/client";
 
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
-import { EmailService } from "../../services/email.service";
+import { EmailService } from "./email.service";
 import { lienDeSuivi } from "../orders/suivi-commande.service";
-import { emitMerchantEvent } from "../../config/socket";
+import { emitMerchantEvent } from "../realtime/socket";
 
 /**
  * Notifications multicanales : e-mail, SMS, push navigateur.
@@ -536,7 +536,7 @@ export class Notifier {
         },
       });
 
-      const { emitNotification } = await import("../../config/socket");
+      const { emitNotification } = await import("../realtime/socket");
       emitNotification(commande.customerEmail, {
         type: "driver_nearby",
         orderId,

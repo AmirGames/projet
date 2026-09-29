@@ -24,14 +24,14 @@ jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
-jest.mock("../../../config/socket", () => ({
+jest.mock("../../realtime/socket", () => ({
   emitOrderUpdate: jest.fn(),
   emitNotification: jest.fn(),
   emitMerchantEvent: jest.fn(),
 }));
 jest.mock("../../../config/env", () => ({ getEnv: () => ({ ENABLE_STRIPE: false }) }));
 jest.mock("../../webhooks/webhook.service", () => ({ emitWebhook: jest.fn() }));
-jest.mock("../../../services/email.service", () => ({ EmailService: { sendOrderConfirmation: jest.fn() } }));
+jest.mock("../../notifications/email.service", () => ({ EmailService: { sendOrderConfirmation: jest.fn() } }));
 jest.mock("../../notifications/notifier.service", () => ({
   Notifier: { pushEquipeBoutique: jest.fn(async () => 0) },
   enArrierePlan: (envoi: Promise<unknown>) => envoi,

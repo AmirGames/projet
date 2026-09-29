@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { ReviewModerationService } from "./review-moderation.service";
 import { isSuperOwner } from "../superowner/shared";
 

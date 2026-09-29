@@ -4,11 +4,11 @@ import { ibanNormalise, ibanValide } from "../../utils/sepa";
 import { db } from "../../services/db";
 import { champAcceptation, enregistrerAcceptation } from "../legal/acceptation-conditions.service";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../../middleware/auth";
-import { uploadMiddleware } from "../../middleware/file-upload";
+import { authMiddleware } from "../auth/auth.middleware";
+import { uploadMiddleware } from "../files/file-upload.middleware";
 import { limiterInscriptions } from "../../middleware/throttle";
 import { logger } from "../../config/logger";
-import { emitDeliveryUpdate, emitNotification } from "../../config/socket";
+import { emitDeliveryUpdate, emitNotification } from "../realtime/socket";
 import { DispatchService, STATUTS_EN_COURSE } from "./dispatch.service";
 import { ordonner, versCourseTournee } from "./tournee.service";
 import { AuthService } from "../auth/auth.service";
@@ -1263,7 +1263,7 @@ router.patch(
           });
 
           // Notifier en temps réel via Socket.IO
-          const { emitOrderUpdate } = await import("../../config/socket");
+          const { emitOrderUpdate } = await import("../realtime/socket");
           emitOrderUpdate(delivery.orderId, "COMPLETED", {
             message: "Votre commande a été livrée. Merci pour votre achat !",
             title: "Commande livrée avec succès",
@@ -1723,7 +1723,7 @@ router.patch(
           },
         });
 
-        const { emitNotification } = await import("../../config/socket");
+        const { emitNotification } = await import("../realtime/socket");
         emitNotification(order.customerEmail, {
           type: "delivery_cancelled",
           orderId: course.orderId,

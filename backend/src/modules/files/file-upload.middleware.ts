@@ -1,7 +1,7 @@
 import multer from "multer";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
-import { ApiError } from "./errorHandler";
-import { detecterType, normaliserTypeAnnonce, type TypeFichier } from "../utils/file-type";
+import { ApiError } from "../../middleware/errorHandler";
+import { detecterType, normaliserTypeAnnonce, type TypeFichier } from "../../utils/file-type";
 
 const MESSAGE_TYPE = "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou PDF.";
 
