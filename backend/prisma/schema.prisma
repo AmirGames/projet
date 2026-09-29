@@ -164,6 +164,12 @@ model Organization {
   /// commandable, jamais reversé, sans accès aux coordonnées bancaires ni aux
   /// envois. Remis à zéro chaque nuit (voir demo.service.ts).
   isDemo   Boolean           @default(false)
+  /// Empreinte (IP + navigateur) du dernier visiteur du commerce de démo, et
+  /// sa dernière activité : de quoi remettre la démo à zéro quand il part, ou
+  /// qu'un autre arrive après lui. Vides hors démo et juste après une remise
+  /// à zéro.
+  demoVisiteurHash String?
+  demoActiviteAt   DateTime?
 
   // Suspension info
   suspensionReason    String?
