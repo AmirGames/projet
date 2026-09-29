@@ -1,7 +1,7 @@
-import { OrderAcceptanceService } from "../services/order-acceptance.service";
-import { paymentService } from "../services/payment.service";
-import { logger } from "../config/logger";
-import { Surveillance } from "../services/surveillance.service";
+import { OrderAcceptanceService } from "./order-acceptance.service";
+import { paymentService } from "../../services/payment.service";
+import { logger } from "../../config/logger";
+import { Surveillance } from "../../services/surveillance.service";
 
 /**
  * Le temps de réponse des commerçants, et l'appel des livreurs.

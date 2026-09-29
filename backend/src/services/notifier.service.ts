@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { logger } from "../config/logger";
 import { EmailService } from "./email.service";
-import { lienDeSuivi } from "./suivi-commande.service";
+import { lienDeSuivi } from "../modules/orders/suivi-commande.service";
 import { emitMerchantEvent } from "../config/socket";
 
 /**

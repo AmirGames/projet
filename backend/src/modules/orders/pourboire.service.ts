@@ -1,12 +1,12 @@
 import Stripe from "stripe";
 
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { logger } from "../config/logger";
-import { getEnv } from "../config/env";
-import { stripe, STRIPE_CONFIG } from "../config/stripe";
-import { emitNotification } from "../config/socket";
-import { POURBOIRE_MAXIMUM } from "../modules/delivery/delivery-mode.service";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { logger } from "../../config/logger";
+import { getEnv } from "../../config/env";
+import { stripe, STRIPE_CONFIG } from "../../config/stripe";
+import { emitNotification } from "../../config/socket";
+import { POURBOIRE_MAXIMUM } from "../delivery/delivery-mode.service";
 
 /**
  * Le pourboire laissé **après** la livraison.

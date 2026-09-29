@@ -8,7 +8,7 @@ import { brancherAnnoncesCommandes } from "./middleware/diffusion";
 import { db } from "./services/db";
 import { ClosureJobs } from "./jobs/closure-jobs";
 import { DispatchJobs } from "./modules/drivers/dispatch.jobs";
-import { OrderJobs } from "./jobs/order-jobs";
+import { OrderJobs } from "./modules/orders/order.jobs";
 import { DriverJobs } from "./modules/drivers/driver.jobs";
 import { WebhookJobs } from "./jobs/webhook-jobs";
 import { MerchantJobs } from "./jobs/merchant-jobs";

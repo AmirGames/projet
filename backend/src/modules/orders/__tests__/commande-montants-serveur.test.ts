@@ -20,45 +20,45 @@ const db: any = {
   order: { create: jest.fn() },
 };
 
-jest.mock("../db", () => ({ db }));
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
-jest.mock("../../config/socket", () => ({
+jest.mock("../../../config/socket", () => ({
   emitOrderUpdate: jest.fn(),
   emitNotification: jest.fn(),
   emitMerchantEvent: jest.fn(),
 }));
-jest.mock("../../config/env", () => ({ getEnv: () => ({ ENABLE_STRIPE: false }) }));
-jest.mock("../webhook.service", () => ({ emitWebhook: jest.fn() }));
-jest.mock("../email.service", () => ({ EmailService: { sendOrderConfirmation: jest.fn() } }));
-jest.mock("../notifier.service", () => ({
+jest.mock("../../../config/env", () => ({ getEnv: () => ({ ENABLE_STRIPE: false }) }));
+jest.mock("../../../services/webhook.service", () => ({ emitWebhook: jest.fn() }));
+jest.mock("../../../services/email.service", () => ({ EmailService: { sendOrderConfirmation: jest.fn() } }));
+jest.mock("../../../services/notifier.service", () => ({
   Notifier: { pushEquipeBoutique: jest.fn(async () => 0) },
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
-jest.mock("../../modules/drivers/dispatch.service", () => ({ DispatchService: {} }));
+jest.mock("../../drivers/dispatch.service", () => ({ DispatchService: {} }));
 jest.mock("../pourboire.service", () => ({ PourboireService: {} }));
-jest.mock("../../modules/delivery/store-hours.service", () => ({ StoreHoursService: { isOpenNow: () => true } }));
-jest.mock("../variant.service", () => ({
+jest.mock("../../delivery/store-hours.service", () => ({ StoreHoursService: { isOpenNow: () => true } }));
+jest.mock("../../../services/variant.service", () => ({
   VariantService: { prixDeLaLigne: jest.fn(async () => 12.5) },
 }));
-jest.mock("../supplement.service", () => ({
+jest.mock("../../../services/supplement.service", () => ({
   SupplementService: { tarifer: jest.fn(async () => ({ montant: 0, retenus: [] })) },
 }));
-jest.mock("../tax.service", () => ({
+jest.mock("../../../services/tax.service", () => ({
   TaxService: {
     tauxAAjouter: jest.fn(async () => new Map()),
     ttc: (montant: number) => montant,
     taxeDesLignes: jest.fn(async () => ({ aAjouter: 0, total: 0, taux: 0, parLigne: [] })),
   },
 }));
-jest.mock("../../modules/delivery/delivery-zone.service", () => ({
+jest.mock("../../delivery/delivery-zone.service", () => ({
   DeliveryZoneService: {
     controlerLaLivraison: jest.fn(async () => ({ frais: 3.5, mode: "OWN" })),
   },
 }));
-jest.mock("../promotion.service", () => ({ PromotionService: {} }));
-jest.mock("../acceptation-conditions.service", () => {
+jest.mock("../../../services/promotion.service", () => ({ PromotionService: {} }));
+jest.mock("../../../services/acceptation-conditions.service", () => {
   const { z } = jest.requireActual<typeof import("zod")>("zod");
   return {
     champAcceptation: { conditionsAcceptees: z.literal(true) },
@@ -67,9 +67,9 @@ jest.mock("../acceptation-conditions.service", () => {
 });
 
 import { OrderService } from "../order.service";
-import { DeliveryZoneService } from "../../modules/delivery/delivery-zone.service";
-import orderRouter from "../../routes/order";
-import { errorHandler } from "../../middleware/errorHandler";
+import { DeliveryZoneService } from "../../delivery/delivery-zone.service";
+import orderRouter from "../order.routes";
+import { errorHandler } from "../../../middleware/errorHandler";
 
 const STORE_ID = "ckboutique00000000000000";
 

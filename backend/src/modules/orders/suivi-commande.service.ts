@@ -1,10 +1,10 @@
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
 
-import { db } from "./db";
-import { logger } from "../config/logger";
-import { finAttente } from "../modules/drivers/delivery-proof.service";
-import { presenter } from "./fichiers-prives.service";
-import type { Compte } from "../middleware/auth";
+import { db } from "../../services/db";
+import { logger } from "../../config/logger";
+import { finAttente } from "../drivers/delivery-proof.service";
+import { presenter } from "../../services/fichiers-prives.service";
+import type { Compte } from "../../middleware/auth";
 
 /**
  * Le suivi d'une commande, et qui a le droit de le lire.

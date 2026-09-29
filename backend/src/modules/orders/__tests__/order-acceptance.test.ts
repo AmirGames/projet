@@ -12,27 +12,27 @@ const db: any = {
   notification: { create: jest.fn() },
 };
 
-jest.mock("../db", () => ({ db }));
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
-jest.mock("../../config/socket", () => ({
+jest.mock("../../../config/socket", () => ({
   emitOrderUpdate: jest.fn(),
   emitNotification: jest.fn(),
   emitMerchantEvent: jest.fn(),
 }));
-jest.mock("../webhook.service", () => ({ emitWebhook: jest.fn() }));
-jest.mock("../email.service", () => ({
+jest.mock("../../../services/webhook.service", () => ({ emitWebhook: jest.fn() }));
+jest.mock("../../../services/email.service", () => ({
   EmailService: { sendOrderStatusUpdate: jest.fn() },
 }));
-jest.mock("../notifier.service", () => ({
+jest.mock("../../../services/notifier.service", () => ({
   Notifier: { pushLivreur: jest.fn(async () => true), pushClient: jest.fn(async () => 0) },
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
-jest.mock("../payment.service", () => ({
+jest.mock("../../../services/payment.service", () => ({
   paymentService: { rembourserCommande: jest.fn(async () => null) },
 }));
-jest.mock("../../modules/drivers/dispatch.service", () => ({
+jest.mock("../../drivers/dispatch.service", () => ({
   DispatchService: {
     creerCourse: jest.fn(async () => ({ id: "course-1", driverId: null })),
     proposerAuSuivant: jest.fn(),
@@ -44,10 +44,10 @@ import {
   echeanceDeReponse,
   verifierTransition,
 } from "../order-acceptance.service";
-import { EmailService } from "../email.service";
-import { DispatchService } from "../../modules/drivers/dispatch.service";
-import { Notifier } from "../notifier.service";
-import { paymentService } from "../payment.service";
+import { EmailService } from "../../../services/email.service";
+import { DispatchService } from "../../drivers/dispatch.service";
+import { Notifier } from "../../../services/notifier.service";
+import { paymentService } from "../../../services/payment.service";
 
 const MINUTE = 60 * 1000;
 

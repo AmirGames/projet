@@ -30,7 +30,7 @@ jest.mock("../../middleware/auth", () => ({
 
 import paymentRouter from "../payment";
 import { paymentService } from "../../services/payment.service";
-import { genererJetonDeSuivi } from "../../services/suivi-commande.service";
+import { genererJetonDeSuivi } from "../../modules/orders/suivi-commande.service";
 
 const app = express();
 app.use(express.json());

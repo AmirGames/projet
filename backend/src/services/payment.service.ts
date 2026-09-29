@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { montantAEncaisser } from "../modules/delivery/delivery-mode.service";
-import { PourboireService } from "./pourboire.service";
+import { PourboireService } from "../modules/orders/pourboire.service";
 import { db } from "./db";
 import { stripe, STRIPE_CONFIG } from "../config/stripe";
 import { logger } from "../config/logger";
@@ -293,7 +293,7 @@ export const paymentService = {
     if (!commande) return false;
 
     // Import tardif : le service des commandes dépend déjà de celui-ci.
-    const { OrderService } = await import("./order.service");
+    const { OrderService } = await import("../modules/orders/order.service");
     await OrderService.annoncerAuCommercant(commande);
 
     logger.info("Commande transmise au commerçant après encaissement", { orderId });

@@ -1,5 +1,5 @@
 import { finAttente } from "../modules/drivers/delivery-proof.service";
-import { positionLivreurVisible } from "../services/suivi-commande.service";
+import { positionLivreurVisible } from "../modules/orders/suivi-commande.service";
 import { presenter } from "../services/fichiers-prives.service";
 import { SupplementService } from "../services/supplement.service";
 import { TaxService } from "../services/tax.service";
@@ -19,7 +19,7 @@ import { CustomerAccountService } from "../services/customer-account.service";
 import { ficheClientDuCompte } from "../services/fiche-client.service";
 import { avisARedemander, avisRestaurantParCommerce } from "../modules/reviews/avis-client.service";
 import { avecLaVraieNote } from "../modules/reviews/review.service";
-import { CustomerCartService, panierSchema } from "../services/customer-cart.service";
+import { CustomerCartService, panierSchema } from "../modules/orders/customer-cart.service";
 import {
   COMMENTAIRE_MAX,
   NOTE_MAX,

@@ -7,7 +7,7 @@ import { getEnv } from "../config/env";
 import { db } from "../services/db";
 import { authMiddleware } from "../middleware/auth";
 import { limiterCadence } from "../middleware/throttle";
-import { jetonReconnu } from "../services/suivi-commande.service";
+import { jetonReconnu } from "../modules/orders/suivi-commande.service";
 
 const router = Router();
 

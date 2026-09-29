@@ -1,17 +1,17 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { PourboireService } from "../services/pourboire.service";
-import { champEmail } from "../utils/validation";
-import { OrderService } from "../services/order.service";
-import { ApiError } from "../middleware/errorHandler";
-import { authFacultative, authMiddleware } from "../middleware/auth";
-import { limiterCadence } from "../middleware/throttle";
-import { courseVisible, type Appelant } from "../services/suivi-commande.service";
-import { logger } from "../config/logger";
-import { emitOrderUpdate } from "../config/socket";
-import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
+import { PourboireService } from "./pourboire.service";
+import { champEmail } from "../../utils/validation";
+import { OrderService } from "./order.service";
+import { ApiError } from "../../middleware/errorHandler";
+import { authFacultative, authMiddleware } from "../../middleware/auth";
+import { limiterCadence } from "../../middleware/throttle";
+import { courseVisible, type Appelant } from "./suivi-commande.service";
+import { logger } from "../../config/logger";
+import { emitOrderUpdate } from "../../config/socket";
+import { champAcceptation, enregistrerAcceptation } from "../../services/acceptation-conditions.service";
 
-import { DispatchService } from "../modules/drivers/dispatch.service";
+import { DispatchService } from "../drivers/dispatch.service";
 
 const router = Router();
 

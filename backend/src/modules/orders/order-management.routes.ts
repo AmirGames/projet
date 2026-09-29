@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { OrderManagementService } from "../services/order-management.service";
-import { OrderAcceptanceService, MOTIFS_DU_COMMERCANT } from "../services/order-acceptance.service";
-import { authMiddleware } from "../middleware/auth";
-import { logger } from "../config/logger";
+import { OrderManagementService } from "./order-management.service";
+import { OrderAcceptanceService, MOTIFS_DU_COMMERCANT } from "./order-acceptance.service";
+import { authMiddleware } from "../../middleware/auth";
+import { logger } from "../../config/logger";
 
 const router = Router();
 

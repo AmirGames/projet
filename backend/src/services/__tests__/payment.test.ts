@@ -24,7 +24,7 @@ jest.mock("../../config/stripe", () => ({
   STRIPE_CONFIG: { currency: "eur", webhookSecret: SECRET },
 }));
 const annoncerAuCommercant = fn();
-jest.mock("../order.service", () => ({ OrderService: { annoncerAuCommercant } }));
+jest.mock("../../modules/orders/order.service", () => ({ OrderService: { annoncerAuCommercant } }));
 jest.mock("../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));

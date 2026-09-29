@@ -9,22 +9,22 @@ const db: any = {
   membership: { findFirst: jest.fn() },
 };
 
-jest.mock("../../services/db", () => ({ db }));
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
-jest.mock("../../config/socket", () => ({
+jest.mock("../../../config/socket", () => ({
   emitOrderUpdate: jest.fn(),
   emitNotification: jest.fn(),
   emitMerchantEvent: jest.fn(),
 }));
 // La configuration réelle exige une base et des secrets absents des tests.
-jest.mock("../../config/env", () => ({
+jest.mock("../../../config/env", () => ({
   getEnv: () => ({ NODE_ENV: "test", ENABLE_STRIPE: false }),
   loadEnv: () => ({ NODE_ENV: "test", ENABLE_STRIPE: false }),
 }));
-jest.mock("../../services/email.service", () => ({ EmailService: {} }));
-jest.mock("../../services/notifier.service", () => ({
+jest.mock("../../../services/email.service", () => ({ EmailService: {} }));
+jest.mock("../../../services/notifier.service", () => ({
   Notifier: {},
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
@@ -33,7 +33,7 @@ jest.mock("../../services/notifier.service", () => ({
  * La session, réduite à ce qui compte ici : « Bearer <userId> ». Le compte de
  * la plateforme se reconnaît à son nom.
  */
-jest.mock("../../middleware/auth", () => ({
+jest.mock("../../../middleware/auth", () => ({
   authMiddleware: (req: any, _res: any, next: any) => {
     const entete: string | undefined = req.headers.authorization;
     if (!entete?.startsWith("Bearer ")) return next(new Error("sans session"));
@@ -51,8 +51,8 @@ jest.mock("../../middleware/auth", () => ({
   authFacultative: (_req: any, _res: any, next: any) => next(),
 }));
 
-import ordersRouter from "../order";
-import { empreinteDuJeton, genererJetonDeSuivi } from "../../services/suivi-commande.service";
+import ordersRouter from "../order.routes";
+import { empreinteDuJeton, genererJetonDeSuivi } from "../suivi-commande.service";
 
 const app = express();
 app.use(express.json());

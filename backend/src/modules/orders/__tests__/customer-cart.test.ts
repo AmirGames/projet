@@ -6,9 +6,9 @@ const db: any = {
 };
 const emitUserEvent = jest.fn();
 
-jest.mock("../db", () => ({ db }));
-jest.mock("../../config/socket", () => ({ emitUserEvent }));
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../config/socket", () => ({ emitUserEvent }));
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
