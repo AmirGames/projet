@@ -1,6 +1,6 @@
 import { MerchantPayoutService } from "./merchant-payout.service";
 import { logger } from "../../config/logger";
-import { Surveillance } from "../../services/surveillance.service";
+import { Surveillance } from "../monitoring/surveillance.service";
 
 /**
  * L'arrêté du lundi.

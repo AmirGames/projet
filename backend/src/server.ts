@@ -13,8 +13,8 @@ import { DriverJobs } from "./modules/drivers/driver.jobs";
 import { WebhookJobs } from "./jobs/webhook-jobs";
 import { MerchantJobs } from "./jobs/merchant-jobs";
 import { PayoutJobs } from "./modules/payouts/payout.jobs";
-import { Vigie } from "./services/vigie.service";
-import { Disponibilite } from "./services/disponibilite.service";
+import { Vigie } from "./modules/monitoring/vigie.service";
+import { Disponibilite } from "./modules/monitoring/disponibilite.service";
 
 // Load environment variables
 const env = loadEnv();

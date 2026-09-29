@@ -1,5 +1,5 @@
-import { db } from "./db";
-import { logger } from "../config/logger";
+import { db } from "../../services/db";
+import { logger } from "../../config/logger";
 import { Surveillance, resumeErreur } from "./surveillance.service";
 
 /**

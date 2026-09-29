@@ -1,6 +1,6 @@
 import { MerchantClosureService } from "../modules/merchants/merchant-closure.service";
 import { logger } from "../config/logger";
-import { Surveillance } from "../services/surveillance.service";
+import { Surveillance } from "../modules/monitoring/surveillance.service";
 
 export class ClosureJobs {
   private static intervalIds: NodeJS.Timeout[] = [];

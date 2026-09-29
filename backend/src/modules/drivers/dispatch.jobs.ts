@@ -1,6 +1,6 @@
 import { DispatchService } from "./dispatch.service";
 import { logger } from "../../config/logger";
-import { Surveillance } from "../../services/surveillance.service";
+import { Surveillance } from "../monitoring/surveillance.service";
 
 /**
  * Relance des courses dont la proposition a expiré.

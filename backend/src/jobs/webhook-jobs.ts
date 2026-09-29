@@ -1,6 +1,6 @@
 import { WebhookService } from "../services/webhook.service";
 import { logger } from "../config/logger";
-import { Surveillance } from "../services/surveillance.service";
+import { Surveillance } from "../modules/monitoring/surveillance.service";
 
 /**
  * Rejoue les envois de webhooks dont la relance est due.

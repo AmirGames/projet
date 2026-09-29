@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db } from "../../services/db";
 
 /**
  * Santé de la plateforme, en un chiffre et ses raisons.

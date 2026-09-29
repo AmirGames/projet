@@ -1,8 +1,8 @@
 import fs from "fs/promises";
 import path from "path";
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { logger } from "../config/logger";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { logger } from "../../config/logger";
 
 const DOSSIER = process.env.BACKUP_DIR || path.join(process.cwd(), "backups");
 

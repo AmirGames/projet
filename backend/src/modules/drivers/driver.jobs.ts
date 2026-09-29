@@ -1,7 +1,7 @@
 import { DriverAvailabilityService } from "./driver-availability.service";
 import { DispatchService } from "./dispatch.service";
 import { logger } from "../../config/logger";
-import { Surveillance } from "../../services/surveillance.service";
+import { Surveillance } from "../monitoring/surveillance.service";
 
 /**
  * Surveillance périodique des livreurs.

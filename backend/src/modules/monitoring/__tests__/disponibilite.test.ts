@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from "@jest/globals";
 
-jest.mock("../db", () => ({ db: {} }));
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../services/db", () => ({ db: {} }));
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 

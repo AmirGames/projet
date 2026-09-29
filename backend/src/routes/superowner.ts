@@ -18,7 +18,7 @@ import {
 import { Plateforme } from "@prisma/client";
 import { ApiKeyService } from "../modules/auth/api-key.service";
 import { WebhookService, EVENEMENTS_WEBHOOK } from "../services/webhook.service";
-import { BackupService } from "../services/backup.service";
+import { BackupService } from "../modules/monitoring/backup.service";
 import { SecurityEventService } from "../modules/auth/security-event.service";
 import { invalidateMaintenanceCache } from "../middleware/maintenance";
 import { MerchantClosureService } from "../modules/merchants/merchant-closure.service";
@@ -36,9 +36,9 @@ import {
 import { StoreSupportService, libelleDuChamp } from "../modules/stores/store-support.service";
 import { MerchantProfileService } from "../modules/merchants/merchant-profile.service";
 import { MerchantApprovalService } from "../modules/merchants/merchant-approval.service";
-import { SystemHealthService } from "../services/system-health.service";
-import { Vigie } from "../services/vigie.service";
-import { Disponibilite } from "../services/disponibilite.service";
+import { SystemHealthService } from "../modules/monitoring/system-health.service";
+import { Vigie } from "../modules/monitoring/vigie.service";
+import { Disponibilite } from "../modules/monitoring/disponibilite.service";
 import { ReviewModerationService } from "../modules/reviews/review-moderation.service";
 
 const LIBELLES_STATUT: Record<string, string> = {

@@ -1,6 +1,6 @@
 import { MerchantApprovalService } from "../modules/merchants/merchant-approval.service";
 import { logger } from "../config/logger";
-import { Surveillance } from "../services/surveillance.service";
+import { Surveillance } from "../modules/monitoring/surveillance.service";
 
 /**
  * Surveillance périodique des dossiers commerçants.
