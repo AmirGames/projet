@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { euro } from '@/lib/format';
+import { jetonDeSuivi } from '@/lib/suivi-commande';
 
 const cleStripe = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
 const stripePromise = cleStripe ? loadStripe(cleStripe) : null;
@@ -79,7 +80,8 @@ function StripePaymentForm({
         const intentResponse = await fetch(`${API_URL}/api/payments/intent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId }),
+          // Le jeton de suivi, gardé à la création, prouve que la commande est la nôtre.
+          body: JSON.stringify({ orderId, trackingToken: jetonDeSuivi(orderId) || undefined }),
         });
 
         if (!intentResponse.ok) {
@@ -112,7 +114,11 @@ function StripePaymentForm({
         await fetch(`${API_URL}/api/payments/confirm`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentIntentId: result.paymentIntent.id }),
+          body: JSON.stringify({
+            orderId,
+            paymentIntentId: result.paymentIntent.id,
+            trackingToken: jetonDeSuivi(orderId) || undefined,
+          }),
         }).catch(() => undefined);
         onPaymentComplete(true);
       }
