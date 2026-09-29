@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { accueilDe, lienVersEspace } from '@/lib/domaines';
-import { EMAIL_CONTACT, PAGES_LEGALES } from '@/lib/editeur';
 
 export const metadata: Metadata = {
   title: 'ZupOne — Des services de proximité, un seul compte',
@@ -63,7 +62,6 @@ export default function VitrineZupOne() {
     },
   ];
 
-  const espaceEquipe = lienVersEspace('groupe', '/superowner');
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -159,38 +157,6 @@ export default function VitrineZupOne() {
           ))}
         </div>
       </section>
-
-      <footer className="bg-slate-900 px-6 py-16 text-white md:px-10">
-        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-10 md:grid-cols-3">
-          <div>
-            <h4 className="mb-3 text-lg font-bold">ZupOne</h4>
-            <p className="mb-3 text-slate-300">Le groupe derrière ZupEat et ZupDrive.</p>
-            <a href={`mailto:${EMAIL_CONTACT}`} className="text-slate-300 hover:text-white">
-              {EMAIL_CONTACT}
-            </a>
-          </div>
-          <div>
-            <h4 className="mb-3 text-lg font-bold">Plateformes</h4>
-            <Link href={accueilDe('public')} className="mb-2 block text-slate-300 hover:text-white">
-              ZupEat
-            </Link>
-            <Link href={accueilDe('drive')} className="mb-2 block text-slate-300 hover:text-white">
-              ZupDrive
-            </Link>
-            <Link href={espaceEquipe} className="mb-2 block text-slate-300 hover:text-white">
-              Espace équipe
-            </Link>
-          </div>
-          <div>
-            <h4 className="mb-3 text-lg font-bold">Informations légales</h4>
-            {PAGES_LEGALES.map((page) => (
-              <Link key={page.href} href={page.href} className="mb-2 block text-slate-300 hover:text-white">
-                {page.titre}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

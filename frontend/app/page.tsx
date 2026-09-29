@@ -1,7 +1,6 @@
 'use client';
 
 import { signalerErreur } from '@/lib/erreurs';
-import { PAGES_LEGALES } from '@/lib/editeur';
 import Link from '@/components/LienRegional';
 import { accueilDe } from '@/lib/domaines';
 import { useAuth } from "@/lib/auth-context";
@@ -250,63 +249,6 @@ export default function Home() {
           </Link>
         </div>
       </section>
-
-      {/* FOOTER */}
-      <footer className="bg-slate-900 px-6 py-16 text-white md:px-10">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 md:grid-cols-4">
-          <div>
-            <h4 className="mb-3 text-lg font-bold">ZupEat</h4>
-            <p className="text-slate-300">
-              La plateforme qui relie commerçants, clients et livreurs de proximité.
-            </p>
-          </div>
-          <div>
-            <h4 className="mb-3 text-lg font-bold">Plateforme</h4>
-            <Link href={accueilDe('public')} className="mb-2 block text-slate-300 hover:text-white">
-              Commerces
-            </Link>
-            {!user || (!isMerchant && !rolesLoading) ? (
-              <Link href="/devenir-commercant" className="mb-2 block text-slate-300 hover:text-white">
-                Devenir commerçant
-              </Link>
-            ) : null}
-            {!user || (!isDriver && !rolesLoading) ? (
-              <Link href="/devenir-livreur" className="mb-2 block text-slate-300 hover:text-white">
-                Devenir livreur
-              </Link>
-            ) : null}
-            <Link href="/devenir-chauffeur" className="mb-2 block text-slate-300 hover:text-white">
-              Devenir chauffeur
-              <span className="ml-2 rounded-full bg-amber-400/20 px-2 py-0.5 text-xs font-bold text-amber-300">Bientôt disponible</span>
-            </Link>
-          </div>
-          <div>
-            <h4 className="mb-3 text-lg font-bold">Compte</h4>
-            {!user ? (
-              <>
-                <Link href="/login" className="mb-2 block text-slate-300 hover:text-white">
-                  Connexion
-                </Link>
-                <Link href="/signup" className="mb-2 block text-slate-300 hover:text-white">
-                  Inscription
-                </Link>
-              </>
-            ) : (
-              <Link href="/dashboard" className="mb-2 block text-slate-300 hover:text-white">
-                Mon espace
-              </Link>
-            )}
-          </div>
-          <div>
-            <h4 className="mb-3 text-lg font-bold">Informations légales</h4>
-            {PAGES_LEGALES.map((page) => (
-              <Link key={page.href} href={page.href} className="mb-2 block text-slate-300 hover:text-white">
-                {page.titre}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
