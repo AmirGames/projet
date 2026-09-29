@@ -12,6 +12,7 @@ import { OrderJobs } from "./modules/orders/order.jobs";
 import { DriverJobs } from "./modules/drivers/driver.jobs";
 import { WebhookJobs } from "./modules/webhooks/webhook.jobs";
 import { MerchantJobs } from "./modules/merchants/merchant.jobs";
+import { DemoJobs } from "./modules/merchants/demo.jobs";
 import { PayoutJobs } from "./modules/payouts/payout.jobs";
 import { Vigie } from "./modules/monitoring/vigie.service";
 import { Disponibilite } from "./modules/monitoring/disponibilite.service";
@@ -62,6 +63,7 @@ const start = async () => {
     DriverJobs.start();
     WebhookJobs.start();
     MerchantJobs.start();
+    DemoJobs.start();
     PayoutJobs.start();
     OrderJobs.start();
 
@@ -76,6 +78,7 @@ const start = async () => {
       DispatchJobs.stop();
       WebhookJobs.stop();
       MerchantJobs.stop();
+      DemoJobs.stop();
       PayoutJobs.stop();
       OrderJobs.stop();
       DriverJobs.stop();

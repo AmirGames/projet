@@ -278,3 +278,36 @@ puis ouvrez `https://zupeat.com`.
 - **Erreurs CORS dans le navigateur** : le domaine affiché dans la barre
   d'adresse doit figurer dans `FRONTEND_URL` ou `ALLOWED_ORIGINS`.
 - **Disque plein** : `docker system df`, puis `docker builder prune -f`.
+
+---
+
+## Compte démo commerçant
+
+Un compte commerçant public, pour qu'un prospect essaie l'espace pro sans
+s'inscrire. Ses identifiants s'affichent sur la page de connexion, avec un
+bouton qui remplit le formulaire.
+
+Dans `.env.production`, puis `./deploy/zup.sh up` :
+
+```
+DEMO_MERCHANT_ENABLED=true
+DEMO_MERCHANT_EMAIL=demo@zupeat.com
+DEMO_MERCHANT_PASSWORD=<un mot de passe à part : il est public>
+```
+
+Au démarrage de l'API, puis chaque nuit à 3 h, le commerce est recréé : une
+boulangerie d'exemple avec ses catégories, ses produits et quelques commandes.
+Ce que les visiteurs y ont changé disparaît.
+
+Il reste hors du réel :
+
+- la boutique n'est jamais listée aux clients et refuse toute commande ;
+- les reversements l'ignorent ;
+- coordonnées bancaires, pièces justificatives, envois marketing, équipe,
+  support, fichiers et changement de mot de passe sont fermés en écriture
+  (réponse `403`, code `DEMO_ACCOUNT`) ;
+- les clients d'exemple ont une adresse en `.invalid` : aucun courriel n'y part.
+
+Il apparaît dans la liste des commerçants de la plateforme (organisation
+« Boulangerie Démo », slug `commerce-demo`). Pour le retirer : retirer
+`DEMO_MERCHANT_ENABLED`, puis le supprimer depuis l'espace plateforme.

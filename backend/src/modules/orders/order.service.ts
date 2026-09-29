@@ -189,12 +189,21 @@ export class OrderService {
           operatingHours: true,
           deletedAt: true,
           name: true,
-          org: { select: { approvedAt: true } },
+          org: { select: { approvedAt: true, isDemo: true } },
         },
       });
 
       if (!boutique || boutique.deletedAt) {
         throw new ApiError(404, "Boutique introuvable", "STORE_NOT_FOUND");
+      }
+
+      // La boutique de démonstration n'est pas un vrai commerce.
+      if (boutique.org.isDemo) {
+        throw new ApiError(
+          400,
+          "Cette boutique est une démonstration : elle ne prend pas de commande.",
+          "DEMO_STORE"
+        );
       }
 
       // Une boutique dont le commerce attend sa validation ne vend pas, même

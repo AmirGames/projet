@@ -159,6 +159,12 @@ model Organization {
   plan     String            @default("STARTER") // STARTER, PROFESSIONAL, ENTERPRISE
   status   String            @default("ACTIVE") // ACTIVE, SUSPENDED, CLOSED, INACTIVE
 
+  /// Le commerce de démonstration : un compte public, dont les identifiants
+  /// s'affichent sur la page de connexion. Jamais listé aux clients, jamais
+  /// commandable, jamais reversé, sans accès aux coordonnées bancaires ni aux
+  /// envois. Remis à zéro chaque nuit (voir demo.service.ts).
+  isDemo   Boolean           @default(false)
+
   // Suspension info
   suspensionReason    String?
   suspensionDate      DateTime?

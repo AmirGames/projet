@@ -31,6 +31,7 @@ import { champAcceptation, enregistrerAcceptation } from "../legal/acceptation-c
 import { StoreService } from "../stores/store.service";
 import { normaliserGenre } from "../stores/store-type.service";
 import { rattacherFicheInvite } from "../customers/fiche-client.service";
+import { configurationDemo } from "../merchants/demo.service";
 
 const router = Router();
 
@@ -143,6 +144,13 @@ router.post("/signup", limiterInscriptions, async (req: Request, res: Response, 
   } catch (err) {
     next(err);
   }
+});
+
+// GET /auth/demo - Les identifiants du commerce de démonstration, s'il est activé.
+// Publics par nature : ils s'affichent sur la page de connexion.
+router.get("/demo", (_req: Request, res: Response) => {
+  const config = configurationDemo();
+  res.json(config ? { enabled: true, ...config } : { enabled: false });
 });
 
 // POST /auth/login

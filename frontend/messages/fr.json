@@ -1428,6 +1428,13 @@
     "reviewPromptButton": "Donner mon avis",
     "reviewEdit": "Modifier mon avis"
   },
+  "accesDemo": {
+    "titre": "Essayer l'espace commerçant",
+    "description": "Un compte de démonstration, ouvert à tous : rien n'y est réel et il est remis à zéro chaque nuit.",
+    "email": "Email",
+    "motDePasse": "Mot de passe",
+    "utiliser": "Remplir le formulaire"
+  },
   "maintenanceGate": {
     "title": "Maintenance en cours",
     "message": "La plateforme est en maintenance. Veuillez réessayer dans quelques minutes."

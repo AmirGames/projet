@@ -10,6 +10,7 @@ import { setupErrorHandling } from "./middleware/errorHandler";
 import { lecteursDeCorps } from "./middleware/corps";
 import { maintenanceMiddleware } from "./middleware/maintenance";
 import { compteRestreint } from "./middleware/compte-restreint";
+import { compteDemo } from "./middleware/compte-demo";
 import { cloisonnement } from "./middleware/cloisonnement";
 import { diffusionModifications } from "./middleware/diffusion";
 import { mesurerRequetes } from "./middleware/surveillance";
@@ -174,6 +175,7 @@ export function createApp(): Express {
   // posé ici, devant toutes les routes, et non route par route : il n'en
   // protégeait que trois.
   app.use(compteRestreint);
+  app.use(compteDemo);
 
   // Chacun chez soi : presque toutes les routes acceptaient un storeId sans
   // vérifier qu'il appartenait à l'appelant. Le verrou est posé ici, devant

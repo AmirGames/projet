@@ -12,6 +12,13 @@ export interface EmailData {
 export class EmailService {
   // Send email
   static async sendEmail(data: EmailData) {
+    // Les clients d'exemple du commerce de démonstration : adresses en
+    // « .invalid », où rien ne doit partir (voir demo.service.ts).
+    if (/\.invalid$/i.test(data.to.trim())) {
+      logger.info("Email non envoyé : adresse fictive", { to: data.to });
+      return { success: true, messageId: "fictif" };
+    }
+
     try {
       logger.info("Sending email", { to: data.to, subject: data.subject });
 

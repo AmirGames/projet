@@ -1428,6 +1428,13 @@
     "reviewPromptButton": "Leave a review",
     "reviewEdit": "Edit my review"
   },
+  "accesDemo": {
+    "titre": "Try the merchant space",
+    "description": "A demo account open to everyone: nothing in it is real and it is reset every night.",
+    "email": "Email",
+    "motDePasse": "Password",
+    "utiliser": "Fill in the form"
+  },
   "maintenanceGate": {
     "title": "Maintenance in progress",
     "message": "The platform is under maintenance. Please try again in a few minutes."
