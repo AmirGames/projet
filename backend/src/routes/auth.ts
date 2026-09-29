@@ -222,13 +222,9 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
   try {
     const body = refreshTokenSchema.parse(req.body);
 
-    const decoded = AuthService.verifyRefreshToken(body.refreshToken);
-
-    // Session fermée (déconnexion, ici ou sur un autre domaine) : pas de
-    // nouveau jeton.
-    if (decoded.sid && !(await SsoService.sessionActive(decoded.sid))) {
-      throw new ApiError(401, "Votre session n'est plus valable. Reconnectez-vous.", "SESSION_INVALIDE");
-    }
+    // Rotation : le jeton présenté est consommé, un nouveau est émis. Un jeton
+    // déjà consommé ferme la session entière (voir SsoService.renouveler).
+    const { decoded, sid, refreshToken } = await SsoService.renouveler(body.refreshToken);
 
     // Le compte a pu disparaître depuis la signature du jeton — base remise à
     // zéro, utilisateur supprimé. Ce n'est pas une ressource introuvable mais
@@ -247,7 +243,7 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
 
     const compteOuvert = await compteConnecte(decoded.userId);
 
-    const accessToken = AuthService.generateAccessToken(decoded.userId, decoded.sid);
+    const accessToken = AuthService.generateAccessToken(decoded.userId, sid);
 
     /**
      * Le compte accompagne le jeton.
@@ -258,6 +254,7 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
      */
     res.json({
       accessToken,
+      refreshToken,
       ...compteOuvert,
     });
   } catch (err) {
@@ -562,7 +559,7 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
     // Generate new tokens to reflect driver status — dans la même session :
     // devenir livreur n'est pas une nouvelle connexion.
     const accessToken = AuthService.generateAccessToken(userId, req.user?.sid);
-    const refreshToken = AuthService.generateRefreshToken(userId, req.user?.sid);
+    const refreshToken = await SsoService.refreshPour(userId, req.user?.sid);
 
     res.status(201).json({
       message: "Candidature de livreur soumise avec succès",
@@ -1022,7 +1019,7 @@ router.post(
       res.json({
         message: "Mot de passe modifié. Vos autres sessions ont été déconnectées.",
         accessToken: AuthService.generateAccessToken(user.id, req.user?.sid),
-        refreshToken: AuthService.generateRefreshToken(user.id, req.user?.sid),
+        refreshToken: await SsoService.refreshPour(user.id, req.user?.sid),
       });
     } catch (err) {
       next(err);

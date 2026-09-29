@@ -73,7 +73,7 @@ router.post("/echanger", limiterEchanges, async (req: Request, res: Response, ne
 
     res.json({
       accessToken: AuthService.generateAccessToken(userId, sid),
-      refreshToken: AuthService.generateRefreshToken(userId, sid),
+      refreshToken: await SsoService.emettreRefresh(userId, sid),
       ...(await compteConnecte(userId)),
     });
   } catch (err) {

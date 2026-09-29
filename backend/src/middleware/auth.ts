@@ -142,8 +142,10 @@ async function authentifier(req: Request) {
   }
 
   // Une session fermée — déconnexion, sur ce domaine ou un autre — ne vaut
-  // plus nulle part. Les jetons émis avant le SSO n'en portent pas.
-  if (payload.sid && !(await SsoService.sessionActive(payload.sid))) {
+  // plus nulle part. Les jetons émis avant le SSO n'en portent pas : ils
+  // échappent à la déconnexion, donc refusés en production.
+  const sansSession = !payload.sid && process.env.NODE_ENV === "production";
+  if (sansSession || (payload.sid && !(await SsoService.sessionActive(payload.sid)))) {
     throw new ApiError(
       401,
       "Votre session n'est plus valable. Reconnectez-vous.",
