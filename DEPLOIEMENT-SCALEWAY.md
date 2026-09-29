@@ -295,9 +295,22 @@ DEMO_MERCHANT_EMAIL=demo@zupeat.com
 DEMO_MERCHANT_PASSWORD=<un mot de passe à part : il est public>
 ```
 
-Au démarrage de l'API, puis chaque nuit à 3 h, le commerce est recréé : une
-boulangerie d'exemple avec ses catégories, ses produits et quelques commandes.
-Ce que les visiteurs y ont changé disparaît.
+Le commerce est recréé : une boulangerie d'exemple avec ses catégories, ses
+produits et quelques commandes. Ce que les visiteurs y ont changé disparaît
+dans ces cas :
+
+- au démarrage de l'API, et chaque nuit à 3 h ;
+- quand le visiteur se déconnecte ;
+- quand un autre visiteur (autre adresse IP ou autre navigateur) se connecte
+  alors que le précédent n'a rien fait depuis 5 minutes ;
+- quand plus personne n'a rien fait depuis 15 minutes (onglet fermé sans
+  déconnexion).
+
+Un visiteur qui arrive pendant qu'un autre est encore actif ne remet rien à
+zéro : il partagerait sinon son travail. Il voit l'état de l'autre. Le
+visiteur est reconnu à son IP et à son navigateur : deux personnes sur la même
+connexion avec le même navigateur comptent pour une. La démo tient sur une
+seule instance de l'API.
 
 Il reste hors du réel :
 

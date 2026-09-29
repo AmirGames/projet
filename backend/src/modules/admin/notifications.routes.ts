@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { AnnouncementService, PUBLICS_CONNUS } from "../marketing/announcement.service";
 import { getQueryNumber, isSystemAdmin } from "./shared";
 

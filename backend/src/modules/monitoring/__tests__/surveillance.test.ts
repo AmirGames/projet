@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
 
 import { Surveillance, centile, resumeErreur } from "../surveillance.service";
-import { routeGenerique } from "../../../middleware/surveillance";
+import { routeGenerique } from "../surveillance.middleware";
 
 describe("routeGenerique", () => {
   it("ramène les identifiants à leur forme générique", () => {

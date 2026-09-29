@@ -16,13 +16,13 @@ jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
-jest.mock("../../../config/socket", () => ({
+jest.mock("../../realtime/socket", () => ({
   emitOrderUpdate: jest.fn(),
   emitNotification: jest.fn(),
   emitMerchantEvent: jest.fn(),
 }));
 jest.mock("../../webhooks/webhook.service", () => ({ emitWebhook: jest.fn() }));
-jest.mock("../../../services/email.service", () => ({
+jest.mock("../../notifications/email.service", () => ({
   EmailService: { sendOrderStatusUpdate: jest.fn() },
 }));
 jest.mock("../../notifications/notifier.service", () => ({
@@ -44,7 +44,7 @@ import {
   echeanceDeReponse,
   verifierTransition,
 } from "../order-acceptance.service";
-import { EmailService } from "../../../services/email.service";
+import { EmailService } from "../../notifications/email.service";
 import { DispatchService } from "../../drivers/dispatch.service";
 import { Notifier } from "../../notifications/notifier.service";
 import { paymentService } from "../../payments/payment.service";

@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { paymentService } from "./payment.service";
 import { z } from "zod";
 

@@ -164,6 +164,12 @@ model Organization {
   /// commandable, jamais reversé, sans accès aux coordonnées bancaires ni aux
   /// envois. Remis à zéro chaque nuit (voir demo.service.ts).
   isDemo   Boolean           @default(false)
+  /// Empreinte (IP + navigateur) du dernier visiteur du commerce de démo, et
+  /// sa dernière activité : de quoi remettre la démo à zéro quand il part, ou
+  /// qu'un autre arrive après lui. Vides hors démo et juste après une remise
+  /// à zéro.
+  demoVisiteurHash String?
+  demoActiviteAt   DateTime?
 
   // Suspension info
   suspensionReason    String?
@@ -220,6 +226,16 @@ model Organization {
   commissionFreeActive Boolean   @default(false)
   commissionFreeUntil  DateTime?
   commissionFreeNote   String?
+
+  /// Les conditions négociées à la main avec un gros compte (une enseigne, une
+  /// chaîne) : elles remplacent, champ par champ, celles de sa formule. Un champ
+  /// vide laisse la formule s'appliquer. La promo « zéro commission » passe
+  /// toujours avant.
+  customCommissionPercent                 Decimal? @db.Decimal(5, 2)
+  customPlatformDeliveryCommissionPercent Decimal? @db.Decimal(5, 2)
+  customMaxStores                         Int?
+  customMonthlyPrice                      Decimal? @db.Decimal(10, 2)
+  customTermsNote                         String?
 
   /// La validation du commerce par la plateforme.
   ///

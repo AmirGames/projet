@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 
-import { db } from "../services/db";
-import { logger } from "../config/logger";
-import { verifyToken } from "./auth";
+import { db } from "../../services/db";
+import { logger } from "../../config/logger";
+import { verifyToken } from "../auth/auth.middleware";
 
 /**
  * Un compte suspendu ou fermé ne garde qu'une porte : le support.

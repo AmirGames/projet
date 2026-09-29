@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { db } from "../services/db";
-import { logger } from "../config/logger";
+import { db } from "../../services/db";
+import { logger } from "../../config/logger";
 
 // Le réglage est relu périodiquement : une requête en base à chaque appel
 // d'API serait inutilement coûteuse pour une valeur qui change rarement.

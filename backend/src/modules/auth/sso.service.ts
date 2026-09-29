@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { db } from "../../services/db";
 import { AuthService } from "./auth.service";
 import { ApiError } from "../../middleware/errorHandler";
-import { originesAutorisees } from "../../config/origines-autorisees";
+import { originesAutorisees } from "./origines-autorisees";
 
 /**
  * Connexion unique entre les domaines (SSO).

@@ -4,11 +4,13 @@ import { Surveillance } from "../monitoring/surveillance.service";
 
 /**
  * Remet le commerce de démonstration à zéro : au démarrage (pour qu'il existe),
- * puis chaque nuit à 3 h, heure du serveur. Sans effet si DEMO_MERCHANT_ENABLED
- * n'est pas « true ».
+ * chaque nuit à 3 h (heure du serveur), et dès qu'il est abandonné (voir
+ * DemoMerchantService.reinitialiserSiAbandonnee). Les remises à zéro liées à la
+ * connexion et à la déconnexion sont dans auth.routes.ts. Sans effet si
+ * DEMO_MERCHANT_ENABLED n'est pas « true ».
  */
 
-const INTERVALLE_MS = 600000;
+const INTERVALLE_MS = 60000;
 const HEURE_REMISE_A_ZERO = 3;
 
 let minuteur: NodeJS.Timeout | null = null;
@@ -34,10 +36,21 @@ async function passer() {
   const maintenant = new Date();
   const jour = maintenant.toISOString().slice(0, 10);
 
-  if (maintenant.getHours() !== HEURE_REMISE_A_ZERO || jour === dernierJour) return;
+  if (maintenant.getHours() === HEURE_REMISE_A_ZERO && jour !== dernierJour) {
+    dernierJour = jour;
+    await remettreAZero();
+    return;
+  }
 
-  dernierJour = jour;
-  await remettreAZero();
+  try {
+    if (await DemoMerchantService.reinitialiserSiAbandonnee()) {
+      logger.info("Commerce de démonstration abandonné : remis à zéro");
+    }
+  } catch (err) {
+    logger.error("Remise à zéro du commerce de démonstration abandonné impossible", {
+      error: err instanceof Error ? err.message : err,
+    });
+  }
 }
 
 export class DemoJobs {

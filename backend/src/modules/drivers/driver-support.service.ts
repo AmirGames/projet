@@ -1,6 +1,6 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { emitDriverEvent, emitSupportEvent } from "../../config/socket";
+import { emitDriverEvent, emitSupportEvent } from "../realtime/socket";
 import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 
 /**

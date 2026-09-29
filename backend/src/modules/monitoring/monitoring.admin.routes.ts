@@ -1,6 +1,6 @@
 import { lireConsole } from "../../config/logger";
 import { Router, Request, Response, NextFunction } from "express";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { BackupService } from "./backup.service";
 import { SecurityEventService } from "../auth/security-event.service";
 import { SystemHealthService } from "./system-health.service";

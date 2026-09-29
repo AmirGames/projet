@@ -1,7 +1,7 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { horsReversements } from "../payouts/merchant-payout.service";
-import { PlanService } from "../plans/plan.service";
+import { PlanService, appliquerConditions } from "../plans/plan.service";
 import { fraisDusALaPlateforme, fraisDeServiceDus } from "../delivery/delivery-mode.service";
 
 // Facturation et rapports partagent le même découpage mensuel.
@@ -24,6 +24,10 @@ export async function detailFacturation(orgId: string, periodeDemandee?: string)
       name: true,
       email: true,
       tier: true,
+      customCommissionPercent: true,
+      customPlatformDeliveryCommissionPercent: true,
+      customMaxStores: true,
+      customMonthlyPrice: true,
       // L'identité de facturation : une facture sans raison sociale, adresse
       // ni numéro de TVA n'en est pas une.
       legalName: true,
@@ -60,7 +64,7 @@ export async function detailFacturation(orgId: string, periodeDemandee?: string)
   finMois.setMonth(finMois.getMonth() + 1);
 
   const config = await db.systemConfig.findFirst();
-  const formule = await PlanService.formule(organisation.tier);
+  const formule = appliquerConditions(await PlanService.formule(organisation.tier), organisation);
   const taux = formule.commission ?? Number(config?.platformFeePercent ?? 5);
 
   const storeIds = organisation.stores.map((boutique) => boutique.id);

@@ -11,7 +11,7 @@ import { effacerCookieRefresh, exigerOrigine, lireCookieRefresh, livrerRefresh }
 import { compteConnecte } from "./compte-connecte";
 import { UserService } from "./user.service";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware, compteDuJeton, jetonPerime, oublierCompte } from "../../middleware/auth";
+import { authMiddleware, compteDuJeton, jetonPerime, oublierCompte } from "./auth.middleware";
 import {
   limiterCadence,
   limiterConnexions,
@@ -20,7 +20,7 @@ import {
 } from "../../middleware/throttle";
 import { logger } from "../../config/logger";
 import { SecurityEventService } from "./security-event.service";
-import { EmailService } from "../../services/email.service";
+import { EmailService } from "../notifications/email.service";
 import {
   AccountTokenService,
   DUREE_CONFIRMATION_MS,
@@ -31,7 +31,7 @@ import { champAcceptation, enregistrerAcceptation } from "../legal/acceptation-c
 import { StoreService } from "../stores/store.service";
 import { normaliserGenre } from "../stores/store-type.service";
 import { rattacherFicheInvite } from "../customers/fiche-client.service";
-import { configurationDemo } from "../merchants/demo.service";
+import { configurationDemo, DemoMerchantService, empreinteVisiteur } from "../merchants/demo.service";
 
 const router = Router();
 
@@ -211,6 +211,12 @@ router.post("/login", limiterConnexions, async (req: Request, res: Response, nex
     // Le compte et ses espaces : refuse un compte rattaché à aucun espace.
     const compteOuvert = await compteConnecte(user.id);
 
+    // Le compte démo : un nouveau visiteur trouve une démo remise à zéro. Une
+    // panne ici ne doit jamais empêcher la connexion.
+    await DemoMerchantService.surLaConnexion(user.id, empreinteVisiteur(req)).catch((err) =>
+      logger.warn("Compte démo : connexion non suivie", { error: err instanceof Error ? err.message : err })
+    );
+
     // Une session par connexion : les jetons la portent, et la fermer les
     // invalide sur tous les domaines (voir sso.service.ts).
     const { accessToken, refreshToken } = await SsoService.connecter(user.id);
@@ -287,13 +293,26 @@ router.post("/logout", async (req: Request, res: Response, next: NextFunction) =
     const bearer = req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.slice(7) : undefined;
 
     let sid: string | undefined;
+    let userId: string | undefined;
     try {
-      if (jeton) sid = AuthService.verifyRefreshToken(jeton).sid;
-      else if (bearer) sid = AuthService.verifyAccessToken(bearer).sid;
+      const decode = jeton
+        ? AuthService.verifyRefreshToken(jeton)
+        : bearer
+          ? AuthService.verifyAccessToken(bearer)
+          : undefined;
+      sid = decode?.sid;
+      userId = decode?.userId;
     } catch {
       // Jeton déjà expiré ou invalide : rien à fermer, le cookie part quand même.
     }
     if (sid) await SsoService.fermer(sid);
+
+    // Le compte démo : le visiteur qui s'en va emporte ses modifications.
+    if (userId) {
+      await DemoMerchantService.surLaDeconnexion(userId, empreinteVisiteur(req)).catch((err) =>
+        logger.warn("Compte démo : déconnexion non suivie", { error: err instanceof Error ? err.message : err })
+      );
+    }
 
     effacerCookieRefresh(res);
     res.json({ success: true });

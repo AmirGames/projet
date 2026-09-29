@@ -13,7 +13,7 @@ jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
-jest.mock("../../../config/socket", () => ({
+jest.mock("../../realtime/socket", () => ({
   emitOrderUpdate: jest.fn(),
   emitNotification: jest.fn(),
   emitMerchantEvent: jest.fn(),
@@ -23,7 +23,7 @@ jest.mock("../../../config/env", () => ({
   getEnv: () => ({ NODE_ENV: "test", ENABLE_STRIPE: false }),
   loadEnv: () => ({ NODE_ENV: "test", ENABLE_STRIPE: false }),
 }));
-jest.mock("../../../services/email.service", () => ({ EmailService: {} }));
+jest.mock("../../notifications/email.service", () => ({ EmailService: {} }));
 jest.mock("../../notifications/notifier.service", () => ({
   Notifier: {},
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
@@ -33,7 +33,7 @@ jest.mock("../../notifications/notifier.service", () => ({
  * La session, réduite à ce qui compte ici : « Bearer <userId> ». Le compte de
  * la plateforme se reconnaît à son nom.
  */
-jest.mock("../../../middleware/auth", () => ({
+jest.mock("../../auth/auth.middleware", () => ({
   authMiddleware: (req: any, _res: any, next: any) => {
     const entete: string | undefined = req.headers.authorization;
     if (!entete?.startsWith("Bearer ")) return next(new Error("sans session"));

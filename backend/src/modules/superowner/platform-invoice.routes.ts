@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { isSuperOwner } from "./shared";
 import { PlatformInvoiceService, moisPrecedent } from "../invoicing/platform-invoice.service";
 

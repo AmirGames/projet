@@ -10,7 +10,7 @@ const db: any = {
 const stripeMock: any = { paymentIntents: { retrieve: jest.fn() } };
 
 jest.mock("../../../services/db", () => ({ db }));
-jest.mock("../../../config/stripe", () => ({
+jest.mock("../stripe", () => ({
   stripe: stripeMock,
   STRIPE_CONFIG: { currency: "eur", webhookSecret: "whsec_test" },
 }));
@@ -21,7 +21,7 @@ jest.mock("../../../config/env", () => ({
   getEnv: () => ({ NODE_ENV: "test", ENABLE_STRIPE: true }),
   loadEnv: () => ({ NODE_ENV: "test", ENABLE_STRIPE: true }),
 }));
-jest.mock("../../../middleware/auth", () => ({
+jest.mock("../../auth/auth.middleware", () => ({
   authMiddleware: (req: any, _res: any, next: any) => {
     req.userId = (req.headers.authorization as string).slice(7);
     next();

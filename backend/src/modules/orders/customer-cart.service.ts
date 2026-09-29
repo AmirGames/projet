@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { emitUserEvent } from "../../config/socket";
+import { emitUserEvent } from "../realtime/socket";
 
 /**
  * Les paniers d'un client, gardés sur le serveur.

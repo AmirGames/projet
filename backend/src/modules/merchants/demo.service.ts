@@ -1,7 +1,10 @@
+import { createHash } from "crypto";
+import type { Request } from "express";
+
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { AuthService } from "../auth/auth.service";
-import { oublierStatut } from "../../middleware/compte-restreint";
+import { oublierStatut } from "./compte-restreint.middleware";
 
 /**
  * Le commerce de démonstration.
@@ -19,6 +22,15 @@ import { oublierStatut } from "../../middleware/compte-restreint";
  *   - les clients d'exemple portent une adresse en `.invalid`, où rien ne part
  *     (email.service.ts).
  *
+ * Remise à zéro : chaque nuit, mais aussi dès que le visiteur s'en va —
+ *   - il se déconnecte ;
+ *   - un autre visiteur (autre IP ou autre navigateur) se connecte alors que
+ *     le précédent n'a plus donné signe de vie depuis INACTIF_MS ;
+ *   - plus personne n'a rien fait depuis ABANDON_MS (onglet fermé sans se
+ *     déconnecter).
+ * Un nouveau venu qui arrive pendant qu'un autre est encore actif ne remet
+ * rien à zéro : il effacerait le travail de celui-ci. Il partage l'état.
+ *
  * Activé par DEMO_MERCHANT_ENABLED=true ; DEMO_MERCHANT_PASSWORD est alors
  * obligatoire. Le mot de passe est public par nature : n'en réutilisez aucun.
  */
@@ -26,6 +38,27 @@ import { oublierStatut } from "../../middleware/compte-restreint";
 const SLUG_ORGANISATION = "commerce-demo";
 const SLUG_BOUTIQUE = "boulangerie-demo";
 const ADRESSE_FICTIVE = (nom: string) => `${nom}@exemple.invalid`;
+
+/** Un visiteur est parti s'il n'a rien fait depuis 5 min quand un autre arrive. */
+const INACTIF_MS = 5 * 60 * 1000;
+/** Plus rien depuis 15 min : la démo est abandonnée, on la remet à zéro. */
+const ABANDON_MS = 15 * 60 * 1000;
+/** L'activité n'est écrite qu'une fois par période, par empreinte. */
+const PAS_ACTIVITE_MS = 30 * 1000;
+
+const activiteRecente = new Map<string, number>();
+let remiseEnCours: Promise<boolean> | null = null;
+
+/**
+ * Qui est le visiteur : son adresse IP et son navigateur, hachés. Derrière
+ * Caddy, `req.ip` est celle du client (TRUST_PROXY). Deux personnes sur la
+ * même connexion avec le même navigateur passent pour une seule : suffisant
+ * pour une démo.
+ */
+export function empreinteVisiteur(req: Request): string {
+  const agent = String(req.headers["user-agent"] ?? "");
+  return createHash("sha256").update(`${req.ip ?? ""}|${agent}`).digest("hex").slice(0, 32);
+}
 
 export type ConfigurationDemo = { email: string; password: string };
 
@@ -66,13 +99,96 @@ export class DemoMerchantService {
     return org?.isDemo === true;
   }
 
+  /** Le commerce de démo dont ce compte est membre, s'il y en a un. */
+  private static async commerceDuCompte(userId: string) {
+    const lien = await db.membership.findFirst({
+      where: { userId, org: { isDemo: true } },
+      select: { org: { select: { id: true, demoVisiteurHash: true, demoActiviteAt: true } } },
+    });
+    return lien?.org ?? null;
+  }
+
+  /**
+   * À la connexion du compte démo : un visiteur différent du précédent, qui
+   * est parti depuis, trouve une démo remise à zéro.
+   */
+  static async surLaConnexion(userId: string, empreinte: string) {
+    const org = await this.commerceDuCompte(userId);
+    if (!org) return;
+
+    const autreVisiteur = Boolean(org.demoVisiteurHash) && org.demoVisiteurHash !== empreinte;
+    const precedentParti =
+      !org.demoActiviteAt || Date.now() - org.demoActiviteAt.getTime() > INACTIF_MS;
+
+    if (autreVisiteur && !precedentParti) {
+      // Le précédent est encore là : on partage son état, sans le lui effacer.
+      await db.organization.update({ where: { id: org.id }, data: { demoActiviteAt: new Date() } });
+      return;
+    }
+
+    if (autreVisiteur) await this.reinitialiser();
+
+    await db.organization.update({
+      where: { id: org.id },
+      data: { demoVisiteurHash: empreinte, demoActiviteAt: new Date() },
+    });
+  }
+
+  /** À la déconnexion : le dernier visiteur qui s'en va emporte ses modifications. */
+  static async surLaDeconnexion(userId: string, empreinte: string) {
+    const org = await this.commerceDuCompte(userId);
+    if (org?.demoVisiteurHash === empreinte) await this.reinitialiser();
+  }
+
+  /** Une requête du compte démo : le visiteur est là. */
+  static async noterActivite(orgId: string, empreinte: string) {
+    const cle = `${orgId}:${empreinte}`;
+    const maintenant = Date.now();
+    if (maintenant - (activiteRecente.get(cle) ?? 0) < PAS_ACTIVITE_MS) return;
+    activiteRecente.set(cle, maintenant);
+
+    // Le visiteur d'origine est gardé : le nouveau venu qui partage son état
+    // ne doit pas lui voler sa place.
+    await db.organization.updateMany({
+      where: { id: orgId, demoVisiteurHash: null },
+      data: { demoVisiteurHash: empreinte },
+    });
+    await db.organization.update({ where: { id: orgId }, data: { demoActiviteAt: new Date() } });
+  }
+
+  /** La démo est abandonnée (onglet fermé, plus d'activité) : remise à zéro. */
+  static async reinitialiserSiAbandonnee() {
+    if (!configurationDemo()) return false;
+
+    const abandonnee = await db.organization.findFirst({
+      where: { isDemo: true, demoActiviteAt: { lt: new Date(Date.now() - ABANDON_MS) } },
+      select: { id: true },
+    });
+
+    return abandonnee ? this.reinitialiser() : false;
+  }
+
   /**
    * Remet la démonstration à son état d'origine : compte, commerce, boutique,
    * produits et quelques commandes d'exemple. Sans effet si elle est désactivée.
    */
-  static async reinitialiser() {
+  static async reinitialiser(): Promise<boolean> {
+    // Deux remises à zéro en même temps (déconnexion + tâche de fond) se
+    // marcheraient dessus : la seconde attend la première. Valable pour une
+    // instance de l'API ; à plusieurs, la démo reste sur une seule.
+    if (remiseEnCours) return remiseEnCours;
+
+    remiseEnCours = this.remettreAZero().finally(() => {
+      remiseEnCours = null;
+    });
+    return remiseEnCours;
+  }
+
+  private static async remettreAZero(): Promise<boolean> {
     const config = configurationDemo();
     if (!config) return false;
+
+    activiteRecente.clear();
 
     const passwordHash = await AuthService.hashPassword(config.password);
 
@@ -112,6 +228,8 @@ export class DemoMerchantService {
             closureDate: null,
             closedUntil: null,
             isArchivedPermanently: false,
+            demoVisiteurHash: null,
+            demoActiviteAt: null,
           },
         })
       : await db.organization.create({
