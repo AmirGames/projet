@@ -16,7 +16,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.zupeat.com",
         "EXPO_PUBLIC_SITE_URL": "https://zupeat.com"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
@@ -26,7 +27,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.zupeat.com",
         "EXPO_PUBLIC_SITE_URL": "https://zupeat.com"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

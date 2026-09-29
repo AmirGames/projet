@@ -7,8 +7,13 @@
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
     "scheme": "zupeat-customer",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "updates": {
-      "enabled": false
+      "url": "https://u.expo.dev/e1aaa610-2a48-49d8-a12a-e91038759c29",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     },
     "plugins": [
       [
@@ -50,7 +55,6 @@
       ]
     ],
     "android": {
-      "package": "com.amir_games.zupeatcustomer",
       "package": "com.amir_games.zupeatcustomer",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
