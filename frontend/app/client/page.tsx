@@ -216,6 +216,7 @@ export default function ClientHomePage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
+      <title>Accueil client — ZupEat</title>
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-12 px-4">
         <div className="max-w-7xl mx-auto">

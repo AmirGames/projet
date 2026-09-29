@@ -266,6 +266,7 @@ export default function DriverDashboard() {
 
   return (
     <div className="bg-gray-900 min-h-screen">
+      <title>Espace livreur — ZupEat</title>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Le dossier passe avant tout le reste : sans validation, aucune
             course n'arrivera, et un écran normal ne le dirait pas. */}

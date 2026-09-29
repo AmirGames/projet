@@ -132,6 +132,7 @@ export default function MerchantDashboard() {
 
   return (
     <div className="space-y-6">
+      <title>Espace commerçant — ZupEat</title>
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white flex items-center gap-2">
