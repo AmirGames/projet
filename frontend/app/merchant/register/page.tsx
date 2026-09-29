@@ -1,5 +1,6 @@
 'use client';
 
+import { adopterRefresh } from '@/lib/jeton-session';
 import { signalerErreur } from '@/lib/erreurs';
 import { slugify } from '@/lib/slug';
 import { useState, FormEvent, useEffect } from 'react';
@@ -210,7 +211,8 @@ export default function MerchantRegisterPage() {
       if (data.accessToken) {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('userEmail', formData.email);
-        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+        // Le jeton de renouvellement devient un cookie httpOnly, il n'est pas gardé.
+        await adopterRefresh(data.refreshToken);
         if (data.organizationId) localStorage.setItem('currentOrgId', data.organizationId);
       }
 

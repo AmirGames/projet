@@ -54,7 +54,6 @@ export default function ChangerMotDePasse() {
       // Les anciens jetons ne valent plus rien : on garde ceux de cette session.
       try {
         if (donnees.accessToken) localStorage.setItem('accessToken', donnees.accessToken);
-        if (donnees.refreshToken) localStorage.setItem('refreshToken', donnees.refreshToken);
       } catch {
         // Stockage refusé : la session se refera à la prochaine connexion.
       }

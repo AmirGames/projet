@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { accueilConnecte, cheminSur } from '@/lib/sso';
+import { ENTETE_TRANSPORT } from '@/lib/jeton-session';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 /**
  * L'arrivée d'une session transmise par zupone.com (voir lib/sso.ts).
@@ -38,16 +38,16 @@ export default function ArriveeSso() {
 
     (async () => {
       try {
-        const reponse = await fetch(`${API_URL}/api/sso/echanger`, {
+        // Par le site lui-même : le cookie de renouvellement doit être posé ici.
+        const reponse = await fetch('/api/sso/echanger', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...ENTETE_TRANSPORT },
           body: JSON.stringify({ code }),
         });
         if (!reponse.ok) throw new Error(String(reponse.status));
 
         const session = await reponse.json();
         localStorage.setItem('accessToken', session.accessToken);
-        localStorage.setItem('refreshToken', session.refreshToken);
         localStorage.setItem('isSuperOwner', session.user?.isSuperOwner ? 'true' : 'false');
         if (session.organization?.id) localStorage.setItem('currentOrgId', session.organization.id);
         if (session.driver?.id) {

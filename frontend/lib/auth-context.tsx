@@ -5,6 +5,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { useRouter } from 'next/navigation';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { fermerSessionPartout } from '@/lib/sso';
+import { ENTETE_TRANSPORT, renouveler, sessionARetrouver, sessionPrete } from '@/lib/jeton-session';
 
 interface User {
   id: string;
@@ -80,6 +81,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Après un rechargement, le jeton d'accès (en mémoire) est perdu : on attend
+  // qu'il soit redemandé avant d'afficher des pages qui le lisent aussitôt.
+  // Sans session à retrouver (visiteurs, robots), rien ne change.
+  const [sessionOk, setSessionOk] = useState(() => !sessionARetrouver());
+
+  useEffect(() => {
+    if (!sessionOk) sessionPrete().then(() => setSessionOk(true));
+  }, [sessionOk]);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -100,41 +109,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
         setUser(data.user);
       } else if (response.status === 401) {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          try {
-            const refreshResponse = await fetch(`${API_URL}/api/auth/refresh`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refreshToken }),
-            });
+        // Le jeton d'accès (15 minutes) a expiré : le cookie de renouvellement
+        // en donne un neuf. Refusé, la session est finie.
+        const renouvele = await renouveler();
 
-            if (refreshResponse.ok) {
-              const refreshData = await refreshResponse.json();
-              localStorage.setItem('accessToken', refreshData.accessToken);
-              if (refreshData.refreshToken) {
-                localStorage.setItem('refreshToken', refreshData.refreshToken);
-              }
-
-              setUser((precedent) => refreshData.user || precedent);
-            } else {
-              oublierLaSession();
-              setUser(null);
-
-              const connexion = connexionDeLEspace(window.location.pathname);
-              if (connexion) router.replace(connexion);
-            }
-          } catch (refreshError) {
-            signalerErreur('Auth refresh failed:', refreshError);
-            if (!estErreurReseau(refreshError)) {
-              oublierLaSession();
-              setUser(null);
-              const connexion = connexionDeLEspace(window.location.pathname);
-              if (connexion) router.replace(connexion);
-            }
-          }
-        } else {
+        if (renouvele.ok) {
+          setUser((precedent) => renouvele.donnees.user || precedent);
+        } else if (renouvele.statut === 401 || renouvele.statut === 403) {
+          oublierLaSession();
           setUser(null);
+
+          const connexion = connexionDeLEspace(window.location.pathname);
+          if (connexion) router.replace(connexion);
+        } else {
+          // Réseau ou serveur en défaut : on garde la session telle quelle.
+          signalerErreur('Auth refresh failed:', renouvele.statut);
         }
       } else {
         signalerErreur('Auth check failed:', response.status);
@@ -150,8 +139,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [API_URL, router]);
 
   useEffectChargement(() => {
-    refreshAuth();
-  }, [refreshAuth]);
+    if (sessionOk) refreshAuth();
+  }, [refreshAuth, sessionOk]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -162,9 +151,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshAuth]);
 
   const login = async (email: string, password: string) => {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
+    // Par le site lui-même : le cookie de renouvellement doit être posé ici.
+    const response = await fetch('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...ENTETE_TRANSPORT },
       body: JSON.stringify({ email, password }),
     });
 
@@ -174,9 +164,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const data = await response.json();
     localStorage.setItem('accessToken', data.accessToken);
-    if (data.refreshToken) {
-      localStorage.setItem('refreshToken', data.refreshToken);
-    }
 
     // Store organization and driver info
     if (data.organization?.id) {
@@ -208,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshAuth,
       }}
     >
-      {children}
+      {sessionOk ? children : null}
     </AuthContext.Provider>
   );
 }

@@ -1,3 +1,4 @@
+import { ENTETE_TRANSPORT, renouveler } from "./jeton-session";
 import { cheminCommande, jetonDeSuivi, memoriserJetonDeSuivi } from "./suivi-commande";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -14,9 +15,10 @@ export const api = {
   // Auth endpoints
   signup: async (email: string, password: string, name: string, conditionsAcceptees: boolean) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+      // Par le site lui-même : le cookie de renouvellement doit être posé ici.
+      const response = await fetch(`/api/auth/signup`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...ENTETE_TRANSPORT },
         body: JSON.stringify({ email, password, name, confirmPassword: password, conditionsAcceptees }),
       });
       const data = await response.json();
@@ -34,9 +36,9 @@ export const api = {
 
   login: async (email: string, password: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const response = await fetch(`/api/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...ENTETE_TRANSPORT },
         body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
@@ -49,14 +51,8 @@ export const api = {
     }
   },
 
-  refresh: async (refreshToken: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
-    });
-    return response.json();
-  },
+  // Le renouvellement passe par le cookie httpOnly : voir lib/jeton-session.ts.
+  refresh: () => renouveler().then((r) => r.donnees ?? { error: true }),
 
   getMe: async () => {
     const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
