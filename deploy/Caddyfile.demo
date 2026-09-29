@@ -1,0 +1,25 @@
+# Reverse proxy de l'environnement de démonstration (voir docker-compose.demo.yml).
+# Les domaines viennent de .env.demo (DOMAINES_SITE, DOMAINE_API).
+{
+	email {$EMAIL_LETSENCRYPT}
+}
+
+{$DOMAINE_API} {
+	encode zstd gzip
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy backend:3001
+}
+
+{$DOMAINES_SITE} {
+	encode zstd gzip
+
+	@www header_regexp www Host ^www\.(.+)$
+	redir @www https://{re.www.1}{uri} permanent
+
+	# Les moteurs de recherche n'ont rien à faire de la démo.
+	header X-Robots-Tag "noindex, nofollow"
+
+	reverse_proxy frontend:3000
+}

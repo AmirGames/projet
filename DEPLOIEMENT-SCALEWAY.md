@@ -24,6 +24,7 @@ Fichiers utilisés :
 | `deploy/env.production.example` | Modèle de `.env.production` (toutes les variables) |
 | `deploy/installer-serveur.sh` | Prépare un VPS neuf (Docker, pare-feu, swap…) |
 | `deploy/zup.sh` | Démarrer, mettre à jour, journaux, sauvegarder, restaurer |
+| `docker-compose.demo.yml`, `deploy/demo.sh` | Environnement de démonstration, sur un serveur à part (voir la fin de ce guide) |
 
 ---
 
@@ -278,3 +279,41 @@ puis ouvrez `https://zupeat.com`.
 - **Erreurs CORS dans le navigateur** : le domaine affiché dans la barre
   d'adresse doit figurer dans `FRONTEND_URL` ou `ALLOWED_ORIGINS`.
 - **Disque plein** : `docker system df`, puis `docker builder prune -f`.
+
+---
+
+## Environnement de démonstration (sandbox)
+
+Un second déploiement, **sur son propre petit VPS**, pour montrer le produit
+sans toucher à la production. Il n'a rien en commun avec elle : autre base,
+autres secrets, autres domaines.
+
+Rien n'y part pour de vrai : Stripe est coupé, les courriels tombent dans
+Mailpit, ni SMS, ni push, ni virement. L'adresse n'a pas à être confirmée : un
+visiteur s'inscrit et entre aussitôt. Chaque nuit à 3 h, la base est vidée et
+le jeu d'essai recréé.
+
+1. DNS : `demo.…`, `manager.demo.…`, `delivery.demo.…` et `api.demo.…` vers
+   l'IP du VPS de démo.
+2. Sur ce VPS (préparé avec `installer-serveur.sh`, dépôt cloné) :
+   ```bash
+   cp deploy/env.demo.example .env.demo && nano .env.demo   # domaines et secrets
+   ./deploy/demo.sh up      # construit, démarre, crée le jeu d'essai
+   ./deploy/demo.sh cron    # remise à zéro chaque nuit
+   ```
+3. Comptes créés, mot de passe `Password123!` : `super@demo.fr` (plateforme),
+   `marchand@demo.fr` (deux boulangeries, formule Premium), `livreur@demo.fr`
+   (dossier validé, une course livrée).
+
+| Commande | Effet |
+|---|---|
+| `./deploy/demo.sh reset` | vide la base et recrée le jeu d'essai |
+| `./deploy/demo.sh update` | git pull + reconstruction |
+| `./deploy/demo.sh logs [service]` | journaux |
+
+Les courriels de la démo se lisent dans Mailpit, ouvert seulement en local sur
+le serveur : `ssh -L 8025:127.0.0.1:8025 <serveur>`, puis
+`http://localhost:8025`.
+
+`demo.sh` refuse de tourner si un `.env.production` existe sur la machine : la
+remise à zéro efface la base, elle ne doit jamais viser la production.
