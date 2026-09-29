@@ -47,3 +47,11 @@ md claude/
 backend/backups/
 mobile/apps/delivery/app.json
 /imagestest
+
+# Clés de signature Android et identifiants EAS (secrets : ne jamais committer)
+mobile/apps/*/credentials.json
+*.keystore
+*.jks
+*.p12
+*.p8
+*.mobileprovision
