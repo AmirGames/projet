@@ -7,10 +7,24 @@
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
     "scheme": "zupone-admin",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "updates": {
-      "enabled": false
+      "url": "https://u.expo.dev/c84bc43e-03d6-4556-8a40-f33012aa0c84",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#4F46E5"
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -21,13 +35,22 @@
       ]
     ],
     "android": {
-      "package": "com.amir_games.zuponeadmin"
+      "package": "com.amir_games.zuponeadmin",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png",
+        "backgroundColor": "#4F46E5"
+      }
     },
     "extra": {
       "eas": {
         "projectId": "c84bc43e-03d6-4556-8a40-f33012aa0c84"
       }
     },
-    "owner": "zupone"
+    "owner": "zupone",
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    }
   }
 }
