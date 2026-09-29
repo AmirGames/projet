@@ -38,7 +38,7 @@ jest.mock("../notifier.service", () => ({
 }));
 jest.mock("../dispatch.service", () => ({ DispatchService: {} }));
 jest.mock("../pourboire.service", () => ({ PourboireService: {} }));
-jest.mock("../store-hours.service", () => ({ StoreHoursService: { isOpenNow: () => true } }));
+jest.mock("../../modules/delivery/store-hours.service", () => ({ StoreHoursService: { isOpenNow: () => true } }));
 jest.mock("../variant.service", () => ({
   VariantService: { prixDeLaLigne: jest.fn(async () => 12.5) },
 }));
@@ -52,7 +52,7 @@ jest.mock("../tax.service", () => ({
     taxeDesLignes: jest.fn(async () => ({ aAjouter: 0, total: 0, taux: 0, parLigne: [] })),
   },
 }));
-jest.mock("../delivery-zone.service", () => ({
+jest.mock("../../modules/delivery/delivery-zone.service", () => ({
   DeliveryZoneService: {
     controlerLaLivraison: jest.fn(async () => ({ frais: 3.5, mode: "OWN" })),
   },
@@ -67,7 +67,7 @@ jest.mock("../acceptation-conditions.service", () => {
 });
 
 import { OrderService } from "../order.service";
-import { DeliveryZoneService } from "../delivery-zone.service";
+import { DeliveryZoneService } from "../../modules/delivery/delivery-zone.service";
 import orderRouter from "../../routes/order";
 import { errorHandler } from "../../middleware/errorHandler";
 

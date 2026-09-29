@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { StoreHoursService } from "../services/store-hours.service";
-import { authMiddleware } from "../middleware/auth";
-import { logger } from "../config/logger";
-import { emitMerchantEvent } from "../config/socket";
+import { StoreHoursService } from "./store-hours.service";
+import { authMiddleware } from "../../middleware/auth";
+import { logger } from "../../config/logger";
+import { emitMerchantEvent } from "../../config/socket";
 
 const router = Router();
 

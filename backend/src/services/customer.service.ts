@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { totalCommercant } from "./delivery-mode.service";
+import { totalCommercant } from "../modules/delivery/delivery-mode.service";
 import { ApiError } from "../middleware/errorHandler";
 
 /**

@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { montantCommercant, totalCommercant } from "./delivery-mode.service";
+import { montantCommercant, totalCommercant } from "../modules/delivery/delivery-mode.service";
 import { TRANSMISE } from "../utils/commande-transmise";
 
 export interface ReportFilters {

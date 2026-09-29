@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { montantAEncaisser } from "./delivery-mode.service";
+import { montantAEncaisser } from "../modules/delivery/delivery-mode.service";
 import { PourboireService } from "./pourboire.service";
 import { db } from "./db";
 import { stripe, STRIPE_CONFIG } from "../config/stripe";

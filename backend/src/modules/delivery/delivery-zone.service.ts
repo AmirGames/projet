@@ -1,9 +1,9 @@
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { distanceKm, estUnPoint, pointDansPolygone, airePolygone, Point } from "../utils/geo";
-import { AddressService, paysDeLAdresse } from "./address.service";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { distanceKm, estUnPoint, pointDansPolygone, airePolygone, Point } from "../../utils/geo";
+import { AddressService, paysDeLAdresse } from "../../services/address.service";
 import { modeDeLivraison, ModeDeLivraison } from "./delivery-mode.service";
-import { DispatchService } from "./dispatch.service";
+import { DispatchService } from "../../services/dispatch.service";
 
 /**
  * Les zones de livraison d'une boutique.

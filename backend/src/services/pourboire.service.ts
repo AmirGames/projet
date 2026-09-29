@@ -6,7 +6,7 @@ import { logger } from "../config/logger";
 import { getEnv } from "../config/env";
 import { stripe, STRIPE_CONFIG } from "../config/stripe";
 import { emitNotification } from "../config/socket";
-import { POURBOIRE_MAXIMUM } from "./delivery-mode.service";
+import { POURBOIRE_MAXIMUM } from "../modules/delivery/delivery-mode.service";
 
 /**
  * Le pourboire laissé **après** la livraison.
