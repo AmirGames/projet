@@ -8,8 +8,8 @@ const db: any = {
   },
 };
 
-jest.mock("../db", () => ({ db }));
-jest.mock("../../config/logger", () => ({ logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() } }));
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../config/logger", () => ({ logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() } }));
 
 import {
   exigerPermission,

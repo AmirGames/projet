@@ -52,14 +52,14 @@ const db: any = {
   },
 };
 
-jest.mock("../db", () => ({ db }));
-jest.mock("../../services/db", () => ({ db }));
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../services/db", () => ({ db }));
 jest.mock("../compte-connecte", () => ({ compteConnecte: jest.fn(async (id: string) => ({ user: { id } })) }));
 
 import { SsoService } from "../sso.service";
 import { AuthService } from "../auth.service";
-import { authMiddleware } from "../../middleware/auth";
-import { errorHandler } from "../../middleware/errorHandler";
+import { authMiddleware } from "../../../middleware/auth";
+import { errorHandler } from "../../../middleware/errorHandler";
 
 const app = express();
 app.get("/protege", authMiddleware, (_req, res) => res.json({ ok: true }));
@@ -177,7 +177,7 @@ describe("refresh par cookie httpOnly (opt-in web) et CSRF", () => {
   const auth = express();
   auth.use(express.json());
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  auth.use("/api/auth", require("../../routes/auth").default);
+  auth.use("/api/auth", require("../auth.routes").default);
   auth.use(errorHandler);
 
   beforeEach(() => {

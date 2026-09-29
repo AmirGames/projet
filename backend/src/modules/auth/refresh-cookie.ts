@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { ApiError } from "../middleware/errorHandler";
-import { originesAutorisees } from "../config/origines-autorisees";
+import { ApiError } from "../../middleware/errorHandler";
+import { originesAutorisees } from "../../config/origines-autorisees";
 import { origineCentrale } from "./sso.service";
 
 /**

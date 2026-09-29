@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { SsoService } from "../../services/sso.service";
+import { SsoService } from "../auth/sso.service";
 import { ibanNormalise, ibanValide } from "../../utils/sepa";
 import { db } from "../../services/db";
 import { champAcceptation, enregistrerAcceptation } from "../../services/acceptation-conditions.service";
@@ -11,7 +11,7 @@ import { logger } from "../../config/logger";
 import { emitDeliveryUpdate, emitNotification } from "../../config/socket";
 import { DispatchService, STATUTS_EN_COURSE } from "./dispatch.service";
 import { ordonner, versCourseTournee } from "./tournee.service";
-import { AuthService } from "../../services/auth.service";
+import { AuthService } from "../auth/auth.service";
 import {
   DriverApprovalService,
   TYPES_DOCUMENT,

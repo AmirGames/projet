@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { getEnv } from "../config/env";
-import { ApiError } from "../middleware/errorHandler";
+import { getEnv } from "../../config/env";
+import { ApiError } from "../../middleware/errorHandler";
 
 export interface JwtPayload {
   userId: string;

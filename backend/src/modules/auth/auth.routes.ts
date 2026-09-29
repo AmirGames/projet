@@ -1,36 +1,36 @@
 import {
   PermissionsPlateforme,
   LIBELLES_PLATEFORMES,
-} from "../services/permissions-plateforme.service";
+} from "./permissions-plateforme.service";
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { champEmail, champMotDePasse, signupSchema, loginSchema, refreshTokenSchema } from "../utils/validation";
-import { AuthService } from "../services/auth.service";
-import { SsoService } from "../services/sso.service";
-import { effacerCookieRefresh, exigerOrigine, lireCookieRefresh, livrerRefresh } from "../services/refresh-cookie";
-import { compteConnecte } from "../services/compte-connecte";
-import { UserService } from "../services/user.service";
-import { ApiError } from "../middleware/errorHandler";
-import { authMiddleware, compteDuJeton, jetonPerime, oublierCompte } from "../middleware/auth";
+import { champEmail, champMotDePasse, signupSchema, loginSchema, refreshTokenSchema } from "../../utils/validation";
+import { AuthService } from "./auth.service";
+import { SsoService } from "./sso.service";
+import { effacerCookieRefresh, exigerOrigine, lireCookieRefresh, livrerRefresh } from "./refresh-cookie";
+import { compteConnecte } from "./compte-connecte";
+import { UserService } from "./user.service";
+import { ApiError } from "../../middleware/errorHandler";
+import { authMiddleware, compteDuJeton, jetonPerime, oublierCompte } from "../../middleware/auth";
 import {
   limiterCadence,
   limiterConnexions,
   limiterInscriptions,
   parDestinataire,
-} from "../middleware/throttle";
-import { logger } from "../config/logger";
-import { SecurityEventService } from "../services/security-event.service";
-import { EmailService } from "../services/email.service";
+} from "../../middleware/throttle";
+import { logger } from "../../config/logger";
+import { SecurityEventService } from "./security-event.service";
+import { EmailService } from "../../services/email.service";
 import {
   AccountTokenService,
   DUREE_CONFIRMATION_MS,
   DUREE_REINITIALISATION_MS,
-} from "../services/account-token.service";
-import { db } from "../services/db";
-import { champAcceptation, enregistrerAcceptation } from "../services/acceptation-conditions.service";
-import { StoreService } from "../modules/stores/store.service";
-import { normaliserGenre } from "../modules/stores/store-type.service";
-import { rattacherFicheInvite } from "../services/fiche-client.service";
+} from "./account-token.service";
+import { db } from "../../services/db";
+import { champAcceptation, enregistrerAcceptation } from "../../services/acceptation-conditions.service";
+import { StoreService } from "../stores/store.service";
+import { normaliserGenre } from "../stores/store-type.service";
+import { rattacherFicheInvite } from "../../services/fiche-client.service";
 
 const router = Router();
 

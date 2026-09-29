@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 
-import { db } from "./db";
-import { champEmail, champMotDePasse } from "../utils/validation";
+import { db } from "../../services/db";
+import { champEmail, champMotDePasse } from "../../utils/validation";
 
 /**
  * Le superowner de la plateforme, créé hors de l'API.

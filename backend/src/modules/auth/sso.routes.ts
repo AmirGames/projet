@@ -1,12 +1,12 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { authMiddleware } from "../middleware/auth";
-import { ApiError } from "../middleware/errorHandler";
-import { limiterCadence } from "../middleware/throttle";
-import { AuthService } from "../services/auth.service";
-import { compteConnecte } from "../services/compte-connecte";
-import { livrerRefresh } from "../services/refresh-cookie";
-import { SsoService, origineCentrale } from "../services/sso.service";
+import { authMiddleware } from "../../middleware/auth";
+import { ApiError } from "../../middleware/errorHandler";
+import { limiterCadence } from "../../middleware/throttle";
+import { AuthService } from "./auth.service";
+import { compteConnecte } from "./compte-connecte";
+import { livrerRefresh } from "./refresh-cookie";
+import { SsoService, origineCentrale } from "./sso.service";
 
 /**
  * Connexion unique entre les domaines (voir sso.service.ts).

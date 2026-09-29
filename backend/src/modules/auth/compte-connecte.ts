@@ -1,6 +1,6 @@
-import { db } from "./db";
+import { db } from "../../services/db";
 import { UserService } from "./user.service";
-import { ApiError } from "../middleware/errorHandler";
+import { ApiError } from "../../middleware/errorHandler";
 
 /**
  * Ce qu'un navigateur apprend du compte en ouvrant une session : qui il est,

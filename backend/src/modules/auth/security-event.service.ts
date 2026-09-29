@@ -1,5 +1,5 @@
-import { db } from "./db";
-import { logger } from "../config/logger";
+import { db } from "../../services/db";
+import { logger } from "../../config/logger";
 
 type Gravite = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 type Etat = "SUCCESS" | "FAILED" | "WARNING";

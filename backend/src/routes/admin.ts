@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../services/db";
 import { ApiError } from "../middleware/errorHandler";
-import { exigerPermission, voitLesFinances } from "../services/permissions-plateforme.service";
+import { exigerPermission, voitLesFinances } from "../modules/auth/permissions-plateforme.service";
 import { authMiddleware } from "../middleware/auth";
 import { MerchantClosureService } from "../modules/merchants/merchant-closure.service";
 import { TicketMessageService } from "../services/ticket-message.service";

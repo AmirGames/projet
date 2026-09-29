@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { AuthService, JwtPayload } from "../services/auth.service";
+import { AuthService, JwtPayload } from "../modules/auth/auth.service";
 import { ApiError } from "./errorHandler";
 import { db } from "../services/db";
-import { SsoService } from "../services/sso.service";
-import type { Acces } from "../services/permissions-plateforme.service";
+import { SsoService } from "../modules/auth/sso.service";
+import type { Acces } from "../modules/auth/permissions-plateforme.service";
 
 /** Ce que le jeton ne dit pas : le compte existe-t-il encore, et qu'est-il. */
 export interface Compte {

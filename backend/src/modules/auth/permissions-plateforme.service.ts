@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { Plateforme } from "@prisma/client";
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
 
 /**
  * Qui, dans l'équipe du groupe, peut faire quoi, plateforme par plateforme.

@@ -1,7 +1,7 @@
 import crypto from "crypto";
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { logger } from "../config/logger";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { logger } from "../../config/logger";
 
 const PREFIXE = "sk_live_";
 

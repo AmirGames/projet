@@ -57,11 +57,11 @@ const db: any = {
 const sendEmailVerification = jest.fn(async (..._args: any[]) => undefined);
 const recordSecurityEvent = jest.fn(async (..._args: any[]) => undefined);
 
-jest.mock("../../services/db", () => ({ db }));
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
-jest.mock("../../middleware/throttle", () => {
+jest.mock("../../../middleware/throttle", () => {
   const passer = (_req: any, _res: any, next: any) => next();
   return {
     limiterCadence: () => passer,
@@ -70,34 +70,34 @@ jest.mock("../../middleware/throttle", () => {
     parDestinataire: () => "",
   };
 });
-jest.mock("../../services/sso.service", () => ({
+jest.mock("../sso.service", () => ({
   SsoService: {
     connecter: jest.fn(async () => ({ accessToken: "acces", refreshToken: "renouvellement" })),
     fermerToutes: jest.fn(async () => undefined),
     sessionActive: jest.fn(async () => true),
   },
 }));
-jest.mock("../../services/security-event.service", () => ({
+jest.mock("../security-event.service", () => ({
   SecurityEventService: { record: (...args: any[]) => recordSecurityEvent(...args) },
 }));
-jest.mock("../../services/email.service", () => ({
+jest.mock("../../../services/email.service", () => ({
   EmailService: { sendEmailVerification: (...args: any[]) => sendEmailVerification(...args) },
 }));
-jest.mock("../../services/acceptation-conditions.service", () => {
+jest.mock("../../../services/acceptation-conditions.service", () => {
   const { z } = jest.requireActual("zod") as typeof import("zod");
   return {
     champAcceptation: { conditionsAcceptees: z.literal(true) },
     enregistrerAcceptation: jest.fn(async () => undefined),
   };
 });
-jest.mock("../../services/compte-connecte", () => ({
+jest.mock("../compte-connecte", () => ({
   compteConnecte: jest.fn(async (userId: string) => ({ user: { id: userId } })),
 }));
 
-import authRouter, { confirmationExigee } from "../auth";
-import { errorHandler } from "../../middleware/errorHandler";
-import { AuthService } from "../../services/auth.service";
-import { ficheClientDuCompte } from "../../services/fiche-client.service";
+import authRouter, { confirmationExigee } from "../auth.routes";
+import { errorHandler } from "../../../middleware/errorHandler";
+import { AuthService } from "../auth.service";
+import { ficheClientDuCompte } from "../../../services/fiche-client.service";
 
 const app = express();
 app.use(express.json());

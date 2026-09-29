@@ -1,12 +1,12 @@
 import request from "supertest";
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "@jest/globals";
 
-import { createApp } from "../../app";
-import { db } from "../../services/db";
+import { createApp } from "../../../app";
+import { db } from "../../../services/db";
 import {
   ConfigurationSuperownerInvalide,
   creerSuperownerInitial,
-} from "../../services/superowner-initial.service";
+} from "../superowner-initial.service";
 
 /**
  * SEC-03 : le premier inscrit ne devient plus superowner.

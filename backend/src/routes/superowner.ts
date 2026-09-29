@@ -14,12 +14,12 @@ import {
   voitLesFinances,
   PLATEFORMES,
   LIBELLES_PLATEFORMES,
-} from "../services/permissions-plateforme.service";
+} from "../modules/auth/permissions-plateforme.service";
 import { Plateforme } from "@prisma/client";
-import { ApiKeyService } from "../services/api-key.service";
+import { ApiKeyService } from "../modules/auth/api-key.service";
 import { WebhookService, EVENEMENTS_WEBHOOK } from "../services/webhook.service";
 import { BackupService } from "../services/backup.service";
-import { SecurityEventService } from "../services/security-event.service";
+import { SecurityEventService } from "../modules/auth/security-event.service";
 import { invalidateMaintenanceCache } from "../middleware/maintenance";
 import { MerchantClosureService } from "../modules/merchants/merchant-closure.service";
 import { PlanService, promoSansCommissionActive } from "../services/plan.service";

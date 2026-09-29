@@ -7,7 +7,7 @@ import { logger } from './logger';
 import { verifyToken } from '../middleware/auth';
 import { AuthenticatedSocket } from '../types/socket';
 import { db } from '../services/db';
-import { SsoService } from '../services/sso.service';
+import { SsoService } from '../modules/auth/sso.service';
 
 // Les notifications sont adressées par e-mail : chaque connexion rejoint donc
 // un salon nominatif, ce qui permet de la pousser au bon destinataire.

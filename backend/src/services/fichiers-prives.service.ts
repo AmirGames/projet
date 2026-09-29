@@ -7,7 +7,7 @@ import { getEnv } from "../config/env";
 import type { Compte } from "../middleware/auth";
 import { detecterType, OCTETS_DE_SIGNATURE } from "../utils/file-type";
 import { db } from "./db";
-import { PermissionsPlateforme } from "./permissions-plateforme.service";
+import { PermissionsPlateforme } from "../modules/auth/permissions-plateforme.service";
 
 /**
  * Les pièces déposées sur le serveur (stockage local), et qui peut les lire.
