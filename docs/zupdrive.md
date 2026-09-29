@@ -37,7 +37,7 @@ Une fois le véhicule, l'assurance et le numéro de TVA obtenus :
 
 ## 5. Téléverser les documents
 
-Via l'application ou le site `drive.zupdrive.com` :
+Via l'application ou le site `driver.zupdrive.com` :
 
 - Carte d'identité
 - Bestuurderspas (Flandre)
