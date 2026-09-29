@@ -223,6 +223,16 @@ model Organization {
   commissionFreeUntil  DateTime?
   commissionFreeNote   String?
 
+  /// Les conditions négociées à la main avec un gros compte (une enseigne, une
+  /// chaîne) : elles remplacent, champ par champ, celles de sa formule. Un champ
+  /// vide laisse la formule s'appliquer. La promo « zéro commission » passe
+  /// toujours avant.
+  customCommissionPercent                 Decimal? @db.Decimal(5, 2)
+  customPlatformDeliveryCommissionPercent Decimal? @db.Decimal(5, 2)
+  customMaxStores                         Int?
+  customMonthlyPrice                      Decimal? @db.Decimal(10, 2)
+  customTermsNote                         String?
+
   /// La validation du commerce par la plateforme.
   ///
   /// Tant qu'elle manque, le commerçant prépare sa boutique — catalogue,

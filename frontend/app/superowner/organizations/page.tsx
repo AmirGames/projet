@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { Building2, Users, Ban, CheckCircle, XCircle, Eye, Gift, X } from 'lucide-react';
+import { Building2, Users, Ban, CheckCircle, XCircle, Eye, Gift, X, Handshake } from 'lucide-react';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
@@ -25,6 +25,15 @@ interface Organization {
     note: string | null;
     /** Réglée et pas encore expirée. */
     enCours: boolean;
+  };
+  /** Les conditions négociées à la main, qui remplacent celles de la formule. */
+  customTerms: {
+    actives: boolean;
+    commission: number | null;
+    commissionLivreursPlateforme: number | null;
+    maxBoutiques: number | null;
+    prixMensuel: number | null;
+    note: string | null;
   };
 }
 
@@ -53,6 +62,17 @@ export default function OrganizationsPage() {
   const limit = 20;
   // Le commerçant dont on règle la promo « zéro commission ».
   const [promo, setPromo] = useState<{ org: Organization; until: string; note: string } | null>(null);
+
+  // Le commerçant dont on règle les conditions négociées. Champs vides : la
+  // formule s'applique.
+  const [conditions, setConditions] = useState<{
+    org: Organization;
+    commission: string;
+    commissionLivreurs: string;
+    maxBoutiques: string;
+    prixMensuel: string;
+    note: string;
+  } | null>(null);
 
   // silencieux : une relecture en direct garde la page affichée.
   const fetchOrganizations = useCallback(async (silencieux = false) => {
@@ -118,6 +138,58 @@ export default function OrganizationsPage() {
       until: org.commissionFree.until ? org.commissionFree.until.slice(0, 10) : '',
       note: org.commissionFree.note || '',
     });
+  };
+
+  const ouvrirConditions = (org: Organization) => {
+    const c = org.customTerms;
+    setConditions({
+      org,
+      commission: c.commission?.toString() ?? '',
+      commissionLivreurs: c.commissionLivreursPlateforme?.toString() ?? '',
+      maxBoutiques: c.maxBoutiques?.toString() ?? '',
+      prixMensuel: c.prixMensuel?.toString() ?? '',
+      note: c.note ?? '',
+    });
+  };
+
+  const enregistrerConditions = async (retirer = false) => {
+    if (!conditions) return;
+    // Champ vide = null = la formule s'applique.
+    const nombre = (v: string) => (retirer || v.trim() === '' ? null : Number(v.replace(',', '.')));
+    setAction(conditions.org.id);
+    setError('');
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(
+        `${API_URL}/api/superowner/organizations/${conditions.org.id}/conditions`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            commission: nombre(conditions.commission),
+            commissionLivreursPlateforme: nombre(conditions.commissionLivreurs),
+            maxBoutiques: nombre(conditions.maxBoutiques),
+            prixMensuel: nombre(conditions.prixMensuel),
+            note: retirer ? null : conditions.note,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || t('termsFailed'));
+        return;
+      }
+
+      setConditions(null);
+      await fetchOrganizations();
+    } catch {
+      setError(t('connectionError'));
+    } finally {
+      setAction('');
+    }
   };
 
   const reglerPromo = async (active: boolean) => {
@@ -325,6 +397,17 @@ export default function OrganizationsPage() {
                         <option value="PREMIUM">PREMIUM</option>
                         <option value="PRO">PRO</option>
                       </select>
+                      {org.customTerms?.actives && (
+                        <span
+                          title={org.customTerms.note || t('termsBadgeTitle')}
+                          className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border bg-amber-500/10 text-amber-300 border-amber-500/30"
+                        >
+                          <Handshake size={12} />
+                          {org.customTerms.commission !== null
+                            ? t('termsBadgeRate', { rate: org.customTerms.commission })
+                            : t('termsBadge')}
+                        </span>
+                      )}
                       {org.commissionFree.enCours && (
                         <span
                           title={org.commissionFree.note || t('promoBadgeTitle')}
@@ -377,6 +460,18 @@ export default function OrganizationsPage() {
                         >
                           <Eye size={16} />
                         </Link>
+                        <button
+                          onClick={() => ouvrirConditions(org)}
+                          disabled={action === org.id}
+                          title={t('termsButton')}
+                          className={`p-2 rounded-lg text-white transition disabled:opacity-40 ${
+                            org.customTerms?.actives
+                              ? 'bg-amber-600/80 hover:bg-amber-600'
+                              : 'bg-gray-700 hover:bg-gray-600'
+                          }`}
+                        >
+                          <Handshake size={16} />
+                        </button>
                         <button
                           onClick={() => ouvrirPromo(org)}
                           disabled={action === org.id}
@@ -521,6 +616,128 @@ export default function OrganizationsPage() {
                 className="px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold disabled:opacity-40 transition"
               >
                 {promo.org.commissionFree.enCours ? t('promoUpdate') : t('promoGrant')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {conditions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Handshake size={20} className="text-amber-400" />
+                {t('termsTitle', { name: conditions.org.name })}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setConditions(null)}
+                aria-label={t('promoCancel')}
+                className="p-1 text-gray-400 hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-400">{t('termsHelp')}</p>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-1" htmlFor="cond-commission">
+                {t('termsCommission')}
+              </label>
+              <input
+                id="cond-commission"
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={conditions.commission}
+                placeholder={t('termsPlaceholder')}
+                onChange={(e) => setConditions({ ...conditions, commission: e.target.value })}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1" htmlFor="cond-livreurs">
+                {t('termsPlatformDelivery')}
+              </label>
+              <input
+                id="cond-livreurs"
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={conditions.commissionLivreurs}
+                placeholder={t('termsPlaceholder')}
+                onChange={(e) => setConditions({ ...conditions, commissionLivreurs: e.target.value })}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1" htmlFor="cond-boutiques">
+                {t('termsMaxStores')}
+              </label>
+              <input
+                id="cond-boutiques"
+                type="number"
+                min="0"
+                step="1"
+                inputMode="decimal"
+                value={conditions.maxBoutiques}
+                placeholder={t('termsPlaceholder')}
+                onChange={(e) => setConditions({ ...conditions, maxBoutiques: e.target.value })}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1" htmlFor="cond-prix">
+                {t('termsPrice')}
+              </label>
+              <input
+                id="cond-prix"
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={conditions.prixMensuel}
+                placeholder={t('termsPlaceholder')}
+                onChange={(e) => setConditions({ ...conditions, prixMensuel: e.target.value })}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-1" htmlFor="cond-note">
+                {t('termsNote')}
+              </label>
+              <input
+                id="cond-note"
+                value={conditions.note}
+                maxLength={500}
+                placeholder={t('termsNotePlaceholder')}
+                onChange={(e) => setConditions({ ...conditions, note: e.target.value })}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              {conditions.org.customTerms?.actives && (
+                <button
+                  type="button"
+                  onClick={() => enregistrerConditions(true)}
+                  disabled={action === conditions.org.id}
+                  className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40 transition"
+                >
+                  {t('termsRemove')}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => enregistrerConditions()}
+                disabled={action === conditions.org.id}
+                className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-40 transition"
+              >
+                {t('termsSave')}
               </button>
             </div>
           </div>

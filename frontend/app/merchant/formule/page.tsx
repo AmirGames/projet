@@ -37,6 +37,8 @@ interface Quota {
   /** La promo « zéro commission » offerte par la plateforme. */
   commissionFree?: boolean;
   commissionFreeUntil?: string | null;
+  /** Des conditions négociées avec la plateforme remplacent celles de la formule. */
+  customTerms?: boolean;
 }
 
 interface Demande {
@@ -174,6 +176,13 @@ export default function MaFormulePage() {
                 {quota.used} boutique{quota.used > 1 ? 's' : ''} sur {quota.max}
               </span>
             </div>
+
+            {quota.customTerms && (
+              <p className="mt-3 text-sm text-amber-300">
+                Vous bénéficiez de conditions négociées avec la plateforme : elles remplacent celles de la
+                formule.
+              </p>
+            )}
 
             {quota.commissionFree && (
               <p className="mt-3 flex items-center gap-2 text-sm text-pink-300">

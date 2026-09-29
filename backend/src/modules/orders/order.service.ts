@@ -10,7 +10,7 @@ import { PromotionService } from "../marketing/promotion.service";
 import { emitWebhook } from "../webhooks/webhook.service";
 import { TaxService } from "../catalog/tax.service";
 import { ModeDeLivraison, POURBOIRE_MAXIMUM, fraisDeServiceEnVigueur, montantCommercant } from "../delivery/delivery-mode.service";
-import { promoSansCommissionActive } from "../plans/plan.service";
+import { promoSansCommissionActive, CHAMPS_CONDITIONS, nombreOuNull } from "../plans/plan.service";
 import { StoreHoursService } from "../delivery/store-hours.service";
 import { emitMerchantEvent } from "../../config/socket";
 import { Notifier, enArrierePlan } from "../notifications/notifier.service";
@@ -70,7 +70,14 @@ export class OrderService {
     const boutique = await db.store.findUnique({
       where: { id: storeId },
       select: {
-        org: { select: { tier: true, commissionFreeActive: true, commissionFreeUntil: true } },
+        org: {
+          select: {
+            tier: true,
+            commissionFreeActive: true,
+            commissionFreeUntil: true,
+            ...CHAMPS_CONDITIONS,
+          },
+        },
       },
     });
 
@@ -92,7 +99,13 @@ export class OrderService {
     // Le réglage global ne sert que de repli, pour une formule sans taux propre.
     const config = await db.systemConfig.findFirst({ select: { platformFeePercent: true } });
 
-    const base = Number(formule?.commissionPercent ?? config?.platformFeePercent ?? 5);
+    const grille = Number(formule?.commissionPercent ?? config?.platformFeePercent ?? 5);
+    const grilleLivreurs = Number(formule?.platformDeliveryCommissionPercent ?? grille);
+
+    // Les conditions négociées avec le commerçant priment sur sa formule.
+    const negociee = boutique?.org;
+    const base = nombreOuNull(negociee?.customCommissionPercent) ?? grille;
+    const livreurs = nombreOuNull(negociee?.customPlatformDeliveryCommissionPercent) ?? grilleLivreurs;
 
     /**
      * Une livraison faite par un livreur de la plateforme coûte plus cher au
@@ -102,7 +115,7 @@ export class OrderService {
      */
     const taux =
       mode === "PLATFORM"
-        ? Math.max(base, Number(formule?.platformDeliveryCommissionPercent ?? base))
+        ? Math.max(base, livreurs)
         : base;
 
     return {
