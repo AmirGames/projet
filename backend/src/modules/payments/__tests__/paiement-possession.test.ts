@@ -9,28 +9,28 @@ const db: any = {
 };
 const stripeMock: any = { paymentIntents: { retrieve: jest.fn() } };
 
-jest.mock("../../services/db", () => ({ db }));
-jest.mock("../../config/stripe", () => ({
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../config/stripe", () => ({
   stripe: stripeMock,
   STRIPE_CONFIG: { currency: "eur", webhookSecret: "whsec_test" },
 }));
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
-jest.mock("../../config/env", () => ({
+jest.mock("../../../config/env", () => ({
   getEnv: () => ({ NODE_ENV: "test", ENABLE_STRIPE: true }),
   loadEnv: () => ({ NODE_ENV: "test", ENABLE_STRIPE: true }),
 }));
-jest.mock("../../middleware/auth", () => ({
+jest.mock("../../../middleware/auth", () => ({
   authMiddleware: (req: any, _res: any, next: any) => {
     req.userId = (req.headers.authorization as string).slice(7);
     next();
   },
 }));
 
-import paymentRouter from "../payment";
-import { paymentService } from "../../services/payment.service";
-import { genererJetonDeSuivi } from "../../modules/orders/suivi-commande.service";
+import paymentRouter from "../payment.routes";
+import { paymentService } from "../payment.service";
+import { genererJetonDeSuivi } from "../../orders/suivi-commande.service";
 
 const app = express();
 app.use(express.json());

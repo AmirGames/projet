@@ -57,7 +57,7 @@ const LIBELLES_PRIORITE: Record<string, string> = {
 import { TicketMessageService } from "../services/ticket-message.service";
 import { logger } from "../config/logger";
 import { PagesLegalesService } from "../services/pages-legales.service";
-import { paymentService } from "../services/payment.service";
+import { paymentService } from "../modules/payments/payment.service";
 import { DriverSupportService, LONGUEUR_MAX } from "../modules/drivers/driver-support.service";
 import { fraisDusALaPlateforme, fraisDeServiceDus } from "../modules/delivery/delivery-mode.service";
 

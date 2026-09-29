@@ -29,7 +29,7 @@ jest.mock("../../../services/notifier.service", () => ({
   Notifier: { pushLivreur: jest.fn(async () => true), pushClient: jest.fn(async () => 0) },
   enArrierePlan: (envoi: Promise<unknown>) => envoi,
 }));
-jest.mock("../../../services/payment.service", () => ({
+jest.mock("../../payments/payment.service", () => ({
   paymentService: { rembourserCommande: jest.fn(async () => null) },
 }));
 jest.mock("../../drivers/dispatch.service", () => ({
@@ -47,7 +47,7 @@ import {
 import { EmailService } from "../../../services/email.service";
 import { DispatchService } from "../../drivers/dispatch.service";
 import { Notifier } from "../../../services/notifier.service";
-import { paymentService } from "../../../services/payment.service";
+import { paymentService } from "../../payments/payment.service";
 
 const MINUTE = 60 * 1000;
 

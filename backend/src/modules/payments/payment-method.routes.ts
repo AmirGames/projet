@@ -1,10 +1,10 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { PaymentMethodService } from "../services/payment-method.service";
-import { authMiddleware } from "../middleware/auth";
-import { logger } from "../config/logger";
-import { db } from "../services/db";
-import { ApiError } from "../middleware/errorHandler";
+import { PaymentMethodService } from "./payment-method.service";
+import { authMiddleware } from "../../middleware/auth";
+import { logger } from "../../config/logger";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
 
 const router = Router();
 

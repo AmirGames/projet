@@ -18,14 +18,14 @@ const stripe: any = {
   refunds: { create: fn() },
 };
 
-jest.mock("../db", () => ({ db }));
-jest.mock("../../config/stripe", () => ({
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../config/stripe", () => ({
   stripe,
   STRIPE_CONFIG: { currency: "eur", webhookSecret: SECRET },
 }));
 const annoncerAuCommercant = fn();
-jest.mock("../../modules/orders/order.service", () => ({ OrderService: { annoncerAuCommercant } }));
-jest.mock("../../config/logger", () => ({
+jest.mock("../../orders/order.service", () => ({ OrderService: { annoncerAuCommercant } }));
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
 

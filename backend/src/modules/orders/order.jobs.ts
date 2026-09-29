@@ -1,5 +1,5 @@
 import { OrderAcceptanceService } from "./order-acceptance.service";
-import { paymentService } from "../../services/payment.service";
+import { paymentService } from "../payments/payment.service";
 import { logger } from "../../config/logger";
 import { Surveillance } from "../../services/surveillance.service";
 

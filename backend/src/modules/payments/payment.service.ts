@@ -1,10 +1,10 @@
 import Stripe from "stripe";
-import { montantAEncaisser } from "../modules/delivery/delivery-mode.service";
-import { PourboireService } from "../modules/orders/pourboire.service";
-import { db } from "./db";
-import { stripe, STRIPE_CONFIG } from "../config/stripe";
-import { logger } from "../config/logger";
-import { ApiError } from "../middleware/errorHandler";
+import { montantAEncaisser } from "../delivery/delivery-mode.service";
+import { PourboireService } from "../orders/pourboire.service";
+import { db } from "../../services/db";
+import { stripe, STRIPE_CONFIG } from "../../config/stripe";
+import { logger } from "../../config/logger";
+import { ApiError } from "../../middleware/errorHandler";
 
 /** Les états d'une intention Stripe qui attendent encore le client. */
 const INTENTION_EN_COURS = new Set([
@@ -293,7 +293,7 @@ export const paymentService = {
     if (!commande) return false;
 
     // Import tardif : le service des commandes dépend déjà de celui-ci.
-    const { OrderService } = await import("../modules/orders/order.service");
+    const { OrderService } = await import("../orders/order.service");
     await OrderService.annoncerAuCommercant(commande);
 
     logger.info("Commande transmise au commerçant après encaissement", { orderId });

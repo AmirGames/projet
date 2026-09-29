@@ -5,7 +5,7 @@ import { emitWebhook } from "../../services/webhook.service";
 import { EmailService } from "../../services/email.service";
 import { DispatchService } from "../drivers/dispatch.service";
 import { Notifier, enArrierePlan } from "../../services/notifier.service";
-import { paymentService } from "../../services/payment.service";
+import { paymentService } from "../payments/payment.service";
 import { emitOrderUpdate, emitNotification, emitMerchantEvent } from "../../config/socket";
 import { arriveeChezLeCommercant } from "../../utils/commande-transmise";
 

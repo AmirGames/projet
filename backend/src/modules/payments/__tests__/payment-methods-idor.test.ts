@@ -16,13 +16,13 @@ const stripe: any = {
   setupIntents: { create: fn() },
 };
 
-jest.mock("../../services/db", () => ({ db }));
-jest.mock("../../config/stripe", () => ({ stripe, STRIPE_CONFIG: { currency: "eur" } }));
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../services/db", () => ({ db }));
+jest.mock("../../../config/stripe", () => ({ stripe, STRIPE_CONFIG: { currency: "eur" } }));
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
 // L'appelant est désigné par l'en-tête x-test-user.
-jest.mock("../../middleware/auth", () => ({
+jest.mock("../../../middleware/auth", () => ({
   authMiddleware: (req: any, _res: any, next: any) => {
     req.userId = req.headers["x-test-user"];
     req.user = { userId: req.headers["x-test-user"] };
@@ -30,9 +30,9 @@ jest.mock("../../middleware/auth", () => ({
   },
 }));
 
-import paymentMethodRouter from "../payment-method";
-import paymentMethodsApiRouter from "../payment-methods-api";
-import { errorHandler } from "../../middleware/errorHandler";
+import paymentMethodRouter from "../payment-method.routes";
+import paymentMethodsApiRouter from "../payment-methods-api.routes";
+import { errorHandler } from "../../../middleware/errorHandler";
 
 const app = express();
 app.use(express.json());

@@ -1,13 +1,13 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { paymentService } from "../services/payment.service";
-import { ApiError } from "../middleware/errorHandler";
-import { logger } from "../config/logger";
-import { getEnv } from "../config/env";
-import { db } from "../services/db";
-import { authMiddleware } from "../middleware/auth";
-import { limiterCadence } from "../middleware/throttle";
-import { jetonReconnu } from "../modules/orders/suivi-commande.service";
+import { paymentService } from "./payment.service";
+import { ApiError } from "../../middleware/errorHandler";
+import { logger } from "../../config/logger";
+import { getEnv } from "../../config/env";
+import { db } from "../../services/db";
+import { authMiddleware } from "../../middleware/auth";
+import { limiterCadence } from "../../middleware/throttle";
+import { jetonReconnu } from "../orders/suivi-commande.service";
 
 const router = Router();
 
