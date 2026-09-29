@@ -4,7 +4,7 @@ import {
   ConfigurationSuperownerInvalide,
   creerSuperownerInitial,
   parametresDeLEnvironnement,
-} from "../services/superowner-initial.service";
+} from "../modules/auth/superowner-initial.service";
 import { db } from "../services/db";
 
 /**

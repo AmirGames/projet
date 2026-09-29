@@ -6,16 +6,16 @@ import { createApp } from "./app";
 import { initializeSocket, brancherRedis } from "./config/socket";
 import { brancherAnnoncesCommandes } from "./middleware/diffusion";
 import { db } from "./services/db";
-import { ClosureJobs } from "./jobs/closure-jobs";
-import { DispatchJobs } from "./jobs/dispatch-jobs";
-import { OrderJobs } from "./jobs/order-jobs";
-import { DriverJobs } from "./jobs/driver-jobs";
-import { WebhookJobs } from "./jobs/webhook-jobs";
-import { MerchantJobs } from "./jobs/merchant-jobs";
-import { PayoutJobs } from "./jobs/payout-jobs";
-import { Vigie } from "./services/vigie.service";
-import { Disponibilite } from "./services/disponibilite.service";
-import { amorcerSuperowner } from "./services/amorcer-superowner.service";
+import { ClosureJobs } from "./modules/merchants/closure.jobs";
+import { DispatchJobs } from "./modules/drivers/dispatch.jobs";
+import { OrderJobs } from "./modules/orders/order.jobs";
+import { DriverJobs } from "./modules/drivers/driver.jobs";
+import { WebhookJobs } from "./modules/webhooks/webhook.jobs";
+import { MerchantJobs } from "./modules/merchants/merchant.jobs";
+import { PayoutJobs } from "./modules/payouts/payout.jobs";
+import { Vigie } from "./modules/monitoring/vigie.service";
+import { Disponibilite } from "./modules/monitoring/disponibilite.service";
+import { amorcerSuperowner } from "./modules/auth/amorcer-superowner.service";
 
 // Load environment variables
 const env = loadEnv();

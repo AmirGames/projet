@@ -1,6 +1,6 @@
 import { emailTransporter, EMAIL_CONFIG } from "../config/email";
 import { logger } from "../config/logger";
-import { lienDeSuivi } from "./suivi-commande.service";
+import { lienDeSuivi } from "../modules/orders/suivi-commande.service";
 
 export interface EmailData {
   to: string;

@@ -2,7 +2,7 @@ import { Express, Request, Response, NextFunction } from "express";
 import { logger } from "../config/logger";
 import { ZodError } from "zod";
 import { MulterError } from "multer";
-import { Surveillance } from "../services/surveillance.service";
+import { Surveillance } from "../modules/monitoring/surveillance.service";
 
 export class ApiError extends Error {
   constructor(

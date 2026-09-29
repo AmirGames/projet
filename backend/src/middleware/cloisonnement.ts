@@ -80,7 +80,7 @@ const GESTES_PUBLICS: { methode: string; chemin: RegExp }[] = [
   { methode: "GET", chemin: /^\/api\/orders\/[^/]+\/pourboire$/ },
   { methode: "POST", chemin: /^\/api\/orders\/[^/]+\/pourboire$/ },
   // Payer sa commande : la route exige la session du client ou le jeton de
-  // suivi, et répond 404 à tout autre (voir routes/payment.ts).
+  // suivi, et répond 404 à tout autre (voir modules/payments/payment.routes.ts).
   { methode: "POST", chemin: /^\/api\/payments\/(intent|confirm)$/ },
   { methode: "GET", chemin: /^\/api\/payments\/status\/[^/]+$/ },
   // Le menu et le détail d'un plat, tels que la vitrine les lit.
