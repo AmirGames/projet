@@ -214,7 +214,7 @@ export default function DeliveryApp() {
           });
           const data = await response.json();
           if (response.ok && data.accessToken && data.driver) {
-            const renewed = { ...stored, accessToken: data.accessToken };
+            const renewed = { ...stored, accessToken: data.accessToken, refreshToken: data.refreshToken || stored.refreshToken };
             await saveSession(renewed);
             await openSession(renewed);
           } else if (response.ok || response.status === 401 || response.status === 403) {

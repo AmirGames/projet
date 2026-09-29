@@ -5,6 +5,7 @@ import { ApiError } from "../middleware/errorHandler";
 import { limiterCadence } from "../middleware/throttle";
 import { AuthService } from "../services/auth.service";
 import { compteConnecte } from "../services/compte-connecte";
+import { livrerRefresh } from "../services/refresh-cookie";
 import { SsoService, origineCentrale } from "../services/sso.service";
 
 /**
@@ -73,7 +74,7 @@ router.post("/echanger", limiterEchanges, async (req: Request, res: Response, ne
 
     res.json({
       accessToken: AuthService.generateAccessToken(userId, sid),
-      refreshToken: AuthService.generateRefreshToken(userId, sid),
+      refreshToken: livrerRefresh(req, res, await SsoService.emettreRefresh(userId, sid)),
       ...(await compteConnecte(userId)),
     });
   } catch (err) {

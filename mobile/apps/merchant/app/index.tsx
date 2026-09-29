@@ -151,7 +151,13 @@ export default function MerchantApp() {
           });
           const data = await response.json();
           if (response.ok && data.accessToken && data.organization) {
-            const renewed = { ...stored, accessToken: data.accessToken, orgId: data.organization.id };
+            const renewed = {
+              ...stored,
+              accessToken: data.accessToken,
+              // Le jeton de renouvellement tourne : l'ancien ne vaut plus.
+              refreshToken: data.refreshToken || stored.refreshToken,
+              orgId: data.organization.id,
+            };
             await saveSession(renewed);
             await openSession(renewed, storedPrefs);
           } else if (response.status === 401 || response.status === 403) {

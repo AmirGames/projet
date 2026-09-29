@@ -11,6 +11,15 @@ export interface JwtPayload {
   exp?: number;
 }
 
+export interface RefreshPayload {
+  userId: string;
+  sid?: string;
+  /** Identifiant du jeton (rotation) : absent des jetons émis avant la rotation. */
+  jti?: string;
+  iat?: number;
+  exp?: number;
+}
+
 export class AuthService {
   /**
    * Hash password using bcrypt
@@ -42,9 +51,12 @@ export class AuthService {
   /**
    * Generate refresh token (JWT)
    */
-  static generateRefreshToken(userId: string, sid?: string): string {
+  static generateRefreshToken(userId: string, sid?: string, jti?: string): string {
     const env = getEnv();
-    const token = (jwt.sign as any)(sid ? { userId, sid } : { userId }, env.JWT_REFRESH_SECRET, {
+    const charge: Record<string, string> = { userId };
+    if (sid) charge.sid = sid;
+    if (jti) charge.jti = jti;
+    const token = (jwt.sign as any)(charge, env.JWT_REFRESH_SECRET, {
       expiresIn: env.JWT_REFRESH_EXPIRES_IN,
       algorithm: "HS256",
     });
@@ -75,13 +87,13 @@ export class AuthService {
   /**
    * Verify and decode refresh token
    */
-  static verifyRefreshToken(token: string): { userId: string; sid?: string; iat?: number } {
+  static verifyRefreshToken(token: string): RefreshPayload {
     const env = getEnv();
     try {
       const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET, {
         algorithms: ["HS256"],
       });
-      return decoded as { userId: string; sid?: string; iat?: number };
+      return decoded as RefreshPayload;
     } catch (err) {
       if (err instanceof jwt.TokenExpiredError) {
         throw new ApiError(401, "Refresh token expired", "REFRESH_TOKEN_EXPIRED");

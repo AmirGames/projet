@@ -113,7 +113,6 @@ export default function LoginPage() {
 
       // Save tokens
       localStorage.setItem("accessToken", result.accessToken);
-      localStorage.setItem("refreshToken", result.refreshToken);
       localStorage.setItem("isSuperOwner", result.user?.isSuperOwner ? "true" : "false");
 
       console.log("Tokens saved:", {

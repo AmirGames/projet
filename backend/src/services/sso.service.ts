@@ -32,6 +32,12 @@ const DUREE_CODE_MS = 1 * MINUTE;
 const DUREE_SESSION_MS = 30 * 24 * 60 * MINUTE;
 /** Une session fermée cesse de valoir partout en trente secondes au plus. */
 const DUREE_CACHE_MS = 30 * 1000;
+/**
+ * Deux renouvellements presque simultanés (deux onglets, une tâche de fond et
+ * l'application) présentent le même jeton : le second n'est pas un vol. Dans
+ * ce délai, il est refusé sans fermer la session.
+ */
+const TOLERANCE_CONCURRENCE_MS = 10 * 1000;
 
 const empreinte = (valeur: string) => crypto.createHash("sha256").update(valeur).digest("hex");
 const aleatoire = () => crypto.randomBytes(32).toString("base64url");
@@ -72,8 +78,91 @@ export const SsoService = {
     return {
       sid: session.id,
       accessToken: AuthService.generateAccessToken(userId, session.id),
-      refreshToken: AuthService.generateRefreshToken(userId, session.id),
+      refreshToken: await this.emettreRefresh(userId, session.id),
     };
+  },
+
+  /**
+   * Émet un jeton de renouvellement pour la session : son identifiant (jti) est
+   * enregistré, haché, pour pouvoir le consommer une seule fois.
+   */
+  async emettreRefresh(userId: string, sid: string): Promise<string> {
+    const jti = crypto.randomUUID();
+    await db.jetonRafraichissement.create({
+      data: { jtiHash: empreinte(jti), sessionId: sid, expiresAt: new Date(Date.now() + DUREE_SESSION_MS) },
+    });
+
+    // Au passage, les jetons périmés : la table ne garde que ce qui peut servir.
+    db.jetonRafraichissement
+      .deleteMany({ where: { expiresAt: { lt: new Date() } } })
+      .catch(() => undefined);
+
+    return AuthService.generateRefreshToken(userId, sid, jti);
+  },
+
+  /** Un refresh pour un jeton qui peut ne pas porter de session (développement seulement). */
+  async refreshPour(userId: string, sid?: string): Promise<string> {
+    return sid ? this.emettreRefresh(userId, sid) : AuthService.generateRefreshToken(userId);
+  },
+
+  /**
+   * Consomme un jeton de renouvellement et en émet un nouveau (rotation).
+   *
+   * - Jeton inconnu de la session ou déjà consommé : il a été copié — la
+   *   session entière est fermée (détection de réutilisation).
+   * - Jeton sans `jti` (émis avant la rotation) : accepté une seule fois, et
+   *   seulement si la session n'a encore émis aucun jeton roté.
+   */
+  async renouveler(refreshToken: string) {
+    const invalide = () =>
+      new ApiError(401, "Votre session n'est plus valable. Reconnectez-vous.", "SESSION_INVALIDE");
+
+    const decoded = AuthService.verifyRefreshToken(refreshToken);
+
+    // Un jeton sans session échappe à toute révocation : refusé en production.
+    if (!decoded.sid) {
+      if (process.env.NODE_ENV === "production") throw invalide();
+      return { decoded, sid: undefined as string | undefined, refreshToken: AuthService.generateRefreshToken(decoded.userId) };
+    }
+    const sid = decoded.sid;
+
+    if (!(await this.sessionActive(sid))) throw invalide();
+
+    if (decoded.jti) {
+      const ligne = await db.jetonRafraichissement.findUnique({
+        where: { jtiHash: empreinte(decoded.jti) },
+        select: { id: true, sessionId: true, usedAt: true },
+      });
+      if (
+        ligne &&
+        ligne.sessionId === sid &&
+        ligne.usedAt &&
+        Date.now() - ligne.usedAt.getTime() < TOLERANCE_CONCURRENCE_MS
+      ) {
+        throw new ApiError(409, "Renouvellement déjà en cours. Réessayez.", "REFRESH_CONCURRENT");
+      }
+      // Marqué consommé seulement s'il ne l'était pas : deux renouvellements
+      // simultanés du même jeton, un seul passe — l'autre est une réutilisation.
+      const { count } =
+        ligne && ligne.sessionId === sid && !ligne.usedAt
+          ? await db.jetonRafraichissement.updateMany({
+              where: { id: ligne.id, usedAt: null },
+              data: { usedAt: new Date() },
+            })
+          : { count: 0 };
+      if (count !== 1) {
+        await this.fermer(sid);
+        throw invalide();
+      }
+    } else {
+      const deja = await db.jetonRafraichissement.count({ where: { sessionId: sid } });
+      if (deja > 0) {
+        await this.fermer(sid);
+        throw invalide();
+      }
+    }
+
+    return { decoded, sid, refreshToken: await this.emettreRefresh(decoded.userId, sid) };
   },
 
   /** La session est-elle encore ouverte ? Gardé trente secondes par processus. */

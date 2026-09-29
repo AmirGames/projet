@@ -24,7 +24,8 @@ export async function withSession<R extends { status: number }>(call: (token: st
     });
     const renewed = await refresh.json().catch(() => null);
     if (refresh.ok && renewed?.accessToken) {
-      await saveSession({ ...session, accessToken: renewed.accessToken });
+      // Le jeton de renouvellement tourne : l'ancien ne vaut plus.
+      await saveSession({ ...session, accessToken: renewed.accessToken, refreshToken: renewed.refreshToken || session.refreshToken });
       response = await call(renewed.accessToken);
     }
   }

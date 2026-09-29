@@ -2232,8 +2232,27 @@ model SessionConnexion {
   expiresAt        DateTime
   revokedAt        DateTime?
   codes            CodeConnexion[]
+  refreshs         JetonRafraichissement[]
 
   @@index([userId])
+}
+
+/// Un jeton de renouvellement émis pour une session.
+///
+/// Chaque renouvellement en émet un nouveau et « consomme » l'ancien (usedAt) :
+/// présenter un jeton déjà consommé prouve qu'il a été copié, et ferme la
+/// session entière. Seule l'empreinte de l'identifiant (jti) est conservée.
+model JetonRafraichissement {
+  id        String           @id @default(cuid())
+  jtiHash   String           @unique
+  sessionId String
+  session   SessionConnexion @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([sessionId])
+  @@index([expiresAt])
 }
 
 /// Un code à usage unique qui fait passer une session d'un domaine à l'autre.

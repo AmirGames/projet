@@ -7,6 +7,7 @@ import {
   lienVersEspace,
   type EspaceHeberge,
 } from '@/lib/domaines';
+import { effacerCookieSession } from '@/lib/jeton-session';
 
 /**
  * Connexion unique entre les domaines, côté navigateur.
@@ -165,6 +166,8 @@ export async function fermerSessionPartout(): Promise<void> {
       method: 'POST',
       headers: { Authorization: `Bearer ${jeton}` },
     });
+    // Le cookie de renouvellement de ce navigateur.
+    await effacerCookieSession();
   } catch {
     // API injoignable : la session locale est effacée quand même, et celle du
     // serveur expirera.

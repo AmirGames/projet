@@ -1,5 +1,6 @@
 'use client';
 
+import { adopterRefresh } from '@/lib/jeton-session';
 import { useState, useEffect } from 'react';
 import { telephoneInternational } from '@/lib/pays-infos';
 import AcceptationConditions from '@/components/AcceptationConditions';
@@ -82,7 +83,8 @@ export default function InscriptionLivreurPage() {
       // L'espace livreur lit son jeton sous une clé dédiée.
       localStorage.setItem('driverToken', donnees.accessToken);
       localStorage.setItem('accessToken', donnees.accessToken);
-      if (donnees.refreshToken) localStorage.setItem('refreshToken', donnees.refreshToken);
+      // Le jeton de renouvellement devient un cookie httpOnly, il n'est pas gardé.
+      await adopterRefresh(donnees.refreshToken);
       if (await confierSessionCentrale(donnees.accessToken, '/driver')) return;
       router.push('/driver');
     } catch {
