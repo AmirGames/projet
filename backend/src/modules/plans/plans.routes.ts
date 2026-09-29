@@ -7,7 +7,7 @@ import { authMiddleware } from "../../middleware/auth";
 import { logger } from "../../config/logger";
 import { PlanService } from "./plan.service";
 import { TicketMessageService } from "../support/ticket-message.service";
-import { emitWebhook } from "../../services/webhook.service";
+import { emitWebhook } from "../webhooks/webhook.service";
 
 const router = Router();
 

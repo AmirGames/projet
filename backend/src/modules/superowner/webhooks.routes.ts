@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../../middleware/auth";
-import { WebhookService, EVENEMENTS_WEBHOOK } from "../../services/webhook.service";
+import { WebhookService, EVENEMENTS_WEBHOOK } from "../webhooks/webhook.service";
 import { SecurityEventService } from "../auth/security-event.service";
 import { isSuperOwner } from "./shared";
 

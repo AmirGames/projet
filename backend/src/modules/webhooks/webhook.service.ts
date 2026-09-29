@@ -1,7 +1,7 @@
 import crypto from "crypto";
-import { db } from "./db";
-import { ApiError } from "../middleware/errorHandler";
-import { logger } from "../config/logger";
+import { db } from "../../services/db";
+import { ApiError } from "../../middleware/errorHandler";
+import { logger } from "../../config/logger";
 
 /**
  * Les webhooks : prévenir un système extérieur de ce qui se passe ici.

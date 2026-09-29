@@ -30,7 +30,7 @@ jest.mock("../../../config/socket", () => ({
   emitMerchantEvent: jest.fn(),
 }));
 jest.mock("../../../config/env", () => ({ getEnv: () => ({ ENABLE_STRIPE: false }) }));
-jest.mock("../../../services/webhook.service", () => ({ emitWebhook: jest.fn() }));
+jest.mock("../../webhooks/webhook.service", () => ({ emitWebhook: jest.fn() }));
 jest.mock("../../../services/email.service", () => ({ EmailService: { sendOrderConfirmation: jest.fn() } }));
 jest.mock("../../notifications/notifier.service", () => ({
   Notifier: { pushEquipeBoutique: jest.fn(async () => 0) },

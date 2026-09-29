@@ -1,7 +1,7 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
-import { emitWebhook } from "../../services/webhook.service";
+import { emitWebhook } from "../webhooks/webhook.service";
 import { EmailService } from "../../services/email.service";
 import { DispatchService } from "../drivers/dispatch.service";
 import { Notifier, enArrierePlan } from "../notifications/notifier.service";

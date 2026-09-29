@@ -21,7 +21,7 @@ jest.mock("../../../config/socket", () => ({
   emitNotification: jest.fn(),
   emitMerchantEvent: jest.fn(),
 }));
-jest.mock("../../../services/webhook.service", () => ({ emitWebhook: jest.fn() }));
+jest.mock("../../webhooks/webhook.service", () => ({ emitWebhook: jest.fn() }));
 jest.mock("../../../services/email.service", () => ({
   EmailService: { sendOrderStatusUpdate: jest.fn() },
 }));

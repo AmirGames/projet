@@ -7,7 +7,7 @@ import { VariantService } from "../catalog/variant.service";
 import { SupplementService, type SupplementRetenu } from "../catalog/supplement.service";
 import { DeliveryZoneService } from "../delivery/delivery-zone.service";
 import { PromotionService } from "../marketing/promotion.service";
-import { emitWebhook } from "../../services/webhook.service";
+import { emitWebhook } from "../webhooks/webhook.service";
 import { TaxService } from "../catalog/tax.service";
 import { ModeDeLivraison, POURBOIRE_MAXIMUM, fraisDeServiceEnVigueur, montantCommercant } from "../delivery/delivery-mode.service";
 import { promoSansCommissionActive } from "../plans/plan.service";

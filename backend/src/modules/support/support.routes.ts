@@ -5,7 +5,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../../middleware/auth";
 import { logger } from "../../config/logger";
 import { TicketMessageService } from "./ticket-message.service";
-import { emitWebhook } from "../../services/webhook.service";
+import { emitWebhook } from "../webhooks/webhook.service";
 import { MerchantApprovalService } from "../merchants/merchant-approval.service";
 import { emitOrgEvent } from "../../config/socket";
 
