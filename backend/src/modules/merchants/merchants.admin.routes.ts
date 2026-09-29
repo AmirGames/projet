@@ -4,13 +4,79 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../auth/auth.middleware";
 import { MerchantClosureService } from "./merchant-closure.service";
-import { PlanService, promoSansCommissionActive } from "../plans/plan.service";
+import {
+  PlanService,
+  promoSansCommissionActive,
+  appliquerConditions,
+  aDesConditionsNegociees,
+  CHAMPS_CONDITIONS,
+} from "../plans/plan.service";
 import { MerchantProfileService } from "./merchant-profile.service";
 import { MerchantApprovalService } from "./merchant-approval.service";
 import { logger } from "../../config/logger";
 import { isSuperOwner, journaliser } from "../superowner/shared";
 
 const router = Router();
+
+/** Les conditions négociées d'un commerçant, sous la forme que lit l'interface. */
+function conditionsDe(org: {
+  customCommissionPercent: unknown;
+  customPlatformDeliveryCommissionPercent: unknown;
+  customMaxStores: number | null;
+  customMonthlyPrice: unknown;
+  customTermsNote: string | null;
+}) {
+  const nombre = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+
+  return {
+    actives: aDesConditionsNegociees(org),
+    commission: nombre(org.customCommissionPercent),
+    commissionLivreursPlateforme: nombre(org.customPlatformDeliveryCommissionPercent),
+    maxBoutiques: org.customMaxStores,
+    prixMensuel: nombre(org.customMonthlyPrice),
+    note: org.customTermsNote,
+  };
+}
+
+/**
+ * Fige, au taux actuellement appliqué, les commandes du mois qui n'ont pas
+ * encore de commission : un changement de formule ou de conditions ne doit pas
+ * refacturer le début du mois au nouveau taux.
+ */
+async function figerCommissionsDuMois(orgId: string, taux: number, tier: string) {
+  const debutMois = new Date();
+  debutMois.setDate(1);
+  debutMois.setHours(0, 0, 0, 0);
+
+  const storeIds = (await db.store.findMany({ where: { orgId }, select: { id: true } })).map(
+    (s) => s.id
+  );
+
+  if (storeIds.length === 0) return;
+
+  const commandes = await db.order.findMany({
+    where: { storeId: { in: storeIds }, createdAt: { gte: debutMois } },
+    select: { id: true, totalAmount: true, commissionAmount: true, commissionWaived: true },
+  });
+
+  // Les commandes offertes par une promo restent à 0.
+  const nonFigees = commandes.filter(
+    (c) => Number(c.commissionAmount) === 0 && !c.commissionWaived
+  );
+
+  await Promise.all(
+    nonFigees.map((c) =>
+      db.order.update({
+        where: { id: c.id },
+        data: {
+          commissionPercent: taux,
+          commissionAmount: Number(((Number(c.totalAmount) * taux) / 100).toFixed(2)),
+          tierAtOrder: tier as any,
+        },
+      })
+    )
+  );
+}
 
 // GET /superowner/organizations - Commerçants avec leur activité réelle
 router.get("/organizations", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
@@ -68,6 +134,8 @@ router.get("/organizations", authMiddleware, isSuperOwner, async (req: Request, 
             note: org.commissionFreeNote,
             enCours: promoSansCommissionActive(org),
           },
+          // Les conditions négociées avec ce commerçant, s'il y en a.
+          customTerms: conditionsDe(org),
           revenue: Number(
             commandes.reduce((somme, c) => somme + Number(c.totalAmount), 0).toFixed(2)
           ),
@@ -94,7 +162,7 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
 
     const existante = await db.organization.findUnique({
       where: { id: orgId },
-      select: { tier: true },
+      select: { tier: true, ...CHAMPS_CONDITIONS },
     });
 
     if (!existante) {
@@ -104,7 +172,8 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
     // Rétrograder en dessous du nombre de boutiques ouvertes créerait un
     // commerçant hors quota : on le signale au lieu de l'accepter en silence.
     const formuleCible = await PlanService.formule(body.tier);
-    const quotaCible = formuleCible.maxBoutiques;
+    // Un quota négocié suit le commerçant d'une formule à l'autre.
+    const quotaCible = appliquerConditions(formuleCible, existante).maxBoutiques;
     const boutiques = await db.store.count({ where: { orgId, deletedAt: null } });
 
     if (boutiques > quotaCible) {
@@ -115,69 +184,10 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
       );
     }
 
-    // ── Figer la commission sur les commandes non encore figées ────────────
-    //
-    // Si le commerçant passe de FREE (8 %) à PRO (3 %), les commandes passées
-    // ce mois-ci avant le changement doivent rester à 8 %. Sans ce bloc, la
-    // facturation mensuelle tombe sur le taux du jour pour toute commande dont
-    // commissionFrozen = false, et recalcule l'ensemble du mois au nouveau taux.
-    //
-    // On fixe ici le taux de l'ancien plan sur toutes les commandes du mois
-    // qui n'ont pas encore de taux figé (commissionFrozen = false).
-    // Les commandes récentes ont déjà commissionFrozen = true : elles ne sont
-    // pas touchées.
-    const ancienTaux = await db.planTier.findUnique({
-      where: { code: existante.tier as any },
-      select: { commissionPercent: true },
-    });
-
-    if (ancienTaux) {
-      const debutMois = new Date();
-      debutMois.setDate(1);
-      debutMois.setHours(0, 0, 0, 0);
-
-      const storeIds = (await db.store.findMany({
-        where: { orgId },
-        select: { id: true },
-      })).map((s) => s.id);
-
-      if (storeIds.length > 0) {
-        // On récupère les commandes non figées du mois pour recalculer
-        // commissionAmount au centime près avant de les figer.
-        // commissionFrozen n'existe pas encore en base si la migration
-        // add_tax_per_item_and_invoice_seq n'a pas été appliquée.
-        // On récupère toutes les commandes du mois et on filtre en mémoire :
-        // on ne retouche que celles dont commissionAmount = 0 (non figées).
-        const toutesCommandes = await db.order.findMany({
-          where: {
-            storeId: { in: storeIds },
-            createdAt: { gte: debutMois },
-          },
-          select: { id: true, totalAmount: true, commissionAmount: true, commissionWaived: true },
-        });
-
-        // Les commandes offertes par une promo restent à 0.
-        const nonFigees = toutesCommandes.filter(
-          (c) => Number(c.commissionAmount) === 0 && !c.commissionWaived
-        );
-
-        const taux = Number(ancienTaux.commissionPercent);
-
-        await Promise.all(
-          nonFigees.map((c) =>
-            db.order.update({
-              where: { id: c.id },
-              data: {
-                commissionPercent: taux,
-                commissionAmount:  Number((Number(c.totalAmount) * taux / 100).toFixed(2)),
-                tierAtOrder:       existante.tier,
-                // commissionFrozen sera mis à true une fois la migration appliquée.
-              },
-            })
-          )
-        );
-      }
-    }
+    // Le taux d'avant le changement (négocié ou de l'ancienne formule) reste
+    // acquis aux commandes déjà passées ce mois-ci.
+    const ancienneFormule = appliquerConditions(await PlanService.formule(existante.tier), existante);
+    await figerCommissionsDuMois(orgId, ancienneFormule.commission, existante.tier);
 
     const organisation = await db.organization.update({
       where: { id: orgId },
@@ -187,12 +197,98 @@ router.patch("/organizations/:orgId/tier", authMiddleware, isSuperOwner, async (
     await journaliser(req, "MERCHANT_TIER_CHANGED", orgId, {
       avant: existante.tier,
       apres: body.tier,
-      commandesFigees: typeof ancienTaux !== 'undefined' ? true : false,
+      commandesFigees: true,
     });
 
     res.json({
       message: `Formule passée en ${formuleCible.libelle}`,
       organization: { id: organisation.id, tier: organisation.tier },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * PATCH /superowner/organizations/:orgId/conditions
+ *
+ * Fixe des conditions négociées à la main avec un commerçant (une enseigne, une
+ * chaîne) : commission, commission avec les livreurs de la plateforme, quota de
+ * boutiques, prix mensuel. Chaque valeur remplace celle de sa formule ; `null`
+ * la rend à la formule. Les commandes déjà passées ce mois-ci gardent le taux
+ * d'avant.
+ */
+router.patch("/organizations/:orgId/conditions", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orgId = req.params.orgId as string;
+    const pourcentage = z.number().min(0).max(100).nullable();
+    const schema = z.object({
+      commission: pourcentage,
+      commissionLivreursPlateforme: pourcentage,
+      maxBoutiques: z.number().int().min(1).max(1000).nullable(),
+      prixMensuel: z.number().min(0).max(100000).nullable(),
+      note: z.string().max(500).nullable().optional(),
+    });
+    const body = schema.parse(req.body);
+
+    const existante = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { tier: true, ...CHAMPS_CONDITIONS },
+    });
+
+    if (!existante) {
+      throw new ApiError(404, "Commerçant introuvable", "ORG_NOT_FOUND");
+    }
+
+    const formule = await PlanService.formule(existante.tier);
+    const commissionFinale = body.commission ?? formule.commission;
+    const livreursFinale = body.commissionLivreursPlateforme ?? formule.commissionLivreursPlateforme;
+
+    if (livreursFinale < commissionFinale) {
+      throw new ApiError(
+        400,
+        `La commission avec les livreurs de la plateforme (${livreursFinale} %) ne peut pas être inférieure à la commission de base (${commissionFinale} %)`,
+        "INVALID_COMMISSION"
+      );
+    }
+
+    if (body.maxBoutiques !== null) {
+      const boutiques = await db.store.count({ where: { orgId, deletedAt: null } });
+      if (boutiques > body.maxBoutiques) {
+        throw new ApiError(
+          400,
+          `Ce commerçant exploite ${boutiques} boutiques : le quota ne peut pas descendre à ${body.maxBoutiques}.`,
+          "TIER_BELOW_USAGE"
+        );
+      }
+    }
+
+    // Les commandes déjà passées ce mois-ci restent au taux d'avant.
+    const ancien = appliquerConditions(formule, existante);
+    await figerCommissionsDuMois(orgId, ancien.commission, existante.tier);
+
+    const organisation = await db.organization.update({
+      where: { id: orgId },
+      data: {
+        customCommissionPercent: body.commission,
+        customPlatformDeliveryCommissionPercent: body.commissionLivreursPlateforme,
+        customMaxStores: body.maxBoutiques,
+        customMonthlyPrice: body.prixMensuel,
+        customTermsNote: body.note?.trim() || null,
+      },
+      select: CHAMPS_CONDITIONS,
+    });
+
+    await journaliser(req, "MERCHANT_CUSTOM_TERMS_SET", orgId, {
+      avant: conditionsDe(existante),
+      apres: conditionsDe(organisation),
+    });
+
+    res.json({
+      message: aDesConditionsNegociees(organisation)
+        ? "Conditions négociées enregistrées"
+        : "Le commerçant retrouve les conditions de sa formule",
+      customTerms: conditionsDe(organisation),
     });
   } catch (err) {
     next(err);

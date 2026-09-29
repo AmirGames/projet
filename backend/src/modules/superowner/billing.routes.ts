@@ -3,7 +3,7 @@ import { horsReversements, reversementsDepuis } from "../payouts/merchant-payout
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { authMiddleware } from "../auth/auth.middleware";
-import { PlanService } from "../plans/plan.service";
+import { PlanService, appliquerConditions, nombreOuNull } from "../plans/plan.service";
 import { fraisDusALaPlateforme, fraisDeServiceDus } from "../delivery/delivery-mode.service";
 import { isSuperOwner } from "./shared";
 
@@ -86,7 +86,9 @@ router.get("/billing", authMiddleware, isSuperOwner, async (req: Request, res: R
          * Les commandes antérieures à ce changement n'ont pas de taux figé : on
          * retombe alors sur la formule du jour, faute de mieux.
          */
-        const tauxDuJour = tauxParFormule.get(org.tier) ?? tauxParDefaut;
+        // Un taux négocié avec le commerçant prime sur celui de sa formule.
+        const tauxDuJour =
+          nombreOuNull(org.customCommissionPercent) ?? tauxParFormule.get(org.tier) ?? tauxParDefaut;
 
         const commission = commandes.reduce((somme, c) => {
           /**
@@ -204,6 +206,10 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
         id: true,
         name: true,
         tier: true,
+        customCommissionPercent: true,
+        customPlatformDeliveryCommissionPercent: true,
+        customMaxStores: true,
+        customMonthlyPrice: true,
         // L'identité de facturation : une facture sans raison sociale, adresse
         // ni numéro de TVA n'en est pas une.
         legalName: true,
@@ -241,7 +247,7 @@ router.get("/billing/:orgId", authMiddleware, isSuperOwner, async (req: Request,
     finMois.setMonth(finMois.getMonth() + 1);
 
     const config = await db.systemConfig.findFirst();
-    const formule = await PlanService.formule(organisation.tier);
+    const formule = appliquerConditions(await PlanService.formule(organisation.tier), organisation);
     const taux = formule.commission ?? Number(config?.platformFeePercent ?? 5);
 
     const storeIds = organisation.stores.map((boutique) => boutique.id);

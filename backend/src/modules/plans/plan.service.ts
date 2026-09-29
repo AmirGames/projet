@@ -104,6 +104,65 @@ export function promoSansCommissionActive(
   return !organisation.commissionFreeUntil || organisation.commissionFreeUntil > maintenant;
 }
 
+/** Les conditions négociées d'un commerçant, telles que lues en base. */
+export interface ConditionsNegociees {
+  customCommissionPercent?: unknown;
+  customPlatformDeliveryCommissionPercent?: unknown;
+  customMaxStores?: number | null;
+  customMonthlyPrice?: unknown;
+}
+
+/** Les champs à sélectionner pour retrouver les conditions négociées. */
+export const CHAMPS_CONDITIONS = {
+  customCommissionPercent: true,
+  customPlatformDeliveryCommissionPercent: true,
+  customMaxStores: true,
+  customMonthlyPrice: true,
+  customTermsNote: true,
+} as const;
+
+export const nombreOuNull = (valeur: unknown) =>
+  valeur === null || valeur === undefined ? null : Number(valeur);
+
+/** Le commerçant a-t-il au moins une condition qui déroge à sa formule ? */
+export function aDesConditionsNegociees(organisation: ConditionsNegociees | null | undefined) {
+  return (
+    !!organisation &&
+    (nombreOuNull(organisation.customCommissionPercent) !== null ||
+      nombreOuNull(organisation.customPlatformDeliveryCommissionPercent) !== null ||
+      (organisation.customMaxStores ?? null) !== null ||
+      nombreOuNull(organisation.customMonthlyPrice) !== null)
+  );
+}
+
+/**
+ * La formule telle qu'elle s'applique vraiment à ce commerçant.
+ *
+ * Un commercial peut négocier avec une enseigne un taux, un quota ou un prix
+ * qui n'existent dans aucune formule. Chaque condition négociée remplace la
+ * valeur de la formule ; celles laissées vides restent celles de la grille.
+ */
+export function appliquerConditions(
+  formule: FormuleDetail,
+  organisation: ConditionsNegociees | null | undefined
+): FormuleDetail {
+  if (!aDesConditionsNegociees(organisation)) return formule;
+
+  const commission = nombreOuNull(organisation!.customCommissionPercent) ?? formule.commission;
+  const livreurs =
+    nombreOuNull(organisation!.customPlatformDeliveryCommissionPercent) ??
+    formule.commissionLivreursPlateforme;
+
+  return {
+    ...formule,
+    commission,
+    // Le tarif livreurs de la plateforme n'est jamais sous la commission de base.
+    commissionLivreursPlateforme: Math.max(commission, livreurs),
+    maxBoutiques: organisation!.customMaxStores ?? formule.maxBoutiques,
+    prixMensuel: nombreOuNull(organisation!.customMonthlyPrice) ?? formule.prixMensuel,
+  };
+}
+
 export class PlanService {
   /**
    * La grille complète, ordonnée.
@@ -227,7 +286,7 @@ export class PlanService {
     // mettrait hors des clous sans qu'ils y soient pour rien.
     if (valeurs.maxBoutiques !== undefined) {
       const abonnes = await db.organization.findMany({
-        where: { tier: code },
+        where: { tier: code, customMaxStores: null },
         select: {
           id: true,
           name: true,
@@ -286,7 +345,13 @@ export class PlanService {
   static async quotaBoutiques(orgId: string) {
     const organisation = await db.organization.findUnique({
       where: { id: orgId },
-      select: { id: true, tier: true, commissionFreeActive: true, commissionFreeUntil: true },
+      select: {
+        id: true,
+        tier: true,
+        commissionFreeActive: true,
+        commissionFreeUntil: true,
+        ...CHAMPS_CONDITIONS,
+      },
     });
 
     if (!organisation) {
@@ -294,7 +359,9 @@ export class PlanService {
     }
 
     const grille = await this.grille();
-    const formule = await this.formule(organisation.tier);
+    const formuleGrille = await this.formule(organisation.tier);
+    // Les conditions négociées priment sur la grille.
+    const formule = appliquerConditions(formuleGrille, organisation);
     const maximum = formule.maxBoutiques;
 
     // Les boutiques supprimées ne comptent pas : fermer une boutique doit
@@ -313,6 +380,8 @@ export class PlanService {
       tierCommission: formule.commission,
       tierPlatformDeliveryCommission: formule.commissionLivreursPlateforme,
       tierFeatures: formule.avantages,
+      // Des conditions négociées à part remplacent celles de la formule.
+      customTerms: aDesConditionsNegociees(organisation),
       // La promo offerte par la plateforme : 0 % tant qu'elle court.
       commissionFree: promoSansCommissionActive(organisation),
       commissionFreeUntil: promoSansCommissionActive(organisation)
