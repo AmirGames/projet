@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { ReportsService } from "./reports.service";
 import { montantCommercant } from "../delivery/delivery-mode.service";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
 
 const router = Router();

@@ -2,12 +2,12 @@ import { describe, expect, it, jest } from "@jest/globals";
 import express from "express";
 import request from "supertest";
 
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
-import { errorHandler } from "../errorHandler";
-import { uploadMiddleware } from "../file-upload";
+import { errorHandler } from "../../../middleware/errorHandler";
+import { uploadMiddleware } from "../file-upload.middleware";
 
 const app = express();
 app.post("/upload", uploadMiddleware.single("file"), (req: express.Request, res: express.Response) => {

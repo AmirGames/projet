@@ -80,7 +80,7 @@ jest.mock("../sso.service", () => ({
 jest.mock("../security-event.service", () => ({
   SecurityEventService: { record: (...args: any[]) => recordSecurityEvent(...args) },
 }));
-jest.mock("../../../services/email.service", () => ({
+jest.mock("../../notifications/email.service", () => ({
   EmailService: { sendEmailVerification: (...args: any[]) => sendEmailVerification(...args) },
 }));
 jest.mock("../../legal/acceptation-conditions.service", () => {

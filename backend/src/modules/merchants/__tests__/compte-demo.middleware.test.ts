@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import express from "express";
 import request from "supertest";
 
-jest.mock("../../config/logger", () => ({
+jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
 const findFirst = jest.fn<(...args: any[]) => Promise<any>>();
-jest.mock("../../services/db", () => ({ db: { membership: { findFirst: (...a: any[]) => findFirst(...a) } } }));
-jest.mock("../auth", () => ({
+jest.mock("../../../services/db", () => ({ db: { membership: { findFirst: (...a: any[]) => findFirst(...a) } } }));
+jest.mock("../../auth/auth.middleware", () => ({
   verifyToken: (jeton: string) => {
     if (jeton === "invalide") throw new Error("jeton invalide");
     return { userId: jeton };
@@ -16,12 +16,12 @@ jest.mock("../auth", () => ({
 }));
 
 const noterActivite = jest.fn<(...args: any[]) => Promise<void>>();
-jest.mock("../../modules/merchants/demo.service", () => ({
+jest.mock("../demo.service", () => ({
   DemoMerchantService: { noterActivite: (...a: any[]) => noterActivite(...a) },
   empreinteVisiteur: () => "empreinte",
 }));
 
-import { compteDemo } from "../compte-demo";
+import { compteDemo } from "../compte-demo.middleware";
 
 const app = express();
 app.use(compteDemo);

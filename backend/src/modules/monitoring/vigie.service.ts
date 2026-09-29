@@ -1,8 +1,8 @@
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
-import { emailTransporter } from "../../config/email";
-import { etatTempsReel } from "../../config/socket";
-import { EmailService } from "../../services/email.service";
+import { emailTransporter } from "../notifications/email.config";
+import { etatTempsReel } from "../realtime/socket";
+import { EmailService } from "../notifications/email.service";
 import { Notifier } from "../notifications/notifier.service";
 import { Surveillance, resumeErreur } from "./surveillance.service";
 import { Disponibilite } from "./disponibilite.service";

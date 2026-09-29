@@ -14,7 +14,7 @@ import { StoreHoursService } from "../delivery/store-hours.service";
 import { genreDuCommerce } from "../stores/store-type.service";
 import { trierProduitsSelonCategorie } from "../catalog/category.service";
 import { DeliveryZoneService } from "../delivery/delivery-zone.service";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { CustomerAccountService } from "./customer-account.service";
 import { ficheClientDuCompte } from "./fiche-client.service";
 import { avisARedemander, avisRestaurantParCommerce } from "../reviews/avis-client.service";

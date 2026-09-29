@@ -1,8 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../../services/db";
-import { authMiddleware } from "../../middleware/auth";
-import { invalidateMaintenanceCache } from "../../middleware/maintenance";
+import { authMiddleware } from "../auth/auth.middleware";
+import { invalidateMaintenanceCache } from "../monitoring/maintenance.middleware";
 import { isSystemAdmin } from "./shared";
 
 const router = Router();

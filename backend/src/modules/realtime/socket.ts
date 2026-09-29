@@ -2,12 +2,12 @@ import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { createClient } from 'redis';
-import { originesAutorisees } from './origines-autorisees';
-import { logger } from './logger';
-import { verifyToken } from '../middleware/auth';
-import { AuthenticatedSocket } from '../types/socket';
-import { db } from '../services/db';
-import { SsoService } from '../modules/auth/sso.service';
+import { originesAutorisees } from '../auth/origines-autorisees';
+import { logger } from '../../config/logger';
+import { verifyToken } from '../auth/auth.middleware';
+import { AuthenticatedSocket } from '../../types/socket';
+import { db } from '../../services/db';
+import { SsoService } from '../auth/sso.service';
 
 // Les notifications sont adressées par e-mail : chaque connexion rejoint donc
 // un salon nominatif, ce qui permet de la pousser au bon destinataire.

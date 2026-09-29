@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { champEmail } from "../../utils/validation";
 import { CustomerService } from "./customer.service";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
 
 const router = Router();

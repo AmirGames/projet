@@ -46,10 +46,10 @@ jest.mock("../../../config/logger", () => {
   };
 });
 // Aucun verrou de compte ni de cloisonnement ici : ils ont leurs propres tests.
-jest.mock("../../../middleware/compte-restreint", () => ({
+jest.mock("../../merchants/compte-restreint.middleware", () => ({
   compteRestreint: (_req: any, _res: any, next: any) => next(),
 }));
-jest.mock("../../../middleware/cloisonnement", () => ({
+jest.mock("../../auth/cloisonnement.middleware", () => ({
   cloisonnement: (_req: any, _res: any, next: any) => next(),
 }));
 
@@ -57,7 +57,7 @@ jest.mock("../../../middleware/cloisonnement", () => ({
  * La session, réduite à ce qui compte ici : « Bearer <userId> ». Le compte
  * « user-plateforme » est le superowner.
  */
-jest.mock("../../../middleware/auth", () => {
+jest.mock("../../auth/auth.middleware", () => {
   const { ApiError } = jest.requireActual("../../../middleware/errorHandler") as any;
   const authentifier = (req: any, _res: any, next: any) => {
     const entete: string | undefined = req.headers.authorization;
@@ -70,7 +70,7 @@ jest.mock("../../../middleware/auth", () => {
     next();
   };
   return {
-    ...(jest.requireActual("../../../middleware/auth") as object),
+    ...(jest.requireActual("../../auth/auth.middleware") as object),
     authMiddleware: authentifier,
     authFacultative: (_req: any, _res: any, next: any) => next(),
   };

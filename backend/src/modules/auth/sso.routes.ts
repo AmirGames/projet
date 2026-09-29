@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "./auth.middleware";
 import { ApiError } from "../../middleware/errorHandler";
 import { limiterCadence } from "../../middleware/throttle";
 import { AuthService } from "./auth.service";

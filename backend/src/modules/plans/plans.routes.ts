@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
 import { PlanService } from "./plan.service";
 import { TicketMessageService } from "../support/ticket-message.service";

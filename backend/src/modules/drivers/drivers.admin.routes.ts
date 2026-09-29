@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { DriverApprovalService, libelleDuDocument, piecesAttendues } from "./driver-approval.service";
 import { DriverPayoutService } from "../payouts/driver-payout.service";
 import { DriverSupportService, LONGUEUR_MAX } from "./driver-support.service";

@@ -5,7 +5,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { getEnv } from "../../config/env";
 import { db } from "../../services/db";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { limiterCadence } from "../../middleware/throttle";
 import { jetonReconnu } from "../orders/suivi-commande.service";
 

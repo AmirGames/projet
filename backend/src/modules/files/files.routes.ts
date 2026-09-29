@@ -1,7 +1,7 @@
 import fs from "fs";
 import { Router, Request, Response, NextFunction } from "express";
 
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { ApiError } from "../../middleware/errorHandler";
 import {
   DUREE_SIGNATURE_S,

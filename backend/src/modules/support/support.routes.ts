@@ -2,12 +2,12 @@ import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware } from "../auth/auth.middleware";
 import { logger } from "../../config/logger";
 import { TicketMessageService } from "./ticket-message.service";
 import { emitWebhook } from "../webhooks/webhook.service";
 import { MerchantApprovalService } from "../merchants/merchant-approval.service";
-import { emitOrgEvent } from "../../config/socket";
+import { emitOrgEvent } from "../realtime/socket";
 
 const router = Router();
 

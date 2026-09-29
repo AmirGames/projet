@@ -4,7 +4,7 @@ import { resolve, sep } from "path";
 
 import type { Plateforme } from "@prisma/client";
 import { getEnv } from "../../config/env";
-import type { Compte } from "../../middleware/auth";
+import type { Compte } from "../auth/auth.middleware";
 import { detecterType, OCTETS_DE_SIGNATURE } from "../../utils/file-type";
 import { db } from "../../services/db";
 import { PermissionsPlateforme } from "../auth/permissions-plateforme.service";

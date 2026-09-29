@@ -1,5 +1,5 @@
 import { db } from "../../services/db";
-import { emitNotification } from "../../config/socket";
+import { emitNotification } from "../realtime/socket";
 import { logger } from "../../config/logger";
 
 /**

@@ -1,7 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
-import { dureeDeLaRequete, origineActuelle } from "../config/origine";
+import { dureeDeLaRequete, origineActuelle } from "../modules/auth/origine";
 
 /**
  * Journalisation des requêtes SQL.
