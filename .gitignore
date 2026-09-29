@@ -45,7 +45,6 @@ md claude/
 
 # Sauvegardes produites par les vérifications
 backend/backups/
-mobile/apps/delivery/app.json
 /imagestest
 
 # Clés de signature Android et identifiants EAS (secrets : ne jamais committer)
