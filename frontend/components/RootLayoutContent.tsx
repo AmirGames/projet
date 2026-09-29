@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Navbar from './Navbar';
+import PiedDeGroupe from './PiedDeGroupe';
 import { separerRegion } from '@/i18n/chemins-regionaux';
 import SynchroPaniers from './SynchroPaniers';
 import { loadThemeFromAPI, loadSavedTheme } from '@/lib/theme-config';
@@ -52,6 +53,17 @@ function aSaPropreNavigation(pathname: string | null): boolean {
   return false;
 }
 
+// Les espaces de travail (barre latérale, pleine hauteur) n'ont pas de pied de
+// page ; il figure sur toutes les autres pages, hors documents à imprimer.
+function estUnEspaceDeTravail(pathname: string | null): boolean {
+  if (!pathname) return false;
+  if (pathname === '/superowner' || pathname.startsWith('/superowner/')) return true;
+  const espaceCommerceOuLivreur = ['/merchant', '/driver'].some(
+    (prefixe) => pathname === prefixe || pathname.startsWith(prefixe + '/'),
+  );
+  return espaceCommerceOuLivreur && aSaPropreNavigation(pathname);
+}
+
 export default function RootLayoutContent({
   children,
 }: {
@@ -96,11 +108,14 @@ export default function RootLayoutContent({
                      chemin?.startsWith('/impression') ||
                      aSaPropreNavigation(chemin);
 
+  const sansPied = chemin?.startsWith('/impression') || estUnEspaceDeTravail(chemin);
+
   return (
     <>
       <SynchroPaniers />
       {!hideNavbar && <Navbar />}
       {children}
+      {!sansPied && <PiedDeGroupe />}
     </>
   );
 }
