@@ -43,9 +43,8 @@ model User {
   memberships   Membership[]
   auditLogs     SystemAuditLog[]
   driver        Driver?
-  /// Le dossier chauffeur ZupDrive (licence LVC). Distinct du profil livreur
-  /// ZupEat : un même compte ZupOne peut avoir les deux, chacun avec son
-  /// propre formulaire et sa propre validation.
+  /// Le dossier chauffeur ZupDrive : transport de personnes, licence LVC.
+  /// Sans rapport avec `driver` ci-dessus, qui est le livreur de repas ZupEat.
   chauffeurDrive ChauffeurDrive?
   customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
   ticketMessages TicketMessage[]
@@ -2395,8 +2394,8 @@ model DriverTip {
 /// son véhicule, et où en est sa validation. Voir docs/zupdrive.md et
 /// src/modules/zupdrive/chauffeur-onboarding.service.ts.
 ///
-/// Rattaché à un compte ZupOne unique. Ce n'est pas un livreur ZupEat : un
-/// chauffeur qui veut livrer passe par « Devenir livreur » (modèle Driver).
+/// Rattaché à un compte ZupOne unique. Chauffeur ≠ livreur : le modèle Driver
+/// est le livreur de repas ZupEat, sans aucun lien avec ce dossier.
 model ChauffeurDrive {
   id     String @id @default(cuid())
   userId String @unique

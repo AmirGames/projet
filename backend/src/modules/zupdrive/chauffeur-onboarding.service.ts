@@ -13,9 +13,9 @@ import { notifierPlateforme } from "../notifications/notification.service";
  * inscrite à la BCE, véhicule assuré pour le transport rémunéré, licence
  * régionale, puis dépôt des pièces sur driver.zupdrive.com.
  *
- * Le dossier est rattaché au compte ZupOne unique, mais il n'a rien à voir
- * avec le profil livreur ZupEat (modèle Driver) : un chauffeur qui veut aussi
- * livrer remplit le formulaire « Devenir livreur », validé à part.
+ * Chauffeur ≠ livreur : le chauffeur transporte des personnes (ZupDrive),
+ * le livreur livre des repas (ZupEat, modèle Driver, espace /driver). Ce
+ * module ne concerne que les chauffeurs et n'a aucun lien avec les livreurs.
  *
  * Cycle de vie :
  *

@@ -59,7 +59,9 @@ Des documents supplémentaires peuvent être requis en fonction de la licence.
 Module backend : `backend/src/modules/zupdrive/` (service `chauffeur-onboarding.service.ts`).
 Modèles Prisma : `ChauffeurDrive` (un par compte ZupOne) et `DocumentChauffeurDrive` (une pièce par type), migration `0027_zupdrive_chauffeurs`.
 
-**Compte unique ZupOne.** Le dossier chauffeur est rattaché au compte ZupOne (`User`). Il est distinct du profil livreur ZupEat (`Driver`) : un chauffeur qui veut aussi livrer passe par « Devenir livreur » et remplit ce formulaire, validé séparément.
+**Chauffeur ≠ livreur.** Un **chauffeur** (ZupDrive) transporte des personnes, avec une licence LVC. Un **livreur** (ZupEat) livre des repas et des commandes. Ce sont deux métiers, deux dossiers et deux validations sans aucun lien : rien, dans le code ou dans les pages de ZupDrive, ne renvoie au métier de livreur. Attention au piège de nommage : le modèle Prisma `Driver` et l'espace `/driver` désignent les **livreurs** ZupEat, pas les chauffeurs.
+
+**Compte unique ZupOne.** Le dossier chauffeur (`ChauffeurDrive`) est rattaché au compte ZupOne (`User`).
 
 ### États du dossier
 
@@ -113,5 +115,4 @@ Gardée par les permissions de la **plateforme DRIVE** (section `chauffeurs`) : 
 - **`/devenir-chauffeur`** (Belgique) : le bouton « Créer mon dossier chauffeur » mène à `/chauffeur`. En France, la candidature reste un simple contact par email.
 - **`/chauffeur`** : le dossier du compte connecté. On y remplit le profil, dépose les pièces, suit le statut de chaque pièce et envoie le dossier. Sans session, la page invite à se connecter ou à créer un compte ZupOne. Les textes sont dans l'espace de noms `chauffeurDrive` de `messages/*.json`.
 - **Domaine** : `/chauffeur` appartient pour l'instant à l'espace `drive` (`NEXT_PUBLIC_DOMAINE_DRIVE`, zupdrive.com). La connexion sur ce domaine mène à `/chauffeur`. Le passage sur `driver.zupdrive.com` demandera un domaine dédié : variable d'environnement, CORS, reverse proxy et certificat.
-- **Pour livrer** : un chauffeur passe par `/devenir-livreur`, qui mène au dossier livreur ZupEat, validé à part.
 - **Vérification E2E** : `frontend/scripts/verif-zupdrive-chauffeur.mjs` (demande `DATABASE_URL` pour créer les comptes de l'équipe).

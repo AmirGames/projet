@@ -159,7 +159,6 @@ const chauffeurCommun = {
 
 const questionsChauffeurCommunes = [
   { question: 'Quand le service ouvre-t-il ?', reponse: 'Le transport de personnes est en préparation. Les chauffeurs qui se sont fait connaître seront prévenus en premier.' },
-  { question: 'Puis-je aussi livrer des commandes ?', reponse: 'Oui, vous pouvez créer un dossier livreur en parallèle depuis la page « Devenir livreur ».' },
 ];
 
 export const CHAUFFEUR: ParPays = {
@@ -186,8 +185,7 @@ export const CHAUFFEUR: ParPays = {
     questions: [
       questionsChauffeurCommunes[0],
       { question: 'Les règles sont-elles les mêmes partout en Belgique ?', reponse: 'Non, le transport rémunéré de personnes est réglementé par chaque Région. Les documents demandés dépendent de la Région où vous exercez.' },
-      { question: 'Je n’ai pas encore d’autorisation, puis-je candidater ?', reponse: 'L’autorisation régionale est obligatoire pour transporter des passagers. En attendant, vous pouvez devenir livreur.' },
-      questionsChauffeurCommunes[1],
+      { question: 'Je n’ai pas encore d’autorisation, puis-je candidater ?', reponse: 'Non. L’autorisation régionale est obligatoire pour transporter des passagers : obtenez-la d’abord (voir les étapes ci-dessus), puis ouvrez votre dossier.' },
     ],
   },
   FR: {
@@ -207,8 +205,7 @@ export const CHAUFFEUR: ParPays = {
     ],
     questions: [
       questionsChauffeurCommunes[0],
-      { question: 'Je n’ai pas encore ma carte VTC, puis-je candidater ?', reponse: 'La carte VTC est obligatoire pour transporter des passagers. En attendant, vous pouvez devenir livreur en voiture.' },
-      questionsChauffeurCommunes[1],
+      { question: 'Je n’ai pas encore ma carte VTC, puis-je candidater ?', reponse: 'Non. La carte VTC est obligatoire pour transporter des passagers : obtenez-la d’abord, puis faites-vous connaître.' },
     ],
   },
 };
