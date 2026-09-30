@@ -2262,5 +2262,71 @@
     "driverTitle": "Chauffeur VTC",
     "driverText": "Faites-vous connaître dès maintenant pour conduire avec ZupDrive à son ouverture.",
     "driverAction": "Devenir chauffeur"
+  },
+  "chauffeurDrive": {
+    "titre": "Mon dossier chauffeur ZupDrive",
+    "intro": "Complétez votre profil, déposez vos documents puis envoyez votre dossier. L'équipe ZupDrive le vérifie et vous prévient.",
+    "connexionRequise": "Connectez-vous avec votre compte ZupOne, ou créez-en un, pour ouvrir votre dossier chauffeur.",
+    "seConnecter": "Se connecter",
+    "creerCompte": "Créer un compte",
+    "erreurConnexion": "Serveur injoignable. Réessayez dans un instant.",
+    "sectionProfil": "Vous, votre entreprise et votre véhicule",
+    "sectionPieces": "Documents",
+    "formatsAcceptes": "JPG, PNG, WebP (2 Mo) ou PDF (5 Mo). Le certificat d'immatriculation doit montrer le recto et le verso.",
+    "champ": {
+      "nomComplet": "Nom complet",
+      "telephone": "Téléphone",
+      "numeroEntreprise": "Numéro d'entreprise (BCE)",
+      "raisonSociale": "Raison sociale (si société)",
+      "numeroLicence": "Numéro de licence",
+      "vehiculeMarque": "Marque du véhicule",
+      "vehiculeModele": "Modèle du véhicule",
+      "vehiculePlaque": "Plaque d'immatriculation",
+      "region": "Région de la licence"
+    },
+    "choisirRegion": "Choisissez…",
+    "region": {
+      "BRUXELLES": "Bruxelles-Capitale",
+      "WALLONIE": "Wallonie",
+      "FLANDRE": "Flandre"
+    },
+    "numeroTva": "Numéro de TVA : {tva}",
+    "commencer": "Ouvrir mon dossier",
+    "enregistrer": "Enregistrer",
+    "enregistrement": "Enregistrement…",
+    "profilEnregistre": "Profil enregistré.",
+    "pieceDeposee": "Document déposé, en attente de vérification.",
+    "pieceActionnaires": "Identité des personnes détenant des parts de la société",
+    "facultative": "(si société)",
+    "aDeposer": "À déposer",
+    "voir": "Voir",
+    "deposer": "Déposer",
+    "remplacer": "Remplacer",
+    "dateExpiration": "Expire le",
+    "statutPiece": {
+      "PENDING": "En vérification",
+      "APPROVED": "Validé",
+      "REJECTED": "Refusé",
+      "EXPIRED": "Expiré"
+    },
+    "motif": "Motif : {motif}",
+    "resteAFaire": "Avant d'envoyer votre dossier : {liste}.",
+    "soumettre": "Envoyer mon dossier",
+    "envoi": "Envoi…",
+    "dossierSoumis": "Dossier envoyé. L'équipe ZupDrive vous répondra après vérification.",
+    "statut": {
+      "BROUILLON": "Dossier en cours",
+      "SOUMIS": "Dossier en vérification",
+      "VALIDE": "Dossier validé",
+      "REFUSE": "Dossier à compléter",
+      "SUSPENDU": "Compte suspendu"
+    },
+    "statutAide": {
+      "BROUILLON": "Complétez votre profil et déposez les documents demandés.",
+      "SOUMIS": "L'équipe ZupDrive examine votre dossier. Il ne peut pas être modifié pendant la vérification.",
+      "VALIDE": "Vous êtes chauffeur ZupDrive. Pensez à renouveler vos documents avant leur expiration.",
+      "REFUSE": "Corrigez ce qui est indiqué puis renvoyez votre dossier.",
+      "SUSPENDU": "Contactez le support ZupDrive pour en savoir plus."
+    }
   }
 }

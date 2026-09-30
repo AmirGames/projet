@@ -82,7 +82,9 @@ const SEGMENTS: Record<EspaceHeberge, string[]> = {
     'track',
   ],
   vitrine: ['zupone'],
-  drive: ['zupdrive', 'devenir-chauffeur'],
+  // /chauffeur : le dossier des chauffeurs (licence LVC), destiné à
+  // driver.zupdrive.com ; servi sur le domaine ZupDrive en attendant.
+  drive: ['zupdrive', 'devenir-chauffeur', 'chauffeur'],
 };
 
 /**

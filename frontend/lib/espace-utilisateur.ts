@@ -46,6 +46,8 @@ export function destinationApresConnexion(options: { isSuperOwner?: boolean }): 
 
   if (espace === 'public') return '/client';
   if (espace === 'livreur') return '/driver';
+  // Sur ZupDrive, seuls les chauffeurs ont un espace pour l'instant.
+  if (espace === 'drive') return '/chauffeur';
   if (options.isSuperOwner) return '/superowner';
   return '/auth/role-selection';
 }

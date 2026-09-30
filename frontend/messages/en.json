@@ -2262,5 +2262,71 @@
     "driverTitle": "Ride-hailing driver",
     "driverText": "Register your interest now to drive with ZupDrive when it opens.",
     "driverAction": "Become a driver"
+  },
+  "chauffeurDrive": {
+    "titre": "My ZupDrive driver application",
+    "intro": "Complete your profile, upload your documents and submit your application. The ZupDrive team reviews it and lets you know.",
+    "connexionRequise": "Sign in with your ZupOne account, or create one, to open your driver application.",
+    "seConnecter": "Sign in",
+    "creerCompte": "Create an account",
+    "erreurConnexion": "Server unreachable. Please try again shortly.",
+    "sectionProfil": "You, your company and your vehicle",
+    "sectionPieces": "Documents",
+    "formatsAcceptes": "JPG, PNG, WebP (2 MB) or PDF (5 MB). The registration certificate must show both sides.",
+    "champ": {
+      "nomComplet": "Full name",
+      "telephone": "Phone",
+      "numeroEntreprise": "Company number (BCE/KBO)",
+      "raisonSociale": "Company name (if incorporated)",
+      "numeroLicence": "Licence number",
+      "vehiculeMarque": "Vehicle make",
+      "vehiculeModele": "Vehicle model",
+      "vehiculePlaque": "Licence plate",
+      "region": "Licence region"
+    },
+    "choisirRegion": "Choose…",
+    "region": {
+      "BRUXELLES": "Brussels-Capital",
+      "WALLONIE": "Wallonia",
+      "FLANDRE": "Flanders"
+    },
+    "numeroTva": "VAT number: {tva}",
+    "commencer": "Open my application",
+    "enregistrer": "Save",
+    "enregistrement": "Saving…",
+    "profilEnregistre": "Profile saved.",
+    "pieceDeposee": "Document uploaded, awaiting review.",
+    "pieceActionnaires": "ID of everyone holding shares in the company",
+    "facultative": "(if incorporated)",
+    "aDeposer": "To upload",
+    "voir": "View",
+    "deposer": "Upload",
+    "remplacer": "Replace",
+    "dateExpiration": "Expires on",
+    "statutPiece": {
+      "PENDING": "Under review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired"
+    },
+    "motif": "Reason: {motif}",
+    "resteAFaire": "Before submitting your application: {liste}.",
+    "soumettre": "Submit my application",
+    "envoi": "Submitting…",
+    "dossierSoumis": "Application submitted. The ZupDrive team will reply after review.",
+    "statut": {
+      "BROUILLON": "Application in progress",
+      "SOUMIS": "Application under review",
+      "VALIDE": "Application approved",
+      "REFUSE": "Application needs changes",
+      "SUSPENDU": "Account suspended"
+    },
+    "statutAide": {
+      "BROUILLON": "Complete your profile and upload the requested documents.",
+      "SOUMIS": "The ZupDrive team is reviewing your application. It cannot be edited during review.",
+      "VALIDE": "You are a ZupDrive driver. Remember to renew your documents before they expire.",
+      "REFUSE": "Fix what is indicated, then resubmit your application.",
+      "SUSPENDU": "Contact ZupDrive support to find out more."
+    }
   }
 }

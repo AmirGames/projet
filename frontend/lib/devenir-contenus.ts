@@ -163,11 +163,16 @@ const questionsChauffeurCommunes = [
 ];
 
 export const CHAUFFEUR: ParPays = {
+  // En Belgique, le dossier se remplit en ligne (licence LVC, voir
+  // docs/zupdrive.md) ; ailleurs, la candidature reste un simple contact.
   BE: {
     ...chauffeurCommun,
+    accroche:
+      'ZupDrive prépare son service de transport de personnes. Chauffeurs, ouvrez votre dossier dès maintenant pour faire partie des premiers sur la plateforme.',
+    cta: { libelle: 'Créer mon dossier chauffeur', href: '/chauffeur' },
     etapes: [
-      { titre: 'Faites-vous connaître', texte: 'Envoyez-nous vos coordonnées et votre Région (Bruxelles, Wallonie ou Flandre).' },
-      { titre: 'Dossier', texte: 'Autorisation d’exploitation régionale, permis, certificat de sélection médicale, assurance.' },
+      { titre: 'Créez votre compte', texte: 'Un seul compte ZupOne, puis ouvrez votre dossier chauffeur et indiquez votre Région (Bruxelles, Wallonie ou Flandre).' },
+      { titre: 'Dossier', texte: 'Numéro BCE, licence régionale, permis avec sélection médicale, assurance, contrôle technique : tout se dépose en ligne.' },
       { titre: 'Validation', texte: 'Notre équipe vérifie vos documents et votre véhicule.' },
       { titre: 'Premiers trajets', texte: 'À l’ouverture du service, passez en ligne et acceptez vos courses.' },
     ],
