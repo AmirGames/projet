@@ -2475,6 +2475,10 @@ model DocumentChauffeurDrive {
   /// Le motif d'un refus, que le chauffeur doit pouvoir lire.
   noteExamen     String?
   examineLe      DateTime?
+  /// Relances d'expiration envoyées au chauffeur, 30 puis 10 jours avant.
+  /// Posées une seule fois chacune ; un nouveau dépôt les remet à zéro.
+  rappel30JoursLe DateTime?
+  rappel10JoursLe DateTime?
 
   chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
 
@@ -2483,4 +2487,5 @@ model DocumentChauffeurDrive {
 
   @@unique([chauffeurId, type])
   @@index([statut])
+  @@index([dateExpiration])
 }

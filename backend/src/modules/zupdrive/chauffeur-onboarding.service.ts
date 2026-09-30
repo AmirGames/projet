@@ -268,6 +268,9 @@ export class ChauffeurOnboardingService {
       statut: "PENDING",
       noteExamen: null,
       examineLe: null,
+      // Nouvelle pièce, nouvelle échéance : les relances repartent de zéro.
+      rappel30JoursLe: null,
+      rappel10JoursLe: null,
     };
 
     const deposee = await db.documentChauffeurDrive.upsert({

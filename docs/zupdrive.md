@@ -123,3 +123,13 @@ Gardée par les permissions de la **plateforme DRIVE** (section `chauffeurs`) : 
 - **`/superowner/zupdrive/chauffeurs/:id`** ouvre directement un dossier : c'est le lien des notifications « Nouveau dossier chauffeur ».
 - **Droits** : la section `chauffeurs` vient uniquement du rôle **ZupDrive** du membre. Un membre ZupDrive seul voit « Chauffeurs » sans « Livreurs ». Un membre ZupEat seul voit l'inverse.
 - **`GET /api/superowner/me/permissions/plateformes`** renvoie les droits du compte sur chaque plateforme en un appel (`null` pour une plateforme sans rôle). La route `GET /api/superowner/me/permissions?plateforme=…` garde son 403 pour une plateforme sans rôle, car l'application mobile d'administration ZupEat s'en sert pour refuser un compte.
+
+### Relances d'expiration des pièces
+
+Un job horaire (`chauffeur.jobs.ts` → `ChauffeurExpirationService.surveiller`, tâche de surveillance « pieces-chauffeurs ») suit toutes les pièces qui ont une date d'expiration : assurance, contrôle technique, licence, etc.
+
+- **30 jours avant**, puis **10 jours avant** : le chauffeur est relancé dans son espace (notification) et par courriel. Chaque relance part une seule fois ; elle est enregistrée dans `rappel30JoursLe` / `rappel10JoursLe` avant l'envoi, par une écriture conditionnelle. Doublons, redémarrages et plusieurs serveurs n'envoient donc jamais deux fois la même relance, et un courriel en échec n'est pas renvoyé.
+- **Pièce déposée tardivement** : une pièce qui expire dans moins de 10 jours ne reçoit que la relance des 10 jours.
+- **Nouveau dépôt** : redéposer une pièce remet les relances à zéro, puisque l'échéance change.
+- **Le jour de l'échéance**, la pièce passe `EXPIRED`. Le chauffeur est prévenu, et l'équipe ZupDrive reçoit une notification qui mène au dossier. Le chauffeur **n'est pas suspendu d'office** : c'est à l'équipe de décider.
+- Seules les pièces `APPROVED` ou `PENDING` sont suivies : une pièce refusée est déjà à refaire.
