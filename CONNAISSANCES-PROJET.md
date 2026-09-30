@@ -45,6 +45,7 @@ de taxi / VTC) viendra ensuite, sur le même code et le même compte.
 | `manager.zupeat.com` | Les commerçants |
 | `delivery.zupeat.com` | Les livreurs |
 | `zupdrive.com`, `manager.zupdrive.com` | ZupDrive : clients, sociétés de taxi (à faire) |
+| `driver.zupdrive.com` | Les chauffeurs ZupDrive (transport de personnes) — pas les livreurs |
 
 - **Un seul compte ZupOne** par personne (`User`), client sur toutes les
   plateformes, commerçant ou livreur s'il l'est.

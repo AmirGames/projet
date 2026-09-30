@@ -503,6 +503,7 @@ Le site sait se répartir sur quatre domaines ou tenir sur un seul :
 | `NEXT_PUBLIC_DOMAINE_LIVREUR` | `delivery.zupeat.com` | Les livreurs, et « Devenir livreur » en accueil |
 | `NEXT_PUBLIC_DOMAINE_VITRINE` | `zupone.com` | La vitrine du groupe ZupOne |
 | `NEXT_PUBLIC_DOMAINE_DRIVE` | `zupdrive.com` | ZupDrive (bientôt) et « Devenir chauffeur » |
+| `NEXT_PUBLIC_DOMAINE_CHAUFFEUR` | `driver.zupdrive.com` | L'espace des chauffeurs ZupDrive (`/chauffeur`) — pas les livreurs |
 
 Chaque page est alors servie par le domaine qui lui revient, et une page
 demandée au mauvais domaine redirige vers le bon. Les pages « Devenir … »

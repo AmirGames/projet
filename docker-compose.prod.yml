@@ -89,6 +89,7 @@ services:
         NEXT_PUBLIC_DOMAINE_LIVREUR: ${NEXT_PUBLIC_DOMAINE_LIVREUR:-}
         NEXT_PUBLIC_DOMAINE_VITRINE: ${NEXT_PUBLIC_DOMAINE_VITRINE:-}
         NEXT_PUBLIC_DOMAINE_DRIVE: ${NEXT_PUBLIC_DOMAINE_DRIVE:-}
+        NEXT_PUBLIC_DOMAINE_CHAUFFEUR: ${NEXT_PUBLIC_DOMAINE_CHAUFFEUR:-}
     restart: unless-stopped
     environment:
       # Même heure que l'API pour les pages rendues côté serveur.
