@@ -2465,8 +2465,12 @@ model ChauffeurDrive {
   @@index([statut])
 }
 
-/// Une pièce du dossier d'un chauffeur ZupDrive. Une seule par type : la
-/// redéposer remplace l'ancienne et la remet en examen.
+/// Une version d'une pièce du dossier d'un chauffeur ZupDrive.
+///
+/// Par type, au plus une version « en vigueur » (validée, ou expirée) et une
+/// version déposée en attente d'examen (ou refusée). Renouveler une pièce
+/// validée n'efface pas l'ancienne : elle reste en vigueur jusqu'à ce que
+/// l'équipe valide la nouvelle, puis elle est archivée (archiveeLe).
 model DocumentChauffeurDrive {
   id             String    @id @default(cuid())
   chauffeurId    String
@@ -2484,13 +2488,16 @@ model DocumentChauffeurDrive {
   /// Posées une seule fois chacune ; un nouveau dépôt les remet à zéro.
   rappel30JoursLe DateTime?
   rappel10JoursLe DateTime?
+  /// Version remplacée par une version plus récente, validée par l'équipe.
+  /// Gardée pour l'historique ; seules les versions non archivées comptent.
+  archiveeLe      DateTime?
 
   chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([chauffeurId, type])
+  @@index([chauffeurId, type])
   @@index([statut])
   @@index([dateExpiration])
 }

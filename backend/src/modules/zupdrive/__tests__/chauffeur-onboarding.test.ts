@@ -43,10 +43,11 @@ const correspond = (ligne: Ligne, where: Ligne = {}) =>
 
 const avecDocuments = (chauffeur: Ligne | undefined, include?: Ligne) =>
   chauffeur && include?.documents
-    ? { ...chauffeur, documents: tables.documents.filter((d) => d.chauffeurId === chauffeur.id) }
+    ? { ...chauffeur, documents: tables.documents.filter((d) => d.chauffeurId === chauffeur.id && !d.archiveeLe) }
     : chauffeur ?? null;
 
 const db: any = {
+  $transaction: jest.fn(async (operations: Promise<unknown>[]) => Promise.all(operations)),
   systemConfig: { findFirst: jest.fn(async () => null) },
   platformRole: {
     // Les rôles de base, avec leurs permissions par défaut, sur chaque plateforme.
@@ -91,13 +92,15 @@ const db: any = {
   documentChauffeurDrive: {
     findUnique: jest.fn(async ({ where }: any) => tables.documents.find((d) => d.id === where.id) ?? null),
     update: jest.fn(async ({ where, data }: any) => Object.assign(tables.documents.find((d) => d.id === where.id)!, data)),
-    upsert: jest.fn(async ({ where, create, update }: any) => {
-      const { chauffeurId, type } = where.chauffeurId_type;
-      const existant = tables.documents.find((d) => d.chauffeurId === chauffeurId && d.type === type);
-      if (existant) return Object.assign(existant, update);
-      const ligne = { id: nouvelId("doc"), createdAt: new Date(), ...create };
+    create: jest.fn(async ({ data }: any) => {
+      const ligne = { id: nouvelId("doc"), createdAt: new Date(), archiveeLe: null, ...data };
       tables.documents.push(ligne);
       return ligne;
+    }),
+    updateMany: jest.fn(async ({ where, data }: any) => {
+      const lignes = tables.documents.filter((d) => correspond(d, where));
+      lignes.forEach((l) => Object.assign(l, data));
+      return { count: lignes.length };
     }),
     findFirst: jest.fn(async ({ where }: any) => {
       const piece = tables.documents.find((d) => d.url.endsWith(where.url.endsWith));
@@ -494,5 +497,109 @@ describe("suspension pour une pièce expirée", () => {
       .expect(200);
     expect(chauffeur.suspenduPourExpirationLe).toBeNull();
     await deposerLicence("user-chauffeur").expect(409);
+  });
+});
+
+describe("renouvellement d'une pièce : l'ancienne version reste en vigueur", () => {
+  async function chauffeurValide(qui = "user-chauffeur") {
+    const chauffeur = await dossierSoumis(qui);
+    for (const piece of tables.documents.filter((d) => d.chauffeurId === chauffeur.id)) {
+      await request(app)
+        .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${piece.id}`)
+        .set(en("superowner"))
+        .send({ approuve: true })
+        .expect(200);
+    }
+    await request(app).post(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/approve`).set(en("superowner")).expect(200);
+    return chauffeur;
+  }
+
+  const renouveler = (qui: string, type = "assurance") =>
+    request(app)
+      .post("/api/zupdrive/chauffeur/me/documents")
+      .set(en(qui))
+      .field("type", type)
+      .field("dateExpiration", new Date(Date.now() + 400 * 86400000).toISOString())
+      .attach("file", JPEG, { filename: "piece.jpg", contentType: "image/jpeg" });
+
+  const versions = (chauffeurId: string, type = "assurance") =>
+    tables.documents.filter((d) => d.chauffeurId === chauffeurId && d.type === type);
+
+  it("dépose la nouvelle version à côté de l'ancienne, qui reste validée", async () => {
+    const chauffeur = await chauffeurValide();
+    const ancienne = versions(chauffeur.id)[0];
+    await renouveler("user-chauffeur").expect(201);
+
+    expect(versions(chauffeur.id)).toHaveLength(2);
+    expect(ancienne.statut).toBe("APPROVED");
+    expect(ancienne.archiveeLe).toBeFalsy();
+
+    const moi = await request(app).get("/api/zupdrive/chauffeur/me").set(en("user-chauffeur")).expect(200);
+    const assurances = moi.body.data.documents.filter((d: any) => d.type === "assurance");
+    expect(assurances.map((d: any) => [d.statut, d.renouvellement])).toEqual([
+      ["APPROVED", false],
+      ["PENDING", true],
+    ]);
+  });
+
+  it("un renouvellement refusé laisse l'ancienne version en vigueur, et le chauffeur validé", async () => {
+    const chauffeur = await chauffeurValide();
+    const ancienne = versions(chauffeur.id)[0];
+    await renouveler("user-chauffeur").expect(201);
+    const nouvelle = versions(chauffeur.id)[1];
+
+    await request(app)
+      .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${nouvelle.id}`)
+      .set(en("superowner"))
+      .send({ approuve: false, note: "Mauvais document" })
+      .expect(200);
+
+    expect(nouvelle.statut).toBe("REJECTED");
+    expect(ancienne.statut).toBe("APPROVED");
+    expect(ancienne.archiveeLe).toBeFalsy();
+    expect(chauffeur.statut).toBe("VALIDE");
+
+    // Un nouveau dépôt remplace la version refusée : pas de troisième version.
+    await renouveler("user-chauffeur").expect(201);
+    expect(versions(chauffeur.id)).toHaveLength(2);
+    expect(nouvelle.statut).toBe("PENDING");
+  });
+
+  it("un renouvellement validé archive l'ancienne version, gardée pour l'historique", async () => {
+    const chauffeur = await chauffeurValide();
+    const ancienne = versions(chauffeur.id)[0];
+    await renouveler("user-chauffeur").expect(201);
+    const nouvelle = versions(chauffeur.id)[1];
+
+    await request(app)
+      .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${nouvelle.id}`)
+      .set(en("superowner"))
+      .send({ approuve: true })
+      .expect(200);
+
+    expect(nouvelle.statut).toBe("APPROVED");
+    expect(ancienne.archiveeLe).toBeInstanceOf(Date);
+    expect(tables.documents).toContain(ancienne);
+
+    const dossier = await request(app).get(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}`).set(en("superowner")).expect(200);
+    expect(dossier.body.data.documents.filter((d: any) => d.type === "assurance")).toHaveLength(1);
+
+    // Une version archivée ne s'examine plus.
+    await request(app)
+      .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${ancienne.id}`)
+      .set(en("superowner"))
+      .send({ approuve: false, note: "Trop tard" })
+      .expect(404);
+  });
+
+  it("refuse de valider une version expirée", async () => {
+    const chauffeur = await chauffeurValide();
+    const ancienne = versions(chauffeur.id)[0];
+    Object.assign(ancienne, { statut: "EXPIRED", dateExpiration: new Date(Date.now() - 86400000) });
+    await request(app)
+      .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${ancienne.id}`)
+      .set(en("superowner"))
+      .send({ approuve: true })
+      .expect(400);
   });
 });

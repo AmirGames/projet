@@ -202,7 +202,14 @@ export default function DossierChauffeurPage() {
   const depotPossible =
     !!dossier &&
     (modifiable || dossier.statut === 'VALIDE' || (dossier.statut === 'SUSPENDU' && !!dossier.suspenduPourExpirationLe));
+  // La version la plus récente de chaque pièce (les documents arrivent du plus
+  // ancien au plus récent), et celle encore en vigueur pendant un renouvellement.
   const pieces = new Map((dossier?.documents || []).map((piece) => [piece.type, piece]));
+  const enVigueur = new Map(
+    (dossier?.documents || [])
+      .filter((piece) => piece.statut === 'APPROVED' || piece.statut === 'EXPIRED')
+      .map((piece) => [piece.type, piece]),
+  );
   // Les pièces exigées, puis les facultatives déjà déposées ou proposées.
   const aDeposer = [
     ...(dossier?.piecesExigees || []),
@@ -287,6 +294,7 @@ export default function DossierChauffeurPage() {
                 libelle={libelle}
                 facultative={!dossier.piecesExigees.some((p) => p.type === type)}
                 piece={pieces.get(type)}
+                versionEnVigueur={pieces.get(type) !== enVigueur.get(type) ? enVigueur.get(type) : undefined}
                 depotPossible={depotPossible}
                 enCours={envoi === `piece-${type}`}
                 onDeposer={(fichier, date) => deposer(type, fichier, date)}
@@ -352,6 +360,7 @@ function LignePiece({
   libelle,
   facultative,
   piece,
+  versionEnVigueur,
   depotPossible,
   enCours,
   onDeposer,
@@ -359,6 +368,8 @@ function LignePiece({
   libelle: string;
   facultative: boolean;
   piece?: Piece;
+  /** Pendant un renouvellement : l'ancienne version, toujours valable jusqu'à sa date. */
+  versionEnVigueur?: Piece;
   depotPossible: boolean;
   enCours: boolean;
   onDeposer: (fichier: File, dateExpiration: string) => void;
@@ -379,6 +390,18 @@ function LignePiece({
           {libelle}
           {facultative && <span className="ml-2 text-xs text-slate-500">{t('facultative')}</span>}
         </p>
+        {versionEnVigueur && (
+          <p className="mt-1 text-sm text-slate-600">
+            {versionEnVigueur.statut === 'EXPIRED'
+              ? t('versionEnVigueurExpiree')
+              : versionEnVigueur.dateExpiration
+                ? t('versionEnVigueurJusquau', {
+                    date: new Date(versionEnVigueur.dateExpiration).toLocaleDateString('fr-FR'),
+                  })
+                : t('versionEnVigueur')}
+          </p>
+        )}
+        {piece && versionEnVigueur && <p className="mt-1 text-xs font-medium text-slate-500">{t('nouvelleVersion')}</p>}
         {piece ? (
           <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
             {icones[piece.statut]}

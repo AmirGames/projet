@@ -39,7 +39,7 @@ router.get("/chauffeurs", async (req: Request, res: Response, next: NextFunction
         take: query.limit,
         include: {
           user: { select: { email: true } },
-          documents: { select: { type: true, statut: true } },
+          documents: { where: { archiveeLe: null }, select: { type: true, statut: true } },
         },
         // Les dossiers soumis depuis le plus longtemps d'abord.
         orderBy: [{ soumisLe: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],

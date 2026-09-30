@@ -51,6 +51,12 @@ export function presenterDossier(dossier: Awaited<ReturnType<typeof ChauffeurOnb
     piecesExigees: dossier.piecesExigees.map((type) => ({ type, libelle: libelleDeLaPiece(type) })),
     documents: dossier.documents.map((piece) => ({
       ...piece,
+      // Une nouvelle version déposée alors qu'une autre est encore en vigueur.
+      renouvellement:
+        (piece.statut === "PENDING" || piece.statut === "REJECTED") &&
+        dossier.documents.some(
+          (autre) => autre.type === piece.type && (autre.statut === "APPROVED" || autre.statut === "EXPIRED")
+        ),
       libelle: libelleDeLaPiece(piece.type),
       url: presenter(piece.url),
     })),

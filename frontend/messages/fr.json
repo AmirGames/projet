@@ -2330,7 +2330,11 @@
       "REFUSE": "Corrigez ce qui est indiqué puis renvoyez votre dossier.",
       "SUSPENDU": "Contactez le support ZupDrive pour en savoir plus.",
       "SUSPENDU_EXPIRATION": "Un document obligatoire a expiré. Déposez la version à jour ci-dessous : votre compte sera rétabli dès que l'équipe ZupDrive l'aura validée."
-    }
+    },
+    "versionEnVigueur": "Version en vigueur : valable.",
+    "versionEnVigueurJusquau": "Version en vigueur : valable jusqu'au {date}.",
+    "versionEnVigueurExpiree": "Version en vigueur : expirée.",
+    "nouvelleVersion": "Nouvelle version :"
   },
   "superownerChauffeurs": {
     "title": "Chauffeurs ZupDrive",
@@ -2398,6 +2402,8 @@
       "BROUILLON": "Le chauffeur n'a pas encore envoyé son dossier.",
       "REFUSE": "Dossier renvoyé au chauffeur : en attente de ses corrections."
     },
-    "backToQueue": "← Retour à la file"
+    "backToQueue": "← Retour à la file",
+    "renewal": "(renouvellement)",
+    "currentVersion": "(version en vigueur jusqu'à validation du renouvellement)"
   }
 }

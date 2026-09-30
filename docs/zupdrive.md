@@ -57,7 +57,7 @@ Des documents supplémentaires peuvent être requis en fonction de la licence.
 ## Côté technique — inscription et validation des chauffeurs
 
 Module backend : `backend/src/modules/zupdrive/` (service `chauffeur-onboarding.service.ts`).
-Modèles Prisma : `ChauffeurDrive` (un par compte ZupOne) et `DocumentChauffeurDrive` (une pièce par type), migration `0027_zupdrive_chauffeurs`.
+Modèles Prisma : `ChauffeurDrive` (un par compte ZupOne) et `DocumentChauffeurDrive` (les versions de chaque pièce), migration `0027_zupdrive_chauffeurs`.
 
 **Chauffeur ≠ livreur.** Un **chauffeur** (ZupDrive) transporte des personnes, avec une licence LVC. Un **livreur** (ZupEat) livre des repas et des commandes. Ce sont deux métiers, deux dossiers et deux validations sans aucun lien : rien, dans le code ou dans les pages de ZupDrive, ne renvoie au métier de livreur. Côté code, le livreur est le modèle Prisma `Courier` (table historique `Driver`). L'espace `/driver` et les routes `/api/drivers` gardent leur nom historique, mais désignent eux aussi les **livreurs** ZupEat, pas les chauffeurs.
 
@@ -130,7 +130,7 @@ Un job horaire (`chauffeur.jobs.ts` → `ChauffeurExpirationService.surveiller`,
 
 - **30 jours avant**, puis **10 jours avant** : le chauffeur est relancé dans son espace (notification) et par courriel. Chaque relance part une seule fois ; elle est enregistrée dans `rappel30JoursLe` / `rappel10JoursLe` avant l'envoi, par une écriture conditionnelle. Doublons, redémarrages et plusieurs serveurs n'envoient donc jamais deux fois la même relance, et un courriel en échec n'est pas renvoyé.
 - **Pièce déposée tardivement** : une pièce qui expire dans moins de 10 jours ne reçoit que la relance des 10 jours.
-- **Nouveau dépôt** : redéposer une pièce remet les relances à zéro, puisque l'échéance change.
+- **Nouvelle version** : ses relances partent de zéro, puisque son échéance est nouvelle. Tant qu'elle attend l'examen, l'ancienne version n'est pas relancée (le chauffeur a déjà fait le nécessaire). Si elle est refusée, les relances de l'ancienne reprennent.
 - **Le jour de l'échéance**, la pièce passe `EXPIRED` et le chauffeur est prévenu.
 - **Suspension automatique** (transport de personnes) : si la pièce expirée est une **pièce exigée** pour sa région (licence, assurance, contrôle technique, permis, immatriculation…), un chauffeur `VALIDE` passe `SUSPENDU`. Le motif nomme la pièce et sa date d'expiration, et `suspenduPourExpirationLe` est posé. Le chauffeur et l'équipe sont prévenus. Les relances d'une pièce exigée annoncent cette suspension. Une pièce facultative (identité des associés) ne suspend jamais.
   - La suspension est calculée à partir de l'état en base à chaque passage : un chauffeur resté `VALIDE` avec une pièce exigée expirée est rattrapé, même après un passage interrompu ou une réactivation manuelle.
@@ -138,3 +138,14 @@ Un job horaire (`chauffeur.jobs.ts` → `ChauffeurExpirationService.surveiller`,
   - Une suspension **décidée par l'équipe** (motif libre) ne pose pas ce marqueur : le dossier reste figé et aucun dépôt ne la lève.
   - Comme la suspension n'a pas d'auteur humain, la table d'audit (qui exige un administrateur) ne l'enregistre pas. La trace est portée par le dossier (`motifStatut`, `suspenduPourExpirationLe`), les logs serveur et la notification envoyée à l'équipe.
 - Seules les pièces `APPROVED` ou `PENDING` sont suivies : une pièce refusée est déjà à refaire.
+
+### Renouvellement d'une pièce : l'ancienne version reste en vigueur
+
+Une pièce peut exister en plusieurs versions (`DocumentChauffeurDrive`, sans contrainte d'unicité par type).
+
+- **Au dépôt**, la version validée (ou expirée) n'est jamais écrasée. La nouvelle version est créée à côté, en attente d'examen. Si une version en attente ou refusée existe déjà, c'est elle qui est remplacée : il y a au plus une version en vigueur et une version déposée par type.
+- **Si l'équipe valide la nouvelle version**, l'ancienne est archivée (`archiveeLe`) dans la même transaction. Elle est conservée pour l'historique, mais ne compte plus nulle part : dossier, relances, suspension.
+- **Si l'équipe refuse la nouvelle version**, l'ancienne reste en vigueur, avec son échéance. Le chauffeur reste validé jusqu'à cette date, puis il est suspendu s'il n'a toujours pas de version validée.
+- **Si l'ancienne expire avant la validation de la nouvelle**, le chauffeur est suspendu, puis rétabli dès que la nouvelle version est validée.
+- **Une version expirée ne peut pas être validée**, et une version archivée ne s'examine plus.
+- **À l'écran**, le chauffeur voit la nouvelle version et « Version en vigueur : valable jusqu'au … ». L'équipe voit les deux, marquées « renouvellement » et « version en vigueur ». L'API signale `renouvellement: true` sur la nouvelle version.

@@ -2330,7 +2330,11 @@
       "REFUSE": "Fix what is indicated, then resubmit your application.",
       "SUSPENDU": "Contact ZupDrive support to find out more.",
       "SUSPENDU_EXPIRATION": "A required document has expired. Upload the up-to-date version below: your account will be reinstated as soon as the ZupDrive team approves it."
-    }
+    },
+    "versionEnVigueur": "Current version: valid.",
+    "versionEnVigueurJusquau": "Current version: valid until {date}.",
+    "versionEnVigueurExpiree": "Current version: expired.",
+    "nouvelleVersion": "New version:"
   },
   "superownerChauffeurs": {
     "title": "ZupDrive drivers",
@@ -2398,6 +2402,8 @@
       "BROUILLON": "The driver has not submitted the application yet.",
       "REFUSE": "Sent back to the driver: waiting for corrections."
     },
-    "backToQueue": "← Back to the queue"
+    "backToQueue": "← Back to the queue",
+    "renewal": "(renewal)",
+    "currentVersion": "(current version until the renewal is approved)"
   }
 }

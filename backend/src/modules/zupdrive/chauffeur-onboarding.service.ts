@@ -137,7 +137,8 @@ type Dossier = NonNullable<Awaited<ReturnType<typeof lireDossier>>>;
 function lireDossier(where: { id: string } | { userId: string }) {
   return db.chauffeurDrive.findUnique({
     where: where as any,
-    include: { documents: { orderBy: { createdAt: "asc" } } },
+    // Les versions archivées (remplacées) ne comptent plus : historique seul.
+    include: { documents: { where: { archiveeLe: null }, orderBy: { createdAt: "asc" } } },
   });
 }
 
@@ -277,11 +278,16 @@ export class ChauffeurOnboardingService {
       rappel10JoursLe: null,
     };
 
-    const deposee = await db.documentChauffeurDrive.upsert({
-      where: { chauffeurId_type: { chauffeurId: dossier.id, type: piece.type } },
-      create: { chauffeurId: dossier.id, type: piece.type, ...valeurs },
-      update: valeurs,
-    });
+    // La version en vigueur (validée ou expirée) n'est jamais écrasée : elle
+    // reste valable jusqu'à ce que l'équipe valide la nouvelle. Seule une
+    // version encore à l'examen, ou refusée, est remplacée par ce dépôt.
+    const aRemplacer = dossier.documents
+      .filter((doc) => doc.type === piece.type && (doc.statut === "PENDING" || doc.statut === "REJECTED"))
+      .at(-1);
+
+    const deposee = aRemplacer
+      ? await db.documentChauffeurDrive.update({ where: { id: aRemplacer.id }, data: valeurs })
+      : await db.documentChauffeurDrive.create({ data: { chauffeurId: dossier.id, type: piece.type, ...valeurs } });
 
     logger.info("ZupDrive chauffeur document uploaded", { chauffeurId: dossier.id, type: piece.type });
 
@@ -348,21 +354,44 @@ export class ChauffeurOnboardingService {
   ) {
     const piece = await db.documentChauffeurDrive.findUnique({ where: { id: documentId } });
 
-    if (!piece || piece.chauffeurId !== chauffeurId) {
+    if (!piece || piece.chauffeurId !== chauffeurId || piece.archiveeLe) {
       throw new ApiError(404, "Document introuvable", "DOCUMENT_NOT_FOUND");
+    }
+    if (verdict.approuve && piece.dateExpiration && piece.dateExpiration.getTime() <= Date.now()) {
+      throw new ApiError(400, "Ce document est expiré : il ne peut pas être validé", "DOCUMENT_EXPIRED");
     }
     if (!verdict.approuve && !verdict.note?.trim()) {
       throw new ApiError(400, "Un refus sans motif ne dit pas au chauffeur quoi corriger", "MISSING_REASON");
     }
 
-    const examinee = await db.documentChauffeurDrive.update({
-      where: { id: documentId },
-      data: {
-        statut: verdict.approuve ? "APPROVED" : "REJECTED",
-        noteExamen: verdict.note?.trim() || null,
-        examineLe: new Date(),
-      },
-    });
+    const maintenant = new Date();
+    // Validée, la nouvelle version remplace l'ancienne, archivée dans la même
+    // transaction : il y a toujours exactement une version en vigueur.
+    // Refusée, elle laisse l'ancienne en vigueur, avec son échéance.
+    const [examinee] = await db.$transaction([
+      db.documentChauffeurDrive.update({
+        where: { id: documentId },
+        data: {
+          statut: verdict.approuve ? "APPROVED" : "REJECTED",
+          noteExamen: verdict.note?.trim() || null,
+          examineLe: maintenant,
+        },
+      }),
+      ...(verdict.approuve
+        ? [
+            db.documentChauffeurDrive.updateMany({
+              where: {
+                chauffeurId,
+                type: piece.type,
+                id: { not: documentId },
+                archiveeLe: null,
+                statut: { in: ["APPROVED", "EXPIRED"] },
+              },
+              data: { archiveeLe: maintenant },
+            }),
+          ]
+        : []),
+    ]);
 
     await this.prevenir(
       chauffeurId,

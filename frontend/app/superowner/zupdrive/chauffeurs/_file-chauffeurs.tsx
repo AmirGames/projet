@@ -47,6 +47,8 @@ interface Piece {
   url: string;
   statut: string;
   noteExamen: string | null;
+  /** Nouvelle version déposée alors que l'ancienne est encore en vigueur. */
+  renouvellement?: boolean;
   dateExpiration: string | null;
 }
 
@@ -344,6 +346,10 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
                     <p className="text-sm text-white">
                       {piece.libelle}
                       {!exigees.has(piece.type) && <span className="ml-2 text-xs text-gray-400">{t('optional')}</span>}
+                      {piece.renouvellement && <span className="ml-2 text-xs text-blue-300">{t('renewal')}</span>}
+                      {dossier.documents.some((autre) => autre.renouvellement && autre.type === piece.type) && (
+                        <span className="ml-2 text-xs text-gray-400">{t('currentVersion')}</span>
+                      )}
                       <span className={`ml-2 text-xs ${COULEURS_PIECE[piece.statut] || 'text-gray-400'}`}>
                         {t(`documentStatus.${piece.statut}`)}
                       </span>
@@ -364,7 +370,8 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
                       <ExternalLink size={12} />
                       {t('view')}
                     </a>
-                    {piece.statut !== 'APPROVED' && (
+                    {/* Une version expirée ne se valide pas : il faut la version à jour. */}
+                    {piece.statut !== 'APPROVED' && piece.statut !== 'EXPIRED' && (
                       <button
                         onClick={() => examiner(piece, true)}
                         disabled={envoi}

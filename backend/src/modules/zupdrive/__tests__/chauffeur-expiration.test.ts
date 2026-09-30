@@ -19,6 +19,7 @@ const correspond = (ligne: Ligne, where: Ligne = {}): boolean =>
       if ("in" in attendu && !(attendu.in as unknown[]).includes(valeur)) return false;
       if ("gt" in attendu && !(valeur && valeur > attendu.gt)) return false;
       if ("lte" in attendu && !(valeur && valeur <= attendu.lte)) return false;
+      if ("not" in attendu && (valeur ?? null) === attendu.not) return false;
       if ("some" in attendu) return pieces.some((p): boolean => p.chauffeurId === ligne.id && correspond(p, attendu.some));
       return true;
     }
@@ -30,6 +31,7 @@ const db: any = {
     findMany: jest.fn(async ({ where }: any) =>
       pieces.filter((p) => correspond(p, where)).map((p) => ({ ...p, chauffeur: chauffeurDe(p) }))
     ),
+    count: jest.fn(async ({ where }: any) => pieces.filter((p) => correspond(p, where)).length),
     updateMany: jest.fn(async ({ where, data }: any) => {
       const lignes = pieces.filter((p) => correspond(p, where));
       lignes.forEach((l) => Object.assign(l, data));
@@ -234,5 +236,33 @@ describe("suspension d'un chauffeur dont une pièce exigée a expiré", () => {
     await ChauffeurExpirationService.surveiller(MAINTENANT);
     expect(chauffeurs[0].motifStatut).toBe("Plainte");
     expect(chauffeurs[0].suspenduPourExpirationLe).toBeNull();
+  });
+});
+
+describe("renouvellement en attente", () => {
+  beforeEach(() => {
+    chauffeurs[0].statut = "VALIDE";
+  });
+
+  it("ne demande pas de déposer une version à jour déjà déposée, et relance si elle est refusée", async () => {
+    pieces = [piece("a", 20), piece("b", 400, { statut: "PENDING" })];
+    expect((await ChauffeurExpirationService.surveiller(MAINTENANT)).rappels).toBe(0);
+    expect(pieces[0].rappel30JoursLe).toBeNull();
+
+    pieces[1].statut = "REJECTED";
+    expect((await ChauffeurExpirationService.surveiller(MAINTENANT)).rappels).toBe(1);
+  });
+
+  it("ignore les versions archivées", async () => {
+    pieces = [piece("a", -3, { type: "licence", archiveeLe: dans(-10) }), piece("b", 300, { type: "licence" })];
+    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 0, suspendus: 0 });
+    expect(pieces[0].statut).toBe("APPROVED");
+  });
+
+  it("suspend si l'ancienne version expire avant la validation de la nouvelle, en le lui expliquant", async () => {
+    pieces = [piece("a", -0.01, { type: "licence" }), piece("b", 400, { type: "licence", statut: "PENDING" })];
+    expect((await ChauffeurExpirationService.surveiller(MAINTENANT)).suspendus).toBe(1);
+    expect(chauffeurs[0].statut).toBe("SUSPENDU");
+    expect(courriels[0].text).toContain("attend la validation");
   });
 });

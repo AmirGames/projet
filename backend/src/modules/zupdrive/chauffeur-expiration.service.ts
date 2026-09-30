@@ -48,6 +48,7 @@ export class ChauffeurExpirationService {
       const candidates = await db.documentChauffeurDrive.findMany({
         where: {
           statut: { in: STATUTS_SUIVIS },
+          archiveeLe: null,
           [champ]: null,
           dateExpiration: { gt: maintenant, lte: horizon },
         },
@@ -55,12 +56,18 @@ export class ChauffeurExpirationService {
           id: true,
           chauffeurId: true,
           type: true,
+          statut: true,
           dateExpiration: true,
           chauffeur: { select: { region: true, statut: true } },
         },
       });
 
       for (const piece of candidates) {
+        // Il a déjà déposé la version à jour : elle attend l'équipe, inutile
+        // de lui demander de la déposer. Si elle est refusée, la relance
+        // repartira au passage suivant (elle n'a pas été marquée).
+        if (piece.statut === "APPROVED" && (await this.renouvellementEnAttente(piece))) continue;
+
         const { count } = await db.documentChauffeurDrive.updateMany({
           where: { id: piece.id, [champ]: null },
           data: { [champ]: maintenant },
@@ -91,14 +98,14 @@ export class ChauffeurExpirationService {
     }
 
     const echues = await db.documentChauffeurDrive.findMany({
-      where: { statut: { in: STATUTS_SUIVIS }, dateExpiration: { lte: maintenant } },
+      where: { statut: { in: STATUTS_SUIVIS }, archiveeLe: null, dateExpiration: { lte: maintenant } },
       select: { id: true, chauffeurId: true, type: true, chauffeur: { select: { nomComplet: true } } },
     });
 
     let expirees = 0;
     for (const piece of echues) {
       const { count } = await db.documentChauffeurDrive.updateMany({
-        where: { id: piece.id, statut: { in: STATUTS_SUIVIS } },
+        where: { id: piece.id, statut: { in: STATUTS_SUIVIS }, archiveeLe: null },
         data: { statut: "EXPIRED" },
       });
       if (count !== 1) continue;
@@ -108,7 +115,9 @@ export class ChauffeurExpirationService {
       await this.prevenirLeChauffeur(
         piece.chauffeurId,
         `${libelle} : document expiré`,
-        "Votre document a expiré. Déposez-en une version à jour depuis votre dossier chauffeur."
+        (await this.renouvellementEnAttente(piece))
+          ? "Votre document a expiré. La version à jour que vous avez déposée attend la validation de l'équipe ZupDrive."
+          : "Votre document a expiré. Déposez-en une version à jour depuis votre dossier chauffeur."
       );
     }
 
@@ -127,12 +136,12 @@ export class ChauffeurExpirationService {
    */
   private static async suspendreLesChauffeursNonAJour(maintenant: Date) {
     const chauffeurs = await db.chauffeurDrive.findMany({
-      where: { statut: "VALIDE", documents: { some: { statut: "EXPIRED" } } },
+      where: { statut: "VALIDE", documents: { some: { statut: "EXPIRED", archiveeLe: null } } },
       select: {
         id: true,
         nomComplet: true,
         region: true,
-        documents: { where: { statut: "EXPIRED" }, select: { type: true, dateExpiration: true } },
+        documents: { where: { statut: "EXPIRED", archiveeLe: null }, select: { type: true, dateExpiration: true } },
       },
     });
 
@@ -170,6 +179,20 @@ export class ChauffeurExpirationService {
       );
     }
     return suspendus;
+  }
+
+  /** Une version plus récente de la même pièce attend l'examen de l'équipe. */
+  private static async renouvellementEnAttente(piece: { id: string; chauffeurId: string; type: string }) {
+    const enAttente = await db.documentChauffeurDrive.count({
+      where: {
+        chauffeurId: piece.chauffeurId,
+        type: piece.type,
+        id: { not: piece.id },
+        archiveeLe: null,
+        statut: "PENDING",
+      },
+    });
+    return enAttente > 0;
   }
 
   /**
