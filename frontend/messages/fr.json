@@ -2277,6 +2277,7 @@
     "sectionProfil": "Vous, votre entreprise et votre véhicule",
     "sectionPieces": "Documents",
     "formatsAcceptes": "JPG, PNG, WebP (2 Mo) ou PDF (5 Mo). Le certificat d'immatriculation doit montrer le recto et le verso.",
+    "fichierTropLourd": "Fichier trop lourd : {mo} Mo maximum. Pour un PDF, scannez en qualité réduite ou envoyez une photo.",
     "champ": {
       "nomComplet": "Nom complet",
       "telephone": "Téléphone",

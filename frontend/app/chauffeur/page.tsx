@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle, Clock, FileUp, Loader, XCircle } from 'lucide
 
 import { useAuth } from '@/lib/auth-context';
 import { signalerErreur } from '@/lib/erreurs';
+import { TAILLE_MAX_IMAGE, TAILLE_MAX_PDF, reduireImage } from '@/lib/reduire-image';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -100,6 +101,7 @@ export default function DossierChauffeurPage() {
   const [envoi, setEnvoi] = useState<string | null>(null);
   const [erreur, setErreur] = useState('');
   const [message, setMessage] = useState('');
+  const [erreursPieces, setErreursPieces] = useState<Record<string, string>>({});
 
   const recevoir = (lu: Dossier | null) => {
     setDossier(lu);
@@ -156,21 +158,51 @@ export default function DossierChauffeurPage() {
     );
   };
 
-  const deposer = (type: string, fichier: File, dateExpiration: string) => {
-    const donnees = new FormData();
-    donnees.append('type', type);
-    donnees.append('file', fichier);
-    if (dateExpiration) donnees.append('dateExpiration', dateExpiration);
-    agir(`piece-${type}`, async () => {
+  /**
+   * Dépose une pièce. Une photo de téléphone dépasse souvent la limite du
+   * serveur (2 Mo) : elle est réduite avant l'envoi. L'erreur s'affiche sous
+   * la pièce concernée, là où le chauffeur regarde, et pas en haut de page.
+   */
+  const deposer = async (type: string, fichier: File, dateExpiration: string) => {
+    const cle = `piece-${type}`;
+    setEnvoi(cle);
+    setErreur('');
+    setMessage('');
+    setErreursPieces(({ [type]: _ancienne, ...autres }) => autres);
+    const echouer = (texte: string) => setErreursPieces((avant) => ({ ...avant, [type]: texte }));
+    try {
+      const aEnvoyer = await reduireImage(fichier);
+      const limite = aEnvoyer.type === 'application/pdf' ? TAILLE_MAX_PDF : TAILLE_MAX_IMAGE;
+      if (aEnvoyer.size > limite) {
+        echouer(t('fichierTropLourd', { mo: limite / (1024 * 1024) }));
+        return;
+      }
+      const donnees = new FormData();
+      donnees.append('type', type);
+      donnees.append(
+        'file',
+        aEnvoyer,
+        aEnvoyer === fichier ? fichier.name : `${fichier.name.replace(/\.[^.]+$/, '')}.jpg`
+      );
+      if (dateExpiration) donnees.append('dateExpiration', dateExpiration);
       const reponse = await fetch(`${API_URL}/api/zupdrive/chauffeur/me/documents`, {
         method: 'POST',
         headers: entetes(),
         body: donnees,
       });
       const corps = await reponse.json().catch(() => null);
-      if (!reponse.ok) throw new Error(corps?.error || corps?.message || `HTTP ${reponse.status}`);
-      return appeler('/me');
-    }, t('pieceDeposee'));
+      if (!reponse.ok) {
+        echouer(corps?.error || corps?.message || `HTTP ${reponse.status}`);
+        return;
+      }
+      const lu = await appeler('/me');
+      if (lu) recevoir(lu);
+      setMessage(t('pieceDeposee'));
+    } catch (err) {
+      echouer(err instanceof Error ? err.message : t('erreurConnexion'));
+    } finally {
+      setEnvoi(null);
+    }
   };
 
   if (!isLoading && !user) {
@@ -305,6 +337,7 @@ export default function DossierChauffeurPage() {
                 versionEnVigueur={pieces.get(type) !== enVigueur.get(type) ? enVigueur.get(type) : undefined}
                 depotPossible={depotPossible}
                 enCours={envoi === `piece-${type}`}
+                erreur={erreursPieces[type]}
                 onDeposer={(fichier, date) => deposer(type, fichier, date)}
               />
             ))}
@@ -371,6 +404,7 @@ function LignePiece({
   versionEnVigueur,
   depotPossible,
   enCours,
+  erreur,
   onDeposer,
 }: {
   libelle: string;
@@ -380,6 +414,8 @@ function LignePiece({
   versionEnVigueur?: Piece;
   depotPossible: boolean;
   enCours: boolean;
+  /** Échec du dernier dépôt de cette pièce. */
+  erreur?: string;
   onDeposer: (fichier: File, dateExpiration: string) => void;
 }) {
   const t = useTranslations('chauffeurDrive');
@@ -423,6 +459,12 @@ function LignePiece({
         )}
         {piece?.noteExamen && piece.statut === 'REJECTED' && (
           <p className="mt-1 text-sm text-red-700">{t('motif', { motif: piece.noteExamen })}</p>
+        )}
+        {erreur && (
+          <p role="alert" className="mt-1 flex items-center gap-2 text-sm text-red-700">
+            <AlertCircle size={16} className="shrink-0" />
+            {erreur}
+          </p>
         )}
       </div>
       {depotPossible && (
