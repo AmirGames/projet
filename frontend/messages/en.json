@@ -78,6 +78,10 @@
       "roles": "Roles & access",
       "console": "Console",
       "sectionZupDrive": "ZupDrive",
+      "sectionTeam": "Team",
+      "platformEat": "ZupEat",
+      "platformDrive": "ZupDrive",
+      "platformChoice": "Platform to manage",
       "chauffeurs": "Drivers (ZupDrive)",
       "coursesDrive": "Rides",
       "tarifsDrive": "Fares"
@@ -2277,6 +2281,7 @@
     "sectionProfil": "You, your company and your vehicle",
     "sectionPieces": "Documents",
     "formatsAcceptes": "JPG, PNG, WebP (2 MB) or PDF (5 MB). The registration certificate must show both sides.",
+    "fichierTropLourd": "File too large: {mo} MB maximum. For a PDF, scan at a lower quality or send a photo instead.",
     "champ": {
       "nomComplet": "Full name",
       "telephone": "Phone",

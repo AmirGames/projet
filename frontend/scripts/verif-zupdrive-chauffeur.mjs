@@ -227,6 +227,22 @@ await pageAdmin.waitForFunction(
 );
 check('la pièce refusée affiche son motif', (await pieceAssurance.innerText()).includes('Attestation illisible'));
 
+// « Voir » ouvre la pièce dans la page, sans nouvel onglet. L'adresse signée
+// est redemandée à l'ouverture : celle du dossier ne vaut que cinq minutes.
+const ongletsAvant = pageAdmin.context().pages().length;
+const [signee, fichier] = await Promise.all([
+  pageAdmin.waitForResponse((r) => r.url().includes('/api/files/signed-url'), { timeout: 10000 }),
+  pageAdmin.waitForResponse((r) => /\/api\/files\/chauffeurs\/[^/?]+\?exp=/.test(r.url()), { timeout: 10000 }),
+  fiche.locator('li', { hasText: "Carte d'identité" }).locator('button:has-text("Voir")').click(),
+]);
+const apercu = pageAdmin.getByRole('dialog');
+await apercu.waitFor({ timeout: 10000 });
+check('« Voir » affiche la pièce dans la page', (await apercu.innerText()).includes("Carte d'identité"));
+check('sans ouvrir d’autre onglet', pageAdmin.context().pages().length === ongletsAvant);
+check('avec une adresse signée fraîche', signee.status() === 200 && fichier.status() === 200, `${signee.status()} / ${fichier.status()}`);
+await apercu.getByRole('button', { name: 'Close preview' }).click();
+await apercu.waitFor({ state: 'detached', timeout: 5000 });
+
 // Chaque pièce validée une à une, la refusée comprise (le chauffeur l'a « corrigée »).
 for (let tour = 0; tour < 12; tour++) {
   const bouton = fiche.getByRole('button', { name: 'Valider', exact: true });
