@@ -78,7 +78,9 @@
       "roles": "Rôles et accès",
       "console": "Console",
       "sectionZupDrive": "ZupDrive",
-      "chauffeurs": "Chauffeurs"
+      "chauffeurs": "Chauffeurs",
+      "coursesDrive": "Courses",
+      "tarifsDrive": "Tarifs"
     },
     "openMenu": "Ouvrir le menu",
     "toggleSidebar": "Replier ou déplier le menu"
@@ -2334,7 +2336,8 @@
     "versionEnVigueur": "Version en vigueur : valable.",
     "versionEnVigueurJusquau": "Version en vigueur : valable jusqu'au {date}.",
     "versionEnVigueurExpiree": "Version en vigueur : expirée.",
-    "nouvelleVersion": "Nouvelle version :"
+    "nouvelleVersion": "Nouvelle version :",
+    "versCourses": "Mes courses"
   },
   "superownerChauffeurs": {
     "title": "Chauffeurs ZupDrive",
@@ -2405,5 +2408,141 @@
     "backToQueue": "← Retour à la file",
     "renewal": "(renouvellement)",
     "currentVersion": "(version en vigueur jusqu'à validation du renouvellement)"
+  },
+  "zupdriveTrajet": {
+    "titre": "Commander un trajet",
+    "intro": "Indiquez votre départ et votre destination : le prix est fixé avant de commander.",
+    "connexionRequise": "Connectez-vous avec votre compte ZupOne, ou créez-en un, pour commander un trajet.",
+    "seConnecter": "Se connecter",
+    "creerCompte": "Créer un compte",
+    "erreur": "Une erreur est survenue. Réessayez.",
+    "depart": "Départ",
+    "destination": "Destination",
+    "departPlaceholder": "Adresse de départ",
+    "destinationPlaceholder": "Adresse d'arrivée",
+    "calcul": "Calcul du prix…",
+    "estimation": "Environ {distance} · {duree}",
+    "prixFixe": "Prix fixe, connu avant de commander.",
+    "commander": "Commander pour {prix}",
+    "commandeEnCours": "Commande…",
+    "prixChange": "Le prix a changé : voici le nouveau prix.",
+    "trajetEnCours": "Trajet en cours vers {destination} — suivre",
+    "mesTrajets": "Mes trajets",
+    "retour": "← Mes trajets",
+    "prix": "Prix",
+    "annuler": "Annuler le trajet",
+    "annuleeParChauffeur": "Le chauffeur a dû annuler. Vous pouvez commander un nouveau trajet.",
+    "statut": {
+      "RECHERCHE": "Recherche d'un chauffeur",
+      "ACCEPTEE": "Chauffeur en route",
+      "ARRIVEE": "Chauffeur arrivé",
+      "EN_COURS": "En cours",
+      "TERMINEE": "Terminée",
+      "ANNULEE": "Annulée",
+      "SANS_CHAUFFEUR": "Sans chauffeur"
+    },
+    "statutDetail": {
+      "RECHERCHE": "Recherche d'un chauffeur…",
+      "ACCEPTEE": "Votre chauffeur arrive",
+      "ARRIVEE": "Votre chauffeur vous attend",
+      "EN_COURS": "Bon trajet !",
+      "TERMINEE": "Trajet terminé",
+      "ANNULEE": "Trajet annulé",
+      "SANS_CHAUFFEUR": "Aucun chauffeur disponible"
+    }
+  },
+  "chauffeurCourses": {
+    "titre": "Mes courses",
+    "erreur": "Une erreur est survenue. Réessayez.",
+    "connexionRequise": "Connectez-vous pour voir vos courses.",
+    "versDossier": "Mon dossier chauffeur",
+    "pasValide": "Votre dossier chauffeur doit être validé pour faire des courses.",
+    "enLigne": "En ligne",
+    "horsLigne": "Hors ligne",
+    "enLigneAide": "Vous recevez les courses proches de vous.",
+    "horsLigneAide": "Passez en ligne pour recevoir des courses.",
+    "passerEnLigne": "Passer en ligne",
+    "passerHorsLigne": "Passer hors ligne",
+    "positionRefusee": "Autorisez la localisation : sans elle, aucune course ne peut vous être proposée.",
+    "nouvelleCourse": "Nouvelle course",
+    "aDistance": "Départ à {distance} de vous",
+    "accepter": "Accepter",
+    "refuser": "Refuser",
+    "passager": "Passager : {prenom}",
+    "trajetEstime": "{distance} · {duree}",
+    "annuler": "Annuler la course",
+    "motifAnnulation": "Motif de l'annulation",
+    "historique": "Historique",
+    "statut": {
+      "RECHERCHE": "Recherche d'un chauffeur",
+      "ACCEPTEE": "Chauffeur en route",
+      "ARRIVEE": "Chauffeur arrivé",
+      "EN_COURS": "En cours",
+      "TERMINEE": "Terminée",
+      "ANNULEE": "Annulée",
+      "SANS_CHAUFFEUR": "Sans chauffeur"
+    },
+    "etape": {
+      "arrive": "Je suis arrivé",
+      "demarrer": "Le passager est à bord",
+      "terminer": "Terminer la course"
+    }
+  },
+  "superownerTarifsDrive": {
+    "titre": "Tarifs ZupDrive",
+    "sousTitre": "Le prix de chaque course est calculé à la commande avec le tarif de sa région, puis figé.",
+    "erreur": "Impossible de charger les tarifs.",
+    "montantInvalide": "{champ} : montant invalide (ex. 2,50).",
+    "enregistre": "Tarif {region} enregistré.",
+    "enregistrer": "Enregistrer",
+    "enregistrement": "Enregistrement…",
+    "actif": "Commandes ouvertes dans cette région",
+    "region": {
+      "BRUXELLES": "Bruxelles-Capitale",
+      "WALLONIE": "Wallonie",
+      "FLANDRE": "Flandre"
+    },
+    "champ": {
+      "priseEnChargeCentimes": "Prise en charge (€)",
+      "parKmCentimes": "Par km (€)",
+      "parMinuteCentimes": "Par minute (€)",
+      "minimumCentimes": "Minimum par course (€)"
+    }
+  },
+  "superownerCoursesDrive": {
+    "titre": "Courses ZupDrive",
+    "sousTitre": "Les trajets commandés, du plus récent au plus ancien.",
+    "erreur": "Impossible de charger les courses.",
+    "filtre": "Filtrer les courses",
+    "aucune": "Aucune course.",
+    "compteSupprime": "Compte supprimé",
+    "colonne": {
+      "date": "Date",
+      "trajet": "Trajet",
+      "passager": "Passager",
+      "chauffeur": "Chauffeur",
+      "prix": "Prix",
+      "statut": "Statut"
+    },
+    "statut": {
+      "ALL": "Toutes",
+      "RECHERCHE": "Recherche d'un chauffeur",
+      "ACCEPTEE": "Chauffeur en route",
+      "ARRIVEE": "Chauffeur arrivé",
+      "EN_COURS": "En cours",
+      "TERMINEE": "Terminée",
+      "ANNULEE": "Annulée",
+      "SANS_CHAUFFEUR": "Sans chauffeur"
+    },
+    "region": {
+      "BRUXELLES": "Bruxelles-Capitale",
+      "WALLONIE": "Wallonie",
+      "FLANDRE": "Flandre"
+    },
+    "annuleePar": {
+      "PASSAGER": "par le passager",
+      "CHAUFFEUR": "par le chauffeur",
+      "PLATEFORME": "par la plateforme"
+    }
   }
 }

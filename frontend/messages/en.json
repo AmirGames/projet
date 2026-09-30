@@ -78,7 +78,9 @@
       "roles": "Roles & access",
       "console": "Console",
       "sectionZupDrive": "ZupDrive",
-      "chauffeurs": "Drivers (ZupDrive)"
+      "chauffeurs": "Drivers (ZupDrive)",
+      "coursesDrive": "Rides",
+      "tarifsDrive": "Fares"
     },
     "openMenu": "Open menu",
     "toggleSidebar": "Collapse or expand the menu"
@@ -2334,7 +2336,8 @@
     "versionEnVigueur": "Current version: valid.",
     "versionEnVigueurJusquau": "Current version: valid until {date}.",
     "versionEnVigueurExpiree": "Current version: expired.",
-    "nouvelleVersion": "New version:"
+    "nouvelleVersion": "New version:",
+    "versCourses": "My rides"
   },
   "superownerChauffeurs": {
     "title": "ZupDrive drivers",
@@ -2405,5 +2408,141 @@
     "backToQueue": "← Back to the queue",
     "renewal": "(renewal)",
     "currentVersion": "(current version until the renewal is approved)"
+  },
+  "zupdriveTrajet": {
+    "titre": "Book a ride",
+    "intro": "Enter your pickup and destination: the price is fixed before you book.",
+    "connexionRequise": "Sign in with your ZupOne account, or create one, to book a ride.",
+    "seConnecter": "Sign in",
+    "creerCompte": "Create an account",
+    "erreur": "Something went wrong. Please try again.",
+    "depart": "Pickup",
+    "destination": "Destination",
+    "departPlaceholder": "Pickup address",
+    "destinationPlaceholder": "Drop-off address",
+    "calcul": "Calculating the price…",
+    "estimation": "About {distance} · {duree}",
+    "prixFixe": "Fixed price, known before you book.",
+    "commander": "Book for {prix}",
+    "commandeEnCours": "Booking…",
+    "prixChange": "The price has changed: here is the new price.",
+    "trajetEnCours": "Ride in progress to {destination} — follow",
+    "mesTrajets": "My rides",
+    "retour": "← My rides",
+    "prix": "Price",
+    "annuler": "Cancel the ride",
+    "annuleeParChauffeur": "The driver had to cancel. You can book a new ride.",
+    "statut": {
+      "RECHERCHE": "Finding a driver",
+      "ACCEPTEE": "Driver on the way",
+      "ARRIVEE": "Driver arrived",
+      "EN_COURS": "In progress",
+      "TERMINEE": "Completed",
+      "ANNULEE": "Cancelled",
+      "SANS_CHAUFFEUR": "No driver"
+    },
+    "statutDetail": {
+      "RECHERCHE": "Finding a driver…",
+      "ACCEPTEE": "Your driver is on the way",
+      "ARRIVEE": "Your driver is waiting",
+      "EN_COURS": "Enjoy your ride!",
+      "TERMINEE": "Ride completed",
+      "ANNULEE": "Ride cancelled",
+      "SANS_CHAUFFEUR": "No driver available"
+    }
+  },
+  "chauffeurCourses": {
+    "titre": "My rides",
+    "erreur": "Something went wrong. Please try again.",
+    "connexionRequise": "Sign in to see your rides.",
+    "versDossier": "My driver application",
+    "pasValide": "Your driver application must be approved before you can take rides.",
+    "enLigne": "Online",
+    "horsLigne": "Offline",
+    "enLigneAide": "You receive rides near you.",
+    "horsLigneAide": "Go online to receive rides.",
+    "passerEnLigne": "Go online",
+    "passerHorsLigne": "Go offline",
+    "positionRefusee": "Allow location access: without it, no ride can be offered to you.",
+    "nouvelleCourse": "New ride",
+    "aDistance": "Pickup {distance} away",
+    "accepter": "Accept",
+    "refuser": "Decline",
+    "passager": "Passenger: {prenom}",
+    "trajetEstime": "{distance} · {duree}",
+    "annuler": "Cancel the ride",
+    "motifAnnulation": "Reason for cancelling",
+    "historique": "History",
+    "statut": {
+      "RECHERCHE": "Finding a driver",
+      "ACCEPTEE": "Driver on the way",
+      "ARRIVEE": "Driver arrived",
+      "EN_COURS": "In progress",
+      "TERMINEE": "Completed",
+      "ANNULEE": "Cancelled",
+      "SANS_CHAUFFEUR": "No driver"
+    },
+    "etape": {
+      "arrive": "I have arrived",
+      "demarrer": "Passenger on board",
+      "terminer": "Complete the ride"
+    }
+  },
+  "superownerTarifsDrive": {
+    "titre": "ZupDrive fares",
+    "sousTitre": "Each ride's price is calculated at booking with its region's fare, then fixed.",
+    "erreur": "Unable to load fares.",
+    "montantInvalide": "{champ}: invalid amount (e.g. 2.50).",
+    "enregistre": "{region} fare saved.",
+    "enregistrer": "Save",
+    "enregistrement": "Saving…",
+    "actif": "Bookings open in this region",
+    "region": {
+      "BRUXELLES": "Brussels-Capital",
+      "WALLONIE": "Wallonia",
+      "FLANDRE": "Flanders"
+    },
+    "champ": {
+      "priseEnChargeCentimes": "Base fare (€)",
+      "parKmCentimes": "Per km (€)",
+      "parMinuteCentimes": "Per minute (€)",
+      "minimumCentimes": "Minimum fare (€)"
+    }
+  },
+  "superownerCoursesDrive": {
+    "titre": "ZupDrive rides",
+    "sousTitre": "Booked rides, newest first.",
+    "erreur": "Unable to load rides.",
+    "filtre": "Filter rides",
+    "aucune": "No rides.",
+    "compteSupprime": "Deleted account",
+    "colonne": {
+      "date": "Date",
+      "trajet": "Route",
+      "passager": "Passenger",
+      "chauffeur": "Driver",
+      "prix": "Price",
+      "statut": "Status"
+    },
+    "statut": {
+      "ALL": "All",
+      "RECHERCHE": "Finding a driver",
+      "ACCEPTEE": "Driver on the way",
+      "ARRIVEE": "Driver arrived",
+      "EN_COURS": "In progress",
+      "TERMINEE": "Completed",
+      "ANNULEE": "Cancelled",
+      "SANS_CHAUFFEUR": "No driver"
+    },
+    "region": {
+      "BRUXELLES": "Brussels-Capital",
+      "WALLONIE": "Wallonia",
+      "FLANDRE": "Flanders"
+    },
+    "annuleePar": {
+      "PASSAGER": "by the passenger",
+      "CHAUFFEUR": "by the driver",
+      "PLATEFORME": "by the platform"
+    }
   }
 }

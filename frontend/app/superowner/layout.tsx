@@ -50,6 +50,8 @@ import {
   UserCircle,
   Terminal,
   Car,
+  Navigation,
+  Euro,
 } from 'lucide-react';
 
 export default function SuperOwnerLayout({ children }: { children: React.ReactNode }) {
@@ -156,6 +158,8 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       title: t('nav.sectionZupDrive'),
       items: [
         { label: t('nav.chauffeurs'), icon: Car, href: '/superowner/zupdrive/chauffeurs', section: 'chauffeurs' },
+        { label: t('nav.coursesDrive'), icon: Navigation, href: '/superowner/zupdrive/courses', section: 'courses-drive' },
+        { label: t('nav.tarifsDrive'), icon: Euro, href: '/superowner/zupdrive/tarifs', section: 'courses-drive' },
       ],
     },
     {

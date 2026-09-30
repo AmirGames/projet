@@ -201,6 +201,10 @@ await renvoyee("/devenir-livreur depuis le public", PUBLIC, "/devenir-livreur", 
 await renvoyee("/devenir-commercant depuis le public", PUBLIC, "/devenir-commercant", PRO);
 await renvoyee("/devenir-chauffeur depuis le public", PUBLIC, "/devenir-chauffeur", DRIVE);
 await servie("/devenir-chauffeur sur ZupDrive", DRIVE, "/devenir-chauffeur", "ZupDrive");
+await servie("/trajet (commande du passager) sur ZupDrive", DRIVE, "/trajet");
+await renvoyee("/trajet depuis le public", PUBLIC, "/trajet", DRIVE);
+await renvoyee("/trajet depuis le domaine chauffeur", CHAUFFEUR, "/trajet", DRIVE);
+await servie("/chauffeur/courses sur le domaine chauffeur", CHAUFFEUR, "/chauffeur/courses");
 await renvoyee("l'accueil du groupe demandé ailleurs mène à sa racine", PUBLIC, "/zupone", VITRINE, "/");
 await servie("les pages légales servies sur la vitrine", VITRINE, "/cgu");
 await renvoyee("/merchant depuis la vitrine", VITRINE, "/merchant", PRO);

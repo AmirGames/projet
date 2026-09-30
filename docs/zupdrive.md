@@ -149,3 +149,50 @@ Une pièce peut exister en plusieurs versions (`DocumentChauffeurDrive`, sans co
 - **Si l'ancienne expire avant la validation de la nouvelle**, le chauffeur est suspendu, puis rétabli dès que la nouvelle version est validée.
 - **Une version expirée ne peut pas être validée**, et une version archivée ne s'examine plus.
 - **À l'écran**, le chauffeur voit la nouvelle version et « Version en vigueur : valable jusqu'au … ». L'équipe voit les deux, marquées « renouvellement » et « version en vigueur ». L'API signale `renouvellement: true` sur la nouvelle version.
+
+---
+
+## Courses (V1)
+
+Le passager commande un trajet à **prix fixe** sur `zupdrive.com/trajet`, avec son compte ZupOne. La course est proposée au chauffeur le plus proche, qui l'accepte depuis `driver.zupdrive.com/chauffeur/courses` et la mène à terme. La V1 ne comporte **pas de paiement en ligne** : il viendra en V2, une fois la facturation tranchée (qui facture le passager, TVA, commission).
+
+Code : `backend/src/modules/zupdrive/` (`tarification-drive.service.ts`, `course-drive.service.ts`, `course-drive.jobs.ts`, `course-drive.routes.ts`). Modèles : `TarifDrive`, `CourseDrive`, `PropositionCourseDrive`, et `enLigne` / position sur `ChauffeurDrive`. Migration `0031_zupdrive_courses`.
+
+### Prix
+- Le tarif est fixé **par région** dans le manager (ZupDrive › Tarifs), en centimes entiers. Il comprend une prise en charge, un prix au km, un prix à la minute et un minimum. Une région n'accepte de commandes que si son tarif est « actif ». Chaque modification est journalisée (`ZUPDRIVE_SET_TARIF`).
+- Formule : `max(minimum, priseEnCharge + parKm × km + parMinute × minutes)`, calculée sur les mètres et les secondes exacts, puis **arrondie une seule fois au centime**, sur le total.
+- Le prix est calculé par le serveur au devis, puis recalculé à la commande. S'il diffère du prix affiché au passager, la commande est refusée (`PRICE_CHANGED`) et la page montre le nouveau prix. Une fois commandé, le prix est figé dans la course, avec une copie du tarif appliqué.
+- **Région** : elle est déduite du code postal belge (Bruxelles 1000–1299 ; Wallonie 1300–1499 et 4000–7999 ; Flandre 1500–3999 et 8000–9999). Départ et destination doivent être dans la même région, puisqu'une licence ne vaut que dans sa région.
+- **Distance et durée** : il n'existe pas encore de service d'itinéraire. La distance routière est estimée à vol d'oiseau × 1,3, et la durée à 25 km/h (`COEFFICIENT_DETOUR`, `VITESSE_MOYENNE_KMH`). Seule `estimerTrajet` changera le jour où un vrai calcul d'itinéraire existera.
+
+### Attribution
+- La course est proposée à un seul chauffeur à la fois : le plus proche du départ (15 km au plus) parmi ceux qui sont `VALIDE`, en ligne, de la même région, avec une position de moins de 2 minutes, sans course ni proposition en cours, et pas encore sollicités pour cette course.
+- Il a **20 secondes** pour accepter. S'il refuse ou ne répond pas, la course passe au suivant. Sans preneur après **5 minutes**, la course passe `SANS_CHAUFFEUR` et le passager est prévenu. Un job tourne toutes les 5 secondes (`courses-drive`).
+- L'acceptation se fait dans une transaction, par écritures conditionnelles : le premier qui accepte l'emporte, et une double acceptation n'attribue la course qu'une fois.
+- Le chauffeur passe en ligne depuis sa page, qui envoie la position du téléphone toutes les 15 secondes au plus. Un chauffeur suspendu est mis hors ligne.
+
+### États
+`RECHERCHE → ACCEPTEE → ARRIVEE → EN_COURS → TERMINEE`, ou `ANNULEE`, ou `SANS_CHAUFFEUR`.
+- Le passager peut annuler jusqu'à l'arrivée du chauffeur, mais plus une fois à bord. Le chauffeur peut annuler avec un motif avant que le passager soit à bord ; le passager est alors prévenu et peut recommander.
+- La commande est idempotente (`cleIdempotence`), et un passager ne peut avoir qu'un trajet actif à la fois.
+- Le passager voit le prénom du chauffeur, son véhicule et sa plaque. La position du chauffeur n'est exposée par l'API que pendant son approche ; l'écran du passager ne l'affiche pas encore (pas de carte). Le chauffeur voit le prénom du passager.
+- L'état fait foi en base. Les écrans le relisent toutes les 3 à 4 secondes pendant une course, et les notifications ne sont qu'un signal.
+- La suppression d'un compte est refusée pendant un trajet actif. Une fois le compte supprimé, ses courses restent dans l'historique sans la personne (`passagerId` à null).
+
+### API
+| Qui | Route | Effet |
+|---|---|---|
+| Passager | `POST /api/zupdrive/courses/devis` | Distance, durée, prix |
+| Passager | `POST /api/zupdrive/courses` | Commander (`cleIdempotence`, `prixAnnonceCentimes`) |
+| Passager | `GET /api/zupdrive/courses`, `GET …/:id`, `POST …/:id/annuler` | Suivre, annuler |
+| Chauffeur | `GET /api/zupdrive/chauffeur/me/courses` | En ligne ?, proposition ouverte, course, historique |
+| Chauffeur | `POST …/me/disponibilite`, `POST …/me/position` | En ligne / hors ligne, position |
+| Chauffeur | `POST …/me/propositions/:id/(accepter\|refuser)` | Répondre à une proposition |
+| Chauffeur | `POST …/me/courses/:id/(arrive\|demarrer\|terminer\|annuler)` | Étapes |
+| Équipe (`courses-drive`) | `GET/PUT /api/zupdrive/admin/tarifs[/:region]`, `GET /api/zupdrive/admin/courses` | Tarifs, liste des courses |
+
+La section de permissions **`courses-drive`** (« Courses et tarifs ») est nouvelle. Comme pour « Chauffeurs », il faut la cocher une fois dans les rôles ZupDrive déjà existants.
+
+### Vérifications
+- `backend/src/modules/zupdrive/__tests__/course-drive.integration.test.ts` : 18 tests contre PostgreSQL (`set -a; . ./.env; set +a; npx jest …`).
+- `frontend/scripts/verif-zupdrive-courses.mjs` : une course de bout en bout dans trois navigateurs (équipe, chauffeur, passager). Seule la recherche d'adresses, qui dépend d'un service externe, y est simulée.

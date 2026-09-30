@@ -224,6 +224,14 @@ export default function DossierChauffeurPage() {
       <p className="mt-2 text-slate-600">{t('intro')}</p>
 
       {dossier && <BandeauStatut dossier={dossier} />}
+      {dossier?.statut === 'VALIDE' && (
+        <Link
+          href="/chauffeur/courses"
+          className="mt-4 inline-block rounded-full bg-accent px-5 py-2 font-semibold text-white hover:bg-accent-hover"
+        >
+          {t('versCourses')}
+        </Link>
+      )}
 
       {erreur && (
         <div role="alert" className="mt-6 flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">

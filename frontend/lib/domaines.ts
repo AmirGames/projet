@@ -90,7 +90,8 @@ const SEGMENTS: Record<EspaceHeberge, string[]> = {
   vitrine: ['zupone'],
   // Le recrutement des chauffeurs reste sur la vitrine ZupDrive, publique et
   // indexée ; leur espace (/chauffeur) a son propre domaine.
-  drive: ['zupdrive', 'devenir-chauffeur'],
+  // /trajet : le passager commande et suit ses trajets.
+  drive: ['zupdrive', 'devenir-chauffeur', 'trajet'],
   chauffeur: ['chauffeur'],
 };
 

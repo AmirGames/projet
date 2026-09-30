@@ -11,7 +11,7 @@ export interface AccesPlateforme {
 }
 
 /** Les sections de l'espace qui relèvent de ZupDrive, et non de ZupEat. */
-const SECTIONS_DRIVE = ['chauffeurs'];
+const SECTIONS_DRIVE = ['chauffeurs', 'courses-drive'];
 
 interface AccesParPlateforme {
   role: string;
@@ -66,6 +66,8 @@ const PAGES: [string, string | null][] = [
   ['/superowner/versements', 'payouts'],
   ['/superowner/reviews', 'reviews'],
   ['/superowner/zupdrive/chauffeurs', 'chauffeurs'],
+  ['/superowner/zupdrive/tarifs', 'courses-drive'],
+  ['/superowner/zupdrive/courses', 'courses-drive'],
 ];
 
 /** La section d'une page de l'espace, d'après son chemin. */
