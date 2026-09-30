@@ -76,7 +76,9 @@
       "reviews": "Avis signalés",
       "monitoring": "Surveillance",
       "roles": "Rôles et accès",
-      "console": "Console"
+      "console": "Console",
+      "sectionZupDrive": "ZupDrive",
+      "chauffeurs": "Chauffeurs"
     },
     "openMenu": "Ouvrir le menu",
     "toggleSidebar": "Replier ou déplier le menu"
@@ -2328,5 +2330,73 @@
       "REFUSE": "Corrigez ce qui est indiqué puis renvoyez votre dossier.",
       "SUSPENDU": "Contactez le support ZupDrive pour en savoir plus."
     }
+  },
+  "superownerChauffeurs": {
+    "title": "Chauffeurs ZupDrive",
+    "subtitle": "Dossiers des chauffeurs (transport de personnes, licence LVC) : examinez chaque pièce, puis validez ou refusez le dossier.",
+    "filter": "Filtrer les dossiers",
+    "status": {
+      "SOUMIS": "À examiner",
+      "VALIDE": "Validés",
+      "REFUSE": "Refusés",
+      "SUSPENDU": "Suspendus",
+      "BROUILLON": "En cours",
+      "ALL": "Tous"
+    },
+    "region": {
+      "BRUXELLES": "Bruxelles-Capitale",
+      "WALLONIE": "Wallonie",
+      "FLANDRE": "Flandre"
+    },
+    "empty": "Aucun dossier dans cette catégorie.",
+    "loadError": "Impossible de charger les dossiers chauffeurs.",
+    "actionFailed": "L'action a échoué.",
+    "connectionError": "Serveur injoignable. Réessayez dans un instant.",
+    "reasonRequired": "Indiquez un motif : le chauffeur doit savoir quoi corriger.",
+    "piecesCount": "{validees}/{exigees} pièces validées",
+    "submittedOn": "Soumis le {date}",
+    "open": "Ouvrir le dossier",
+    "collapse": "Replier",
+    "field": {
+      "email": "E-mail",
+      "telephone": "Téléphone",
+      "region": "Région",
+      "numeroEntreprise": "N° BCE",
+      "numeroTva": "N° TVA",
+      "raisonSociale": "Raison sociale",
+      "numeroLicence": "N° de licence",
+      "vehicule": "Véhicule",
+      "vehiculePlaque": "Plaque",
+      "soumisLe": "Soumis le",
+      "valideLe": "Validé le"
+    },
+    "documents": "Pièces du dossier",
+    "optional": "(facultative)",
+    "documentStatus": {
+      "PENDING": "À examiner",
+      "APPROVED": "Validée",
+      "REJECTED": "Refusée",
+      "EXPIRED": "Expirée"
+    },
+    "expiresOn": "Expire le {date}",
+    "view": "Voir",
+    "approveDocument": "Valider",
+    "rejectDocument": "Refuser",
+    "documentReasonPlaceholder": "Motif du refus de la pièce",
+    "missingDocuments": "Pièces exigées non déposées : {liste}.",
+    "decision": "Décision sur le dossier",
+    "approveHint": "La validation s'ouvre quand toutes les pièces exigées sont validées.",
+    "reasonLabel": "Motif",
+    "rejectReasonPlaceholder": "Motif du refus (obligatoire pour refuser), envoyé au chauffeur",
+    "suspendReasonPlaceholder": "Motif de la suspension (obligatoire), envoyé au chauffeur",
+    "approve": "Valider le dossier",
+    "reject": "Refuser le dossier",
+    "suspend": "Suspendre le chauffeur",
+    "reactivate": "Rétablir le chauffeur",
+    "waiting": {
+      "BROUILLON": "Le chauffeur n'a pas encore envoyé son dossier.",
+      "REFUSE": "Dossier renvoyé au chauffeur : en attente de ses corrections."
+    },
+    "backToQueue": "← Retour à la file"
   }
 }

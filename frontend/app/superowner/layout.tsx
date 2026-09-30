@@ -49,6 +49,7 @@ import {
   ShieldCheck,
   UserCircle,
   Terminal,
+  Car,
 } from 'lucide-react';
 
 export default function SuperOwnerLayout({ children }: { children: React.ReactNode }) {
@@ -147,6 +148,14 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
         { label: t('nav.clients'), icon: UserCheck, href: '/superowner/members/clients', section: 'members' },
         { label: t('nav.merchants'), icon: ShoppingCart, href: '/superowner/members/merchants', section: 'members' },
         { label: t('nav.deliveries'), icon: Briefcase, href: '/superowner/members/deliveries', section: 'members' },
+      ],
+    },
+    {
+      // ZupDrive : les chauffeurs (transport de personnes, licence LVC). Rien
+      // à voir avec les livreurs ZupEat ci-dessus.
+      title: t('nav.sectionZupDrive'),
+      items: [
+        { label: t('nav.chauffeurs'), icon: Car, href: '/superowner/zupdrive/chauffeurs', section: 'chauffeurs' },
       ],
     },
     {

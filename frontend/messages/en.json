@@ -43,7 +43,7 @@
       "sectionActivity": "Activity",
       "organizations": "Organizations",
       "stores": "Stores",
-      "drivers": "Drivers",
+      "drivers": "Couriers",
       "payouts": "Payouts",
       "sepaPayouts": "SEPA payouts",
       "analytics": "Analytics",
@@ -76,7 +76,9 @@
       "reviews": "Reported reviews",
       "monitoring": "Monitoring",
       "roles": "Roles & access",
-      "console": "Console"
+      "console": "Console",
+      "sectionZupDrive": "ZupDrive",
+      "chauffeurs": "Drivers (ZupDrive)"
     },
     "openMenu": "Open menu",
     "toggleSidebar": "Collapse or expand the menu"
@@ -2328,5 +2330,73 @@
       "REFUSE": "Fix what is indicated, then resubmit your application.",
       "SUSPENDU": "Contact ZupDrive support to find out more."
     }
+  },
+  "superownerChauffeurs": {
+    "title": "ZupDrive drivers",
+    "subtitle": "Driver applications (passenger transport, LVC licence): review each document, then approve or reject the application.",
+    "filter": "Filter applications",
+    "status": {
+      "SOUMIS": "To review",
+      "VALIDE": "Approved",
+      "REFUSE": "Rejected",
+      "SUSPENDU": "Suspended",
+      "BROUILLON": "In progress",
+      "ALL": "All"
+    },
+    "region": {
+      "BRUXELLES": "Brussels-Capital",
+      "WALLONIE": "Wallonia",
+      "FLANDRE": "Flanders"
+    },
+    "empty": "No application in this category.",
+    "loadError": "Unable to load driver applications.",
+    "actionFailed": "The action failed.",
+    "connectionError": "Server unreachable. Please try again shortly.",
+    "reasonRequired": "Give a reason: the driver needs to know what to fix.",
+    "piecesCount": "{validees}/{exigees} documents approved",
+    "submittedOn": "Submitted on {date}",
+    "open": "Open application",
+    "collapse": "Collapse",
+    "field": {
+      "email": "Email",
+      "telephone": "Phone",
+      "region": "Region",
+      "numeroEntreprise": "Company no. (BCE)",
+      "numeroTva": "VAT no.",
+      "raisonSociale": "Company name",
+      "numeroLicence": "Licence no.",
+      "vehicule": "Vehicle",
+      "vehiculePlaque": "Plate",
+      "soumisLe": "Submitted on",
+      "valideLe": "Approved on"
+    },
+    "documents": "Application documents",
+    "optional": "(optional)",
+    "documentStatus": {
+      "PENDING": "To review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired"
+    },
+    "expiresOn": "Expires on {date}",
+    "view": "View",
+    "approveDocument": "Approve",
+    "rejectDocument": "Reject",
+    "documentReasonPlaceholder": "Reason for rejecting the document",
+    "missingDocuments": "Required documents not uploaded: {liste}.",
+    "decision": "Decision on the application",
+    "approveHint": "Approval unlocks once every required document is approved.",
+    "reasonLabel": "Reason",
+    "rejectReasonPlaceholder": "Reason for rejection (required to reject), sent to the driver",
+    "suspendReasonPlaceholder": "Reason for suspension (required), sent to the driver",
+    "approve": "Approve application",
+    "reject": "Reject application",
+    "suspend": "Suspend driver",
+    "reactivate": "Reinstate driver",
+    "waiting": {
+      "BROUILLON": "The driver has not submitted the application yet.",
+      "REFUSE": "Sent back to the driver: waiting for corrections."
+    },
+    "backToQueue": "← Back to the queue"
   }
 }

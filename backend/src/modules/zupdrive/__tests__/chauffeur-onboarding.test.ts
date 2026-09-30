@@ -394,3 +394,29 @@ describe("administration ZupDrive", () => {
     expect(pieceDeB.statut).toBe("PENDING");
   });
 });
+
+describe("droits de l'espace manager, toutes plateformes", () => {
+  const lire = (qui: string) => request(app).get("/api/superowner/me/permissions/plateformes").set(en(qui));
+
+  it("donne la plateforme ZupDrive seule à un membre ZupDrive, sans 403 pour ZupEat", async () => {
+    const reponse = await lire("admin-drive:DRIVE:ADMIN").expect(200);
+    expect(reponse.body.plateformes.EAT).toBeNull();
+    expect(reponse.body.plateformes.DRIVE.permissions.chauffeurs).toBe("write");
+  });
+
+  it("donne au support ZupDrive la lecture seule des chauffeurs", async () => {
+    const reponse = await lire("support:DRIVE:SUPPORT").expect(200);
+    expect(reponse.body.plateformes.DRIVE.permissions.chauffeurs).toBe("read");
+  });
+
+  it("refuse un compte hors de l'équipe", async () => {
+    await lire("user-chauffeur").expect(403);
+  });
+
+  it("garde le 403 de la route par plateforme (application mobile ZupEat)", async () => {
+    await request(app)
+      .get("/api/superowner/me/permissions?plateforme=EAT")
+      .set(en("admin-drive:DRIVE:ADMIN"))
+      .expect(403);
+  });
+});

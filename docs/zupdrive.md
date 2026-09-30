@@ -116,3 +116,10 @@ Gardée par les permissions de la **plateforme DRIVE** (section `chauffeurs`) : 
 - **`/chauffeur`** : le dossier du compte connecté. On y remplit le profil, dépose les pièces, suit le statut de chaque pièce et envoie le dossier. Sans session, la page invite à se connecter ou à créer un compte ZupOne. Les textes sont dans l'espace de noms `chauffeurDrive` de `messages/*.json`.
 - **Domaine** : `/chauffeur` appartient pour l'instant à l'espace `drive` (`NEXT_PUBLIC_DOMAINE_DRIVE`, zupdrive.com). La connexion sur ce domaine mène à `/chauffeur`. Le passage sur `driver.zupdrive.com` demandera un domaine dédié : variable d'environnement, CORS, reverse proxy et certificat.
 - **Vérification E2E** : `frontend/scripts/verif-zupdrive-chauffeur.mjs` (demande `DATABASE_URL` pour créer les comptes de l'équipe).
+
+### Espace manager — file de validation
+
+- **`/superowner/zupdrive/chauffeurs`**, menu « ZupDrive › Chauffeurs ». Les filtres sont À examiner, Validés, Refusés, Suspendus, En cours et Tous. En ouvrant un dossier, on voit le profil, la TVA et le véhicule. Chaque pièce peut être consultée, validée, ou refusée avec un motif obligatoire. La décision sur le dossier est ensuite : valider (possible seulement si toutes les pièces exigées sont validées), refuser avec motif, suspendre avec motif, ou rétablir. La file se met à jour en temps réel (famille `zupdrive`).
+- **`/superowner/zupdrive/chauffeurs/:id`** ouvre directement un dossier : c'est le lien des notifications « Nouveau dossier chauffeur ».
+- **Droits** : la section `chauffeurs` vient uniquement du rôle **ZupDrive** du membre. Un membre ZupDrive seul voit « Chauffeurs » sans « Livreurs ». Un membre ZupEat seul voit l'inverse.
+- **`GET /api/superowner/me/permissions/plateformes`** renvoie les droits du compte sur chaque plateforme en un appel (`null` pour une plateforme sans rôle). La route `GET /api/superowner/me/permissions?plateforme=…` garde son 403 pour une plateforme sans rôle, car l'application mobile d'administration ZupEat s'en sert pour refuser un compte.

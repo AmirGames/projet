@@ -187,16 +187,74 @@ const id = ligne?.id;
 const tropTot = await appeler(`/api/zupdrive/admin/chauffeurs/${id}/approve`, { method: 'POST', jeton: adminDrive.jeton });
 check('pas de validation avant l’examen des pièces', tropTot.statut === 400, `${tropTot.statut}`);
 
-const dossier = await appeler(`/api/zupdrive/admin/chauffeurs/${id}`, { jeton: adminDrive.jeton });
-for (const piece of dossier.donnees?.data?.documents || []) {
-  await appeler(`/api/zupdrive/admin/chauffeurs/${id}/documents/${piece.id}`, {
-    method: 'PATCH',
-    jeton: adminDrive.jeton,
-    corps: { approuve: true },
-  });
+titre('Un admin ZupDrive traite le dossier dans l’espace manager');
+const pageAdmin = await (await nav.newContext()).newPage();
+pageAdmin.on('console', (m) => {
+  if (m.type() === 'error') erreurs.push(`admin ${new URL(pageAdmin.url()).pathname} : ${m.text()}`);
+});
+await pageAdmin.goto(`${SITE}/login`);
+await pageAdmin.fill('input[type="email"]', adminDrive.email);
+await pageAdmin.fill('input[type="password"]', MDP);
+await pageAdmin.click('button[type="submit"]');
+await pageAdmin.waitForURL((url) => url.pathname !== '/login', { timeout: 15000 });
+
+// Le lien des notifications ouvre le dossier directement.
+await pageAdmin.goto(`${SITE}/superowner/zupdrive/chauffeurs/${id}`);
+await pageAdmin.waitForSelector(`[data-dossier="${id}"]`, { timeout: 15000 });
+const menu = await pageAdmin.locator('aside').innerText();
+check('le menu propose « Chauffeurs » sous ZupDrive', /ZupDrive/i.test(menu) && /Chauffeurs/.test(menu), menu.slice(0, 300));
+check('et pas « Livreurs » : son rôle n’est que ZupDrive', !/Livreurs/.test(menu), menu.slice(0, 300));
+
+await pageAdmin.goto(`${SITE}/superowner/zupdrive/chauffeurs`);
+await pageAdmin.waitForSelector(`text=chauffeur ${uniq}`, { timeout: 15000 });
+check('le dossier soumis est dans la file « À examiner »', true);
+await pageAdmin.click(`button:has-text("chauffeur ${uniq}")`);
+const fiche = pageAdmin.locator(`[data-dossier="${id}"]`);
+await fiche.waitFor({ timeout: 10000 });
+check('le numéro de TVA est affiché', (await fiche.innerText()).includes('BE0123456749'));
+check('la validation est bloquée tant que les pièces ne sont pas examinées', await fiche.locator('button:has-text("Valider le dossier")').isDisabled());
+
+const pieceAssurance = fiche.locator('li', { hasText: 'Assurance' });
+await pieceAssurance.locator('button:has-text("Refuser")').click();
+await pageAdmin.waitForTimeout(500);
+check('refuser une pièce sans motif est impossible', /Indiquez un motif/.test(await pageAdmin.locator('main').innerText()));
+await pieceAssurance.locator('input').fill('Attestation illisible');
+await pieceAssurance.locator('button:has-text("Refuser")').click();
+await pageAdmin.waitForFunction(
+  () => [...document.querySelectorAll('li')].some((li) => li.textContent.includes('Assurance') && li.textContent.includes('Refusée')),
+  null,
+  { timeout: 10000 }
+);
+check('la pièce refusée affiche son motif', (await pieceAssurance.innerText()).includes('Attestation illisible'));
+
+// Chaque pièce validée une à une, la refusée comprise (le chauffeur l'a « corrigée »).
+for (let tour = 0; tour < 12; tour++) {
+  const bouton = fiche.getByRole('button', { name: 'Valider', exact: true });
+  if ((await bouton.count()) === 0) break;
+  await bouton.first().click();
+  await pageAdmin.waitForTimeout(700);
 }
-const validation = await appeler(`/api/zupdrive/admin/chauffeurs/${id}/approve`, { method: 'POST', jeton: adminDrive.jeton });
-check('le dossier complet est validé', validation.donnees?.data?.statut === 'VALIDE', JSON.stringify(validation.donnees));
+check('toutes les pièces sont validées', (await fiche.getByRole('button', { name: 'Valider', exact: true }).count()) === 0);
+await fiche.locator('button:has-text("Valider le dossier")').click();
+await pageAdmin.waitForTimeout(1500);
+const apres = await appeler(`/api/zupdrive/admin/chauffeurs/${id}`, { jeton: adminDrive.jeton });
+check('le dossier complet est validé', apres.donnees?.data?.statut === 'VALIDE', apres.donnees?.data?.statut);
+check('l’écran propose ensuite la suspension', await fiche.locator('button:has-text("Suspendre le chauffeur")').isVisible());
+
+titre('Un admin ZupEat seul ne voit pas les chauffeurs');
+const pageEat = await (await nav.newContext()).newPage();
+await pageEat.goto(`${SITE}/login`);
+await pageEat.fill('input[type="email"]', adminEat.email);
+await pageEat.fill('input[type="password"]', MDP);
+await pageEat.click('button[type="submit"]');
+await pageEat.waitForURL((url) => url.pathname !== '/login', { timeout: 15000 });
+await pageEat.goto(`${SITE}/superowner/zupdrive/chauffeurs`);
+await pageEat.waitForSelector('aside', { timeout: 15000 });
+await pageEat.waitForTimeout(1500);
+const menuEat = await pageEat.locator('aside').innerText();
+check('son menu a « Livreurs » mais pas « Chauffeurs »', /Livreurs/.test(menuEat) && !/Chauffeurs/.test(menuEat), menuEat.slice(0, 300));
+check('et la file des chauffeurs ne s’affiche pas', !(await pageEat.locator('main').innerText()).includes(`chauffeur ${uniq}`));
+
 const rejoue = await appeler(`/api/zupdrive/admin/chauffeurs/${id}/approve`, { method: 'POST', jeton: adminDrive.jeton });
 check('une seconde validation est refusée', rejoue.statut === 409, `${rejoue.statut}`);
 
