@@ -49,6 +49,8 @@ model User {
   chauffeurDrive ChauffeurDrive?
   /// Les trajets commandés comme passager sur ZupDrive.
   coursesDrive  CourseDrive[]
+  /// Les notes reçues comme passager ZupDrive, de ses chauffeurs.
+  notesRecuesDrive NoteCourseDrive[]
   customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
   ticketMessages TicketMessage[]
   pushDevices   PushDevice[]
@@ -2471,6 +2473,7 @@ model ChauffeurDrive {
   documents DocumentChauffeurDrive[]
   courses      CourseDrive[]
   propositions PropositionCourseDrive[]
+  notes        NoteCourseDrive[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2584,6 +2587,7 @@ model CourseDrive {
   passager  User?           @relation(fields: [passagerId], references: [id], onDelete: SetNull)
   chauffeur ChauffeurDrive? @relation(fields: [chauffeurId], references: [id], onDelete: SetNull)
   propositions PropositionCourseDrive[]
+  notes        NoteCourseDrive[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2615,4 +2619,34 @@ model PropositionCourseDrive {
   @@unique([courseId, chauffeurId])
   @@index([statut, expireA])
   @@index([chauffeurId, statut])
+}
+
+/// La note d'une course terminée, dans un sens : le passager note son
+/// chauffeur, le chauffeur note son passager. Une fois par sens et par course,
+/// dans les 7 jours. Les moyennes sont recalculées depuis ces notes, jamais
+/// entretenues à part (voir note-course-drive.service.ts).
+model NoteCourseDrive {
+  id          String   @id @default(cuid())
+  courseId    String
+  /// PASSAGER (il note le chauffeur) ou CHAUFFEUR (il note le passager).
+  auteur      String
+  /// Le chauffeur de la course : ses notes reçues sont celles des passagers.
+  chauffeurId String
+  /// Le passager de la course. Nul si son compte est supprimé : la note reste,
+  /// sinon la moyenne du chauffeur bougerait à la suppression d'un compte.
+  passagerId  String?
+  /// De 1 à 5. Entier : une demi-étoile ne se donne pas.
+  note        Int
+  /// Lu par l'équipe ZupDrive seulement, jamais par la personne notée.
+  commentaire String?
+
+  course    CourseDrive    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+  passager  User?          @relation(fields: [passagerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, auteur])
+  @@index([chauffeurId, auteur])
+  @@index([passagerId, auteur])
 }

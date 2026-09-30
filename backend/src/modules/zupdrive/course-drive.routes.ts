@@ -3,6 +3,7 @@ import { z } from "zod";
 import { authMiddleware } from "../auth/auth.middleware";
 import { limiterCadence } from "../../middleware/throttle";
 import { CourseDriveService } from "./course-drive.service";
+import { COMMENTAIRE_MAX, NOTE_MAX, NOTE_MIN, NoteCourseDriveService } from "./note-course-drive.service";
 
 /**
  * /api/zupdrive/courses — le passager commande et suit ses trajets
@@ -112,6 +113,26 @@ router.post("/:id/annuler", async (req: Request, res: Response, next: NextFuncti
       success: true,
       data: await CourseDriveService.annulerParPassager(req.userId as string, idSchema.parse(req.params.id), motif),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/zupdrive/courses/:id/note { note, commentaire? } — noter son chauffeur (course terminée, 7 jours)
+router.post("/:id/note", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const saisie = z
+      .object({
+        note: z.number().int().min(NOTE_MIN).max(NOTE_MAX),
+        commentaire: z.string().trim().max(COMMENTAIRE_MAX).nullable().optional(),
+      })
+      .strict().parse(req.body);
+    const note = await NoteCourseDriveService.noter(
+      { auteur: "PASSAGER", passagerId: req.userId as string },
+      idSchema.parse(req.params.id),
+      saisie
+    );
+    res.status(201).json({ success: true, data: { note: note.note } });
   } catch (err) {
     next(err);
   }

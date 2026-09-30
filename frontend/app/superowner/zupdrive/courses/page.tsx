@@ -28,6 +28,7 @@ interface CourseAdmin {
   createdAt: string;
   passager: { email: string; name: string | null } | null;
   chauffeur: { nomComplet: string; vehiculePlaque: string | null } | null;
+  notes: { auteur: 'PASSAGER' | 'CHAUFFEUR'; note: number; commentaire: string | null }[];
 }
 
 export default function CoursesDrivePage() {
@@ -89,6 +90,7 @@ export default function CoursesDrivePage() {
                 <th className="px-4 py-2">{t('colonne.chauffeur')}</th>
                 <th className="px-4 py-2">{t('colonne.prix')}</th>
                 <th className="px-4 py-2">{t('colonne.statut')}</th>
+                <th className="px-4 py-2">{t('colonne.notes')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700 bg-gray-900 text-gray-200">
@@ -109,6 +111,16 @@ export default function CoursesDrivePage() {
                   <td className="px-4 py-2">
                     {t(`statut.${course.statut}`)}
                     {course.annuleePar && <span className="block text-xs text-gray-500">{t(`annuleePar.${course.annuleePar}`)}</span>}
+                  </td>
+                  <td className="px-4 py-2 text-xs">
+                    {course.notes.length === 0
+                      ? '—'
+                      : course.notes.map((n) => (
+                          <span key={n.auteur} className={`block ${n.note <= 2 ? 'text-red-300' : ''}`}>
+                            {t(`noteDe.${n.auteur}`, { note: n.note })}
+                            {n.commentaire && <span className="block text-gray-400 italic">« {n.commentaire} »</span>}
+                          </span>
+                        ))}
                   </td>
                 </tr>
               ))}

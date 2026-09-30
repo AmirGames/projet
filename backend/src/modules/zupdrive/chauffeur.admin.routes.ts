@@ -7,6 +7,7 @@ import { journaliser } from "../superowner/shared";
 import { ChauffeurOnboardingService, STATUTS_CHAUFFEUR, piecesExigees } from "./chauffeur-onboarding.service";
 import { presenterDossier } from "./chauffeur.routes";
 import { TarificationDriveService } from "./tarification-drive.service";
+import { NoteCourseDriveService } from "./note-course-drive.service";
 import { REGIONS } from "./chauffeur-onboarding.service";
 
 /**
@@ -49,6 +50,7 @@ router.get("/chauffeurs", async (req: Request, res: Response, next: NextFunction
       db.chauffeurDrive.count({ where }),
       db.chauffeurDrive.groupBy({ by: ["statut"], _count: true }),
     ]);
+    const notes = await NoteCourseDriveService.moyennesChauffeurs(chauffeurs.map((c) => c.id));
 
     res.json({
       success: true,
@@ -72,6 +74,8 @@ router.get("/chauffeurs", async (req: Request, res: Response, next: NextFunction
           piecesDeposees: chauffeur.documents.length,
           piecesValidees: exigees.filter((type) => validees.has(type)).length,
           piecesExigees: exigees.length,
+          // Nulle tant qu'aucun passager ne l'a noté.
+          note: notes.get(chauffeur.id) ?? { moyenne: null, avis: 0 },
           createdAt: chauffeur.createdAt,
         };
       }),
@@ -87,8 +91,11 @@ router.get("/chauffeurs", async (req: Request, res: Response, next: NextFunction
 router.get("/chauffeurs/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const dossier = await ChauffeurOnboardingService.dossier(idSchema.parse(req.params.id));
-    const user = await db.user.findUnique({ where: { id: dossier.userId }, select: { email: true } });
-    res.json({ success: true, data: { ...presenterDossier(dossier), email: user?.email ?? null } });
+    const [user, note] = await Promise.all([
+      db.user.findUnique({ where: { id: dossier.userId }, select: { email: true } }),
+      NoteCourseDriveService.moyenneChauffeur(dossier.id),
+    ]);
+    res.json({ success: true, data: { ...presenterDossier(dossier), email: user?.email ?? null, note } });
   } catch (err) {
     next(err);
   }
@@ -249,6 +256,8 @@ router.get("/courses", async (req: Request, res: Response, next: NextFunction) =
         include: {
           passager: { select: { email: true, name: true } },
           chauffeur: { select: { id: true, nomComplet: true, vehiculePlaque: true } },
+          // Les commentaires ne sont lus que par l'équipe.
+          notes: { select: { auteur: true, note: true, commentaire: true } },
         },
       }),
       db.courseDrive.count({ where }),

@@ -200,6 +200,21 @@ La section de permissions **`courses-drive`** (« Courses et tarifs ») est nouv
 - `backend/src/modules/zupdrive/__tests__/course-drive.integration.test.ts` : 18 tests contre PostgreSQL (`set -a; . ./.env; set +a; npx jest …`).
 - `frontend/scripts/verif-zupdrive-courses.mjs` : une course de bout en bout dans trois navigateurs (équipe, chauffeur, passager). Seule la recherche d'adresses, qui dépend d'un service externe, y est simulée.
 
+### Notes
+
+Après une course terminée, **le passager note son chauffeur et le chauffeur note son passager**, de 1 à 5 étoiles, avec un commentaire facultatif (`NoteCourseDrive`, `note-course-drive.service.ts`, migration `0032_zupdrive_notes`).
+
+- Seules les deux personnes de la course notent. Chacune le fait une fois, sur une course `TERMINEE`, dans les **7 jours**. Une note ne se modifie pas (contrainte unique par course et par sens).
+- **Moyennes** : elles sont recalculées depuis les notes, jamais entretenues à part. Un compte jamais noté n'a pas de note (« Nouveau chauffeur », « Nouveau passager »), plutôt qu'un 5/5 qu'il n'a pas gagné.
+- **Qui voit quoi** :
+  - le passager voit la moyenne de son chauffeur ;
+  - le chauffeur voit la sienne, et la moyenne du passager dans une proposition ;
+  - **les commentaires ne sont lus que par l'équipe ZupDrive**, qui voit les notes et les commentaires dans ZupDrive › Courses, et la moyenne de chaque chauffeur dans la file des chauffeurs.
+- **Alerte** : une note de 1 ou 2 prévient l'équipe, avec le commentaire et un lien.
+- Si le compte du passager est supprimé, sa note reste, pour que la moyenne du chauffeur ne bouge pas.
+- API : `POST /api/zupdrive/courses/:id/note` (passager) et `POST /api/zupdrive/chauffeur/me/courses/:id/note` (chauffeur), avec `{ note, commentaire? }`.
+- Les notes des livreurs ZupEat sont distinctes : autre métier, autres règles.
+
 ### Héberger OSRM (itinéraire réel)
 
 OSRM est gratuit, mais il lui faut les données de la région, préparées une fois (une dizaine de minutes pour la Belgique) :

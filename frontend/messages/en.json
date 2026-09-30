@@ -2407,7 +2407,9 @@
     },
     "backToQueue": "← Back to the queue",
     "renewal": "(renewal)",
-    "currentVersion": "(current version until the renewal is approved)"
+    "currentVersion": "(current version until the renewal is approved)",
+    "rating": "{moyenne} ★ ({avis} ratings)",
+    "neverRated": "Never rated"
   },
   "zupdriveTrajet": {
     "titre": "Book a ride",
@@ -2449,7 +2451,10 @@
       "TERMINEE": "Ride completed",
       "ANNULEE": "Ride cancelled",
       "SANS_CHAUFFEUR": "No driver available"
-    }
+    },
+    "pasEncoreNote": "New driver",
+    "noterChauffeur": "How was your ride with {prenom}?",
+    "votreNote": "Your rating:"
   },
   "chauffeurCourses": {
     "titre": "My rides",
@@ -2486,7 +2491,12 @@
       "arrive": "I have arrived",
       "demarrer": "Passenger on board",
       "terminer": "Complete the ride"
-    }
+    },
+    "maMoyenne": "{moyenne} out of 5 ({avis} ratings)",
+    "pasEncoreNote": "No rating yet",
+    "noterPassager": "How did this ride go with your passenger?",
+    "passagerNote": "Passenger rated.",
+    "passagerNouveau": "New passenger"
   },
   "superownerTarifsDrive": {
     "titre": "ZupDrive fares",
@@ -2522,7 +2532,8 @@
       "passager": "Passenger",
       "chauffeur": "Driver",
       "prix": "Price",
-      "statut": "Status"
+      "statut": "Status",
+      "notes": "Ratings"
     },
     "statut": {
       "ALL": "All",
@@ -2543,6 +2554,10 @@
       "PASSAGER": "by the passenger",
       "CHAUFFEUR": "by the driver",
       "PLATEFORME": "by the platform"
+    },
+    "noteDe": {
+      "PASSAGER": "Driver rated {note}/5",
+      "CHAUFFEUR": "Passenger rated {note}/5"
     }
   },
   "carteCourseDrive": {
@@ -2550,5 +2565,21 @@
     "depart": "Pickup",
     "destination": "Destination",
     "chauffeur": "Your driver"
+  },
+  "noterCourseDrive": {
+    "note": "Your rating",
+    "etoiles": "{n} star(s) — {libelle}",
+    "libelle": {
+      "1": "Very bad",
+      "2": "Bad",
+      "3": "OK",
+      "4": "Good",
+      "5": "Excellent"
+    },
+    "commentaire": "Any comment? (optional)",
+    "commentairePrive": "Your comment is only read by the ZupDrive team.",
+    "envoyer": "Send my rating",
+    "envoi": "Sending…",
+    "erreur": "The rating could not be saved."
   }
 }

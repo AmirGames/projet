@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Car, Loader } from 'lucide-react';
 
 import { CarteCourseDrive } from '@/components/CarteCourseDrive';
+import { Etoiles, NoterCourseDrive } from '@/components/NoterCourseDrive';
 import { useAuth } from '@/lib/auth-context';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { appelerZupDrive, kilometres, minutes, prix, STATUTS_ACTIFS } from '@/lib/zupdrive';
@@ -37,7 +38,11 @@ interface Trajet {
     plaque: string | null;
     /** Seulement pendant son approche. */
     position: { latitude: number; longitude: number } | null;
+    /** Sa moyenne donnée par les passagers ; nulle tant que personne ne l'a noté. */
+    note: { moyenne: number | null; avis: number } | null;
   } | null;
+  maNote: number | null;
+  peutNoter: boolean;
 }
 
 const RELECTURE_MS = 4000;
@@ -124,7 +129,17 @@ export default function SuiviTrajetPage({ params }: { params: Promise<{ id: stri
 
           {trajet.chauffeur && (
             <div className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
-              <p className="font-semibold">{trajet.chauffeur.prenom}</p>
+              <p className="flex items-center gap-2 font-semibold">
+                {trajet.chauffeur.prenom}
+                {trajet.chauffeur.note?.moyenne != null ? (
+                  <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
+                    <Etoiles valeur={trajet.chauffeur.note.moyenne} taille={12} />
+                    {trajet.chauffeur.note.moyenne.toLocaleString('fr-FR')} ({trajet.chauffeur.note.avis})
+                  </span>
+                ) : (
+                  <span className="text-xs font-normal text-slate-500">{t('pasEncoreNote')}</span>
+                )}
+              </p>
               <p>
                 {trajet.chauffeur.vehicule}
                 {trajet.chauffeur.plaque ? ` · ${trajet.chauffeur.plaque}` : ''}
@@ -151,6 +166,21 @@ export default function SuiviTrajetPage({ params }: { params: Promise<{ id: stri
               </dd>
             </div>
           </dl>
+
+          {trajet.peutNoter && (
+            <div className="mt-6">
+              <NoterCourseDrive
+                chemin={`/api/zupdrive/courses/${encodeURIComponent(trajet.id)}/note`}
+                question={t('noterChauffeur', { prenom: trajet.chauffeur?.prenom ?? '' })}
+                onNote={() => charger()}
+              />
+            </div>
+          )}
+          {trajet.maNote != null && (
+            <p className="mt-6 flex items-center gap-2 text-sm text-slate-600" data-ma-note={trajet.maNote}>
+              {t('votreNote')} <Etoiles valeur={trajet.maNote} />
+            </p>
+          )}
 
           {ANNULABLE.includes(trajet.statut) && (
             <button

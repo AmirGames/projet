@@ -38,6 +38,7 @@ interface LigneChauffeur {
   piecesDeposees: number;
   piecesValidees: number;
   piecesExigees: number;
+  note?: { moyenne: number | null; avis: number };
 }
 
 interface Piece {
@@ -289,6 +290,13 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
                     {chauffeur.vehiculePlaque && <span>{chauffeur.vehiculePlaque}</span>}
                     <span>{t('piecesCount', { validees: chauffeur.piecesValidees, exigees: chauffeur.piecesExigees })}</span>
                     {chauffeur.soumisLe && <span>{t('submittedOn', { date: date(chauffeur.soumisLe) })}</span>}
+                    {chauffeur.statut === 'VALIDE' && (
+                      <span>
+                        {chauffeur.note?.moyenne != null
+                          ? t('rating', { moyenne: chauffeur.note.moyenne.toLocaleString('fr-FR'), avis: chauffeur.note.avis })
+                          : t('neverRated')}
+                      </span>
+                    )}
                   </div>
                   {chauffeur.motifStatut && <p className="mt-2 text-xs text-red-300">{chauffeur.motifStatut}</p>}
                 </div>

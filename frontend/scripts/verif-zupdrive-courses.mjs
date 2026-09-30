@@ -243,12 +243,41 @@ check('le passager voit le trajet terminé', /Trajet terminé/.test(await pagePa
 await pageChauffeur.waitForSelector('text=Historique', { timeout: 10000 });
 check('la course rejoint l’historique du chauffeur', (await pageChauffeur.locator('main').innerText()).includes(DEPART.label));
 
+// ===== Les notes =====
+titre('Chacun note l’autre');
+await pagePassager.waitForSelector('[data-noter]', { timeout: 10000 });
+await pagePassager.click('[data-noter] [role="radio"][aria-label^="5 "]');
+await pagePassager.fill('[data-noter] textarea', 'Chauffeur ponctuel et aimable');
+check('le passager est prévenu que son commentaire ne va qu’à l’équipe', /n'est lu que par l'équipe ZupDrive/.test(await pagePassager.locator('[data-noter]').innerText()));
+await pagePassager.click('[data-noter] button:has-text("Envoyer ma note")');
+await pagePassager.waitForSelector('[data-ma-note="5"]', { timeout: 10000 });
+check('le passager a noté son chauffeur 5/5', true);
+
+await pageChauffeur.reload();
+const noterPassager = pageChauffeur.locator(`[data-noter-course="${courseId}"]`);
+await noterPassager.waitFor({ timeout: 15000 });
+await noterPassager.locator('[role="radio"][aria-label^="2 "]').click();
+await noterPassager.locator('textarea').fill('Quinze minutes de retard');
+await noterPassager.locator('button:has-text("Envoyer ma note")').click();
+await pageChauffeur.waitForSelector('text=Passager noté.', { timeout: 10000 });
+check('le chauffeur a noté son passager', true);
+const vueChauffeur = await pageChauffeur.locator('main').innerText();
+check('le chauffeur voit sa moyenne, pas le commentaire du passager', /5 sur 5 \(1 avis\)/.test(vueChauffeur) && !vueChauffeur.includes('ponctuel'), vueChauffeur.slice(0, 200));
+await pagePassager.reload();
+await pagePassager.waitForSelector('[data-ma-note="5"]', { timeout: 10000 });
+check('le passager ne voit pas le commentaire du chauffeur', !(await pagePassager.locator('main').innerText()).includes('retard'));
+
 // ===== L'équipe la retrouve =====
 titre('L’équipe retrouve la course');
 await pageAdmin.goto(`${SITE}/superowner/zupdrive/courses`);
 await pageAdmin.waitForSelector('table', { timeout: 15000 });
 const liste = await pageAdmin.locator('table').innerText();
 check('dans la liste, terminée, avec son chauffeur et son passager', liste.includes(passager.email) && liste.includes(`Karim ${uniq}`) && /Terminée/.test(liste));
+check(
+  'l’équipe voit les deux notes et leurs commentaires',
+  /Chauffeur noté 5\/5/.test(liste) && /Passager noté 2\/5/.test(liste) && liste.includes('Quinze minutes de retard') && liste.includes('ponctuel'),
+  liste.slice(0, 400)
+);
 
 check('aucune erreur dans la console', erreurs.length === 0, erreurs.join(' | '));
 

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Loader, MapPin, Navigation } from 'lucide-react';
 
+import { Etoiles, NoterCourseDrive } from '@/components/NoterCourseDrive';
 import { useAuth } from '@/lib/auth-context';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { appelerZupDrive, kilometres, minutes, prix } from '@/lib/zupdrive';
@@ -18,10 +19,16 @@ import { appelerZupDrive, kilometres, minutes, prix } from '@/lib/zupdrive';
  * serveur ; les boutons ne proposent que l'étape suivante.
  */
 
+interface Moyenne {
+  moyenne: number | null;
+  avis: number;
+}
+
 interface CoursePourChauffeur {
   id: string;
   statut: string;
   passager: string | null;
+  notePassager: Moyenne | null;
   departAdresse: string;
   arriveeAdresse: string;
   distanceMetres: number;
@@ -35,7 +42,17 @@ interface Tableau {
   positionLe: string | null;
   proposition: { id: string; expireA: string; distanceMetres: number; course: CoursePourChauffeur } | null;
   course: CoursePourChauffeur | null;
-  historique: { id: string; statut: string; departAdresse: string; arriveeAdresse: string; prixCentimes: number }[];
+  historique: {
+    id: string;
+    statut: string;
+    departAdresse: string;
+    arriveeAdresse: string;
+    prixCentimes: number;
+    peutNoter: boolean;
+    noteDonnee: boolean;
+  }[];
+  /** Sa moyenne, telle que les passagers la font. */
+  maNote: Moyenne;
 }
 
 const RELECTURE_MS = 3000;
@@ -145,7 +162,19 @@ export default function CoursesChauffeurPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-slate-900">{t('titre')}</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">{t('titre')}</h1>
+          <p className="mt-1 flex items-center gap-2 text-sm text-slate-600" data-ma-moyenne>
+            {tableau.maNote.moyenne != null ? (
+              <>
+                <Etoiles valeur={tableau.maNote.moyenne} taille={14} />
+                {t('maMoyenne', { moyenne: tableau.maNote.moyenne.toLocaleString('fr-FR'), avis: tableau.maNote.avis })}
+              </>
+            ) : (
+              t('pasEncoreNote')
+            )}
+          </p>
+        </div>
         <Link href="/chauffeur" className="text-sm text-slate-500 hover:underline">
           {t('versDossier')}
         </Link>
@@ -185,7 +214,10 @@ export default function CoursesChauffeurPage() {
             <span className="rounded-full bg-accent px-3 py-1 text-sm font-bold text-white">{resteSecondes} s</span>
           </div>
           <Trajet course={proposition.course} />
-          <p className="mt-2 text-sm text-slate-500">{t('aDistance', { distance: kilometres(proposition.distanceMetres) })}</p>
+          <p className="mt-2 text-sm text-slate-500">
+            {t('aDistance', { distance: kilometres(proposition.distanceMetres) })}
+            <NotePassager note={proposition.course.notePassager} />
+          </p>
           <div className="mt-4 flex gap-3">
             <button
               type="button"
@@ -210,7 +242,12 @@ export default function CoursesChauffeurPage() {
       {course && (
         <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5" data-course={course.id} data-statut={course.statut}>
           <p className="text-lg font-bold text-slate-900">{t(`statut.${course.statut}`)}</p>
-          {course.passager && <p className="text-sm text-slate-600">{t('passager', { prenom: course.passager })}</p>}
+          {course.passager && (
+            <p className="text-sm text-slate-600">
+              {t('passager', { prenom: course.passager })}
+              <NotePassager note={course.notePassager} />
+            </p>
+          )}
           <Trajet course={course} />
           {etape && (
             <button
@@ -251,19 +288,48 @@ export default function CoursesChauffeurPage() {
           <h2 className="text-lg font-semibold text-slate-900">{t('historique')}</h2>
           <ul className="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
             {tableau.historique.map((c) => (
-              <li key={c.id} className="flex justify-between gap-4 px-4 py-3 text-sm">
-                <span className="min-w-0 truncate text-slate-700">
-                  {c.departAdresse} → {c.arriveeAdresse}
-                </span>
-                <span className="shrink-0 text-slate-500">
-                  {prix(c.prixCentimes)} · {t(`statut.${c.statut}`)}
-                </span>
+              <li key={c.id} className="px-4 py-3 text-sm">
+                <div className="flex justify-between gap-4">
+                  <span className="min-w-0 truncate text-slate-700">
+                    {c.departAdresse} → {c.arriveeAdresse}
+                  </span>
+                  <span className="shrink-0 text-slate-500">
+                    {prix(c.prixCentimes)} · {t(`statut.${c.statut}`)}
+                  </span>
+                </div>
+                {c.peutNoter && (
+                  <div className="mt-2" data-noter-course={c.id}>
+                    <NoterCourseDrive
+                      chemin={`/api/zupdrive/chauffeur/me/courses/${encodeURIComponent(c.id)}/note`}
+                      question={t('noterPassager')}
+                      onNote={() => charger()}
+                    />
+                  </div>
+                )}
+                {c.noteDonnee && <p className="mt-1 text-xs text-slate-500">{t('passagerNote')}</p>}
               </li>
             ))}
           </ul>
         </section>
       )}
     </main>
+  );
+}
+
+/** La moyenne du passager, pour aider à décider ; jamais le détail. */
+function NotePassager({ note }: { note: Moyenne | null }) {
+  const t = useTranslations('chauffeurCourses');
+  if (!note) return null;
+  return (
+    <span className="ml-2 inline-flex items-center gap-1 text-xs text-slate-500">
+      {note.moyenne != null ? (
+        <>
+          <Etoiles valeur={note.moyenne} taille={12} /> {note.moyenne.toLocaleString('fr-FR')} ({note.avis})
+        </>
+      ) : (
+        t('passagerNouveau')
+      )}
+    </span>
   );
 }
 

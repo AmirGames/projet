@@ -6,6 +6,7 @@ import { distanceKm } from "../../utils/geo";
 import { emitNotification } from "../realtime/socket";
 import { TarificationDriveService, type Point } from "./tarification-drive.service";
 import { lireDevis, signerDevis, VALIDITE_DEVIS_MS } from "./devis-signe";
+import { NoteCourseDriveService } from "./note-course-drive.service";
 
 /**
  * Les courses ZupDrive : un passager commande un trajet à prix fixe, la
@@ -209,7 +210,21 @@ export class CourseDriveService {
       throw new ApiError(404, "Trajet introuvable", "RIDE_NOT_FOUND");
     }
     const { chauffeur: _chauffeur, tarifApplique: _tarif, cleIdempotence: _cle, ...reste } = course;
-    return { ...reste, chauffeur: chauffeurPourLePassager(course) };
+    const [noteChauffeur, maNote] = await Promise.all([
+      course.chauffeurId ? NoteCourseDriveService.moyenneChauffeur(course.chauffeurId) : null,
+      db.noteCourseDrive.findUnique({
+        where: { courseId_auteur: { courseId, auteur: "PASSAGER" } },
+        select: { note: true },
+      }),
+    ]);
+    const chauffeur = chauffeurPourLePassager(course);
+    return {
+      ...reste,
+      chauffeur: chauffeur ? { ...chauffeur, note: noteChauffeur } : null,
+      // Sa propre note (jamais celle que le chauffeur lui a donnée), et s'il peut encore noter.
+      maNote: maNote?.note ?? null,
+      peutNoter: NoteCourseDriveService.peutNoter(course, !!maNote),
+    };
   }
 
   static async mesCourses(passagerId: string) {
@@ -304,10 +319,28 @@ export class CourseDriveService {
       }),
     ]);
 
+    // La moyenne du passager aide le chauffeur à décider ; jamais le détail.
+    const notesPassagers = new Map(
+      await Promise.all(
+        [proposition?.course.passagerId, course?.passagerId]
+          .filter((id): id is string => !!id)
+          .map(async (id) => [id, await NoteCourseDriveService.moyennePassager(id)] as const)
+      )
+    );
+    const mesNotes = new Set(
+      (
+        await db.noteCourseDrive.findMany({
+          where: { auteur: "CHAUFFEUR", courseId: { in: historique.map((c) => c.id) } },
+          select: { courseId: true },
+        })
+      ).map((n) => n.courseId)
+    );
+
     const pourLeChauffeur = (c: NonNullable<typeof course>) => ({
       id: c.id,
       statut: c.statut,
       passager: prenom(c.passager?.name),
+      notePassager: c.passagerId ? notesPassagers.get(c.passagerId) ?? null : null,
       departAdresse: c.departAdresse,
       departLatitude: c.departLatitude,
       departLongitude: c.departLongitude,
@@ -339,7 +372,11 @@ export class CourseDriveService {
         prixCentimes: c.prixCentimes,
         termineeLe: c.termineeLe,
         annuleeLe: c.annuleeLe,
+        peutNoter: NoteCourseDriveService.peutNoter(c, mesNotes.has(c.id)),
+        noteDonnee: mesNotes.has(c.id),
       })),
+      // Sa propre moyenne, telle que les passagers la font.
+      maNote: await NoteCourseDriveService.moyenneChauffeur(chauffeur.id),
     };
   }
 

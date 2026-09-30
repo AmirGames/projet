@@ -2407,7 +2407,9 @@
     },
     "backToQueue": "← Retour à la file",
     "renewal": "(renouvellement)",
-    "currentVersion": "(version en vigueur jusqu'à validation du renouvellement)"
+    "currentVersion": "(version en vigueur jusqu'à validation du renouvellement)",
+    "rating": "{moyenne} ★ ({avis} avis)",
+    "neverRated": "Jamais noté"
   },
   "zupdriveTrajet": {
     "titre": "Commander un trajet",
@@ -2449,7 +2451,10 @@
       "TERMINEE": "Trajet terminé",
       "ANNULEE": "Trajet annulé",
       "SANS_CHAUFFEUR": "Aucun chauffeur disponible"
-    }
+    },
+    "pasEncoreNote": "Nouveau chauffeur",
+    "noterChauffeur": "Comment s'est passé votre trajet avec {prenom} ?",
+    "votreNote": "Votre note :"
   },
   "chauffeurCourses": {
     "titre": "Mes courses",
@@ -2486,7 +2491,12 @@
       "arrive": "Je suis arrivé",
       "demarrer": "Le passager est à bord",
       "terminer": "Terminer la course"
-    }
+    },
+    "maMoyenne": "{moyenne} sur 5 ({avis} avis)",
+    "pasEncoreNote": "Pas encore de note",
+    "noterPassager": "Comment s'est passée cette course avec votre passager ?",
+    "passagerNote": "Passager noté.",
+    "passagerNouveau": "Nouveau passager"
   },
   "superownerTarifsDrive": {
     "titre": "Tarifs ZupDrive",
@@ -2522,7 +2532,8 @@
       "passager": "Passager",
       "chauffeur": "Chauffeur",
       "prix": "Prix",
-      "statut": "Statut"
+      "statut": "Statut",
+      "notes": "Notes"
     },
     "statut": {
       "ALL": "Toutes",
@@ -2543,6 +2554,10 @@
       "PASSAGER": "par le passager",
       "CHAUFFEUR": "par le chauffeur",
       "PLATEFORME": "par la plateforme"
+    },
+    "noteDe": {
+      "PASSAGER": "Chauffeur noté {note}/5",
+      "CHAUFFEUR": "Passager noté {note}/5"
     }
   },
   "carteCourseDrive": {
@@ -2550,5 +2565,21 @@
     "depart": "Départ",
     "destination": "Destination",
     "chauffeur": "Votre chauffeur"
+  },
+  "noterCourseDrive": {
+    "note": "Votre note",
+    "etoiles": "{n} étoile(s) — {libelle}",
+    "libelle": {
+      "1": "Très mauvais",
+      "2": "Mauvais",
+      "3": "Correct",
+      "4": "Bien",
+      "5": "Excellent"
+    },
+    "commentaire": "Un commentaire ? (facultatif)",
+    "commentairePrive": "Votre commentaire n'est lu que par l'équipe ZupDrive.",
+    "envoyer": "Envoyer ma note",
+    "envoi": "Envoi…",
+    "erreur": "La note n'a pas pu être enregistrée."
   }
 }

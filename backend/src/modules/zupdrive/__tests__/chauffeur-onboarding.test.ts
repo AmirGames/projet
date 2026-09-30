@@ -48,6 +48,11 @@ const avecDocuments = (chauffeur: Ligne | undefined, include?: Ligne) =>
 
 const db: any = {
   $transaction: jest.fn(async (operations: Promise<unknown>[]) => Promise.all(operations)),
+  // Aucune course ici : aucun chauffeur n'a encore de note.
+  noteCourseDrive: {
+    aggregate: jest.fn(async () => ({ _avg: { note: null }, _count: { _all: 0 } })),
+    groupBy: jest.fn(async () => []),
+  },
   systemConfig: { findFirst: jest.fn(async () => null) },
   platformRole: {
     // Les rôles de base, avec leurs permissions par défaut, sur chaque plateforme.

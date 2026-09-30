@@ -11,6 +11,7 @@ import {
   libelleDeLaPiece,
 } from "./chauffeur-onboarding.service";
 import { CourseDriveService } from "./course-drive.service";
+import { COMMENTAIRE_MAX, NOTE_MAX, NOTE_MIN, NoteCourseDriveService } from "./note-course-drive.service";
 
 /**
  * /api/zupdrive/chauffeur — le dossier du chauffeur connecté
@@ -200,6 +201,24 @@ router.post("/me/courses/:id/annuler", async (req: Request, res: Response, next:
       success: true,
       data: await CourseDriveService.annulerParChauffeur(req.userId as string, idCourse.parse(req.params.id), motif),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/zupdrive/chauffeur/me/courses/:id/note { note, commentaire? } — noter son passager
+// (avant la route des étapes : « note » n'en est pas une)
+router.post("/me/courses/:id/note", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const saisie = z
+      .object({
+        note: z.number().int().min(NOTE_MIN).max(NOTE_MAX),
+        commentaire: z.string().trim().max(COMMENTAIRE_MAX).nullable().optional(),
+      })
+      .strict().parse(req.body);
+    const chauffeur = await CourseDriveService.chauffeurDuCompte(req.userId as string);
+    await NoteCourseDriveService.noter({ auteur: "CHAUFFEUR", chauffeurId: chauffeur.id }, idCourse.parse(req.params.id), saisie);
+    res.status(201).json({ success: true, data: await CourseDriveService.tableauDeBord(req.userId as string) });
   } catch (err) {
     next(err);
   }

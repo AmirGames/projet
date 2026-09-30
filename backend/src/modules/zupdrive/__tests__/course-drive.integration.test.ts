@@ -11,6 +11,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, jest } from "@je
  */
 
 jest.mock("../../realtime/socket", () => ({ emitNotification: jest.fn() }));
+const notifierPlateforme = jest.fn(async (_titre: string, _message: string, _lien: string) => undefined);
+jest.mock("../../notifications/notification.service", () => ({ notifierPlateforme }));
 jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
@@ -24,6 +26,7 @@ import {
 import { CourseDriveService, DELAI_REPONSE_MS, RECHERCHE_MAX_MS } from "../course-drive.service";
 import { estimer as estimerTrajet, COEFFICIENT_DETOUR } from "../itineraire.service";
 import { signerDevis } from "../devis-signe";
+import { NoteCourseDriveService, DELAI_NOTE_MS } from "../note-course-drive.service";
 
 const suffixe = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const REGION = "WALLONIE";
@@ -328,5 +331,103 @@ describe("dans la durée", () => {
     await expect(CourseDriveService.passerEnLigne(suspendu!.userId, true)).rejects.toMatchObject({
       code: "CHAUFFEUR_NOT_ACTIVE",
     });
+  });
+});
+
+describe("notes", () => {
+  /** Une course menée à terme par le chauffeur « proche ». */
+  async function courseTerminee(qui = passager) {
+    const course = await commande(qui);
+    await CourseDriveService.accepter(proche.userId, (await propositionOuverte(proche.id))!.id);
+    for (const etape of ["arrive", "demarrer", "terminer"] as const) {
+      await CourseDriveService.avancer(proche.userId, course.id, etape);
+    }
+    return course;
+  }
+  const parPassager = (passagerId: string) => ({ auteur: "PASSAGER" as const, passagerId });
+  const parChauffeur = (chauffeurId: string) => ({ auteur: "CHAUFFEUR" as const, chauffeurId });
+
+  it("ne se donne que sur une course terminée", async () => {
+    const course = await commande(passager);
+    await expect(NoteCourseDriveService.noter(parPassager(passager), course.id, { note: 5 })).rejects.toMatchObject({
+      code: "RIDE_NOT_FINISHED",
+    });
+  });
+
+  it("le passager note son chauffeur une seule fois, et voit sa moyenne", async () => {
+    const avant = await NoteCourseDriveService.moyenneChauffeur(proche.id);
+    const course = await courseTerminee();
+    expect((await CourseDriveService.maCourse(passager, course.id)).peutNoter).toBe(true);
+
+    await NoteCourseDriveService.noter(parPassager(passager), course.id, { note: 4, commentaire: "Très bien" });
+    await expect(NoteCourseDriveService.noter(parPassager(passager), course.id, { note: 1 })).rejects.toMatchObject({
+      code: "ALREADY_RATED",
+    });
+
+    const apres = await NoteCourseDriveService.moyenneChauffeur(proche.id);
+    expect(apres.avis).toBe(avant.avis + 1);
+    const vue = await CourseDriveService.maCourse(passager, course.id);
+    expect(vue).toMatchObject({ maNote: 4, peutNoter: false });
+    expect(vue.chauffeur?.note).toEqual(apres);
+    // Le commentaire n'est pas renvoyé au passager, ni au chauffeur.
+    expect(JSON.stringify(vue)).not.toContain("Très bien");
+    expect(JSON.stringify(await CourseDriveService.tableauDeBord(proche.userId))).not.toContain("Très bien");
+  });
+
+  it("le chauffeur note son passager ; une note basse prévient l'équipe", async () => {
+    const course = await courseTerminee();
+    notifierPlateforme.mockClear();
+    const avantTableau = await CourseDriveService.tableauDeBord(proche.userId);
+    expect(avantTableau.historique.find((c) => c.id === course.id)).toMatchObject({ peutNoter: true, noteDonnee: false });
+
+    await NoteCourseDriveService.noter(parChauffeur(proche.id), course.id, { note: 2, commentaire: "Retard de 15 min" });
+    expect(notifierPlateforme).toHaveBeenCalledWith(
+      expect.stringContaining("Note basse (2/5)"),
+      expect.stringContaining("Retard de 15 min"),
+      expect.any(String)
+    );
+    const moyenne = await NoteCourseDriveService.moyennePassager(passager);
+    expect(moyenne.avis).toBeGreaterThanOrEqual(1);
+
+    const tableau = await CourseDriveService.tableauDeBord(proche.userId);
+    expect(tableau.historique.find((c) => c.id === course.id)).toMatchObject({ peutNoter: false, noteDonnee: true });
+  });
+
+  it("une bonne note ne dérange pas l'équipe", async () => {
+    const course = await courseTerminee();
+    notifierPlateforme.mockClear();
+    await NoteCourseDriveService.noter(parPassager(passager), course.id, { note: 5 });
+    expect(notifierPlateforme).not.toHaveBeenCalled();
+  });
+
+  it("seules les deux personnes de la course notent", async () => {
+    const course = await courseTerminee();
+    await expect(NoteCourseDriveService.noter(parPassager(autrePassager), course.id, { note: 1 })).rejects.toMatchObject({
+      statusCode: 404,
+    });
+    await expect(NoteCourseDriveService.noter(parChauffeur(loin.id), course.id, { note: 1 })).rejects.toMatchObject({
+      statusCode: 404,
+    });
+  });
+
+  it("refuse une note hors de 1 à 5, et après le délai", async () => {
+    const course = await courseTerminee();
+    for (const note of [0, 6, 3.5]) {
+      await expect(NoteCourseDriveService.noter(parPassager(passager), course.id, { note })).rejects.toMatchObject({
+        code: "INVALID_RATING",
+      });
+    }
+    const tropTard = new Date(Date.now() + DELAI_NOTE_MS + 60_000);
+    await expect(
+      NoteCourseDriveService.noter(parPassager(passager), course.id, { note: 5 }, tropTard)
+    ).rejects.toMatchObject({ code: "RATING_WINDOW_CLOSED" });
+  });
+
+  it("montre au chauffeur la moyenne du passager qu'on lui propose", async () => {
+    await commande(passager);
+    const tableau = await CourseDriveService.tableauDeBord(proche.userId);
+    expect(tableau.proposition).not.toBeNull();
+    // Le passager a déjà été noté par le chauffeur plus haut dans cette suite.
+    expect(tableau.proposition?.course.notePassager?.avis).toBeGreaterThanOrEqual(1);
   });
 });
