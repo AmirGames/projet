@@ -7,12 +7,17 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * signée, valable cinq minutes.
  *
  * Reconnaît les adresses telles que la base les garde
- * (…/uploads/drivers/…), et l'ancienne route (…/documents/file/…).
+ * (…/uploads/drivers/…), l'ancienne route (…/documents/file/…) et les
+ * adresses déjà signées (…/api/files/…) : l'API les donne signées, mais pour
+ * cinq minutes seulement. Un écran resté ouvert plus longtemps (examen d'un
+ * dossier) ouvrait un lien échu ; on en redemande donc une au moment du clic.
+ * Les dossiers suivent DOSSIERS_PRIVES (backend, fichiers-prives.service.ts).
  */
-const PIECE_PRIVEE = /\/(uploads|api\/drivers\/documents\/file)\/(drivers|merchants|deliveries)\//;
+const PIECE_PRIVEE =
+  /\/(uploads|api\/drivers\/documents\/file|api\/files)\/(drivers|merchants|deliveries|chauffeurs)\//;
 
 export function estPiecePrivee(adresse: string | null | undefined): boolean {
-  return !!adresse && PIECE_PRIVEE.test(adresse) && !/[?&]sig=/.test(adresse);
+  return !!adresse && PIECE_PRIVEE.test(adresse);
 }
 
 /** L'adresse à donner au navigateur : signée pour une pièce privée, inchangée sinon. */

@@ -12,9 +12,10 @@
 
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { Car, Check, ExternalLink, X } from 'lucide-react';
+import { Car, Check, Eye, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { useDerniereValeur } from '@/lib/use-derniere-valeur';
 import { useDonneesModifiees } from '@/lib/temps-reel';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
@@ -107,6 +108,7 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
   // Le motif de refus en cours de saisie, par pièce.
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [envoi, setEnvoi] = useState(false);
+  const [apercu, setApercu] = useState<Piece | null>(null);
 
   const lireDossier = useCallback(async (id: string) => {
     const reponse = await fetch(`${BASE}/${id}`, { headers: { Authorization: `Bearer ${jeton()}` } });
@@ -225,6 +227,9 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
 
   return (
     <div className="space-y-6">
+      {apercu && (
+        <DocumentPreviewModal documentUrl={apercu.url} libelle={apercu.libelle} onClose={() => setApercu(null)} />
+      )}
       <div>
         <h1 className="flex items-center gap-2 text-3xl font-bold text-white">
           <Car className="h-8 w-8" />
@@ -368,16 +373,15 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
                     {piece.noteExamen && <p className="text-xs text-red-300">{piece.noteExamen}</p>}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    {/* Adresse signée, valable quelques minutes : relue avec le dossier. */}
-                    <a
-                      href={piece.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    {/* Aperçu dans la page ; l'adresse signée est redemandée à l'ouverture. */}
+                    <button
+                      type="button"
+                      onClick={() => setApercu(piece)}
                       className="flex items-center gap-1 text-xs text-blue-400 hover:underline"
                     >
-                      <ExternalLink size={12} />
+                      <Eye size={12} />
                       {t('view')}
-                    </a>
+                    </button>
                     {/* Une version expirée ne se valide pas : il faut la version à jour. */}
                     {piece.statut !== 'APPROVED' && piece.statut !== 'EXPIRED' && (
                       <button

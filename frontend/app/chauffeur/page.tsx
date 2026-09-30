@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { AlertCircle, CheckCircle, Clock, FileUp, Loader, XCircle } from 'lucide-react';
 
+import { LienPiece } from '@/components/LienPiece';
 import { useAuth } from '@/lib/auth-context';
 import { signalerErreur } from '@/lib/erreurs';
 import { TAILLE_MAX_IMAGE, TAILLE_MAX_PDF, reduireImage } from '@/lib/reduire-image';
@@ -450,9 +451,9 @@ function LignePiece({
           <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
             {icones[piece.statut]}
             {t(`statutPiece.${piece.statut}`)}
-            <a href={piece.url} target="_blank" rel="noopener noreferrer" className="underline">
+            <LienPiece adresse={piece.url} className="underline">
               {t('voir')}
-            </a>
+            </LienPiece>
           </p>
         ) : (
           <p className="mt-1 text-sm text-slate-500">{t('aDeposer')}</p>
