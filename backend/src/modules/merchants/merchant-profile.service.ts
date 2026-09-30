@@ -398,7 +398,7 @@ export class MerchantProfileService {
     await notifierPlateforme(
       `Nouveau document — ${org?.name || "commerce"}`,
       `${libelleDuDocumentCommercant(type)} a été mis en ligne et attend votre validation.`,
-      `/superowner/organizations/${orgId}`
+      `/superowner/zupeat/organizations/${orgId}`
     );
   }
 

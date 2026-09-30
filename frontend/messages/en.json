@@ -92,7 +92,7 @@
   "superownerDashboard": {
     "loading": "Loading...",
     "title": "Superowner Dashboard",
-    "subtitle": "Full overview of the platform",
+    "subtitle": "ZupEat overview: merchants, couriers, revenue",
     "criticalAlerts": "{count} Critical Alert(s)",
     "criticalAlertsSubtitle": "Immediate attention required",
     "totalRevenue": "Total Revenue",
@@ -110,9 +110,9 @@
     "quickConfig": "Configuration",
     "quickSecurityAudit": "Security Audit",
     "loggedInAs": "🔐 You are logged in as Superowner. You have full access to all systems.",
-    "titleRole": "{role} Dashboard",
-    "titleGeneric": "Dashboard",
-    "subtitleTeam": "Platform overview, within your role's access",
+    "titleRole": "ZupEat dashboard · {role}",
+    "titleGeneric": "ZupEat dashboard",
+    "subtitleTeam": "ZupEat overview, within your role's access",
     "loggedInAsRole": "🔐 You are logged in as {role}. You can only access the sections open to your role; ask the SuperOwner for more."
   },
   "superownerOrganizations": {
@@ -2522,6 +2522,33 @@
       "parKmCentimes": "Per km (€)",
       "parMinuteCentimes": "Per minute (€)",
       "minimumCentimes": "Minimum fare (€)"
+    }
+  },
+  "superownerZupDrive": {
+    "titre": "ZupDrive dashboard",
+    "sousTitre": "Driver applications and rides at a glance.",
+    "chargement": "Loading…",
+    "erreur": "Could not load the dashboard.",
+    "chauffeurs": {
+      "titre": "Drivers",
+      "aExaminer": "Applications to review",
+      "valides": "Approved drivers",
+      "suspendus": "Suspended",
+      "brouillons": "Applications in progress",
+      "plusAnciens": "Waiting the longest",
+      "aucunEnAttente": "No application to review.",
+      "soumisLe": "Sent on {date}",
+      "pieces": "{validees}/{exigees} documents approved"
+    },
+    "courses": {
+      "titre": "Rides",
+      "recherche": "Looking for a driver",
+      "enCours": "In progress",
+      "sansChauffeur": "No driver found",
+      "terminees": "Completed",
+      "dernieres": "Latest rides",
+      "toutes": "All rides",
+      "aucune": "No rides yet."
     }
   },
   "superownerCoursesDrive": {

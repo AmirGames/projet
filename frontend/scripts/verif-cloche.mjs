@@ -109,9 +109,9 @@ await connecter(`p-${uniq}@t.fr`);
 
 const PAGES_PLATEFORME = [
   '/superowner',
-  '/superowner/organizations',
-  '/superowner/support-tickets',
-  '/superowner/formules',
+  '/superowner/zupeat/organizations',
+  '/superowner/zupeat/support-tickets',
+  '/superowner/zupeat/formules',
   '/superowner/audit-logs',
   '/superowner/system-config',
 ];

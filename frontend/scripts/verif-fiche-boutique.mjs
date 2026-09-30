@@ -124,7 +124,7 @@ await page.waitForURL('**/superowner**', { timeout: 15000 });
 await page.waitForTimeout(1500);
 
 await page.click('aside a:has-text("Boutiques")');
-await page.waitForURL('**/superowner/stores', { timeout: 15000 });
+await page.waitForURL('**/superowner/zupeat/stores', { timeout: 15000 });
 await page.waitForTimeout(2500);
 
 const liste = await texte();
@@ -133,7 +133,7 @@ check('la boutique est listée', liste.includes(nomBoutique), liste.slice(0, 500
 titre('Son nom ouvre sa fiche');
 // La liste ne menait nulle part : ni fiche, ni détail.
 await page.click(`a:has-text("${nomBoutique}")`);
-await page.waitForURL(`**/superowner/stores/${storeId}`, { timeout: 15000 });
+await page.waitForURL(`**/superowner/zupeat/stores/${storeId}`, { timeout: 15000 });
 await page.waitForTimeout(2500);
 
 const fiche = await texte();

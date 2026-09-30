@@ -4,7 +4,7 @@
  * ZupDrive — la file de validation des dossiers chauffeurs (licence LVC).
  *
  * Les chauffeurs transportent des personnes : rien à voir avec les livreurs
- * ZupEat (/superowner/drivers). Tout se décide côté API
+ * ZupEat (/superowner/zupeat/drivers). Tout se décide côté API
  * (/api/zupdrive/admin/chauffeurs), qui applique les permissions de la
  * plateforme ZupDrive et journalise chaque décision : l'écran se contente de
  * relire l'état réel après chaque geste.

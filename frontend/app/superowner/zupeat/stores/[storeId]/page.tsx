@@ -287,7 +287,7 @@ export default function FicheBoutiquePage() {
   if (!fiche) {
     return (
       <div className="space-y-4">
-        <Link href="/superowner/stores" className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm">
+        <Link href="/superowner/zupeat/stores" className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm">
           <ArrowLeft size={16} /> {t('back')}
         </Link>
         <p className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
@@ -301,7 +301,7 @@ export default function FicheBoutiquePage() {
     <div className="space-y-6">
       <div>
         <Link
-          href="/superowner/stores"
+          href="/superowner/zupeat/stores"
           className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-2"
         >
           <ArrowLeft size={16} /> {t('back')}
@@ -314,7 +314,7 @@ export default function FicheBoutiquePage() {
               {fiche.name}
             </h1>
             <p className="text-gray-400 mt-1">
-              <Link href="/superowner/organizations" className="hover:underline">
+              <Link href="/superowner/zupeat/organizations" className="hover:underline">
                 {fiche.org.name}
               </Link>{' '}
               · {t('plan')} {fiche.org.tier} · {fiche.isOpen ? t('active') : t('closed')}

@@ -222,7 +222,7 @@ const menu = await pagePlateforme.locator('aside').innerText();
 check('« Versements » figure au menu', menu.includes('Versements'), menu.slice(0, 500));
 
 await pagePlateforme.click('aside a:has-text("Versements")');
-await pagePlateforme.waitForURL('**/superowner/payouts', { timeout: 15000 });
+await pagePlateforme.waitForURL('**/superowner/zupeat/payouts', { timeout: 15000 });
 await pagePlateforme.waitForTimeout(2500);
 
 const vue = await pagePlateforme.locator('main').innerText();

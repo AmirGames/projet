@@ -226,7 +226,7 @@ await plateformePage.click('button[type="submit"]');
 await plateformePage.waitForURL('**/superowner**', { timeout: 15000 });
 await plateformePage.waitForTimeout(1500);
 
-await plateformePage.goto(`${SITE}/superowner/organizations/${orgId}`);
+await plateformePage.goto(`${SITE}/superowner/zupeat/organizations/${orgId}`);
 await plateformePage.waitForTimeout(3000);
 
 const vuPlateforme = await plateformePage.locator('body').innerText();

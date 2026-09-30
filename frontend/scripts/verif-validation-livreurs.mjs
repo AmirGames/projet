@@ -189,7 +189,7 @@ const menu = await pagePlateforme.locator('aside').innerText();
 check('« Livreurs » figure au menu', menu.includes('Livreurs'), menu.slice(0, 400));
 
 await pagePlateforme.click('aside a:has-text("Livreurs")');
-await pagePlateforme.waitForURL('**/superowner/drivers', { timeout: 15000 });
+await pagePlateforme.waitForURL('**/superowner/zupeat/drivers', { timeout: 15000 });
 await pagePlateforme.waitForTimeout(2500);
 
 const liste = await pagePlateforme.locator('main').innerText();

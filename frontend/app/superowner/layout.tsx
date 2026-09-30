@@ -9,7 +9,13 @@ import { useProtectedRoute } from '@/lib/use-protected-route';
 import { NotificationBell } from '@/components/NotificationBell';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
-import { AccesPlateforme, chargerAcces, sectionDuChemin } from '@/lib/acces-plateforme';
+import {
+  AccesPlateforme,
+  SECTION_ACCUEIL,
+  SECTION_ACCUEIL_DRIVE,
+  chargerAcces,
+  sectionDuChemin,
+} from '@/lib/acces-plateforme';
 import {
   Scale,
   Flag,
@@ -169,22 +175,22 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
     {
       title: null,
       plateforme: 'EAT',
-      items: [{ label: t('nav.dashboard'), icon: Home, href: '/superowner', section: 'dashboard' }],
+      items: [{ label: t('nav.dashboard'), icon: Home, href: '/superowner/zupeat', section: 'dashboard' }],
     },
     {
       title: t('nav.sectionActivity'),
       plateforme: 'EAT',
       items: [
-        { label: t('nav.organizations'), icon: Building2, href: '/superowner/organizations', section: 'organizations' },
-        { label: t('nav.stores'), icon: Store, href: '/superowner/stores', section: 'stores' },
-        { label: t('nav.drivers'), icon: Truck, href: '/superowner/drivers', section: 'drivers' },
-        { label: t('nav.payouts'), icon: Banknote, href: '/superowner/payouts', section: 'payouts' },
-        { label: t('nav.sepaPayouts'), icon: Banknote, href: '/superowner/versements', section: 'payouts' },
-        { label: t('nav.analytics'), icon: TrendingUp, href: '/superowner/analytics', section: 'analytics' },
-        { label: t('nav.billing'), icon: CreditCard, href: '/superowner/billing', section: 'billing' },
-        { label: t('nav.formules'), icon: Layers, href: '/superowner/formules', section: 'formules' },
-        { label: t('nav.financialReports'), icon: BarChart3, href: '/superowner/financial-reports', section: 'financial-reports' },
-        { label: t('nav.exports'), icon: Download, href: '/superowner/exports', section: 'exports' },
+        { label: t('nav.organizations'), icon: Building2, href: '/superowner/zupeat/organizations', section: 'organizations' },
+        { label: t('nav.stores'), icon: Store, href: '/superowner/zupeat/stores', section: 'stores' },
+        { label: t('nav.drivers'), icon: Truck, href: '/superowner/zupeat/drivers', section: 'drivers' },
+        { label: t('nav.payouts'), icon: Banknote, href: '/superowner/zupeat/payouts', section: 'payouts' },
+        { label: t('nav.sepaPayouts'), icon: Banknote, href: '/superowner/zupeat/versements', section: 'payouts' },
+        { label: t('nav.analytics'), icon: TrendingUp, href: '/superowner/zupeat/analytics', section: 'analytics' },
+        { label: t('nav.billing'), icon: CreditCard, href: '/superowner/zupeat/billing', section: 'billing' },
+        { label: t('nav.formules'), icon: Layers, href: '/superowner/zupeat/formules', section: 'formules' },
+        { label: t('nav.financialReports'), icon: BarChart3, href: '/superowner/zupeat/financial-reports', section: 'financial-reports' },
+        { label: t('nav.exports'), icon: Download, href: '/superowner/zupeat/exports', section: 'exports' },
       ],
     },
     {
@@ -193,10 +199,15 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       title: t('nav.members'),
       icon: Users2,
       items: [
-        { label: t('nav.clients'), icon: UserCheck, href: '/superowner/members/clients', section: 'members' },
-        { label: t('nav.merchants'), icon: ShoppingCart, href: '/superowner/members/merchants', section: 'members' },
-        { label: t('nav.deliveries'), icon: Briefcase, href: '/superowner/members/deliveries', section: 'members' },
+        { label: t('nav.clients'), icon: UserCheck, href: '/superowner/zupeat/members/clients', section: 'members' },
+        { label: t('nav.merchants'), icon: ShoppingCart, href: '/superowner/zupeat/members/merchants', section: 'members' },
+        { label: t('nav.deliveries'), icon: Briefcase, href: '/superowner/zupeat/members/deliveries', section: 'members' },
       ],
+    },
+    {
+      title: null,
+      plateforme: 'DRIVE',
+      items: [{ label: t('nav.dashboard'), icon: Home, href: '/superowner/zupdrive', section: SECTION_ACCUEIL_DRIVE }],
     },
     {
       // ZupDrive : les chauffeurs (transport de personnes, licence LVC). Rien
@@ -213,10 +224,10 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       title: t('nav.sectionSupport'),
       plateforme: 'EAT',
       items: [
-        { label: t('nav.supportTickets'), icon: LifeBuoy, href: '/superowner/support-tickets', section: 'support-tickets' },
-        { label: t('nav.driverSupport'), icon: MessageCircle, href: '/superowner/driver-support', section: 'driver-support' },
-        { label: t('nav.reviews'), icon: Flag, href: '/superowner/reviews', section: 'reviews' },
-        { label: t('nav.notifications'), icon: Megaphone, href: '/superowner/notifications', section: 'notifications' },
+        { label: t('nav.supportTickets'), icon: LifeBuoy, href: '/superowner/zupeat/support-tickets', section: 'support-tickets' },
+        { label: t('nav.driverSupport'), icon: MessageCircle, href: '/superowner/zupeat/driver-support', section: 'driver-support' },
+        { label: t('nav.reviews'), icon: Flag, href: '/superowner/zupeat/reviews', section: 'reviews' },
+        { label: t('nav.notifications'), icon: Megaphone, href: '/superowner/zupeat/notifications', section: 'notifications' },
       ],
     },
     {
@@ -254,9 +265,14 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
 
   // Chaque membre de l'équipe gère son propre compte, quelles que soient ses
   // permissions.
+  // L'accueil (/superowner) ne fait que renvoyer vers une plateforme ; celui
+  // de ZupDrive s'ouvre à qui voit l'une de ses sections.
   const autorise = (section: string | null) =>
     acces.isSuperOwner ||
-    section === 'profil' || (section !== null && !!acces.permissions[section]);
+    section === 'profil' ||
+    section === SECTION_ACCUEIL ||
+    (section === SECTION_ACCUEIL_DRIVE && !!(acces.permissions.chauffeurs || acces.permissions['courses-drive'])) ||
+    (section !== null && !!acces.permissions[section]);
   const sectionsAutorisees = navSections
     .map((section) => ({ ...section, items: section.items.filter((item) => autorise(item.section)) }))
     .filter((section) => section.items.length > 0);
@@ -269,13 +285,13 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   const plateformesOuvertes = PLATEFORMES.filter((plateforme) => accueilDe(plateforme));
 
   // La page affichée décide de l'onglet ; une page commune garde le dernier choix.
-  const plateformeDuChemin = navSections.find(
-    (section) =>
-      section.plateforme &&
-      section.items.some((item) =>
-        item.href === '/superowner' ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
-      )
-  )?.plateforme;
+  // Chaque plateforme a son préfixe : /superowner/zupeat, /superowner/zupdrive.
+  const dansLePrefixe = (prefixe: string) => pathname === prefixe || pathname.startsWith(`${prefixe}/`);
+  const plateformeDuChemin: Plateforme | undefined = dansLePrefixe('/superowner/zupeat')
+    ? 'EAT'
+    : dansLePrefixe('/superowner/zupdrive')
+      ? 'DRIVE'
+      : undefined;
   // Arrivé sur une page d'une plateforme (lien, notification) : elle devient
   // le choix, que les pages communes gardent ensuite.
   if (plateformeDuChemin && plateformeDuChemin !== choix) setChoix(plateformeDuChemin);
@@ -467,7 +483,11 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
 
         {/* Page Content */}
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
-          {pageAutorisee ? (
+          {pathname === '/superowner' ? (
+            // /superowner n'a pas d'écran à lui : il ouvre la plateforme
+            // choisie en dernier (ou la seule ouverte), sinon le profil.
+            <Rediriger vers={(plateforme && accueilDe(plateforme)) || '/superowner/profil'} />
+          ) : pageAutorisee ? (
             children
           ) : (
             <div className="max-w-lg mx-auto mt-16 text-center bg-gray-800 border border-gray-700 rounded-lg p-8">
@@ -480,4 +500,13 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       </div>
     </div>
   );
+}
+
+/** Remplace l'adresse affichée par `vers`, sans ajouter d'étape à l'historique. */
+function Rediriger({ vers }: { vers: string }) {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace(vers);
+  }, [router, vers]);
+  return null;
 }

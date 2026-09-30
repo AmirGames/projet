@@ -44,7 +44,8 @@ de taxi / VTC) viendra ensuite, sur le même code et le même compte.
 | `zupeat.com` | Les clients de ZupEat |
 | `manager.zupeat.com` | Les commerçants |
 | `delivery.zupeat.com` | Les livreurs |
-| `zupdrive.com`, `manager.zupdrive.com` | ZupDrive : clients, sociétés de taxi (à faire) |
+| `zupdrive.com` | ZupDrive : les clients (passagers) |
+| `manager.zupdrive.com` | ZupDrive : les sociétés qui gèrent plusieurs VTC ou chauffeurs (à faire) |
 | `driver.zupdrive.com` | Les chauffeurs ZupDrive (transport de personnes) — pas les livreurs |
 
 - **Un seul compte ZupOne** par personne (`User`), client sur toutes les
@@ -236,6 +237,16 @@ le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
 - **Un seul panneau, `/superowner`**, sur `manager.zupone.com` : `/admin`,
   `/super-admin` et le routeur `/api/super-admin` ont été supprimés. Le
   routeur `/api/admin` reste, des pages superowner s'en servent
+- **Une partie par plateforme dans ce panneau** : onglets ZupEat | ZupDrive
+  sous le logo. Les pages ZupEat vivent sous `/superowner/zupeat/…` (tableau
+  de bord, commerces, boutiques, livreurs, versements, support…), celles de
+  ZupDrive sous `/superowner/zupdrive/…` (tableau de bord, chauffeurs,
+  courses, tarifs). Restent communes, sans préfixe : Équipe (profil,
+  administrateurs, rôles), Plateforme (clés API, webhooks, configuration,
+  pages légales) et Supervision. `/superowner` renvoie vers la dernière
+  plateforme choisie ; les anciennes adresses ZupEat (`/superowner/stores`…)
+  redirigent (`next.config.js`), y compris les liens des notifications déjà
+  envoyées. Page ↔ permission : `sectionDuChemin` (`lib/acces-plateforme.ts`)
 - **Équipe et rôles** : SuperAdmin, Administrateur, Support (non supprimables)
   et les rôles créés par le superowner (« Facturation »…), supprimables une fois
   sans membre. Chaque rôle coche, **section par section**

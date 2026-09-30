@@ -213,7 +213,7 @@ check(
 );
 check(
   'elle mène à la page du support',
-  alerte?.link === '/superowner/support-tickets',
+  alerte?.link === '/superowner/zupeat/support-tickets',
   alerte?.link
 );
 
