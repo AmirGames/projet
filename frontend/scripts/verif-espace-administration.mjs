@@ -106,6 +106,48 @@ for (const { href, texte } of entrees) {
   check(`${texte} (${href})`, !introuvable && corps.length > 50, introuvable ? '404' : `${corps.length} caractères`);
 }
 
+titre('Un onglet par plateforme : ZupEat ou ZupDrive');
+await page.goto(`${SITE}/superowner`, { waitUntil: 'domcontentloaded' });
+await page.waitForSelector('aside [role="tablist"]', { timeout: 15000 });
+const onglet = (nom) => page.locator('aside [role="tab"]', { hasText: nom });
+const liensMenu = () => page.locator('aside nav a').evaluateAll((liens) => liens.map((a) => a.getAttribute('href')));
+
+check('ZupEat est l’onglet du tableau de bord', (await onglet('ZupEat').getAttribute('aria-selected')) === 'true');
+let liens = await liensMenu();
+check('le menu ZupEat n’a pas les chauffeurs', liens.includes('/superowner/drivers') && !liens.some((h) => h.startsWith('/superowner/zupdrive')), liens.join(' '));
+
+await onglet('ZupDrive').click();
+await page.waitForURL('**/superowner/zupdrive/**', { timeout: 15000 });
+await page.waitForTimeout(800);
+liens = await liensMenu();
+check('l’onglet ZupDrive ouvre sa première page', new URL(page.url()).pathname === '/superowner/zupdrive/chauffeurs', page.url());
+check(
+  'et son menu : chauffeurs, courses, tarifs — sans les livreurs ni les boutiques',
+  ['/superowner/zupdrive/chauffeurs', '/superowner/zupdrive/courses', '/superowner/zupdrive/tarifs'].every((h) => liens.includes(h)) &&
+    !liens.includes('/superowner/drivers') &&
+    !liens.includes('/superowner/stores'),
+  liens.join(' ')
+);
+check('les sections communes restent (profil, rôles, supervision)', ['/superowner/profil', '/superowner/roles', '/superowner/health'].every((h) => liens.includes(h)), liens.join(' '));
+
+await page.click('aside nav a[href="/superowner/profil"]');
+await page.waitForURL('**/superowner/profil', { timeout: 15000 });
+await page.waitForTimeout(800);
+check('une page commune garde l’onglet choisi', (await onglet('ZupDrive').getAttribute('aria-selected')) === 'true');
+
+await page.reload({ waitUntil: 'domcontentloaded' });
+await page.waitForSelector('aside [role="tablist"]', { timeout: 15000 });
+check('même après rechargement', (await onglet('ZupDrive').getAttribute('aria-selected')) === 'true');
+
+// Un lien direct (notification, favori) vers une page ZupEat bascule l'onglet.
+await page.goto(`${SITE}/superowner/stores`, { waitUntil: 'domcontentloaded' });
+await page.waitForSelector('aside [role="tablist"]', { timeout: 15000 });
+check('un lien direct vers une page ZupEat rebascule sur ZupEat', (await onglet('ZupEat').getAttribute('aria-selected')) === 'true');
+
+await onglet('ZupEat').click();
+await page.waitForURL((url) => url.pathname === '/superowner', { timeout: 15000 });
+check('l’onglet ZupEat ramène au tableau de bord', true);
+
 titre('Les anciennes adresses mènent toujours quelque part');
 for (const [ancienne, attendue] of Object.entries(ANCIENNES)) {
   await page.goto(SITE + ancienne, { waitUntil: 'domcontentloaded' });

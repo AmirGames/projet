@@ -52,7 +52,29 @@ import {
   Car,
   Navigation,
   Euro,
+  UtensilsCrossed,
 } from 'lucide-react';
+
+/** Les plateformes que l'espace administre ; les sections sans plateforme sont communes. */
+type Plateforme = 'EAT' | 'DRIVE';
+const PLATEFORMES: Plateforme[] = ['EAT', 'DRIVE'];
+const CLE_PLATEFORME = 'superowner.plateforme';
+
+interface EntreeMenu {
+  label: string;
+  icon: typeof Home;
+  href: string;
+  section: string | null;
+}
+
+interface SectionMenu {
+  id?: string;
+  title: string | null;
+  icon?: typeof Home;
+  /** Absente : section commune à ZupEat et ZupDrive (équipe, technique, supervision). */
+  plateforme?: Plateforme;
+  items: EntreeMenu[];
+}
 
 export default function SuperOwnerLayout({ children }: { children: React.ReactNode }) {
   // Sur grand écran, la barre se replie en icônes. Sur téléphone, elle ne
@@ -68,6 +90,28 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   const t = useTranslations('superowner');
   const tRoles = useTranslations('superownerRoles');
   const [acces, setAcces] = useState<AccesPlateforme | null>(null);
+  // La plateforme choisie à l'onglet, gardée pour les pages communes (profil,
+  // supervision…), qui n'appartiennent à aucune des deux.
+  // Lu dès le départ : le premier rendu, serveur comme client, n'est que
+  // l'écran de chargement (accès pas encore connus), donc sans écart
+  // d'hydratation.
+  const [choix, setChoix] = useState<Plateforme | null>(() => {
+    try {
+      const lu = typeof window === 'undefined' ? null : localStorage.getItem(CLE_PLATEFORME);
+      return lu === 'EAT' || lu === 'DRIVE' ? lu : null;
+    } catch {
+      // Stockage indisponible : on retombe sur la page affichée.
+      return null;
+    }
+  });
+  useEffect(() => {
+    if (!choix) return;
+    try {
+      localStorage.setItem(CLE_PLATEFORME, choix);
+    } catch {
+      // Sans stockage, le choix vaut pour cette visite.
+    }
+  }, [choix]);
 
   // Ce que le rôle du compte ouvre : le menu n'affiche que cela, et une page
   // hors de son périmètre est remplacée par un refus. Le serveur, lui,
@@ -119,16 +163,17 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
     );
   }
 
-  const navSections = [
+  // Chaque section appartient à ZupEat, à ZupDrive, ou aux deux (commune) :
+  // l'onglet de plateforme n'affiche que la sienne, suivie des communes.
+  const navSections: SectionMenu[] = [
     {
       title: null,
-      items: [
-        { label: t('nav.dashboard'), icon: Home, href: '/superowner', section: 'dashboard' },
-        { label: t('nav.profile'), icon: UserCircle, href: '/superowner/profil', section: 'profil' },
-      ],
+      plateforme: 'EAT',
+      items: [{ label: t('nav.dashboard'), icon: Home, href: '/superowner', section: 'dashboard' }],
     },
     {
       title: t('nav.sectionActivity'),
+      plateforme: 'EAT',
       items: [
         { label: t('nav.organizations'), icon: Building2, href: '/superowner/organizations', section: 'organizations' },
         { label: t('nav.stores'), icon: Store, href: '/superowner/stores', section: 'stores' },
@@ -144,6 +189,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
     },
     {
       id: 'members',
+      plateforme: 'EAT',
       title: t('nav.members'),
       icon: Users2,
       items: [
@@ -156,6 +202,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       // ZupDrive : les chauffeurs (transport de personnes, licence LVC). Rien
       // à voir avec les livreurs ZupEat ci-dessus.
       title: t('nav.sectionZupDrive'),
+      plateforme: 'DRIVE',
       items: [
         { label: t('nav.chauffeurs'), icon: Car, href: '/superowner/zupdrive/chauffeurs', section: 'chauffeurs' },
         { label: t('nav.coursesDrive'), icon: Navigation, href: '/superowner/zupdrive/courses', section: 'courses-drive' },
@@ -164,11 +211,19 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
     },
     {
       title: t('nav.sectionSupport'),
+      plateforme: 'EAT',
       items: [
         { label: t('nav.supportTickets'), icon: LifeBuoy, href: '/superowner/support-tickets', section: 'support-tickets' },
         { label: t('nav.driverSupport'), icon: MessageCircle, href: '/superowner/driver-support', section: 'driver-support' },
         { label: t('nav.reviews'), icon: Flag, href: '/superowner/reviews', section: 'reviews' },
         { label: t('nav.notifications'), icon: Megaphone, href: '/superowner/notifications', section: 'notifications' },
+      ],
+    },
+    {
+      // Commune : l'équipe et ses rôles valent pour toutes les plateformes.
+      title: t('nav.sectionTeam'),
+      items: [
+        { label: t('nav.profile'), icon: UserCircle, href: '/superowner/profil', section: 'profil' },
         { label: t('nav.userManagement'), icon: Users, href: '/superowner/user-management', section: null },
         { label: t('nav.roles'), icon: ShieldCheck, href: '/superowner/roles', section: null },
       ],
@@ -202,10 +257,40 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   const autorise = (section: string | null) =>
     acces.isSuperOwner ||
     section === 'profil' || (section !== null && !!acces.permissions[section]);
-  const sectionsVisibles = navSections
+  const sectionsAutorisees = navSections
     .map((section) => ({ ...section, items: section.items.filter((item) => autorise(item.section)) }))
     .filter((section) => section.items.length > 0);
   const pageAutorisee = autorise(sectionDuChemin(pathname));
+
+  // Les plateformes que le compte peut administrer : celles dont il voit au
+  // moins une entrée. Un seul choix possible : pas d'onglets.
+  const accueilDe = (plateforme: Plateforme) =>
+    sectionsAutorisees.find((section) => section.plateforme === plateforme)?.items[0]?.href;
+  const plateformesOuvertes = PLATEFORMES.filter((plateforme) => accueilDe(plateforme));
+
+  // La page affichée décide de l'onglet ; une page commune garde le dernier choix.
+  const plateformeDuChemin = navSections.find(
+    (section) =>
+      section.plateforme &&
+      section.items.some((item) =>
+        item.href === '/superowner' ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
+      )
+  )?.plateforme;
+  // Arrivé sur une page d'une plateforme (lien, notification) : elle devient
+  // le choix, que les pages communes gardent ensuite.
+  if (plateformeDuChemin && plateformeDuChemin !== choix) setChoix(plateformeDuChemin);
+  const candidate = plateformeDuChemin ?? choix;
+  const plateforme =
+    candidate && plateformesOuvertes.includes(candidate) ? candidate : plateformesOuvertes[0];
+
+  const sectionsVisibles = [
+    ...sectionsAutorisees.filter((section) => section.plateforme && section.plateforme === plateforme),
+    ...sectionsAutorisees.filter((section) => !section.plateforme),
+  ];
+  const ONGLETS: Record<Plateforme, { label: string; icon: typeof Home }> = {
+    EAT: { label: t('nav.platformEat'), icon: UtensilsCrossed },
+    DRIVE: { label: t('nav.platformDrive'), icon: Car },
+  };
 
   // Libellés visibles : barre dépliée sur grand écran, ou tiroir ouvert.
   const etendu = sidebarOpen || menuMobile;
@@ -243,18 +328,51 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
           </SelecteurEspace>
         </div>
 
+        {/* Plateforme administrée : ZupEat ou ZupDrive, chacune son menu. */}
+        {plateformesOuvertes.length > 1 && (
+          <div
+            role="tablist"
+            aria-label={t('nav.platformChoice')}
+            className={`mx-4 mt-4 flex gap-1 rounded-lg bg-gray-900 p-1 ${etendu ? '' : 'flex-col'}`}
+          >
+            {plateformesOuvertes.map((code) => {
+              const { label, icon: Icone } = ONGLETS[code];
+              const actif = code === plateforme;
+              return (
+                <Link
+                  key={code}
+                  href={accueilDe(code) ?? '/superowner'}
+                  role="tab"
+                  aria-selected={actif}
+                  title={etendu ? undefined : label}
+                  onClick={() => {
+                    setChoix(code);
+                    setMenuMobile(false);
+                  }}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-2 text-sm font-medium transition-colors hover:no-underline ${
+                    actif ? 'bg-red-600 text-white' : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                  }`}
+                >
+                  <Icone size={16} className="flex-shrink-0" />
+                  {etendu && <span className="truncate">{label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-4 overflow-y-auto no-scrollbar">
           {sectionsVisibles.map((section, index) => {
             const isCollapsible = section.id;
-            const isExpanded = isCollapsible ? expandedSections.has(section.id) : true;
+            const isExpanded = isCollapsible ? expandedSections.has(isCollapsible) : true;
 
             return (
               <div key={section.title ?? `section-${index}`} className="space-y-1">
                 {etendu && section.title && (
                   isCollapsible ? (
                     <button
-                      onClick={() => isCollapsible && toggleSection(section.id)}
+                      onClick={() => isCollapsible && toggleSection(isCollapsible)}
                       className="w-full flex items-center justify-between px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-400 transition-colors"
                     >
                       <span className="flex items-center gap-2">

@@ -78,6 +78,10 @@
       "roles": "Rôles et accès",
       "console": "Console",
       "sectionZupDrive": "ZupDrive",
+      "sectionTeam": "Équipe",
+      "platformEat": "ZupEat",
+      "platformDrive": "ZupDrive",
+      "platformChoice": "Plateforme administrée",
       "chauffeurs": "Chauffeurs",
       "coursesDrive": "Courses",
       "tarifsDrive": "Tarifs"
