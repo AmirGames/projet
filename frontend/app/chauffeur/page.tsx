@@ -47,6 +47,8 @@ interface Piece {
 interface Dossier extends Profil {
   statut: 'BROUILLON' | 'SOUMIS' | 'VALIDE' | 'REFUSE' | 'SUSPENDU';
   motifStatut: string | null;
+  /** Suspendu parce qu'une pièce exigée a expiré : il peut la redéposer. */
+  suspenduPourExpirationLe: string | null;
   numeroTva: string | null;
   piecesExigees: { type: string; libelle: string }[];
   piecesManquantes: string[];
@@ -197,7 +199,9 @@ export default function DossierChauffeurPage() {
   }
 
   const modifiable = !dossier || dossier.statut === 'BROUILLON' || dossier.statut === 'REFUSE';
-  const depotPossible = !!dossier && (modifiable || dossier.statut === 'VALIDE');
+  const depotPossible =
+    !!dossier &&
+    (modifiable || dossier.statut === 'VALIDE' || (dossier.statut === 'SUSPENDU' && !!dossier.suspenduPourExpirationLe));
   const pieces = new Map((dossier?.documents || []).map((piece) => [piece.type, piece]));
   // Les pièces exigées, puis les facultatives déjà déposées ou proposées.
   const aDeposer = [
@@ -334,7 +338,11 @@ function BandeauStatut({ dossier }: { dossier: Dossier }) {
   return (
     <div className={`mt-6 rounded-lg border p-4 ${styles[dossier.statut]}`}>
       <p className="font-semibold">{t(`statut.${dossier.statut}`)}</p>
-      <p className="mt-1 text-sm">{t(`statutAide.${dossier.statut}`)}</p>
+      <p className="mt-1 text-sm">
+        {dossier.statut === 'SUSPENDU' && dossier.suspenduPourExpirationLe
+          ? t('statutAide.SUSPENDU_EXPIRATION')
+          : t(`statutAide.${dossier.statut}`)}
+      </p>
       {dossier.motifStatut && <p className="mt-2 text-sm">{t('motif', { motif: dossier.motifStatut })}</p>}
     </div>
   );

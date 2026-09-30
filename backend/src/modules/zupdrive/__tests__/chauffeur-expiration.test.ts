@@ -7,16 +7,19 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 type Ligne = Record<string, any>;
 let pieces: Ligne[] = [];
+let chauffeurs: Ligne[] = [];
+const chauffeurDe = (p: Ligne) => chauffeurs.find((c) => c.id === p.chauffeurId)!;
 
 /** Les filtres Prisma que le service emploie : égalité, null, in, gt/lte. */
-const correspond = (ligne: Ligne, where: Ligne = {}) =>
-  Object.entries(where).every(([cle, attendu]) => {
+const correspond = (ligne: Ligne, where: Ligne = {}): boolean =>
+  Object.entries(where).every(([cle, attendu]): boolean => {
     const valeur = ligne[cle];
     if (attendu === null) return valeur === null || valeur === undefined;
     if (attendu && typeof attendu === "object" && !(attendu instanceof Date)) {
       if ("in" in attendu && !(attendu.in as unknown[]).includes(valeur)) return false;
       if ("gt" in attendu && !(valeur && valeur > attendu.gt)) return false;
       if ("lte" in attendu && !(valeur && valeur <= attendu.lte)) return false;
+      if ("some" in attendu) return pieces.some((p): boolean => p.chauffeurId === ligne.id && correspond(p, attendu.some));
       return true;
     }
     return valeur === attendu;
@@ -25,7 +28,7 @@ const correspond = (ligne: Ligne, where: Ligne = {}) =>
 const db: any = {
   documentChauffeurDrive: {
     findMany: jest.fn(async ({ where }: any) =>
-      pieces.filter((p) => correspond(p, where)).map((p) => ({ ...p, chauffeur: { nomComplet: "Chauffeur Test" } }))
+      pieces.filter((p) => correspond(p, where)).map((p) => ({ ...p, chauffeur: chauffeurDe(p) }))
     ),
     updateMany: jest.fn(async ({ where, data }: any) => {
       const lignes = pieces.filter((p) => correspond(p, where));
@@ -35,6 +38,16 @@ const db: any = {
   },
   chauffeurDrive: {
     findUnique: jest.fn(async () => ({ nomComplet: "Chauffeur <Test>", user: { email: "chauffeur@exemple.test" } })),
+    findMany: jest.fn(async ({ where }: any) =>
+      chauffeurs
+        .filter((c) => correspond(c, where))
+        .map((c) => ({ ...c, documents: pieces.filter((p) => p.chauffeurId === c.id && p.statut === "EXPIRED") }))
+    ),
+    updateMany: jest.fn(async ({ where, data }: any) => {
+      const lignes = chauffeurs.filter((c) => correspond(c, where));
+      lignes.forEach((l) => Object.assign(l, data));
+      return { count: lignes.length };
+    }),
   },
   notification: { create: jest.fn(async ({ data }: any) => ({ id: "n", ...data })) },
 };
@@ -74,6 +87,9 @@ const piece = (id: string, expireDans: number | null, extra: Ligne = {}) => ({
 
 beforeEach(() => {
   pieces = [];
+  chauffeurs = [
+    { id: "ch1", nomComplet: "Chauffeur Test", region: "WALLONIE", statut: "SOUMIS", suspenduPourExpirationLe: null },
+  ];
   courriels.length = 0;
   sendEmail.mockClear();
   notifierPlateforme.mockClear();
@@ -83,7 +99,7 @@ beforeEach(() => {
 describe("relances d'expiration des pièces chauffeurs", () => {
   it("ne relance pas une pièce qui expire dans plus de 30 jours, ni sans date", async () => {
     pieces = [piece("a", 45), piece("b", null)];
-    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 0 });
+    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 0, suspendus: 0 });
     expect(courriels).toHaveLength(0);
   });
 
@@ -136,24 +152,87 @@ describe("relances d'expiration des pièces chauffeurs", () => {
     expect(sendEmail).toHaveBeenCalledTimes(1);
   });
 
-  it("passe la pièce échue en « expirée », prévient le chauffeur et l'équipe, une seule fois", async () => {
+  it("passe la pièce échue en « expirée » et prévient le chauffeur, une seule fois", async () => {
     pieces = [piece("a", -1, { rappel30JoursLe: dans(-31), rappel10JoursLe: dans(-11) })];
-    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 1 });
+    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 1, suspendus: 0 });
     expect(pieces[0].statut).toBe("EXPIRED");
     expect(courriels[0].subject).toContain("document expiré");
-    expect(notifierPlateforme).toHaveBeenCalledWith(
-      expect.stringContaining("Pièce expirée"),
-      expect.any(String),
-      "/superowner/zupdrive/chauffeurs/ch1"
-    );
 
     await ChauffeurExpirationService.surveiller(MAINTENANT);
-    expect(notifierPlateforme).toHaveBeenCalledTimes(1);
+    expect(courriels).toHaveLength(1);
   });
 
   it("échappe le nom du chauffeur dans le courriel", async () => {
     pieces = [piece("a", 20)];
     await ChauffeurExpirationService.surveiller(MAINTENANT);
     expect(courriels[0].html).toContain("Chauffeur &lt;Test&gt;");
+  });
+});
+
+describe("suspension d'un chauffeur dont une pièce exigée a expiré", () => {
+  beforeEach(() => {
+    chauffeurs[0].statut = "VALIDE";
+  });
+
+  it("annonce la suspension dans les relances d'une pièce exigée", async () => {
+    pieces = [piece("a", 20, { type: "licence" })];
+    await ChauffeurExpirationService.surveiller(MAINTENANT);
+    expect(courriels[0].text).toContain("sera suspendu");
+  });
+
+  it("ne l'annonce pas pour une pièce facultative", async () => {
+    pieces = [piece("a", 20, { type: "actionnaires" })];
+    await ChauffeurExpirationService.surveiller(MAINTENANT);
+    expect(courriels[0].text).not.toContain("suspendu");
+  });
+
+  it("suspend le chauffeur validé le jour où sa licence expire, prévient chauffeur et équipe, une seule fois", async () => {
+    pieces = [piece("a", -0.01, { type: "licence" }), piece("b", 200, { type: "assurance" })];
+    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 1, suspendus: 1 });
+
+    const chauffeur = chauffeurs[0];
+    expect(chauffeur.statut).toBe("SUSPENDU");
+    expect(chauffeur.suspenduPourExpirationLe).toEqual(MAINTENANT);
+    expect(chauffeur.motifStatut).toContain("Licence");
+    expect(courriels.map((c) => c.subject)).toContain("ZupDrive — Votre compte chauffeur ZupDrive est suspendu");
+    expect(notifierPlateforme).toHaveBeenCalledWith(
+      expect.stringContaining("Chauffeur suspendu"),
+      expect.any(String),
+      "/superowner/zupdrive/chauffeurs/ch1"
+    );
+
+    await ChauffeurExpirationService.surveiller(new Date(MAINTENANT.getTime() + 3600000));
+    expect(notifierPlateforme).toHaveBeenCalledTimes(1);
+  });
+
+  it("rattrape un chauffeur resté validé avec une pièce exigée déjà expirée", async () => {
+    pieces = [piece("a", -5, { type: "assurance", statut: "EXPIRED" })];
+    expect((await ChauffeurExpirationService.surveiller(MAINTENANT)).suspendus).toBe(1);
+    expect(chauffeurs[0].statut).toBe("SUSPENDU");
+  });
+
+  it("ne suspend pas pour une pièce facultative", async () => {
+    pieces = [piece("a", -1, { type: "actionnaires" })];
+    expect((await ChauffeurExpirationService.surveiller(MAINTENANT)).suspendus).toBe(0);
+    expect(chauffeurs[0].statut).toBe("VALIDE");
+  });
+
+  it("tient compte de la région : le bestuurderspas n'est exigé qu'en Flandre", async () => {
+    pieces = [piece("a", -1, { type: "bestuurderspas" })];
+    expect((await ChauffeurExpirationService.surveiller(MAINTENANT)).suspendus).toBe(0);
+    chauffeurs[0].region = "FLANDRE";
+    expect((await ChauffeurExpirationService.surveiller(MAINTENANT)).suspendus).toBe(1);
+  });
+
+  it("ne touche ni un dossier pas encore validé, ni une suspension décidée par l'équipe", async () => {
+    pieces = [piece("a", -1, { type: "licence" })];
+    chauffeurs[0].statut = "SOUMIS";
+    await ChauffeurExpirationService.surveiller(MAINTENANT);
+    expect(chauffeurs[0].statut).toBe("SOUMIS");
+
+    chauffeurs[0] = { ...chauffeurs[0], statut: "SUSPENDU", motifStatut: "Plainte", suspenduPourExpirationLe: null };
+    await ChauffeurExpirationService.surveiller(MAINTENANT);
+    expect(chauffeurs[0].motifStatut).toBe("Plainte");
+    expect(chauffeurs[0].suspenduPourExpirationLe).toBeNull();
   });
 });

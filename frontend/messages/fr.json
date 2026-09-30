@@ -2328,7 +2328,8 @@
       "SOUMIS": "L'équipe ZupDrive examine votre dossier. Il ne peut pas être modifié pendant la vérification.",
       "VALIDE": "Vous êtes chauffeur ZupDrive. Pensez à renouveler vos documents avant leur expiration.",
       "REFUSE": "Corrigez ce qui est indiqué puis renvoyez votre dossier.",
-      "SUSPENDU": "Contactez le support ZupDrive pour en savoir plus."
+      "SUSPENDU": "Contactez le support ZupDrive pour en savoir plus.",
+      "SUSPENDU_EXPIRATION": "Un document obligatoire a expiré. Déposez la version à jour ci-dessous : votre compte sera rétabli dès que l'équipe ZupDrive l'aura validée."
     }
   },
   "superownerChauffeurs": {

@@ -4,8 +4,9 @@ import { ChauffeurExpirationService } from "./chauffeur-expiration.service";
 
 /**
  * Surveillance périodique des pièces des chauffeurs ZupDrive : relances
- * d'expiration (30 puis 10 jours avant) et passage en « expirée ». Une fois
- * par heure suffit.
+ * d'expiration (30 puis 10 jours avant), passage en « expirée » et
+ * suspension des chauffeurs dont une pièce exigée n'est plus valable. Une
+ * fois par heure suffit.
  */
 
 const INTERVALLE_MS = 3600000;
@@ -21,7 +22,7 @@ async function passer() {
     const bilan = await Surveillance.executerTache("pieces-chauffeurs", () =>
       ChauffeurExpirationService.surveiller()
     );
-    if (bilan.rappels > 0 || bilan.expirees > 0) {
+    if (bilan.rappels > 0 || bilan.expirees > 0 || bilan.suspendus > 0) {
       logger.info("Pièces chauffeurs ZupDrive surveillées", bilan);
     }
   } catch (err) {

@@ -3,7 +3,7 @@ import { logger } from "../../config/logger";
 import { emitNotification } from "../realtime/socket";
 import { EmailService } from "../notifications/email.service";
 import { notifierPlateforme } from "../notifications/notification.service";
-import { libelleDeLaPiece } from "./chauffeur-onboarding.service";
+import { libelleDeLaPiece, piecesExigees } from "./chauffeur-onboarding.service";
 
 /**
  * Les pièces des chauffeurs ZupDrive qui arrivent à échéance (assurance,
@@ -11,9 +11,13 @@ import { libelleDeLaPiece } from "./chauffeur-onboarding.service";
  *
  * Personne ne clique le jour où une assurance expire : il faut aller voir.
  * Le chauffeur est relancé deux fois, 30 puis 10 jours avant, dans son espace
- * et par courriel. Le jour venu, la pièce passe « expirée » et l'équipe
- * ZupDrive l'apprend ; le chauffeur n'est pas suspendu d'office — c'est à
- * l'équipe d'en décider.
+ * et par courriel. Le jour venu, la pièce passe « expirée ».
+ *
+ * Transport de personnes oblige : si la pièce expirée est une pièce exigée
+ * (licence, assurance, contrôle technique, permis…), le chauffeur validé est
+ * suspendu automatiquement. Il peut alors déposer la version à jour, et il
+ * est rétabli dès que l'équipe la valide (voir
+ * ChauffeurOnboardingService.retablirApresRenouvellement).
  *
  * Chaque relance est posée par une écriture conditionnelle (« seulement si
  * elle n'a pas déjà été envoyée ») avant tout envoi : deux passages
@@ -47,7 +51,13 @@ export class ChauffeurExpirationService {
           [champ]: null,
           dateExpiration: { gt: maintenant, lte: horizon },
         },
-        select: { id: true, chauffeurId: true, type: true, dateExpiration: true },
+        select: {
+          id: true,
+          chauffeurId: true,
+          type: true,
+          dateExpiration: true,
+          chauffeur: { select: { region: true, statut: true } },
+        },
       });
 
       for (const piece of candidates) {
@@ -66,11 +76,15 @@ export class ChauffeurExpirationService {
 
         const restant = Math.max(1, Math.ceil((piece.dateExpiration!.getTime() - maintenant.getTime()) / JOUR_MS));
         const libelle = libelleDeLaPiece(piece.type);
+        const exigee = (piecesExigees(piece.chauffeur.region) as string[]).includes(piece.type);
         await this.prevenirLeChauffeur(
           piece.chauffeurId,
           `${libelle} : expire dans ${restant} jour${restant > 1 ? "s" : ""}`,
           `Votre document expire le ${piece.dateExpiration!.toLocaleDateString("fr-FR")}. ` +
-            "Déposez-en une version à jour depuis votre dossier chauffeur avant cette date."
+            "Déposez-en une version à jour depuis votre dossier chauffeur avant cette date." +
+            (exigee && piece.chauffeur.statut === "VALIDE"
+              ? " Sans renouvellement, votre compte chauffeur sera suspendu à cette date."
+              : "")
         );
         rappels++;
       }
@@ -96,14 +110,66 @@ export class ChauffeurExpirationService {
         `${libelle} : document expiré`,
         "Votre document a expiré. Déposez-en une version à jour depuis votre dossier chauffeur."
       );
-      await notifierPlateforme(
-        `Pièce expirée — chauffeur ${piece.chauffeur.nomComplet}`,
-        `${libelle} a expiré. Le chauffeur n'est pas suspendu d'office : à vous de décider de la suite.`,
-        `/superowner/zupdrive/chauffeurs/${piece.chauffeurId}`
-      );
     }
 
-    return { rappels, expirees };
+    const suspendus = await this.suspendreLesChauffeursNonAJour(maintenant);
+
+    return { rappels, expirees, suspendus };
+  }
+
+  /**
+   * Suspend tout chauffeur validé dont une pièce exigée est expirée.
+   *
+   * Calculé à partir de l'état en base, et non des seules pièces expirées à
+   * ce passage : un passage interrompu entre les deux étapes est rattrapé au
+   * suivant. La suspension est conditionnée à l'état « VALIDE » : jamais
+   * appliquée deux fois, jamais par-dessus une décision de l'équipe.
+   */
+  private static async suspendreLesChauffeursNonAJour(maintenant: Date) {
+    const chauffeurs = await db.chauffeurDrive.findMany({
+      where: { statut: "VALIDE", documents: { some: { statut: "EXPIRED" } } },
+      select: {
+        id: true,
+        nomComplet: true,
+        region: true,
+        documents: { where: { statut: "EXPIRED" }, select: { type: true, dateExpiration: true } },
+      },
+    });
+
+    let suspendus = 0;
+    for (const chauffeur of chauffeurs) {
+      const exigees = piecesExigees(chauffeur.region) as string[];
+      const enCause = chauffeur.documents.filter((piece) => exigees.includes(piece.type));
+      if (enCause.length === 0) continue;
+
+      const liste = enCause
+        .map((piece) =>
+          piece.dateExpiration
+            ? `${libelleDeLaPiece(piece.type)} (expirée le ${piece.dateExpiration.toLocaleDateString("fr-FR")})`
+            : libelleDeLaPiece(piece.type)
+        )
+        .join(", ");
+      const motif = `Document expiré : ${liste}. Déposez la version à jour : votre compte sera rétabli dès sa validation.`;
+
+      const { count } = await db.chauffeurDrive.updateMany({
+        where: { id: chauffeur.id, statut: "VALIDE" },
+        data: { statut: "SUSPENDU", motifStatut: motif, suspenduPourExpirationLe: maintenant },
+      });
+      if (count !== 1) continue;
+      suspendus++;
+
+      logger.warn("ZupDrive chauffeur suspended: expired document", {
+        chauffeurId: chauffeur.id,
+        pieces: enCause.map((piece) => piece.type),
+      });
+      await this.prevenirLeChauffeur(chauffeur.id, "Votre compte chauffeur ZupDrive est suspendu", motif);
+      await notifierPlateforme(
+        `Chauffeur suspendu — ${chauffeur.nomComplet}`,
+        `Suspendu automatiquement : ${liste}. Il sera rétabli dès que vous validerez la pièce à jour.`,
+        `/superowner/zupdrive/chauffeurs/${chauffeur.id}`
+      );
+    }
+    return suspendus;
   }
 
   /**

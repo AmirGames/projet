@@ -233,7 +233,11 @@ export class ChauffeurOnboardingService {
     if (!dossier) {
       throw new ApiError(404, "Commencez par ouvrir votre dossier chauffeur", "CHAUFFEUR_NOT_FOUND");
     }
-    if (![...MODIFIABLE, "VALIDE"].includes(dossier.statut)) {
+    // Suspendu parce qu'une pièce a expiré : c'est justement la pièce à jour
+    // qu'on attend de lui. Une suspension décidée par l'équipe, elle, fige
+    // le dossier.
+    const suspenduPourExpiration = dossier.statut === "SUSPENDU" && !!dossier.suspenduPourExpirationLe;
+    if (![...MODIFIABLE, "VALIDE"].includes(dossier.statut) && !suspenduPourExpiration) {
       throw new ApiError(
         409,
         dossier.statut === "SOUMIS"
@@ -281,9 +285,9 @@ export class ChauffeurOnboardingService {
 
     logger.info("ZupDrive chauffeur document uploaded", { chauffeurId: dossier.id, type: piece.type });
 
-    if (dossier.statut === "VALIDE") {
+    if (dossier.statut === "VALIDE" || suspenduPourExpiration) {
       await notifierPlateforme(
-        `Pièce renouvelée — chauffeur ${dossier.nomComplet}`,
+        `Pièce renouvelée — chauffeur ${dossier.nomComplet}${suspenduPourExpiration ? " (suspendu)" : ""}`,
         `${libelleDeLaPiece(piece.type)} attend votre validation.`,
         `/superowner/zupdrive/chauffeurs/${dossier.id}`
       );
@@ -368,7 +372,9 @@ export class ChauffeurOnboardingService {
       verdict.approuve ? "Votre pièce a été acceptée." : `Motif : ${verdict.note!.trim()}.`
     );
 
-    return { avant: piece, piece: examinee };
+    const retabli = verdict.approuve ? await this.retablirApresRenouvellement(chauffeurId) : false;
+
+    return { avant: piece, piece: examinee, retabli };
   }
 
   /** Valide un dossier soumis dont toutes les pièces exigées sont validées. */
@@ -412,7 +418,8 @@ export class ChauffeurOnboardingService {
     return this.changerStatut(
       dossier,
       ["VALIDE"],
-      { statut: "SUSPENDU", motifStatut: this.motifExige(motif) },
+      // Décidée par l'équipe : un simple dépôt ne la lèvera pas.
+      { statut: "SUSPENDU", motifStatut: this.motifExige(motif), suspenduPourExpirationLe: null },
       "Votre compte chauffeur ZupDrive est suspendu",
       motif.trim()
     );
@@ -424,10 +431,36 @@ export class ChauffeurOnboardingService {
     return this.changerStatut(
       dossier,
       ["SUSPENDU"],
-      { statut: "VALIDE", motifStatut: null },
+      { statut: "VALIDE", motifStatut: null, suspenduPourExpirationLe: null },
       "Votre compte chauffeur ZupDrive est rétabli",
       "Vous pouvez de nouveau exercer via ZupDrive."
     );
+  }
+
+  /**
+   * Un chauffeur suspendu parce qu'une pièce a expiré reprend la route dès
+   * que toutes ses pièces exigées sont de nouveau validées par l'équipe. Une
+   * suspension décidée par l'équipe n'est jamais levée ainsi.
+   */
+  private static async retablirApresRenouvellement(chauffeurId: string): Promise<boolean> {
+    const dossier = await this.dossier(chauffeurId);
+    if (dossier.statut !== "SUSPENDU" || !dossier.suspenduPourExpirationLe || !dossier.dossierValidable) {
+      return false;
+    }
+
+    const { count } = await db.chauffeurDrive.updateMany({
+      where: { id: chauffeurId, statut: "SUSPENDU", suspenduPourExpirationLe: { not: null } },
+      data: { statut: "VALIDE", motifStatut: null, suspenduPourExpirationLe: null },
+    });
+    if (count !== 1) return false;
+
+    logger.info("ZupDrive chauffeur reinstated after renewal", { chauffeurId });
+    await this.prevenir(
+      chauffeurId,
+      "Votre compte chauffeur ZupDrive est rétabli",
+      "Vos documents sont de nouveau à jour : vous pouvez reprendre vos courses."
+    );
+    return true;
   }
 
   // -------------------------------------------------------------------------

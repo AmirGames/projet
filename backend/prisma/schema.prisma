@@ -2450,6 +2450,11 @@ model ChauffeurDrive {
   valideLe    DateTime?
   /// Le membre de l'équipe qui a validé le dossier.
   validePar   String?
+  /// Suspendu automatiquement parce qu'une pièce exigée (licence, assurance,
+  /// contrôle technique…) a expiré sans être renouvelée. Tant que ce marqueur
+  /// est posé, le chauffeur peut déposer la pièce à jour ; il est rétabli dès
+  /// que l'équipe la valide. Une suspension décidée par l'équipe ne le pose pas.
+  suspenduPourExpirationLe DateTime?
 
   user      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   documents DocumentChauffeurDrive[]

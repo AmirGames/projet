@@ -34,11 +34,12 @@ let sequence = 0;
 const nouvelId = (prefixe: string) => `${prefixe}${String(++sequence).padStart(24, "0")}`;
 
 const correspond = (ligne: Ligne, where: Ligne = {}) =>
-  Object.entries(where).every(([cle, valeur]) =>
-    valeur && typeof valeur === "object" && "in" in valeur
-      ? (valeur.in as unknown[]).includes(ligne[cle])
-      : ligne[cle] === valeur
-  );
+  Object.entries(where).every(([cle, valeur]) => {
+    if (valeur && typeof valeur === "object" && "in" in valeur) return (valeur.in as unknown[]).includes(ligne[cle]);
+    if (valeur && typeof valeur === "object" && "not" in valeur) return (ligne[cle] ?? null) !== valeur.not;
+    if (valeur === null) return (ligne[cle] ?? null) === null;
+    return ligne[cle] === valeur;
+  });
 
 const avecDocuments = (chauffeur: Ligne | undefined, include?: Ligne) =>
   chauffeur && include?.documents
@@ -418,5 +419,80 @@ describe("droits de l'espace manager, toutes plateformes", () => {
       .get("/api/superowner/me/permissions?plateforme=EAT")
       .set(en("admin-drive:DRIVE:ADMIN"))
       .expect(403);
+  });
+});
+
+describe("suspension pour une pièce expirée", () => {
+  /** Un chauffeur validé dont la licence vient d'expirer, suspendu par la surveillance. */
+  async function suspenduPourExpiration(qui = "user-chauffeur") {
+    const chauffeur = await dossierSoumis(qui);
+    const admin = en("superowner");
+    for (const piece of tables.documents.filter((d) => d.chauffeurId === chauffeur.id)) {
+      await request(app)
+        .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${piece.id}`)
+        .set(admin)
+        .send({ approuve: true })
+        .expect(200);
+    }
+    await request(app).post(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/approve`).set(admin).expect(200);
+    // Ce que fait ChauffeurExpirationService (testé à part).
+    tables.documents.find((d) => d.chauffeurId === chauffeur.id && d.type === "licence")!.statut = "EXPIRED";
+    Object.assign(chauffeur, { statut: "SUSPENDU", motifStatut: "Licence expirée", suspenduPourExpirationLe: new Date() });
+    return chauffeur;
+  }
+
+  const deposerLicence = (qui: string) =>
+    request(app)
+      .post("/api/zupdrive/chauffeur/me/documents")
+      .set(en(qui))
+      .field("type", "licence")
+      .attach("file", JPEG, { filename: "licence.jpg", contentType: "image/jpeg" });
+
+  it("laisse le chauffeur déposer la pièce à jour, et le rétablit quand l'équipe la valide", async () => {
+    const chauffeur = await suspenduPourExpiration();
+    await deposerLicence("user-chauffeur").expect(201);
+    expect(chauffeur.statut).toBe("SUSPENDU");
+
+    const licence = tables.documents.find((d) => d.chauffeurId === chauffeur.id && d.type === "licence")!;
+    await request(app)
+      .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${licence.id}`)
+      .set(en("superowner"))
+      .send({ approuve: true })
+      .expect(200);
+
+    expect(chauffeur.statut).toBe("VALIDE");
+    expect(chauffeur.suspenduPourExpirationLe).toBeNull();
+    expect(chauffeur.motifStatut).toBeNull();
+    expect(db.systemAuditLog.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          changes: expect.objectContaining({ chauffeur: { avant: "SUSPENDU", apres: "VALIDE" } }),
+        }),
+      })
+    );
+  });
+
+  it("ne le rétablit pas tant que la pièce à jour n'est pas validée", async () => {
+    const chauffeur = await suspenduPourExpiration();
+    await deposerLicence("user-chauffeur").expect(201);
+    const licence = tables.documents.find((d) => d.chauffeurId === chauffeur.id && d.type === "licence")!;
+    await request(app)
+      .patch(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/documents/${licence.id}`)
+      .set(en("superowner"))
+      .send({ approuve: false, note: "Illisible" })
+      .expect(200);
+    expect(chauffeur.statut).toBe("SUSPENDU");
+  });
+
+  it("une suspension décidée par l'équipe fige le dossier et n'est jamais levée par un dépôt", async () => {
+    const chauffeur = await suspenduPourExpiration();
+    await request(app).post(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/reactivate`).set(en("superowner")).expect(200);
+    await request(app)
+      .post(`/api/zupdrive/admin/chauffeurs/${chauffeur.id}/suspend`)
+      .set(en("superowner"))
+      .send({ motif: "Plainte d'un passager" })
+      .expect(200);
+    expect(chauffeur.suspenduPourExpirationLe).toBeNull();
+    await deposerLicence("user-chauffeur").expect(409);
   });
 });

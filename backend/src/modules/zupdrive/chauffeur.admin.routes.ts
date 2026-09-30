@@ -101,7 +101,7 @@ router.patch("/chauffeurs/:id/documents/:documentId", async (req: Request, res: 
       .parse(req.body);
     const chauffeurId = idSchema.parse(req.params.id);
 
-    const { avant, piece } = await ChauffeurOnboardingService.examinerPiece(
+    const { avant, piece, retabli } = await ChauffeurOnboardingService.examinerPiece(
       chauffeurId,
       idSchema.parse(req.params.documentId),
       body
@@ -113,6 +113,8 @@ router.patch("/chauffeurs/:id/documents/:documentId", async (req: Request, res: 
       avant: avant.statut,
       apres: piece.statut,
       note: piece.noteExamen,
+      // Suspendu pour une pièce expirée, rétabli par cette validation.
+      ...(retabli ? { chauffeur: { avant: "SUSPENDU", apres: "VALIDE" } } : {}),
     });
 
     res.json({ success: true, data: piece });
