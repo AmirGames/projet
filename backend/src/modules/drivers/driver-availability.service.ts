@@ -26,7 +26,7 @@ export const PAUSE_MAX_MINUTES = 240;
 
 /** L'e-mail du salon temps réel : celui du compte, à défaut celui de la fiche. */
 async function emailDuLivreur(driverId: string) {
-  const livreur = await db.driver.findUnique({
+  const livreur = await db.courier.findUnique({
     where: { id: driverId },
     select: { email: true, user: { select: { email: true } } },
   });
@@ -48,7 +48,7 @@ export class DriverAvailabilityService {
       );
     }
 
-    const livreur = await db.driver.findUnique({ where: { id: driverId } });
+    const livreur = await db.courier.findUnique({ where: { id: driverId } });
     if (!livreur) throw new ApiError(404, "Livreur introuvable", "DRIVER_NOT_FOUND");
 
     if (!livreur.isOnline) {
@@ -62,7 +62,7 @@ export class DriverAvailabilityService {
 
     const fin = new Date(Date.now() + minutes * 60000);
 
-    const misAJour = await db.driver.update({
+    const misAJour = await db.courier.update({
       where: { id: driverId },
       data: { pausedUntil: fin, pauseReason: raison?.trim() || null, isAvailable: false },
     });
@@ -95,10 +95,10 @@ export class DriverAvailabilityService {
 
   /** Lève la pause : le livreur redevient disponible s'il est en ligne et libre. */
   static async reprendre(driverId: string) {
-    const livreur = await db.driver.findUnique({ where: { id: driverId } });
+    const livreur = await db.courier.findUnique({ where: { id: driverId } });
     if (!livreur) throw new ApiError(404, "Livreur introuvable", "DRIVER_NOT_FOUND");
 
-    return db.driver.update({
+    return db.courier.update({
       where: { id: driverId },
       data: {
         pausedUntil: null,
@@ -113,7 +113,7 @@ export class DriverAvailabilityService {
    * Appelé périodiquement.
    */
   static async leverPausesEchues() {
-    const echues = await db.driver.findMany({
+    const echues = await db.courier.findMany({
       where: { pausedUntil: { lte: new Date() } },
       select: { id: true },
     });
@@ -153,7 +153,7 @@ export class DriverAvailabilityService {
 
     // updatedAt couvre le livreur qui vient de se mettre en ligne et n'a pas
     // encore eu le temps d'envoyer sa première position.
-    const perdus = await db.driver.findMany({
+    const perdus = await db.courier.findMany({
       where: {
         isOnline: true,
         gpsLostAt: null,
@@ -171,7 +171,7 @@ export class DriverAvailabilityService {
     });
 
     for (const livreur of perdus) {
-      await db.driver.update({ where: { id: livreur.id }, data: { gpsLostAt: maintenant } });
+      await db.courier.update({ where: { id: livreur.id }, data: { gpsLostAt: maintenant } });
 
       const email = livreur.user?.email || livreur.email;
       emitDriverEvent(email, "gps-perdu", { depuis: livreur.lastLocationUpdate });
@@ -201,13 +201,13 @@ export class DriverAvailabilityService {
     // Sans course, un signal perdu depuis longtemps : le livreur a quitté
     // l'application. Le laisser en ligne fausserait la liste des disponibles.
     const limiteHorsLigne = new Date(maintenant.getTime() - HORS_LIGNE_APRES_MS);
-    const abandonnes = await db.driver.findMany({
+    const abandonnes = await db.courier.findMany({
       where: { isOnline: true, currentOrderId: null, gpsLostAt: { lt: limiteHorsLigne } },
       select: { id: true, email: true, user: { select: { email: true } } },
     });
 
     for (const livreur of abandonnes) {
-      await db.driver.update({
+      await db.courier.update({
         where: { id: livreur.id },
         data: { isOnline: false, isAvailable: false, pausedUntil: null, pauseReason: null },
       });
@@ -262,7 +262,7 @@ export class DriverAvailabilityService {
   static async signalRetabli(driverId: string, gpsLostAt: Date | null, deliveryId: string | null) {
     if (!gpsLostAt) return;
 
-    await db.driver.update({ where: { id: driverId }, data: { gpsLostAt: null } });
+    await db.courier.update({ where: { id: driverId }, data: { gpsLostAt: null } });
 
     if (deliveryId) {
       const courses = await db.orderDelivery.findMany({

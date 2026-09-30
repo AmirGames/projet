@@ -1,0 +1,238 @@
+import { db } from "../../services/db";
+import { logger } from "../../config/logger";
+import { emitNotification } from "../realtime/socket";
+import { EmailService } from "../notifications/email.service";
+import { notifierPlateforme } from "../notifications/notification.service";
+import { libelleDeLaPiece, piecesExigees } from "./chauffeur-onboarding.service";
+
+/**
+ * Les pièces des chauffeurs ZupDrive qui arrivent à échéance (assurance,
+ * contrôle technique, licence…).
+ *
+ * Personne ne clique le jour où une assurance expire : il faut aller voir.
+ * Le chauffeur est relancé deux fois, 30 puis 10 jours avant, dans son espace
+ * et par courriel. Le jour venu, la pièce passe « expirée ».
+ *
+ * Transport de personnes oblige : si la pièce expirée est une pièce exigée
+ * (licence, assurance, contrôle technique, permis…), le chauffeur validé est
+ * suspendu automatiquement. Il peut alors déposer la version à jour, et il
+ * est rétabli dès que l'équipe la valide (voir
+ * ChauffeurOnboardingService.retablirApresRenouvellement).
+ *
+ * Chaque relance est posée par une écriture conditionnelle (« seulement si
+ * elle n'a pas déjà été envoyée ») avant tout envoi : deux passages
+ * simultanés, un redémarrage ou un courriel en échec ne relancent jamais deux
+ * fois. Une pièce déposée à 8 jours de l'échéance ne reçoit que la relance
+ * des 10 jours.
+ */
+
+export const RELANCES_JOURS = [30, 10] as const;
+const JOUR_MS = 24 * 3600 * 1000;
+
+/** Seules les pièces encore valables comptent : une pièce refusée est déjà à refaire. */
+const STATUTS_SUIVIS = ["APPROVED", "PENDING"];
+
+const echapper = (texte: string) =>
+  texte.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+export class ChauffeurExpirationService {
+  static async surveiller(maintenant = new Date()) {
+    let rappels = 0;
+
+    // La relance la plus proche d'abord : une pièce à 8 jours ne reçoit que
+    // celle des 10 jours, et plus jamais celle des 30.
+    for (const jours of [...RELANCES_JOURS].sort((a, b) => a - b)) {
+      const champ = jours === 30 ? "rappel30JoursLe" : "rappel10JoursLe";
+      const horizon = new Date(maintenant.getTime() + jours * JOUR_MS);
+
+      const candidates = await db.documentChauffeurDrive.findMany({
+        where: {
+          statut: { in: STATUTS_SUIVIS },
+          archiveeLe: null,
+          [champ]: null,
+          dateExpiration: { gt: maintenant, lte: horizon },
+        },
+        select: {
+          id: true,
+          chauffeurId: true,
+          type: true,
+          statut: true,
+          dateExpiration: true,
+          chauffeur: { select: { region: true, statut: true } },
+        },
+      });
+
+      for (const piece of candidates) {
+        // Il a déjà déposé la version à jour : elle attend l'équipe, inutile
+        // de lui demander de la déposer. Si elle est refusée, la relance
+        // repartira au passage suivant (elle n'a pas été marquée).
+        if (piece.statut === "APPROVED" && (await this.renouvellementEnAttente(piece))) continue;
+
+        const { count } = await db.documentChauffeurDrive.updateMany({
+          where: { id: piece.id, [champ]: null },
+          data: { [champ]: maintenant },
+        });
+        if (count !== 1) continue;
+        // La relance des 10 jours rend celle des 30 sans objet.
+        if (jours === 10) {
+          await db.documentChauffeurDrive.updateMany({
+            where: { id: piece.id, rappel30JoursLe: null },
+            data: { rappel30JoursLe: maintenant },
+          });
+        }
+
+        const restant = Math.max(1, Math.ceil((piece.dateExpiration!.getTime() - maintenant.getTime()) / JOUR_MS));
+        const libelle = libelleDeLaPiece(piece.type);
+        const exigee = (piecesExigees(piece.chauffeur.region) as string[]).includes(piece.type);
+        await this.prevenirLeChauffeur(
+          piece.chauffeurId,
+          `${libelle} : expire dans ${restant} jour${restant > 1 ? "s" : ""}`,
+          `Votre document expire le ${piece.dateExpiration!.toLocaleDateString("fr-FR")}. ` +
+            "Déposez-en une version à jour depuis votre dossier chauffeur avant cette date." +
+            (exigee && piece.chauffeur.statut === "VALIDE"
+              ? " Sans renouvellement, votre compte chauffeur sera suspendu à cette date."
+              : "")
+        );
+        rappels++;
+      }
+    }
+
+    const echues = await db.documentChauffeurDrive.findMany({
+      where: { statut: { in: STATUTS_SUIVIS }, archiveeLe: null, dateExpiration: { lte: maintenant } },
+      select: { id: true, chauffeurId: true, type: true, chauffeur: { select: { nomComplet: true } } },
+    });
+
+    let expirees = 0;
+    for (const piece of echues) {
+      const { count } = await db.documentChauffeurDrive.updateMany({
+        where: { id: piece.id, statut: { in: STATUTS_SUIVIS }, archiveeLe: null },
+        data: { statut: "EXPIRED" },
+      });
+      if (count !== 1) continue;
+      expirees++;
+
+      const libelle = libelleDeLaPiece(piece.type);
+      await this.prevenirLeChauffeur(
+        piece.chauffeurId,
+        `${libelle} : document expiré`,
+        (await this.renouvellementEnAttente(piece))
+          ? "Votre document a expiré. La version à jour que vous avez déposée attend la validation de l'équipe ZupDrive."
+          : "Votre document a expiré. Déposez-en une version à jour depuis votre dossier chauffeur."
+      );
+    }
+
+    const suspendus = await this.suspendreLesChauffeursNonAJour(maintenant);
+
+    return { rappels, expirees, suspendus };
+  }
+
+  /**
+   * Suspend tout chauffeur validé dont une pièce exigée est expirée.
+   *
+   * Calculé à partir de l'état en base, et non des seules pièces expirées à
+   * ce passage : un passage interrompu entre les deux étapes est rattrapé au
+   * suivant. La suspension est conditionnée à l'état « VALIDE » : jamais
+   * appliquée deux fois, jamais par-dessus une décision de l'équipe.
+   */
+  private static async suspendreLesChauffeursNonAJour(maintenant: Date) {
+    const chauffeurs = await db.chauffeurDrive.findMany({
+      where: { statut: "VALIDE", documents: { some: { statut: "EXPIRED", archiveeLe: null } } },
+      select: {
+        id: true,
+        nomComplet: true,
+        region: true,
+        documents: { where: { statut: "EXPIRED", archiveeLe: null }, select: { type: true, dateExpiration: true } },
+      },
+    });
+
+    let suspendus = 0;
+    for (const chauffeur of chauffeurs) {
+      const exigees = piecesExigees(chauffeur.region) as string[];
+      const enCause = chauffeur.documents.filter((piece) => exigees.includes(piece.type));
+      if (enCause.length === 0) continue;
+
+      const liste = enCause
+        .map((piece) =>
+          piece.dateExpiration
+            ? `${libelleDeLaPiece(piece.type)} (expirée le ${piece.dateExpiration.toLocaleDateString("fr-FR")})`
+            : libelleDeLaPiece(piece.type)
+        )
+        .join(", ");
+      const motif = `Document expiré : ${liste}. Déposez la version à jour : votre compte sera rétabli dès sa validation.`;
+
+      const { count } = await db.chauffeurDrive.updateMany({
+        where: { id: chauffeur.id, statut: "VALIDE" },
+        // Hors ligne aussi : plus aucune course ne lui est proposée.
+        data: { statut: "SUSPENDU", motifStatut: motif, suspenduPourExpirationLe: maintenant, enLigne: false },
+      });
+      if (count !== 1) continue;
+      suspendus++;
+
+      logger.warn("ZupDrive chauffeur suspended: expired document", {
+        chauffeurId: chauffeur.id,
+        pieces: enCause.map((piece) => piece.type),
+      });
+      await this.prevenirLeChauffeur(chauffeur.id, "Votre compte chauffeur ZupDrive est suspendu", motif);
+      await notifierPlateforme(
+        `Chauffeur suspendu — ${chauffeur.nomComplet}`,
+        `Suspendu automatiquement : ${liste}. Il sera rétabli dès que vous validerez la pièce à jour.`,
+        `/superowner/zupdrive/chauffeurs/${chauffeur.id}`
+      );
+    }
+    return suspendus;
+  }
+
+  /** Une version plus récente de la même pièce attend l'examen de l'équipe. */
+  private static async renouvellementEnAttente(piece: { id: string; chauffeurId: string; type: string }) {
+    const enAttente = await db.documentChauffeurDrive.count({
+      where: {
+        chauffeurId: piece.chauffeurId,
+        type: piece.type,
+        id: { not: piece.id },
+        archiveeLe: null,
+        statut: "PENDING",
+      },
+    });
+    return enAttente > 0;
+  }
+
+  /**
+   * Dans son espace et par courriel : une échéance s'annonce des semaines à
+   * l'avance, il ne consulte pas forcément son dossier d'ici là. Un envoi en
+   * échec ne défait pas la relance, déjà enregistrée.
+   */
+  private static async prevenirLeChauffeur(chauffeurId: string, titre: string, message: string) {
+    try {
+      const chauffeur = await db.chauffeurDrive.findUnique({
+        where: { id: chauffeurId },
+        select: { nomComplet: true, user: { select: { email: true } } },
+      });
+      const email = chauffeur?.user.email;
+      if (!email) return;
+
+      const notification = await db.notification.create({
+        data: {
+          type: "PLATFORM_ANNOUNCEMENT",
+          title: titre,
+          message,
+          recipientEmail: email,
+          link: "/chauffeur",
+          priority: "HIGH",
+        },
+      });
+      emitNotification(email, notification);
+
+      await EmailService.sendEmail({
+        to: email,
+        subject: `ZupDrive — ${titre}`,
+        html: `<p>Bonjour ${echapper(chauffeur.nomComplet)},</p><p>${echapper(message)}</p>`,
+        text: `Bonjour ${chauffeur.nomComplet},\n\n${message}`,
+      });
+    } catch (err) {
+      logger.warn("ZupDrive chauffeur expiry reminder failed", {
+        chauffeurId,
+        error: err instanceof Error ? err.message : err,
+      });
+    }
+  }
+}

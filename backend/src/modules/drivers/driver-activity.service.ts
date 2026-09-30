@@ -226,14 +226,14 @@ export class DriverActivityService {
           delivery: { select: { driverId: true, status: true } },
         },
       }),
-      db.driverRating.aggregate({
+      db.courierRating.aggregate({
         where: { driverId, createdAt: { gte: depuis } },
         _avg: { note: true },
         _count: true,
       }),
-      db.driver.findUnique({ where: { id: driverId }, select: { rating: true, totalRatings: true } }),
+      db.courier.findUnique({ where: { id: driverId }, select: { rating: true, totalRatings: true } }),
       // Les pourboires laissés après la livraison, au jour de leur encaissement.
-      db.driverTip.findMany({
+      db.courierTip.findMany({
         where: { driverId, status: "PAID", paidAt: { gte: depuis } },
         select: { amount: true, paidAt: true },
       }),

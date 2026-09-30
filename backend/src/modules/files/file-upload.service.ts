@@ -58,7 +58,7 @@ export class FileUploadService {
   static async uploadDocument(
     buffer: Buffer,
     filename: string,
-    folder: "drivers" | "merchants" | "deliveries",
+    folder: "drivers" | "merchants" | "deliveries" | "chauffeurs",
     mimeType?: string
   ): Promise<{ url: string; publicId: string }> {
     if (isCloudinaryConfigured()) {
@@ -88,7 +88,7 @@ export class FileUploadService {
   private static async uploadToCloudinary(
     buffer: Buffer,
     filename: string,
-    folder: "drivers" | "merchants" | "deliveries" | "stores",
+    folder: "drivers" | "merchants" | "deliveries" | "chauffeurs" | "stores",
     publique = false
   ): Promise<{ url: string; publicId: string }> {
     const cloud = await getCloudinary();
@@ -128,7 +128,7 @@ export class FileUploadService {
   private static async uploadLocal(
     buffer: Buffer,
     filename: string,
-    folder: "drivers" | "merchants" | "deliveries" | "stores",
+    folder: "drivers" | "merchants" | "deliveries" | "chauffeurs" | "stores",
     mimeType?: string
   ): Promise<{ url: string; publicId: string }> {
     await ensureUploadsDir();

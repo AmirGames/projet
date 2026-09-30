@@ -43,7 +43,7 @@
       "sectionActivity": "Activity",
       "organizations": "Organizations",
       "stores": "Stores",
-      "drivers": "Drivers",
+      "drivers": "Couriers",
       "payouts": "Payouts",
       "sepaPayouts": "SEPA payouts",
       "analytics": "Analytics",
@@ -76,7 +76,11 @@
       "reviews": "Reported reviews",
       "monitoring": "Monitoring",
       "roles": "Roles & access",
-      "console": "Console"
+      "console": "Console",
+      "sectionZupDrive": "ZupDrive",
+      "chauffeurs": "Drivers (ZupDrive)",
+      "coursesDrive": "Rides",
+      "tarifsDrive": "Fares"
     },
     "openMenu": "Open menu",
     "toggleSidebar": "Collapse or expand the menu"
@@ -2262,5 +2266,320 @@
     "driverTitle": "Ride-hailing driver",
     "driverText": "Register your interest now to drive with ZupDrive when it opens.",
     "driverAction": "Become a driver"
+  },
+  "chauffeurDrive": {
+    "titre": "My ZupDrive driver application",
+    "intro": "Complete your profile, upload your documents and submit your application. The ZupDrive team reviews it and lets you know.",
+    "connexionRequise": "Sign in with your ZupOne account, or create one, to open your driver application.",
+    "seConnecter": "Sign in",
+    "creerCompte": "Create an account",
+    "erreurConnexion": "Server unreachable. Please try again shortly.",
+    "sectionProfil": "You, your company and your vehicle",
+    "sectionPieces": "Documents",
+    "formatsAcceptes": "JPG, PNG, WebP (2 MB) or PDF (5 MB). The registration certificate must show both sides.",
+    "champ": {
+      "nomComplet": "Full name",
+      "telephone": "Phone",
+      "numeroEntreprise": "Company number (BCE/KBO)",
+      "raisonSociale": "Company name (if incorporated)",
+      "numeroLicence": "Licence number",
+      "vehiculeMarque": "Vehicle make",
+      "vehiculeModele": "Vehicle model",
+      "vehiculePlaque": "Licence plate",
+      "region": "Licence region"
+    },
+    "choisirRegion": "Choose…",
+    "region": {
+      "BRUXELLES": "Brussels-Capital",
+      "WALLONIE": "Wallonia",
+      "FLANDRE": "Flanders"
+    },
+    "numeroTva": "VAT number: {tva}",
+    "commencer": "Open my application",
+    "enregistrer": "Save",
+    "enregistrement": "Saving…",
+    "profilEnregistre": "Profile saved.",
+    "pieceDeposee": "Document uploaded, awaiting review.",
+    "pieceActionnaires": "ID of everyone holding shares in the company",
+    "facultative": "(if incorporated)",
+    "aDeposer": "To upload",
+    "voir": "View",
+    "deposer": "Upload",
+    "remplacer": "Replace",
+    "dateExpiration": "Expires on",
+    "statutPiece": {
+      "PENDING": "Under review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired"
+    },
+    "motif": "Reason: {motif}",
+    "resteAFaire": "Before submitting your application: {liste}.",
+    "soumettre": "Submit my application",
+    "envoi": "Submitting…",
+    "dossierSoumis": "Application submitted. The ZupDrive team will reply after review.",
+    "statut": {
+      "BROUILLON": "Application in progress",
+      "SOUMIS": "Application under review",
+      "VALIDE": "Application approved",
+      "REFUSE": "Application needs changes",
+      "SUSPENDU": "Account suspended"
+    },
+    "statutAide": {
+      "BROUILLON": "Complete your profile and upload the requested documents.",
+      "SOUMIS": "The ZupDrive team is reviewing your application. It cannot be edited during review.",
+      "VALIDE": "You are a ZupDrive driver. Remember to renew your documents before they expire.",
+      "REFUSE": "Fix what is indicated, then resubmit your application.",
+      "SUSPENDU": "Contact ZupDrive support to find out more.",
+      "SUSPENDU_EXPIRATION": "A required document has expired. Upload the up-to-date version below: your account will be reinstated as soon as the ZupDrive team approves it."
+    },
+    "versionEnVigueur": "Current version: valid.",
+    "versionEnVigueurJusquau": "Current version: valid until {date}.",
+    "versionEnVigueurExpiree": "Current version: expired.",
+    "nouvelleVersion": "New version:",
+    "versCourses": "My rides"
+  },
+  "superownerChauffeurs": {
+    "title": "ZupDrive drivers",
+    "subtitle": "Driver applications (passenger transport, LVC licence): review each document, then approve or reject the application.",
+    "filter": "Filter applications",
+    "status": {
+      "SOUMIS": "To review",
+      "VALIDE": "Approved",
+      "REFUSE": "Rejected",
+      "SUSPENDU": "Suspended",
+      "BROUILLON": "In progress",
+      "ALL": "All"
+    },
+    "region": {
+      "BRUXELLES": "Brussels-Capital",
+      "WALLONIE": "Wallonia",
+      "FLANDRE": "Flanders"
+    },
+    "empty": "No application in this category.",
+    "loadError": "Unable to load driver applications.",
+    "actionFailed": "The action failed.",
+    "connectionError": "Server unreachable. Please try again shortly.",
+    "reasonRequired": "Give a reason: the driver needs to know what to fix.",
+    "piecesCount": "{validees}/{exigees} documents approved",
+    "submittedOn": "Submitted on {date}",
+    "open": "Open application",
+    "collapse": "Collapse",
+    "field": {
+      "email": "Email",
+      "telephone": "Phone",
+      "region": "Region",
+      "numeroEntreprise": "Company no. (BCE)",
+      "numeroTva": "VAT no.",
+      "raisonSociale": "Company name",
+      "numeroLicence": "Licence no.",
+      "vehicule": "Vehicle",
+      "vehiculePlaque": "Plate",
+      "soumisLe": "Submitted on",
+      "valideLe": "Approved on"
+    },
+    "documents": "Application documents",
+    "optional": "(optional)",
+    "documentStatus": {
+      "PENDING": "To review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired"
+    },
+    "expiresOn": "Expires on {date}",
+    "view": "View",
+    "approveDocument": "Approve",
+    "rejectDocument": "Reject",
+    "documentReasonPlaceholder": "Reason for rejecting the document",
+    "missingDocuments": "Required documents not uploaded: {liste}.",
+    "decision": "Decision on the application",
+    "approveHint": "Approval unlocks once every required document is approved.",
+    "reasonLabel": "Reason",
+    "rejectReasonPlaceholder": "Reason for rejection (required to reject), sent to the driver",
+    "suspendReasonPlaceholder": "Reason for suspension (required), sent to the driver",
+    "approve": "Approve application",
+    "reject": "Reject application",
+    "suspend": "Suspend driver",
+    "reactivate": "Reinstate driver",
+    "waiting": {
+      "BROUILLON": "The driver has not submitted the application yet.",
+      "REFUSE": "Sent back to the driver: waiting for corrections."
+    },
+    "backToQueue": "← Back to the queue",
+    "renewal": "(renewal)",
+    "currentVersion": "(current version until the renewal is approved)",
+    "rating": "{moyenne} ★ ({avis} ratings)",
+    "neverRated": "Never rated"
+  },
+  "zupdriveTrajet": {
+    "titre": "Book a ride",
+    "intro": "Enter your pickup and destination: the price is fixed before you book.",
+    "connexionRequise": "Sign in with your ZupOne account, or create one, to book a ride.",
+    "seConnecter": "Sign in",
+    "creerCompte": "Create an account",
+    "erreur": "Something went wrong. Please try again.",
+    "depart": "Pickup",
+    "destination": "Destination",
+    "departPlaceholder": "Pickup address",
+    "destinationPlaceholder": "Drop-off address",
+    "calcul": "Calculating the price…",
+    "estimation": "About {distance} · {duree}",
+    "prixFixe": "Fixed price, known before you book.",
+    "commander": "Book for {prix}",
+    "commandeEnCours": "Booking…",
+    "prixChange": "This quote has expired: here is the updated price.",
+    "trajetEnCours": "Ride in progress to {destination} — follow",
+    "mesTrajets": "My rides",
+    "retour": "← My rides",
+    "prix": "Price",
+    "annuler": "Cancel the ride",
+    "annuleeParChauffeur": "The driver had to cancel. You can book a new ride.",
+    "statut": {
+      "RECHERCHE": "Finding a driver",
+      "ACCEPTEE": "Driver on the way",
+      "ARRIVEE": "Driver arrived",
+      "EN_COURS": "In progress",
+      "TERMINEE": "Completed",
+      "ANNULEE": "Cancelled",
+      "SANS_CHAUFFEUR": "No driver"
+    },
+    "statutDetail": {
+      "RECHERCHE": "Finding a driver…",
+      "ACCEPTEE": "Your driver is on the way",
+      "ARRIVEE": "Your driver is waiting",
+      "EN_COURS": "Enjoy your ride!",
+      "TERMINEE": "Ride completed",
+      "ANNULEE": "Ride cancelled",
+      "SANS_CHAUFFEUR": "No driver available"
+    },
+    "pasEncoreNote": "New driver",
+    "noterChauffeur": "How was your ride with {prenom}?",
+    "votreNote": "Your rating:"
+  },
+  "chauffeurCourses": {
+    "titre": "My rides",
+    "erreur": "Something went wrong. Please try again.",
+    "connexionRequise": "Sign in to see your rides.",
+    "versDossier": "My driver application",
+    "pasValide": "Your driver application must be approved before you can take rides.",
+    "enLigne": "Online",
+    "horsLigne": "Offline",
+    "enLigneAide": "You receive rides near you.",
+    "horsLigneAide": "Go online to receive rides.",
+    "passerEnLigne": "Go online",
+    "passerHorsLigne": "Go offline",
+    "positionRefusee": "Allow location access: without it, no ride can be offered to you.",
+    "nouvelleCourse": "New ride",
+    "aDistance": "Pickup {distance} away",
+    "accepter": "Accept",
+    "refuser": "Decline",
+    "passager": "Passenger: {prenom}",
+    "trajetEstime": "{distance} · {duree}",
+    "annuler": "Cancel the ride",
+    "motifAnnulation": "Reason for cancelling",
+    "historique": "History",
+    "statut": {
+      "RECHERCHE": "Finding a driver",
+      "ACCEPTEE": "Driver on the way",
+      "ARRIVEE": "Driver arrived",
+      "EN_COURS": "In progress",
+      "TERMINEE": "Completed",
+      "ANNULEE": "Cancelled",
+      "SANS_CHAUFFEUR": "No driver"
+    },
+    "etape": {
+      "arrive": "I have arrived",
+      "demarrer": "Passenger on board",
+      "terminer": "Complete the ride"
+    },
+    "maMoyenne": "{moyenne} out of 5 ({avis} ratings)",
+    "pasEncoreNote": "No rating yet",
+    "noterPassager": "How did this ride go with your passenger?",
+    "passagerNote": "Passenger rated.",
+    "passagerNouveau": "New passenger"
+  },
+  "superownerTarifsDrive": {
+    "titre": "ZupDrive fares",
+    "sousTitre": "Each ride's price is calculated at booking with its region's fare, then fixed.",
+    "erreur": "Unable to load fares.",
+    "montantInvalide": "{champ}: invalid amount (e.g. 2.50).",
+    "enregistre": "{region} fare saved.",
+    "enregistrer": "Save",
+    "enregistrement": "Saving…",
+    "actif": "Bookings open in this region",
+    "region": {
+      "BRUXELLES": "Brussels-Capital",
+      "WALLONIE": "Wallonia",
+      "FLANDRE": "Flanders"
+    },
+    "champ": {
+      "priseEnChargeCentimes": "Base fare (€)",
+      "parKmCentimes": "Per km (€)",
+      "parMinuteCentimes": "Per minute (€)",
+      "minimumCentimes": "Minimum fare (€)"
+    }
+  },
+  "superownerCoursesDrive": {
+    "titre": "ZupDrive rides",
+    "sousTitre": "Booked rides, newest first.",
+    "erreur": "Unable to load rides.",
+    "filtre": "Filter rides",
+    "aucune": "No rides.",
+    "compteSupprime": "Deleted account",
+    "colonne": {
+      "date": "Date",
+      "trajet": "Route",
+      "passager": "Passenger",
+      "chauffeur": "Driver",
+      "prix": "Price",
+      "statut": "Status",
+      "notes": "Ratings"
+    },
+    "statut": {
+      "ALL": "All",
+      "RECHERCHE": "Finding a driver",
+      "ACCEPTEE": "Driver on the way",
+      "ARRIVEE": "Driver arrived",
+      "EN_COURS": "In progress",
+      "TERMINEE": "Completed",
+      "ANNULEE": "Cancelled",
+      "SANS_CHAUFFEUR": "No driver"
+    },
+    "region": {
+      "BRUXELLES": "Brussels-Capital",
+      "WALLONIE": "Wallonia",
+      "FLANDRE": "Flanders"
+    },
+    "annuleePar": {
+      "PASSAGER": "by the passenger",
+      "CHAUFFEUR": "by the driver",
+      "PLATEFORME": "by the platform"
+    },
+    "noteDe": {
+      "PASSAGER": "Driver rated {note}/5",
+      "CHAUFFEUR": "Passenger rated {note}/5"
+    }
+  },
+  "carteCourseDrive": {
+    "libelle": "Ride map",
+    "depart": "Pickup",
+    "destination": "Destination",
+    "chauffeur": "Your driver"
+  },
+  "noterCourseDrive": {
+    "note": "Your rating",
+    "etoiles": "{n} star(s) — {libelle}",
+    "libelle": {
+      "1": "Very bad",
+      "2": "Bad",
+      "3": "OK",
+      "4": "Good",
+      "5": "Excellent"
+    },
+    "commentaire": "Any comment? (optional)",
+    "commentairePrive": "Your comment is only read by the ZupDrive team.",
+    "envoyer": "Send my rating",
+    "envoi": "Sending…",
+    "erreur": "The rating could not be saved."
   }
 }

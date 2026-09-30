@@ -367,7 +367,7 @@ router.get("/me/roles", authMiddleware, async (req: Request, res: Response, next
 
     const user = await UserService.getUserById(userId);
     const memberships = await UserService.getUserOrganizations(userId);
-    const driver = await db.driver.findUnique({
+    const driver = await db.courier.findUnique({
       where: { userId },
       select: { id: true, status: true },
     });
@@ -577,7 +577,7 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
     const user = await UserService.getUserById(userId);
 
     // Check if driver already exists
-    const existingDriver = await db.driver.findUnique({
+    const existingDriver = await db.courier.findUnique({
       where: { userId },
     });
 
@@ -587,7 +587,7 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
 
     // L'e-mail d'une fiche livreur est unique : une fiche restée sur cette
     // adresse (compte qui en a changé depuis) ferait échouer la création.
-    const livreurSurEmail = await db.driver.findUnique({
+    const livreurSurEmail = await db.courier.findUnique({
       where: { email: user.email },
       select: { id: true },
     });
@@ -597,7 +597,7 @@ router.post("/me/become-driver", authMiddleware, async (req: Request, res: Respo
     }
 
     // Create driver using user's existing email and name
-    const driver = await db.driver.create({
+    const driver = await db.courier.create({
       data: {
         userId,
         name: user.name || user.email.split("@")[0],

@@ -11,6 +11,7 @@
  *   NEXT_PUBLIC_DOMAINE_LIVREUR=livreur.monsite.local \
  *   NEXT_PUBLIC_DOMAINE_VITRINE=groupe.local \
  *   NEXT_PUBLIC_DOMAINE_DRIVE=drive.local \
+ *   NEXT_PUBLIC_DOMAINE_CHAUFFEUR=chauffeur.drive.local \
  *   npm run dev
  *
  *   # puis, dans un autre terminal
@@ -30,6 +31,8 @@ const PRO = process.env.NEXT_PUBLIC_DOMAINE_PRO || "commercant.monsite.local";
 const LIVREUR = process.env.NEXT_PUBLIC_DOMAINE_LIVREUR || "livreur.monsite.local";
 const VITRINE = process.env.NEXT_PUBLIC_DOMAINE_VITRINE || "groupe.local";
 const DRIVE = process.env.NEXT_PUBLIC_DOMAINE_DRIVE || "drive.local";
+// Les chauffeurs ZupDrive (transport de personnes) : rien à voir avec LIVREUR.
+const CHAUFFEUR = process.env.NEXT_PUBLIC_DOMAINE_CHAUFFEUR || "chauffeur.drive.local";
 // Le domaine de l'équipe est facultatif : sans lui, /superowner reste servi
 // partout (lib/domaines.ts).
 const GROUPE = process.env.NEXT_PUBLIC_DOMAINE_GROUPE || "";
@@ -163,12 +166,27 @@ await servie("le domaine livreur sert /driver/earnings", LIVREUR, "/driver/earni
 await renvoyee("/driver depuis le pro", PRO, "/driver", LIVREUR);
 await renvoyee("/driver/signup depuis le public", PUBLIC, "/driver/signup", LIVREUR);
 
+// ===== Espace chauffeur ZupDrive =====
+// Les chauffeurs transportent des personnes ; les livreurs livrent des repas.
+// Chacun son domaine : aucune page de l'un n'est servie chez l'autre.
+titre("Espace chauffeur ZupDrive");
+await servie("le domaine chauffeur ouvre sur l'espace chauffeur", CHAUFFEUR, "/");
+await servie("le domaine chauffeur sert /chauffeur", CHAUFFEUR, "/chauffeur");
+await renvoyee("/chauffeur depuis la vitrine ZupDrive", DRIVE, "/chauffeur", CHAUFFEUR);
+await renvoyee("/chauffeur depuis le public", PUBLIC, "/chauffeur", CHAUFFEUR);
+await renvoyee("/chauffeur depuis le livreur", LIVREUR, "/chauffeur", CHAUFFEUR);
+await renvoyee("/driver (livreurs) depuis le domaine chauffeur", CHAUFFEUR, "/driver", LIVREUR);
+await renvoyee("/devenir-livreur depuis le domaine chauffeur", CHAUFFEUR, "/devenir-livreur", LIVREUR);
+await renvoyee("/devenir-chauffeur depuis le domaine chauffeur", CHAUFFEUR, "/devenir-chauffeur", DRIVE);
+// Le bouton de /devenir-chauffeur (Belgique), tel qu'il est cliqué sur zupdrive.com.
+await renvoyee("le bouton « Créer mon dossier chauffeur » mène au domaine chauffeur", DRIVE, "/chauffeur?pays=BE", CHAUFFEUR);
+
 // ===== Pages communes =====
 titre("Pages communes");
 // /dashboard aussi : c'est le sélecteur de rôles des comptes multi-rôles
 // (SEGMENTS_COMMUNS, lib/domaines.ts). /signup crée le compte unique, dont
 // le rôle se choisit ensuite : on s'inscrit depuis n'importe quel domaine.
-for (const [nom, hote] of [["pro", PRO], ["public", PUBLIC], ["livreur", LIVREUR]]) {
+for (const [nom, hote] of [["pro", PRO], ["public", PUBLIC], ["livreur", LIVREUR], ["chauffeur", CHAUFFEUR]]) {
   await servie(`/login servi par le domaine ${nom}`, hote, "/login");
   await servie(`/signup servi par le domaine ${nom}`, hote, "/signup");
   await servie(`/dashboard servi par le domaine ${nom}`, hote, "/dashboard");
@@ -183,6 +201,10 @@ await renvoyee("/devenir-livreur depuis le public", PUBLIC, "/devenir-livreur", 
 await renvoyee("/devenir-commercant depuis le public", PUBLIC, "/devenir-commercant", PRO);
 await renvoyee("/devenir-chauffeur depuis le public", PUBLIC, "/devenir-chauffeur", DRIVE);
 await servie("/devenir-chauffeur sur ZupDrive", DRIVE, "/devenir-chauffeur", "ZupDrive");
+await servie("/trajet (commande du passager) sur ZupDrive", DRIVE, "/trajet");
+await renvoyee("/trajet depuis le public", PUBLIC, "/trajet", DRIVE);
+await renvoyee("/trajet depuis le domaine chauffeur", CHAUFFEUR, "/trajet", DRIVE);
+await servie("/chauffeur/courses sur le domaine chauffeur", CHAUFFEUR, "/chauffeur/courses");
 await renvoyee("l'accueil du groupe demandé ailleurs mène à sa racine", PUBLIC, "/zupone", VITRINE, "/");
 await servie("les pages légales servies sur la vitrine", VITRINE, "/cgu");
 await renvoyee("/merchant depuis la vitrine", VITRINE, "/merchant", PRO);

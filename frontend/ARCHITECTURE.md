@@ -80,6 +80,7 @@ autres. C'est le point d'architecture le plus important du frontend.
 | `public` — les clients | `/client`, `/store`, `/restaurant`, `/restaurants`, `/checkout`, `/payment`, `/order-confirmation`, `/track` | `NEXT_PUBLIC_DOMAINE_PUBLIC` |
 | `vitrine` — présentation ZupOne | `/zupone` | `NEXT_PUBLIC_DOMAINE_VITRINE` |
 | `drive` — ZupDrive | `/zupdrive`, `/devenir-chauffeur` | `NEXT_PUBLIC_DOMAINE_DRIVE` |
+| `chauffeur` — chauffeurs ZupDrive (pas les livreurs) | `/chauffeur` | `NEXT_PUBLIC_DOMAINE_CHAUFFEUR` |
 | `commun` — accessible partout | `/login`, `/signup`, `/mot-de-passe-oublie`, `/reinitialiser`, `/verifier-email`, `/dashboard` | — |
 
 **Comment ça marche.** `lib/domaines.ts` associe le **premier segment** d'une

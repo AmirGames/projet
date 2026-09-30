@@ -74,6 +74,8 @@ const ACCUEIL_CONNECTE: Record<EspaceHeberge, string> = {
   public: '/client',
   vitrine: '/',
   drive: '/',
+  // Le chauffeur ZupDrive, pas le livreur ZupEat (/driver).
+  chauffeur: '/chauffeur',
 };
 
 export function accueilConnecte(): string {

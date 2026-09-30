@@ -45,6 +45,7 @@ de taxi / VTC) viendra ensuite, sur le même code et le même compte.
 | `manager.zupeat.com` | Les commerçants |
 | `delivery.zupeat.com` | Les livreurs |
 | `zupdrive.com`, `manager.zupdrive.com` | ZupDrive : clients, sociétés de taxi (à faire) |
+| `driver.zupdrive.com` | Les chauffeurs ZupDrive (transport de personnes) — pas les livreurs |
 
 - **Un seul compte ZupOne** par personne (`User`), client sur toutes les
   plateformes, commerçant ou livreur s'il l'est.
@@ -309,7 +310,7 @@ schéma sans être réellement branchées.
 > appliquée.** Des prix de commande venaient du client et étaient crus sur
 > parole. Une boutique fermée acceptait quand même les commandes. Les montants
 > minimum et maximum se réglaient dans l'interface sans agir nulle part. Le
-> modèle `DriverDocument` existait sans aucune route. Un livreur naissait
+> modèle `CourierDocument` existait sans aucune route. Un livreur naissait
 > `ACTIVE`. La commission était globale alors que les formules en annonçaient
 > une par palier. La durée des requêtes était écrite en dur à `0`. L'IP n'était
 > jamais enregistrée. Treize routes d'API renvoyaient des données inventées.
@@ -899,13 +900,13 @@ l'écrivait jamais. Le livreur lisait « 5 » sur son tableau de bord le jour de
 son inscription, la plateforme classait ses livreurs sur un chiffre identique
 pour tous, et le client qui avait attendu une heure n'avait nulle part où le
 dire. Une note va de 1 à 5 et se donne **une fois par course remise**, par le
-client de cette course : c'est `deliveryId` qui est unique dans `DriverRating`,
+client de cette course : c'est `deliveryId` qui est unique dans `CourierRating`,
 pas le couple client/livreur. Trois choses à retenir :
 
 - **La moyenne est recalculée depuis les notes, jamais ajustée au fil de
   l'eau.** Une moyenne entretenue par additions successives dérive au premier
   incident, et plus rien ne permet de la remettre d'aplomb. `Driver.rating`
-  n'est que le reflet de `DriverRating`.
+  n'est que le reflet de `CourierRating`.
 - **Un livreur jamais noté n'a pas de note.** Les routes renvoient `rating: null`
   et `avis: 0` tant que `totalRatings` vaut zéro, et les écrans affichent « Pas
   encore noté » — plutôt qu'un sans-faute qu'il n'a pas gagné.

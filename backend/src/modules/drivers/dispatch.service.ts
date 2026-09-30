@@ -212,7 +212,7 @@ export class DispatchService {
    * d'expiration.
    */
   static async livreursEligibles(retrait: Point, reglages: Reglages, exclus: string[] = []) {
-    const candidats = await db.driver.findMany({
+    const candidats = await db.courier.findMany({
       where: {
         id: { notIn: exclus },
         status: "ACTIVE",
@@ -272,7 +272,7 @@ export class DispatchService {
     if (actives.length > 0 && retraitsRestants === 0) {
       const sansOrdre = actives.filter((c) => c.ordreRemise == null);
       if (sansOrdre.length > 0) {
-        const livreur = await db.driver.findUnique({ where: { id: driverId }, select: { latitude: true, longitude: true } });
+        const livreur = await db.courier.findUnique({ where: { id: driverId }, select: { latitude: true, longitude: true } });
         const depart = livreur && estUnPoint(livreur) ? (livreur as Point) : null;
         const { arrets } = ordonner(depart, sansOrdre.map(versCourseTournee));
         const base = Math.max(0, ...actives.map((c) => c.ordreRemise ?? 0));
@@ -337,7 +337,7 @@ export class DispatchService {
    */
   static async liberer(driverId: string) {
     const restantes = await this.coursesActives(driverId);
-    await db.driver.update({
+    await db.courier.update({
       where: { id: driverId },
       data: { currentOrderId: restantes[0]?.id ?? null, isAvailable: restantes.length === 0 },
     });
@@ -362,7 +362,7 @@ export class DispatchService {
     const nouvelle = versCourseTournee({ ...course, status: "ACCEPTED" });
     if (!estUnPoint(nouvelle.retrait) || !estUnPoint(nouvelle.remise)) return [];
 
-    const livreurs = await db.driver.findMany({
+    const livreurs = await db.courier.findMany({
       where: {
         status: "ACTIVE",
         isOnline: true,
@@ -833,7 +833,7 @@ export class DispatchService {
     const acceptees = [proposition, ...compagnes].slice(0, place);
     const laissees = [proposition, ...compagnes].slice(place);
 
-    const livreur = await db.driver.findUnique({ where: { id: driverId }, select: { currentOrderId: true } });
+    const livreur = await db.courier.findUnique({ where: { id: driverId }, select: { currentOrderId: true } });
     const maintenant = new Date();
 
     // Tout d'un bloc : sans cela, une course pourrait être attribuée sans que
@@ -863,7 +863,7 @@ export class DispatchService {
       ...laissees.map((offre) =>
         db.deliveryOffer.update({ where: { id: offre.id }, data: { status: "CANCELLED", respondedAt: maintenant } })
       ),
-      db.driver.update({
+      db.courier.update({
         where: { id: driverId },
         data: { currentOrderId: livreur?.currentOrderId ?? proposition.deliveryId, isAvailable: false },
       }),
@@ -962,7 +962,7 @@ export class DispatchService {
   static async enregistrerPosition(driverId: string, position: Point) {
     const maintenant = new Date();
 
-    const livreur = await db.driver.update({
+    const livreur = await db.courier.update({
       where: { id: driverId },
       data: {
         latitude: position.latitude,

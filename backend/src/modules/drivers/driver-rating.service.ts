@@ -31,7 +31,7 @@ export const COMMENTAIRE_MAX = 500;
  * Ici la vérité est dans les notes, et `Driver.rating` n'en est que le reflet.
  */
 export async function recalculerMoyenne(driverId: string) {
-  const bilan = await db.driverRating.aggregate({
+  const bilan = await db.courierRating.aggregate({
     where: { driverId },
     _avg: { note: true },
     _count: { _all: true },
@@ -42,7 +42,7 @@ export async function recalculerMoyenne(driverId: string) {
   // une note : `totalRatings` à zéro est ce qui dit « pas encore noté ».
   const moyenne = avis > 0 ? Math.round((bilan._avg.note ?? 0) * 100) / 100 : 5;
 
-  await db.driver.update({
+  await db.courier.update({
     where: { id: driverId },
     data: { rating: moyenne, totalRatings: avis },
   });
@@ -109,7 +109,7 @@ export async function noterLivreur({ orderId, customerId, note, commentaire }: D
     throw new ApiError(409, "Cette livraison est déjà notée", "ALREADY_RATED");
   }
 
-  const enregistree = await db.driverRating.create({
+  const enregistree = await db.courierRating.create({
     data: {
       deliveryId: course.id,
       driverId: course.driverId,
@@ -127,11 +127,11 @@ export async function noterLivreur({ orderId, customerId, note, commentaire }: D
 /** Ce qu'un livreur lit de ses propres notes. */
 export async function notesDuLivreur(driverId: string, limite = 20) {
   const [livreur, notes] = await Promise.all([
-    db.driver.findUnique({
+    db.courier.findUnique({
       where: { id: driverId },
       select: { rating: true, totalRatings: true },
     }),
-    db.driverRating.findMany({
+    db.courierRating.findMany({
       where: { driverId },
       orderBy: { createdAt: "desc" },
       take: limite,

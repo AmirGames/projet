@@ -70,6 +70,7 @@ zupeat.com            A   <IP du VPS>
 www.zupeat.com        A   <IP du VPS>
 manager.zupeat.com    A   <IP du VPS>
 delivery.zupeat.com   A   <IP du VPS>
+driver.zupdrive.com   A   <IP du VPS>
 api.zupeat.com        A   <IP du VPS>
 manager.zupone.com    A   <IP du VPS>
 ```

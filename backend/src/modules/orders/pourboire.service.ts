@@ -158,7 +158,7 @@ export class PourboireService {
       payment_method_types: ["card"],
     });
 
-    await db.driverTip.upsert({
+    await db.courierTip.upsert({
       where: { orderId: commande.id },
       create: {
         orderId: commande.id,
@@ -185,7 +185,7 @@ export class PourboireService {
    * Stripe renvoie parfois un événement deux fois.
    */
   static async marquerPaye(intention: Stripe.PaymentIntent) {
-    const pourboire = await db.driverTip.findUnique({
+    const pourboire = await db.courierTip.findUnique({
       where: { stripePaymentIntentId: intention.id },
       include: { driver: { select: { email: true } } },
     });
@@ -196,13 +196,13 @@ export class PourboireService {
 
     // Le montant encaissé fait foi, pas celui demandé.
     const montant = (intention.amount_received ?? intention.amount) / 100;
-    const { count } = await db.driverTip.updateMany({
+    const { count } = await db.courierTip.updateMany({
       where: { id: pourboire.id, status: { not: "PAID" } },
       data: { status: "PAID", amount: montant, paidAt: new Date() },
     });
     if (count === 0) return pourboire;
 
-    await db.driver.update({
+    await db.courier.update({
       where: { id: pourboire.driverId },
       data: { totalEarnings: { increment: montant } },
     });
@@ -229,7 +229,7 @@ export class PourboireService {
   }
 
   static async marquerEchec(intention: Stripe.PaymentIntent) {
-    await db.driverTip.updateMany({
+    await db.courierTip.updateMany({
       where: { stripePaymentIntentId: intention.id, status: "PENDING" },
       data: { status: "FAILED" },
     });

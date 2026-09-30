@@ -310,6 +310,51 @@ router.delete("/admins/:adminId/acces/:plateforme", authMiddleware, superOwnerSe
   }
 });
 
+/**
+ * GET /superowner/me/permissions/plateformes - Les droits du compte connecté
+ * sur chaque plateforme, en un appel.
+ *
+ * L'espace manager réunit ZupEat et ZupDrive : un membre qui n'a de rôle que
+ * sur l'une des deux recevait un 403 pour l'autre à chaque page. Ici, une
+ * plateforme sans rôle vaut `null`. La route par plateforme, ci-dessous, garde
+ * son 403 : l'application mobile d'administration ZupEat s'en sert pour
+ * refuser un compte qui n'a pas de rôle ZupEat.
+ */
+router.get("/me/permissions/plateformes", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const compte = req.compte;
+    if (compte?.isSuperOwner) {
+      const tout = Object.fromEntries(SECTIONS.map((s) => [s.id, "write"]));
+      res.json({
+        isSuperOwner: true,
+        plateformes: Object.fromEntries(
+          PLATEFORMES.map((p) => [p, { role: "SUPEROWNER", permissions: tout }])
+        ),
+      });
+      return;
+    }
+    if (!compte?.isSystemAdmin) {
+      throw new ApiError(403, "Accès refusé", "FORBIDDEN");
+    }
+
+    const plateformes = Object.fromEntries(
+      await Promise.all(
+        PLATEFORMES.map(async (p) => {
+          const role = await PermissionsPlateforme.role(compte.acces[p], p);
+          return [p, role ? { role: role.code, roleLabel: role.label, permissions: role.permissions } : null] as const;
+        })
+      )
+    );
+    if (Object.values(plateformes).every((acces) => acces === null)) {
+      throw new ApiError(403, "Accès refusé", "FORBIDDEN");
+    }
+
+    res.json({ isSuperOwner: false, plateformes });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /superowner/me/permissions?plateforme=EAT - Ce que le compte connecté peut voir et faire
 router.get("/me/permissions", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {

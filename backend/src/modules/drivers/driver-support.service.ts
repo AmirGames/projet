@@ -49,13 +49,13 @@ export class DriverSupportService {
       throw new ApiError(400, `Message limité à ${LONGUEUR_MAX} caractères`, "MESSAGE_TOO_LONG");
     }
 
-    const livreur = await db.driver.findUnique({
+    const livreur = await db.courier.findUnique({
       where: { id: driverId },
       select: { id: true, name: true, email: true, currentOrderId: true, user: { select: { email: true } } },
     });
     if (!livreur) throw new ApiError(404, "Livreur introuvable", "DRIVER_NOT_FOUND");
 
-    const message = await db.driverSupportMessage.create({
+    const message = await db.courierSupportMessage.create({
       data: {
         driverId,
         sender: expediteur,
@@ -92,7 +92,7 @@ export class DriverSupportService {
 
   /** Le fil d'un livreur, du plus ancien au plus récent. */
   static async fil(driverId: string, limite = 200) {
-    const messages = await db.driverSupportMessage.findMany({
+    const messages = await db.courierSupportMessage.findMany({
       where: { driverId },
       orderBy: { createdAt: "desc" },
       take: Math.min(Math.max(limite, 1), 500),
@@ -102,7 +102,7 @@ export class DriverSupportService {
 
   /** Marque comme lus les messages écrits par l'autre partie. */
   static async marquerLu(driverId: string, lecteur: Expediteur) {
-    const { count } = await db.driverSupportMessage.updateMany({
+    const { count } = await db.courierSupportMessage.updateMany({
       where: { driverId, sender: lecteur === "DRIVER" ? "SUPPORT" : "DRIVER", readAt: null },
       data: { readAt: new Date() },
     });
@@ -110,7 +110,7 @@ export class DriverSupportService {
     if (count > 0) {
       // L'autre côté voit ses messages passer en « lu ».
       if (lecteur === "SUPPORT") {
-        const livreur = await db.driver.findUnique({
+        const livreur = await db.courier.findUnique({
           where: { id: driverId },
           select: { email: true, user: { select: { email: true } } },
         });
@@ -123,12 +123,12 @@ export class DriverSupportService {
   }
 
   static async nonLusPourLivreur(driverId: string) {
-    return db.driverSupportMessage.count({ where: { driverId, sender: "SUPPORT", readAt: null } });
+    return db.courierSupportMessage.count({ where: { driverId, sender: "SUPPORT", readAt: null } });
   }
 
   /** Les conversations, la plus récente d'abord, avec les messages en attente. */
   static async conversations() {
-    const derniers = await db.driverSupportMessage.groupBy({
+    const derniers = await db.courierSupportMessage.groupBy({
       by: ["driverId"],
       _max: { createdAt: true },
       orderBy: { _max: { createdAt: "desc" } },
@@ -139,18 +139,18 @@ export class DriverSupportService {
     const ids = derniers.map((d) => d.driverId);
 
     const [livreurs, nonLus, apercus] = await Promise.all([
-      db.driver.findMany({
+      db.courier.findMany({
         where: { id: { in: ids } },
         select: { id: true, name: true, phone: true, isOnline: true, currentOrderId: true },
       }),
-      db.driverSupportMessage.groupBy({
+      db.courierSupportMessage.groupBy({
         by: ["driverId"],
         where: { driverId: { in: ids }, sender: "DRIVER", readAt: null },
         _count: true,
       }),
       Promise.all(
         ids.map((driverId) =>
-          db.driverSupportMessage.findFirst({ where: { driverId }, orderBy: { createdAt: "desc" } })
+          db.courierSupportMessage.findFirst({ where: { driverId }, orderBy: { createdAt: "desc" } })
         )
       ),
     ]);

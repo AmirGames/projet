@@ -109,7 +109,7 @@ router.get("/members/deliveries", authMiddleware, isSuperOwner, async (req: Requ
     const where = status && status !== 'all' ? { status } : {};
 
     const [deliveries, total] = await Promise.all([
-      db.driver.findMany({
+      db.courier.findMany({
         where,
         skip: offset,
         take: limit,
@@ -125,7 +125,7 @@ router.get("/members/deliveries", authMiddleware, isSuperOwner, async (req: Requ
         },
         orderBy: { createdAt: 'desc' }
       }),
-      db.driver.count({ where })
+      db.courier.count({ where })
     ]);
 
     res.json({
@@ -157,7 +157,7 @@ router.get("/members/drivers", authMiddleware, isSuperOwner, async (req: Request
     const where = status && status !== 'all' ? { status } : {};
 
     const [drivers, total] = await Promise.all([
-      db.driver.findMany({
+      db.courier.findMany({
         where,
         skip: offset,
         take: limit,
@@ -174,7 +174,7 @@ router.get("/members/drivers", authMiddleware, isSuperOwner, async (req: Request
         },
         orderBy: { createdAt: 'desc' }
       }),
-      db.driver.count({ where })
+      db.courier.count({ where })
     ]);
 
     res.json({

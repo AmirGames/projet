@@ -58,7 +58,7 @@ export class AnnouncementService {
     }
 
     if (cible === "ALL" || cible === "DRIVERS") {
-      const livreurs = await db.driver.findMany({ select: { email: true } });
+      const livreurs = await db.courier.findMany({ select: { email: true } });
       for (const livreur of livreurs) {
         if (livreur.email) adresses.add(livreur.email);
       }

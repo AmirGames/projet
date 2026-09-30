@@ -99,7 +99,7 @@ export const paymentService = {
   async intentionDeLaCommande(orderId: string, paymentIntentId: string) {
     const [paiement, pourboire] = await Promise.all([
       db.payment.findFirst({ where: { orderId, stripePaymentIntentId: paymentIntentId }, select: { id: true } }),
-      db.driverTip.findFirst({ where: { orderId, stripePaymentIntentId: paymentIntentId }, select: { id: true } }),
+      db.courierTip.findFirst({ where: { orderId, stripePaymentIntentId: paymentIntentId }, select: { id: true } }),
     ]);
     return Boolean(paiement || pourboire);
   },

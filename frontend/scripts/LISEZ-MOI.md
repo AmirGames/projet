@@ -83,12 +83,14 @@ trois domaines renseignés**, les mêmes que ceux passés au script.
 NEXT_PUBLIC_DOMAINE_PUBLIC=monsite.local \
 NEXT_PUBLIC_DOMAINE_PRO=commercant.monsite.local \
 NEXT_PUBLIC_DOMAINE_LIVREUR=livreur.monsite.local \
+NEXT_PUBLIC_DOMAINE_CHAUFFEUR=chauffeur.drive.local \
 npm run dev
 
 # dans un autre terminal, les mêmes valeurs
 NEXT_PUBLIC_DOMAINE_PUBLIC=monsite.local \
 NEXT_PUBLIC_DOMAINE_PRO=commercant.monsite.local \
 NEXT_PUBLIC_DOMAINE_LIVREUR=livreur.monsite.local \
+NEXT_PUBLIC_DOMAINE_CHAUFFEUR=chauffeur.drive.local \
 npm run verif:domaines
 ```
 

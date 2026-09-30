@@ -14,7 +14,10 @@
  *   - la vitrine du groupe (zupone.com) : la présentation de ZupOne et de ses
  *     plateformes ;
  *   - le domaine ZupDrive (zupdrive.com) : le service VTC à venir et le
- *     recrutement des chauffeurs.
+ *     recrutement des chauffeurs ;
+ *   - le domaine chauffeur (driver.zupdrive.com) : l'espace des chauffeurs
+ *     ZupDrive (transport de personnes). À ne pas confondre avec le domaine
+ *     livreur ZupEat, dont les pages vivent sous /driver.
  *
  * Séparer les domaines donne des sessions cloisonnées (chaque domaine a son
  * propre stockage navigateur, un client et un commerçant ne se marchent plus
@@ -26,10 +29,10 @@
  * domaine unique.
  */
 
-export type Espace = 'groupe' | 'pro' | 'livreur' | 'public' | 'vitrine' | 'drive' | 'commun';
+export type Espace = 'groupe' | 'pro' | 'livreur' | 'public' | 'vitrine' | 'drive' | 'chauffeur' | 'commun';
 
 /** Un espace qui possède son propre domaine. */
-export type EspaceHeberge = 'groupe' | 'pro' | 'livreur' | 'public' | 'vitrine' | 'drive';
+export type EspaceHeberge = 'groupe' | 'pro' | 'livreur' | 'public' | 'vitrine' | 'drive' | 'chauffeur';
 
 const lire = (valeur: string | undefined) => (valeur || '').trim().toLowerCase();
 
@@ -39,6 +42,7 @@ export const DOMAINE_PUBLIC = lire(process.env.NEXT_PUBLIC_DOMAINE_PUBLIC);
 export const DOMAINE_LIVREUR = lire(process.env.NEXT_PUBLIC_DOMAINE_LIVREUR);
 export const DOMAINE_VITRINE = lire(process.env.NEXT_PUBLIC_DOMAINE_VITRINE);
 export const DOMAINE_DRIVE = lire(process.env.NEXT_PUBLIC_DOMAINE_DRIVE);
+export const DOMAINE_CHAUFFEUR = lire(process.env.NEXT_PUBLIC_DOMAINE_CHAUFFEUR);
 
 export const DOMAINES: Record<EspaceHeberge, string> = {
   groupe: DOMAINE_GROUPE,
@@ -47,6 +51,7 @@ export const DOMAINES: Record<EspaceHeberge, string> = {
   public: DOMAINE_PUBLIC,
   vitrine: DOMAINE_VITRINE,
   drive: DOMAINE_DRIVE,
+  chauffeur: DOMAINE_CHAUFFEUR,
 };
 
 /**
@@ -54,7 +59,8 @@ export const DOMAINES: Record<EspaceHeberge, string> = {
  * professionnel : sans point de comparaison, il n'y a rien à répartir.
  */
 export const CLOISONNEMENT_ACTIF = Boolean(
-  DOMAINE_PUBLIC && (DOMAINE_PRO || DOMAINE_LIVREUR || DOMAINE_GROUPE || DOMAINE_VITRINE || DOMAINE_DRIVE),
+  DOMAINE_PUBLIC &&
+    (DOMAINE_PRO || DOMAINE_LIVREUR || DOMAINE_GROUPE || DOMAINE_VITRINE || DOMAINE_DRIVE || DOMAINE_CHAUFFEUR),
 );
 
 /**
@@ -82,7 +88,11 @@ const SEGMENTS: Record<EspaceHeberge, string[]> = {
     'track',
   ],
   vitrine: ['zupone'],
-  drive: ['zupdrive', 'devenir-chauffeur'],
+  // Le recrutement des chauffeurs reste sur la vitrine ZupDrive, publique et
+  // indexée ; leur espace (/chauffeur) a son propre domaine.
+  // /trajet : le passager commande et suit ses trajets.
+  drive: ['zupdrive', 'devenir-chauffeur', 'trajet'],
+  chauffeur: ['chauffeur'],
 };
 
 /**
@@ -121,9 +131,11 @@ export const ACCUEIL: Record<EspaceHeberge, string> = {
   public: '/client',
   vitrine: '/zupone',
   drive: '/zupdrive',
+  // Le dossier du chauffeur ; sans session, la page propose de se connecter.
+  chauffeur: '/chauffeur',
 };
 
-const ESPACES_HEBERGES: EspaceHeberge[] = ['groupe', 'pro', 'livreur', 'public', 'vitrine', 'drive'];
+const ESPACES_HEBERGES: EspaceHeberge[] = ['groupe', 'pro', 'livreur', 'public', 'vitrine', 'drive', 'chauffeur'];
 
 /** Un espace n'est cloisonné que si son domaine est renseigné. */
 export function espaceHeberge(espace: EspaceHeberge): boolean {

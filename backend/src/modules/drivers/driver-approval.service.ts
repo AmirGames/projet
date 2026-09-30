@@ -54,7 +54,7 @@ export const libelleDuDocument = (type: string) => LIBELLES_DOCUMENT[type] || ty
 export class DriverApprovalService {
   /** Le dossier complet : le livreur, ses pièces, ce qui manque. */
   static async dossier(driverId: string) {
-    const livreur = await db.driver.findUnique({
+    const livreur = await db.courier.findUnique({
       where: { id: driverId },
       include: {
         documents: { orderBy: { createdAt: "desc" } },
@@ -96,7 +96,7 @@ export class DriverApprovalService {
 
     // Une pièce corrigée après un refus ne doit pas laisser l'ancienne traîner
     // dans le dossier : elle prend sa place.
-    const existante = await db.driverDocument.findFirst({
+    const existante = await db.courierDocument.findFirst({
       where: { driverId, type: piece.type },
       orderBy: { createdAt: "desc" },
     });
@@ -110,8 +110,8 @@ export class DriverApprovalService {
     };
 
     const deposee = existante
-      ? await db.driverDocument.update({ where: { id: existante.id }, data: valeurs })
-      : await db.driverDocument.create({ data: { driverId, type: piece.type, ...valeurs } });
+      ? await db.courierDocument.update({ where: { id: existante.id }, data: valeurs })
+      : await db.courierDocument.create({ data: { driverId, type: piece.type, ...valeurs } });
 
     logger.info("Driver document submitted", { driverId, type: piece.type });
 
@@ -122,7 +122,7 @@ export class DriverApprovalService {
 
   /** Prévient la plateforme qu'une pièce attend son examen. */
   private static async signalerDepot(driverId: string, type: TypeDocument) {
-    const livreur = await db.driver
+    const livreur = await db.courier
       .findUnique({ where: { id: driverId }, select: { name: true, email: true } })
       .catch(() => null);
 
@@ -148,7 +148,7 @@ export class DriverApprovalService {
       );
     }
 
-    const existante = await db.driverDocument.findFirst({
+    const existante = await db.courierDocument.findFirst({
       where: { driverId, type: piece.type },
       orderBy: { createdAt: "desc" },
     });
@@ -169,8 +169,8 @@ export class DriverApprovalService {
     };
 
     const deposee = existante
-      ? await db.driverDocument.update({ where: { id: existante.id }, data: valeurs })
-      : await db.driverDocument.create({ data: { driverId, type: piece.type, ...valeurs } });
+      ? await db.courierDocument.update({ where: { id: existante.id }, data: valeurs })
+      : await db.courierDocument.create({ data: { driverId, type: piece.type, ...valeurs } });
 
     logger.info("Driver document uploaded", { driverId, type: piece.type });
 
@@ -187,7 +187,7 @@ export class DriverApprovalService {
    * reçoit une date future repart en examen, sans être revalidée d'office.
    */
   static async changerEcheance(driverId: string, documentId: string, expiryDate: string) {
-    const piece = await db.driverDocument.findUnique({ where: { id: documentId } });
+    const piece = await db.courierDocument.findUnique({ where: { id: documentId } });
 
     if (!piece || piece.driverId !== driverId) {
       throw new ApiError(404, "Document introuvable", "DOCUMENT_NOT_FOUND");
@@ -203,7 +203,7 @@ export class DriverApprovalService {
       throw new ApiError(400, "Cette date est déjà passée", "DOCUMENT_EXPIRED");
     }
 
-    const modifiee = await db.driverDocument.update({
+    const modifiee = await db.courierDocument.update({
       where: { id: documentId },
       data: {
         expiryDate: echeance,
@@ -226,7 +226,7 @@ export class DriverApprovalService {
     documentId: string,
     verdict: { approuve: boolean; note?: string }
   ) {
-    const piece = await db.driverDocument.findUnique({ where: { id: documentId } });
+    const piece = await db.courierDocument.findUnique({ where: { id: documentId } });
 
     if (!piece || piece.driverId !== driverId) {
       throw new ApiError(404, "Document introuvable", "DOCUMENT_NOT_FOUND");
@@ -240,7 +240,7 @@ export class DriverApprovalService {
       );
     }
 
-    const misAJour = await db.driverDocument.update({
+    const misAJour = await db.courierDocument.update({
       where: { id: documentId },
       data: {
         status: verdict.approuve ? "APPROVED" : "REJECTED",
@@ -283,7 +283,7 @@ export class DriverApprovalService {
       );
     }
 
-    const livreur = await db.driver.update({
+    const livreur = await db.courier.update({
       where: { id: driverId },
       data: {
         status: "ACTIVE",
@@ -318,7 +318,7 @@ export class DriverApprovalService {
       throw new ApiError(400, "Dites au livreur pourquoi", "MISSING_REASON");
     }
 
-    const livreur = await db.driver.update({
+    const livreur = await db.courier.update({
       where: { id: driverId },
       data: {
         status: etat,
@@ -343,7 +343,7 @@ export class DriverApprovalService {
 
   /** Remet en course un livreur suspendu, sans repasser par le dossier. */
   static async reactiver(driverId: string, adminId: string) {
-    const livreur = await db.driver.findUnique({ where: { id: driverId } });
+    const livreur = await db.courier.findUnique({ where: { id: driverId } });
 
     if (!livreur) {
       throw new ApiError(404, "Livreur introuvable", "DRIVER_NOT_FOUND");
@@ -357,7 +357,7 @@ export class DriverApprovalService {
       );
     }
 
-    const remis = await db.driver.update({
+    const remis = await db.courier.update({
       where: { id: driverId },
       data: { status: "ACTIVE", statusReason: null, approvedBy: adminId },
     });
@@ -378,7 +378,7 @@ export class DriverApprovalService {
    * « en attente » pour toujours.
    */
   private static async prevenir(driverId: string, titre: string, corps: string) {
-    const livreur = await db.driver.findUnique({
+    const livreur = await db.courier.findUnique({
       where: { id: driverId },
       select: { email: true },
     });

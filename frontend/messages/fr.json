@@ -76,7 +76,11 @@
       "reviews": "Avis signalés",
       "monitoring": "Surveillance",
       "roles": "Rôles et accès",
-      "console": "Console"
+      "console": "Console",
+      "sectionZupDrive": "ZupDrive",
+      "chauffeurs": "Chauffeurs",
+      "coursesDrive": "Courses",
+      "tarifsDrive": "Tarifs"
     },
     "openMenu": "Ouvrir le menu",
     "toggleSidebar": "Replier ou déplier le menu"
@@ -2262,5 +2266,320 @@
     "driverTitle": "Chauffeur VTC",
     "driverText": "Faites-vous connaître dès maintenant pour conduire avec ZupDrive à son ouverture.",
     "driverAction": "Devenir chauffeur"
+  },
+  "chauffeurDrive": {
+    "titre": "Mon dossier chauffeur ZupDrive",
+    "intro": "Complétez votre profil, déposez vos documents puis envoyez votre dossier. L'équipe ZupDrive le vérifie et vous prévient.",
+    "connexionRequise": "Connectez-vous avec votre compte ZupOne, ou créez-en un, pour ouvrir votre dossier chauffeur.",
+    "seConnecter": "Se connecter",
+    "creerCompte": "Créer un compte",
+    "erreurConnexion": "Serveur injoignable. Réessayez dans un instant.",
+    "sectionProfil": "Vous, votre entreprise et votre véhicule",
+    "sectionPieces": "Documents",
+    "formatsAcceptes": "JPG, PNG, WebP (2 Mo) ou PDF (5 Mo). Le certificat d'immatriculation doit montrer le recto et le verso.",
+    "champ": {
+      "nomComplet": "Nom complet",
+      "telephone": "Téléphone",
+      "numeroEntreprise": "Numéro d'entreprise (BCE)",
+      "raisonSociale": "Raison sociale (si société)",
+      "numeroLicence": "Numéro de licence",
+      "vehiculeMarque": "Marque du véhicule",
+      "vehiculeModele": "Modèle du véhicule",
+      "vehiculePlaque": "Plaque d'immatriculation",
+      "region": "Région de la licence"
+    },
+    "choisirRegion": "Choisissez…",
+    "region": {
+      "BRUXELLES": "Bruxelles-Capitale",
+      "WALLONIE": "Wallonie",
+      "FLANDRE": "Flandre"
+    },
+    "numeroTva": "Numéro de TVA : {tva}",
+    "commencer": "Ouvrir mon dossier",
+    "enregistrer": "Enregistrer",
+    "enregistrement": "Enregistrement…",
+    "profilEnregistre": "Profil enregistré.",
+    "pieceDeposee": "Document déposé, en attente de vérification.",
+    "pieceActionnaires": "Identité des personnes détenant des parts de la société",
+    "facultative": "(si société)",
+    "aDeposer": "À déposer",
+    "voir": "Voir",
+    "deposer": "Déposer",
+    "remplacer": "Remplacer",
+    "dateExpiration": "Expire le",
+    "statutPiece": {
+      "PENDING": "En vérification",
+      "APPROVED": "Validé",
+      "REJECTED": "Refusé",
+      "EXPIRED": "Expiré"
+    },
+    "motif": "Motif : {motif}",
+    "resteAFaire": "Avant d'envoyer votre dossier : {liste}.",
+    "soumettre": "Envoyer mon dossier",
+    "envoi": "Envoi…",
+    "dossierSoumis": "Dossier envoyé. L'équipe ZupDrive vous répondra après vérification.",
+    "statut": {
+      "BROUILLON": "Dossier en cours",
+      "SOUMIS": "Dossier en vérification",
+      "VALIDE": "Dossier validé",
+      "REFUSE": "Dossier à compléter",
+      "SUSPENDU": "Compte suspendu"
+    },
+    "statutAide": {
+      "BROUILLON": "Complétez votre profil et déposez les documents demandés.",
+      "SOUMIS": "L'équipe ZupDrive examine votre dossier. Il ne peut pas être modifié pendant la vérification.",
+      "VALIDE": "Vous êtes chauffeur ZupDrive. Pensez à renouveler vos documents avant leur expiration.",
+      "REFUSE": "Corrigez ce qui est indiqué puis renvoyez votre dossier.",
+      "SUSPENDU": "Contactez le support ZupDrive pour en savoir plus.",
+      "SUSPENDU_EXPIRATION": "Un document obligatoire a expiré. Déposez la version à jour ci-dessous : votre compte sera rétabli dès que l'équipe ZupDrive l'aura validée."
+    },
+    "versionEnVigueur": "Version en vigueur : valable.",
+    "versionEnVigueurJusquau": "Version en vigueur : valable jusqu'au {date}.",
+    "versionEnVigueurExpiree": "Version en vigueur : expirée.",
+    "nouvelleVersion": "Nouvelle version :",
+    "versCourses": "Mes courses"
+  },
+  "superownerChauffeurs": {
+    "title": "Chauffeurs ZupDrive",
+    "subtitle": "Dossiers des chauffeurs (transport de personnes, licence LVC) : examinez chaque pièce, puis validez ou refusez le dossier.",
+    "filter": "Filtrer les dossiers",
+    "status": {
+      "SOUMIS": "À examiner",
+      "VALIDE": "Validés",
+      "REFUSE": "Refusés",
+      "SUSPENDU": "Suspendus",
+      "BROUILLON": "En cours",
+      "ALL": "Tous"
+    },
+    "region": {
+      "BRUXELLES": "Bruxelles-Capitale",
+      "WALLONIE": "Wallonie",
+      "FLANDRE": "Flandre"
+    },
+    "empty": "Aucun dossier dans cette catégorie.",
+    "loadError": "Impossible de charger les dossiers chauffeurs.",
+    "actionFailed": "L'action a échoué.",
+    "connectionError": "Serveur injoignable. Réessayez dans un instant.",
+    "reasonRequired": "Indiquez un motif : le chauffeur doit savoir quoi corriger.",
+    "piecesCount": "{validees}/{exigees} pièces validées",
+    "submittedOn": "Soumis le {date}",
+    "open": "Ouvrir le dossier",
+    "collapse": "Replier",
+    "field": {
+      "email": "E-mail",
+      "telephone": "Téléphone",
+      "region": "Région",
+      "numeroEntreprise": "N° BCE",
+      "numeroTva": "N° TVA",
+      "raisonSociale": "Raison sociale",
+      "numeroLicence": "N° de licence",
+      "vehicule": "Véhicule",
+      "vehiculePlaque": "Plaque",
+      "soumisLe": "Soumis le",
+      "valideLe": "Validé le"
+    },
+    "documents": "Pièces du dossier",
+    "optional": "(facultative)",
+    "documentStatus": {
+      "PENDING": "À examiner",
+      "APPROVED": "Validée",
+      "REJECTED": "Refusée",
+      "EXPIRED": "Expirée"
+    },
+    "expiresOn": "Expire le {date}",
+    "view": "Voir",
+    "approveDocument": "Valider",
+    "rejectDocument": "Refuser",
+    "documentReasonPlaceholder": "Motif du refus de la pièce",
+    "missingDocuments": "Pièces exigées non déposées : {liste}.",
+    "decision": "Décision sur le dossier",
+    "approveHint": "La validation s'ouvre quand toutes les pièces exigées sont validées.",
+    "reasonLabel": "Motif",
+    "rejectReasonPlaceholder": "Motif du refus (obligatoire pour refuser), envoyé au chauffeur",
+    "suspendReasonPlaceholder": "Motif de la suspension (obligatoire), envoyé au chauffeur",
+    "approve": "Valider le dossier",
+    "reject": "Refuser le dossier",
+    "suspend": "Suspendre le chauffeur",
+    "reactivate": "Rétablir le chauffeur",
+    "waiting": {
+      "BROUILLON": "Le chauffeur n'a pas encore envoyé son dossier.",
+      "REFUSE": "Dossier renvoyé au chauffeur : en attente de ses corrections."
+    },
+    "backToQueue": "← Retour à la file",
+    "renewal": "(renouvellement)",
+    "currentVersion": "(version en vigueur jusqu'à validation du renouvellement)",
+    "rating": "{moyenne} ★ ({avis} avis)",
+    "neverRated": "Jamais noté"
+  },
+  "zupdriveTrajet": {
+    "titre": "Commander un trajet",
+    "intro": "Indiquez votre départ et votre destination : le prix est fixé avant de commander.",
+    "connexionRequise": "Connectez-vous avec votre compte ZupOne, ou créez-en un, pour commander un trajet.",
+    "seConnecter": "Se connecter",
+    "creerCompte": "Créer un compte",
+    "erreur": "Une erreur est survenue. Réessayez.",
+    "depart": "Départ",
+    "destination": "Destination",
+    "departPlaceholder": "Adresse de départ",
+    "destinationPlaceholder": "Adresse d'arrivée",
+    "calcul": "Calcul du prix…",
+    "estimation": "Environ {distance} · {duree}",
+    "prixFixe": "Prix fixe, connu avant de commander.",
+    "commander": "Commander pour {prix}",
+    "commandeEnCours": "Commande…",
+    "prixChange": "Ce devis a expiré : voici le prix à jour.",
+    "trajetEnCours": "Trajet en cours vers {destination} — suivre",
+    "mesTrajets": "Mes trajets",
+    "retour": "← Mes trajets",
+    "prix": "Prix",
+    "annuler": "Annuler le trajet",
+    "annuleeParChauffeur": "Le chauffeur a dû annuler. Vous pouvez commander un nouveau trajet.",
+    "statut": {
+      "RECHERCHE": "Recherche d'un chauffeur",
+      "ACCEPTEE": "Chauffeur en route",
+      "ARRIVEE": "Chauffeur arrivé",
+      "EN_COURS": "En cours",
+      "TERMINEE": "Terminée",
+      "ANNULEE": "Annulée",
+      "SANS_CHAUFFEUR": "Sans chauffeur"
+    },
+    "statutDetail": {
+      "RECHERCHE": "Recherche d'un chauffeur…",
+      "ACCEPTEE": "Votre chauffeur arrive",
+      "ARRIVEE": "Votre chauffeur vous attend",
+      "EN_COURS": "Bon trajet !",
+      "TERMINEE": "Trajet terminé",
+      "ANNULEE": "Trajet annulé",
+      "SANS_CHAUFFEUR": "Aucun chauffeur disponible"
+    },
+    "pasEncoreNote": "Nouveau chauffeur",
+    "noterChauffeur": "Comment s'est passé votre trajet avec {prenom} ?",
+    "votreNote": "Votre note :"
+  },
+  "chauffeurCourses": {
+    "titre": "Mes courses",
+    "erreur": "Une erreur est survenue. Réessayez.",
+    "connexionRequise": "Connectez-vous pour voir vos courses.",
+    "versDossier": "Mon dossier chauffeur",
+    "pasValide": "Votre dossier chauffeur doit être validé pour faire des courses.",
+    "enLigne": "En ligne",
+    "horsLigne": "Hors ligne",
+    "enLigneAide": "Vous recevez les courses proches de vous.",
+    "horsLigneAide": "Passez en ligne pour recevoir des courses.",
+    "passerEnLigne": "Passer en ligne",
+    "passerHorsLigne": "Passer hors ligne",
+    "positionRefusee": "Autorisez la localisation : sans elle, aucune course ne peut vous être proposée.",
+    "nouvelleCourse": "Nouvelle course",
+    "aDistance": "Départ à {distance} de vous",
+    "accepter": "Accepter",
+    "refuser": "Refuser",
+    "passager": "Passager : {prenom}",
+    "trajetEstime": "{distance} · {duree}",
+    "annuler": "Annuler la course",
+    "motifAnnulation": "Motif de l'annulation",
+    "historique": "Historique",
+    "statut": {
+      "RECHERCHE": "Recherche d'un chauffeur",
+      "ACCEPTEE": "Chauffeur en route",
+      "ARRIVEE": "Chauffeur arrivé",
+      "EN_COURS": "En cours",
+      "TERMINEE": "Terminée",
+      "ANNULEE": "Annulée",
+      "SANS_CHAUFFEUR": "Sans chauffeur"
+    },
+    "etape": {
+      "arrive": "Je suis arrivé",
+      "demarrer": "Le passager est à bord",
+      "terminer": "Terminer la course"
+    },
+    "maMoyenne": "{moyenne} sur 5 ({avis} avis)",
+    "pasEncoreNote": "Pas encore de note",
+    "noterPassager": "Comment s'est passée cette course avec votre passager ?",
+    "passagerNote": "Passager noté.",
+    "passagerNouveau": "Nouveau passager"
+  },
+  "superownerTarifsDrive": {
+    "titre": "Tarifs ZupDrive",
+    "sousTitre": "Le prix de chaque course est calculé à la commande avec le tarif de sa région, puis figé.",
+    "erreur": "Impossible de charger les tarifs.",
+    "montantInvalide": "{champ} : montant invalide (ex. 2,50).",
+    "enregistre": "Tarif {region} enregistré.",
+    "enregistrer": "Enregistrer",
+    "enregistrement": "Enregistrement…",
+    "actif": "Commandes ouvertes dans cette région",
+    "region": {
+      "BRUXELLES": "Bruxelles-Capitale",
+      "WALLONIE": "Wallonie",
+      "FLANDRE": "Flandre"
+    },
+    "champ": {
+      "priseEnChargeCentimes": "Prise en charge (€)",
+      "parKmCentimes": "Par km (€)",
+      "parMinuteCentimes": "Par minute (€)",
+      "minimumCentimes": "Minimum par course (€)"
+    }
+  },
+  "superownerCoursesDrive": {
+    "titre": "Courses ZupDrive",
+    "sousTitre": "Les trajets commandés, du plus récent au plus ancien.",
+    "erreur": "Impossible de charger les courses.",
+    "filtre": "Filtrer les courses",
+    "aucune": "Aucune course.",
+    "compteSupprime": "Compte supprimé",
+    "colonne": {
+      "date": "Date",
+      "trajet": "Trajet",
+      "passager": "Passager",
+      "chauffeur": "Chauffeur",
+      "prix": "Prix",
+      "statut": "Statut",
+      "notes": "Notes"
+    },
+    "statut": {
+      "ALL": "Toutes",
+      "RECHERCHE": "Recherche d'un chauffeur",
+      "ACCEPTEE": "Chauffeur en route",
+      "ARRIVEE": "Chauffeur arrivé",
+      "EN_COURS": "En cours",
+      "TERMINEE": "Terminée",
+      "ANNULEE": "Annulée",
+      "SANS_CHAUFFEUR": "Sans chauffeur"
+    },
+    "region": {
+      "BRUXELLES": "Bruxelles-Capitale",
+      "WALLONIE": "Wallonie",
+      "FLANDRE": "Flandre"
+    },
+    "annuleePar": {
+      "PASSAGER": "par le passager",
+      "CHAUFFEUR": "par le chauffeur",
+      "PLATEFORME": "par la plateforme"
+    },
+    "noteDe": {
+      "PASSAGER": "Chauffeur noté {note}/5",
+      "CHAUFFEUR": "Passager noté {note}/5"
+    }
+  },
+  "carteCourseDrive": {
+    "libelle": "Carte du trajet",
+    "depart": "Départ",
+    "destination": "Destination",
+    "chauffeur": "Votre chauffeur"
+  },
+  "noterCourseDrive": {
+    "note": "Votre note",
+    "etoiles": "{n} étoile(s) — {libelle}",
+    "libelle": {
+      "1": "Très mauvais",
+      "2": "Mauvais",
+      "3": "Correct",
+      "4": "Bien",
+      "5": "Excellent"
+    },
+    "commentaire": "Un commentaire ? (facultatif)",
+    "commentairePrive": "Votre commentaire n'est lu que par l'équipe ZupDrive.",
+    "envoyer": "Envoyer ma note",
+    "envoi": "Envoi…",
+    "erreur": "La note n'a pas pu être enregistrée."
   }
 }
