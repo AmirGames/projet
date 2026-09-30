@@ -256,7 +256,7 @@ export default function DossierChauffeurPage() {
                 name={champ}
                 value={profil[champ]}
                 onChange={(e) => setProfil({ ...profil, [champ]: e.target.value })}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 disabled:bg-slate-100"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 disabled:bg-slate-100 disabled:text-slate-500"
               />
             </label>
           ))}
@@ -266,7 +266,7 @@ export default function DossierChauffeurPage() {
               name="region"
               value={profil.region}
               onChange={(e) => setProfil({ ...profil, region: e.target.value })}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 disabled:bg-slate-100"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 disabled:bg-slate-100 disabled:text-slate-500"
             >
               <option value="">{t('choisirRegion')}</option>
               {REGIONS.map((region) => (
@@ -433,7 +433,7 @@ function LignePiece({
               type="date"
               value={dateExpiration}
               onChange={(e) => setDateExpiration(e.target.value)}
-              className="ml-2 rounded border border-slate-300 px-2 py-1"
+              className="ml-2 rounded border border-slate-300 bg-white px-2 py-1 text-slate-900"
             />
           </label>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 hover:border-slate-400">
