@@ -44,7 +44,12 @@ interface Course {
 }
 
 interface Chiffres {
-  chauffeurs: { parStatut: Record<string, number>; enAttente: DossierEnAttente[] } | null;
+  chauffeurs: {
+    parStatut: Record<string, number>;
+    enAttente: DossierEnAttente[];
+    /** Les sociétés par statut : même section « chauffeurs » (dossiers LVC). */
+    societes: Record<string, number>;
+  } | null;
   courses: { parStatut: Record<string, number>; dernieres: Course[] } | null;
 }
 
@@ -75,9 +80,10 @@ export default function TableauDeBordZupDrive() {
 
       const [chauffeurs, courses] = await Promise.all([
         voit('chauffeurs')
-          ? lire<{ data: DossierEnAttente[]; counts: Record<string, number> }>('/chauffeurs?statut=SOUMIS&limit=5').then(
-              (lu) => ({ parStatut: lu.counts, enAttente: lu.data })
-            )
+          ? Promise.all([
+              lire<{ data: DossierEnAttente[]; counts: Record<string, number> }>('/chauffeurs?statut=SOUMIS&limit=5'),
+              lire<{ counts: Record<string, number> }>('/societes?statut=SOUMIS&limit=1'),
+            ]).then(([lu, societes]) => ({ parStatut: lu.counts, enAttente: lu.data, societes: societes.counts }))
           : null,
         voit('courses-drive')
           ? Promise.all([
@@ -137,6 +143,15 @@ export default function TableauDeBordZupDrive() {
             <Tuile libelle={t('chauffeurs.valides')} valeur={chiffres.chauffeurs.parStatut.VALIDE ?? 0} />
             <Tuile libelle={t('chauffeurs.suspendus')} valeur={chiffres.chauffeurs.parStatut.SUSPENDU ?? 0} />
             <Tuile libelle={t('chauffeurs.brouillons')} valeur={chiffres.chauffeurs.parStatut.BROUILLON ?? 0} />
+          </div>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <Tuile
+              libelle={t('chauffeurs.societesAExaminer')}
+              valeur={chiffres.chauffeurs.societes.SOUMIS ?? 0}
+              accent={(chiffres.chauffeurs.societes.SOUMIS ?? 0) > 0}
+              href="/superowner/zupdrive/societes"
+            />
+            <Tuile libelle={t('chauffeurs.societesValidees')} valeur={chiffres.chauffeurs.societes.VALIDE ?? 0} />
           </div>
 
           <div className="rounded-lg border border-gray-700 bg-gray-800">

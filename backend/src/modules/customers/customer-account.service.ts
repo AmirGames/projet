@@ -37,6 +37,7 @@ export class CustomerAccountService {
         isSystemAdmin: true,
         _count: { select: { memberships: true, accesEquipe: true } },
         driver: { select: { id: true, suppressionDemandeeLe: true } },
+        societeDrive: { select: { id: true } },
       },
     });
     if (!utilisateur) throw new ApiError(401, "Session invalide", "UNAUTHORIZED");
@@ -70,6 +71,9 @@ export class CustomerAccountService {
 
     const livreur = Boolean(utilisateur.driver);
     const commercant = utilisateur._count.memberships > 0;
+    // Gérant d'une société ZupDrive : la société et l'historique de ses
+    // courses ne partent pas avec lui (relation Restrict).
+    const societeDrive = Boolean(utilisateur.societeDrive);
     const equipe = utilisateur.isSuperOwner || utilisateur.isSystemAdmin || utilisateur._count.accesEquipe > 0;
 
     return {
@@ -80,9 +84,10 @@ export class CustomerAccountService {
         // de son dernier versement.
         livreurEnSuppression: Boolean(utilisateur.driver?.suppressionDemandeeLe),
         commercant,
+        societeDrive,
       },
       // Personne d'autre ne s'en sert : la connexion part avec ZupEat.
-      compteEntierSupprime: !livreur && !commercant && !equipe,
+      compteEntierSupprime: !livreur && !commercant && !equipe && !societeDrive,
       _clientId: client?.id ?? null,
       _email: utilisateur.email,
     };
@@ -172,6 +177,7 @@ export class CustomerAccountService {
           ? "Votre compte livreur, en cours de suppression, reste accessible jusqu'au dernier versement de vos courses."
           : "Votre compte livreur reste actif."),
       apercu.restent.commercant && "Votre espace commerçant reste actif.",
+      apercu.restent.societeDrive && "Votre société ZupDrive reste active.",
     ].filter(Boolean);
     return `${base} ${autres.join(" ")} Vous vous y connectez avec la même adresse e-mail et le même mot de passe.`;
   }

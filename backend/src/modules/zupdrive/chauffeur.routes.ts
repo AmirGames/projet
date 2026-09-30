@@ -11,6 +11,7 @@ import {
   libelleDeLaPiece,
 } from "./chauffeur-onboarding.service";
 import { CourseDriveService } from "./course-drive.service";
+import { SocieteDriveService } from "./societe-drive.service";
 import { COMMENTAIRE_MAX, NOTE_MAX, NOTE_MIN, NoteCourseDriveService } from "./note-course-drive.service";
 
 /**
@@ -134,6 +135,51 @@ router.post(
 router.post("/me/submit", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const dossier = await ChauffeurOnboardingService.soumettre(req.userId as string);
+    res.json({ success: true, data: presenterDossier(dossier!) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Société : invitations reçues, rattachement (une société à la fois)
+// ---------------------------------------------------------------------------
+
+const idInvitation = z.string().min(1).max(64);
+
+// GET /api/zupdrive/chauffeur/me/invitations — les invitations en attente adressées à l'e-mail du compte
+router.get("/me/invitations", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await SocieteDriveService.invitationsDuCompte(req.userId as string) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/zupdrive/chauffeur/me/invitations/:id/accepter — rouler pour cette société
+router.post("/me/invitations/:id/accepter", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dossier = await SocieteDriveService.accepterInvitation(req.userId as string, idInvitation.parse(req.params.id));
+    res.json({ success: true, data: presenterDossier(dossier!) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/zupdrive/chauffeur/me/invitations/:id/refuser
+router.post("/me/invitations/:id/refuser", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const invitations = await SocieteDriveService.refuserInvitation(req.userId as string, idInvitation.parse(req.params.id));
+    res.json({ success: true, data: invitations });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/zupdrive/chauffeur/me/quitter-societe — redevenir indépendant (pas pendant une course)
+router.post("/me/quitter-societe", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dossier = await SocieteDriveService.quitterSociete(req.userId as string);
     res.json({ success: true, data: presenterDossier(dossier!) });
   } catch (err) {
     next(err);

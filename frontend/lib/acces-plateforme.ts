@@ -66,6 +66,8 @@ const PAGES: [string, string | null][] = [
   ['/superowner/zupeat/versements', 'payouts'],
   ['/superowner/zupeat/reviews', 'reviews'],
   ['/superowner/zupdrive/chauffeurs', 'chauffeurs'],
+  // Les sociétés et leurs véhicules : les mêmes dossiers LVC que les chauffeurs.
+  ['/superowner/zupdrive/societes', 'chauffeurs'],
   ['/superowner/zupdrive/tarifs', 'courses-drive'],
   ['/superowner/zupdrive/courses', 'courses-drive'],
 ];

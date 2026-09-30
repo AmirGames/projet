@@ -216,6 +216,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       plateforme: 'DRIVE',
       items: [
         { label: t('nav.chauffeurs'), icon: Car, href: '/superowner/zupdrive/chauffeurs', section: 'chauffeurs' },
+        { label: t('nav.societesDrive'), icon: Building2, href: '/superowner/zupdrive/societes', section: 'chauffeurs' },
         { label: t('nav.coursesDrive'), icon: Navigation, href: '/superowner/zupdrive/courses', section: 'courses-drive' },
         { label: t('nav.tarifsDrive'), icon: Euro, href: '/superowner/zupdrive/tarifs', section: 'courses-drive' },
       ],

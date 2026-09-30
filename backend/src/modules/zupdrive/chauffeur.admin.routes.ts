@@ -6,6 +6,8 @@ import { exigerPermission } from "../auth/permissions-plateforme.service";
 import { journaliser } from "../superowner/shared";
 import { ChauffeurOnboardingService, STATUTS_CHAUFFEUR, piecesExigees } from "./chauffeur-onboarding.service";
 import { presenterDossier } from "./chauffeur.routes";
+import { STATUTS_SOCIETE, SocieteDriveService } from "./societe-drive.service";
+import { presenterSociete } from "./societe.routes";
 import { TarificationDriveService } from "./tarification-drive.service";
 import { NoteCourseDriveService } from "./note-course-drive.service";
 import { REGIONS } from "./chauffeur-onboarding.service";
@@ -43,6 +45,7 @@ router.get("/chauffeurs", async (req: Request, res: Response, next: NextFunction
         include: {
           user: { select: { email: true } },
           documents: { where: { archiveeLe: null }, select: { type: true, statut: true } },
+          societe: { select: { id: true, raisonSociale: true } },
         },
         // Les dossiers soumis depuis le plus longtemps d'abord.
         orderBy: [{ soumisLe: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
@@ -55,7 +58,7 @@ router.get("/chauffeurs", async (req: Request, res: Response, next: NextFunction
     res.json({
       success: true,
       data: chauffeurs.map((chauffeur) => {
-        const exigees = piecesExigees(chauffeur.region);
+        const exigees = piecesExigees(chauffeur.region, { enSociete: Boolean(chauffeur.societeId) });
         const validees = new Set(
           chauffeur.documents.filter((piece) => piece.statut === "APPROVED").map((piece) => piece.type)
         );
@@ -67,6 +70,8 @@ router.get("/chauffeurs", async (req: Request, res: Response, next: NextFunction
           region: chauffeur.region,
           raisonSociale: chauffeur.raisonSociale,
           vehiculePlaque: chauffeur.vehiculePlaque,
+          // Chauffeur d'une société : licence, assurance et véhicule sont les siens.
+          societe: chauffeur.societe ?? null,
           statut: chauffeur.statut,
           motifStatut: chauffeur.motifStatut,
           soumisLe: chauffeur.soumisLe,
@@ -183,6 +188,147 @@ router.post(
 router.post(
   "/chauffeurs/:id/reactivate",
   decision("ZUPDRIVE_REACTIVATE_CHAUFFEUR", (id) => ChauffeurOnboardingService.reactiver(id))
+);
+
+// ---------------------------------------------------------------------------
+// Sociétés et leurs véhicules (section « chauffeurs » : les mêmes dossiers LVC)
+// ---------------------------------------------------------------------------
+
+// GET /api/zupdrive/admin/societes?statut=SOUMIS&limit=20&offset=0
+router.get("/societes", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const query = z
+      .object({
+        statut: z.enum([...STATUTS_SOCIETE, "ALL"]).default("ALL"),
+        limit: z.coerce.number().int().min(1).max(100).default(20),
+        offset: z.coerce.number().int().min(0).default(0),
+      })
+      .parse(req.query);
+    const where = query.statut === "ALL" ? {} : { statut: query.statut };
+
+    const [societes, total, parStatut] = await Promise.all([
+      db.societeDrive.findMany({
+        where,
+        skip: query.offset,
+        take: query.limit,
+        include: {
+          gerant: { select: { email: true } },
+          _count: { select: { chauffeurs: true } },
+          vehicules: { where: { retireLe: null }, select: { conforme: true } },
+        },
+        orderBy: [{ soumisLe: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
+      }),
+      db.societeDrive.count({ where }),
+      db.societeDrive.groupBy({ by: ["statut"], _count: true }),
+    ]);
+
+    res.json({
+      success: true,
+      data: societes.map((societe) => ({
+        id: societe.id,
+        raisonSociale: societe.raisonSociale,
+        numeroEntreprise: societe.numeroEntreprise,
+        region: societe.region,
+        telephone: societe.telephone,
+        email: societe.gerant.email,
+        statut: societe.statut,
+        motifStatut: societe.motifStatut,
+        soumisLe: societe.soumisLe,
+        chauffeurs: societe._count.chauffeurs,
+        vehicules: societe.vehicules.length,
+        vehiculesConformes: societe.vehicules.filter((v) => v.conforme).length,
+        createdAt: societe.createdAt,
+      })),
+      counts: Object.fromEntries(parStatut.map((ligne) => [ligne.statut, ligne._count])),
+      pagination: { total, limit: query.limit, offset: query.offset },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/zupdrive/admin/societes/:id — le dossier complet : société, véhicules, chauffeurs
+router.get("/societes/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: presenterSociete(await SocieteDriveService.societe(idSchema.parse(req.params.id))) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/zupdrive/admin/societes/:id/documents/:documentId — une pièce de la société ou de l'un de ses véhicules
+router.patch("/societes/:id/documents/:documentId", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const body = z
+      .object({ approuve: z.boolean(), note: z.string().trim().max(500).optional() })
+      .strict()
+      .parse(req.body);
+    const societeId = idSchema.parse(req.params.id);
+    const { avant, piece, vehicule } = await SocieteDriveService.examinerPiece(
+      societeId,
+      idSchema.parse(req.params.documentId),
+      body
+    );
+
+    await journaliser(req, "ZUPDRIVE_REVIEW_SOCIETE_DOCUMENT", piece.id, {
+      societeId,
+      vehiculeId: piece.vehiculeId,
+      type: piece.type,
+      avant: avant.statut,
+      apres: piece.statut,
+      note: piece.noteExamen,
+      ...(vehicule?.change ? { vehiculeConforme: vehicule.conforme } : {}),
+    });
+    res.json({ success: true, data: piece });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const motifSocieteSchema = z.object({ motif: z.string().trim().min(3, "Dites à la société pourquoi").max(1000) }).strict();
+
+function decisionSociete(
+  action: string,
+  faire: (societeId: string, req: Request) => Promise<{ avant: string; dossier: { statut: string; motifStatut: string | null } }>
+) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const societeId = idSchema.parse(req.params.id);
+      const { avant, dossier } = await faire(societeId, req);
+      await journaliser(req, action, societeId, { avant, apres: dossier.statut, motif: dossier.motifStatut });
+      res.json({ success: true, data: dossier });
+    } catch (err) {
+      next(err);
+    }
+  };
+}
+
+// POST /api/zupdrive/admin/societes/:id/approve
+router.post(
+  "/societes/:id/approve",
+  decisionSociete("ZUPDRIVE_APPROVE_SOCIETE", (id, req) => SocieteDriveService.valider(id, req.userId as string))
+);
+
+// POST /api/zupdrive/admin/societes/:id/reject { motif }
+router.post(
+  "/societes/:id/reject",
+  decisionSociete("ZUPDRIVE_REJECT_SOCIETE", (id, req) =>
+    SocieteDriveService.refuser(id, motifSocieteSchema.parse(req.body).motif)
+  )
+);
+
+// POST /api/zupdrive/admin/societes/:id/suspend { motif } — plus aucun de ses chauffeurs ne roule
+router.post(
+  "/societes/:id/suspend",
+  decisionSociete("ZUPDRIVE_SUSPEND_SOCIETE", (id, req) =>
+    SocieteDriveService.suspendre(id, motifSocieteSchema.parse(req.body).motif)
+  )
+);
+
+// POST /api/zupdrive/admin/societes/:id/reactivate
+router.post(
+  "/societes/:id/reactivate",
+  decisionSociete("ZUPDRIVE_REACTIVATE_SOCIETE", (id) => SocieteDriveService.reactiver(id))
 );
 
 // ---------------------------------------------------------------------------

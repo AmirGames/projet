@@ -52,6 +52,8 @@ const db: any = {
     }),
   },
   notification: { create: jest.fn(async ({ data }: any) => ({ id: "n", ...data })) },
+  // Pièces de chauffeurs seulement ici : aucun véhicule de société à arrêter.
+  vehiculeDrive: { findMany: jest.fn(async () => []) },
 };
 
 const courriels: any[] = [];
@@ -101,7 +103,7 @@ beforeEach(() => {
 describe("relances d'expiration des pièces chauffeurs", () => {
   it("ne relance pas une pièce qui expire dans plus de 30 jours, ni sans date", async () => {
     pieces = [piece("a", 45), piece("b", null)];
-    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 0, suspendus: 0 });
+    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 0, suspendus: 0, vehiculesArretes: 0 });
     expect(courriels).toHaveLength(0);
   });
 
@@ -156,7 +158,7 @@ describe("relances d'expiration des pièces chauffeurs", () => {
 
   it("passe la pièce échue en « expirée » et prévient le chauffeur, une seule fois", async () => {
     pieces = [piece("a", -1, { rappel30JoursLe: dans(-31), rappel10JoursLe: dans(-11) })];
-    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 1, suspendus: 0 });
+    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 1, suspendus: 0, vehiculesArretes: 0 });
     expect(pieces[0].statut).toBe("EXPIRED");
     expect(courriels[0].subject).toContain("document expiré");
 
@@ -190,7 +192,7 @@ describe("suspension d'un chauffeur dont une pièce exigée a expiré", () => {
 
   it("suspend le chauffeur validé le jour où sa licence expire, prévient chauffeur et équipe, une seule fois", async () => {
     pieces = [piece("a", -0.01, { type: "licence" }), piece("b", 200, { type: "assurance" })];
-    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 1, suspendus: 1 });
+    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 1, suspendus: 1, vehiculesArretes: 0 });
 
     const chauffeur = chauffeurs[0];
     expect(chauffeur.statut).toBe("SUSPENDU");
@@ -255,7 +257,7 @@ describe("renouvellement en attente", () => {
 
   it("ignore les versions archivées", async () => {
     pieces = [piece("a", -3, { type: "licence", archiveeLe: dans(-10) }), piece("b", 300, { type: "licence" })];
-    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 0, suspendus: 0 });
+    expect(await ChauffeurExpirationService.surveiller(MAINTENANT)).toEqual({ rappels: 0, expirees: 0, suspendus: 0, vehiculesArretes: 0 });
     expect(pieces[0].statut).toBe("APPROVED");
   });
 

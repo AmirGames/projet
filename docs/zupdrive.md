@@ -153,6 +153,83 @@ Une pièce peut exister en plusieurs versions (`DocumentChauffeurDrive`, sans co
 
 ---
 
+## Sociétés de taxi / VTC et leurs chauffeurs
+
+Un chauffeur ZupDrive roule **soit en indépendant** (avec sa propre licence, son entreprise et son véhicule : tout ce qui précède), **soit pour une société**, et pour une seule à la fois. La société détient les licences et les véhicules, et ses chauffeurs roulent pour elle. Leurs courses lui sont attribuées ; le reversement viendra avec le paiement en ligne (V2).
+
+Code : `backend/src/modules/zupdrive/societe-drive.service.ts` (métier), `societe.routes.ts` (gérant), `chauffeur.admin.routes.ts` (équipe) et `pieces-drive.ts` (versions de pièces, communes aux chauffeurs, sociétés et véhicules). Modèles : `SocieteDrive`, `VehiculeDrive`, `InvitationSocieteDrive`, et `societeId` / `vehiculeId` sur `ChauffeurDrive` et `CourseDrive`. Migration `0033_zupdrive_societes`, purement additive.
+
+### Qui porte quelle pièce
+
+| Dossier | Pièces |
+|---|---|
+| Société | TVA (exigée), identité des associés (facultative) |
+| Véhicule de la société | licence, assurance transport rémunéré, contrôle technique, immatriculation (toutes exigées) |
+| Chauffeur de société | carte d'identité, permis ; plus le bestuurderspas en Flandre et l'extrait de casier judiciaire à Bruxelles |
+| Chauffeur indépendant | inchangé (voir « Pièces exigées ») |
+
+> **À faire confirmer** par un professionnel du secteur : cette répartition est une hypothèse de départ (une licence LVC ou une vergunning étant délivrée pour un véhicule). Elle ne se lit qu'à un endroit, en tête de `chauffeur-onboarding.service.ts` (`TYPES_PIECE_SOCIETE`, `TYPES_PIECE_VEHICULE`, `TYPES_PIECE_CHAUFFEUR_SOCIETE`, `piecesExigees`).
+
+Une pièce appartient à **exactement un** dossier : chauffeur, société ou véhicule (contrainte `CHECK` en base). Renouvellement, versions, relances et expiration suivent les mêmes règles que pour les chauffeurs ; les relances d'une pièce de société ou de véhicule vont au gérant.
+
+### Règles
+- **Société** : un compte ZupOne en est le gérant, et un gérant n'a qu'une société. Son numéro BCE est contrôlé (modulo 97) et unique sur ZupDrive. Son dossier suit le même cycle qu'un dossier chauffeur (`BROUILLON → SOUMIS → VALIDE`, `REFUSE`, `SUSPENDU`) ; l'équipe ne peut la valider que si sa pièce de TVA est validée. Suspendre une société met tous ses chauffeurs hors ligne.
+- **Véhicule** : plaque normalisée, unique parmi les véhicules non retirés (index partiel). Il est **conforme** quand chaque pièce exigée a une version validée et en cours de validité. Cet état est **calculé par le serveur** après chaque examen et chaque expiration (`recalculerVehicule`), jamais saisi. Un véhicule qui cesse d'être conforme met son chauffeur hors ligne ; il redevient conforme dès que l'équipe valide la version à jour. Un véhicule retiré reste dans l'historique des courses. Un véhicule dont une pièce est déjà validée ne se modifie plus : on en inscrit un nouveau.
+- **Invitation** : la société invite par adresse e-mail (idempotent : au plus une invitation en attente par adresse ; 50 en attente au plus ; 30 envois par heure). Le chauffeur accepte ou refuse depuis `/chauffeur` : **personne n'est rattaché sans son accord**. Sans dossier chauffeur, l'acceptation en ouvre un.
+- **Une société à la fois** : garanti en base (rattachement conditionné à « sans société », dans une transaction). Refusé aussi pour un chauffeur suspendu ou en course.
+- **Chauffeur de société** : sa région devient celle de la société ; il ne renseigne que son nom et son téléphone, la société fixe le reste. Il ne peut se mettre en ligne (ni recevoir ou accepter une course) que si son dossier est validé, **sa société validée** et **le véhicule qu'elle lui attribue conforme**. Un véhicule, un chauffeur (index unique). Pas de changement de véhicule pendant une course.
+- **Changer de rattachement** (rejoindre ou quitter une société) change les pièces exigées. Si le chauffeur ne remplit plus les conditions de son état (validé ou dossier envoyé), il repasse en `BROUILLON` avec un motif qui dit quoi compléter. Exemple : un chauffeur de société qui la quitte sans licence à lui.
+- **Courses** : à l'acceptation, la course fige `societeId` et `vehiculeId`, relus dans la transaction. Changer de société ensuite ne change pas l'historique. Le passager voit la marque et la plaque du véhicule de la course, jamais la société ni ses identifiants.
+- **Cloisonnement** : les routes du gérant partent toujours de SA société (par son compte), jamais d'un identifiant de société envoyé par le client. Un véhicule, un chauffeur ou une invitation d'une autre société répond 404. Les pièces de la société et de ses véhicules ne sont lisibles (`/api/files`) que par son gérant et par l'équipe.
+- **Suppression du compte du gérant** : sa société et l'historique de ses courses restent (relation `Restrict`) ; son compte ZupOne n'est pas entièrement effacé.
+
+### API gérant — futur `manager.zupdrive.com`
+
+Toutes les routes exigent une session. L'espace du gérant (pages) est la phase 2 ; d'ici là, l'API est complète.
+
+| Méthode | Route | Effet |
+|---|---|---|
+| GET / POST / PATCH | `/api/zupdrive/societe/me` | La société du compte (`null` sans société), l'ouvrir (idempotent), la modifier |
+| POST | `/api/zupdrive/societe/me/documents` | Pièce de la société (multipart `file`, `type`, `dateExpiration?`) |
+| POST | `/api/zupdrive/societe/me/submit` | Envoyer le dossier (idempotent) |
+| POST | `/api/zupdrive/societe/me/vehicules` | Inscrire un véhicule (`marque`, `modele`, `plaque`, `numeroLicence?`) |
+| PATCH | `/api/zupdrive/societe/me/vehicules/:id` | Corriger un véhicule sans pièce validée |
+| POST | `/api/zupdrive/societe/me/vehicules/:id/retirer` | Retirer un véhicule (refusé en pleine course) |
+| POST | `/api/zupdrive/societe/me/vehicules/:id/documents` | Pièce du véhicule |
+| POST | `/api/zupdrive/societe/me/invitations` | Inviter un chauffeur (`email`) |
+| POST | `/api/zupdrive/societe/me/invitations/:id/annuler` | Annuler une invitation en attente |
+| PUT | `/api/zupdrive/societe/me/chauffeurs/:id/vehicule` | Attribuer (`vehiculeId`) ou retirer (`null`) un véhicule |
+| POST | `/api/zupdrive/societe/me/chauffeurs/:id/detacher` | Se séparer d'un chauffeur (refusé en pleine course) |
+| GET | `/api/zupdrive/societe/me/courses?limit=&offset=` | Les courses faites pour la société |
+
+### API chauffeur (ajouts)
+
+| Méthode | Route | Effet |
+|---|---|---|
+| GET | `/api/zupdrive/chauffeur/me/invitations` | Les invitations en attente adressées à l'e-mail du compte |
+| POST | `/api/zupdrive/chauffeur/me/invitations/:id/accepter` | Rejoindre la société |
+| POST | `/api/zupdrive/chauffeur/me/invitations/:id/refuser` | Refuser |
+| POST | `/api/zupdrive/chauffeur/me/quitter-societe` | Redevenir indépendant (refusé en pleine course) |
+
+`GET /api/zupdrive/chauffeur/me` renvoie en plus `societe` et `vehicule`. Nouveaux refus possibles de `POST …/me/disponibilite` et de l'acceptation d'une course : `COMPANY_NOT_ACTIVE`, `VEHICLE_NOT_READY` (403).
+
+### API équipe (section `chauffeurs` de la plateforme DRIVE)
+
+| Méthode | Route | Effet |
+|---|---|---|
+| GET | `/api/zupdrive/admin/societes?statut=` | Liste paginée, avec les compteurs par statut |
+| GET | `/api/zupdrive/admin/societes/:id` | Dossier complet : société, véhicules, chauffeurs, invitations |
+| PATCH | `/api/zupdrive/admin/societes/:id/documents/:documentId` | Statuer sur une pièce de la société ou de l'un de ses véhicules (`ZUPDRIVE_REVIEW_SOCIETE_DOCUMENT`) |
+| POST | `/api/zupdrive/admin/societes/:id/(approve\|reject\|suspend\|reactivate)` | Décisions, avec motif pour refuser ou suspendre (`ZUPDRIVE_*_SOCIETE`) |
+
+Pas de nouvelle permission à cocher : les sociétés relèvent de la section « Chauffeurs ».
+
+### Frontend
+- **`/superowner/zupdrive/societes`** (menu « ZupDrive › Sociétés ») : la file de validation. Chaque pièce de la société et de chaque véhicule s'examine dans la page, la conformité de chaque véhicule s'affiche, et les chauffeurs rattachés et les invitations en attente sont listés. `/superowner/zupdrive/societes/:id` ouvre un dossier directement (lien des notifications).
+- **Tableau de bord ZupDrive** : sociétés à examiner et sociétés validées.
+- **`/chauffeur`** : les invitations reçues (accepter, refuser) ; une fois rattaché, la société, le véhicule attribué et « Quitter la société ». Le profil se réduit au nom et au téléphone.
+- **Vérification E2E** : `frontend/scripts/verif-zupdrive-societe.mjs`.
+
 ## Courses (V1)
 
 Le passager commande un trajet à **prix fixe** sur `zupdrive.com/trajet`, avec son compte ZupOne. La course est proposée au chauffeur le plus proche, qui l'accepte depuis `driver.zupdrive.com/chauffeur/courses` et la mène à terme. La V1 ne comporte **pas de paiement en ligne** : il viendra en V2, une fois la facturation tranchée (qui facture le passager, TVA, commission).

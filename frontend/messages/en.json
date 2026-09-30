@@ -83,6 +83,7 @@
       "platformDrive": "ZupDrive",
       "platformChoice": "Platform to manage",
       "chauffeurs": "Drivers (ZupDrive)",
+      "societesDrive": "Companies",
       "coursesDrive": "Rides",
       "tarifsDrive": "Fares"
     },
@@ -2279,9 +2280,29 @@
     "creerCompte": "Create an account",
     "erreurConnexion": "Server unreachable. Please try again shortly.",
     "sectionProfil": "You, your company and your vehicle",
+    "sectionProfilSociete": "Your details",
     "sectionPieces": "Documents",
     "formatsAcceptes": "JPG, PNG, WebP (2 MB) or PDF (5 MB). The registration certificate must show both sides.",
     "fichierTropLourd": "File too large: {mo} MB maximum. For a PDF, scan at a lower quality or send a photo instead.",
+    "societe": {
+      "invitations": "Company invitations",
+      "invite": "{societe} invites you to drive for them.",
+      "accepter": "Accept",
+      "refuser": "Decline",
+      "uneALaFois": "You already drive for a company: leave it before joining another one.",
+      "rejointe": "You now drive for {societe}.",
+      "invitationRefusee": "Invitation declined.",
+      "titre": "You drive for {societe}",
+      "explication": "The licence, insurance and vehicle belong to the company, which receives your rides' earnings. Your file only holds your personal documents.",
+      "enAttente": "The company is still waiting for ZupDrive's approval: you cannot drive until then.",
+      "suspendue": "The company is suspended: you cannot drive for it.",
+      "vehicule": "Assigned vehicle: {vehicule} ({plaque}).",
+      "sansVehicule": "The company has not assigned you a vehicle yet.",
+      "vehiculeNonConforme": "This vehicle is not compliant yet.",
+      "quitter": "Leave the company",
+      "confirmerDepart": "Leave {societe}? You will no longer be able to drive for it; to drive independently you will need your own licence.",
+      "quittee": "You have left the company."
+    },
     "champ": {
       "nomComplet": "Full name",
       "telephone": "Phone",
@@ -2380,6 +2401,7 @@
       "numeroLicence": "Licence no.",
       "vehicule": "Vehicle",
       "vehiculePlaque": "Plate",
+      "societe": "Company",
       "soumisLe": "Submitted on",
       "valideLe": "Approved on"
     },
@@ -2414,7 +2436,9 @@
     "renewal": "(renewal)",
     "currentVersion": "(current version until the renewal is approved)",
     "rating": "{moyenne} ★ ({avis} ratings)",
-    "neverRated": "Never rated"
+    "neverRated": "Never rated",
+    "forCompany": "Drives for {societe}",
+    "companyDriver": "Driver for"
   },
   "zupdriveTrajet": {
     "titre": "Book a ride",
@@ -2524,6 +2548,46 @@
       "minimumCentimes": "Minimum fare (€)"
     }
   },
+  "superownerSocietes": {
+    "title": "ZupDrive companies",
+    "subtitle": "Taxi and ride-hailing companies: their file, their vehicles (licence, insurance, roadworthiness test, registration) and their drivers. Review each document, then approve the company.",
+    "filter": "Filter companies",
+    "empty": "No company in this category.",
+    "loadError": "Could not load the companies.",
+    "reasonRequired": "Give a reason: the company needs to know what to fix.",
+    "vehiclesCount": "{conformes}/{total} vehicles compliant",
+    "driversCount": "{n, plural, =0 {no driver} one {# driver} other {# drivers}}",
+    "field": {
+      "gerant": "Manager",
+      "telephone": "Phone",
+      "region": "Licence region",
+      "numeroEntreprise": "Company no. (BCE)",
+      "numeroTva": "VAT no.",
+      "soumisLe": "Submitted on",
+      "valideLe": "Approved on"
+    },
+    "companyDocuments": "Company documents",
+    "vehicles": "Vehicles",
+    "noVehicle": "No vehicle registered yet.",
+    "licence": "Licence {numero}",
+    "conforme": "Compliant: can drive",
+    "nonConforme": "Not compliant yet",
+    "drivenBy": "Driven by {nom}",
+    "drivers": "Drivers",
+    "noDriver": "No driver has joined the company yet.",
+    "online": "online",
+    "pendingInvitations": "Pending invitations: {liste}",
+    "rejectReasonPlaceholder": "Reason for rejection (required to reject), sent to the company",
+    "suspendReasonPlaceholder": "Reason for suspension (required), sent to the company; its drivers stop driving",
+    "approve": "Approve the company",
+    "reject": "Reject the file",
+    "suspend": "Suspend the company",
+    "reactivate": "Reinstate the company",
+    "waiting": {
+      "BROUILLON": "The company has not sent its file yet.",
+      "REFUSE": "File sent back to the company: waiting for its corrections."
+    }
+  },
   "superownerZupDrive": {
     "titre": "ZupDrive dashboard",
     "sousTitre": "Driver applications and rides at a glance.",
@@ -2535,6 +2599,8 @@
       "valides": "Approved drivers",
       "suspendus": "Suspended",
       "brouillons": "Applications in progress",
+      "societesAExaminer": "Companies to review",
+      "societesValidees": "Approved companies",
       "plusAnciens": "Waiting the longest",
       "aucunEnAttente": "No application to review.",
       "soumisLe": "Sent on {date}",

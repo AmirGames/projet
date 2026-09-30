@@ -23,7 +23,7 @@ import { PermissionsPlateforme } from "../auth/permissions-plateforme.service";
  *
  * Le propriétaire se retrouve par la table qui référence la pièce :
  * DriverDocument, OrganizationDocument, OrderDelivery.proofPhoto,
- * DocumentChauffeurDrive (ZupDrive).
+ * DocumentChauffeurDrive (ZupDrive : chauffeur, société ou véhicule).
  */
 
 export const DOSSIERS_PRIVES = ["drivers", "merchants", "deliveries", "chauffeurs"] as const;
@@ -201,8 +201,17 @@ export async function peutLire(
   }
 
   if (dossier === "chauffeurs") {
+    // Une pièce ZupDrive : celle du chauffeur lui-même, ou celle d'une société
+    // (ou de l'un de ses véhicules) dont il est le gérant.
     const piece = await db.documentChauffeurDrive.findFirst({
-      where: { url: reference(relatif), chauffeur: { userId } },
+      where: {
+        url: reference(relatif),
+        OR: [
+          { chauffeur: { userId } },
+          { societe: { gerantId: userId } },
+          { vehicule: { societe: { gerantId: userId } } },
+        ],
+      },
       select: { id: true },
     });
     return Boolean(piece);

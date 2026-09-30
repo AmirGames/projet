@@ -162,6 +162,8 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
   ],
   zupdrive: [
     [/^\/chauffeurs/, "chauffeurs"],
+    // Les sociétés et leurs véhicules : les mêmes dossiers LVC que les chauffeurs.
+    [/^\/societes/, "chauffeurs"],
     [/^\/(tarifs|courses)/, "courses-drive"],
   ],
   admin: [

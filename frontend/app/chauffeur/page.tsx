@@ -32,6 +32,11 @@ const CHAMPS = [
   'vehiculeModele',
   'vehiculePlaque',
 ] as const;
+/**
+ * Chauffeur d'une société : l'entreprise, la licence, la région et le
+ * véhicule sont ceux de la société. Il ne renseigne que ce qui le concerne.
+ */
+const CHAMPS_EN_SOCIETE = ['nomComplet', 'telephone'] as const;
 
 type Champ = (typeof CHAMPS)[number];
 type Profil = Record<Champ, string> & { region: string };
@@ -46,8 +51,25 @@ interface Piece {
   dateExpiration: string | null;
 }
 
+/** La société pour laquelle il roule (une à la fois). */
+interface Societe {
+  id: string;
+  raisonSociale: string;
+  region: string | null;
+  statut: string;
+}
+
+/** Une société qui l'invite à rouler pour elle. */
+interface Invitation {
+  id: string;
+  createdAt: string;
+  societe: Societe;
+}
+
 interface Dossier extends Profil {
   statut: 'BROUILLON' | 'SOUMIS' | 'VALIDE' | 'REFUSE' | 'SUSPENDU';
+  societe: Societe | null;
+  vehicule: { marque: string; modele: string; plaque: string; conforme: boolean } | null;
   motifStatut: string | null;
   /** Suspendu parce qu'une pièce exigée a expiré : il peut la redéposer. */
   suspenduPourExpirationLe: string | null;
@@ -77,7 +99,7 @@ const entetes = (): Record<string, string> => {
 };
 
 /** Appelle l'API du dossier ; lève le message d'erreur de l'API. */
-async function appeler(chemin: string, init: RequestInit = {}): Promise<Dossier | null> {
+async function appeler<T = Dossier>(chemin: string, init: RequestInit = {}): Promise<T | null> {
   const reponse = await fetch(`${API_URL}/api/zupdrive/chauffeur${chemin}`, {
     ...init,
     headers: { ...entetes(), ...(init.headers || {}) },
@@ -103,6 +125,7 @@ export default function DossierChauffeurPage() {
   const [erreur, setErreur] = useState('');
   const [message, setMessage] = useState('');
   const [erreursPieces, setErreursPieces] = useState<Record<string, string>>({});
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
 
   const recevoir = (lu: Dossier | null) => {
     setDossier(lu);
@@ -111,7 +134,9 @@ export default function DossierChauffeurPage() {
 
   const charger = useCallback(async () => {
     try {
-      recevoir(await appeler('/me'));
+      const [lu, recues] = await Promise.all([appeler('/me'), appeler<Invitation[]>('/me/invitations')]);
+      recevoir(lu);
+      setInvitations(recues || []);
     } catch (err) {
       setErreur(err instanceof Error ? err.message : t('erreurConnexion'));
       signalerErreur(err);
@@ -141,10 +166,35 @@ export default function DossierChauffeurPage() {
     }
   };
 
+  /** Accepter rattache à la société ; refuser la retire de la liste. */
+  const repondreInvitation = (invitation: Invitation, accepter: boolean) =>
+    agir(
+      `invitation-${invitation.id}`,
+      async () => {
+        const lu = accepter
+          ? await appeler(`/me/invitations/${invitation.id}/accepter`, { method: 'POST' })
+          : null;
+        if (!accepter) await appeler(`/me/invitations/${invitation.id}/refuser`, { method: 'POST' });
+        setInvitations((await appeler<Invitation[]>('/me/invitations')) || []);
+        return lu;
+      },
+      accepter ? t('societe.rejointe', { societe: invitation.societe.raisonSociale }) : t('societe.invitationRefusee')
+    );
+
+  const quitterSociete = () => {
+    if (!dossier?.societe || !window.confirm(t('societe.confirmerDepart', { societe: dossier.societe.raisonSociale }))) return;
+    agir('quitter', () => appeler('/me/quitter-societe', { method: 'POST' }), t('societe.quittee'));
+  };
+
   const enregistrerProfil = (e: React.FormEvent) => {
     e.preventDefault();
+    // Chauffeur de société : seuls ses propres champs partent, le reste est
+    // celui de la société.
+    const champsEnvoyes: string[] = dossier?.societe ? [...CHAMPS_EN_SOCIETE] : [...CHAMPS, 'region'];
     const corps = Object.fromEntries(
-      Object.entries(profil).map(([champ, valeur]) => [champ, valeur.trim() ? valeur.trim() : null])
+      Object.entries(profil)
+        .filter(([champ]) => champsEnvoyes.includes(champ))
+        .map(([champ, valeur]) => [champ, valeur.trim() ? valeur.trim() : null])
     );
     if (!corps.nomComplet) delete corps.nomComplet;
     agir(
@@ -209,13 +259,13 @@ export default function DossierChauffeurPage() {
   if (!isLoading && !user) {
     return (
       <main className="mx-auto max-w-xl px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-slate-900">{t('titre')}</h1>
-        <p className="mt-3 text-slate-600">{t('connexionRequise')}</p>
+        <h1 className="text-2xl font-bold text-white">{t('titre')}</h1>
+        <p className="mt-3 text-slate-300">{t('connexionRequise')}</p>
         <div className="mt-6 flex justify-center gap-3">
           <Link href="/login" className="rounded-full bg-accent px-5 py-2 text-white hover:bg-accent-hover">
             {t('seConnecter')}
           </Link>
-          <Link href="/signup" className="rounded-full border border-slate-300 px-5 py-2 text-slate-800 hover:border-slate-400">
+          <Link href="/signup" className="rounded-full border border-slate-300 px-5 py-2 text-white hover:border-slate-400">
             {t('creerCompte')}
           </Link>
         </div>
@@ -243,18 +293,20 @@ export default function DossierChauffeurPage() {
       .filter((piece) => piece.statut === 'APPROVED' || piece.statut === 'EXPIRED')
       .map((piece) => [piece.type, piece]),
   );
-  // Les pièces exigées, puis les facultatives déjà déposées ou proposées.
+  // Les pièces exigées, puis les facultatives déjà déposées ou proposées
+  // (l'identité des associés est une pièce de la société, pas la sienne).
   const aDeposer = [
     ...(dossier?.piecesExigees || []),
-    ...(dossier && !dossier.piecesExigees.some((p) => p.type === 'actionnaires')
+    ...(dossier && !dossier.societe && !dossier.piecesExigees.some((p) => p.type === 'actionnaires')
       ? [{ type: 'actionnaires', libelle: pieces.get('actionnaires')?.libelle || t('pieceActionnaires') }]
       : []),
   ];
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-3xl font-bold text-slate-900">{t('titre')}</h1>
-      <p className="mt-2 text-slate-600">{t('intro')}</p>
+      {/* Sur le fond sombre du site : en clair, sinon le titre ne se lit pas. */}
+      <h1 className="text-3xl font-bold text-white">{t('titre')}</h1>
+      <p className="mt-2 text-slate-300">{t('intro')}</p>
 
       {dossier && <BandeauStatut dossier={dossier} />}
       {dossier?.statut === 'VALIDE' && (
@@ -279,10 +331,84 @@ export default function DossierChauffeurPage() {
         </div>
       )}
 
+      {invitations.length > 0 && (
+        <section className="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-6" aria-labelledby="titre-invitations">
+          <h2 id="titre-invitations" className="text-lg font-semibold text-slate-900">
+            {t('societe.invitations')}
+          </h2>
+          <ul className="mt-3 space-y-3">
+            {invitations.map((invitation) => (
+              <li key={invitation.id} className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-slate-800">
+                  {t('societe.invite', { societe: invitation.societe.raisonSociale })}
+                  {invitation.societe.region && (
+                    <span className="ml-1 text-slate-500">({t(`region.${invitation.societe.region}`)})</span>
+                  )}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={envoi !== null || !!dossier?.societe}
+                    onClick={() => repondreInvitation(invitation, true)}
+                    className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+                  >
+                    {t('societe.accepter')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={envoi !== null}
+                    onClick={() => repondreInvitation(invitation, false)}
+                    className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium text-slate-800 hover:border-slate-400 disabled:opacity-60"
+                  >
+                    {t('societe.refuser')}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {dossier?.societe && <p className="mt-3 text-xs text-slate-600">{t('societe.uneALaFois')}</p>}
+        </section>
+      )}
+
+      {dossier?.societe && (
+        <section className="mt-8 rounded-xl border border-slate-200 bg-white p-6" aria-labelledby="titre-societe">
+          <h2 id="titre-societe" className="text-lg font-semibold text-slate-900">
+            {t('societe.titre', { societe: dossier.societe.raisonSociale })}
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">{t('societe.explication')}</p>
+          {dossier.societe.statut !== 'VALIDE' && (
+            <p className="mt-2 text-sm text-amber-700">
+              {dossier.societe.statut === 'SUSPENDU' ? t('societe.suspendue') : t('societe.enAttente')}
+            </p>
+          )}
+          <p className="mt-3 text-sm text-slate-800">
+            {dossier.vehicule
+              ? t('societe.vehicule', {
+                  vehicule: `${dossier.vehicule.marque} ${dossier.vehicule.modele}`,
+                  plaque: dossier.vehicule.plaque,
+                })
+              : t('societe.sansVehicule')}
+            {dossier.vehicule && !dossier.vehicule.conforme && (
+              <span className="ml-1 text-amber-700">{t('societe.vehiculeNonConforme')}</span>
+            )}
+          </p>
+          <button
+            type="button"
+            disabled={envoi !== null}
+            onClick={quitterSociete}
+            className="mt-4 rounded-full border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-800 hover:border-slate-400 disabled:opacity-60"
+          >
+            {t('societe.quitter')}
+          </button>
+        </section>
+      )}
+
       <form onSubmit={enregistrerProfil} className="mt-8 space-y-6 rounded-xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900">{t('sectionProfil')}</h2>
+        <h2 className="text-lg font-semibold text-slate-900">
+          {dossier?.societe ? t('sectionProfilSociete') : t('sectionProfil')}
+        </h2>
         <fieldset disabled={!modifiable} className="grid gap-4 sm:grid-cols-2">
-          {CHAMPS.map((champ) => (
+          {(dossier?.societe ? CHAMPS_EN_SOCIETE : CHAMPS).map((champ) => (
             <label key={champ} className="block text-sm">
               <span className="font-medium text-slate-700">{t(`champ.${champ}`)}</span>
               <input
@@ -293,6 +419,7 @@ export default function DossierChauffeurPage() {
               />
             </label>
           ))}
+          {!dossier?.societe && (
           <label className="block text-sm">
             <span className="font-medium text-slate-700">{t('champ.region')}</span>
             <select
@@ -309,8 +436,9 @@ export default function DossierChauffeurPage() {
               ))}
             </select>
           </label>
+          )}
         </fieldset>
-        {dossier?.numeroTva && (
+        {dossier?.numeroTva && !dossier.societe && (
           <p className="text-sm text-slate-600">{t('numeroTva', { tva: dossier.numeroTva })}</p>
         )}
         {modifiable && (

@@ -39,7 +39,8 @@ export const POSITION_FRAICHE_MS = 2 * 60_000;
 export const RAYON_KM = 15;
 
 export const STATUTS_ACTIFS = ["RECHERCHE", "ACCEPTEE", "ARRIVEE", "EN_COURS"];
-const STATUTS_AVEC_CHAUFFEUR = ["ACCEPTEE", "ARRIVEE", "EN_COURS"];
+/** Une course qui a un chauffeur et n'est pas finie. */
+export const STATUTS_AVEC_CHAUFFEUR = ["ACCEPTEE", "ARRIVEE", "EN_COURS"];
 
 /** Les étapes que le chauffeur fait avancer, et l'état qu'elles exigent. */
 const ETAPES = {
@@ -56,9 +57,14 @@ export interface Adresse extends Point {
 
 const prenom = (nom: string | null | undefined) => (nom || "").trim().split(/\s+/)[0] || null;
 
-/** Le chauffeur tel que le passager le voit : de quoi le reconnaître, rien de plus. */
+/**
+ * Le chauffeur tel que le passager le voit : de quoi le reconnaître, rien de
+ * plus. Pour un chauffeur de société, le véhicule est celui de la course
+ * (figé à l'acceptation), pas celui déclaré dans son propre dossier.
+ */
 function chauffeurPourLePassager(course: {
   statut: string;
+  vehicule?: { marque: string; modele: string; plaque: string } | null;
   chauffeur: {
     nomComplet: string;
     vehiculeMarque: string | null;
@@ -75,8 +81,10 @@ function chauffeurPourLePassager(course: {
   const enApproche = course.statut === "ACCEPTEE" || course.statut === "ARRIVEE";
   return {
     prenom: prenom(c.nomComplet),
-    vehicule: [c.vehiculeMarque, c.vehiculeModele].filter(Boolean).join(" ") || null,
-    plaque: c.vehiculePlaque,
+    vehicule: course.vehicule
+      ? `${course.vehicule.marque} ${course.vehicule.modele}`
+      : [c.vehiculeMarque, c.vehiculeModele].filter(Boolean).join(" ") || null,
+    plaque: course.vehicule ? course.vehicule.plaque : c.vehiculePlaque,
     position:
       enApproche && c.latitude !== null && c.longitude !== null
         ? { latitude: c.latitude, longitude: c.longitude, le: c.positionLe }
@@ -95,6 +103,16 @@ const SELECTION_CHAUFFEUR = {
     positionLe: true,
   },
 } as const;
+
+const SELECTION_VEHICULE = { select: { marque: true, modele: true, plaque: true } } as const;
+
+/**
+ * Un chauffeur de société ne roule que pour une société validée, avec le
+ * véhicule conforme qu'elle lui a attribué. Un indépendant n'a pas de société.
+ */
+const EN_REGLE_POUR_ROULER = {
+  OR: [{ societeId: null }, { societe: { statut: "VALIDE" }, vehicule: { conforme: true, retireLe: null } }],
+};
 
 export class CourseDriveService {
   // -------------------------------------------------------------------------
@@ -204,12 +222,22 @@ export class CourseDriveService {
   static async maCourse(passagerId: string, courseId: string) {
     const course = await db.courseDrive.findUnique({
       where: { id: courseId },
-      include: { chauffeur: SELECTION_CHAUFFEUR },
+      include: { chauffeur: SELECTION_CHAUFFEUR, vehicule: SELECTION_VEHICULE },
     });
     if (!course || course.passagerId !== passagerId) {
       throw new ApiError(404, "Trajet introuvable", "RIDE_NOT_FOUND");
     }
-    const { chauffeur: _chauffeur, tarifApplique: _tarif, cleIdempotence: _cle, ...reste } = course;
+    // Le passager reconnaît la voiture par « chauffeur » (marque, plaque) :
+    // la société et ses identifiants internes ne le regardent pas.
+    const {
+      chauffeur: _chauffeur,
+      tarifApplique: _tarif,
+      cleIdempotence: _cle,
+      vehicule: _vehicule,
+      societeId: _societe,
+      vehiculeId: _vehiculeId,
+      ...reste
+    } = course;
     const [noteChauffeur, maNote] = await Promise.all([
       course.chauffeurId ? NoteCourseDriveService.moyenneChauffeur(course.chauffeurId) : null,
       db.noteCourseDrive.findUnique({
@@ -232,12 +260,14 @@ export class CourseDriveService {
       where: { passagerId },
       orderBy: { createdAt: "desc" },
       take: 50,
-      include: { chauffeur: SELECTION_CHAUFFEUR },
+      include: { chauffeur: SELECTION_CHAUFFEUR, vehicule: SELECTION_VEHICULE },
     });
-    return courses.map(({ chauffeur: _c, tarifApplique: _t, cleIdempotence: _k, ...reste }, i) => ({
+    return courses.map(
+      ({ chauffeur: _c, tarifApplique: _t, cleIdempotence: _k, vehicule: _v, societeId: _s, vehiculeId: _vi, ...reste }, i) => ({
       ...reste,
       chauffeur: chauffeurPourLePassager(courses[i]),
-    }));
+    })
+    );
   }
 
   /** Le passager annule, tant qu'il n'est pas monté à bord. */
@@ -262,7 +292,13 @@ export class CourseDriveService {
 
   /** Le chauffeur du compte connecté ; seul un chauffeur validé fait des courses. */
   static async chauffeurDuCompte(userId: string) {
-    const chauffeur = await db.chauffeurDrive.findUnique({ where: { userId } });
+    const chauffeur = await db.chauffeurDrive.findUnique({
+      where: { userId },
+      include: {
+        societe: { select: { statut: true, raisonSociale: true } },
+        vehicule: { select: { conforme: true, retireLe: true, marque: true, modele: true, plaque: true } },
+      },
+    });
     if (!chauffeur) {
       throw new ApiError(404, "Aucun dossier chauffeur pour ce compte", "CHAUFFEUR_NOT_FOUND");
     }
@@ -281,9 +317,33 @@ export class CourseDriveService {
     }
   }
 
+  /** Validé, et pour un chauffeur de société : société validée, véhicule conforme attribué. */
+  private static exigerPretARouler(chauffeur: Awaited<ReturnType<typeof CourseDriveService.chauffeurDuCompte>>) {
+    this.exigerValide(chauffeur);
+    if (!chauffeur.societeId) return;
+    if (chauffeur.societe?.statut !== "VALIDE") {
+      throw new ApiError(
+        403,
+        chauffeur.societe?.statut === "SUSPENDU"
+          ? "Votre société est suspendue : vous ne pouvez pas rouler pour elle"
+          : "Votre société doit être validée par ZupDrive avant que vous puissiez rouler",
+        "COMPANY_NOT_ACTIVE"
+      );
+    }
+    if (!chauffeur.vehicule || chauffeur.vehicule.retireLe || !chauffeur.vehicule.conforme) {
+      throw new ApiError(
+        403,
+        chauffeur.vehicule
+          ? "Le véhicule que votre société vous a attribué n'est pas en règle"
+          : "Votre société ne vous a pas encore attribué de véhicule",
+        "VEHICLE_NOT_READY"
+      );
+    }
+  }
+
   static async passerEnLigne(userId: string, enLigne: boolean) {
     const chauffeur = await this.chauffeurDuCompte(userId);
-    if (enLigne) this.exigerValide(chauffeur);
+    if (enLigne) this.exigerPretARouler(chauffeur);
     await db.chauffeurDrive.update({ where: { id: chauffeur.id }, data: { enLigne } });
     return this.tableauDeBord(userId);
   }
@@ -388,7 +448,7 @@ export class CourseDriveService {
    */
   static async accepter(userId: string, propositionId: string) {
     const chauffeur = await this.chauffeurDuCompte(userId);
-    this.exigerValide(chauffeur);
+    this.exigerPretARouler(chauffeur);
     const maintenant = new Date();
 
     const proposition = await db.propositionCourseDrive.findUnique({ where: { id: propositionId } });
@@ -412,9 +472,22 @@ export class CourseDriveService {
         throw new ApiError(409, "Cette proposition n'est plus ouverte", "OFFER_CLOSED");
       }
 
+      // La société et le véhicule sont relus dans la transaction et figés sur
+      // la course : c'est à cette société qu'elle sera reversée, même si le
+      // chauffeur en change ensuite.
+      const rattachement = await tx.chauffeurDrive.findUniqueOrThrow({
+        where: { id: chauffeur.id },
+        select: { societeId: true, vehiculeId: true },
+      });
       const attribuee = await tx.courseDrive.updateMany({
         where: { id: proposition.courseId, statut: "RECHERCHE", chauffeurId: null },
-        data: { statut: "ACCEPTEE", chauffeurId: chauffeur.id, accepteeLe: maintenant },
+        data: {
+          statut: "ACCEPTEE",
+          chauffeurId: chauffeur.id,
+          accepteeLe: maintenant,
+          societeId: rattachement.societeId,
+          vehiculeId: rattachement.societeId ? rattachement.vehiculeId : null,
+        },
       });
       if (attribuee.count !== 1) {
         throw new ApiError(409, "Cette course n'est plus disponible", "RIDE_UNAVAILABLE");
@@ -426,7 +499,9 @@ export class CourseDriveService {
       proposition.courseId,
       "Votre chauffeur arrive",
       `${prenom(chauffeur.nomComplet) ?? "Votre chauffeur"} a accepté votre course${
-        chauffeur.vehiculePlaque ? ` (${chauffeur.vehiculePlaque})` : ""
+        (chauffeur.societeId ? chauffeur.vehicule?.plaque : chauffeur.vehiculePlaque)
+          ? ` (${chauffeur.societeId ? chauffeur.vehicule?.plaque : chauffeur.vehiculePlaque})`
+          : ""
       }.`
     );
     return this.tableauDeBord(userId);
@@ -543,6 +618,7 @@ export class CourseDriveService {
         id: { notIn: dejaSollicites },
         courses: { none: { statut: { in: STATUTS_AVEC_CHAUFFEUR } } },
         propositions: { none: { statut: "EN_ATTENTE", expireA: { gt: maintenant } } },
+        ...EN_REGLE_POUR_ROULER,
       },
       select: { id: true, latitude: true, longitude: true },
     });
