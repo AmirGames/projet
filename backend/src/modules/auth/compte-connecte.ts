@@ -20,7 +20,7 @@ export async function compteConnecte(userId: string) {
 
   const livreur = primaryMembership
     ? null
-    : await db.driver.findUnique({ where: { userId }, select: { id: true } });
+    : await db.courier.findUnique({ where: { userId }, select: { id: true } });
 
   // Check if user has a customer profile (all users get one at signup)
   const customer =

@@ -103,14 +103,14 @@ const LOCALISATEURS: Record<string, Localisateur> = {
     return ticket ? { id, orgId: ticket.orgId } : null;
   },
   driver: async (id) => {
-    const livreur = await db.driver.findUnique({
+    const livreur = await db.courier.findUnique({
       where: { id },
       select: { email: true, user: { select: { email: true } } },
     });
     return livreur ? { id, emails: emailsDuLivreur(livreur) } : null;
   },
   driverPayout: async (id) => {
-    const versement = await db.driverPayout.findUnique({
+    const versement = await db.courierPayout.findUnique({
       where: { id },
       select: { driver: { select: { email: true, user: { select: { email: true } } } } },
     });
@@ -130,9 +130,9 @@ const ROUTES: { prefixe: string; ressource?: string; modele?: string }[] = [
   { prefixe: "/api/support/tickets", ressource: "tickets", modele: "merchantTicket" },
   { prefixe: "/api/superowner/support-tickets", ressource: "tickets", modele: "merchantTicket" },
   { prefixe: "/api/admin/tickets", ressource: "tickets", modele: "merchantTicket" },
-  { prefixe: "/api/superowner/drivers", ressource: "drivers", modele: "driver" },
-  { prefixe: "/api/superowner/driver-support", ressource: "driver-support", modele: "driver" },
-  { prefixe: "/api/superowner/payouts", ressource: "payouts", modele: "driverPayout" },
+  { prefixe: "/api/superowner/drivers", ressource: "drivers", modele: "courier" },
+  { prefixe: "/api/superowner/driver-support", ressource: "driver-support", modele: "courier" },
+  { prefixe: "/api/superowner/payouts", ressource: "payouts", modele: "courierPayout" },
   { prefixe: "/api/superowner/organizations", ressource: "organizations" },
   { prefixe: "/api/admin/merchants", ressource: "organizations" },
   { prefixe: "/api/superowner/stores", ressource: "stores" },

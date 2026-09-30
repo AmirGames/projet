@@ -21,7 +21,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
     // Clean up test data
     await db.user.deleteMany({});
     await db.customer.deleteMany({});
-    await db.driver.deleteMany({});
+    await db.courier.deleteMany({});
     await db.organization.deleteMany({});
     await db.membership.deleteMany({});
     await db.store.deleteMany({});
@@ -439,7 +439,7 @@ describe('🎯 Refonte Identité Unifiée - E2E Tests', () => {
       });
 
       // Verify in database
-      const driver = await db.driver.findUnique({
+      const driver = await db.courier.findUnique({
         where: { userId: testUserId },
       });
       expect(driver).toBeDefined();

@@ -26,7 +26,7 @@ router.get("/drivers", authMiddleware, isSuperOwner, async (req: Request, res: R
     const where = statut && statut !== "ALL" ? { status: statut } : {};
 
     const [livreurs, total, parEtat] = await Promise.all([
-      db.driver.findMany({
+      db.courier.findMany({
         where,
         skip: offset,
         take: limit,
@@ -38,8 +38,8 @@ router.get("/drivers", authMiddleware, isSuperOwner, async (req: Request, res: R
         // faire ici.
         orderBy: [{ status: "asc" }, { createdAt: "desc" }],
       }),
-      db.driver.count({ where }),
-      db.driver.groupBy({ by: ["status"], _count: true }),
+      db.courier.count({ where }),
+      db.courier.groupBy({ by: ["status"], _count: true }),
     ]);
 
     res.json({
@@ -298,7 +298,7 @@ router.get("/driver-support/:driverId", authMiddleware, isSuperOwner, async (req
     const driverId = req.params.driverId as string;
     const [messages, livreur] = await Promise.all([
       DriverSupportService.fil(driverId),
-      db.driver.findUnique({
+      db.courier.findUnique({
         where: { id: driverId },
         select: {
           id: true,

@@ -39,7 +39,7 @@ const router = Router();
 // quel utilisateur authentifié pourrait manipuler les courses des autres.
 async function livreurConnecte(req: Request) {
   const userId = req.user?.userId as string;
-  const livreur = await db.driver.findUnique({ where: { userId } });
+  const livreur = await db.courier.findUnique({ where: { userId } });
 
   if (!livreur) {
     throw new ApiError(404, "Aucun profil livreur associé à ce compte", "DRIVER_NOT_FOUND");
@@ -113,7 +113,7 @@ router.post("/register", limiterInscriptions, async (req: Request, res: Response
 
     const [compteExistant, livreurExistant] = await Promise.all([
       db.user.findUnique({ where: { email: body.email } }),
-      db.driver.findUnique({ where: { email: body.email } }),
+      db.courier.findUnique({ where: { email: body.email } }),
     ]);
 
     if (compteExistant || livreurExistant) {
@@ -132,7 +132,7 @@ router.post("/register", limiterInscriptions, async (req: Request, res: Response
       documents: ["cgu", "conditions-livreurs", "confidentialite"],
     });
 
-    const livreur = await db.driver.create({
+    const livreur = await db.courier.create({
       data: {
         userId: utilisateur.id,
         name: body.name,
@@ -182,7 +182,7 @@ router.get("/earnings", authMiddleware, async (req: Request, res: Response, next
         orderBy: { deliveryTime: "desc" },
       }),
       // Les pourboires laissés après la livraison : un revenu à part entière.
-      db.driverTip.findMany({
+      db.courierTip.findMany({
         where: { driverId: livreur.id, status: "PAID" },
         select: { orderId: true, amount: true, paidAt: true },
       }),
@@ -295,7 +295,7 @@ router.patch("/availability", authMiddleware, async (req: Request, res: Response
 
     const enPause = DriverAvailabilityService.estEnPause(livreur);
 
-    const misAJour = await db.driver.update({
+    const misAJour = await db.courier.update({
       where: { id: livreur.id },
       data: {
         isOnline: voulu,
@@ -374,7 +374,7 @@ router.post("/push/subscribe", authMiddleware, async (req: Request, res: Respons
       .passthrough()
       .parse(req.body);
 
-    await db.driver.update({ where: { id: livreur.id }, data: { pushSubscription: abonnement as any } });
+    await db.courier.update({ where: { id: livreur.id }, data: { pushSubscription: abonnement as any } });
 
     res.json({ success: true });
   } catch (err) {
@@ -386,7 +386,7 @@ router.post("/push/subscribe", authMiddleware, async (req: Request, res: Respons
 router.delete("/push/subscribe", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const livreur = await livreurConnecte(req);
-    await db.driver.update({ where: { id: livreur.id }, data: { pushSubscription: Prisma.DbNull } });
+    await db.courier.update({ where: { id: livreur.id }, data: { pushSubscription: Prisma.DbNull } });
     res.json({ success: true });
   } catch (err) {
     next(err);
@@ -535,7 +535,7 @@ router.post("/me/suppression", authMiddleware, async (req: Request, res: Respons
     }
 
     const le = livreur.suppressionDemandeeLe ?? new Date();
-    await db.driver.update({
+    await db.courier.update({
       where: { id: livreur.id },
       data: {
         status: "INACTIVE",
@@ -596,7 +596,7 @@ router.put("/me/bank-account", authMiddleware, async (req: Request, res: Respons
       throw new ApiError(400, "Cet IBAN n'est pas valide : vérifiez-le.", "INVALID_IBAN");
     }
 
-    await db.driver.update({
+    await db.courier.update({
       where: { id: livreur.id },
       data: {
         iban: ibanNormalise(corps.iban),
@@ -615,7 +615,7 @@ router.get("/me", authMiddleware, async (req: Request, res: Response, next: Next
   try {
     const userId = req.user?.userId as string;
 
-    const driver = await db.driver.findUnique({
+    const driver = await db.courier.findUnique({
       where: { userId },
       include: {
         user: {
@@ -1211,7 +1211,7 @@ router.patch(
           data: { status: "COMPLETED" },
         });
 
-        await db.driver.update({
+        await db.courier.update({
           where: { id: livreur.id },
           data: {
             totalDeliveries: { increment: 1 },
@@ -1793,7 +1793,7 @@ router.get("/available", authMiddleware, async (req: Request, res: Response, nex
     // Tous les livreurs, puis filtrage étape par étape : quand la liste est
     // vide, le commerçant voit à quelle condition ils ont tous échoué au lieu
     // d'un simple « aucun livreur ».
-    const tous = await db.driver.findMany({
+    const tous = await db.courier.findMany({
       select: {
         id: true,
         name: true,

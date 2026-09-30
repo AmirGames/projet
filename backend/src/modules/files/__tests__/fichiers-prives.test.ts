@@ -28,7 +28,7 @@ const env = {
 
 const db: any = {
   systemConfig: { findFirst: jest.fn(async () => null) },
-  driverDocument: { findFirst: jest.fn() },
+  courierDocument: { findFirst: jest.fn() },
   organizationDocument: { findFirst: jest.fn() },
   orderDelivery: { findFirst: jest.fn() },
   membership: { findFirst: jest.fn() },
@@ -107,7 +107,7 @@ afterAll(() => {
 beforeEach(() => {
   db.systemConfig.findFirst.mockResolvedValue(null);
   // Le permis appartient au livreur dont le compte est « user-livreur ».
-  db.driverDocument.findFirst.mockImplementation(async ({ where }: any) =>
+  db.courierDocument.findFirst.mockImplementation(async ({ where }: any) =>
     where.driver.userId === "user-livreur" &&
     [PERMIS, ANCIEN_PERMIS].some((r) => where.documentUrl.endsWith === `/uploads/${r}`)
       ? { id: "doc-1" }

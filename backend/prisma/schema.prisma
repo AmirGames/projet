@@ -42,9 +42,10 @@ model User {
   // Relations
   memberships   Membership[]
   auditLogs     SystemAuditLog[]
-  driver        Driver?
+  driver        Courier?
   /// Le dossier chauffeur ZupDrive : transport de personnes, licence LVC.
-  /// Sans rapport avec `driver` ci-dessus, qui est le livreur de repas ZupEat.
+  /// Sans rapport avec `driver` ci-dessus (modèle Courier), le livreur de
+  /// repas ZupEat.
   chauffeurDrive ChauffeurDrive?
   customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
   ticketMessages TicketMessage[]
@@ -950,8 +951,8 @@ model Order {
   customer        Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   payments        Payment[]
   delivery        OrderDelivery?
-  /// Le pourboire laissé après la livraison, payé à part (voir DriverTip).
-  pourboireApres  DriverTip?
+  /// Le pourboire laissé après la livraison, payé à part (voir CourierTip).
+  pourboireApres  CourierTip?
   /// Les jetons des liens de suivi envoyés par e-mail et SMS (empreintes).
   jetonsDeSuivi   OrderTrackingToken[]
   invoice         Invoice?
@@ -1079,10 +1080,15 @@ model Theme {
 }
 
 // ============================================================================
-// DELIVERY & DRIVERS
+// DELIVERY & LIVREURS (COURIERS)
 // ============================================================================
 
-model Driver {
+/// Le livreur ZupEat (« courier ») : il livre des repas et des commandes.
+/// Rien à voir avec le chauffeur ZupDrive (ChauffeurDrive), qui transporte
+/// des personnes. Les tables, les champs (driverId…) et les routes
+/// (/api/drivers) gardent leur nom historique « driver » : seul le nom des
+/// modèles a changé, sans migration.
+model Courier {
   id              String    @id @default(cuid())
   userId          String?   @unique // Link to User account (optional)
   name            String
@@ -1139,16 +1145,16 @@ model Driver {
   user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   deliveries      OrderDelivery[]
   /// Les pourboires laissés après la livraison.
-  tips            DriverTip[]
+  tips            CourierTip[]
   offers          DeliveryOffer[]
-  documents       DriverDocument[]
-  payouts         DriverPayout[]
+  documents       CourierDocument[]
+  payouts         CourierPayout[]
   /// Le compte à créditer pour ses versements (virement SEPA groupé).
   iban            String?
   bic             String?
   accountHolder   String?
-  ratings         DriverRating[]
-  supportMessages DriverSupportMessage[]
+  ratings         CourierRating[]
+  supportMessages CourierSupportMessage[]
 
   /// Le livreur a demandé la suppression de son compte (application ou
   /// site). Le compte est désactivé aussitôt ; ses données ne s'effacent
@@ -1161,13 +1167,16 @@ model Driver {
   @@index([status])
   @@index([isOnline])
   @@index([userId])
+
+  /// Table au nom historique (renommage Driver → Courier, code seulement).
+  @@map("Driver")
 }
 
 /// Chat en direct entre un livreur et le support de la plateforme.
 ///
 /// Un fil par livreur : le livreur écrit en pleine course, le support répond
 /// depuis l'espace superowner, et chaque message est poussé en temps réel.
-model DriverSupportMessage {
+model CourierSupportMessage {
   id          String    @id @default(cuid())
   driverId    String
   /// DRIVER ou SUPPORT : qui a écrit.
@@ -1179,19 +1188,22 @@ model DriverSupportMessage {
   deliveryId  String?
   readAt      DateTime?
 
-  driver      Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driver      Courier    @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime  @default(now())
 
   @@index([driverId, createdAt])
   @@index([sender, readAt])
+
+  /// Table au nom historique (renommage Driver → Courier, code seulement).
+  @@map("DriverSupportMessage")
 }
 
 /// Une pièce du dossier d'un livreur : permis, assurance, carte grise.
 ///
 /// Le modèle existait depuis le début sans qu'aucune route ne l'écrive ni ne le
 /// lise : le dossier d'un livreur était vide, et sa validation impossible.
-model DriverDocument {
+model CourierDocument {
   id              String    @id @default(cuid())
   driverId        String
   type            String    // license, insurance, vehicle_registration, identity
@@ -1206,13 +1218,16 @@ model DriverDocument {
   reviewedAt      DateTime?
 
   // Relations
-  driver          Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driver          Courier    @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([driverId])
   @@index([status])
+
+  /// Table au nom historique (renommage Driver → Courier, code seulement).
+  @@map("DriverDocument")
 }
 
 model OrderDelivery {
@@ -1298,10 +1313,10 @@ model OrderDelivery {
 
   // Relations
   order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  driver          Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  driver          Courier?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
   offers          DeliveryOffer[]
-  payout          DriverPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
-  rating          DriverRating?
+  payout          CourierPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  rating          CourierRating?
 
   /// Tournée : le rang de cette remise, figé une fois toutes les commandes
   /// récupérées. Seule la plus petite se montre et se remet ; les suivantes
@@ -1321,7 +1336,7 @@ model OrderDelivery {
 /// qu'elle lui a versé.
 ///
 /// Les gains d'un livreur s'accumulaient course après course dans
-/// `Driver.totalEarnings`, sans que rien ne les paie : ni période, ni relevé,
+/// `Courier.totalEarnings`, sans que rien ne les paie : ni période, ni relevé,
 /// ni trace de versement. Un livreur ne pouvait pas savoir si les 340 € qu'on
 /// lui annonçait étaient déjà sur son compte ou toujours dus.
 /// Le relevé de reversement d'un commerçant.
@@ -1367,7 +1382,7 @@ model MerchantPayout {
   @@index([periodStart])
 }
 
-model DriverPayout {
+model CourierPayout {
   id              String    @id @default(cuid())
   driverId        String
 
@@ -1392,10 +1407,10 @@ model DriverPayout {
   note            String?
 
   // Relations
-  driver          Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driver          Courier    @relation(fields: [driverId], references: [id], onDelete: Cascade)
   deliveries      OrderDelivery[]
   /// Les pourboires laissés après la livraison, payés avec ce relevé.
-  tips            DriverTip[]
+  tips            CourierTip[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1403,6 +1418,9 @@ model DriverPayout {
   @@index([driverId])
   @@index([status])
   @@index([periodStart])
+
+  /// Table au nom historique (renommage Driver → Courier, code seulement).
+  @@map("DriverPayout")
 }
 
 // Proposition d'une course à un livreur.
@@ -1439,7 +1457,7 @@ model DeliveryOffer {
   ajout       Boolean   @default(false)
 
   delivery    OrderDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
-  driver      Driver        @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driver      Courier        @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1699,7 +1717,7 @@ model Customer {
   // Relations
   orders          Order[]
   reviews         Review[] @relation("ReviewToCustomer")
-  driverRatings   DriverRating[]
+  driverRatings   CourierRating[]
   favorites       FavoriteStore[] @relation("CustomerFavorites")
   carts           CustomerCart[]
 
@@ -1718,7 +1736,7 @@ model Customer {
 
 /// La note qu'un client donne à son livreur, une fois la course remise.
 ///
-/// `Driver.rating` valait 5,00 pour tout le monde depuis le premier jour :
+/// `Courier.rating` valait 5,00 pour tout le monde depuis le premier jour :
 /// c'était la valeur par défaut de la colonne, et rien ne l'écrivait jamais.
 /// Le livreur voyait « 5 » sur son tableau de bord sans avoir jamais été noté,
 /// l'attribution ne pouvait pas s'en servir pour départager, et la plateforme
@@ -1727,7 +1745,7 @@ model Customer {
 /// Une note par course, et par la course : c'est `deliveryId` qui est unique,
 /// pas le couple client/livreur. Un client qui commande dix fois note dix fois,
 /// et ne peut pas noter deux fois la même course.
-model DriverRating {
+model CourierRating {
   id          String   @id @default(cuid())
   deliveryId  String   @unique
   driverId    String
@@ -1740,13 +1758,16 @@ model DriverRating {
   commentaire String?
 
   delivery    OrderDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
-  driver      Driver        @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  driver      Courier        @relation(fields: [driverId], references: [id], onDelete: Cascade)
   customer    Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   createdAt   DateTime @default(now())
 
   @@index([driverId])
   @@index([customerId])
+
+  /// Table au nom historique (renommage Driver → Courier, code seulement).
+  @@map("DriverRating")
 }
 
 model Review {
@@ -2363,7 +2384,7 @@ model CodeConnexion {
 /// paiement à part : la course peut déjà figurer sur un relevé arrêté. Il a
 /// donc sa propre ligne, due tant qu'aucun relevé ne la porte (payoutId), comme
 /// une course, et versée avec le relevé suivant.
-model DriverTip {
+model CourierTip {
   id              String    @id @default(cuid())
   /// Un seul pourboire après livraison par commande.
   orderId         String    @unique
@@ -2376,14 +2397,17 @@ model DriverTip {
   payoutId        String?
 
   order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  driver          Driver        @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  payout          DriverPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  driver          Courier        @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  payout          CourierPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([driverId, status, payoutId])
   @@index([payoutId])
+
+  /// Table au nom historique (renommage Driver → Courier, code seulement).
+  @@map("DriverTip")
 }
 
 // ============================================================================
@@ -2394,7 +2418,7 @@ model DriverTip {
 /// son véhicule, et où en est sa validation. Voir docs/zupdrive.md et
 /// src/modules/zupdrive/chauffeur-onboarding.service.ts.
 ///
-/// Rattaché à un compte ZupOne unique. Chauffeur ≠ livreur : le modèle Driver
+/// Rattaché à un compte ZupOne unique. Chauffeur ≠ livreur : le modèle Courier
 /// est le livreur de repas ZupEat, sans aucun lien avec ce dossier.
 model ChauffeurDrive {
   id     String @id @default(cuid())

@@ -193,7 +193,7 @@ export async function peutLire(
   if (await equipeHabilitee(appelant.compte, dossier)) return true;
 
   if (dossier === "drivers") {
-    const piece = await db.driverDocument.findFirst({
+    const piece = await db.courierDocument.findFirst({
       where: { documentUrl: reference(relatif), driver: { userId } },
       select: { id: true },
     });

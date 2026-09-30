@@ -194,7 +194,7 @@ export class MerchantPayoutService {
 
     const [dejaCommercants, dejaLivreurs] = await Promise.all([
       db.merchantPayout.count({ where: { periodEnd } }),
-      db.driverPayout.count({ where: { periodEnd } }),
+      db.courierPayout.count({ where: { periodEnd } }),
     ]);
 
     const commercants = dejaCommercants > 0 ? [] : await this.arreterTous(periodStart, periodEnd);
@@ -312,7 +312,7 @@ export class MerchantPayoutService {
         where: { status: "PENDING" },
         include: { org: { select: { name: true, legalName: true, iban: true, bic: true, accountHolder: true } } },
       }),
-      db.driverPayout.findMany({
+      db.courierPayout.findMany({
         where: { status: "PENDING" },
         include: { driver: { select: { name: true, iban: true, bic: true, accountHolder: true } } },
       }),

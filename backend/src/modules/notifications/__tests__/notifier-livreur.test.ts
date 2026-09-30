@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const db: any = {
-  driver: { findUnique: jest.fn(), update: jest.fn() },
+  courier: { findUnique: jest.fn(), update: jest.fn() },
   pushDevice: { findMany: jest.fn(), deleteMany: jest.fn() },
 };
 
@@ -22,7 +22,7 @@ const fetchMock = jest.fn(async (_url: string, _init?: any) => ({
 describe("Notifier.pushLivreur vers l'application livreur", () => {
   beforeEach(() => {
     (global as any).fetch = fetchMock;
-    db.driver.findUnique.mockResolvedValue({ pushSubscription: null, userId: "user-1" });
+    db.courier.findUnique.mockResolvedValue({ pushSubscription: null, userId: "user-1" });
     db.pushDevice.findMany.mockResolvedValue([{ token: "ExponentPushToken[abc]" }]);
   });
 

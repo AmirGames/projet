@@ -83,7 +83,7 @@ passée : changer la formule d'un commerçant ne réécrit pas l'historique.
 | Commission figée par commande, historique mensuel | ✅ | `Order.commission*`, `CommissionHistory` |
 | Relevé de reversement hebdomadaire commerçant, ligne par ligne (codes 100, 110, 120, 200, 230, 240, 300) | ✅ | `MerchantPayout`, `utils/reversement.ts` |
 | Report d'un solde négatif sur le relevé suivant | ✅ | `MerchantPayout.status = CARRIED` |
-| Relevé de versement livreur (gains + pourboires après livraison) | ✅ | `DriverPayout`, `DriverTip` |
+| Relevé de versement livreur (gains + pourboires après livraison) | ✅ | `CourierPayout`, `CourierTip` |
 | Fichier de virements SEPA `pain.001.001.03`, IBAN contrôlés, bénéficiaires invalides écartés | ✅ | `GET /versements/sepa.xml`, `/superowner/versements` |
 | Marquer un lot « versé » avec référence ; annuler un relevé non versé | ✅ | `POST /versements/payer`, `/payouts/:id/cancel` |
 | Une course ne peut pas être payée deux fois | ✅ | `OrderDelivery.payoutId` |
@@ -209,7 +209,7 @@ Format à choisir avec le comptable, à faire dans un seul lot :
 2. **Le montant du reversement est figé** à la création du relevé : il ne se recalcule pas si une commande change plus tard.
 3. **Un relevé négatif est reporté** (`CARRIED`) sur le suivant, ligne code 300.
 4. **La commission est calculée sur les articles après remise** ; elle ne l'est pas sur la livraison, les frais de service ni le pourboire.
-5. **Le pourboire** est à part : il n'entre ni dans le total de la commande ni dans le chiffre d'affaires. Celui laissé après livraison est payé séparément (`DriverTip`) et part avec le relevé suivant du livreur.
+5. **Le pourboire** est à part : il n'entre ni dans le total de la commande ni dans le chiffre d'affaires. Celui laissé après livraison est payé séparément (`CourierTip`) et part avec le relevé suivant du livreur.
 6. **Un livreur qui supprime son compte** est payé une dernière fois avant la clôture (`suppressionDemandeeLe`).
 7. **Un commerçant fermé** voit ses données archivées puis effacées à 60 jours : les pièces comptables (factures, relevés) doivent être **conservées** au-delà — durée légale : 7 ans en Belgique, 10 ans en France pour les pièces comptables. À vérifier que la purge n'efface pas `Invoice` ni `MerchantPayout` (les relations `onDelete: Restrict` sur `Invoice` protègent déjà les factures).
 8. **La suppression d'un compte client** conserve les commandes sans lien avec la personne, pour la comptabilité.

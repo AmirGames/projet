@@ -59,7 +59,7 @@ Des documents supplémentaires peuvent être requis en fonction de la licence.
 Module backend : `backend/src/modules/zupdrive/` (service `chauffeur-onboarding.service.ts`).
 Modèles Prisma : `ChauffeurDrive` (un par compte ZupOne) et `DocumentChauffeurDrive` (une pièce par type), migration `0027_zupdrive_chauffeurs`.
 
-**Chauffeur ≠ livreur.** Un **chauffeur** (ZupDrive) transporte des personnes, avec une licence LVC. Un **livreur** (ZupEat) livre des repas et des commandes. Ce sont deux métiers, deux dossiers et deux validations sans aucun lien : rien, dans le code ou dans les pages de ZupDrive, ne renvoie au métier de livreur. Attention au piège de nommage : le modèle Prisma `Driver` et l'espace `/driver` désignent les **livreurs** ZupEat, pas les chauffeurs.
+**Chauffeur ≠ livreur.** Un **chauffeur** (ZupDrive) transporte des personnes, avec une licence LVC. Un **livreur** (ZupEat) livre des repas et des commandes. Ce sont deux métiers, deux dossiers et deux validations sans aucun lien : rien, dans le code ou dans les pages de ZupDrive, ne renvoie au métier de livreur. Côté code, le livreur est le modèle Prisma `Courier` (table historique `Driver`). L'espace `/driver` et les routes `/api/drivers` gardent leur nom historique, mais désignent eux aussi les **livreurs** ZupEat, pas les chauffeurs.
 
 **Compte unique ZupOne.** Le dossier chauffeur (`ChauffeurDrive`) est rattaché au compte ZupOne (`User`).
 

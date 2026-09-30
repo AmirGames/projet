@@ -262,7 +262,7 @@ export class Notifier {
    * téléphones où l'application livreur est connectée à son compte.
    */
   static async pushLivreur(driverId: string, message: MessagePush) {
-    const livreur = await db.driver.findUnique({
+    const livreur = await db.courier.findUnique({
       where: { id: driverId },
       select: { pushSubscription: true, userId: true },
     });
@@ -280,7 +280,7 @@ export class Notifier {
 
     const resultat = await this.push(abonnement, message);
     if (resultat === "expire") {
-      await db.driver
+      await db.courier
         .update({ where: { id: driverId }, data: { pushSubscription: Prisma.DbNull } })
         .catch(() => {});
       return false;

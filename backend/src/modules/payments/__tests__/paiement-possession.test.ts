@@ -5,7 +5,7 @@ import request from "supertest";
 const db: any = {
   order: { findFirst: jest.fn() },
   payment: { findFirst: jest.fn() },
-  driverTip: { findFirst: jest.fn() },
+  courierTip: { findFirst: jest.fn() },
 };
 const stripeMock: any = { paymentIntents: { retrieve: jest.fn() } };
 
@@ -101,7 +101,7 @@ describe("Routes de paiement : preuve de possession", () => {
 
   it("confirm avec l'intention d'une autre commande → refus, sans appel à Stripe", async () => {
     db.payment.findFirst.mockResolvedValue(null);
-    db.driverTip.findFirst.mockResolvedValue(null);
+    db.courierTip.findFirst.mockResolvedValue(null);
     const r = await request(app)
       .post("/api/payments/confirm")
       .send({ orderId: "cmd_1", paymentIntentId: "pi_autre", trackingToken: jeton });
@@ -114,7 +114,7 @@ describe("Routes de paiement : preuve de possession", () => {
 
   it("confirm de sa propre intention : lecture seule quand le webhook est configuré", async () => {
     db.payment.findFirst.mockResolvedValue({ id: "pay-1" });
-    db.driverTip.findFirst.mockResolvedValue(null);
+    db.courierTip.findFirst.mockResolvedValue(null);
     stripeMock.paymentIntents.retrieve.mockResolvedValue({
       id: "pi_1",
       status: "succeeded",

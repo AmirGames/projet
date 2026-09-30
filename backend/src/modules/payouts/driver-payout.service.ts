@@ -78,8 +78,8 @@ export class DriverPayoutService {
     const [dues, pourboires, enAttente, livreur] = await Promise.all([
       this.coursesDues(driverId),
       this.pourboiresDus(driverId),
-      db.driverPayout.findMany({ where: { driverId, status: "PENDING" }, select: { amount: true } }),
-      db.driver.findUnique({ where: { id: driverId }, select: { iban: true } }),
+      db.courierPayout.findMany({ where: { driverId, status: "PENDING" }, select: { amount: true } }),
+      db.courier.findUnique({ where: { id: driverId }, select: { iban: true } }),
     ]);
     const nonArrete =
       dues.reduce((somme, course) => somme + gainDeLaCourse(course), 0) + totalDesPourboires(pourboires);
@@ -125,7 +125,7 @@ export class DriverPayoutService {
    * relevé suivant, pas avec celui déjà arrêté.
    */
   static async pourboiresDus(driverId: string, bornes?: { debut?: Date; fin?: Date }) {
-    return db.driverTip.findMany({
+    return db.courierTip.findMany({
       where: {
         driverId,
         status: "PAID",
@@ -149,7 +149,7 @@ export class DriverPayoutService {
     const [dues, pourboires, releves] = await Promise.all([
       this.coursesDues(driverId),
       this.pourboiresDus(driverId),
-      db.driverPayout.findMany({
+      db.courierPayout.findMany({
         where: { driverId, status: { not: "CANCELLED" } },
         orderBy: { periodStart: "desc" },
         include: { _count: { select: { deliveries: true } } },
@@ -204,7 +204,7 @@ export class DriverPayoutService {
 
   /** Le détail d'un relevé : ses bornes, son montant, et les courses payées. */
   static async detail(payoutId: string) {
-    const releve = await db.driverPayout.findUnique({
+    const releve = await db.courierPayout.findUnique({
       where: { id: payoutId },
       include: {
         driver: { select: { id: true, name: true, email: true, phone: true } },
@@ -251,7 +251,7 @@ export class DriverPayoutService {
       throw new ApiError(400, "La fin de période précède son début", "INVALID_PERIOD");
     }
 
-    const livreur = await db.driver.findUnique({ where: { id: driverId } });
+    const livreur = await db.courier.findUnique({ where: { id: driverId } });
 
     if (!livreur) {
       throw new ApiError(404, "Livreur introuvable", "DRIVER_NOT_FOUND");
@@ -277,7 +277,7 @@ export class DriverPayoutService {
     // La création du relevé et le rattachement des courses vont ensemble : un
     // relevé sans ses courses laisserait celles-ci payables une seconde fois.
     const releve = await db.$transaction(async (tx) => {
-      const cree = await tx.driverPayout.create({
+      const cree = await tx.courierPayout.create({
         data: {
           driverId,
           periodStart,
@@ -293,7 +293,7 @@ export class DriverPayoutService {
         data: { payoutId: cree.id },
       });
       // Les pourboires aussi : sans ce lien, ils seraient versés deux fois.
-      await tx.driverTip.updateMany({
+      await tx.courierTip.updateMany({
         where: { id: { in: pourboires.map((pourboire) => pourboire.id) } },
         data: { payoutId: cree.id },
       });
@@ -334,7 +334,7 @@ export class DriverPayoutService {
     });
 
     // Un livreur sans course sur la période peut avoir reçu un pourboire.
-    const pourboires = await db.driverTip.groupBy({
+    const pourboires = await db.courierTip.groupBy({
       by: ["driverId"],
       where: { status: "PAID", payoutId: null, paidAt: { gte: periodStart, lt: periodEnd } },
     });
@@ -359,7 +359,7 @@ export class DriverPayoutService {
     versement: { method: string; reference?: string; note?: string },
     adminId: string
   ) {
-    const releve = await db.driverPayout.findUnique({ where: { id: payoutId } });
+    const releve = await db.courierPayout.findUnique({ where: { id: payoutId } });
 
     if (!releve) {
       throw new ApiError(404, "Relevé introuvable", "PAYOUT_NOT_FOUND");
@@ -381,7 +381,7 @@ export class DriverPayoutService {
       );
     }
 
-    const paye = await db.driverPayout.update({
+    const paye = await db.courierPayout.update({
       where: { id: payoutId },
       data: {
         status: "PAID",
@@ -411,7 +411,7 @@ export class DriverPayoutService {
    * au prochain arrêté.
    */
   static async annuler(payoutId: string, raison: string) {
-    const releve = await db.driverPayout.findUnique({ where: { id: payoutId } });
+    const releve = await db.courierPayout.findUnique({ where: { id: payoutId } });
 
     if (!releve) {
       throw new ApiError(404, "Relevé introuvable", "PAYOUT_NOT_FOUND");
@@ -436,12 +436,12 @@ export class DriverPayoutService {
         where: { payoutId },
         data: { payoutId: null },
       });
-      await tx.driverTip.updateMany({
+      await tx.courierTip.updateMany({
         where: { payoutId },
         data: { payoutId: null },
       });
 
-      return tx.driverPayout.update({
+      return tx.courierPayout.update({
         where: { id: payoutId },
         data: { status: "CANCELLED", note: raison.trim() },
       });
@@ -450,7 +450,7 @@ export class DriverPayoutService {
 
   /** Les relevés vus de la plateforme, avec le livreur concerné. */
   static async lister(filtres: { status?: string; driverId?: string }) {
-    const releves = await db.driverPayout.findMany({
+    const releves = await db.courierPayout.findMany({
       where: {
         ...(filtres.status && filtres.status !== "ALL" ? { status: filtres.status } : {}),
         ...(filtres.driverId ? { driverId: filtres.driverId } : {}),
@@ -460,7 +460,7 @@ export class DriverPayoutService {
       take: 200,
     });
 
-    const parEtat = await db.driverPayout.groupBy({
+    const parEtat = await db.courierPayout.groupBy({
       by: ["status"],
       _count: { _all: true },
       _sum: { amount: true },
@@ -509,7 +509,7 @@ export class DriverPayoutService {
         where: { status: "DELIVERED", payoutId: null, driverId: { not: null } },
         select: { driverId: true, driverPayout: true, order: { select: { feesAmount: true } } },
       }),
-      db.driverTip.findMany({
+      db.courierTip.findMany({
         where: { status: "PAID", payoutId: null },
         select: { driverId: true, amount: true },
       }),
@@ -525,7 +525,7 @@ export class DriverPayoutService {
 
   /** Prévient le livreur. Un versement muet ne se remarque pas. */
   private static async prevenir(driverId: string, titre: string, corps: string) {
-    const livreur = await db.driver.findUnique({
+    const livreur = await db.courier.findUnique({
       where: { id: driverId },
       select: { email: true },
     });
