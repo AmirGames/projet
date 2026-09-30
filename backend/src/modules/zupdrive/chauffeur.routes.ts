@@ -10,6 +10,7 @@ import {
   TYPES_PIECE,
   libelleDeLaPiece,
 } from "./chauffeur-onboarding.service";
+import { CourseDriveService } from "./course-drive.service";
 
 /**
  * /api/zupdrive/chauffeur — le dossier du chauffeur connecté
@@ -133,6 +134,85 @@ router.post("/me/submit", async (req: Request, res: Response, next: NextFunction
   try {
     const dossier = await ChauffeurOnboardingService.soumettre(req.userId as string);
     res.json({ success: true, data: presenterDossier(dossier!) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Courses (chauffeur validé)
+// ---------------------------------------------------------------------------
+
+const idCourse = z.string().min(1).max(64);
+
+// GET /api/zupdrive/chauffeur/me/courses — disponibilité, proposition ouverte, course, historique
+router.get("/me/courses", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await CourseDriveService.tableauDeBord(req.userId as string) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/zupdrive/chauffeur/me/disponibilite { enLigne }
+router.post("/me/disponibilite", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { enLigne } = z.object({ enLigne: z.boolean() }).strict().parse(req.body);
+    res.json({ success: true, data: await CourseDriveService.passerEnLigne(req.userId as string, enLigne) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/zupdrive/chauffeur/me/position { latitude, longitude }
+router.post("/me/position", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const position = z
+      .object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) })
+      .strict()
+      .parse(req.body);
+    res.json({ success: true, data: await CourseDriveService.enregistrerPosition(req.userId as string, position) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/zupdrive/chauffeur/me/propositions/:id/(accepter|refuser)
+router.post("/me/propositions/:id/:reponse", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const reponse = z.enum(["accepter", "refuser"]).parse(req.params.reponse);
+    const id = idCourse.parse(req.params.id);
+    const data =
+      reponse === "accepter"
+        ? await CourseDriveService.accepter(req.userId as string, id)
+        : await CourseDriveService.refuser(req.userId as string, id);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/zupdrive/chauffeur/me/courses/:id/annuler { motif }
+router.post("/me/courses/:id/annuler", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { motif } = z.object({ motif: z.string().trim().min(3, "Indiquez un motif").max(300) }).strict().parse(req.body);
+    res.json({
+      success: true,
+      data: await CourseDriveService.annulerParChauffeur(req.userId as string, idCourse.parse(req.params.id), motif),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/zupdrive/chauffeur/me/courses/:id/(arrive|demarrer|terminer)
+router.post("/me/courses/:id/:etape", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const etape = z.enum(["arrive", "demarrer", "terminer"]).parse(req.params.etape);
+    res.json({
+      success: true,
+      data: await CourseDriveService.avancer(req.userId as string, idCourse.parse(req.params.id), etape),
+    });
   } catch (err) {
     next(err);
   }

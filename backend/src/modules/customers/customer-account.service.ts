@@ -98,6 +98,18 @@ export class CustomerAccountService {
       );
     }
 
+    // Une course ZupDrive en cours : le chauffeur est peut-être déjà en route.
+    const trajetsEnCours = await db.courseDrive.count({
+      where: { passagerId: userId, statut: { in: ["RECHERCHE", "ACCEPTEE", "ARRIVEE", "EN_COURS"] } },
+    });
+    if (trajetsEnCours > 0) {
+      throw new ApiError(
+        409,
+        "Un trajet ZupDrive est en cours : attendez qu'il soit terminé (ou annulé), puis refaites la demande.",
+        "RIDE_IN_PROGRESS"
+      );
+    }
+
     const maintenant = new Date();
     await db.$transaction(async (tx) => {
       if (apercu._clientId) {

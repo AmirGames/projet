@@ -162,7 +162,8 @@ export class ChauffeurExpirationService {
 
       const { count } = await db.chauffeurDrive.updateMany({
         where: { id: chauffeur.id, statut: "VALIDE" },
-        data: { statut: "SUSPENDU", motifStatut: motif, suspenduPourExpirationLe: maintenant },
+        // Hors ligne aussi : plus aucune course ne lui est proposée.
+        data: { statut: "SUSPENDU", motifStatut: motif, suspenduPourExpirationLe: maintenant, enLigne: false },
       });
       if (count !== 1) continue;
       suspendus++;

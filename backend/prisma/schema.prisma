@@ -47,6 +47,8 @@ model User {
   /// Sans rapport avec `driver` ci-dessus (modèle Courier), le livreur de
   /// repas ZupEat.
   chauffeurDrive ChauffeurDrive?
+  /// Les trajets commandés comme passager sur ZupDrive.
+  coursesDrive  CourseDrive[]
   customer      Customer?  // REFONTE IDENTITÉ UNIFIÉE: Relation inverse
   ticketMessages TicketMessage[]
   pushDevices   PushDevice[]
@@ -2456,8 +2458,19 @@ model ChauffeurDrive {
   /// que l'équipe la valide. Une suspension décidée par l'équipe ne le pose pas.
   suspenduPourExpirationLe DateTime?
 
+  /// Disponibilité pour les courses : seul un chauffeur VALIDE peut être en
+  /// ligne ; une suspension le met hors ligne. La position sert à proposer
+  /// chaque course au chauffeur le plus proche ; trop ancienne, elle ne compte
+  /// plus (voir course-drive.service.ts).
+  enLigne    Boolean   @default(false)
+  latitude   Float?
+  longitude  Float?
+  positionLe DateTime?
+
   user      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   documents DocumentChauffeurDrive[]
+  courses      CourseDrive[]
+  propositions PropositionCourseDrive[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2500,4 +2513,106 @@ model DocumentChauffeurDrive {
   @@index([chauffeurId, type])
   @@index([statut])
   @@index([dateExpiration])
+}
+
+// ============================================================================
+// ZUPDRIVE — COURSES (transport de personnes)
+// ============================================================================
+
+/// Le tarif d'une région, fixé par l'équipe ZupDrive. Tous les montants sont
+/// des entiers en centimes d'euro. Prix d'une course, calculé une fois à la
+/// commande puis figé (voir tarification-drive.service.ts) :
+///   max(minimum, priseEnCharge + parKm × km + parMinute × minutes),
+///   arrondi au centime le plus proche, une seule fois, sur le total.
+model TarifDrive {
+  /// BRUXELLES, WALLONIE ou FLANDRE : une licence ne vaut que dans sa région.
+  region                 String   @id
+  priseEnChargeCentimes  Int
+  parKmCentimes          Int
+  parMinuteCentimes      Int
+  minimumCentimes        Int
+  /// Le service n'est ouvert à la commande que dans une région active.
+  actif                  Boolean  @default(false)
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+/// Une course ZupDrive : un passager, un trajet, un prix fixe, un chauffeur.
+///
+/// RECHERCHE → ACCEPTEE → ARRIVEE → EN_COURS → TERMINEE, ou ANNULEE, ou
+/// SANS_CHAUFFEUR quand personne n'a accepté à temps. Transitions contrôlées
+/// par des écritures conditionnées à l'état attendu.
+model CourseDrive {
+  id           String   @id @default(cuid())
+  /// Nul une fois le compte du passager supprimé : la course reste dans
+  /// l'historique, sans la personne (comme les commandes ZupEat).
+  passagerId   String?
+  /// Clé envoyée par le client : rejouer la commande rend la même course.
+  cleIdempotence String
+
+  chauffeurId  String?
+
+  statut       String   @default("RECHERCHE")
+  region       String
+
+  departAdresse    String
+  departLatitude   Float
+  departLongitude  Float
+  arriveeAdresse   String
+  arriveeLatitude  Float
+  arriveeLongitude Float
+
+  /// Estimation au moment de la commande (distance routière estimée).
+  distanceMetres   Int
+  dureeSecondes    Int
+  /// Le prix annoncé au passager et figé à la commande, en centimes d'euro.
+  prixCentimes     Int
+  devise           String   @default("EUR")
+  /// Le tarif appliqué, recopié : le prix reste explicable même si le tarif change.
+  tarifApplique    Json
+
+  accepteeLe  DateTime?
+  arriveeLe   DateTime?
+  debutLe     DateTime?
+  termineeLe  DateTime?
+  annuleeLe   DateTime?
+  /// PASSAGER, CHAUFFEUR ou PLATEFORME.
+  annuleePar  String?
+  motifAnnulation String?
+
+  passager  User?           @relation(fields: [passagerId], references: [id], onDelete: SetNull)
+  chauffeur ChauffeurDrive? @relation(fields: [chauffeurId], references: [id], onDelete: SetNull)
+  propositions PropositionCourseDrive[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([passagerId, cleIdempotence])
+  @@index([statut])
+  @@index([chauffeurId, statut])
+  @@index([passagerId, createdAt])
+}
+
+/// Une course proposée à un chauffeur, qui a quelques secondes pour accepter.
+model PropositionCourseDrive {
+  id          String   @id @default(cuid())
+  courseId    String
+  chauffeurId String
+  /// EN_ATTENTE, ACCEPTEE, REFUSEE, EXPIREE, CADUQUE (course annulée entre-temps).
+  statut      String   @default("EN_ATTENTE")
+  /// Distance du chauffeur au point de départ, au moment de la proposition.
+  distanceMetres Int
+  expireA     DateTime
+  reponduLe   DateTime?
+
+  course    CourseDrive    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chauffeur ChauffeurDrive @relation(fields: [chauffeurId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  /// Une course n'est proposée qu'une fois à un même chauffeur.
+  @@unique([courseId, chauffeurId])
+  @@index([statut, expireA])
+  @@index([chauffeurId, statut])
 }

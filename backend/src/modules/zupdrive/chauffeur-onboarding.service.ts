@@ -448,7 +448,7 @@ export class ChauffeurOnboardingService {
       dossier,
       ["VALIDE"],
       // Décidée par l'équipe : un simple dépôt ne la lèvera pas.
-      { statut: "SUSPENDU", motifStatut: this.motifExige(motif), suspenduPourExpirationLe: null },
+      { statut: "SUSPENDU", motifStatut: this.motifExige(motif), suspenduPourExpirationLe: null, enLigne: false },
       "Votre compte chauffeur ZupDrive est suspendu",
       motif.trim()
     );

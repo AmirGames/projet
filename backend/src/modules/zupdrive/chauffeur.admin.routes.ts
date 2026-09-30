@@ -6,6 +6,8 @@ import { exigerPermission } from "../auth/permissions-plateforme.service";
 import { journaliser } from "../superowner/shared";
 import { ChauffeurOnboardingService, STATUTS_CHAUFFEUR, piecesExigees } from "./chauffeur-onboarding.service";
 import { presenterDossier } from "./chauffeur.routes";
+import { TarificationDriveService } from "./tarification-drive.service";
+import { REGIONS } from "./chauffeur-onboarding.service";
 
 /**
  * /api/zupdrive/admin — l'équipe ZupDrive examine les dossiers chauffeurs.
@@ -175,5 +177,90 @@ router.post(
   "/chauffeurs/:id/reactivate",
   decision("ZUPDRIVE_REACTIVATE_CHAUFFEUR", (id) => ChauffeurOnboardingService.reactiver(id))
 );
+
+// ---------------------------------------------------------------------------
+// Tarifs et courses (section « courses-drive »)
+// ---------------------------------------------------------------------------
+
+// GET /api/zupdrive/admin/tarifs — le tarif de chaque région
+router.get("/tarifs", async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await TarificationDriveService.lister() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const centimes = z.number().int().min(0).max(100_000);
+
+// PUT /api/zupdrive/admin/tarifs/:region — fixer le tarif (entiers en centimes)
+router.put("/tarifs/:region", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const region = z.enum(REGIONS).parse(req.params.region);
+    const valeurs = z
+      .object({
+        priseEnChargeCentimes: centimes,
+        parKmCentimes: centimes,
+        parMinuteCentimes: centimes,
+        minimumCentimes: centimes,
+        actif: z.boolean(),
+      })
+      .strict()
+      .parse(req.body);
+
+    const { avant, apres } = await TarificationDriveService.definir(region, valeurs);
+    await journaliser(req, "ZUPDRIVE_SET_TARIF", region, {
+      avant: avant
+        ? {
+            priseEnChargeCentimes: avant.priseEnChargeCentimes,
+            parKmCentimes: avant.parKmCentimes,
+            parMinuteCentimes: avant.parMinuteCentimes,
+            minimumCentimes: avant.minimumCentimes,
+            actif: avant.actif,
+          }
+        : null,
+      apres: valeurs,
+    });
+    res.json({ success: true, data: apres });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/zupdrive/admin/courses?statut=&limit=&offset= — les courses, les plus récentes d'abord
+router.get("/courses", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const query = z
+      .object({
+        statut: z
+          .enum(["ALL", "RECHERCHE", "ACCEPTEE", "ARRIVEE", "EN_COURS", "TERMINEE", "ANNULEE", "SANS_CHAUFFEUR"])
+          .default("ALL"),
+        limit: z.coerce.number().int().min(1).max(100).default(50),
+        offset: z.coerce.number().int().min(0).default(0),
+      })
+      .parse(req.query);
+    const where = query.statut === "ALL" ? {} : { statut: query.statut };
+    const [courses, total] = await Promise.all([
+      db.courseDrive.findMany({
+        where,
+        skip: query.offset,
+        take: query.limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          passager: { select: { email: true, name: true } },
+          chauffeur: { select: { id: true, nomComplet: true, vehiculePlaque: true } },
+        },
+      }),
+      db.courseDrive.count({ where }),
+    ]);
+    res.json({
+      success: true,
+      data: courses.map(({ cleIdempotence: _cle, ...course }) => course),
+      pagination: { total, limit: query.limit, offset: query.offset },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default router;

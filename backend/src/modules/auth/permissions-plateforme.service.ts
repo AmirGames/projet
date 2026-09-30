@@ -80,6 +80,7 @@ export const SECTIONS: Section[] = [
   { id: "audit-logs", label: "Journal d'audit", groupe: "Supervision" },
   { id: "access-logs", label: "Journal des connexions", groupe: "Supervision" },
   { id: "chauffeurs", label: "Chauffeurs (dossiers LVC)", groupe: "ZupDrive" },
+  { id: "courses-drive", label: "Courses et tarifs", groupe: "ZupDrive" },
 ];
 
 const IDS_SECTIONS = new Set(SECTIONS.map((s) => s.id));
@@ -113,6 +114,7 @@ export const PERMISSIONS_PAR_DEFAUT: Record<RolePlateforme, Permissions> = {
     stores: "read",
     drivers: "read",
     chauffeurs: "read",
+    "courses-drive": "read",
     members: "read",
     "support-tickets": "write",
     "driver-support": "write",
@@ -158,7 +160,10 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
     [/^\/security-audit/, "security-audit"],
     [/^\/audit-logs/, "audit-logs"],
   ],
-  zupdrive: [[/^\/chauffeurs/, "chauffeurs"]],
+  zupdrive: [
+    [/^\/chauffeurs/, "chauffeurs"],
+    [/^\/(tarifs|courses)/, "courses-drive"],
+  ],
   admin: [
     [/^\/config/, "system-config"],
     [/^\/merchants\/[^/]+\/(close|restore-from-backup)/, "organizations-close"],

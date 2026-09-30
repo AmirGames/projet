@@ -51,6 +51,7 @@ import mapsRouter from "./modules/maps/maps.routes";
 import driversRouter from "./modules/drivers/drivers.routes";
 import zupdriveChauffeurRouter from "./modules/zupdrive/chauffeur.routes";
 import zupdriveAdminRouter from "./modules/zupdrive/chauffeur.admin.routes";
+import zupdriveCoursesRouter from "./modules/zupdrive/course-drive.routes";
 import notificationsApiRouter from "./modules/notifications/notifications-api.routes";
 import paymentMethodsApiRouter from "./modules/payments/payment-methods-api.routes";
 import supportRouter from "./modules/support/support.routes";
@@ -255,6 +256,7 @@ export function createApp(): Express {
   app.use("/api/drivers", driversRouter);
   app.use("/api/zupdrive/chauffeur", zupdriveChauffeurRouter);
   app.use("/api/zupdrive/admin", zupdriveAdminRouter);
+  app.use("/api/zupdrive/courses", zupdriveCoursesRouter);
   app.use("/api/notifications", notificationsApiRouter);
   app.use("/api/support", supportRouter);
   app.use("/api/plans", plansRouter);
