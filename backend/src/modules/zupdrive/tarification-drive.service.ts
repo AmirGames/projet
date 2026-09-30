@@ -1,6 +1,6 @@
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
-import { distanceKm } from "../../utils/geo";
+import { calculerItineraire, type Point } from "./itineraire.service";
 import { REGIONS, type Region } from "./chauffeur-onboarding.service";
 
 /**
@@ -15,37 +15,22 @@ import { REGIONS, type Region } from "./chauffeur-onboarding.service";
  * avant la commande, figé avec la course, et le tarif appliqué est recopié
  * dans la course pour rester explicable.
  *
- * Distance et durée : il n'y a pas encore de service d'itinéraire. La distance
- * routière est estimée à partir de la distance à vol d'oiseau (coefficient
- * de détour), la durée à partir d'une vitesse moyenne urbaine. Le jour où un
- * calcul d'itinéraire existera, seul `estimerTrajet` changera.
+ * Distance et durée viennent de l'itinéraire (itineraire.service.ts : OSRM
+ * ou estimation). Le devis est ensuite signé (devis-signe.ts) : la commande
+ * reprend exactement le prix affiché.
  */
 
-/** Détour moyen de la route par rapport à la ligne droite, en ville. */
-export const COEFFICIENT_DETOUR = 1.3;
-/** Vitesse moyenne retenue pour la durée, en km/h. */
-export const VITESSE_MOYENNE_KMH = 25;
 /** Un trajet plus court n'a pas de sens pour une course (et plus long non plus). */
 export const DISTANCE_MIN_METRES = 300;
 export const DISTANCE_MAX_METRES = 200_000;
 
-export interface Point {
-  latitude: number;
-  longitude: number;
-}
+export type { Point };
 
 export interface Tarif {
   priseEnChargeCentimes: number;
   parKmCentimes: number;
   parMinuteCentimes: number;
   minimumCentimes: number;
-}
-
-export function estimerTrajet(depart: Point, arrivee: Point) {
-  const droite = distanceKm(depart, arrivee) * 1000;
-  const distanceMetres = Math.round(droite * COEFFICIENT_DETOUR);
-  const dureeSecondes = Math.round((distanceMetres / 1000 / VITESSE_MOYENNE_KMH) * 3600);
-  return { distanceMetres, dureeSecondes };
 }
 
 /** Le prix en centimes, arrondi une seule fois, sur le total. */
@@ -108,7 +93,7 @@ export class TarificationDriveService {
       throw new ApiError(400, "ZupDrive n'est pas encore ouvert dans cette région", "REGION_NOT_SERVED");
     }
 
-    const { distanceMetres, dureeSecondes } = estimerTrajet(trajet.depart, trajet.arrivee);
+    const { distanceMetres, dureeSecondes, trace, source } = await calculerItineraire(trajet.depart, trajet.arrivee);
     if (distanceMetres < DISTANCE_MIN_METRES) {
       throw new ApiError(400, "Départ et destination sont trop proches", "RIDE_TOO_SHORT");
     }
@@ -124,6 +109,8 @@ export class TarificationDriveService {
       prixCentimes: calculerPrix(tarif, distanceMetres, dureeSecondes),
       devise: "EUR" as const,
       tarif,
+      trace,
+      source,
     };
   }
 

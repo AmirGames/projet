@@ -2425,7 +2425,7 @@
     "prixFixe": "Prix fixe, connu avant de commander.",
     "commander": "Commander pour {prix}",
     "commandeEnCours": "Commande…",
-    "prixChange": "Le prix a changé : voici le nouveau prix.",
+    "prixChange": "Ce devis a expiré : voici le prix à jour.",
     "trajetEnCours": "Trajet en cours vers {destination} — suivre",
     "mesTrajets": "Mes trajets",
     "retour": "← Mes trajets",
@@ -2544,5 +2544,11 @@
       "CHAUFFEUR": "par le chauffeur",
       "PLATEFORME": "par la plateforme"
     }
+  },
+  "carteCourseDrive": {
+    "libelle": "Carte du trajet",
+    "depart": "Départ",
+    "destination": "Destination",
+    "chauffeur": "Votre chauffeur"
   }
 }

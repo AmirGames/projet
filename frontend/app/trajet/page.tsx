@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Car, Loader, MapPin, Navigation } from 'lucide-react';
 
 import { AddressAutocomplete, type AdresseChoisie } from '@/components/AddressAutocomplete';
+import { CarteCourseDrive } from '@/components/CarteCourseDrive';
 import { useAuth } from '@/lib/auth-context';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import {
@@ -22,9 +23,9 @@ import {
 /**
  * ZupDrive — commander un trajet (passager, zupdrive.com/trajet).
  *
- * Le prix affiché vient du serveur (devis) et c'est ce prix, figé, qui est
- * envoyé à la commande : s'il a changé entre-temps, le serveur refuse et la
- * page propose le nouveau devis. Rien n'est calculé ici.
+ * Le prix affiché vient du serveur, dans un devis signé qui est renvoyé tel
+ * quel à la commande : le prix vu est le prix payé. Un devis expiré (10 min)
+ * est refusé et la page en redemande un. Rien n'est calculé ici.
  */
 
 interface Devis {
@@ -32,6 +33,10 @@ interface Devis {
   distanceMetres: number;
   dureeSecondes: number;
   prixCentimes: number;
+  /** Le tracé de la route quand le serveur l'a calculé, sinon null. */
+  trace: [number, number][] | null;
+  /** Le devis signé, à renvoyer pour commander. */
+  devis: string;
 }
 
 interface Trajet {
@@ -98,12 +103,12 @@ export default function CommanderTrajetPage() {
     try {
       const course = await appelerZupDrive<{ id: string }>('/api/zupdrive/courses', {
         method: 'POST',
-        corps: { depart, arrivee, cleIdempotence: cle, prixAnnonceCentimes: devis.prixCentimes },
+        corps: { devis: devis.devis, cleIdempotence: cle },
       });
       router.push(`/trajet/${course.id}`);
     } catch (err) {
       const code = (err as { code?: string }).code;
-      if (code === 'PRICE_CHANGED') {
+      if (code === 'QUOTE_EXPIRED') {
         setErreur(t('prixChange'));
         await demanderDevis();
       } else {
@@ -208,6 +213,10 @@ export default function CommanderTrajetPage() {
           <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {erreur}
           </p>
+        )}
+
+        {devis && depart && arrivee && (
+          <CarteCourseDrive depart={depart} arrivee={arrivee} trace={devis.trace} hauteur={220} />
         )}
 
         {devis && (

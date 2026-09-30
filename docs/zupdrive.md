@@ -161,9 +161,12 @@ Code : `backend/src/modules/zupdrive/` (`tarification-drive.service.ts`, `course
 ### Prix
 - Le tarif est fixé **par région** dans le manager (ZupDrive › Tarifs), en centimes entiers. Il comprend une prise en charge, un prix au km, un prix à la minute et un minimum. Une région n'accepte de commandes que si son tarif est « actif ». Chaque modification est journalisée (`ZUPDRIVE_SET_TARIF`).
 - Formule : `max(minimum, priseEnCharge + parKm × km + parMinute × minutes)`, calculée sur les mètres et les secondes exacts, puis **arrondie une seule fois au centime**, sur le total.
-- Le prix est calculé par le serveur au devis, puis recalculé à la commande. S'il diffère du prix affiché au passager, la commande est refusée (`PRICE_CHANGED`) et la page montre le nouveau prix. Une fois commandé, le prix est figé dans la course, avec une copie du tarif appliqué.
+- **Devis signé** : le serveur calcule le devis et le signe (HMAC, `devis-signe.ts`), lié au compte du passager et valable 10 minutes. La commande reprend ce devis tel quel, donc le prix vu est le prix payé, même si l'itinéraire a changé entre-temps (circulation). Un devis retouché ou émis pour un autre compte est refusé (`INVALID_QUOTE`). Un devis expiré est refusé aussi (`QUOTE_EXPIRED`), et la page en redemande un. Une fois commandé, le prix est figé dans la course, avec une copie du tarif appliqué et la source de l'itinéraire.
 - **Région** : elle est déduite du code postal belge (Bruxelles 1000–1299 ; Wallonie 1300–1499 et 4000–7999 ; Flandre 1500–3999 et 8000–9999). Départ et destination doivent être dans la même région, puisqu'une licence ne vaut que dans sa région.
-- **Distance et durée** : il n'existe pas encore de service d'itinéraire. La distance routière est estimée à vol d'oiseau × 1,3, et la durée à 25 km/h (`COEFFICIENT_DETOUR`, `VITESSE_MOYENNE_KMH`). Seule `estimerTrajet` changera le jour où un vrai calcul d'itinéraire existera.
+- **Distance et durée** (`itineraire.service.ts`, variable `ROUTING_PROVIDER`) :
+  - `estimation` (par défaut) : vol d'oiseau × 1,3, à 25 km/h, sans service externe ;
+  - `osrm` : la vraie route, calculée par un serveur **OSRM** (`OSRM_API_URL`), un moteur libre et gratuit basé sur OpenStreetMap. Il fournit aussi le tracé affiché sur la carte ;
+  - si OSRM ne répond pas, ou pas en 3 secondes, l'estimation prend le relais : un devis n'est jamais bloqué.
 
 ### Attribution
 - La course est proposée à un seul chauffeur à la fois : le plus proche du départ (15 km au plus) parmi ceux qui sont `VALIDE`, en ligne, de la même région, avec une position de moins de 2 minutes, sans course ni proposition en cours, et pas encore sollicités pour cette course.
@@ -175,15 +178,15 @@ Code : `backend/src/modules/zupdrive/` (`tarification-drive.service.ts`, `course
 `RECHERCHE → ACCEPTEE → ARRIVEE → EN_COURS → TERMINEE`, ou `ANNULEE`, ou `SANS_CHAUFFEUR`.
 - Le passager peut annuler jusqu'à l'arrivée du chauffeur, mais plus une fois à bord. Le chauffeur peut annuler avec un motif avant que le passager soit à bord ; le passager est alors prévenu et peut recommander.
 - La commande est idempotente (`cleIdempotence`), et un passager ne peut avoir qu'un trajet actif à la fois.
-- Le passager voit le prénom du chauffeur, son véhicule et sa plaque. La position du chauffeur n'est exposée par l'API que pendant son approche ; l'écran du passager ne l'affiche pas encore (pas de carte). Le chauffeur voit le prénom du passager.
+- Le passager voit le prénom du chauffeur, son véhicule et sa plaque, et sur une **carte** (`CarteCourseDrive`, fonds OpenStreetMap) le départ, la destination, le tracé de la route et le chauffeur pendant son approche. La position du chauffeur n'est plus exposée une fois le passager à bord. Le chauffeur voit le prénom du passager.
 - L'état fait foi en base. Les écrans le relisent toutes les 3 à 4 secondes pendant une course, et les notifications ne sont qu'un signal.
 - La suppression d'un compte est refusée pendant un trajet actif. Une fois le compte supprimé, ses courses restent dans l'historique sans la personne (`passagerId` à null).
 
 ### API
 | Qui | Route | Effet |
 |---|---|---|
-| Passager | `POST /api/zupdrive/courses/devis` | Distance, durée, prix |
-| Passager | `POST /api/zupdrive/courses` | Commander (`cleIdempotence`, `prixAnnonceCentimes`) |
+| Passager | `POST /api/zupdrive/courses/devis` | Distance, durée, prix, tracé, devis signé |
+| Passager | `POST /api/zupdrive/courses` | Commander un devis signé (`devis`, `cleIdempotence`) |
 | Passager | `GET /api/zupdrive/courses`, `GET …/:id`, `POST …/:id/annuler` | Suivre, annuler |
 | Chauffeur | `GET /api/zupdrive/chauffeur/me/courses` | En ligne ?, proposition ouverte, course, historique |
 | Chauffeur | `POST …/me/disponibilite`, `POST …/me/position` | En ligne / hors ligne, position |
@@ -196,3 +199,18 @@ La section de permissions **`courses-drive`** (« Courses et tarifs ») est nouv
 ### Vérifications
 - `backend/src/modules/zupdrive/__tests__/course-drive.integration.test.ts` : 18 tests contre PostgreSQL (`set -a; . ./.env; set +a; npx jest …`).
 - `frontend/scripts/verif-zupdrive-courses.mjs` : une course de bout en bout dans trois navigateurs (équipe, chauffeur, passager). Seule la recherche d'adresses, qui dépend d'un service externe, y est simulée.
+
+### Héberger OSRM (itinéraire réel)
+
+OSRM est gratuit, mais il lui faut les données de la région, préparées une fois (une dizaine de minutes pour la Belgique) :
+
+```bash
+mkdir -p osrm && cd osrm
+wget https://download.geofabrik.de/europe/belgium-latest.osm.pbf
+docker run --rm -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-extract -p /opt/car.lua /data/belgium-latest.osm.pbf
+docker run --rm -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-partition /data/belgium-latest.osrm
+docker run --rm -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-customize /data/belgium-latest.osrm
+docker run -d --name osrm -p 5000:5000 -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-routed --algorithm mld /data/belgium-latest.osrm
+```
+
+Ensuite, dans `.env.production` : `ROUTING_PROVIDER=osrm` et `OSRM_API_URL` (l'adresse du conteneur, joignable depuis l'API). Pour suivre l'évolution des routes, refaire la préparation de temps en temps, par exemple chaque mois. Le serveur public de démonstration d'OSRM n'est pas fait pour la production.

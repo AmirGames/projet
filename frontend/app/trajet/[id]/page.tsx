@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Car, Loader } from 'lucide-react';
 
+import { CarteCourseDrive } from '@/components/CarteCourseDrive';
 import { useAuth } from '@/lib/auth-context';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { appelerZupDrive, kilometres, minutes, prix, STATUTS_ACTIFS } from '@/lib/zupdrive';
@@ -26,7 +27,17 @@ interface Trajet {
   dureeSecondes: number;
   prixCentimes: number;
   annuleePar: string | null;
-  chauffeur: { prenom: string | null; vehicule: string | null; plaque: string | null } | null;
+  departLatitude: number;
+  departLongitude: number;
+  arriveeLatitude: number;
+  arriveeLongitude: number;
+  chauffeur: {
+    prenom: string | null;
+    vehicule: string | null;
+    plaque: string | null;
+    /** Seulement pendant son approche. */
+    position: { latitude: number; longitude: number } | null;
+  } | null;
 }
 
 const RELECTURE_MS = 4000;
@@ -99,6 +110,16 @@ export default function SuiviTrajetPage({ params }: { params: Promise<{ id: stri
           </p>
           {trajet.statut === 'ANNULEE' && trajet.annuleePar === 'CHAUFFEUR' && (
             <p className="mt-1 text-sm text-slate-600">{t('annuleeParChauffeur')}</p>
+          )}
+
+          {actif && (
+            <div className="mt-4">
+              <CarteCourseDrive
+                depart={{ latitude: trajet.departLatitude, longitude: trajet.departLongitude }}
+                arrivee={{ latitude: trajet.arriveeLatitude, longitude: trajet.arriveeLongitude }}
+                chauffeur={trajet.chauffeur?.position ?? null}
+              />
+            </div>
           )}
 
           {trajet.chauffeur && (

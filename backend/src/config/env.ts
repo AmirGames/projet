@@ -55,6 +55,11 @@ const envSchema = z.object({
   // Le fournisseur d'Access Point Peppol. Vide : les factures sont générées mais
   // s'envoient à la main (téléchargement du XML).
   PEPPOL_PROVIDER: z.string().optional(),
+  // Itinéraire des courses ZupDrive (distance et durée du devis) :
+  // « estimation » (défaut, sans service externe) ou « osrm » (OSRM_API_URL,
+  // une instance OSRM, idéalement hébergée par vous). Voir itineraire.service.ts.
+  ROUTING_PROVIDER: z.enum(["estimation", "osrm"]).default("estimation"),
+  OSRM_API_URL: z.string().url().optional(),
   ENABLE_STRIPE: z.string().default("true").transform((v) => v === "true"),
   ENABLE_EMAIL_VERIFICATION: z.string().default("true").transform((v) => v === "true"),
 });

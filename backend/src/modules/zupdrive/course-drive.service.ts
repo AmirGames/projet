@@ -5,6 +5,7 @@ import { logger } from "../../config/logger";
 import { distanceKm } from "../../utils/geo";
 import { emitNotification } from "../realtime/socket";
 import { TarificationDriveService, type Point } from "./tarification-drive.service";
+import { lireDevis, signerDevis, VALIDITE_DEVIS_MS } from "./devis-signe";
 
 /**
  * Les courses ZupDrive : un passager commande un trajet à prix fixe, la
@@ -99,24 +100,50 @@ export class CourseDriveService {
   // Passager
   // -------------------------------------------------------------------------
 
-  static async devis(depart: Adresse, arrivee: Adresse) {
-    return TarificationDriveService.devis({ depart, arrivee });
+  /**
+   * Le devis d'un trajet pour ce passager : distance, durée, prix fixe, tracé,
+   * et le devis signé à renvoyer pour commander (valable 10 minutes).
+   */
+  static async devis(passagerId: string, depart: Adresse, arrivee: Adresse) {
+    const calcul = await TarificationDriveService.devis({ depart, arrivee });
+    const devis = signerDevis({
+      passagerId,
+      region: calcul.region,
+      depart,
+      arrivee,
+      distanceMetres: calcul.distanceMetres,
+      dureeSecondes: calcul.dureeSecondes,
+      prixCentimes: calcul.prixCentimes,
+      devise: calcul.devise,
+      tarif: { ...calcul.tarif },
+      source: calcul.source,
+      exp: Date.now() + VALIDITE_DEVIS_MS,
+    });
+    return { ...calcul, devis };
   }
 
   /**
-   * Commande un trajet. Rejouer la même commande (même clé) rend la même
-   * course. Le prix est recalculé ici, jamais repris du navigateur : s'il a
-   * changé depuis le devis affiché, la commande est refusée pour que le
-   * passager voie le nouveau prix.
+   * Commande le trajet d'un devis signé. Le prix est celui du devis, que le
+   * passager a vu : ni recalculé, ni repris du navigateur. Un devis falsifié,
+   * expiré ou émis pour un autre compte est refusé. Rejouer la même commande
+   * (même clé) rend la même course.
    */
-  static async commander(
-    passagerId: string,
-    demande: { depart: Adresse; arrivee: Adresse; cleIdempotence: string; prixAnnonceCentimes: number }
-  ) {
+  static async commander(passagerId: string, demande: { devis: string; cleIdempotence: string }) {
     const deja = await db.courseDrive.findUnique({
       where: { passagerId_cleIdempotence: { passagerId, cleIdempotence: demande.cleIdempotence } },
     });
     if (deja) return this.maCourse(passagerId, deja.id);
+
+    const lu = lireDevis(demande.devis);
+    if (!lu.ok) {
+      throw lu.raison === "EXPIRE"
+        ? new ApiError(409, "Ce devis a expiré : voici le prix à jour", "QUOTE_EXPIRED")
+        : new ApiError(400, "Devis invalide", "INVALID_QUOTE");
+    }
+    const devis = lu.contenu;
+    if (devis.passagerId !== passagerId) {
+      throw new ApiError(400, "Devis invalide", "INVALID_QUOTE");
+    }
 
     const enCours = await db.courseDrive.findFirst({
       where: { passagerId, statut: { in: STATUTS_ACTIFS } },
@@ -126,9 +153,10 @@ export class CourseDriveService {
       throw new ApiError(409, "Vous avez déjà un trajet en cours", "RIDE_IN_PROGRESS");
     }
 
-    const devis = await this.devis(demande.depart, demande.arrivee);
-    if (devis.prixCentimes !== demande.prixAnnonceCentimes) {
-      throw new ApiError(409, "Le prix de ce trajet a changé : vérifiez le nouveau prix", "PRICE_CHANGED");
+    // La région a pu fermer depuis le devis.
+    const tarif = await db.tarifDrive.findUnique({ where: { region: devis.region }, select: { actif: true } });
+    if (!tarif?.actif) {
+      throw new ApiError(400, "ZupDrive n'est pas encore ouvert dans cette région", "REGION_NOT_SERVED");
     }
 
     let course;
@@ -138,17 +166,17 @@ export class CourseDriveService {
           passagerId,
           cleIdempotence: demande.cleIdempotence,
           region: devis.region,
-          departAdresse: demande.depart.adresse,
-          departLatitude: demande.depart.latitude,
-          departLongitude: demande.depart.longitude,
-          arriveeAdresse: demande.arrivee.adresse,
-          arriveeLatitude: demande.arrivee.latitude,
-          arriveeLongitude: demande.arrivee.longitude,
+          departAdresse: devis.depart.adresse,
+          departLatitude: devis.depart.latitude,
+          departLongitude: devis.depart.longitude,
+          arriveeAdresse: devis.arrivee.adresse,
+          arriveeLatitude: devis.arrivee.latitude,
+          arriveeLongitude: devis.arrivee.longitude,
           distanceMetres: devis.distanceMetres,
           dureeSecondes: devis.dureeSecondes,
           prixCentimes: devis.prixCentimes,
           devise: devis.devise,
-          tarifApplique: devis.tarif as unknown as Prisma.InputJsonValue,
+          tarifApplique: { ...devis.tarif, itineraire: devis.source } as unknown as Prisma.InputJsonValue,
         },
       });
     } catch (err: any) {

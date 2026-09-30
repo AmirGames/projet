@@ -176,6 +176,9 @@ await pagePassager.route('**/api/addresses/search**', (route) => {
   const adresse = /jambes|materne/i.test(q) ? ARRIVEE : DEPART;
   route.fulfill({ json: { suggestions: [adresse], available: true, provider: 'test' } });
 });
+// Les fonds de carte (OpenStreetMap, service externe) : une image vide.
+const TUILE_VIDE = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+await pagePassager.route('**/tile.openstreetmap.org/**', (route) => route.fulfill({ contentType: 'image/png', body: TUILE_VIDE }));
 await connecter(pagePassager, passager.email);
 await pagePassager.goto(`${SITE}/trajet`);
 await pagePassager.fill('#depart', 'Place d’Armes Namur');
@@ -184,6 +187,8 @@ await pagePassager.fill('#arrivee', 'Avenue Jean Materne Jambes');
 await pagePassager.click(`li button:has-text("${ARRIVEE.street}")`, { timeout: 10000 });
 await pagePassager.waitForSelector('[data-devis]', { timeout: 10000 });
 const devisAffiche = await pagePassager.locator('[data-devis]').innerText();
+await pagePassager.waitForSelector('[data-carte-course] .leaflet-marker-icon', { timeout: 10000 });
+check('la carte montre le départ et la destination', (await pagePassager.locator('[data-carte-course] .leaflet-marker-icon').count()) === 2);
 
 const devisApi = await fetch(`${API}/api/zupdrive/courses/devis`, {
   method: 'POST',
@@ -218,6 +223,8 @@ check('la course lui est attribuée', true);
 await pagePassager.waitForSelector('[data-statut="ACCEPTEE"]', { timeout: 15000 });
 const vuePassager = await pagePassager.locator('main').innerText();
 check('le passager voit son chauffeur arriver, avec la plaque', /Votre chauffeur arrive/.test(vuePassager) && vuePassager.includes('TLAA123'), vuePassager.slice(0, 300));
+await pagePassager.waitForSelector('[data-carte-course] [title="Votre chauffeur"]', { timeout: 10000 });
+check('et le voit sur la carte pendant son approche', true);
 
 for (const [bouton, statut] of [
   ['Je suis arrivé', 'ARRIVEE'],

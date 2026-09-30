@@ -43,7 +43,7 @@ const limiterCommandes = limiterCadence({
 router.post("/devis", limiterDevis, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { depart, arrivee } = trajetSchema.parse(req.body);
-    const devis = await CourseDriveService.devis(depart, arrivee);
+    const devis = await CourseDriveService.devis(req.userId as string, depart, arrivee);
     res.json({
       success: true,
       data: {
@@ -52,6 +52,11 @@ router.post("/devis", limiterDevis, async (req: Request, res: Response, next: Ne
         dureeSecondes: devis.dureeSecondes,
         prixCentimes: devis.prixCentimes,
         devise: devis.devise,
+        // Le tracé de la route (OSRM), pour la carte ; null en estimation.
+        trace: devis.trace,
+        itineraire: devis.source,
+        // À renvoyer tel quel pour commander : le prix affiché est le prix payé.
+        devis: devis.devis,
       },
     });
   } catch (err) {
@@ -59,13 +64,13 @@ router.post("/devis", limiterDevis, async (req: Request, res: Response, next: Ne
   }
 });
 
-// POST /api/zupdrive/courses — commander (idempotent par cleIdempotence)
+// POST /api/zupdrive/courses { devis, cleIdempotence } — commander le devis signé (idempotent)
 router.post("/", limiterCommandes, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const demande = trajetSchema
-      .extend({
+    const demande = z
+      .object({
+        devis: z.string().min(10).max(8000),
         cleIdempotence: z.string().trim().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/),
-        prixAnnonceCentimes: z.number().int().min(0),
       })
       .strict()
       .parse(req.body);

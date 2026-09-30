@@ -2425,7 +2425,7 @@
     "prixFixe": "Fixed price, known before you book.",
     "commander": "Book for {prix}",
     "commandeEnCours": "Booking…",
-    "prixChange": "The price has changed: here is the new price.",
+    "prixChange": "This quote has expired: here is the updated price.",
     "trajetEnCours": "Ride in progress to {destination} — follow",
     "mesTrajets": "My rides",
     "retour": "← My rides",
@@ -2544,5 +2544,11 @@
       "CHAUFFEUR": "by the driver",
       "PLATEFORME": "by the platform"
     }
+  },
+  "carteCourseDrive": {
+    "libelle": "Ride map",
+    "depart": "Pickup",
+    "destination": "Destination",
+    "chauffeur": "Your driver"
   }
 }

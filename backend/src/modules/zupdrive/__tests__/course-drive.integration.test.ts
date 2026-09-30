@@ -19,11 +19,11 @@ import bcrypt from "bcrypt";
 import { db } from "../../../services/db";
 import {
   calculerPrix,
-  estimerTrajet,
   regionDuCodePostal,
-  COEFFICIENT_DETOUR,
 } from "../tarification-drive.service";
 import { CourseDriveService, DELAI_REPONSE_MS, RECHERCHE_MAX_MS } from "../course-drive.service";
+import { estimer as estimerTrajet, COEFFICIENT_DETOUR } from "../itineraire.service";
+import { signerDevis } from "../devis-signe";
 
 const suffixe = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const REGION = "WALLONIE";
@@ -68,13 +68,11 @@ async function chauffeur(nom: string, extra: Record<string, unknown>) {
 }
 
 let cle = 0;
-const commande = (qui: string, prix: number) =>
-  CourseDriveService.commander(qui, {
-    depart: DEPART,
-    arrivee: ARRIVEE,
-    cleIdempotence: `cle-${suffixe}-${++cle}`,
-    prixAnnonceCentimes: prix,
-  });
+/** Un devis pour ce passager, puis la commande de ce devis. */
+const commande = async (qui: string) => {
+  const devis = await CourseDriveService.devis(qui, DEPART, ARRIVEE);
+  return CourseDriveService.commander(qui, { devis: devis.devis, cleIdempotence: `cle-${suffixe}-${++cle}` });
+};
 
 const propositionOuverte = (chauffeurId: string) =>
   db.propositionCourseDrive.findFirst({ where: { chauffeurId, statut: "EN_ATTENTE" } });
@@ -156,7 +154,7 @@ describe("prix", () => {
 describe("devis et commande", () => {
   it("refuse un trajet entre deux régions", async () => {
     await expect(
-      CourseDriveService.devis(DEPART, { ...ARRIVEE, codePostal: "1000" })
+      CourseDriveService.devis(passager, DEPART, { ...ARRIVEE, codePostal: "1000" })
     ).rejects.toMatchObject({ code: "CROSS_REGION_RIDE" });
   });
 
@@ -169,19 +167,38 @@ describe("devis et commande", () => {
     const flandre = await db.tarifDrive.findUnique({ where: { region: "FLANDRE" } });
     if (!flandre?.actif) {
       await expect(
-        CourseDriveService.devis({ ...DEPART, codePostal: "9000" }, { ...ARRIVEE, codePostal: "9000" })
+        CourseDriveService.devis(passager, { ...DEPART, codePostal: "9000" }, { ...ARRIVEE, codePostal: "9000" })
       ).rejects.toMatchObject({ code: "REGION_NOT_SERVED" });
     }
   });
 
-  it("refuse une commande dont le prix annoncé n'est plus le bon", async () => {
-    const devis = await CourseDriveService.devis(DEPART, ARRIVEE);
-    await expect(commande(passager, devis.prixCentimes + 1)).rejects.toMatchObject({ code: "PRICE_CHANGED" });
+  it("refuse un devis retouché, celui d'un autre compte, ou un devis expiré", async () => {
+    const devis = await CourseDriveService.devis(passager, DEPART, ARRIVEE);
+    const nouvelleCle = () => `cle-${suffixe}-${++cle}`;
+
+    // Le prix baissé dans le devis : la signature ne correspond plus.
+    const [corps, signature] = devis.devis.split(".");
+    const retouche = JSON.parse(Buffer.from(corps, "base64url").toString());
+    retouche.prixCentimes = 1;
+    const falsifie = `${Buffer.from(JSON.stringify(retouche)).toString("base64url")}.${signature}`;
+    await expect(
+      CourseDriveService.commander(passager, { devis: falsifie, cleIdempotence: nouvelleCle() })
+    ).rejects.toMatchObject({ code: "INVALID_QUOTE" });
+
+    await expect(
+      CourseDriveService.commander(autrePassager, { devis: devis.devis, cleIdempotence: nouvelleCle() })
+    ).rejects.toMatchObject({ code: "INVALID_QUOTE" });
+
+    const { v: _version, ...contenu } = retouche;
+    const expire = signerDevis({ ...contenu, passagerId: passager, exp: Date.now() - 1 });
+    await expect(
+      CourseDriveService.commander(passager, { devis: expire, cleIdempotence: nouvelleCle() })
+    ).rejects.toMatchObject({ code: "QUOTE_EXPIRED" });
   });
 
   it("crée la course au prix fixe et la propose au chauffeur le plus proche, lui seul", async () => {
-    const devis = await CourseDriveService.devis(DEPART, ARRIVEE);
-    const course = await commande(passager, devis.prixCentimes);
+    const devis = await CourseDriveService.devis(passager, DEPART, ARRIVEE);
+    const course = await commande(passager);
 
     expect(course.statut).toBe("RECHERCHE");
     expect(course.prixCentimes).toBe(devis.prixCentimes);
@@ -192,26 +209,24 @@ describe("devis et commande", () => {
   });
 
   it("rend la même course quand la commande est rejouée, et refuse un second trajet en parallèle", async () => {
-    const devis = await CourseDriveService.devis(DEPART, ARRIVEE);
-    const demande = { depart: DEPART, arrivee: ARRIVEE, cleIdempotence: `cle-${suffixe}-rejouee`, prixAnnonceCentimes: devis.prixCentimes };
+    const devis = await CourseDriveService.devis(passager, DEPART, ARRIVEE);
+    const demande = { devis: devis.devis, cleIdempotence: `cle-${suffixe}-rejouee` };
     const premiere = await CourseDriveService.commander(passager, demande);
     const rejouee = await CourseDriveService.commander(passager, demande);
     expect(rejouee.id).toBe(premiere.id);
 
-    await expect(commande(passager, devis.prixCentimes)).rejects.toMatchObject({ code: "RIDE_IN_PROGRESS" });
+    await expect(commande(passager)).rejects.toMatchObject({ code: "RIDE_IN_PROGRESS" });
   });
 
   it("ne montre la course qu'à son passager", async () => {
-    const devis = await CourseDriveService.devis(DEPART, ARRIVEE);
-    const course = await commande(passager, devis.prixCentimes);
+    const course = await commande(passager);
     await expect(CourseDriveService.maCourse(autrePassager, course.id)).rejects.toMatchObject({ statusCode: 404 });
   });
 });
 
 describe("attribution et étapes", () => {
   it("passe au suivant quand le plus proche refuse, puis attribue la course à celui qui accepte", async () => {
-    const devis = await CourseDriveService.devis(DEPART, ARRIVEE);
-    const course = await commande(passager, devis.prixCentimes);
+    const course = await commande(passager);
 
     const pourProche = (await propositionOuverte(proche.id))!;
     await CourseDriveService.refuser(proche.userId, pourProche.id);
@@ -232,8 +247,7 @@ describe("attribution et étapes", () => {
   });
 
   it("n'attribue la course qu'une fois, même si l'acceptation arrive deux fois en même temps", async () => {
-    const devis = await CourseDriveService.devis(DEPART, ARRIVEE);
-    const course = await commande(passager, devis.prixCentimes);
+    const course = await commande(passager);
     const proposition = (await propositionOuverte(proche.id))!;
 
     const resultats = await Promise.allSettled([
@@ -246,8 +260,8 @@ describe("attribution et étapes", () => {
   });
 
   it("fait avancer la course dans l'ordre, et pas autrement", async () => {
-    const devis = await CourseDriveService.devis(DEPART, ARRIVEE);
-    const course = await commande(passager, devis.prixCentimes);
+    const devis = await CourseDriveService.devis(passager, DEPART, ARRIVEE);
+    const course = await commande(passager);
     await CourseDriveService.accepter(proche.userId, (await propositionOuverte(proche.id))!.id);
 
     await expect(CourseDriveService.avancer(proche.userId, course.id, "terminer")).rejects.toMatchObject({
@@ -273,18 +287,16 @@ describe("attribution et étapes", () => {
   });
 
   it("un chauffeur occupé ne reçoit pas d'autre course", async () => {
-    const devis = await CourseDriveService.devis(DEPART, ARRIVEE);
-    await commande(passager, devis.prixCentimes);
+    await commande(passager);
     await CourseDriveService.accepter(proche.userId, (await propositionOuverte(proche.id))!.id);
 
-    await commande(autrePassager, devis.prixCentimes);
+    await commande(autrePassager);
     expect(await propositionOuverte(proche.id)).toBeNull();
     expect(await propositionOuverte(loin.id)).not.toBeNull();
   });
 
   it("une annulation du passager ferme la proposition ouverte", async () => {
-    const devis = await CourseDriveService.devis(DEPART, ARRIVEE);
-    const course = await commande(passager, devis.prixCentimes);
+    const course = await commande(passager);
     const proposition = (await propositionOuverte(proche.id))!;
 
     await CourseDriveService.annulerParPassager(passager, course.id, "Plus besoin");
@@ -294,8 +306,7 @@ describe("attribution et étapes", () => {
 
 describe("dans la durée", () => {
   it("une proposition sans réponse expire, et la course passe au suivant", async () => {
-    const devis = await CourseDriveService.devis(DEPART, ARRIVEE);
-    const course = await commande(passager, devis.prixCentimes);
+    const course = await commande(passager);
     const plusTard = new Date(Date.now() + DELAI_REPONSE_MS + 1000);
 
     await CourseDriveService.balayer(plusTard);
@@ -306,8 +317,7 @@ describe("dans la durée", () => {
   });
 
   it("sans preneur à temps, la course passe SANS_CHAUFFEUR", async () => {
-    const devis = await CourseDriveService.devis(DEPART, ARRIVEE);
-    const course = await commande(passager, devis.prixCentimes);
+    const course = await commande(passager);
     await CourseDriveService.balayer(new Date(Date.now() + RECHERCHE_MAX_MS + 60_000));
     const lue = await db.courseDrive.findUnique({ where: { id: course.id } });
     expect(lue?.statut).toBe("SANS_CHAUFFEUR");
