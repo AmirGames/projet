@@ -3,6 +3,7 @@ import { AppState, Vibration } from 'react-native';
 import { io, Socket } from 'socket.io-client';
 import { API_URL } from './api';
 import { dispatchRealtime, setRealtimeSocket } from './realtime';
+import type { Retard } from './orders';
 
 export interface OrderUpdate {
   orderId: string;
@@ -21,6 +22,8 @@ export interface DeliveryUpdate {
   livreurProche?: boolean;
   /** Le livreur est à la porte et n'arrive pas à joindre le client. */
   attenteFinLe?: string;
+  /** La livraison dérape : en retard, ou confiée à un nouveau livreur. */
+  retard?: Retard;
 }
 
 /**

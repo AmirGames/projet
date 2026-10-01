@@ -15,6 +15,7 @@ import {
   uniq,
   post,
   get,
+  lireSuivi,
   patch,
   terminer,
   sqlScalaire,
@@ -151,6 +152,9 @@ check(
 const offresA = await j(await get('/api/drivers/offers', A));
 check('et plus jamais d’office au livreur A', !JSON.stringify(offresA).includes(course1.courseId));
 
+const suivi1 = await j(await lireSuivi(course1.orderId));
+check('le client voit qu’un nouveau livreur prend le relais', suivi1?.retard?.motif === 'NOUVEAU_LIVREUR', JSON.stringify(suivi1?.retard));
+
 const liste1 = await incidents();
 check(
   'la plateforme voit le retrait',
@@ -186,6 +190,10 @@ check(
   Number(await sqlScalaire(`SELECT count(*) FROM "Notification" WHERE "relatedOrderId" = '${course2.orderId}' AND type = 'DELIVERY_LATE'`)) >= 1
 );
 
+const suivi2 = await j(await lireSuivi(course2.orderId));
+check('le suivi du client affiche le retard', suivi2?.retard?.motif === 'LIVRAISON', JSON.stringify(suivi2?.retard));
+check('sans rien dire du livreur ni de sa position', !JSON.stringify(suivi2?.retard ?? {}).includes('km'));
+
 // Rejouée, la surveillance ne renvoie rien de plus.
 await new Promise((r) => setTimeout(r, 32000));
 check(
@@ -209,6 +217,9 @@ check(
   (await sqlScalaire(`SELECT status || '/' || "cancelledBy" FROM "OrderDelivery" WHERE id = '${course2.courseId}'`)) === 'FAILED/PLATFORM'
 );
 check('le retard est refermé', !(await incidents('ouverts')).some((i) => i.course.id === course2.courseId));
+
+const suivi3 = await j(await lireSuivi(course2.orderId));
+check('une course close n’affiche plus de retard', suivi3?.retard == null, JSON.stringify(suivi3?.retard));
 
 const tardive = await patch(`/api/drivers/deliveries/${course2.courseId}`, { status: 'DELIVERED' }, B);
 check('le livreur ne peut plus la clore', tardive.status === 409, `statut ${tardive.status}`);

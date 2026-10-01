@@ -1,4 +1,5 @@
 import { finAttente } from "../drivers/delivery-proof.service";
+import { INCIDENTS_POUR_LE_CLIENT, retardPourLeClient } from "../drivers/retard-livraison";
 import { positionLivreurVisible } from "../orders/suivi-commande.service";
 import { presenter } from "../files/fichiers-prives.service";
 import { SupplementService } from "../catalog/supplement.service";
@@ -743,6 +744,8 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         // La note déjà donnée : sans elle l'écran reproposerait les étoiles à
         // chaque visite, pour un enregistrement que le serveur refuse.
         rating: { select: { note: true, commentaire: true, createdAt: true } },
+        // Les constats de la surveillance des courses : la livraison dérape-t-elle ?
+        incidents: INCIDENTS_POUR_LE_CLIENT,
       },
     });
 
@@ -817,6 +820,8 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         // Le livreur est à la porte et n'arrive pas à le joindre : passé cette
         // heure, la commande est déposée en lieu sûr.
         attenteFinLe: course.status === "PICKED_UP" ? finAttente(course) : null,
+        // En retard, ou confiée à un nouveau livreur (voir retard-livraison.ts).
+        retard: retardPourLeClient(course),
         maintenant: new Date(),
       },
     });

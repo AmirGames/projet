@@ -2193,6 +2193,12 @@
     "withdrawnTitle": "Delivery withdrawn",
     "dismiss": "Close"
   },
+  "retardLivraison": {
+    "retardTitre": "Your delivery is running late",
+    "retardTexte": "Our team has been notified and is following your order. Thank you for your patience.",
+    "relaisTitre": "A new driver is taking over",
+    "relaisTexte": "The original driver couldn't make it: your order has been handed to another driver."
+  },
   "superownerReviews": {
     "title": "Reported reviews",
     "description": "Merchants report, the platform decides: keep or remove the review.",

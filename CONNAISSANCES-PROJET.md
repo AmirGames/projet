@@ -232,6 +232,10 @@ le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
   de détour, **alerte** au livreur, au commerce, au client et à la plateforme,
   sans rien retirer. Chaque constat est unique par attribution
   (`DeliveryIncident`) ; un livreur en incident ne reçoit pas de course en plus
+- **Le client voit le retard** sur son suivi (`/track`, `/client/orders/:id`,
+  application client) : champ `retard` (`LIVRAISON` ou `NOUVEAU_LIVREUR`,
+  `retard-livraison.ts`), relu en base et poussé en direct, sans détail sur
+  le livreur
 - **Application** : course gardée et étapes mises en file **sans réseau**
   (envoyées au retour, `effectueLe` garde l'heure réelle) ; position en
   **arrière-plan** (expo-location + expo-task-manager) ; course proposée
@@ -451,7 +455,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 57 | **1892** |
+| **API** (`backend/scripts/verification/`) | 57 | **1896** |
 | **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
 
 Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1841

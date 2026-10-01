@@ -483,8 +483,9 @@ export class SurveillanceCoursesService {
       );
     }
 
-    // Le suivi du client affiche le retard, sans attendre un rechargement.
-    emitDeliveryUpdate(course.orderId, { retard: true });
+    // Le suivi du client affiche le retard, sans attendre un rechargement
+    // (même forme que `retard` dans le suivi, voir retard-livraison.ts).
+    emitDeliveryUpdate(course.orderId, { retard: { motif: "LIVRAISON", depuis: new Date() } });
 
     if (course.order) {
       await this.prevenirBoutique(
@@ -650,7 +651,12 @@ export class SurveillanceCoursesService {
     );
 
     // Le client ne voit plus ce livreur : un autre va être cherché.
-    emitDeliveryUpdate(course.orderId, { status: "PENDING", location: null, livreurRemplace: true });
+    emitDeliveryUpdate(course.orderId, {
+      status: "PENDING",
+      location: null,
+      livreurRemplace: true,
+      retard: { motif: "NOUVEAU_LIVREUR", depuis: maintenant },
+    });
 
     if (course.order) {
       const numero = numeroDe(course.orderId);

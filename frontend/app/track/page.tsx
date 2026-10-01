@@ -14,6 +14,7 @@ import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
 import { useParametreAdresse } from '@/lib/navigateur';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { cheminCommande, jetonDeSuivi, memoriserJetonDeSuivi } from '@/lib/suivi-commande';
+import { RetardLivraison, type Retard } from '@/components/RetardLivraison';
 
 // Leaflet touche `window` dès l'import : la carte ne se charge que côté navigateur.
 const SuiviLivraisonClient = dynamic(
@@ -63,6 +64,8 @@ interface Order {
   livreurProche?: boolean;
   /** Le livreur attend à la porte : passé cette heure, dépôt en lieu sûr. */
   attenteFinLe?: string | null;
+  /** La livraison dérape : en retard, ou confiée à un nouveau livreur. */
+  retard?: Retard | null;
   maintenant?: string | null;
   /** L'heure à laquelle la commande sera prête, annoncée à l'acceptation. */
   estimatedReadyAt?: string | null;
@@ -448,6 +451,12 @@ export default function TrackOrderPage() {
                   changé de mains. Une commande suivie sans compte n'a pas
                   d'autre endroit pour le lire. */}
               {/* Prévenu à 300 m : le temps de descendre, le livreur est là. */}
+              {order.retard && order.status !== 'COMPLETED' && !order.attenteFinLe && (
+                <div className="mt-4">
+                  <RetardLivraison retard={order.retard} />
+                </div>
+              )}
+
               {order.codeRemise && order.attenteFinLe && (
                 <div className="mt-4">
                   <AttenteLivreur key={order.attenteFinLe} finLe={order.attenteFinLe} maintenant={order.maintenant} />

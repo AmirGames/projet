@@ -2193,6 +2193,12 @@
     "withdrawnTitle": "Course retirée",
     "dismiss": "Fermer"
   },
+  "retardLivraison": {
+    "retardTitre": "Votre livraison prend du retard",
+    "retardTexte": "Notre équipe a été prévenue et suit votre commande. Merci de votre patience.",
+    "relaisTitre": "Un nouveau livreur prend le relais",
+    "relaisTexte": "Le livreur prévu a eu un empêchement : votre commande est confiée à un autre livreur."
+  },
   "superownerReviews": {
     "title": "Avis signalés",
     "description": "Les commerçants signalent, la plateforme tranche : conserver ou retirer l'avis.",

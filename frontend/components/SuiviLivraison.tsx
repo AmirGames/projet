@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Bike, Clock, MapPin, Navigation, Store } from 'lucide-react';
 import { Etoiles, NoterLivreur, type MaNote } from '@/components/NoterLivreur';
 import { AttenteLivreur } from '@/components/AttenteLivreur';
+import { RetardLivraison, type Retard } from '@/components/RetardLivraison';
 
 // Leaflet touche `window` dès son chargement : il ne peut pas être rendu côté
 // serveur.
@@ -53,6 +54,8 @@ export interface Course {
   livreurProche?: boolean;
   /** Le livreur attend à la porte : passé cette heure, dépôt en lieu sûr. */
   attenteFinLe?: string | null;
+  /** La livraison dérape : en retard, ou confiée à un nouveau livreur. */
+  retard?: Retard | null;
   /** L'heure du serveur à la lecture, pour corriger l'horloge du téléphone. */
   maintenant?: string | null;
   /** La note que ce client a déjà donnée à cette course, s'il l'a donnée. */
@@ -188,6 +191,10 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
           </p>
         </div>
       )}
+
+      {/* La surveillance des courses a constaté un retard : le client sait
+          que l'équipe suit sa commande. À la porte, l'attente prend le relais. */}
+      {!livree && course.retard && !course.attenteFinLe && <RetardLivraison retard={course.retard} />}
 
       {/* Le livreur est à la porte et n'arrive pas à le joindre. */}
       {!livree && course.status === 'PICKED_UP' && course.attenteFinLe && (

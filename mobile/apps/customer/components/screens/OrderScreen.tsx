@@ -10,6 +10,7 @@ import {
   OrderDetail,
   orderStatus,
   REJECTION_REASONS,
+  RETARD_TEXTE,
   shortId,
   Tracking,
   VEHICLE_LABELS,
@@ -99,6 +100,7 @@ export default function OrderScreen({
       if (typeof u.gpsLost === 'boolean') next.gpsPerdu = u.gpsLost;
       if (u.livreurProche) next.livreurProche = true;
       if (u.attenteFinLe) next.attenteFinLe = u.attenteFinLe;
+      if (u.retard) next.retard = u.retard;
       if (u.status) next.status = u.status;
       return next;
     });
@@ -106,6 +108,7 @@ export default function OrderScreen({
       setToast({ title: 'Votre livreur vous attend', message: 'Il est devant chez vous : descendez vite.' });
       load();
     } else if (u.livreurProche) setToast({ title: 'Votre livreur est bientôt là', message: 'Vous pouvez descendre devant la porte.' });
+    else if (u.retard) setToast({ title: RETARD_TEXTE[u.retard.motif].titre, message: RETARD_TEXTE[u.retard.motif].texte });
     if (u.status) load();
   });
   useRealtimeEvent('reconnecte', load);
@@ -197,6 +200,12 @@ export default function OrderScreen({
           <Card title="Livraison">
             {tracking.attenteFinLe && tracking.status === 'PICKED_UP' && (
               <WaitCountdown key={tracking.attenteFinLe} finLe={tracking.attenteFinLe} maintenant={tracking.maintenant} />
+            )}
+            {tracking.retard && !tracking.attenteFinLe && !['DELIVERED', 'FAILED'].includes(tracking.status) && (
+              <View style={styles.late}>
+                <Text style={styles.lateTitle}>⏱️ {RETARD_TEXTE[tracking.retard.motif].titre}</Text>
+                <Text style={styles.lateText}>{RETARD_TEXTE[tracking.retard.motif].texte}</Text>
+              </View>
             )}
             {tracking.livreurProche && tracking.status === 'PICKED_UP' && !tracking.attenteFinLe && (
               <View style={styles.near}>
@@ -368,6 +377,9 @@ const styles = StyleSheet.create({
   waitTimer: { fontSize: 34, fontWeight: '800', color: '#7A4B00', marginVertical: 2, fontVariant: ['tabular-nums'] },
   waitText: { fontSize: 13, color: '#7A4B00' },
   nearText: { color: '#1B5E20', fontWeight: '700' },
+  late: { backgroundColor: '#FFF4E5', borderLeftWidth: 4, borderLeftColor: '#F59E0B', borderRadius: 8, padding: 12, marginBottom: 8 },
+  lateTitle: { fontSize: 15, fontWeight: '700', color: '#7A4B00' },
+  lateText: { fontSize: 13, color: '#7A4B00', marginTop: 2 },
   driver: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 12 },
   avatar: {
     width: 44,

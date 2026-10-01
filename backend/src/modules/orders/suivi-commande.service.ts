@@ -3,6 +3,7 @@ import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { finAttente } from "../drivers/delivery-proof.service";
+import { INCIDENTS_POUR_LE_CLIENT, retardPourLeClient } from "../drivers/retard-livraison";
 import { presenter } from "../files/fichiers-prives.service";
 import type { Compte } from "../auth/auth.middleware";
 
@@ -172,6 +173,9 @@ const CHAMPS = {
       proofNote: true,
       nearCustomerNotifiedAt: true,
       customerWaitStartedAt: true,
+      driverId: true,
+      assignedAt: true,
+      incidents: INCIDENTS_POUR_LE_CLIENT,
       driver: { select: { userId: true } },
     },
   },
@@ -202,6 +206,9 @@ function etatDeLaLivraison(commande: Lue, avecCode: boolean) {
     // Le livreur attend à la porte : passé cette heure, la commande est
     // déposée en lieu sûr.
     attenteFinLe: course?.status === "PICKED_UP" ? finAttente(course) : null,
+    // La livraison dérape (voir retard-livraison.ts) : en route et en retard,
+    // ou un nouveau livreur a pris le relais.
+    retard: course ? retardPourLeClient(course) : null,
     maintenant: new Date(),
   };
 }
