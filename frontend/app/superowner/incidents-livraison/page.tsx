@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { AlertTriangle, Circle, MessageCircle, Phone, RefreshCw, SatelliteDish, Store, User } from 'lucide-react';
 
 import { connexionTempsReel } from '@/lib/temps-reel';
+import { chargerAcces } from '@/lib/acces-plateforme';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -105,6 +106,14 @@ export default function IncidentsLivraisonPage() {
   const [bilan, setBilan] = useState('');
   // L'heure du dernier relevé : « il y a 12 min » se calcule depuis elle.
   const [releveA, setReleveA] = useState(0);
+  // L'export du dossier (données personnelles) a sa propre section : par
+  // défaut SuperAdmin et Administrateur. L'API refuse les autres de toute façon.
+  const [peutExporter, setPeutExporter] = useState(false);
+  useEffectChargement(() => {
+    chargerAcces()
+      .then((acces) => setPeutExporter(acces.isSuperOwner || Boolean(acces.permissions['incidents-export'])))
+      .catch(() => setPeutExporter(false));
+  }, []);
 
   const charger = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
@@ -457,6 +466,16 @@ export default function IncidentsLivraisonPage() {
                           {t('refuseDeposit')}
                         </button>
                       </>
+                    )}
+                    {peutExporter && (
+                      <a
+                        href={`/impression/dossier-incident/${incident.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 text-sm"
+                      >
+                        {t('exportFile')}
+                      </a>
                     )}
                     {!incident.closedAt && !incident.course.actions.depot && (
                       <button

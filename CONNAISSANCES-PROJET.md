@@ -299,6 +299,16 @@ le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
   remboursement se fait depuis la facturation), ou **marquer traité** — tout
   journalisé. Alerte aussi par courriel et webhook (`prevenirPlateforme`,
   `vigie.service.ts`)
+- **Dossier d'un incident de livraison** (`GET
+  /api/superowner/delivery-incidents/:id/dossier`, page imprimable
+  `/impression/dossier-incident/:id`, bouton « Exporter le dossier ») :
+  chronologie, preuves (code, photo et sa position, attente), échanges
+  support, décisions et conséquences financières, pour une plainte, un avocat
+  ou le droit d'accès du livreur. Section à part `incidents-export`, ouverte
+  au seul SuperAdmin et à l'Administrateur (migration 0037 pour les rôles
+  déjà enregistrés), chaque export journalisé (`EXPORT_INCIDENT_FILE`). Du
+  client, seulement le nom et l'adresse de livraison. L'historique complet des
+  positions n'est pas conservé : seuls les points clés y figurent
 - Commerçants : formule, suspension, fermeture (**section à part**,
   `organizations-close` : elle archive puis efface à 60 jours ; le Support
   suspend et réactive mais ne ferme pas), réouverture depuis sauvegarde
@@ -487,7 +497,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 57 | **1940** |
+| **API** (`backend/scripts/verification/`) | 57 | **1949** |
 | **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
 
 Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1841

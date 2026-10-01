@@ -8,6 +8,7 @@ import { DriverPayoutService } from "../payouts/driver-payout.service";
 import { DriverSupportService, LONGUEUR_MAX } from "./driver-support.service";
 import { isSuperOwner, journaliser } from "../superowner/shared";
 import { SurveillanceCoursesService } from "./surveillance-courses.service";
+import { DossierIncidentService } from "./dossier-incident.service";
 
 const router = Router();
 
@@ -488,6 +489,32 @@ router.post(
     }
   }
 );
+
+/**
+ * GET /superowner/delivery-incidents/:id/dossier - Le dossier complet d'un incident
+ *
+ * Chronologie, preuves (photo et position, attente), échanges avec le
+ * support, décisions et conséquences financières : de quoi déposer plainte,
+ * consulter un avocat, ou répondre au livreur qui conteste (droit d'accès).
+ * Données personnelles : section à part (incidents-export, SuperAdmin et
+ * Administrateur par défaut), et chaque export est journalisé.
+ */
+router.get("/delivery-incidents/:id/dossier", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dossier = await DossierIncidentService.construire(req.params.id as string);
+
+    await journaliser(req, "EXPORT_INCIDENT_FILE", dossier.incident.id, {
+      deliveryId: dossier.course.id,
+      orderId: dossier.commande.id,
+      livreurs: dossier.livreurs.map((l) => l.id),
+    });
+
+    res.set("Cache-Control", "no-store");
+    res.json({ success: true, data: dossier });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // POST /superowner/delivery-incidents/:id/clore - Marquer un incident comme traité
 router.post(

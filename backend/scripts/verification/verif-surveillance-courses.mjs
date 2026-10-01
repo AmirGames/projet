@@ -457,4 +457,51 @@ check(
   JSON.stringify(vueAilleurs?.course?.depot)
 );
 
+titre('Le dossier d’un incident, réservé au SuperAdmin et à l’Administrateur');
+
+/** Un membre de l'équipe de la plateforme, avec son rôle sur ZupEat. */
+async function membreEquipe(role) {
+  const compte = await j(await inscription({ email: `${role.toLowerCase()}-${uniq}@t.fr`, password: MDP, name: `${role} ${uniq}` }));
+  await sqlExec(`UPDATE "User" SET "isSystemAdmin" = true WHERE id = '${compte.user.id}'`);
+  await sqlExec(
+    `INSERT INTO "AccesEquipe" ("userId", plateforme, role, "createdAt", "updatedAt") VALUES ('${compte.user.id}', 'EAT', '${role}', NOW(), NOW())`
+  );
+  return compte.accessToken;
+}
+
+const ADMIN = await membreEquipe('ADMIN');
+const SUPPORT = await membreEquipe('SUPPORT');
+// Le serveur garde les droits d'un compte 30 s en cache (auth.middleware) :
+// les rôles posés en base ne valent qu'après.
+await new Promise((r) => setTimeout(r, 31000));
+const idDossier = (await incidents('tous')).find((i) => i.course.id === course6.courseId && i.type === 'RECLAMATION_CLIENT')?.id;
+
+const parSupport = await get(`/api/superowner/delivery-incidents/${idDossier}/dossier`, SUPPORT);
+check('le Support suit les incidents…', (await get('/api/superowner/delivery-incidents', SUPPORT)).status === 200);
+check('…mais n’exporte pas le dossier', parSupport.status === 403, `statut ${parSupport.status}`);
+check('le commerçant non plus', (await get(`/api/superowner/delivery-incidents/${idDossier}/dossier`, T)).status === 403);
+
+const exporte = await get(`/api/superowner/delivery-incidents/${idDossier}/dossier`, ADMIN);
+const dossier = (await j(exporte))?.data;
+check('l’Administrateur exporte le dossier', exporte.status === 200, `statut ${exporte.status}`);
+check(
+  'avec les constats et la décision',
+  dossier?.constats?.some((c) => c.type === 'RECLAMATION_CLIENT') &&
+    dossier?.decisions?.some((d) => d.action === 'REFUSE_DELIVERY_DEPOSIT'),
+  JSON.stringify(dossier?.constats?.map((c) => c.type))
+);
+check(
+  'les preuves et les conséquences',
+  dossier?.preuves?.type === 'PHOTO' && dossier?.consequences?.paiementLivreur?.etat === 'REFUSED' && dossier?.chronologie?.length > 5
+);
+check(
+  'et, du client, le strict nécessaire',
+  dossier?.client?.nom && dossier?.client?.adresse && !JSON.stringify(dossier.client).includes('@')
+);
+check(
+  'chaque export est journalisé',
+  Number(await sqlScalaire(`SELECT count(*) FROM "SystemAuditLog" WHERE action = 'EXPORT_INCIDENT_FILE' AND target = '${idDossier}'`)) === 1
+);
+check('un dossier inconnu répond 404', (await get('/api/superowner/delivery-incidents/inconnu/dossier', ADMIN)).status === 404);
+
 await terminer();
