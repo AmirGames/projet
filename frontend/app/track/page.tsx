@@ -15,6 +15,7 @@ import { useParametreAdresse } from '@/lib/navigateur';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { cheminCommande, jetonDeSuivi, memoriserJetonDeSuivi } from '@/lib/suivi-commande';
 import { RetardLivraison, type Retard } from '@/components/RetardLivraison';
+import { ReclamationLivraison, type EtatReclamation } from '@/components/ReclamationLivraison';
 
 // Leaflet touche `window` dès l'import : la carte ne se charge que côté navigateur.
 const SuiviLivraisonClient = dynamic(
@@ -60,6 +61,8 @@ interface Order {
   codeRemise?: string | null;
   preuveDeLivraison?: string | null;
   photoDepot?: string | null;
+  /** « Je n'ai pas reçu ma commande », après un dépôt en photo. */
+  reclamation?: EtatReclamation | null;
   noteDepot?: string | null;
   livreurProche?: boolean;
   /** Le livreur attend à la porte : passé cette heure, dépôt en lieu sûr. */
@@ -502,6 +505,12 @@ export default function TrackOrderPage() {
                   {order.noteDepot && (
                     <p className="text-sm text-gray-400">Déposée : {order.noteDepot}</p>
                   )}
+                </div>
+              )}
+
+              {order.reclamation && (order.reclamation.possible || order.reclamation.deposee) && (
+                <div className="mt-3">
+                  <ReclamationLivraison orderId={order.id} etat={order.reclamation} />
                 </div>
               )}
             </div>

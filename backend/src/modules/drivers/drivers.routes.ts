@@ -29,6 +29,7 @@ import { FileUploadService } from "../files/file-upload.service";
 import { notesDuLivreur } from "./driver-rating.service";
 import { bilanCourse, DriverActivityService, FiltreHistorique } from "./driver-activity.service";
 import { DriverAvailabilityService, GPS_PERDU_APRES_MS } from "./driver-availability.service";
+import { SurveillanceCoursesService } from "./surveillance-courses.service";
 import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { DriverSupportService, LONGUEUR_MAX } from "./driver-support.service";
 import { z } from "zod";
@@ -1173,10 +1174,11 @@ router.patch(
        * remis en main propre d'un repas jamais sorti du sac. Le code du client
        * le prouve ; à défaut, la photo du dépôt.
        */
+      let preuve: string | null = null;
       if (status === "DELIVERED" && course.status !== "DELIVERED") {
         // Tournée : on ne remet qu'à son tour, toutes les commandes en main.
         await DispatchService.exigerTourAtteint(livreur.id, deliveryId);
-        await DeliveryProofService.verifier(deliveryId, {
+        preuve = await DeliveryProofService.verifier(deliveryId, {
           code: req.body?.code,
           photoUrl: req.body?.photoUrl,
           note: req.body?.note,
@@ -1280,6 +1282,19 @@ router.patch(
             title: "Commande livrée avec succès",
             message: "Votre commande a été livrée. Merci pour votre achat !",
             timestamp: new Date().toISOString(),
+          });
+        }
+      }
+
+      // Un dépôt en photo fait pendant un incident de livraison n'est pas payé
+      // sans examen de la plateforme. Un échec ici n'annule pas la remise.
+      if (preuve === "PHOTO") {
+        try {
+          await SurveillanceCoursesService.apresDepotPhoto(deliveryId);
+        } catch (err) {
+          logger.error("Dépôt en photo : examen impossible", {
+            deliveryId,
+            error: err instanceof Error ? err.message : err,
           });
         }
       }

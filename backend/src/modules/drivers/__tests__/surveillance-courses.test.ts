@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const tx: any = {
-  orderDelivery: { updateMany: jest.fn() },
+  orderDelivery: { updateMany: jest.fn(), update: jest.fn() },
+  courier: { update: jest.fn() },
   order: { updateMany: jest.fn(async () => ({ count: 1 })) },
   deliveryOffer: { updateMany: jest.fn() },
   deliveryIncident: { createMany: jest.fn(), updateMany: jest.fn() },
 };
 const db: any = {
   orderDelivery: { findMany: jest.fn(), findUnique: jest.fn(), updateMany: jest.fn() },
-  deliveryIncident: { createMany: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
+  deliveryIncident: { createMany: jest.fn(), findMany: jest.fn(), updateMany: jest.fn(), count: jest.fn() },
   order: { findUnique: jest.fn() },
   courier: { findUnique: jest.fn() },
   membership: { findMany: jest.fn(async () => []) },
@@ -49,9 +50,10 @@ jest.mock("../dispatch.service", () => ({
   },
 }));
 jest.mock("../driver-availability.service", () => ({ GPS_PERDU_APRES_MS: 2 * 60000 }));
-jest.mock("../delivery-proof.service", () => ({ ATTENTE_CLIENT_MS: 6 * 60000 }));
+jest.mock("../delivery-proof.service", () => ({ ATTENTE_CLIENT_MS: 6 * 60000, RAYON_ATTENTE_CLIENT_KM: 0.5 }));
 jest.mock("../driver-approval.service", () => ({ DriverApprovalService: { ecarter: jest.fn(async () => ({})) } }));
 jest.mock("../../webhooks/webhook.service", () => ({ emitWebhook: jest.fn() }));
+jest.mock("../../files/fichiers-prives.service", () => ({ presenter: (v: string | null) => v }));
 jest.mock("../../orders/order-acceptance.service", () => ({ MOTIF_LIVRAISON_ECHOUEE: "DELIVERY_FAILED" }));
 jest.mock("../../payments/payment.service", () => ({
   paymentService: { rembourserCommande: jest.fn(async () => ({ id: "re_1" })) },
@@ -349,6 +351,8 @@ describe("SurveillanceCoursesService", () => {
       { id: "i1", driverId: "l1", assignedAt, delivery: { status: "DELIVERED", driverId: "l1", assignedAt } },
       { id: "i2", driverId: "l1", assignedAt, delivery: { status: "ACCEPTED", driverId: "l2", assignedAt: new Date() } },
       { id: "i3", driverId: "l1", assignedAt, delivery: { status: "PICKED_UP", driverId: "l1", assignedAt } },
+      // Réclamation sur une course déjà payée : elle attend une décision.
+      { id: "i4", type: "RECLAMATION_CLIENT", driverId: "l1", assignedAt, delivery: { status: "DELIVERED", driverId: "l1", assignedAt } },
     ]);
     db.deliveryIncident.updateMany.mockResolvedValue({ count: 1 });
 
@@ -504,6 +508,121 @@ describe("SurveillanceCoursesService", () => {
       expect(retirer).toHaveBeenCalledWith("course-2", expect.objectContaining({ motif: "Livreur suspendu par la plateforme" }));
       expect(resultat.coursesRetirees).toBe(1);
       retirer.mockRestore();
+    });
+  });
+
+  describe("dépôts contestés", () => {
+    const livree = (extra: Record<string, unknown> = {}) =>
+      ligne({
+        status: "DELIVERED",
+        proofType: "PHOTO",
+        deliveryTime: new Date(),
+        payoutId: null,
+        payoutHold: null,
+        driverPayout: 6.5,
+        assignedAt: new Date("2026-10-01T11:00:00Z"),
+        incidents: [],
+        ...extra,
+      });
+
+    beforeEach(() => {
+      db.orderDelivery.updateMany.mockResolvedValue({ count: 1 });
+      db.deliveryIncident.createMany.mockResolvedValue({ count: 1 });
+    });
+
+    it("suspend le paiement d'un dépôt en photo fait pendant un incident de livraison", async () => {
+      db.orderDelivery.findUnique.mockResolvedValue(livree());
+      db.deliveryIncident.findMany.mockResolvedValue([{ detail: "Pas encore livrée 40 min après la récupération." }]);
+
+      expect(await SurveillanceCoursesService.apresDepotPhoto("course-1")).toBe(true);
+      expect(db.orderDelivery.updateMany).toHaveBeenCalledWith({
+        where: { id: "course-1", payoutId: null, payoutHold: null },
+        data: expect.objectContaining({ payoutHold: "REVIEW" }),
+      });
+      expect(db.deliveryIncident.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: [expect.objectContaining({ type: "DEPOT_CONTESTE" })] })
+      );
+    });
+
+    it("laisse payer normalement un dépôt sans incident", async () => {
+      db.orderDelivery.findUnique.mockResolvedValue(livree());
+      db.deliveryIncident.findMany.mockResolvedValue([]);
+      expect(await SurveillanceCoursesService.apresDepotPhoto("course-1")).toBe(false);
+      expect(db.orderDelivery.updateMany).not.toHaveBeenCalled();
+    });
+
+    it("suspend le paiement sur réclamation du client, une seule fois", async () => {
+      db.orderDelivery.findUnique.mockResolvedValue(livree());
+      await SurveillanceCoursesService.reclamationClient("commande-abcdef", "Rien devant ma porte");
+      expect(db.orderDelivery.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ payoutHold: "REVIEW" }) })
+      );
+
+      db.orderDelivery.findUnique.mockResolvedValue(livree({ incidents: [{ type: "RECLAMATION_CLIENT" }] }));
+      await expect(SurveillanceCoursesService.reclamationClient("commande-abcdef", undefined)).rejects.toMatchObject({
+        statusCode: 409,
+        code: "CLAIM_ALREADY_FILED",
+      });
+    });
+
+    it("refuse la réclamation d'une remise contre le code", async () => {
+      db.orderDelivery.findUnique.mockResolvedValue(livree({ proofType: "CODE" }));
+      await expect(SurveillanceCoursesService.reclamationClient("commande-abcdef", undefined)).rejects.toMatchObject({
+        code: "CLAIM_NOT_POSSIBLE",
+      });
+    });
+
+    it("validé : la course redevient payable, sur le relevé de la semaine", async () => {
+      db.orderDelivery.findUnique.mockResolvedValue(livree({ payoutHold: "REVIEW" }));
+      db.deliveryIncident.count.mockResolvedValue(1);
+      tx.deliveryIncident.updateMany.mockResolvedValue({ count: 1 });
+
+      await SurveillanceCoursesService.deciderDepot("course-1", { par: { userId: "a" }, decision: "VALIDER", motif: "Photo probante" });
+
+      expect(tx.orderDelivery.update).toHaveBeenCalledWith({
+        where: { id: "course-1" },
+        data: { payoutHold: null, payoutHoldReleasedAt: expect.any(Date) },
+      });
+      expect(tx.order.updateMany).not.toHaveBeenCalled();
+      expect(paymentService.rembourserCommande).not.toHaveBeenCalled();
+    });
+
+    it("refusé : jamais payée, commande annulée, client remboursé, livreur suspendu", async () => {
+      db.orderDelivery.findUnique.mockResolvedValue(livree({ payoutHold: "REVIEW" }));
+      db.deliveryIncident.count.mockResolvedValue(1);
+      tx.deliveryIncident.updateMany.mockResolvedValue({ count: 1 });
+      db.order.findUnique.mockResolvedValue({ paymentStatus: "SUCCEEDED" });
+      db.courier.findUnique.mockResolvedValue({ status: "ACTIVE" });
+      db.orderDelivery.findMany.mockResolvedValue([]);
+
+      const resultat = await SurveillanceCoursesService.deciderDepot("course-1", {
+        par: { userId: "a" },
+        decision: "REFUSER",
+        motif: "Le client n'a rien reçu",
+      });
+
+      expect(tx.orderDelivery.update).toHaveBeenCalledWith({
+        where: { id: "course-1" },
+        data: { payoutHold: "REFUSED", payoutHoldReason: "Le client n'a rien reçu" },
+      });
+      expect(tx.order.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: "REJECTED", rejectionReason: "DELIVERY_FAILED" }) })
+      );
+      expect(tx.courier.update).toHaveBeenCalledWith({
+        where: { id: "livreur-1" },
+        data: { totalDeliveries: { decrement: 1 }, totalEarnings: { decrement: 6.5 } },
+      });
+      expect(resultat).toMatchObject({ remboursement: "REMBOURSEE", suspendu: true });
+    });
+
+    it("ne tranche pas deux fois", async () => {
+      db.orderDelivery.findUnique.mockResolvedValue(livree({ payoutHold: "REVIEW" }));
+      db.deliveryIncident.count.mockResolvedValue(1);
+      tx.deliveryIncident.updateMany.mockResolvedValue({ count: 0 });
+      await expect(
+        SurveillanceCoursesService.deciderDepot("course-1", { par: { userId: "a" }, decision: "REFUSER", motif: "xxx" })
+      ).rejects.toMatchObject({ code: "DELIVERY_CHANGED" });
+      expect(paymentService.rembourserCommande).not.toHaveBeenCalled();
     });
   });
 });

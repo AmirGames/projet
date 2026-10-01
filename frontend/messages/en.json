@@ -2170,7 +2170,9 @@
     "confirm": {
       "retirer": "The order is still at the store: the delivery will be taken from this driver and offered to another.",
       "echec": "The order left with the driver: the delivery will be closed as failed and the driver released, unpaid.",
-      "clore": "The incident will be marked as handled."
+      "clore": "The incident will be marked as handled.",
+      "valider": "The drop-off is deemed valid: the driver will be paid with this week's statement.",
+      "refuser": "The order is deemed not delivered: the delivery will never be paid, the order is cancelled for the customer (still paid to the store)."
     },
     "type": {
       "RETARD_RETRAIT": "Not showing up at the store",
@@ -2178,7 +2180,11 @@
       "RETARD_LIVRAISON": "Late delivery",
       "ECART_LIVRAISON": "Off route to the customer",
       "COURSE_RETIREE": "Delivery withdrawn",
-      "COURSE_ECHOUEE": "Delivery failed"
+      "COURSE_ECHOUEE": "Delivery failed",
+      "DEPOT_CONTESTE": "Drop-off during an incident",
+      "RECLAMATION_CLIENT": "Order not received (customer)",
+      "DEPOT_VALIDE": "Drop-off validated",
+      "DEPOT_REFUSE": "Drop-off refused"
     },
     "courseStatus": {
       "PENDING": "looking for a driver",
@@ -2198,7 +2204,17 @@
       "SANS_PAIEMENT_EN_LIGNE": "No online payment to refund.",
       "ECHEC": "The refund failed: redo it from billing.",
       "NON_DEMANDE": "No refund requested."
-    }
+    },
+    "validateDeposit": "Validate drop-off",
+    "refuseDeposit": "Refuse drop-off",
+    "depositPhoto": "Drop-off photo",
+    "depositNote": "Driver's note: {note}",
+    "depositValidated": "Drop-off validated: the delivery will be paid with this week's statement.",
+    "payoutHold": {
+      "REVIEW": "Driver payment on hold, awaiting your decision.",
+      "REFUSED": "Drop-off refused: the delivery will not be paid."
+    },
+    "alreadyOnStatement": "The delivery was already on a payout statement: refusing the drop-off refunds the customer and suspends the driver, but does not take back what they were paid."
   },
   "driverCourseAlerts": {
     "warningTitle": "Delivery needs attention",
@@ -2210,6 +2226,16 @@
     "retardTexte": "Our team has been notified and is following your order. Thank you for your patience.",
     "relaisTitre": "A new driver is taking over",
     "relaisTexte": "The original driver couldn't make it: your order has been handed to another driver."
+  },
+  "reclamationLivraison": {
+    "bouton": "I didn't receive my order",
+    "titre": "Didn't receive your order?",
+    "explication": "The driver reported dropping it off while you were away. Let us know: our team reviews the drop-off and refunds you if the order wasn't handed to you.",
+    "placeholder": "What you noticed (optional)",
+    "envoyer": "Report",
+    "annuler": "Cancel",
+    "deposee": "Your claim is recorded: our team is reviewing the drop-off and will get back to you.",
+    "erreur": "The claim could not be sent. Please try again."
   },
   "superownerReviews": {
     "title": "Reported reviews",

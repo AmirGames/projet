@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 
-import { retardPourLeClient } from "../retard-livraison";
+import { RECLAMATION_DELAI_MS, reclamationPourLeClient, retardPourLeClient } from "../retard-livraison";
 
 const attribution = new Date("2026-10-01T12:00:00Z");
 const constat = new Date("2026-10-01T12:40:00Z");
@@ -51,5 +51,27 @@ describe("retardPourLeClient", () => {
         retardPourLeClient({ status, driverId: "l1", assignedAt: attribution, incidents: [incident("RETARD_LIVRAISON")] })
       ).toBeNull();
     }
+  });
+});
+
+describe("reclamationPourLeClient", () => {
+  const livree = new Date("2026-10-01T12:00:00Z");
+  const apres = (ms: number) => new Date(livree.getTime() + ms);
+  const course = (extra = {}) => ({ status: "DELIVERED", proofType: "PHOTO", deliveryTime: livree, incidents: [], ...extra });
+
+  it("est ouverte après un dépôt en photo, pendant 48 h", () => {
+    expect(reclamationPourLeClient(course(), apres(60000))).toEqual({ possible: true, deposee: false });
+    expect(reclamationPourLeClient(course(), apres(RECLAMATION_DELAI_MS + 1)).possible).toBe(false);
+  });
+
+  it("ne l'est pas après une remise contre le code, qui prouve la réception", () => {
+    expect(reclamationPourLeClient(course({ proofType: "CODE" }), apres(60000)).possible).toBe(false);
+  });
+
+  it("ne se dépose qu'une fois", () => {
+    expect(reclamationPourLeClient(course({ incidents: [{ type: "RECLAMATION_CLIENT" }] }), apres(60000))).toEqual({
+      possible: false,
+      deposee: true,
+    });
   });
 });

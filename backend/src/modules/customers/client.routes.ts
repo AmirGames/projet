@@ -1,5 +1,5 @@
 import { finAttente } from "../drivers/delivery-proof.service";
-import { INCIDENTS_POUR_LE_CLIENT, retardPourLeClient } from "../drivers/retard-livraison";
+import { INCIDENTS_POUR_LE_CLIENT, reclamationPourLeClient, retardPourLeClient } from "../drivers/retard-livraison";
 import { positionLivreurVisible } from "../orders/suivi-commande.service";
 import { presenter } from "../files/fichiers-prives.service";
 import { SupplementService } from "../catalog/supplement.service";
@@ -822,6 +822,8 @@ router.get("/deliveries/:orderId", authMiddleware, async (req: Request, res: Res
         attenteFinLe: course.status === "PICKED_UP" ? finAttente(course) : null,
         // En retard, ou confiée à un nouveau livreur (voir retard-livraison.ts).
         retard: retardPourLeClient(course),
+        // « Je n'ai pas reçu ma commande », après un dépôt en photo.
+        reclamation: reclamationPourLeClient(course),
         maintenant: new Date(),
       },
     });

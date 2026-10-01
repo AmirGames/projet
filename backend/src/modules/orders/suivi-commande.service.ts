@@ -3,7 +3,7 @@ import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { db } from "../../services/db";
 import { logger } from "../../config/logger";
 import { finAttente } from "../drivers/delivery-proof.service";
-import { INCIDENTS_POUR_LE_CLIENT, retardPourLeClient } from "../drivers/retard-livraison";
+import { INCIDENTS_POUR_LE_CLIENT, reclamationPourLeClient, retardPourLeClient } from "../drivers/retard-livraison";
 import { presenter } from "../files/fichiers-prives.service";
 import type { Compte } from "../auth/auth.middleware";
 
@@ -175,6 +175,7 @@ const CHAMPS = {
       customerWaitStartedAt: true,
       driverId: true,
       assignedAt: true,
+      deliveryTime: true,
       incidents: INCIDENTS_POUR_LE_CLIENT,
       driver: { select: { userId: true } },
     },
@@ -209,6 +210,9 @@ function etatDeLaLivraison(commande: Lue, avecCode: boolean) {
     // La livraison dérape (voir retard-livraison.ts) : en route et en retard,
     // ou un nouveau livreur a pris le relais.
     retard: course ? retardPourLeClient(course) : null,
+    // « Je n'ai pas reçu ma commande », après un dépôt en photo : pour le
+    // client seulement (celui qui lit le code).
+    reclamation: avecCode && course ? reclamationPourLeClient(course) : null,
     maintenant: new Date(),
   };
 }
@@ -471,4 +475,16 @@ export async function courseVisible(orderId: string, appelant: Appelant, jeton?:
     driverLocationAt: enRoute ? course.driverLocationAt ?? null : null,
     driver: course.driver ? { name: course.driver.name } : null,
   };
+}
+
+/**
+ * Le client de la commande, et lui seul : le propriétaire connecté (qui lit
+ * le code de remise), ou le visiteur qui présente son jeton de suivi. Ni le
+ * commerce, ni la plateforme, ni le livreur ne réclament à sa place.
+ */
+export async function estLeClientDeLaCommande(orderId: string, appelant: Appelant, jeton?: unknown) {
+  const commande = await lireCommande(orderId);
+  if (!commande) return false;
+  const acces = await evaluerAcces(commande, appelant, jeton);
+  return acces?.vue === "publique" || (acces?.vue === "complete" && acces.avecCode);
 }

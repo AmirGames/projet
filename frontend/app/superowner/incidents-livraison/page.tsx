@@ -16,7 +16,11 @@ type TypeIncident =
   | 'RETARD_LIVRAISON'
   | 'ECART_LIVRAISON'
   | 'COURSE_RETIREE'
-  | 'COURSE_ECHOUEE';
+  | 'COURSE_ECHOUEE'
+  | 'DEPOT_CONTESTE'
+  | 'RECLAMATION_CLIENT'
+  | 'DEPOT_VALIDE'
+  | 'DEPOT_REFUSE';
 
 interface Incident {
   id: string;
@@ -45,14 +49,18 @@ interface Incident {
     orderId: string;
     numero: string;
     status: string;
-    actions: { retirer: boolean; echec: boolean };
+    actions: { retirer: boolean; echec: boolean; depot: boolean };
+    /** Le paiement au livreur : REVIEW (suspendu, en examen), REFUSED, ou null. */
+    paiement: { blocage: string | null; motif: string | null; surUnReleve: boolean };
+    /** Le dépôt en photo, quand la course a été close ainsi. */
+    depot: { photo: string | null; note: string | null; le: string | null } | null;
     boutique: { id: string; name: string; phone: string | null } | null;
     client: { nom: string; telephone: string | null; ville: string | null } | null;
     commande: string | null;
   };
 }
 
-type Geste = { incidentId: string; type: 'retirer' | 'echec' | 'clore' };
+type Geste = { incidentId: string; type: 'retirer' | 'echec' | 'clore' | 'valider' | 'refuser' };
 
 // Les plus graves en rouge : la commande est partie avec le livreur.
 const COULEURS: Record<TypeIncident, string> = {
@@ -62,6 +70,10 @@ const COULEURS: Record<TypeIncident, string> = {
   ECART_LIVRAISON: 'bg-red-600/20 text-red-300 border-red-600/40',
   COURSE_RETIREE: 'bg-gray-600/30 text-gray-300 border-gray-600/50',
   COURSE_ECHOUEE: 'bg-gray-600/30 text-gray-300 border-gray-600/50',
+  DEPOT_CONTESTE: 'bg-red-600/20 text-red-300 border-red-600/40',
+  RECLAMATION_CLIENT: 'bg-red-600/20 text-red-300 border-red-600/40',
+  DEPOT_VALIDE: 'bg-gray-600/30 text-gray-300 border-gray-600/50',
+  DEPOT_REFUSE: 'bg-gray-600/30 text-gray-300 border-gray-600/50',
 };
 
 /**
@@ -136,16 +148,21 @@ export default function IncidentsLivraisonPage() {
     if (!geste) return;
     const token = localStorage.getItem('accessToken');
     if (!token) return;
+    const depot = geste.type === 'valider' || geste.type === 'refuser';
     const url =
       geste.type === 'clore'
         ? `${API_URL}/api/superowner/delivery-incidents/${incident.id}/clore`
-        : `${API_URL}/api/superowner/delivery-incidents/courses/${incident.course.id}/${geste.type}`;
+        : `${API_URL}/api/superowner/delivery-incidents/courses/${incident.course.id}/${depot ? 'depot' : geste.type}`;
     const corps =
       geste.type === 'clore'
         ? { resolution: texte }
         : geste.type === 'echec'
           ? { motif: texte, rembourser, suspendre }
-          : { motif: texte };
+          : geste.type === 'refuser'
+            ? { decision: 'REFUSER', motif: texte, rembourser, suspendre }
+            : geste.type === 'valider'
+              ? { decision: 'VALIDER', motif: texte }
+              : { motif: texte };
 
     setEnvoi(true);
     try {
@@ -156,7 +173,8 @@ export default function IncidentsLivraisonPage() {
       });
       const donnees = await res.json();
       if (!res.ok) throw new Error(donnees.error);
-      if (geste.type === 'echec') {
+      if (geste.type === 'valider') setBilan(t('depositValidated'));
+      if (geste.type === 'echec' || geste.type === 'refuser') {
         const r = donnees.data;
         setBilan(
           [
@@ -254,6 +272,26 @@ export default function IncidentsLivraisonPage() {
                       <span className="text-xs text-gray-500">{depuis(incident.createdAt)}</span>
                     </div>
                     <p className="text-white">{incident.detail}</p>
+                    {incident.course.actions.depot && incident.course.paiement.surUnReleve && (
+                      <p className="text-xs text-amber-300">{t('alreadyOnStatement')}</p>
+                    )}
+                    {incident.course.paiement.blocage && (
+                      <p className="text-xs text-amber-300">
+                        {t(`payoutHold.${incident.course.paiement.blocage}`)}
+                      </p>
+                    )}
+                    {incident.course.depot?.photo && (
+                      <a href={incident.course.depot.photo} target="_blank" rel="noreferrer" className="inline-block">
+                        <img
+                          src={incident.course.depot.photo}
+                          alt={t('depositPhoto')}
+                          className="mt-1 h-32 w-auto max-w-full rounded border border-gray-700 object-cover"
+                        />
+                      </a>
+                    )}
+                    {incident.course.depot?.note && (
+                      <p className="text-xs text-gray-400">{t('depositNote', { note: incident.course.depot.note })}</p>
+                    )}
                     {!incident.closedAt && incident.alertes > 1 && (
                       <p className="text-xs text-red-300">{t('reminders', { count: incident.alertes - 1 })}</p>
                     )}
@@ -337,7 +375,7 @@ export default function IncidentsLivraisonPage() {
                       placeholder={t(ouvert.type === 'clore' ? 'resolutionPlaceholder' : 'reasonPlaceholder')}
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-orange-500"
                     />
-                    {ouvert.type === 'echec' && (
+                    {(ouvert.type === 'echec' || ouvert.type === 'refuser') && (
                       <div className="space-y-1 text-sm text-gray-200">
                         <label className="flex items-center gap-2">
                           <input type="checkbox" checked={rembourser} onChange={(e) => setRembourser(e.target.checked)} />
@@ -383,7 +421,23 @@ export default function IncidentsLivraisonPage() {
                         {t('fail')}
                       </button>
                     )}
-                    {!incident.closedAt && (
+                    {incident.course.actions.depot && (
+                      <>
+                        <button
+                          onClick={() => ouvrirGeste(incident.id, 'valider')}
+                          className="px-3 py-2 rounded-lg bg-green-600/20 border border-green-600/50 text-green-200 hover:bg-green-600/30 text-sm"
+                        >
+                          {t('validateDeposit')}
+                        </button>
+                        <button
+                          onClick={() => ouvrirGeste(incident.id, 'refuser')}
+                          className="px-3 py-2 rounded-lg bg-red-600/20 border border-red-600/50 text-red-200 hover:bg-red-600/30 text-sm"
+                        >
+                          {t('refuseDeposit')}
+                        </button>
+                      </>
+                    )}
+                    {!incident.closedAt && !incident.course.actions.depot && (
                       <button
                         onClick={() => ouvrirGeste(incident.id, 'clore')}
                         className="px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 text-sm"

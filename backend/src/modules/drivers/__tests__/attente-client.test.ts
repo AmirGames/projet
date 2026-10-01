@@ -9,7 +9,9 @@ import {
   ATTENTE_CLIENT_MS,
   exigerAttenteTerminee,
   exigerPresenceChezClient,
+  exigerResteChezClient,
   finAttente,
+  quitteLAdressePendantLAttente,
 } from "../delivery-proof.service";
 
 const debut = new Date("2026-09-27T12:00:00Z");
@@ -56,5 +58,29 @@ describe("présence chez le client pour lancer l'attente", () => {
 
   it("laisse passer une adresse jamais située, qu'on ne peut pas vérifier", () => {
     expect(() => exigerPresenceChezClient(null, { deliveryLat: null, deliveryLng: null })).not.toThrow();
+  });
+});
+
+describe("livreur qui quitte l'adresse pendant l'attente", () => {
+  const course = (extra = {}) => ({
+    status: "PICKED_UP",
+    customerWaitStartedAt: debut,
+    deliveryLat: 45.78,
+    deliveryLng: 4.86,
+    ...extra,
+  });
+
+  it("est repéré au-delà de 500 m, pendant l'attente seulement", () => {
+    const loin = { latitude: 45.764, longitude: 4.8357 };
+    const proche = { latitude: 45.7813, longitude: 4.86 };
+    expect(quitteLAdressePendantLAttente(loin, course())).toBe(true);
+    expect(quitteLAdressePendantLAttente(proche, course())).toBe(false);
+    expect(quitteLAdressePendantLAttente(loin, course({ customerWaitStartedAt: null }))).toBe(false);
+    expect(quitteLAdressePendantLAttente(loin, course({ status: "DELIVERED" }))).toBe(false);
+  });
+
+  it("perd le dépôt en photo, même revenu à la porte", () => {
+    expect(() => exigerResteChezClient({ customerWaitLeftAt: new Date() })).toThrow(/code du client/);
+    expect(() => exigerResteChezClient({ customerWaitLeftAt: null })).not.toThrow();
   });
 });

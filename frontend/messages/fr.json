@@ -2170,7 +2170,9 @@
     "confirm": {
       "retirer": "La commande est encore au commerce : la course sera retirée au livreur et proposée à un autre.",
       "echec": "La commande est partie avec le livreur : la course sera close comme échouée et le livreur libéré, sans paiement.",
-      "clore": "L'incident sera marqué comme traité."
+      "clore": "L'incident sera marqué comme traité.",
+      "valider": "Le dépôt est jugé valable : la course sera payée au livreur avec le relevé de la semaine.",
+      "refuser": "La commande est jugée non livrée : la course ne sera jamais payée, la commande est annulée pour le client (toujours payée au commerçant)."
     },
     "type": {
       "RETARD_RETRAIT": "Ne vient pas au commerce",
@@ -2178,7 +2180,11 @@
       "RETARD_LIVRAISON": "Livraison en retard",
       "ECART_LIVRAISON": "Hors trajet vers le client",
       "COURSE_RETIREE": "Course retirée",
-      "COURSE_ECHOUEE": "Course échouée"
+      "COURSE_ECHOUEE": "Course échouée",
+      "DEPOT_CONTESTE": "Dépôt pendant un incident",
+      "RECLAMATION_CLIENT": "Commande non reçue (client)",
+      "DEPOT_VALIDE": "Dépôt validé",
+      "DEPOT_REFUSE": "Dépôt refusé"
     },
     "courseStatus": {
       "PENDING": "recherche d'un livreur",
@@ -2198,7 +2204,17 @@
       "SANS_PAIEMENT_EN_LIGNE": "Pas de paiement en ligne à rembourser.",
       "ECHEC": "Le remboursement a échoué : refaites-le depuis la facturation.",
       "NON_DEMANDE": "Pas de remboursement demandé."
-    }
+    },
+    "validateDeposit": "Valider le dépôt",
+    "refuseDeposit": "Refuser le dépôt",
+    "depositPhoto": "Photo du dépôt",
+    "depositNote": "Note du livreur : {note}",
+    "depositValidated": "Dépôt validé : la course sera payée avec le relevé de la semaine.",
+    "payoutHold": {
+      "REVIEW": "Paiement du livreur suspendu, en attente de votre décision.",
+      "REFUSED": "Dépôt refusé : la course ne sera pas payée."
+    },
+    "alreadyOnStatement": "La course était déjà sur un relevé de versement : refuser le dépôt rembourse le client et suspend le livreur, mais ne reprend pas ce qui lui a été payé."
   },
   "driverCourseAlerts": {
     "warningTitle": "Course à surveiller",
@@ -2210,6 +2226,16 @@
     "retardTexte": "Notre équipe a été prévenue et suit votre commande. Merci de votre patience.",
     "relaisTitre": "Un nouveau livreur prend le relais",
     "relaisTexte": "Le livreur prévu a eu un empêchement : votre commande est confiée à un autre livreur."
+  },
+  "reclamationLivraison": {
+    "bouton": "Je n'ai pas reçu ma commande",
+    "titre": "Vous n'avez pas reçu votre commande ?",
+    "explication": "Le livreur l'a déclarée déposée en votre absence. Dites-le-nous : notre équipe examine le dépôt et vous rembourse si la commande ne vous a pas été remise.",
+    "placeholder": "Ce que vous avez constaté (facultatif)",
+    "envoyer": "Signaler",
+    "annuler": "Annuler",
+    "deposee": "Votre réclamation est enregistrée : notre équipe examine le dépôt et revient vers vous.",
+    "erreur": "La réclamation n'a pas pu être envoyée. Réessayez."
   },
   "superownerReviews": {
     "title": "Avis signalés",

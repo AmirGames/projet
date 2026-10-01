@@ -1306,6 +1306,22 @@ model OrderDelivery {
   /// cette attente, un livreur pressé posait le sac et partait.
   customerWaitStartedAt DateTime?
 
+  /// Le livreur s'est éloigné de l'adresse pendant cette attente (à plus de
+  /// 500 m, relevé à chaque position reçue). Le dépôt en photo lui est alors
+  /// refusé : sans cette marque, il pouvait lancer l'attente à la porte,
+  /// repartir avec la commande et la « déposer » ailleurs.
+  customerWaitLeftAt DateTime?
+
+  /// Le paiement de la course au livreur est suspendu : REVIEW (dépôt contesté
+  /// ou fait pendant un incident, en examen par la plateforme), REFUSED (la
+  /// plateforme a jugé la commande non livrée : la course n'est jamais payée).
+  /// Vide : la course suit son relevé normalement.
+  payoutHold       String?
+  payoutHoldReason String?
+  /// Le dépôt contesté a été validé : la course est payée avec le relevé de
+  /// la semaine de cette validation, et non celle de sa livraison, déjà arrêtée.
+  payoutHoldReleasedAt DateTime?
+
   /// Le relevé de versement qui paie cette course.
   ///
   /// Tant qu'il est vide, la course est due au livreur. C'est ce lien qui
@@ -1342,6 +1358,7 @@ model OrderDelivery {
 
   @@index([orderId])
   @@index([driverId])
+  @@index([payoutHold])
   @@index([status])
   @@index([payoutId])
 }

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros, mediaUrl } from '../../lib/api';
 import {
   amountPaid,
@@ -81,6 +81,32 @@ export default function OrderScreen({
     const id = setTimeout(() => setToast(null), 6000);
     return () => clearTimeout(id);
   }, [toast]);
+
+  /**
+   * « Je n'ai pas reçu ma commande » : le paiement du livreur est suspendu et
+   * la plateforme examine le dépôt.
+   */
+  const reclamer = () =>
+    Alert.alert(
+      'Vous n’avez pas reçu votre commande ?',
+      'Le livreur l’a déclarée déposée en votre absence. Notre équipe examine le dépôt et vous rembourse si elle ne vous a pas été remise.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Signaler',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiFetch(`/api/orders/${orderId}/reclamation-livraison`, token, { method: 'POST', body: {} });
+              setTracking((t) => (t ? { ...t, reclamation: { possible: false, deposee: true } } : t));
+              setToast({ title: 'Réclamation envoyée', message: 'Notre équipe examine le dépôt et revient vers vous.' });
+            } catch (e: any) {
+              Alert.alert('Réclamation impossible', e?.message || 'Réessayez dans un instant.');
+            }
+          },
+        },
+      ]
+    );
 
   useRoom('order', orderId);
   useRealtimeEvent('order-update', (u: OrderUpdate) => {
@@ -275,6 +301,13 @@ export default function OrderScreen({
           <Card title="Déposée devant chez vous">
             <Image source={{ uri: photo }} style={styles.photo} resizeMode="cover" />
             {tracking?.noteDepot ? <Text style={styles.help}>{tracking.noteDepot}</Text> : null}
+            {tracking?.reclamation?.deposee ? (
+              <Text style={styles.help}>Votre réclamation est enregistrée : notre équipe examine le dépôt et revient vers vous.</Text>
+            ) : tracking?.reclamation?.possible ? (
+              <TouchableOpacity style={styles.claimButton} onPress={reclamer}>
+                <Text style={styles.claimText}>Je n’ai pas reçu ma commande</Text>
+              </TouchableOpacity>
+            ) : null}
           </Card>
         ) : null}
 
@@ -400,6 +433,8 @@ const styles = StyleSheet.create({
   codeValue: { color: '#fff', fontSize: 40, fontWeight: '800', letterSpacing: 4, marginVertical: 6 },
   codeHint: { color: '#fff', opacity: 0.85, fontSize: 13, textAlign: 'center' },
   photo: { width: '100%', height: 220, borderRadius: 8, backgroundColor: COLORS.bg },
+  claimButton: { borderWidth: 1, borderColor: '#C62828', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 10 },
+  claimText: { color: '#C62828', fontWeight: '700' },
   reviewButton: { backgroundColor: '#FFB300', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginBottom: 12 },
   reviewButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   address: { fontSize: 14, color: COLORS.text },

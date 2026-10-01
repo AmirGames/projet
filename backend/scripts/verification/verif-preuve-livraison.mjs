@@ -217,8 +217,6 @@ const pendantAttente = await patch(
 );
 check('pendant l’attente, le dépôt est refusé', pendantAttente.status === 409, `statut ${pendantAttente.status}`);
 await attenteClientEcoulee(absente.courseId);
-// Retour au commerce pour les courses suivantes.
-await patch('/api/drivers/location', { latitude: 45.764, longitude: 4.8357 }, D);
 
 const photo = await patch(
   `/api/drivers/deliveries/${absente.courseId}`,

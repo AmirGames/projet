@@ -439,6 +439,56 @@ router.post(
   }
 );
 
+/**
+ * POST /superowner/delivery-incidents/courses/:deliveryId/depot - Trancher un dépôt contesté
+ *
+ * Dépôt en photo fait pendant un incident, ou réclamation du client : le
+ * paiement au livreur attend cette décision. Body : { decision: VALIDER |
+ * REFUSER, motif, rembourser = true, suspendre = true } (les deux derniers ne
+ * servent qu'au refus). VALIDER : la course est payée avec le relevé de la
+ * semaine. REFUSER : jamais payée, commande annulée (DELIVERY_FAILED, due au
+ * commerçant), client remboursé, livreur suspendu.
+ */
+router.post(
+  "/delivery-incidents/courses/:deliveryId/depot",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const body = motif
+        .extend({
+          decision: z.enum(["VALIDER", "REFUSER"]),
+          rembourser: z.boolean().default(true),
+          suspendre: z.boolean().default(true),
+        })
+        .parse(req.body);
+      const resultat = await SurveillanceCoursesService.deciderDepot(req.params.deliveryId as string, {
+        par: { userId: req.userId as string },
+        decision: body.decision,
+        motif: body.motif,
+        rembourser: body.rembourser,
+        suspendre: body.suspendre,
+      });
+
+      await journaliser(req, body.decision === "VALIDER" ? "VALIDATE_DELIVERY_DEPOSIT" : "REFUSE_DELIVERY_DEPOSIT", req.params.deliveryId as string, {
+        driverId: resultat.driverId,
+        orderId: resultat.orderId,
+        avant: { payoutHold: "REVIEW" },
+        apres: { payoutHold: body.decision === "VALIDER" ? null : "REFUSED" },
+        motif: body.motif,
+        ...("remboursement" in resultat
+          ? { remboursement: resultat.remboursement, livreurSuspendu: resultat.suspendu, coursesRetirees: resultat.coursesRetirees }
+          : {}),
+        dejaSurUnReleve: resultat.dejaSurUnReleve,
+      });
+
+      res.json({ success: true, data: resultat });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // POST /superowner/delivery-incidents/:id/clore - Marquer un incident comme traité
 router.post(
   "/delivery-incidents/:id/clore",

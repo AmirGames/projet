@@ -109,6 +109,46 @@ export function exigerPresenceChezClient(
   }
 }
 
+/**
+ * Pendant l'attente, le livreur reste devant chez le client : au-delà de cette
+ * distance, il est reparti (marge pour le GPS au pied d'un immeuble).
+ */
+export const RAYON_ATTENTE_CLIENT_KM = 0.5;
+
+/** L'attente est en cours et cette position est loin de l'adresse du client. */
+export function quitteLAdressePendantLAttente(
+  position: Point,
+  course: {
+    status: string;
+    customerWaitStartedAt: Date | null;
+    deliveryLat: number | null;
+    deliveryLng: number | null;
+  }
+) {
+  const adresse = { latitude: course.deliveryLat, longitude: course.deliveryLng };
+  return (
+    course.status === "PICKED_UP" &&
+    Boolean(course.customerWaitStartedAt) &&
+    estUnPoint(adresse) &&
+    distanceKm(position, adresse) > RAYON_ATTENTE_CLIENT_KM
+  );
+}
+
+/**
+ * Le dépôt en photo est refusé au livreur qui a quitté l'adresse pendant
+ * l'attente : l'attente lancée à la porte ne vaut plus présence. Il lui reste
+ * le code du client, ou le support.
+ */
+export function exigerResteChezClient(course: { customerWaitLeftAt: Date | null }) {
+  if (course.customerWaitLeftAt) {
+    throw new ApiError(
+      409,
+      "Vous avez quitté l'adresse du client pendant l'attente : le dépôt en photo n'est plus possible. Remettez la commande contre le code du client, ou écrivez au support.",
+      "LEFT_DURING_WAIT"
+    );
+  }
+}
+
 export const TYPES_PREUVE = ["CODE", "PHOTO"] as const;
 export type TypePreuve = (typeof TYPES_PREUVE)[number];
 
@@ -135,7 +175,7 @@ export class DeliveryProofService {
   ): Promise<TypePreuve> {
     const course = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
-      select: { id: true, deliveryCode: true, codeAttempts: true, customerWaitStartedAt: true },
+      select: { id: true, deliveryCode: true, codeAttempts: true, customerWaitStartedAt: true, customerWaitLeftAt: true },
     });
 
     if (!course) {
@@ -220,6 +260,8 @@ export class DeliveryProofService {
 
       // Le dépôt se photographie quand le client n'est pas venu, pas avant.
       exigerAttenteTerminee(course);
+      // Et seulement par un livreur resté à la porte.
+      exigerResteChezClient(course);
 
       await db.orderDelivery.update({
         where: { id: deliveryId },

@@ -6,6 +6,9 @@
 // travail, comme en production.
 
 import {
+  attenteClientEcoulee,
+  codeDeRemise,
+  jetonDeSuivi,
   inscription,
   declarerPrete,
   ouvrirBoutiqueLivrante,
@@ -284,6 +287,121 @@ check('le livreur ne peut plus la clore', tardive.status === 409, `statut ${tard
 check(
   'le geste est journalisé',
   Number(await sqlScalaire(`SELECT count(*) FROM "SystemAuditLog" WHERE action = 'FAIL_DELIVERY' AND target = '${course2.courseId}'`)) === 1
+);
+
+// ===== Le dépôt en photo n'est pas un passe-droit =====
+
+titre('Dépôt en photo pendant un incident : paiement suspendu');
+// Seule D roule désormais : A se déconnecte, B est suspendu, C est occupée.
+await patch('/api/drivers/availability', { isOnline: false }, A);
+const D = await nouveauLivreur('Dina', COMMERCE);
+const CHEZ_LE_CLIENT = { latitude: 45.7801, longitude: 4.8601 };
+
+async function enRoute(prenom) {
+  const course = await commander();
+  await patch('/api/drivers/location', COMMERCE, D);
+  const ok = await patch(`/api/drivers/deliveries/${course.courseId}/accept`, null, D);
+  await declarerPrete(storeId, course.orderId, T);
+  const prise = await patch(`/api/drivers/deliveries/${course.courseId}`, { status: 'PICKED_UP' }, D);
+  check(`${prenom} : D prend la commande`, ok.status === 200 && prise.status === 200, `${ok.status} ${prise.status}`);
+  return course;
+}
+
+async function attendreALaPorte(courseId) {
+  await patch('/api/drivers/location', CHEZ_LE_CLIENT, D);
+  const attente = await post(`/api/drivers/deliveries/${courseId}/attente`, {}, D);
+  await attenteClientEcoulee(courseId);
+  return attente.status;
+}
+
+const deposer = (courseId) =>
+  patch(`/api/drivers/deliveries/${courseId}`, { status: 'DELIVERED', photoUrl: 'https://exemple.fr/depot.jpg', note: 'Devant la porte' }, D);
+
+const course4 = await enRoute('Course 4');
+await sqlExec(`UPDATE "OrderDelivery" SET "pickupTime" = NOW() - INTERVAL '40 minutes' WHERE id = '${course4.courseId}'`);
+const retard4 = await attendre(
+  `SELECT count(*) FROM "DeliveryIncident" WHERE "deliveryId" = '${course4.courseId}' AND type = 'RETARD_LIVRAISON'`,
+  '1'
+);
+check('la livraison en retard est constatée', retard4 === '1', retard4);
+check('l’attente se lance à la porte', (await attendreALaPorte(course4.courseId)) === 200);
+const depot4 = await deposer(course4.courseId);
+check('le dépôt en photo est accepté', depot4.status === 200, `statut ${depot4.status}`);
+check(
+  'mais son paiement est suspendu',
+  (await sqlScalaire(`SELECT "payoutHold" FROM "OrderDelivery" WHERE id = '${course4.courseId}'`)) === 'REVIEW'
+);
+const situation = (await j(await get('/api/drivers/payouts', D)))?.data;
+check('le livreur le voit « en examen », pas dû', situation?.coursesEnExamen === 1 && situation?.coursesDues === 0, JSON.stringify(situation)?.slice(0, 200));
+
+const idD = await sqlScalaire(`SELECT "driverId" FROM "OrderDelivery" WHERE id = '${course4.courseId}'`);
+const periode = { periodStart: new Date(Date.now() - 3600_000).toISOString(), periodEnd: new Date(Date.now() + 3600_000).toISOString() };
+const avantDecision = await post('/api/superowner/payouts/draw', { ...periode, driverId: idD }, TP);
+check('aucun relevé ne la paie avant la décision', avantDecision.status === 400, `statut ${avantDecision.status}`);
+
+const aExaminer = (await incidents('ouverts')).find((i) => i.course.id === course4.courseId && i.type === 'DEPOT_CONTESTE');
+check('la plateforme voit le dépôt à examiner, photo comprise', aExaminer?.course?.actions?.depot === true && Boolean(aExaminer?.course?.depot?.photo));
+const fermeture = await post(`/api/superowner/delivery-incidents/${aExaminer?.id}/clore`, { resolution: 'Dépôt regardé' }, TP);
+check('il ne se clôt pas sans décision', fermeture.status === 409, `statut ${fermeture.status}`);
+
+const validation = await post(`/api/superowner/delivery-incidents/courses/${course4.courseId}/depot`, { decision: 'VALIDER', motif: 'Photo devant la bonne porte' }, TP);
+check('la plateforme valide le dépôt', validation.status === 200, `statut ${validation.status}`);
+const apresDecision = await post('/api/superowner/payouts/draw', { ...periode, driverId: idD }, TP);
+check('la course entre alors dans un relevé', apresDecision.status === 201, `statut ${apresDecision.status}`);
+
+titre('Parti pendant l’attente : plus de dépôt en photo');
+const course5 = await enRoute('Course 5');
+check('l’attente se lance à la porte', (await attendreALaPorte(course5.courseId)) === 200);
+await patch('/api/drivers/location', LOIN, D);
+await patch('/api/drivers/location', CHEZ_LE_CLIENT, D);
+const depot5 = await deposer(course5.courseId);
+check(
+  'revenu à la porte, le dépôt en photo lui est refusé',
+  depot5.status === 409 && (await j(depot5))?.code === 'LEFT_DURING_WAIT',
+  `statut ${depot5.status}`
+);
+const remise5 = await patch(`/api/drivers/deliveries/${course5.courseId}`, { status: 'DELIVERED', code: await codeDeRemise(course5.courseId) }, D);
+check('le code du client, lui, reste possible', remise5.status === 200, `statut ${remise5.status}`);
+
+titre('« Je n’ai pas reçu ma commande »');
+const course6 = await enRoute('Course 6');
+await attendreALaPorte(course6.courseId);
+check('un dépôt sans incident se fait normalement', (await deposer(course6.courseId)).status === 200);
+check(
+  'et se paie normalement',
+  (await sqlScalaire(`SELECT coalesce("payoutHold", 'aucun') FROM "OrderDelivery" WHERE id = '${course6.courseId}'`)) === 'aucun'
+);
+const suivi6 = await j(await lireSuivi(course6.orderId));
+check('le client peut le contester', suivi6?.reclamation?.possible === true, JSON.stringify(suivi6?.reclamation));
+
+const parLeCommerce = await post(`/api/orders/${course6.orderId}/reclamation-livraison`, {}, T);
+check('le commerce ne réclame pas à la place du client', parLeCommerce.status === 404, `statut ${parLeCommerce.status}`);
+const reclamation = await post(
+  `/api/orders/${course6.orderId}/reclamation-livraison?t=${encodeURIComponent(jetonDeSuivi(course6.orderId))}`,
+  { message: 'Rien devant ma porte' }
+);
+check('le client réclame avec son lien de suivi', reclamation.status === 200, `statut ${reclamation.status}`);
+const encore = await post(`/api/orders/${course6.orderId}/reclamation-livraison?t=${encodeURIComponent(jetonDeSuivi(course6.orderId))}`, {});
+check('une seule fois', encore.status === 409, `statut ${encore.status}`);
+check(
+  'le paiement du livreur est suspendu',
+  (await sqlScalaire(`SELECT "payoutHold" FROM "OrderDelivery" WHERE id = '${course6.courseId}'`)) === 'REVIEW'
+);
+
+const refusDepot = await post(`/api/superowner/delivery-incidents/courses/${course6.courseId}/depot`, { decision: 'REFUSER', motif: 'Photo prise ailleurs' }, TP);
+const bilanRefus = (await j(refusDepot))?.data;
+check('la plateforme refuse le dépôt', refusDepot.status === 200 && bilanRefus?.suspendu === true, JSON.stringify(bilanRefus));
+check(
+  'la course ne sera jamais payée',
+  (await sqlScalaire(`SELECT "payoutHold" FROM "OrderDelivery" WHERE id = '${course6.courseId}'`)) === 'REFUSED'
+);
+check(
+  'la commande est annulée, livraison échouée, toujours due au commerçant',
+  (await sqlScalaire(`SELECT status || '/' || "rejectionReason" FROM "Order" WHERE id = '${course6.orderId}'`)) === 'REJECTED/DELIVERY_FAILED'
+);
+check(
+  'le geste est journalisé',
+  Number(await sqlScalaire(`SELECT count(*) FROM "SystemAuditLog" WHERE action = 'REFUSE_DELIVERY_DEPOSIT' AND target = '${course6.courseId}'`)) === 1
 );
 
 await terminer();

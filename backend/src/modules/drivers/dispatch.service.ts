@@ -4,7 +4,7 @@ import { ApiError } from "../../middleware/errorHandler";
 import { distanceKm, estUnPoint, Point } from "../../utils/geo";
 import { emitDeliveryUpdate, emitDriverEvent } from "../realtime/socket";
 import { positionLivreurVisible } from "../orders/suivi-commande.service";
-import { genererCode } from "./delivery-proof.service";
+import { genererCode, quitteLAdressePendantLAttente } from "./delivery-proof.service";
 import { obfusquerAdresse } from "../../utils/address-obfuscation";
 import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { randomUUID } from "crypto";
@@ -1008,8 +1008,21 @@ export class DispatchService {
           deliveryLat: true,
           deliveryLng: true,
           nearCustomerNotifiedAt: true,
+          customerWaitStartedAt: true,
+          customerWaitLeftAt: true,
         },
       });
+
+      // Parti pendant l'attente du client : la marque reste, même s'il
+      // revient — le dépôt en photo ne lui est plus ouvert (voir
+      // exigerResteChezClient).
+      if (!course.customerWaitLeftAt && quitteLAdressePendantLAttente(position, course)) {
+        await db.orderDelivery.updateMany({
+          where: { id: course.id, customerWaitLeftAt: null },
+          data: { customerWaitLeftAt: maintenant },
+        });
+        logger.warn("Driver left the customer's address during the wait", { deliveryId: course.id, driverId });
+      }
 
       // Même règle que GET /orders/:id/delivery : la position du livreur ne
       // part vers le salon de la commande qu'en route vers le client.

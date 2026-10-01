@@ -242,6 +242,20 @@ le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
   course échouée **rembourse le client** (paiement en ligne, idempotent) et
   **suspend le livreur** par défaut, ses courses encore au commerce
   reproposées ; deux cases permettent de s'en dispenser
+- **Dépôt en photo sous contrôle** : un livreur vu à plus de 500 m de
+  l'adresse pendant l'attente (`OrderDelivery.customerWaitLeftAt`, relevé à
+  chaque position) ne peut plus déposer en photo (`LEFT_DURING_WAIT`), le code
+  du client reste possible. Un dépôt en photo fait pendant un incident de
+  livraison, ou contesté par le client (« Je n'ai pas reçu ma commande »,
+  48 h, une fois : `POST /api/orders/:id/reclamation-livraison`), suspend le
+  paiement de la course (`payoutHold = REVIEW`) jusqu'à la décision de la
+  plateforme : validé, il est payé avec le relevé de la semaine de la
+  validation (`payoutHoldReleasedAt`) ; refusé (`REFUSED`), jamais payé,
+  commande annulée, client remboursé, livreur suspendu
+- **Livraison échouée** (course échouée ou dépôt refusé) : la commande passe à
+  `REJECTED`, motif `DELIVERY_FAILED`, et reste **due au commerçant** comme
+  une vente (ligne 130 du relevé) : la plateforme rembourse le client et
+  absorbe la perte. Elle ne compte pas dans les refus du commerce
 - **Le client voit le retard** sur son suivi (`/track`, `/client/orders/:id`,
   application client) : champ `retard` (`LIVRAISON` ou `NOUVEAU_LIVREUR`,
   `retard-livraison.ts`), relu en base et poussé en direct, sans détail sur
@@ -465,7 +479,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 57 | **1906** |
+| **API** (`backend/scripts/verification/`) | 57 | **1933** |
 | **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
 
 Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1841

@@ -15,11 +15,13 @@ import { lienDeSuivi } from "../orders/suivi-commande.service";
 import { prevenirPlateforme } from "../monitoring/vigie.service";
 import { DispatchService, MAX_SOLLICITATIONS, STATUTS_EN_COURSE } from "./dispatch.service";
 import { GPS_PERDU_APRES_MS } from "./driver-availability.service";
-import { ATTENTE_CLIENT_MS } from "./delivery-proof.service";
+import { presenter } from "../files/fichiers-prives.service";
+import { ATTENTE_CLIENT_MS, RAYON_ATTENTE_CLIENT_KM } from "./delivery-proof.service";
 import { DriverApprovalService } from "./driver-approval.service";
 import { paymentService } from "../payments/payment.service";
 import { emitWebhook } from "../webhooks/webhook.service";
 import { MOTIF_LIVRAISON_ECHOUEE } from "../orders/order-acceptance.service";
+import { INCIDENTS_POUR_LE_CLIENT, reclamationPourLeClient } from "./retard-livraison";
 
 /**
  * Surveillance des courses acceptées.
@@ -85,7 +87,7 @@ export const SEUILS_COURSE = {
    * Pendant l'attente du client, le livreur doit rester devant chez lui :
    * au-delà, il est reparti (marge pour le GPS au pied d'un immeuble).
    */
-  rayonAttenteClientKm: 0.5,
+  rayonAttenteClientKm: RAYON_ATTENTE_CLIENT_KM,
   /** Attente lancée, position perdue : marge après les six minutes avant de s'inquiéter. */
   graceAttenteSansPositionMin: 10,
   /** Constat d'une commande dans le sac encore ouvert : la plateforme est relancée à ce rythme. */
@@ -98,7 +100,17 @@ export type TypeIncident =
   | "RETARD_LIVRAISON"
   | "ECART_LIVRAISON"
   | "COURSE_RETIREE"
-  | "COURSE_ECHOUEE";
+  | "COURSE_ECHOUEE"
+  // Dépôt en photo fait pendant un incident de livraison : paiement suspendu.
+  | "DEPOT_CONTESTE"
+  // Le client dit ne pas avoir reçu sa commande : paiement suspendu.
+  | "RECLAMATION_CLIENT"
+  // La plateforme a tranché un dépôt contesté.
+  | "DEPOT_VALIDE"
+  | "DEPOT_REFUSE";
+
+/** Constats qui suspendent le paiement de la course et attendent une décision. */
+const TYPES_DEPOT_EN_EXAMEN = ["DEPOT_CONTESTE", "RECLAMATION_CLIENT"];
 
 /** AVERTIR : le livreur seul. RETIRER : la course part à un autre. ALERTER : tout le monde. */
 export interface Constat {
@@ -1070,6 +1082,290 @@ export class SurveillanceCoursesService {
   }
 
   /**
+   * Un dépôt en photo vient de clore la course : s'il s'est fait pendant un
+   * incident de livraison (retard, livreur hors trajet), le paiement au
+   * livreur est suspendu jusqu'à la décision de la plateforme.
+   *
+   * C'est le garde-fou de dernier recours : un livreur parti avec la commande
+   * qui parvient à la « déposer » n'est pas payé sans examen.
+   */
+  static async apresDepotPhoto(deliveryId: string) {
+    const course = await db.orderDelivery.findUnique({
+      where: { id: deliveryId },
+      select: { ...COURSE_EN_COURS, proofType: true, payoutId: true, payoutHold: true },
+    });
+    if (!course || course.status !== "DELIVERED" || course.proofType !== "PHOTO") return false;
+    if (!course.driverId || !course.assignedAt || course.payoutId || course.payoutHold) return false;
+
+    const incidents = await db.deliveryIncident.findMany({
+      where: {
+        deliveryId,
+        driverId: course.driverId,
+        assignedAt: course.assignedAt,
+        phase: "LIVRAISON",
+        closedAt: null,
+        type: { in: ["RETARD_LIVRAISON", "ECART_LIVRAISON"] },
+      },
+      select: { detail: true },
+    });
+    if (incidents.length === 0) return false;
+
+    const motif = `Dépôt en photo pendant un incident de livraison : ${incidents.map((i) => i.detail).join(" ")}`;
+    await this.suspendrePaiement(course, "DEPOT_CONTESTE", motif);
+    return true;
+  }
+
+  /**
+   * « Je n'ai pas reçu ma commande » : le client conteste un dépôt en photo.
+   * Le paiement au livreur est suspendu (s'il n'est pas déjà sur un relevé)
+   * et la plateforme tranche.
+   *
+   * Une seule réclamation par course : la seconde est refusée.
+   */
+  static async reclamationClient(orderId: string, message: string | undefined) {
+    const course = await db.orderDelivery.findUnique({
+      where: { orderId },
+      select: {
+        ...COURSE_EN_COURS,
+        proofType: true,
+        deliveryTime: true,
+        payoutId: true,
+        payoutHold: true,
+        incidents: INCIDENTS_POUR_LE_CLIENT,
+      },
+    });
+    if (!course) throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
+
+    const etat = reclamationPourLeClient(course);
+    if (etat.deposee) {
+      throw new ApiError(409, "Votre réclamation est déjà enregistrée : notre équipe revient vers vous.", "CLAIM_ALREADY_FILED");
+    }
+    if (!etat.possible || !course.driverId || !course.assignedAt) {
+      throw new ApiError(
+        409,
+        "Cette commande ne peut plus être contestée ici : contactez le support.",
+        "CLAIM_NOT_POSSIBLE"
+      );
+    }
+
+    const precision = message?.trim().slice(0, 500);
+    const motif = `Le client dit ne pas avoir reçu sa commande.${precision ? ` « ${precision} »` : ""}`;
+    await this.suspendrePaiement(course, "RECLAMATION_CLIENT", motif);
+    return { deposee: true };
+  }
+
+  /** Suspend le paiement de la course, trace le constat, prévient la plateforme. */
+  private static async suspendrePaiement(
+    course: {
+      id: string;
+      orderId: string;
+      driverId: string | null;
+      assignedAt: Date | null;
+      payoutId: string | null;
+      order: { store: { name: string } | null } | null;
+      driver: { name: string } | null;
+    },
+    type: "DEPOT_CONTESTE" | "RECLAMATION_CLIENT",
+    motif: string
+  ) {
+    if (!course.driverId || !course.assignedAt) return;
+
+    // Déjà sur un relevé : le paiement ne se suspend plus, la plateforme
+    // tranche quand même (remboursement, suspension du livreur).
+    if (!course.payoutId) {
+      await db.orderDelivery.updateMany({
+        where: { id: course.id, payoutId: null, payoutHold: null },
+        data: { payoutHold: "REVIEW", payoutHoldReason: motif },
+      });
+    }
+
+    const nouveau = await this.enregistrer(
+      course.id,
+      course.driverId,
+      course.assignedAt,
+      { type, minutes: 0, distanceKm: null, detail: motif },
+      "PICKED_UP"
+    );
+    if (!nouveau) return;
+
+    const numero = numeroDe(course.orderId);
+    enArrierePlan(
+      prevenirPlateforme({
+        sujet: `🟠 [ZupEat] ${type === "RECLAMATION_CLIENT" ? "Commande non reçue" : "Dépôt à examiner"} — commande #${numero}`,
+        texte: `${course.driver?.name || "Le livreur"} : ${motif}\nCommerce : ${course.order?.store?.name || "?"}.\n${
+          course.payoutId ? "La course est déjà sur un relevé de versement." : "Le paiement du livreur est suspendu jusqu'à votre décision."
+        }`,
+        chemin: "/superowner/incidents-livraison",
+        bouton: "Examiner le dépôt",
+      })
+    );
+  }
+
+  /**
+   * La plateforme tranche un dépôt contesté.
+   *
+   * VALIDER : la course est payée avec le relevé de la semaine en cours.
+   * REFUSER : la commande est jugée non livrée — la course n'est jamais payée,
+   * la commande est annulée pour le client (motif DELIVERY_FAILED, toujours
+   * due au commerçant), le client remboursé et le livreur suspendu, sauf cases
+   * décochées.
+   */
+  static async deciderDepot(
+    deliveryId: string,
+    options: {
+      par: { userId: string };
+      decision: "VALIDER" | "REFUSER";
+      motif: string;
+      rembourser?: boolean;
+      suspendre?: boolean;
+    }
+  ) {
+    const course = await db.orderDelivery.findUnique({
+      where: { id: deliveryId },
+      select: { ...COURSE_EN_COURS, payoutId: true, payoutHold: true, driverPayout: true },
+    });
+    if (!course) throw new ApiError(404, "Course introuvable", "DELIVERY_NOT_FOUND");
+
+    const enExamen = await db.deliveryIncident.count({
+      where: { deliveryId, closedAt: null, type: { in: TYPES_DEPOT_EN_EXAMEN } },
+    });
+    if (course.status !== "DELIVERED" || !course.driverId || !course.assignedAt || !course.driver || enExamen === 0) {
+      throw new ApiError(409, "Aucun dépôt à examiner sur cette course.", "NO_DEPOSIT_UNDER_REVIEW");
+    }
+
+    const driverId = course.driverId;
+    const maintenant = new Date();
+    const auteur = auteurDe(options.par);
+    const valide = options.decision === "VALIDER";
+    const resolution = valide ? `Dépôt validé : ${options.motif}` : `Dépôt refusé, commande non livrée : ${options.motif}`;
+
+    const tranche = await db.$transaction(async (tx) => {
+      // Sous condition : deux décisions simultanées ne s'appliquent pas deux fois.
+      const { count } = await tx.deliveryIncident.updateMany({
+        where: { deliveryId, closedAt: null },
+        data: { closedAt: maintenant, closedBy: auteur, resolution },
+      });
+      if (count === 0) return false;
+
+      if (course.payoutHold === "REVIEW") {
+        await tx.orderDelivery.update({
+          where: { id: deliveryId },
+          data: valide
+            ? { payoutHold: null, payoutHoldReleasedAt: maintenant }
+            : { payoutHold: "REFUSED", payoutHoldReason: options.motif },
+        });
+      }
+
+      if (!valide) {
+        await tx.order.updateMany({
+          where: { id: course.orderId, status: { in: ["COMPLETED", "READY"] } },
+          data: { status: "REJECTED", rejectedAt: maintenant, rejectionReason: MOTIF_LIVRAISON_ECHOUEE, rejectionNote: null },
+        });
+        // Les compteurs du livreur avaient compté cette course à la remise.
+        // Ce ne sont pas des mouvements d'argent : le relevé, lui, ne la
+        // prendra jamais (payoutHold REFUSED).
+        await tx.courier.update({
+          where: { id: driverId },
+          data: {
+            totalDeliveries: { decrement: 1 },
+            totalEarnings: { decrement: Number(course.driverPayout ?? 0) },
+          },
+        });
+      }
+
+      await tx.deliveryIncident.createMany({
+        data: [
+          {
+            deliveryId,
+            driverId,
+            assignedAt: course.assignedAt!,
+            type: valide ? "DEPOT_VALIDE" : "DEPOT_REFUSE",
+            phase: "LIVRAISON",
+            detail: options.motif,
+            closedAt: maintenant,
+            closedBy: auteur,
+            resolution,
+          },
+        ],
+        skipDuplicates: true,
+      });
+      return true;
+    });
+
+    if (!tranche) throw new ApiError(409, "Ce dépôt vient d'être tranché : rechargez la page.", "DELIVERY_CHANGED");
+
+    logger.warn("Dépôt contesté tranché", { deliveryId, driverId, decision: options.decision, par: auteur });
+    emitSupportEvent("incident-livraison", { deliveryId, driverId, type: valide ? "DEPOT_VALIDE" : "DEPOT_REFUSE" });
+
+    if (valide) {
+      enArrierePlan(
+        Notifier.pushLivreur(driverId, {
+          title: "Dépôt validé",
+          body: "La plateforme a validé votre dépôt : la course sera payée avec votre prochain relevé.",
+          url: "/driver/earnings",
+          tag: "depot",
+        })
+      );
+      return { deliveryId, driverId, orderId: course.orderId, decision: options.decision, dejaSurUnReleve: Boolean(course.payoutId) };
+    }
+
+    const remboursement = options.rembourser === false ? "NON_DEMANDE" : await this.rembourser(course.orderId, options.motif);
+    const suspension = options.suspendre === false ? null : await this.suspendre(driverId, options);
+
+    enArrierePlan(
+      Notifier.pushLivreur(driverId, {
+        title: "Dépôt refusé",
+        body: course.payoutId
+          ? `La plateforme a jugé la commande non livrée. La course était déjà sur un relevé : le support va vous contacter. Motif : ${options.motif}`
+          : `La plateforme a jugé la commande non livrée : la course ne sera pas payée. Motif : ${options.motif}`,
+        url: "/driver",
+        tag: "depot",
+      })
+    );
+    emitOrderUpdate(course.orderId, "REJECTED", { title: "Commande non livrée", message: "Votre réclamation est acceptée." });
+    if (course.order) {
+      emitWebhook("order.status_changed", {
+        orderId: course.orderId,
+        storeId: course.order.storeId,
+        previousStatus: course.order.status,
+        status: "REJECTED",
+      });
+      const numero = numeroDe(course.orderId);
+      enArrierePlan(
+        this.prevenirBoutique(
+          course.orderId,
+          course.order,
+          "DELIVERY_CANCELLED",
+          "Commande non livrée",
+          `La commande #${numero} n'est pas arrivée chez le client. La plateforme s'occupe du client et vous la paie comme une vente.`
+        )
+      );
+      enArrierePlan(
+        this.prevenirClient(
+          course.orderId,
+          course.order.customerEmail,
+          "DELIVERY_CANCELLED",
+          "Votre réclamation est acceptée",
+          remboursement === "REMBOURSEE" || remboursement === "DEJA_REMBOURSEE"
+            ? "Nous avons reconnu que votre commande ne vous a pas été remise. Vous êtes intégralement remboursé : le montant réapparaît sur votre compte sous quelques jours, selon votre banque."
+            : "Nous avons reconnu que votre commande ne vous a pas été remise. Notre équipe revient vers vous pour la suite."
+        )
+      );
+    }
+
+    return {
+      deliveryId,
+      driverId,
+      orderId: course.orderId,
+      decision: options.decision,
+      dejaSurUnReleve: Boolean(course.payoutId),
+      remboursement,
+      suspendu: Boolean(suspension?.suspendu),
+      coursesRetirees: suspension?.coursesRetirees ?? 0,
+    };
+  }
+
+  /**
    * Referme les constats dont la course est terminée pour ce livreur :
    * livrée, échouée, ou passée à un autre. Ce qui reste ouvert attend la
    * plateforme.
@@ -1079,9 +1375,10 @@ export class SurveillanceCoursesService {
       where: { closedAt: null },
       select: {
         id: true,
+        type: true,
         driverId: true,
         assignedAt: true,
-        delivery: { select: { status: true, driverId: true, assignedAt: true } },
+        delivery: { select: { status: true, driverId: true, assignedAt: true, payoutHold: true } },
       },
       take: 500,
     });
@@ -1089,6 +1386,13 @@ export class SurveillanceCoursesService {
     let closes = 0;
     for (const incident of ouverts) {
       const c = incident.delivery;
+      // Livrée mais dépôt en examen : les constats restent sous les yeux de la
+      // plateforme jusqu'à sa décision (deciderDepot).
+      if (c.status === "DELIVERED" && c.payoutHold === "REVIEW") continue;
+      // Un dépôt contesté ne se referme que par une décision, même quand la
+      // course était déjà sur un relevé (rien à suspendre, mais un client à
+      // rembourser ou un livreur à examiner).
+      if (TYPES_DEPOT_EN_EXAMEN.includes(incident.type)) continue;
       const memeAttribution =
         c.driverId === incident.driverId && c.assignedAt?.getTime() === incident.assignedAt.getTime();
       const resolution = !memeAttribution
@@ -1114,6 +1418,11 @@ export class SurveillanceCoursesService {
     const incident = await db.deliveryIncident.findUnique({ where: { id: incidentId } });
     if (!incident) throw new ApiError(404, "Incident introuvable", "INCIDENT_NOT_FOUND");
     if (incident.closedAt) throw new ApiError(409, "Cet incident est déjà clos", "INCIDENT_CLOSED");
+    // Un dépôt contesté se tranche (valider ou refuser) : le marquer « traité »
+    // laisserait le paiement suspendu, ou le client sans réponse.
+    if (TYPES_DEPOT_EN_EXAMEN.includes(incident.type)) {
+      throw new ApiError(409, "Ce dépôt attend votre décision : validez-le ou refusez-le.", "DEPOSIT_DECISION_REQUIRED");
+    }
 
     const clos = await db.deliveryIncident.update({
       where: { id: incidentId },
@@ -1157,6 +1466,13 @@ export class SurveillanceCoursesService {
             driverId: true,
             assignedAt: true,
             pickupTime: true,
+            deliveryTime: true,
+            proofType: true,
+            proofPhoto: true,
+            proofNote: true,
+            payoutHold: true,
+            payoutHoldReason: true,
+            payoutId: true,
             order: {
               select: {
                 customerName: true,
@@ -1200,7 +1516,15 @@ export class SurveillanceCoursesService {
           actions: {
             retirer: memeAttribution && i.delivery.status === "ACCEPTED",
             echec: memeAttribution && i.delivery.status === "PICKED_UP",
+            // Dépôt contesté encore ouvert : valider ou refuser.
+            depot: memeAttribution && !i.closedAt && i.delivery.status === "DELIVERED" && TYPES_DEPOT_EN_EXAMEN.includes(i.type),
           },
+          // Le paiement au livreur : suspendu (REVIEW), refusé (REFUSED), ou normal.
+          paiement: { blocage: i.delivery.payoutHold, motif: i.delivery.payoutHoldReason, surUnReleve: Boolean(i.delivery.payoutId) },
+          depot:
+            i.delivery.proofType === "PHOTO"
+              ? { photo: presenter(i.delivery.proofPhoto), note: i.delivery.proofNote, le: i.delivery.deliveryTime }
+              : null,
           boutique: i.delivery.order?.store ?? null,
           client: i.delivery.order
             ? {
