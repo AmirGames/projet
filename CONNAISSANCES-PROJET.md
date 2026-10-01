@@ -232,6 +232,16 @@ le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
   de détour, **alerte** au livreur, au commerce, au client et à la plateforme,
   sans rien retirer. Chaque constat est unique par attribution
   (`DeliveryIncident`) ; un livreur en incident ne reçoit pas de course en plus
+- **Commande partie avec le livreur** : l'attente du client injoignable (qui
+  ouvre le dépôt en photo) ne se lance qu'à moins de 250 m de l'adresse, sur
+  une position fraîche (`exigerPresenceChezClient`, `NOT_AT_CUSTOMER`,
+  `POSITION_UNKNOWN`) ; un livreur qui quitte l'adresse pendant l'attente
+  redevient surveillé (écart signalé au bout de 5 min). Tant qu'un constat
+  « commande dans le sac » reste ouvert, la plateforme et le livreur sont
+  **relancés toutes les 15 min** (`DeliveryIncident.alertCount`). Déclarer la
+  course échouée **rembourse le client** (paiement en ligne, idempotent) et
+  **suspend le livreur** par défaut, ses courses encore au commerce
+  reproposées ; deux cases permettent de s'en dispenser
 - **Le client voit le retard** sur son suivi (`/track`, `/client/orders/:id`,
   application client) : champ `retard` (`LIVRAISON` ou `NOUVEAU_LIVREUR`,
   `retard-livraison.ts`), relu en base et poussé en direct, sans détail sur
@@ -455,7 +465,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 57 | **1896** |
+| **API** (`backend/scripts/verification/`) | 57 | **1906** |
 | **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
 
 Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1841

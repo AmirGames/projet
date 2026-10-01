@@ -5,7 +5,12 @@ jest.mock("../../../config/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
-import { ATTENTE_CLIENT_MS, exigerAttenteTerminee, finAttente } from "../delivery-proof.service";
+import {
+  ATTENTE_CLIENT_MS,
+  exigerAttenteTerminee,
+  exigerPresenceChezClient,
+  finAttente,
+} from "../delivery-proof.service";
 
 const debut = new Date("2026-09-27T12:00:00Z");
 
@@ -28,5 +33,28 @@ describe("attente du client injoignable", () => {
   it("accepte la photo une fois l'attente écoulée", () => {
     const apres = new Date(debut.getTime() + ATTENTE_CLIENT_MS);
     expect(() => exigerAttenteTerminee({ customerWaitStartedAt: debut }, apres)).not.toThrow();
+  });
+});
+
+describe("présence chez le client pour lancer l'attente", () => {
+  const adresse = { deliveryLat: 45.78, deliveryLng: 4.86 };
+
+  it("l'accepte devant chez le client, GPS approximatif compris", () => {
+    // ~150 m au nord de l'adresse
+    expect(() => exigerPresenceChezClient({ latitude: 45.7813, longitude: 4.86 }, adresse)).not.toThrow();
+  });
+
+  it("la refuse loin de l'adresse, en disant à quelle distance", () => {
+    expect(() => exigerPresenceChezClient({ latitude: 45.764, longitude: 4.8357 }, adresse)).toThrow(
+      /à 2,6 km de l'adresse du client/
+    );
+  });
+
+  it("la refuse sans position connue : couper le GPS ne doit pas ouvrir le dépôt", () => {
+    expect(() => exigerPresenceChezClient(null, adresse)).toThrow(/activez la localisation/);
+  });
+
+  it("laisse passer une adresse jamais située, qu'on ne peut pas vérifier", () => {
+    expect(() => exigerPresenceChezClient(null, { deliveryLat: null, deliveryLng: null })).not.toThrow();
   });
 });

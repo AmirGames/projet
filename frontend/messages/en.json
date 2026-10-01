@@ -2142,7 +2142,7 @@
     "title": "Delivery incidents",
     "description": "Drivers who don't show up at the store, drift away or don't deliver: what monitoring has detected.",
     "rulePickup": "Order at the store: the driver is warned after 20 min (or 5 min away from their route), then the delivery goes to another driver after 30 min (or 10 min off route).",
-    "ruleDelivery": "Order picked up: after 30 min (more depending on distance and batch), or 5 min off route, the driver, store, customer and platform are notified. The decision is yours.",
+    "ruleDelivery": "Order picked up: after 30 min (more depending on distance and batch), or 5 min off route — including a driver leaving the customer's address during the wait —, the driver, store, customer and platform are notified, then the platform is reminded every 15 min while the incident stays open. The decision is yours.",
     "refresh": "Refresh",
     "tabOpen": "To handle",
     "tabAll": "All",
@@ -2169,7 +2169,7 @@
     "resolutionPlaceholder": "What was done",
     "confirm": {
       "retirer": "The order is still at the store: the delivery will be taken from this driver and offered to another.",
-      "echec": "The order left with the driver: the delivery will be closed as failed and the driver released, unpaid. Then refund the customer from billing.",
+      "echec": "The order left with the driver: the delivery will be closed as failed and the driver released, unpaid.",
       "clore": "The incident will be marked as handled."
     },
     "type": {
@@ -2186,6 +2186,18 @@
       "PICKED_UP": "on the way",
       "DELIVERED": "delivered",
       "FAILED": "failed"
+    },
+    "optionRefund": "Refund the customer (online payment)",
+    "optionSuspend": "Suspend the driver pending review",
+    "reminders": "Still unresolved: platform reminded {count, plural, one {# time} other {# times}}",
+    "driverSuspended": "Suspended",
+    "suspended": "Driver suspended{courses, plural, =0 {.} one {, # delivery at the store handed to another driver.} other {, # deliveries at the store handed to other drivers.}}",
+    "refund": {
+      "REMBOURSEE": "Customer refunded.",
+      "DEJA_REMBOURSEE": "The customer was already refunded.",
+      "SANS_PAIEMENT_EN_LIGNE": "No online payment to refund.",
+      "ECHEC": "The refund failed: redo it from billing.",
+      "NON_DEMANDE": "No refund requested."
     }
   },
   "driverCourseAlerts": {

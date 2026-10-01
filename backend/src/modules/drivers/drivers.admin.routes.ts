@@ -394,8 +394,11 @@ router.post(
  * POST /superowner/delivery-incidents/courses/:deliveryId/echec - Déclarer la course échouée
  *
  * Commande partie avec le livreur (PICKED_UP) et qui n'arrivera pas : la
- * course passe à FAILED, le livreur est libéré et n'est pas payé. Le
- * remboursement du client reste à faire depuis la facturation.
+ * course passe à FAILED, le livreur est libéré et n'est pas payé.
+ * Body : { motif, rembourser = true, suspendre = true }. Rembourse le client
+ * (paiement en ligne) et suspend le livreur, ses courses encore au commerce
+ * reproposées. Réponse : `remboursement` (REMBOURSEE, DEJA_REMBOURSEE,
+ * SANS_PAIEMENT_EN_LIGNE, ECHEC, NON_DEMANDE), `suspendu`, `coursesRetirees`.
  */
 router.post(
   "/delivery-incidents/courses/:deliveryId/echec",
@@ -403,10 +406,19 @@ router.post(
   isSuperOwner,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const body = motif.parse(req.body);
+      const body = motif
+        .extend({
+          // Cochés par défaut : un client qui n'a rien reçu est remboursé, et
+          // le livreur ne roule plus tant que l'équipe n'a pas examiné le cas.
+          rembourser: z.boolean().default(true),
+          suspendre: z.boolean().default(true),
+        })
+        .parse(req.body);
       const resultat = await SurveillanceCoursesService.declarerEchec(req.params.deliveryId as string, {
         par: { userId: req.userId as string },
         motif: body.motif,
+        rembourser: body.rembourser,
+        suspendre: body.suspendre,
       });
 
       await journaliser(req, "FAIL_DELIVERY", req.params.deliveryId as string, {
@@ -415,6 +427,9 @@ router.post(
         avant: { status: "PICKED_UP" },
         apres: { status: "FAILED" },
         motif: body.motif,
+        remboursement: resultat.remboursement,
+        livreurSuspendu: resultat.suspendu,
+        coursesRetirees: resultat.coursesRetirees,
       });
 
       res.json({ success: true, data: resultat });

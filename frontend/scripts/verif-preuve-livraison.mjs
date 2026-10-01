@@ -327,6 +327,10 @@ const seconde = await courseAuSeuil();
 await page.goto(`${SITE}/driver/deliveries/${seconde.courseId}`);
 await page.waitForTimeout(3000);
 check('pas de photo avant l’attente du client', (await page.locator('#photo-depot').count()) === 0, 'déjà proposée');
+// L'attente ne se lance que devant chez le client : le livreur s'y rend.
+const CHEZ_LE_CLIENT = { latitude: 45.7801, longitude: 4.8601 };
+await contexte.setGeolocation(CHEZ_LE_CLIENT);
+await appeler('/api/drivers/location', { method: 'PATCH', jeton: D, corps: CHEZ_LE_CLIENT });
 await page.click('button:has-text("Lancer l")');
 await page.waitForTimeout(1500);
 check('le compte à rebours s’affiche', /Attendez encore/.test(await page.locator('body').innerText()));

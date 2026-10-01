@@ -14,6 +14,9 @@ import { lienDeSuivi } from "../orders/suivi-commande.service";
 import { prevenirPlateforme } from "../monitoring/vigie.service";
 import { DispatchService, MAX_SOLLICITATIONS, STATUTS_EN_COURSE } from "./dispatch.service";
 import { GPS_PERDU_APRES_MS } from "./driver-availability.service";
+import { ATTENTE_CLIENT_MS } from "./delivery-proof.service";
+import { DriverApprovalService } from "./driver-approval.service";
+import { paymentService } from "../payments/payment.service";
 
 /**
  * Surveillance des courses acceptées.
@@ -75,6 +78,15 @@ export const SEUILS_COURSE = {
   margeLivraisonMin: 10,
   /** Chaque autre commande de la tournée à remettre en route. */
   minutesParAutreRemise: 10,
+  /**
+   * Pendant l'attente du client, le livreur doit rester devant chez lui :
+   * au-delà, il est reparti (marge pour le GPS au pied d'un immeuble).
+   */
+  rayonAttenteClientKm: 0.5,
+  /** Attente lancée, position perdue : marge après les six minutes avant de s'inquiéter. */
+  graceAttenteSansPositionMin: 10,
+  /** Constat d'une commande dans le sac encore ouvert : la plateforme est relancée à ce rythme. */
+  relanceAlerteMin: 15,
 };
 
 export type TypeIncident =
@@ -203,17 +215,37 @@ export function evaluerCourse(
   }
 
   if (course.status === "PICKED_UP") {
-    // À la porte, le client ne répond pas : l'attente a sa propre procédure.
-    if (course.customerWaitStartedAt) return { ecart: false, ecartKm: null, constats };
-
     const minutes = minutesDepuis(course.pickupTime ?? course.assignedAt, maintenant);
     const trajet = estUnPoint(commerce) && estUnPoint(client) ? distanceKm(commerce, client) : null;
     const delai = delaiLivraisonMin(trajet, course.autresRemises);
 
     let ecartKm: number | null = null;
-    if (position && trajet != null) {
+    let detailEcart = "";
+
+    if (course.customerWaitStartedAt) {
+      // À la porte, le client ne répond pas : l'attente a sa propre procédure,
+      // mais seulement tant que le livreur y est. Lancée devant chez le client
+      // (exigerPresenceChezClient), elle ne doit pas couvrir un livreur qui
+      // repart ensuite avec la commande.
+      const versClient = position && estUnPoint(client) ? distanceKm(position, client) : null;
+      if (versClient != null && versClient <= s.rayonAttenteClientKm) {
+        return { ecart: false, ecartKm: null, constats };
+      }
+      if (versClient == null) {
+        // Sans position, on lui laisse le temps de l'attente, plus une marge.
+        const finGrace =
+          course.customerWaitStartedAt.getTime() + ATTENTE_CLIENT_MS + s.graceAttenteSansPositionMin * 60000;
+        if (maintenant.getTime() < finGrace) return { ecart: false, ecartKm: null, constats };
+      } else {
+        ecartKm = Number(versClient.toFixed(2));
+        detailEcart = `A quitté l'adresse du client pendant l'attente : à ${km(versClient)} km`;
+      }
+    } else if (position && trajet != null) {
       const detour = distanceKm(position, commerce as Point) + distanceKm(position, client as Point) - trajet;
-      if (detour > s.ecartLivraisonKm) ecartKm = Number(detour.toFixed(2));
+      if (detour > s.ecartLivraisonKm) {
+        ecartKm = Number(detour.toFixed(2));
+        detailEcart = `Hors du trajet vers le client : ${km(ecartKm)} km de détour`;
+      }
     }
     const ecart = ecartKm != null;
 
@@ -233,7 +265,7 @@ export function evaluerCourse(
         action: "ALERTER",
         minutes,
         distanceKm: ecartKm,
-        detail: `Hors du trajet vers le client : ${km(ecartKm!)} km de détour depuis ${ecartMin} min.`,
+        detail: `${detailEcart} depuis ${ecartMin} min.`,
       });
     }
 
@@ -294,7 +326,7 @@ export class SurveillanceCoursesService {
    * attribution ne renvoie rien, une course déjà retirée ne l'est pas deux fois.
    */
   static async surveiller(maintenant = new Date()) {
-    const bilan = { averties: 0, retirees: 0, alertes: 0, closes: 0 };
+    const bilan = { averties: 0, retirees: 0, alertes: 0, closes: 0, relances: 0 };
     const { maxRadiusKm } = await DispatchService.reglages();
 
     const courses = await db.orderDelivery.findMany({
@@ -377,7 +409,111 @@ export class SurveillanceCoursesService {
     }
 
     bilan.closes = await this.refermerTerminees(maintenant);
+    bilan.relances = await this.relancerAlertes(maintenant);
     return bilan;
+  }
+
+  /**
+   * Relance la plateforme tant qu'une commande partie avec le livreur reste
+   * sans solution.
+   *
+   * Une alerte unique pouvait se perdre dans une boîte de réception, ou être
+   * marquée « traitée » sans que rien ne soit fait : la commande restait dans
+   * le sac du livreur. Toutes les SEUILS_COURSE.relanceAlerteMin minutes, tant
+   * que le constat est ouvert et la course toujours entre ses mains, l'équipe
+   * et le livreur sont relancés. Le client, lui, n'est pas relancé : il a déjà
+   * le retard sous les yeux sur son suivi.
+   *
+   * Une relance par course et par passage, posée sous condition : deux
+   * instances de l'API ne relancent pas deux fois.
+   */
+  static async relancerAlertes(maintenant = new Date()) {
+    const limite = new Date(maintenant.getTime() - SEUILS_COURSE.relanceAlerteMin * 60000);
+    const dues = {
+      closedAt: null,
+      phase: "LIVRAISON",
+      type: { in: ["RETARD_LIVRAISON", "ECART_LIVRAISON"] },
+      OR: [{ lastAlertAt: { lt: limite } }, { lastAlertAt: null, createdAt: { lt: limite } }],
+    };
+
+    const ouverts = await db.deliveryIncident.findMany({
+      where: dues,
+      orderBy: { createdAt: "asc" },
+      take: 100,
+      select: {
+        deliveryId: true,
+        driverId: true,
+        assignedAt: true,
+        detail: true,
+        alertCount: true,
+        createdAt: true,
+        delivery: {
+          select: {
+            orderId: true,
+            status: true,
+            driverId: true,
+            assignedAt: true,
+            order: { select: { store: { select: { name: true } } } },
+          },
+        },
+        driver: { select: { id: true, name: true, email: true, user: { select: { email: true } } } },
+      },
+    });
+
+    const vues = new Set<string>();
+    let relances = 0;
+    for (const incident of ouverts) {
+      const course = incident.delivery;
+      if (vues.has(incident.deliveryId)) continue;
+      vues.add(incident.deliveryId);
+
+      // Livrée, échouée ou passée à un autre : refermerTerminees s'en charge.
+      const memeAttribution =
+        course.status === "PICKED_UP" &&
+        course.driverId === incident.driverId &&
+        course.assignedAt?.getTime() === incident.assignedAt.getTime();
+      if (!memeAttribution) continue;
+
+      const { count } = await db.deliveryIncident.updateMany({
+        where: { ...dues, deliveryId: incident.deliveryId, driverId: incident.driverId, assignedAt: incident.assignedAt },
+        data: { lastAlertAt: maintenant, alertCount: { increment: 1 } },
+      });
+      if (count === 0) continue;
+      relances += 1;
+
+      const numero = numeroDe(course.orderId);
+      const depuis = minutesDepuis(incident.createdAt, maintenant);
+      const rang = incident.alertCount + 1;
+
+      logger.warn("Incident de course toujours ouvert : relance", { deliveryId: incident.deliveryId, rang, depuis });
+      emitSupportEvent("incident-livraison", { deliveryId: incident.deliveryId, driverId: incident.driverId, relance: rang });
+
+      enArrierePlan(
+        prevenirPlateforme({
+          sujet: `🔴 [ZupEat] Toujours sans solution — commande #${numero} (relance ${rang})`,
+          texte: `${incident.driver.name} : ${incident.detail}\nCommerce : ${course.order?.store?.name || "?"}.\nOuvert depuis ${depuis} min, la commande est toujours entre les mains du livreur.`,
+          chemin: "/superowner/incidents-livraison",
+          bouton: "Traiter l'incident",
+        })
+      );
+
+      const message = "Cette commande n'est toujours pas livrée. Livrez-la ou contactez le support sans attendre.";
+      emitDriverEvent(incident.driver.user?.email || incident.driver.email, "course-avertissement", {
+        deliveryId: incident.deliveryId,
+        orderId: course.orderId,
+        type: "RELANCE",
+        message,
+      });
+      enArrierePlan(
+        Notifier.pushLivreur(incident.driver.id, {
+          title: "Commande toujours pas livrée",
+          body: message,
+          url: `/driver/deliveries/${incident.deliveryId}`,
+          tag: "course-avertissement",
+        })
+      );
+    }
+    return relances;
   }
 
   /**
@@ -403,6 +539,9 @@ export class SurveillanceCoursesService {
           detail: constat.detail,
           minutes: constat.minutes,
           distanceKm: constat.distanceKm,
+          // La première alerte part avec le constat : les relances se comptent à partir d'elle.
+          lastAlertAt: new Date(),
+          alertCount: 1,
           ...(cloture
             ? { closedAt: new Date(), closedBy: auteurDe(cloture.par), resolution: cloture.resolution }
             : {}),
@@ -702,7 +841,17 @@ export class SurveillanceCoursesService {
    * remboursement du client se fait depuis la facturation, comme tout
    * remboursement.
    */
-  static async declarerEchec(deliveryId: string, options: { par: { userId: string }; motif: string }) {
+  static async declarerEchec(
+    deliveryId: string,
+    options: {
+      par: { userId: string };
+      motif: string;
+      /** Rembourser le client dans la foulée (paiement en ligne). */
+      rembourser?: boolean;
+      /** Suspendre le livreur en attendant que l'équipe examine le cas. */
+      suspendre?: boolean;
+    }
+  ) {
     const course = await db.orderDelivery.findUnique({ where: { id: deliveryId }, select: COURSE_EN_COURS });
     if (!course) throw new ApiError(404, "Course introuvable", "DELIVERY_NOT_FOUND");
 
@@ -778,6 +927,11 @@ export class SurveillanceCoursesService {
 
     emitDeliveryUpdate(course.orderId, { status: "FAILED", location: null });
 
+    // La course est close avant tout : un remboursement ou une suspension qui
+    // échoue ne la rouvre pas, et se rattrape à part.
+    const remboursement = options.rembourser === false ? "NON_DEMANDE" : await this.rembourser(course.orderId, options.motif);
+    const suspension = options.suspendre === false ? null : await this.suspendre(driverId, options);
+
     if (course.order) {
       const numero = numeroDe(course.orderId);
       enArrierePlan(
@@ -795,12 +949,91 @@ export class SurveillanceCoursesService {
           course.order.customerEmail,
           "DELIVERY_CANCELLED",
           "Un problème est survenu avec votre livraison",
-          "Votre commande n'a pas pu être livrée. Notre équipe revient vers vous pour la suite (remboursement ou nouvelle livraison)."
+          remboursement === "REMBOURSEE" || remboursement === "DEJA_REMBOURSEE"
+            ? "Votre commande n'a pas pu être livrée. Vous êtes intégralement remboursé : le montant réapparaît sur votre compte sous quelques jours, selon votre banque."
+            : "Votre commande n'a pas pu être livrée. Notre équipe revient vers vous pour la suite (remboursement ou nouvelle livraison)."
         )
       );
     }
 
-    return { deliveryId, driverId, orderId: course.orderId };
+    return {
+      deliveryId,
+      driverId,
+      orderId: course.orderId,
+      remboursement,
+      suspendu: Boolean(suspension?.suspendu),
+      coursesRetirees: suspension?.coursesRetirees ?? 0,
+    };
+  }
+
+  /**
+   * Rembourse le client d'une livraison échouée.
+   *
+   * Même chemin que le remboursement de la plateforme : idempotent côté Stripe
+   * (une clé par commande), et les versements du commerçant ignorent une
+   * commande remboursée. Un échec n'empêche pas de clore la course : il est
+   * signalé, et le remboursement se refait depuis la facturation.
+   */
+  private static async rembourser(
+    orderId: string,
+    motif: string
+  ): Promise<"REMBOURSEE" | "DEJA_REMBOURSEE" | "SANS_PAIEMENT_EN_LIGNE" | "ECHEC"> {
+    try {
+      const commande = await db.order.findUnique({ where: { id: orderId }, select: { paymentStatus: true } });
+      if (commande?.paymentStatus === "REFUNDED") return "DEJA_REMBOURSEE";
+      if (commande?.paymentStatus !== "SUCCEEDED") return "SANS_PAIEMENT_EN_LIGNE";
+
+      const remboursement = await paymentService.rembourserCommande(orderId, `Livraison échouée : ${motif}`);
+      return remboursement ? "REMBOURSEE" : "SANS_PAIEMENT_EN_LIGNE";
+    } catch (err) {
+      logger.error("Livraison échouée : remboursement impossible", {
+        orderId,
+        error: err instanceof Error ? err.message : err,
+      });
+      return "ECHEC";
+    }
+  }
+
+  /**
+   * Suspend le livreur d'une course échouée, le temps que l'équipe examine le
+   * cas (elle le rétablit depuis sa fiche). Ses courses encore au commerce
+   * repartent à d'autres livreurs ; celles qu'il a déjà en main restent à
+   * livrer, et restent surveillées.
+   */
+  private static async suspendre(driverId: string, options: { par: { userId: string }; motif: string }) {
+    try {
+      const livreur = await db.courier.findUnique({ where: { id: driverId }, select: { status: true } });
+      if (!livreur || livreur.status !== "ACTIVE") return { suspendu: false, coursesRetirees: 0 };
+
+      await DriverApprovalService.ecarter(
+        driverId,
+        "SUSPENDED",
+        `Course échouée, en attente d'examen par la plateforme. Motif : ${options.motif}`,
+        options.par.userId
+      );
+
+      let coursesRetirees = 0;
+      const auCommerce = await db.orderDelivery.findMany({
+        where: { driverId, status: "ACCEPTED" },
+        select: { id: true },
+      });
+      for (const { id } of auCommerce) {
+        try {
+          await this.retirerCourse(id, { par: options.par, motif: "Livreur suspendu par la plateforme" });
+          coursesRetirees += 1;
+        } catch (err) {
+          logger.warn("Suspension : course non retirée", { deliveryId: id, error: err instanceof Error ? err.message : err });
+        }
+      }
+
+      return { suspendu: true, coursesRetirees };
+    } catch (err) {
+      logger.error("Livraison échouée : suspension du livreur impossible", {
+        driverId,
+        error: err instanceof Error ? err.message : err,
+      });
+      return { suspendu: false, coursesRetirees: 0 };
+    }
   }
 
   /**
@@ -877,9 +1110,11 @@ export class SurveillanceCoursesService {
         closedAt: true,
         closedBy: true,
         resolution: true,
+        alertCount: true,
+        lastAlertAt: true,
         createdAt: true,
         driver: {
-          select: { id: true, name: true, phone: true, isOnline: true, gpsLostAt: true, lastLocationUpdate: true },
+          select: { id: true, name: true, phone: true, status: true, isOnline: true, gpsLostAt: true, lastLocationUpdate: true },
         },
         delivery: {
           select: {
@@ -917,6 +1152,9 @@ export class SurveillanceCoursesService {
         closedAt: i.closedAt,
         closedBy: i.closedBy,
         resolution: i.resolution,
+        // Combien de fois la plateforme a été prévenue, première alerte comprise.
+        alertes: i.alertCount,
+        derniereAlerte: i.lastAlertAt,
         driver: i.driver,
         course: {
           id: i.delivery.id,

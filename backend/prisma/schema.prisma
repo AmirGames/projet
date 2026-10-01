@@ -1511,6 +1511,13 @@ model DeliveryIncident {
   /// L'écart constaté, en kilomètres, pour un livreur hors trajet.
   distanceKm  Float?
 
+  /// Dernière alerte envoyée pour ce constat. Une commande partie avec le
+  /// livreur ne se règle pas toute seule : tant que personne n'a traité le
+  /// constat, la plateforme est relancée (voir surveillance-courses.service.ts).
+  lastAlertAt DateTime?
+  /// Combien d'alertes sont parties, la première comprise.
+  alertCount  Int       @default(0)
+
   /// Traité : par le système (course livrée, retirée) ou par la plateforme.
   closedAt    DateTime?
   /// SYSTEM, ou l'identifiant de l'utilisateur de la plateforme.

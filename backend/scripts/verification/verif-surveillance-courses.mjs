@@ -194,12 +194,57 @@ const suivi2 = await j(await lireSuivi(course2.orderId));
 check('le suivi du client affiche le retard', suivi2?.retard?.motif === 'LIVRAISON', JSON.stringify(suivi2?.retard));
 check('sans rien dire du livreur ni de sa position', !JSON.stringify(suivi2?.retard ?? {}).includes('km'));
 
-// Rejouée, la surveillance ne renvoie rien de plus.
-await new Promise((r) => setTimeout(r, 32000));
+// Personne ne traite : la plateforme est relancée, sans nouveau constat.
+await sqlExec(
+  `UPDATE "DeliveryIncident" SET "lastAlertAt" = NOW() - INTERVAL '16 minutes' WHERE "deliveryId" = '${course2.courseId}'`
+);
+const relances = await attendre(
+  `SELECT "alertCount" FROM "DeliveryIncident" WHERE "deliveryId" = '${course2.courseId}' AND type = 'RETARD_LIVRAISON'`,
+  '2'
+);
+check('la plateforme est relancée tant que la commande reste dans le sac', relances === '2', `alertes ${relances}`);
 check(
-  'pas d’alerte en double au passage suivant',
+  'sans constat en double',
   (await sqlScalaire(`SELECT count(*) FROM "DeliveryIncident" WHERE "deliveryId" = '${course2.courseId}'`)) === '1'
 );
+check(
+  'et la page de la plateforme compte les relances',
+  (await incidents('ouverts')).find((i) => i.course.id === course2.courseId)?.alertes === 2
+);
+
+// ===== L'attente du client ne couvre que le livreur à la porte =====
+
+titre('Attente du client : devant chez lui, et seulement là');
+// La course 1, toujours en recherche, partirait dans le même lot (tournée) :
+// elle n'est pas le sujet ici.
+await sqlExec(`UPDATE "OrderDelivery" SET status = 'FAILED' WHERE id = '${course1.courseId}'`);
+const C = await nouveauLivreur('Chloe', COMMERCE);
+const course3 = await commander();
+const acceptee3 = await patch(`/api/drivers/deliveries/${course3.courseId}/accept`, null, C);
+await declarerPrete(storeId, course3.orderId, T);
+const prise3 = await patch(`/api/drivers/deliveries/${course3.courseId}`, { status: 'PICKED_UP' }, C);
+check('la livreuse C prend la commande', acceptee3.status === 200 && prise3.status === 200, `${acceptee3.status} ${JSON.stringify(await j(acceptee3))} / ${prise3.status} ${JSON.stringify(await j(prise3))}`);
+
+const deLoin = await post(`/api/drivers/deliveries/${course3.courseId}/attente`, {}, C);
+const refus = await j(deLoin);
+check(
+  'lancée du commerce, l’attente est refusée',
+  deLoin.status === 409 && refus?.code === 'NOT_AT_CUSTOMER',
+  `statut ${deLoin.status} ${JSON.stringify(refus)}`
+);
+
+await patch('/api/drivers/location', { latitude: 45.7801, longitude: 4.8601 }, C);
+const aLaPorte = await post(`/api/drivers/deliveries/${course3.courseId}/attente`, {}, C);
+check('devant chez le client, elle commence', aLaPorte.status === 200, `statut ${aLaPorte.status} ${JSON.stringify(await j(aLaPorte))}`);
+
+// Il repart avec la commande : l'attente ne le couvre plus.
+await patch('/api/drivers/location', LOIN, C);
+await sqlExec(`UPDATE "OrderDelivery" SET "driftStartedAt" = NOW() - INTERVAL '6 minutes' WHERE id = '${course3.courseId}'`);
+const abandon = await attendre(
+  `SELECT count(*) FROM "DeliveryIncident" WHERE "deliveryId" = '${course3.courseId}' AND type = 'ECART_LIVRAISON' AND detail LIKE '%pendant l''attente%'`,
+  '1'
+);
+check('le livreur qui quitte l’adresse pendant l’attente est signalé', abandon === '1', abandon);
 
 // ===== La plateforme tranche =====
 
@@ -212,6 +257,19 @@ check('retirer une commande déjà dans le sac est refusé', retrait.status === 
 
 const echec = await post(`/api/superowner/delivery-incidents/courses/${course2.courseId}/echec`, { motif: 'Livreur injoignable' }, TP);
 check('la plateforme déclare la course échouée', echec.status === 200, `statut ${echec.status}`);
+const bilanEchec = (await j(echec))?.data;
+check(
+  'sans paiement en ligne, rien à rembourser',
+  bilanEchec?.remboursement === 'SANS_PAIEMENT_EN_LIGNE',
+  JSON.stringify(bilanEchec)
+);
+check('le livreur est suspendu d’office', bilanEchec?.suspendu === true);
+check(
+  'en base aussi, avec le motif',
+  /Course échouée/.test(
+    await sqlScalaire(`SELECT status || ' ' || "statusReason" FROM "Driver" WHERE id = '${bilanEchec?.driverId}' AND status = 'SUSPENDED'`)
+  )
+);
 check(
   'la course est échouée, par la plateforme',
   (await sqlScalaire(`SELECT status || '/' || "cancelledBy" FROM "OrderDelivery" WHERE id = '${course2.courseId}'`)) === 'FAILED/PLATFORM'

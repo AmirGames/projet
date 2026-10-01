@@ -8,6 +8,8 @@ const tx: any = {
 const db: any = {
   orderDelivery: { findMany: jest.fn(), findUnique: jest.fn(), updateMany: jest.fn() },
   deliveryIncident: { createMany: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
+  order: { findUnique: jest.fn() },
+  courier: { findUnique: jest.fn() },
   membership: { findMany: jest.fn(async () => []) },
   notification: { create: jest.fn(async () => ({})) },
   $transaction: jest.fn(async (fn: any) => fn(tx)),
@@ -45,6 +47,11 @@ jest.mock("../dispatch.service", () => ({
   },
 }));
 jest.mock("../driver-availability.service", () => ({ GPS_PERDU_APRES_MS: 2 * 60000 }));
+jest.mock("../delivery-proof.service", () => ({ ATTENTE_CLIENT_MS: 6 * 60000 }));
+jest.mock("../driver-approval.service", () => ({ DriverApprovalService: { ecarter: jest.fn(async () => ({})) } }));
+jest.mock("../../payments/payment.service", () => ({
+  paymentService: { rembourserCommande: jest.fn(async () => ({ id: "re_1" })) },
+}));
 
 import {
   SEUILS_COURSE,
@@ -54,6 +61,8 @@ import {
   type CourseSurveillee,
 } from "../surveillance-courses.service";
 import { DispatchService } from "../dispatch.service";
+import { DriverApprovalService } from "../driver-approval.service";
+import { paymentService } from "../../payments/payment.service";
 import { Notifier } from "../../notifications/notifier.service";
 import { emitDriverEvent } from "../../realtime/socket";
 import { prevenirPlateforme } from "../../monitoring/vigie.service";
@@ -188,6 +197,30 @@ describe("evaluerCourse : commande dans le sac", () => {
       8
     );
     expect(constats).toEqual([]);
+  });
+
+  it("ne couvre plus par l'attente un livreur reparti loin de chez le client", () => {
+    const attente = enRoute({ customerWaitStartedAt: ilYa(8) });
+    const loin = auSud(1); // ~3 km du client, sur le trajet du commerce
+
+    const premier = evaluerCourse(attente, loin, maintenant, 8);
+    expect(premier.ecart).toBe(true);
+    expect(premier.constats).toEqual([]);
+
+    const { constats } = evaluerCourse({ ...attente, driftStartedAt: ilYa(6) }, loin, maintenant, 8);
+    expect(constats).toEqual([
+      expect.objectContaining({ type: "ECART_LIVRAISON", action: "ALERTER", detail: expect.stringContaining("pendant l'attente") }),
+    ]);
+  });
+
+  it("laisse au livreur sans position le temps de l'attente, puis applique le délai", () => {
+    const sansPosition = enRoute({ pickupTime: ilYa(40), customerWaitStartedAt: ilYa(10) });
+    expect(evaluerCourse(sansPosition, null, maintenant, 8).constats).toEqual([]);
+
+    const tropLongtemps = enRoute({ pickupTime: ilYa(40), customerWaitStartedAt: ilYa(20) });
+    expect(evaluerCourse(tropLongtemps, null, maintenant, 8).constats).toEqual([
+      expect.objectContaining({ type: "RETARD_LIVRAISON" }),
+    ]);
   });
 });
 
@@ -349,5 +382,119 @@ describe("SurveillanceCoursesService", () => {
     );
     expect(DispatchService.liberer).toHaveBeenCalledWith("livreur-1");
     expect(DispatchService.proposerAuSuivant).not.toHaveBeenCalled();
+  });
+
+  describe("relances", () => {
+    const ouvert = (extra: Record<string, unknown> = {}) => ({
+      deliveryId: "course-1",
+      driverId: "livreur-1",
+      assignedAt: new Date("2026-10-01T11:00:00Z"),
+      detail: "Pas encore livrée 35 min après la récupération.",
+      alertCount: 1,
+      createdAt: new Date(Date.now() - 20 * MIN),
+      delivery: {
+        orderId: "commande-abcdef",
+        status: "PICKED_UP",
+        driverId: "livreur-1",
+        assignedAt: new Date("2026-10-01T11:00:00Z"),
+        order: { store: { name: "Chez Nour" } },
+      },
+      driver: { id: "livreur-1", name: "Karim B.", email: "karim@exemple.be", user: null },
+      ...extra,
+    });
+
+    it("relance la plateforme et le livreur tant que la commande reste dans le sac", async () => {
+      db.deliveryIncident.findMany.mockResolvedValue([ouvert(), ouvert({ detail: "Hors trajet" })]);
+      db.deliveryIncident.updateMany.mockResolvedValue({ count: 2 });
+
+      const relances = await SurveillanceCoursesService.relancerAlertes();
+      await new Promise((r) => setImmediate(r));
+
+      expect(relances).toBe(1); // une relance par course, pas par constat
+      expect(db.deliveryIncident.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ deliveryId: "course-1", closedAt: null }),
+          data: expect.objectContaining({ alertCount: { increment: 1 } }),
+        })
+      );
+      expect(prevenirPlateforme).toHaveBeenCalledWith(
+        expect.objectContaining({ sujet: expect.stringContaining("relance 2") })
+      );
+      expect(Notifier.pushLivreur).toHaveBeenCalledTimes(1);
+    });
+
+    it("ne relance pas deux fois quand une autre instance est passée avant", async () => {
+      db.deliveryIncident.findMany.mockResolvedValue([ouvert()]);
+      db.deliveryIncident.updateMany.mockResolvedValue({ count: 0 });
+
+      expect(await SurveillanceCoursesService.relancerAlertes()).toBe(0);
+      expect(prevenirPlateforme).not.toHaveBeenCalled();
+    });
+
+    it("ne relance plus une course livrée ou passée à un autre", async () => {
+      db.deliveryIncident.findMany.mockResolvedValue([ouvert({ delivery: { ...ouvert().delivery, status: "DELIVERED" } })]);
+      expect(await SurveillanceCoursesService.relancerAlertes()).toBe(0);
+      expect(db.deliveryIncident.updateMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("course échouée : remboursement et suspension", () => {
+    beforeEach(() => {
+      db.orderDelivery.findUnique.mockResolvedValue(ligne({ status: "PICKED_UP", pickupTime: new Date() }));
+      db.courier.findUnique.mockResolvedValue({ status: "ACTIVE" });
+      db.orderDelivery.findMany.mockResolvedValue([]);
+    });
+
+    it("rembourse le client payé en ligne et suspend le livreur, par défaut", async () => {
+      db.order.findUnique.mockResolvedValue({ paymentStatus: "SUCCEEDED" });
+
+      const resultat = await SurveillanceCoursesService.declarerEchec("course-1", {
+        par: { userId: "admin" },
+        motif: "Parti avec la commande",
+      });
+
+      expect(paymentService.rembourserCommande).toHaveBeenCalledWith("commande-abcdef", expect.stringContaining("Parti"));
+      expect(DriverApprovalService.ecarter).toHaveBeenCalledWith("livreur-1", "SUSPENDED", expect.any(String), "admin");
+      expect(resultat).toMatchObject({ remboursement: "REMBOURSEE", suspendu: true });
+    });
+
+    it("ne rembourse pas une commande sans paiement en ligne, ni deux fois", async () => {
+      db.order.findUnique.mockResolvedValueOnce({ paymentStatus: "PENDING" });
+      const sansPaiement = await SurveillanceCoursesService.declarerEchec("course-1", { par: { userId: "a" }, motif: "xxx" });
+      expect(sansPaiement.remboursement).toBe("SANS_PAIEMENT_EN_LIGNE");
+
+      db.order.findUnique.mockResolvedValueOnce({ paymentStatus: "REFUNDED" });
+      const deja = await SurveillanceCoursesService.declarerEchec("course-1", { par: { userId: "a" }, motif: "xxx" });
+      expect(deja.remboursement).toBe("DEJA_REMBOURSEE");
+      expect(paymentService.rembourserCommande).not.toHaveBeenCalled();
+    });
+
+    it("clôt la course même si le remboursement échoue", async () => {
+      db.order.findUnique.mockResolvedValue({ paymentStatus: "SUCCEEDED" });
+      (paymentService.rembourserCommande as any).mockRejectedValueOnce(new Error("Stripe indisponible"));
+
+      const resultat = await SurveillanceCoursesService.declarerEchec("course-1", { par: { userId: "a" }, motif: "xxx" });
+      expect(resultat.remboursement).toBe("ECHEC");
+      expect(tx.orderDelivery.updateMany).toHaveBeenCalled();
+    });
+
+    it("respecte les cases décochées, et retire au livreur suspendu ses courses encore au commerce", async () => {
+      const decoche = await SurveillanceCoursesService.declarerEchec("course-1", {
+        par: { userId: "a" },
+        motif: "xxx",
+        rembourser: false,
+        suspendre: false,
+      });
+      expect(decoche).toMatchObject({ remboursement: "NON_DEMANDE", suspendu: false });
+      expect(DriverApprovalService.ecarter).not.toHaveBeenCalled();
+
+      db.order.findUnique.mockResolvedValue({ paymentStatus: "PENDING" });
+      db.orderDelivery.findMany.mockResolvedValue([{ id: "course-2" }]);
+      const retirer = jest.spyOn(SurveillanceCoursesService, "retirerCourse").mockResolvedValue(null);
+      const resultat = await SurveillanceCoursesService.declarerEchec("course-1", { par: { userId: "a" }, motif: "xxx" });
+      expect(retirer).toHaveBeenCalledWith("course-2", expect.objectContaining({ motif: "Livreur suspendu par la plateforme" }));
+      expect(resultat.coursesRetirees).toBe(1);
+      retirer.mockRestore();
+    });
   });
 });

@@ -29,10 +29,13 @@ interface Incident {
   closedAt: string | null;
   closedBy: string | null;
   resolution: string | null;
+  /** Alertes envoyées à la plateforme, première comprise. */
+  alertes: number;
   driver: {
     id: string;
     name: string;
     phone: string | null;
+    status: string;
     isOnline: boolean;
     gpsLostAt: string | null;
     lastLocationUpdate: string | null;
@@ -76,6 +79,11 @@ export default function IncidentsLivraisonPage() {
   const [geste, setGeste] = useState<Geste | null>(null);
   const [texte, setTexte] = useState('');
   const [envoi, setEnvoi] = useState(false);
+  // Course échouée : rembourser le client et suspendre le livreur, cochés d'office.
+  const [rembourser, setRembourser] = useState(true);
+  const [suspendre, setSuspendre] = useState(true);
+  // Ce que la dernière action a donné (remboursement, suspension).
+  const [bilan, setBilan] = useState('');
   // L'heure du dernier relevé : « il y a 12 min » se calcule depuis elle.
   const [releveA, setReleveA] = useState(0);
 
@@ -119,6 +127,9 @@ export default function IncidentsLivraisonPage() {
     setGeste({ incidentId, type });
     setTexte('');
     setErreur('');
+    setBilan('');
+    setRembourser(true);
+    setSuspendre(true);
   };
 
   const confirmer = async (incident: Incident) => {
@@ -129,7 +140,12 @@ export default function IncidentsLivraisonPage() {
       geste.type === 'clore'
         ? `${API_URL}/api/superowner/delivery-incidents/${incident.id}/clore`
         : `${API_URL}/api/superowner/delivery-incidents/courses/${incident.course.id}/${geste.type}`;
-    const corps = geste.type === 'clore' ? { resolution: texte } : { motif: texte };
+    const corps =
+      geste.type === 'clore'
+        ? { resolution: texte }
+        : geste.type === 'echec'
+          ? { motif: texte, rembourser, suspendre }
+          : { motif: texte };
 
     setEnvoi(true);
     try {
@@ -140,6 +156,17 @@ export default function IncidentsLivraisonPage() {
       });
       const donnees = await res.json();
       if (!res.ok) throw new Error(donnees.error);
+      if (geste.type === 'echec') {
+        const r = donnees.data;
+        setBilan(
+          [
+            t(`refund.${r.remboursement}`),
+            r.suspendu ? t('suspended', { courses: r.coursesRetirees }) : null,
+          ]
+            .filter(Boolean)
+            .join(' ')
+        );
+      }
       setGeste(null);
       await charger();
     } catch (e) {
@@ -194,6 +221,10 @@ export default function IncidentsLivraisonPage() {
         ))}
       </div>
 
+      {bilan && (
+        <div className="bg-green-900/30 border border-green-700/50 text-green-200 rounded-lg p-3 text-sm">{bilan}</div>
+      )}
+
       {erreur && (
         <div className="bg-red-900/30 border border-red-700/50 text-red-200 rounded-lg p-3 text-sm">{erreur}</div>
       )}
@@ -223,6 +254,9 @@ export default function IncidentsLivraisonPage() {
                       <span className="text-xs text-gray-500">{depuis(incident.createdAt)}</span>
                     </div>
                     <p className="text-white">{incident.detail}</p>
+                    {!incident.closedAt && incident.alertes > 1 && (
+                      <p className="text-xs text-red-300">{t('reminders', { count: incident.alertes - 1 })}</p>
+                    )}
                     {incident.closedAt && (
                       <p className="text-xs text-green-400">
                         {t('closed', { resolution: incident.resolution || '—' })}
@@ -241,6 +275,9 @@ export default function IncidentsLivraisonPage() {
                       />
                       {incident.driver.name}
                     </p>
+                    {incident.driver.status === 'SUSPENDED' && (
+                      <p className="text-red-300 text-xs">{t('driverSuspended')}</p>
+                    )}
                     {incident.driver.gpsLostAt && (
                       <p className="text-amber-300 text-xs flex items-center gap-1">
                         <SatelliteDish size={12} /> {t('gpsLost')}
@@ -300,6 +337,18 @@ export default function IncidentsLivraisonPage() {
                       placeholder={t(ouvert.type === 'clore' ? 'resolutionPlaceholder' : 'reasonPlaceholder')}
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-orange-500"
                     />
+                    {ouvert.type === 'echec' && (
+                      <div className="space-y-1 text-sm text-gray-200">
+                        <label className="flex items-center gap-2">
+                          <input type="checkbox" checked={rembourser} onChange={(e) => setRembourser(e.target.checked)} />
+                          {t('optionRefund')}
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input type="checkbox" checked={suspendre} onChange={(e) => setSuspendre(e.target.checked)} />
+                          {t('optionSuspend')}
+                        </label>
+                      </div>
+                    )}
                     <div className="flex gap-2 flex-wrap">
                       <button
                         disabled={envoi || texte.trim().length < 3}

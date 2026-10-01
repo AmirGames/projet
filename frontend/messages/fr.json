@@ -2142,7 +2142,7 @@
     "title": "Incidents de livraison",
     "description": "Livreurs qui ne viennent pas au commerce, s'éloignent ou ne livrent pas : ce que la surveillance a constaté.",
     "rulePickup": "Commande au commerce : le livreur est averti après 20 min (ou 5 min loin de son trajet), puis la course est confiée à un autre livreur après 30 min (ou 10 min d'écart).",
-    "ruleDelivery": "Commande récupérée : après 30 min (plus selon la distance et la tournée), ou 5 min hors trajet, le livreur, le commerce, le client et la plateforme sont prévenus. La décision vous revient.",
+    "ruleDelivery": "Commande récupérée : après 30 min (plus selon la distance et la tournée), ou 5 min hors trajet — y compris un livreur qui quitte l'adresse du client pendant l'attente —, le livreur, le commerce, le client et la plateforme sont prévenus, puis la plateforme est relancée toutes les 15 min tant que l'incident reste ouvert. La décision vous revient.",
     "refresh": "Actualiser",
     "tabOpen": "À traiter",
     "tabAll": "Tous",
@@ -2169,7 +2169,7 @@
     "resolutionPlaceholder": "Ce qui a été fait",
     "confirm": {
       "retirer": "La commande est encore au commerce : la course sera retirée au livreur et proposée à un autre.",
-      "echec": "La commande est partie avec le livreur : la course sera close comme échouée et le livreur libéré, sans paiement. Remboursez ensuite le client depuis la facturation.",
+      "echec": "La commande est partie avec le livreur : la course sera close comme échouée et le livreur libéré, sans paiement.",
       "clore": "L'incident sera marqué comme traité."
     },
     "type": {
@@ -2186,6 +2186,18 @@
       "PICKED_UP": "en route",
       "DELIVERED": "livrée",
       "FAILED": "échouée"
+    },
+    "optionRefund": "Rembourser le client (paiement en ligne)",
+    "optionSuspend": "Suspendre le livreur en attendant l'examen du cas",
+    "reminders": "Toujours sans solution : plateforme relancée {count, plural, one {# fois} other {# fois}}",
+    "driverSuspended": "Suspendu",
+    "suspended": "Livreur suspendu{courses, plural, =0 {.} one {, # course au commerce confiée à un autre livreur.} other {, # courses au commerce confiées à d'autres livreurs.}}",
+    "refund": {
+      "REMBOURSEE": "Client remboursé.",
+      "DEJA_REMBOURSEE": "Le client était déjà remboursé.",
+      "SANS_PAIEMENT_EN_LIGNE": "Pas de paiement en ligne à rembourser.",
+      "ECHEC": "Le remboursement a échoué : refaites-le depuis la facturation.",
+      "NON_DEMANDE": "Pas de remboursement demandé."
     }
   },
   "driverCourseAlerts": {

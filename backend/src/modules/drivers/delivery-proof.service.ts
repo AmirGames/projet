@@ -4,6 +4,7 @@ import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { logger } from "../../config/logger";
 import { cheminRelatif, presenter } from "../files/fichiers-prives.service";
+import { distanceKm, estUnPoint, Point } from "../../utils/geo";
 
 /**
  * La preuve de la remise.
@@ -60,6 +61,50 @@ export function exigerAttenteTerminee(course: { customerWaitStartedAt: Date | nu
       409,
       `Le client peut encore descendre : attendez ${minutes ? `${minutes} min ` : ""}${secondes} s avant de déposer la commande.`,
       "WAIT_NOT_OVER"
+    );
+  }
+}
+
+/**
+ * À cette distance de l'adresse, le livreur est chez le client. Plus large que
+ * les 150 m de l'application : en ville, le GPS dérive de plusieurs dizaines
+ * de mètres au pied d'un immeuble.
+ */
+export const RAYON_CHEZ_CLIENT_KM = 0.25;
+
+/**
+ * L'attente du client injoignable ne se lance que devant chez lui.
+ *
+ * C'est elle qui ouvre le dépôt en lieu sûr : lancée de n'importe où, elle
+ * laissait un livreur parti avec la commande la « déposer » en photo au bout
+ * de six minutes, être payé, et faire taire la surveillance. Le contrôle se
+ * fait ici, au lancement, parce que l'attente ne part qu'en ligne : le dépôt,
+ * lui, peut arriver bien plus tard depuis la file hors réseau du téléphone.
+ *
+ * `position` est la dernière position reçue, encore fraîche, ou null.
+ * Une adresse non située ne peut pas être vérifiée : elle passe.
+ */
+export function exigerPresenceChezClient(
+  position: Point | null,
+  course: { deliveryLat: number | null; deliveryLng: number | null }
+) {
+  const adresse = { latitude: course.deliveryLat, longitude: course.deliveryLng };
+  if (!estUnPoint(adresse)) return;
+
+  if (!position) {
+    throw new ApiError(
+      409,
+      "Votre position n'arrive pas au serveur : activez la localisation pour lancer l'attente. Le client peut aussi vous donner son code ; sinon, écrivez au support.",
+      "POSITION_UNKNOWN"
+    );
+  }
+
+  const distance = distanceKm(position, adresse);
+  if (distance > RAYON_CHEZ_CLIENT_KM) {
+    throw new ApiError(
+      409,
+      `Vous êtes à ${distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1).replace(".", ",")} km`} de l'adresse du client : l'attente se lance devant chez lui.`,
+      "NOT_AT_CUSTOMER"
     );
   }
 }

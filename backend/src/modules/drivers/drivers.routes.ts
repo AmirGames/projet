@@ -19,11 +19,16 @@ import {
   piecesAttendues,
 } from "./driver-approval.service";
 import { DriverPayoutService } from "../payouts/driver-payout.service";
-import { DeliveryProofService, exigerAttenteTerminee, finAttente } from "./delivery-proof.service";
+import {
+  DeliveryProofService,
+  exigerAttenteTerminee,
+  exigerPresenceChezClient,
+  finAttente,
+} from "./delivery-proof.service";
 import { FileUploadService } from "../files/file-upload.service";
 import { notesDuLivreur } from "./driver-rating.service";
 import { bilanCourse, DriverActivityService, FiltreHistorique } from "./driver-activity.service";
-import { DriverAvailabilityService } from "./driver-availability.service";
+import { DriverAvailabilityService, GPS_PERDU_APRES_MS } from "./driver-availability.service";
 import { Notifier, enArrierePlan } from "../notifications/notifier.service";
 import { DriverSupportService, LONGUEUR_MAX } from "./driver-support.service";
 import { z } from "zod";
@@ -1381,6 +1386,21 @@ router.post(
       }
       // Tournée : on n'attend un client qu'à son tour.
       await DispatchService.exigerTourAtteint(livreur.id, deliveryId);
+
+      // Devant chez le client, et pas ailleurs : l'attente ouvre le dépôt en
+      // photo (voir exigerPresenceChezClient). Un second appui sur une attente
+      // déjà lancée n'est pas contrôlé de nouveau.
+      if (!course.customerWaitStartedAt) {
+        const fraiche =
+          !livreur.gpsLostAt &&
+          livreur.lastLocationUpdate &&
+          Date.now() - livreur.lastLocationUpdate.getTime() <= GPS_PERDU_APRES_MS;
+        const position =
+          fraiche && livreur.latitude != null && livreur.longitude != null
+            ? { latitude: livreur.latitude, longitude: livreur.longitude }
+            : null;
+        exigerPresenceChezClient(position, course);
+      }
 
       // Une seule attente par course, même si le bouton est touché deux fois.
       const lancee = await db.orderDelivery.updateMany({
