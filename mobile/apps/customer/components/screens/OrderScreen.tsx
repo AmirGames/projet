@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch, formatEuros, mediaUrl } from '../../lib/api';
 import {
   amountPaid,
@@ -10,6 +10,7 @@ import {
   OrderDetail,
   orderStatus,
   REJECTION_REASONS,
+  RETARD_TEXTE,
   shortId,
   Tracking,
   VEHICLE_LABELS,
@@ -81,6 +82,32 @@ export default function OrderScreen({
     return () => clearTimeout(id);
   }, [toast]);
 
+  /**
+   * « Je n'ai pas reçu ma commande » : le paiement du livreur est suspendu et
+   * la plateforme examine le dépôt.
+   */
+  const reclamer = () =>
+    Alert.alert(
+      'Vous n’avez pas reçu votre commande ?',
+      'Le livreur l’a déclarée déposée en votre absence. Notre équipe examine le dépôt et vous rembourse si elle ne vous a pas été remise.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Signaler',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiFetch(`/api/orders/${orderId}/reclamation-livraison`, token, { method: 'POST', body: {} });
+              setTracking((t) => (t ? { ...t, reclamation: { possible: false, deposee: true } } : t));
+              setToast({ title: 'Réclamation envoyée', message: 'Notre équipe examine le dépôt et revient vers vous.' });
+            } catch (e: any) {
+              Alert.alert('Réclamation impossible', e?.message || 'Réessayez dans un instant.');
+            }
+          },
+        },
+      ]
+    );
+
   useRoom('order', orderId);
   useRealtimeEvent('order-update', (u: OrderUpdate) => {
     if (u.orderId !== orderId) return;
@@ -99,6 +126,7 @@ export default function OrderScreen({
       if (typeof u.gpsLost === 'boolean') next.gpsPerdu = u.gpsLost;
       if (u.livreurProche) next.livreurProche = true;
       if (u.attenteFinLe) next.attenteFinLe = u.attenteFinLe;
+      if (u.retard) next.retard = u.retard;
       if (u.status) next.status = u.status;
       return next;
     });
@@ -106,6 +134,7 @@ export default function OrderScreen({
       setToast({ title: 'Votre livreur vous attend', message: 'Il est devant chez vous : descendez vite.' });
       load();
     } else if (u.livreurProche) setToast({ title: 'Votre livreur est bientôt là', message: 'Vous pouvez descendre devant la porte.' });
+    else if (u.retard) setToast({ title: RETARD_TEXTE[u.retard.motif].titre, message: RETARD_TEXTE[u.retard.motif].texte });
     if (u.status) load();
   });
   useRealtimeEvent('reconnecte', load);
@@ -198,6 +227,12 @@ export default function OrderScreen({
             {tracking.attenteFinLe && tracking.status === 'PICKED_UP' && (
               <WaitCountdown key={tracking.attenteFinLe} finLe={tracking.attenteFinLe} maintenant={tracking.maintenant} />
             )}
+            {tracking.retard && !tracking.attenteFinLe && !['DELIVERED', 'FAILED'].includes(tracking.status) && (
+              <View style={styles.late}>
+                <Text style={styles.lateTitle}>⏱️ {RETARD_TEXTE[tracking.retard.motif].titre}</Text>
+                <Text style={styles.lateText}>{RETARD_TEXTE[tracking.retard.motif].texte}</Text>
+              </View>
+            )}
             {tracking.livreurProche && tracking.status === 'PICKED_UP' && !tracking.attenteFinLe && (
               <View style={styles.near}>
                 <Text style={styles.nearText}>🛵 Votre livreur est bientôt là : vous pouvez descendre.</Text>
@@ -266,6 +301,13 @@ export default function OrderScreen({
           <Card title="Déposée devant chez vous">
             <Image source={{ uri: photo }} style={styles.photo} resizeMode="cover" />
             {tracking?.noteDepot ? <Text style={styles.help}>{tracking.noteDepot}</Text> : null}
+            {tracking?.reclamation?.deposee ? (
+              <Text style={styles.help}>Votre réclamation est enregistrée : notre équipe examine le dépôt et revient vers vous.</Text>
+            ) : tracking?.reclamation?.possible ? (
+              <TouchableOpacity style={styles.claimButton} onPress={reclamer}>
+                <Text style={styles.claimText}>Je n’ai pas reçu ma commande</Text>
+              </TouchableOpacity>
+            ) : null}
           </Card>
         ) : null}
 
@@ -368,6 +410,9 @@ const styles = StyleSheet.create({
   waitTimer: { fontSize: 34, fontWeight: '800', color: '#7A4B00', marginVertical: 2, fontVariant: ['tabular-nums'] },
   waitText: { fontSize: 13, color: '#7A4B00' },
   nearText: { color: '#1B5E20', fontWeight: '700' },
+  late: { backgroundColor: '#FFF4E5', borderLeftWidth: 4, borderLeftColor: '#F59E0B', borderRadius: 8, padding: 12, marginBottom: 8 },
+  lateTitle: { fontSize: 15, fontWeight: '700', color: '#7A4B00' },
+  lateText: { fontSize: 13, color: '#7A4B00', marginTop: 2 },
   driver: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 12 },
   avatar: {
     width: 44,
@@ -388,6 +433,8 @@ const styles = StyleSheet.create({
   codeValue: { color: '#fff', fontSize: 40, fontWeight: '800', letterSpacing: 4, marginVertical: 6 },
   codeHint: { color: '#fff', opacity: 0.85, fontSize: 13, textAlign: 'center' },
   photo: { width: '100%', height: 220, borderRadius: 8, backgroundColor: COLORS.bg },
+  claimButton: { borderWidth: 1, borderColor: '#C62828', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 10 },
+  claimText: { color: '#C62828', fontWeight: '700' },
   reviewButton: { backgroundColor: '#FFB300', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginBottom: 12 },
   reviewButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   address: { fontSize: 14, color: COLORS.text },

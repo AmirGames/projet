@@ -1,14 +1,16 @@
 import { DriverAvailabilityService } from "./driver-availability.service";
 import { DispatchService } from "./dispatch.service";
+import { SurveillanceCoursesService } from "./surveillance-courses.service";
 import { logger } from "../../config/logger";
 import { Surveillance } from "../monitoring/surveillance.service";
 
 /**
  * Surveillance périodique des livreurs.
  *
- * Deux choses n'arrivent jamais d'elles-mêmes : la fin d'une pause (personne
- * ne clique à l'heure dite) et la perte du signal GPS (un téléphone sans
- * réseau n'envoie justement plus rien). Il faut aller voir.
+ * Trois choses n'arrivent jamais d'elles-mêmes : la fin d'une pause (personne
+ * ne clique à l'heure dite), la perte du signal GPS (un téléphone sans
+ * réseau n'envoie justement plus rien) et le livreur qui ne vient pas, ou ne
+ * livre pas, la course qu'il a acceptée. Il faut aller voir.
  */
 
 const INTERVALLE_MS = 30000;
@@ -36,6 +38,12 @@ export class DriverJobs {
 
           const gps = await DriverAvailabilityService.surveillerGps();
           if (gps.perdus > 0 || gps.misHorsLigne > 0) logger.info("Signaux GPS surveillés", gps);
+
+          // Après le GPS : un signal perdu à ce passage ne compte plus comme position.
+          const courses = await SurveillanceCoursesService.surveiller();
+          if (courses.averties + courses.retirees + courses.alertes + courses.closes > 0) {
+            logger.info("Courses en cours surveillées", courses);
+          }
         });
       } catch (err) {
         logger.error("Surveillance des livreurs impossible", {

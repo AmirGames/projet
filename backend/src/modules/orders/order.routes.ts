@@ -6,12 +6,13 @@ import { OrderService } from "./order.service";
 import { ApiError } from "../../middleware/errorHandler";
 import { authFacultative, authMiddleware } from "../auth/auth.middleware";
 import { limiterCadence } from "../../middleware/throttle";
-import { courseVisible, type Appelant } from "./suivi-commande.service";
+import { courseVisible, estLeClientDeLaCommande, type Appelant } from "./suivi-commande.service";
 import { logger } from "../../config/logger";
 import { emitOrderUpdate } from "../realtime/socket";
 import { champAcceptation, enregistrerAcceptation } from "../legal/acceptation-conditions.service";
 
 import { DispatchService } from "../drivers/dispatch.service";
+import { SurveillanceCoursesService } from "../drivers/surveillance-courses.service";
 
 const router = Router();
 
@@ -396,6 +397,31 @@ router.get("/:id/delivery", limiterSuivi, async (req: Request, res: Response, ne
 
     res.set("Cache-Control", "no-store");
     res.json({ data: course });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/orders/:id/reclamation-livraison — « Je n'ai pas reçu ma commande »
+ *
+ * Après un dépôt en photo, pendant 48 h, une fois. Le client propriétaire
+ * (connecté) ou le visiteur avec son jeton de suivi (`?t=`). Body :
+ * { message?: string (500) }. Suspend le paiement de la course au livreur et
+ * prévient la plateforme, qui tranche. 404 pour tout autre appelant ; 409
+ * CLAIM_ALREADY_FILED ou CLAIM_NOT_POSSIBLE.
+ */
+router.post("/:id/reclamation-livraison", limiterSuivi, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orderId = req.params.id as string;
+    const { message } = z.object({ message: z.string().max(500).optional() }).parse(req.body ?? {});
+    const appelant = await appelantFacultatif(req, res);
+
+    if (!(await estLeClientDeLaCommande(orderId, appelant, jetonDeSuivi(req)))) {
+      throw new ApiError(404, "Commande non trouvée", "NOT_FOUND");
+    }
+
+    res.json({ success: true, data: await SurveillanceCoursesService.reclamationClient(orderId, message) });
   } catch (err) {
     next(err);
   }

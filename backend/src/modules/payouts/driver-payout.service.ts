@@ -65,6 +65,32 @@ export function semainePrecedente(reference = new Date()) {
   return { periodStart: debut, periodEnd: lundiCourant };
 }
 
+/**
+ * Les courses qui se paient : livrées, sur aucun relevé, et dont le paiement
+ * n'est pas suspendu. Un dépôt contesté (`payoutHold`, voir
+ * surveillance-courses.service.ts) attend la décision de la plateforme ; refusé,
+ * il ne se paie jamais.
+ */
+const COURSES_A_PAYER = { status: "DELIVERED", payoutId: null, payoutHold: null } as const;
+
+/**
+ * La période d'une course : celle de sa livraison, ou, pour un dépôt contesté
+ * puis validé, celle de la validation — la semaine de sa livraison a pu être
+ * arrêtée entre-temps, et la course n'y entrerait plus jamais.
+ */
+function dansLaPeriode(bornes: { debut?: Date; fin?: Date }) {
+  const intervalle = {
+    ...(bornes.debut ? { gte: bornes.debut } : {}),
+    ...(bornes.fin ? { lt: bornes.fin } : {}),
+  };
+  return {
+    OR: [
+      { payoutHoldReleasedAt: null, deliveryTime: intervalle },
+      { payoutHoldReleasedAt: intervalle },
+    ],
+  };
+}
+
 export class DriverPayoutService {
   /**
    * Ce qui reste à verser à un livreur, et quand.
@@ -102,16 +128,8 @@ export class DriverPayoutService {
     return db.orderDelivery.findMany({
       where: {
         driverId,
-        status: "DELIVERED",
-        payoutId: null,
-        ...(bornes?.debut || bornes?.fin
-          ? {
-              deliveryTime: {
-                ...(bornes.debut ? { gte: bornes.debut } : {}),
-                ...(bornes.fin ? { lt: bornes.fin } : {}),
-              },
-            }
-          : {}),
+        ...COURSES_A_PAYER,
+        ...(bornes?.debut || bornes?.fin ? dansLaPeriode(bornes) : {}),
       },
       include: { order: { select: { id: true, totalAmount: true, feesAmount: true } } },
       orderBy: { deliveryTime: "asc" },
@@ -146,13 +164,18 @@ export class DriverPayoutService {
 
   /** Le relevé d'un livreur : ce qui est dû, et l'historique de ses versements. */
   static async situation(driverId: string) {
-    const [dues, pourboires, releves] = await Promise.all([
+    const [dues, pourboires, releves, enExamen] = await Promise.all([
       this.coursesDues(driverId),
       this.pourboiresDus(driverId),
       db.courierPayout.findMany({
         where: { driverId, status: { not: "CANCELLED" } },
         orderBy: { periodStart: "desc" },
         include: { _count: { select: { deliveries: true } } },
+      }),
+      // Dépôts contestés : payés si la plateforme les valide.
+      db.orderDelivery.findMany({
+        where: { driverId, status: "DELIVERED", payoutId: null, payoutHold: "REVIEW" },
+        include: { order: { select: { id: true, totalAmount: true, feesAmount: true } } },
       }),
     ]);
 
@@ -171,6 +194,9 @@ export class DriverPayoutService {
       duNonArrete:
         dues.reduce((somme, course) => somme + gainDeLaCourse(course), 0) + totalDesPourboires(pourboires),
       enAttenteDeVersement: arretes,
+      // Courses dont le dépôt est en examen : ni dues ni perdues pour l'instant.
+      enExamen: enExamen.reduce((somme, course) => somme + gainDeLaCourse(course), 0),
+      coursesEnExamen: enExamen.length,
       verse: verses,
       coursesDues: dues.length,
       courses: dues.map((course) => ({
@@ -326,10 +352,9 @@ export class DriverPayoutService {
     const aPayer = await db.orderDelivery.groupBy({
       by: ["driverId"],
       where: {
-        status: "DELIVERED",
-        payoutId: null,
+        ...COURSES_A_PAYER,
         driverId: { not: null },
-        deliveryTime: { gte: periodStart, lt: periodEnd },
+        ...dansLaPeriode({ debut: periodStart, fin: periodEnd }),
       },
     });
 
@@ -506,7 +531,7 @@ export class DriverPayoutService {
   static async resteADevoir() {
     const [dues, pourboires] = await Promise.all([
       db.orderDelivery.findMany({
-        where: { status: "DELIVERED", payoutId: null, driverId: { not: null } },
+        where: { ...COURSES_A_PAYER, driverId: { not: null } },
         select: { driverId: true, driverPayout: true, order: { select: { feesAmount: true } } },
       }),
       db.courierTip.findMany({

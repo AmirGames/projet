@@ -13,7 +13,7 @@ import {
   Session,
 } from '../lib/session';
 import { Carts, CartLine, itemCount, loadCarts, saveCarts, sortedCarts, withLines } from '../lib/carts';
-import { isActive, OrderSummary, orderStatus } from '../lib/orders';
+import { isActive, OrderSummary, orderStatus, RETARD_TEXTE } from '../lib/orders';
 import { useCustomerRealtime } from '../lib/useCustomerRealtime';
 import { useCartSync } from '../lib/useCartSync';
 import { onCustomerNotificationTap, PushCustomerData, PushSetup, registerForPush, unregisterPush } from '../lib/push';
@@ -261,6 +261,9 @@ export default function CustomerApp() {
         setBanner({ orderId: u.orderId, title: 'Votre livreur vous attend', message: 'Il est devant chez vous : descendez vite, il ne peut attendre que 6 minutes.' });
       } else if (u.livreurProche && !viewingOrder(u.orderId)) {
         setBanner({ orderId: u.orderId, title: 'Votre livreur est bientôt là', message: 'Vous pouvez descendre devant la porte.' });
+      } else if (u.retard && !viewingOrder(u.orderId)) {
+        const { titre, texte } = RETARD_TEXTE[u.retard.motif];
+        setBanner({ orderId: u.orderId, title: titre, message: texte });
       }
     },
     onNotification: () => {

@@ -125,7 +125,9 @@ export default function DeliveryTrackingPage() {
 
   // Dernière position connue, renvoyée dès le retour du réseau : sans cela le
   // client gardait une pastille figée jusqu'au prochain mouvement.
-  const dernierePosition = useRef<{ latitude: number; longitude: number } | null>(null);
+  const dernierePosition = useRef<{ latitude: number; longitude: number; precision: number | null; le: number } | null>(null);
+  // Où était le téléphone quand la photo du dépôt a été prise : jointe au dépôt.
+  const positionPhoto = useRef<{ latitude: number; longitude: number; precision: number | null; releveeLe: string } | null>(null);
 
   const envoyerPosition = useCallback(
     (latitude: number, longitude: number) => {
@@ -156,7 +158,7 @@ export default function DeliveryTrackingPage() {
       (position) => {
         positionRecue();
         const { latitude, longitude, accuracy } = position.coords;
-        dernierePosition.current = { latitude, longitude };
+        dernierePosition.current = { latitude, longitude, precision: accuracy ?? null, le: position.timestamp };
         setLocation({ lat: latitude, lng: longitude });
         setPrecision(accuracy ?? null);
         envoyerPosition(latitude, longitude);
@@ -245,7 +247,7 @@ export default function DeliveryTrackingPage() {
           ? 1
           : 0;
 
-  const envoyerStatut = async (status: 'PICKED_UP' | 'DELIVERED', preuve?: Record<string, string>) => {
+  const envoyerStatut = async (status: 'PICKED_UP' | 'DELIVERED', preuve?: Record<string, unknown>) => {
     const token = localStorage.getItem('driverToken');
     if (!token) return null;
 
@@ -297,7 +299,10 @@ export default function DeliveryTrackingPage() {
     setUpdating(true);
     setRefus('');
     try {
-      const reponse = await envoyerStatut('DELIVERED', preuve);
+      const reponse = await envoyerStatut(
+        'DELIVERED',
+        preuve.photoUrl && positionPhoto.current ? { ...preuve, positionDepot: positionPhoto.current } : preuve
+      );
 
       if (reponse?.ok) {
         // Relire la course plutôt que de croire la réponse du PATCH : celle-ci
@@ -348,6 +353,11 @@ export default function DeliveryTrackingPage() {
   /** L'appareil photo du téléphone s'ouvre ; la photo part aussitôt prise. */
   const photographier = async (fichier: File | undefined) => {
     if (!fichier) return;
+
+    const ici = dernierePosition.current;
+    positionPhoto.current = ici
+      ? { latitude: ici.latitude, longitude: ici.longitude, precision: ici.precision, releveeLe: new Date(ici.le).toISOString() }
+      : null;
 
     const token = localStorage.getItem('driverToken');
     if (!token) return;

@@ -100,9 +100,31 @@ export interface Tracking {
   livreurProche?: boolean;
   /** Le livreur attend à la porte : passé cette heure, dépôt en lieu sûr. */
   attenteFinLe?: string | null;
+  /** La livraison dérape : en retard, ou confiée à un nouveau livreur. */
+  retard?: Retard | null;
+  /** « Je n'ai pas reçu ma commande », après un dépôt en photo (48 h, une fois). */
+  reclamation?: { possible: boolean; deposee: boolean } | null;
   /** L'heure du serveur à la lecture, pour corriger l'horloge du téléphone. */
   maintenant?: string | null;
 }
+
+/** LIVRAISON : en route et en retard. NOUVEAU_LIVREUR : un autre livreur prend le relais. */
+export interface Retard {
+  motif: 'LIVRAISON' | 'NOUVEAU_LIVREUR';
+  depuis: string;
+}
+
+/** Ce que le client lit d'un retard : on le prévient, sans détail sur le livreur. */
+export const RETARD_TEXTE: Record<Retard['motif'], { titre: string; texte: string }> = {
+  LIVRAISON: {
+    titre: 'Votre livraison prend du retard',
+    texte: 'Notre équipe a été prévenue et suit votre commande. Merci de votre patience.',
+  },
+  NOUVEAU_LIVREUR: {
+    titre: 'Un nouveau livreur prend le relais',
+    texte: 'Le livreur prévu a eu un empêchement : votre commande est confiée à un autre livreur.',
+  },
+};
 
 export const ORDER_STATUS: Record<string, { label: string; color: string; icon: string }> = {
   PENDING: { label: 'En attente du commerce', color: '#FFA500', icon: '⏳' },
@@ -132,6 +154,7 @@ export const REJECTION_REASONS: Record<string, string> = {
   EXCEPTIONAL_CLOSURE: 'Le commerce a dû fermer exceptionnellement.',
   OTHER: 'Le commerce ne peut pas honorer votre commande.',
   NO_RESPONSE: "Le commerce n'a pas confirmé votre commande à temps.",
+  DELIVERY_FAILED: "La livraison n'a pas pu aboutir. Le commerce n'y est pour rien. Un paiement en ligne vous est intégralement remboursé.",
 };
 
 export const VEHICLE_LABELS: Record<string, string> = {

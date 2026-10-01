@@ -18,6 +18,7 @@ import {
   nettoyerPermissions,
   codeDuLibelle,
   voitLesFinances,
+  PERMISSIONS_PAR_DEFAUT,
 } from "../permissions-plateforme.service";
 
 const roles = [
@@ -68,6 +69,11 @@ describe("permissions de l'équipe", () => {
     expect(sectionDeLaRoute("admin", "/merchants/o1/restore-from-backup")).toBe("organizations-close");
     expect(sectionDeLaRoute("superowner", "/organizations/o1/close")).toBe("organizations-close");
     expect(sectionDeLaRoute("superowner", "/admins")).toBeNull();
+    // Le dossier d'un incident (données personnelles) a sa propre section,
+    // distincte du suivi des incidents par le support.
+    expect(sectionDeLaRoute("superowner", "/delivery-incidents")).toBe("driver-support");
+    expect(sectionDeLaRoute("superowner", "/delivery-incidents/i1/clore")).toBe("driver-support");
+    expect(sectionDeLaRoute("superowner", "/delivery-incidents/i1/dossier")).toBe("incidents-export");
     expect(sectionDeLaRoute("superowner", "/roles/ADMIN")).toBeNull();
   });
 
@@ -137,5 +143,13 @@ describe("permissions de l'équipe", () => {
     expect(nettoyerPermissions({ billing: "write", inconnu: "read", stores: "tout" })).toEqual({
       billing: "write",
     });
+  });
+});
+
+describe("export du dossier d'incident", () => {
+  it("est ouvert par défaut au SuperAdmin et à l'Administrateur, pas au Support", () => {
+    expect(PERMISSIONS_PAR_DEFAUT.SUPER_ADMIN["incidents-export"]).toBe("write");
+    expect(PERMISSIONS_PAR_DEFAUT.ADMIN["incidents-export"]).toBe("write");
+    expect(PERMISSIONS_PAR_DEFAUT.SUPPORT["incidents-export"]).toBeUndefined();
   });
 });
