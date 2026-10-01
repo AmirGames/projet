@@ -51,7 +51,7 @@ export function ChoixPourboire({
 
   const pastille = (actif: boolean) =>
     `min-w-[4.5rem] flex flex-col items-center rounded-xl border px-3 py-1.5 text-sm transition ${
-      actif ? 'border-red-500 bg-red-500/20 text-red-100' : 'border-gray-600 text-gray-300 hover:border-gray-400'
+      actif ? 'border-red-500 bg-red-100 text-red-800' : 'border-gray-300 text-gray-700 hover:border-gray-400'
     }`;
 
   return (
@@ -82,7 +82,7 @@ export function ChoixPourboire({
         </button>
       </div>
       {choix === 'autre' && (
-        <label className="mt-2 flex items-center gap-2 text-sm text-gray-300">
+        <label className="mt-2 flex items-center gap-2 text-sm text-gray-700">
           Montant
           <input
             type="number"
@@ -97,7 +97,7 @@ export function ChoixPourboire({
               setLibre(e.target.value);
               onChange(lireLibre(e.target.value));
             }}
-            className="w-24 bg-gray-700 border border-gray-600 rounded-full px-3 py-1.5 text-sm text-white focus:outline-none focus:border-red-500"
+            className="w-24 bg-gray-100 border border-gray-300 rounded-full px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-red-500"
           />
           €
         </label>

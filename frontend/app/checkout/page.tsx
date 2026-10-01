@@ -19,6 +19,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { TunnelCommande, type BoutiqueCommandee } from '@/components/TunnelCommande';
+import { EnTeteClient } from '@/components/EnTeteClient';
 import { useHydrate } from '@/lib/navigateur';
 import { useTranslations } from 'next-intl';
 import {
@@ -112,16 +113,20 @@ export default function CheckoutPage() {
 
   if (chargement) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-900 text-white">
-        <p className="text-gray-400">Chargement de votre panier…</p>
+      <div className="min-h-screen bg-gray-50 text-gray-900">
+        <EnTeteClient />
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="text-gray-500">Chargement de votre panier…</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="max-w-6xl mx-auto flex items-center gap-4">
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <EnTeteClient />
+      <div className="px-4 pt-6 sm:px-6">
+        <div className="max-w-6xl mx-auto flex items-center gap-3">
           {/* Sans retour, un client qui veut corriger son panier n'a que le
               bouton du navigateur — et il ne le trouve pas sur téléphone. */}
           <button
@@ -129,57 +134,57 @@ export default function CheckoutPage() {
             onClick={() => router.back()}
             title={t('back')}
             aria-label={t('back')}
-            className="p-2 hover:bg-gray-700 rounded-lg transition"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200 hover:bg-gray-100 transition"
           >
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold">Passer la commande</h1>
-            {boutique && <p className="text-sm text-gray-400">{boutique.name}</p>}
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Passer la commande</h1>
+            {boutique && <p className="text-sm text-gray-500">{boutique.name}</p>}
           </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
         {confirmation ? (
-          <div className="max-w-md mx-auto bg-gray-800 border border-gray-700 rounded-lg text-center p-8 space-y-6">
+          <div className="max-w-md mx-auto bg-white border border-gray-200 rounded-lg text-center p-8 space-y-6">
             <div className="flex justify-center">
-              <div className="w-16 h-16 bg-green-600/20 border border-green-600 rounded-full flex items-center justify-center">
-                <Check size={32} className="text-green-400" />
+              <div className="w-16 h-16 bg-green-50 border border-green-600 rounded-full flex items-center justify-center">
+                <Check size={32} className="text-green-600" />
               </div>
             </div>
 
             <div>
               <h2 className="text-2xl font-bold mb-2">Commande envoyée</h2>
-              <p className="text-gray-400">
+              <p className="text-gray-500">
                 Le commerce doit maintenant la confirmer. Vous recevrez un e-mail dès qu&apos;il
                 l&apos;aura acceptée, avec l&apos;heure prévue.
               </p>
             </div>
 
-            <div className="bg-gray-700 rounded-lg p-4">
-              <p className="text-gray-400 text-sm mb-1">Numéro de commande</p>
-              <p className="text-2xl font-bold text-red-400">#{confirmation.numero}</p>
+            <div className="bg-gray-100 rounded-lg p-4">
+              <p className="text-gray-500 text-sm mb-1">Numéro de commande</p>
+              <p className="text-2xl font-bold text-red-600">#{confirmation.numero}</p>
             </div>
 
             <Link
               href={`/track?commande=${confirmation.id}`}
-              className="block w-full py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors"
+              className="block w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-full text-white font-semibold transition-colors"
             >
               Suivre ma commande
             </Link>
           </div>
         ) : !boutique ? (
-          <div className="max-w-md mx-auto bg-gray-800 border border-gray-700 rounded-lg p-8 space-y-4">
+          <div className="max-w-md mx-auto bg-white border border-gray-200 rounded-lg p-8 space-y-4">
             {aChoisir.length === 0 ? (
               <>
                 <h2 className="text-xl font-bold">Votre panier est vide</h2>
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-500 text-sm">
                   Choisissez un commerce et composez votre commande.
                 </p>
                 <Link
                   href="/client"
-                  className="inline-block py-2 px-4 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors"
+                  className="inline-block py-3 px-6 bg-gray-900 hover:bg-gray-800 rounded-full text-white font-semibold transition-colors"
                 >
                   Voir les commerces
                 </Link>
@@ -189,7 +194,7 @@ export default function CheckoutPage() {
                 <h2 className="text-xl font-bold">Quel panier voulez-vous commander&nbsp;?</h2>
                 {/* Une commande ne peut porter que sur un commerce : mélanger
                     deux paniers n'aurait ni livreur ni cuisine communs. */}
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-500 text-sm">
                   Vous avez un panier chez plusieurs commerces. Une commande ne concerne qu&apos;un
                   commerce à la fois.
                 </p>
@@ -198,16 +203,16 @@ export default function CheckoutPage() {
                     <li key={panier.storeId}>
                       <Link
                         href={`/checkout?boutique=${panier.storeId}`}
-                        className="flex items-center justify-between bg-gray-700 hover:bg-gray-600 rounded-lg px-4 py-3 transition-colors"
+                        className="flex items-center justify-between bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-3 transition-colors"
                       >
                         <span className="font-semibold">
                           {panier.storeName || 'Commerce'}
-                          <span className="block text-xs text-gray-400">
+                          <span className="block text-xs text-gray-500">
                             {nombreDArticles(panier.lignes)} article
                             {nombreDArticles(panier.lignes) > 1 ? 's' : ''}
                           </span>
                         </span>
-                        <span className="text-red-400">{euro(totalDuPanier(panier.lignes))}</span>
+                        <span className="text-red-600">{euro(totalDuPanier(panier.lignes))}</span>
                       </Link>
                     </li>
                   ))}

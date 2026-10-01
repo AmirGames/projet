@@ -24,6 +24,10 @@ const ESPACES_AVEC_NAVIGATION = [
   '/devenir-chauffeur',
   // Le passage éclair de la connexion unique.
   '/sso',
+  // Le parcours client après la vitrine : il porte l'en-tête client.
+  '/checkout',
+  '/track',
+  '/order-confirmation',
 ];
 
 // Pages du livreur affichées sans session : le layout livreur n'y montre
