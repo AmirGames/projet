@@ -20,7 +20,9 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
   avec le GPS, brève vibration à chaque manœuvre faite) et ses **annonces
   vocales** (« Dans 200 mètres, tournez à droite », rappel à 400 m, puis au
   moment de tourner ; bouton 🔊 sur le bandeau et réglage dans les
-  paramètres) (OpenStreetMap et
+  paramètres, avec **« Tester la voix »** qui dit quoi faire si le téléphone
+  n'a pas de voix française ; l'écran reste allumé tant que la carte plein
+  écran est ouverte) (OpenStreetMap et
   OSRM, sans clé ; Google Maps, Waze ou Plans restent au choix dans les
   paramètres), prise en
   charge **déverrouillée à moins de 150 m du commerce** par un curseur à glisser

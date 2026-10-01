@@ -5,6 +5,7 @@ import { API_URL, ApiError, apiFetch, SITE_URL } from '../../lib/api';
 import { isNetworkError } from '../../lib/network';
 import type { Prefs } from '../../lib/session';
 import type { BackgroundState, GpsState } from '../../lib/useDriverLocation';
+import { checkVoice, say, VOICE_HELP, VoiceCheck } from '../../lib/voice';
 import { Card, COLORS, isDarkTheme, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 const NAVIGATION_APPS: { key: Prefs['navigationApp']; label: string }[] = [
@@ -128,6 +129,34 @@ function useAccountDeletion(token: string, onDeleted: () => void, onOpenAccount:
   return { deleting, ask };
 }
 
+/**
+ * « Tester la voix » : dit une consigne, et explique quoi faire si le
+ * téléphone n'a pas de voix française ou pas de synthèse vocale du tout.
+ */
+function VoiceTest() {
+  const [result, setResult] = useState<VoiceCheck | null>(null);
+  const [testing, setTesting] = useState(false);
+  const test = async () => {
+    setTesting(true);
+    const check = await checkVoice();
+    setResult(check);
+    setTesting(false);
+    if (check === 'ok') say('Dans 200 mètres, tournez à droite', () => setResult('no-engine'));
+  };
+  return (
+    <>
+      <TouchableOpacity style={styles.test} onPress={test} disabled={testing}>
+        <Text style={styles.testText}>{testing ? 'Vérification…' : '🔊 Tester la voix'}</Text>
+      </TouchableOpacity>
+      {result && (
+        <Text style={[styles.help, { marginTop: 8, color: result === 'ok' ? COLORS.secondary : COLORS.warning }]}>
+          {VOICE_HELP[result]}
+        </Text>
+      )}
+    </>
+  );
+}
+
 export default function SettingsScreen({
   prefs,
   onChangePrefs,
@@ -231,6 +260,7 @@ export default function SettingsScreen({
               trackColor={{ true: COLORS.success, false: COLORS.raised }}
             />
           </View>
+          <VoiceTest />
         </Card>
 
         <Card title="Localisation">

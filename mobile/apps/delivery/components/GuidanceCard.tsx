@@ -38,7 +38,7 @@ export default function GuidanceCard({
     setProgress({ steps, index: current });
   }, [sameRoute, progress.index, current, steps]);
 
-  useVoiceGuidance(steps, current, driver, voice);
+  const voiceProblem = useVoiceGuidance(steps, current, driver, voice);
 
   if (steps.length < 2) return null;
   const step = steps[current];
@@ -65,6 +65,12 @@ export default function GuidanceCard({
       >
         <Text style={styles.voiceText}>{voice ? '🔊' : '🔇'}</Text>
       </TouchableOpacity>
+      {voiceProblem && (
+        <Text style={styles.voiceProblem}>
+          🔇 {voiceProblem === 'no-french' ? 'Pas de voix française sur ce téléphone' : 'Pas de synthèse vocale sur ce téléphone'} :
+          voir Paramètres › Tester la voix.
+        </Text>
+      )}
       {then && !listOpen && (
         <Text style={styles.then} numberOfLines={1}>
           Puis {maneuverIcon(then)} {instruction(then)}
@@ -109,6 +115,14 @@ const styles = themedStyles(() => ({
     justifyContent: 'center',
   },
   voiceText: { fontSize: 18 },
+  voiceProblem: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.warning,
+    backgroundColor: COLORS.warningBg,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
   then: {
     fontSize: 13,
     color: COLORS.secondary,
