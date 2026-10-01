@@ -2,7 +2,12 @@ import { encaissePourLaPlateforme, fraisDeServiceDus, totalCommercant } from "..
 import { db } from "../../services/db";
 import { ApiError } from "../../middleware/errorHandler";
 import { emitWebhook } from "../webhooks/webhook.service";
-import { OrderAcceptanceService, echeanceDeReponse, verifierTransition } from "./order-acceptance.service";
+import {
+  OrderAcceptanceService,
+  MOTIF_LIVRAISON_ECHOUEE,
+  echeanceDeReponse,
+  verifierTransition,
+} from "./order-acceptance.service";
 import { TRANSMISE } from "../../utils/commande-transmise";
 
 export interface OrderFilterOptions {
@@ -292,6 +297,7 @@ export class OrderManagementService {
           deliveryMode: true,
           createdAt: true,
           paymentStatus: true,
+          rejectionReason: true,
         },
       });
 
@@ -314,7 +320,10 @@ export class OrderManagementService {
         preparing: orders.filter(o => o.status === "PREPARING").length,
         ready: orders.filter(o => o.status === "READY").length,
         completed: orders.filter(o => o.status === "COMPLETED").length,
-        rejected: orders.filter(o => o.status === "REJECTED").length,
+        // Refusées par le commerce : une commande perdue en livraison par un
+        // livreur de la plateforme n'est pas de son fait.
+        rejected: orders.filter(o => o.status === "REJECTED" && o.rejectionReason !== MOTIF_LIVRAISON_ECHOUEE).length,
+        deliveryFailed: orders.filter(o => o.rejectionReason === MOTIF_LIVRAISON_ECHOUEE).length,
         paidOrders: orders.filter(o => o.paymentStatus === "SUCCEEDED").length,
         unpaidOrders: orders.filter(o => o.paymentStatus !== "SUCCEEDED").length,
       };

@@ -367,6 +367,16 @@ export default function DeliveryApp() {
   useRealtimeEvent('pause-terminee', (e: { isAvailable: boolean; isOnline: boolean }) => {
     patchDriver({ isAvailable: e.isAvailable, isOnline: e.isOnline, pausedUntil: null, pauseReason: null });
   });
+  // La surveillance des courses : on l'attend au commerce, il s'éloigne, ou
+  // la course lui a été retirée (elle n'est plus à lui : on quitte son écran).
+  useRealtimeEvent('course-avertissement', (e: { message?: string }) => {
+    Alert.alert('Course à surveiller', e?.message || 'Cette course prend du retard.');
+  });
+  useRealtimeEvent('course-retiree', (e: { deliveryId?: string; message?: string }) => {
+    setOpenDeliveryId((ouverte) => (ouverte && ouverte === e?.deliveryId ? null : ouverte));
+    scheduleReload();
+    Alert.alert('Course retirée', e?.message || 'Cette course a été confiée à un autre livreur.');
+  });
   useRealtimeEvent('gps-perdu', () => patchDriver({ gpsLostAt: new Date().toISOString() }));
   useRealtimeEvent('gps-retabli', () => patchDriver({ gpsLostAt: null }));
   useRealtimeEvent('support-message', (m: { sender?: string }) => {

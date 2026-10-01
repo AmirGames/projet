@@ -46,7 +46,21 @@ export type PendingStep =
       photoUri: string;
       /** Rempli une fois la photo envoyée : pas de second envoi en cas de reprise. */
       photoUrl?: string;
+      /** Où était le téléphone quand la photo a été prise. */
+      position?: PositionDepot;
     };
+
+/**
+ * La position du téléphone au moment de la photo du dépôt. Le serveur la
+ * compare à l'adresse du client : une photo prise loin suspend le paiement
+ * de la course, le temps que la plateforme regarde.
+ */
+export interface PositionDepot {
+  latitude: number;
+  longitude: number;
+  precision: number | null;
+  releveeLe: string;
+}
 
 /** Une étape que le serveur a refusée : le livreur doit le savoir. */
 export interface RejectedStep {
@@ -108,7 +122,7 @@ const newId = () => `${Date.now().toString(36)}-${Math.random().toString(36).sli
 type NewStep =
   | { kind: 'pickup'; deliveryId: string }
   | { kind: 'handover'; deliveryId: string; code: string }
-  | { kind: 'drop'; deliveryId: string; note: string; photoUri: string; photoUrl?: string };
+  | { kind: 'drop'; deliveryId: string; note: string; photoUri: string; photoUrl?: string; position?: PositionDepot };
 
 /** Enregistre une étape faite sans réseau ; l'envoi part dès que possible. */
 export async function enqueueStep(step: NewStep) {
@@ -168,7 +182,7 @@ async function fromResponse(response: { status: number; json?: () => Promise<any
   return { done: false, retry: false, message: body?.error || body?.message || `Erreur ${response.status}` };
 }
 
-async function sendStatus(step: PendingStep, proof: Record<string, string>) {
+async function sendStatus(step: PendingStep, proof: Record<string, unknown>) {
   const response = await fetchWithSession(`/api/drivers/deliveries/${step.deliveryId}`, {
     method: 'PATCH',
     body: { status: step.kind === 'pickup' ? 'PICKED_UP' : 'DELIVERED', effectueLe: step.at, ...proof },
@@ -201,7 +215,11 @@ async function send(step: PendingStep): Promise<Outcome> {
     // La photo est chez nous : une reprise ne la renverra pas.
     await setState({ pending: state.pending.map((p) => (p.id === step.id ? { ...step, photoUrl } : p)) });
   }
-  return sendStatus(step, { photoUrl: photoUrl!, note: step.note });
+  return sendStatus(step, {
+    photoUrl: photoUrl!,
+    note: step.note,
+    ...(step.position ? { positionDepot: step.position } : {}),
+  });
 }
 
 const STEP_LABELS: Record<PendingStep['kind'], string> = {

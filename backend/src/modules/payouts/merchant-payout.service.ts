@@ -7,6 +7,7 @@ import { LIBELLES_REVERSEMENT, LigneReversement, lignesDuReversement } from "../
 import { dateBruxelles, fichierSepa, ibanNormalise, ibanValide, VirementSepa } from "../../utils/sepa";
 import { debutDeSemaine, semaineEcoulee } from "../../utils/semaine-bruxelles";
 import { DriverPayoutService, MOYENS_VERSEMENT } from "./driver-payout.service";
+import { MOTIF_LIVRAISON_ECHOUEE } from "../orders/order-acceptance.service";
 
 /**
  * Les reversements aux commerçants.
@@ -22,7 +23,9 @@ import { DriverPayoutService, MOYENS_VERSEMENT } from "./driver-payout.service";
  * banque, puis marque le lot versé.
  *
  * Une commande entre dans un relevé une fois terminée (COMPLETED), et une
- * seule fois : `Order.merchantPayoutId`. Une commande terminée après l'arrêté
+ * seule fois : `Order.merchantPayoutId`. Une commande perdue en livraison par
+ * un livreur de la plateforme y entre aussi : la plateforme la paie au
+ * commerçant comme une vente (voir utils/reversement.ts, ligne 130). Une commande terminée après l'arrêté
  * de sa semaine passe dans le relevé suivant, elle n'est jamais perdue.
  */
 
@@ -35,7 +38,21 @@ const SELECTION_COMMANDE = {
   commissionAmount: true,
   deliveryMode: true,
   paymentId: true,
+  status: true,
 } as const;
+
+/**
+ * Les commandes dues au commerçant : terminées et non remboursées, ou perdues
+ * en livraison par un livreur de la plateforme (remboursées au client, mais
+ * dues au commerçant qui les a préparées).
+ */
+const DUES_AU_COMMERCANT = {
+  OR: [
+    // Payée en ligne mais remboursée : il n'y a rien à reverser.
+    { status: "COMPLETED" as const, NOT: { paymentStatus: "REFUNDED" as const } },
+    { status: "REJECTED" as const, rejectionReason: MOTIF_LIVRAISON_ECHOUEE },
+  ],
+};
 
 /**
  * Le début des reversements : aucune commande d'avant n'est reprise. Sans
@@ -70,15 +87,13 @@ function commandesAReverser(orgId: string, fin: Date) {
   return db.order.findMany({
     where: {
       store: { orgId, org: { isDemo: false } },
-      status: "COMPLETED",
+      ...DUES_AU_COMMERCANT,
       merchantPayoutId: null,
       deletedAt: null,
       createdAt: { lt: fin, ...(debut ? { gte: debut } : {}) },
-      // Payée en ligne mais remboursée : il n'y a rien à reverser.
-      NOT: { paymentStatus: "REFUNDED" },
     },
     select: SELECTION_COMMANDE,
-  });
+  }).then((commandes) => commandes.map((c) => ({ ...c, priseEnCharge: c.status === "REJECTED" })));
 }
 
 /** La légende du relevé : chaque code présent, expliqué. */
@@ -150,11 +165,10 @@ export class MerchantPayoutService {
       db.order.findMany({
         where: {
           store: { org: { isDemo: false } },
-          status: "COMPLETED",
+          ...DUES_AU_COMMERCANT,
           merchantPayoutId: null,
           deletedAt: null,
           createdAt: { lt: periodEnd, ...(debutDesReversements() ? { gte: debutDesReversements() as Date } : {}) },
-          NOT: { paymentStatus: "REFUNDED" },
         },
         select: { store: { select: { orgId: true } } },
         distinct: ["storeId"],
