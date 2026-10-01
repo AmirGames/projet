@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const tx: any = {
   orderDelivery: { updateMany: jest.fn() },
+  order: { updateMany: jest.fn(async () => ({ count: 1 })) },
   deliveryOffer: { updateMany: jest.fn() },
   deliveryIncident: { createMany: jest.fn(), updateMany: jest.fn() },
 };
@@ -25,6 +26,7 @@ jest.mock("../../realtime/socket", () => ({
   emitMerchantEvent: jest.fn(async () => undefined),
   emitNotification: jest.fn(),
   emitSupportEvent: jest.fn(),
+  emitOrderUpdate: jest.fn(),
 }));
 jest.mock("../../notifications/notifier.service", () => ({
   Notifier: {
@@ -49,6 +51,8 @@ jest.mock("../dispatch.service", () => ({
 jest.mock("../driver-availability.service", () => ({ GPS_PERDU_APRES_MS: 2 * 60000 }));
 jest.mock("../delivery-proof.service", () => ({ ATTENTE_CLIENT_MS: 6 * 60000 }));
 jest.mock("../driver-approval.service", () => ({ DriverApprovalService: { ecarter: jest.fn(async () => ({})) } }));
+jest.mock("../../webhooks/webhook.service", () => ({ emitWebhook: jest.fn() }));
+jest.mock("../../orders/order-acceptance.service", () => ({ MOTIF_LIVRAISON_ECHOUEE: "DELIVERY_FAILED" }));
 jest.mock("../../payments/payment.service", () => ({
   paymentService: { rembourserCommande: jest.fn(async () => ({ id: "re_1" })) },
 }));
@@ -382,6 +386,11 @@ describe("SurveillanceCoursesService", () => {
     );
     expect(DispatchService.liberer).toHaveBeenCalledWith("livreur-1");
     expect(DispatchService.proposerAuSuivant).not.toHaveBeenCalled();
+    // La commande est annulée, motif « livraison échouée », sans le motif interne.
+    expect(tx.order.updateMany).toHaveBeenCalledWith({
+      where: { id: "commande-abcdef", status: { in: ["ACCEPTED", "PREPARING", "READY"] } },
+      data: expect.objectContaining({ status: "REJECTED", rejectionReason: "DELIVERY_FAILED", rejectionNote: null }),
+    });
   });
 
   describe("relances", () => {

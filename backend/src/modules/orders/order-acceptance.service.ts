@@ -29,9 +29,19 @@ export const MOTIFS_DE_REFUS = {
   EXCEPTIONAL_CLOSURE: "le restaurant a dû fermer exceptionnellement",
   OTHER: "le restaurant ne peut pas honorer votre commande",
   NO_RESPONSE: "le restaurant n'a pas confirmé votre commande à temps",
+  // Réservé à la plateforme : le livreur n'a pas livré la commande
+  // (SurveillanceCoursesService.declarerEchec). Le restaurant n'y est pour rien.
+  DELIVERY_FAILED: "la livraison n'a pas pu aboutir",
 } as const;
 
 export type MotifDeRefus = keyof typeof MOTIFS_DE_REFUS;
+
+/**
+ * Commande perdue en livraison par un livreur de la plateforme : annulée pour
+ * le client, remboursée, et payée quand même au commerçant (voir
+ * merchant-payout.service.ts).
+ */
+export const MOTIF_LIVRAISON_ECHOUEE = "DELIVERY_FAILED" satisfies MotifDeRefus;
 
 /** Ceux que le commerçant peut choisir ; NO_RESPONSE est réservé au système. */
 export const MOTIFS_DU_COMMERCANT = [

@@ -52,6 +52,46 @@ describe("lignesDuReversement", () => {
     expect(net).toBe(-1.05);
   });
 
+  it("paie comme une vente une commande perdue en livraison, sur sa propre ligne", () => {
+    // 15 € d'articles − 2 € de remise + 5 € livreur plateforme + 0,25 € : payé 18,25 €, remboursé au client.
+    const { lignes, net } = lignesDuReversement([
+      commande({
+        totalAmount: 18.25,
+        feesAmount: 5,
+        serviceFeeAmount: 0.25,
+        discountAmount: 2,
+        commissionAmount: 1,
+        deliveryMode: "PLATFORM",
+        priseEnCharge: true,
+      }),
+    ]);
+    expect(lignes.map((l) => [l.code, l.montant])).toEqual([
+      ["130", 13],
+      ["200", -1],
+    ]);
+    expect(net).toBe(12);
+  });
+
+  it("ne traite pas une commande perdue payée à la remise comme encaissée par le commerçant", () => {
+    const { lignes, net } = lignesDuReversement([
+      commande({
+        paymentId: null,
+        totalAmount: 15.25,
+        feesAmount: 5,
+        serviceFeeAmount: 0.25,
+        commissionAmount: 0.8,
+        deliveryMode: "PLATFORM",
+        priseEnCharge: true,
+      }),
+    ]);
+    // Ni frais de service ni course « encaissés sur place » à lui retenir.
+    expect(lignes.map((l) => [l.code, l.montant])).toEqual([
+      ["130", 10],
+      ["200", -0.8],
+    ]);
+    expect(net).toBe(9.2);
+  });
+
   it("reprend un solde négatif reporté", () => {
     const { lignes, net } = lignesDuReversement([commande({ totalAmount: 10, commissionAmount: 1 })], -1.05);
     expect(lignes.find((l) => l.code === "300")?.montant).toBe(-1.05);

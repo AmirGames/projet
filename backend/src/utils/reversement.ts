@@ -10,9 +10,15 @@
  * - payées sur place : le commerçant a déjà tout en main, frais de service
  *   compris. La plateforme retient ce qui lui revient.
  * La commission se retient sur les deux.
+ *
+ * Une commande perdue en livraison par un livreur de la plateforme (annulée,
+ * motif DELIVERY_FAILED) est payée au commerçant comme une vente : il a fait
+ * son travail, la plateforme rembourse le client et absorbe la perte. Elle a sa
+ * propre ligne (130), quel que soit le moyen de paiement : le commerçant n'a
+ * rien encaissé, même pour une commande à payer à la remise.
  */
 
-export type CodeReversement = "100" | "110" | "120" | "200" | "230" | "240" | "300";
+export type CodeReversement = "100" | "110" | "120" | "130" | "200" | "230" | "240" | "300";
 
 export const LIBELLES_REVERSEMENT: Record<CodeReversement, { libelle: string; explication: string }> = {
   "100": {
@@ -26,6 +32,11 @@ export const LIBELLES_REVERSEMENT: Record<CodeReversement, { libelle: string; ex
   "120": {
     libelle: "Livraisons par vos livreurs",
     explication: "Frais de livraison payés en ligne par vos clients quand vous livrez vous-même : ils vous reviennent.",
+  },
+  "130": {
+    libelle: "Commandes perdues en livraison, prises en charge",
+    explication:
+      "Commandes préparées que le livreur de la plateforme n'a pas livrées : la plateforme rembourse le client et vous les paie comme des ventes (articles, remise déduite).",
   },
   "200": {
     libelle: "Commission de la plateforme",
@@ -62,14 +73,18 @@ export interface CommandeAReverser {
   deliveryMode: string | null;
   /** Payée en ligne : l'argent est passé par la plateforme. */
   paymentId: string | null;
+  /** Perdue en livraison par un livreur de la plateforme : payée par elle (ligne 130). */
+  priseEnCharge?: boolean;
 }
 
 const n = (v: unknown) => Number(v || 0);
 const arrondi = (v: number) => Math.round(v * 100) / 100;
 
 export function lignesDuReversement(commandes: CommandeAReverser[], report = 0) {
-  const enLigne = commandes.filter((c) => c.paymentId);
-  const surPlace = commandes.filter((c) => !c.paymentId);
+  const perdues = commandes.filter((c) => c.priseEnCharge);
+  const vendues = commandes.filter((c) => !c.priseEnCharge);
+  const enLigne = vendues.filter((c) => c.paymentId);
+  const surPlace = vendues.filter((c) => !c.paymentId);
 
   // Articles TTC avant remise : ce que le client a payé, moins la livraison et
   // les frais de service, plus la remise qu'il n'a pas payée.
@@ -98,6 +113,14 @@ export function lignesDuReversement(commandes: CommandeAReverser[], report = 0) 
       nombre: avecLivraisonPropre.length,
     },
     {
+      code: "130",
+      libelle: "",
+      // Les articles, remise déduite : ce que la vente lui aurait rapporté.
+      montant: perdues.reduce((s, c) => s + articles(c) - n(c.discountAmount), 0),
+      nombre: perdues.length,
+    },
+    {
+      // Sur toutes les commandes, perdues comprises : comme pour une vente.
       code: "200",
       libelle: "",
       montant: -commandes.reduce((s, c) => s + n(c.commissionAmount), 0),

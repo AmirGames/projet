@@ -152,6 +152,7 @@ export const REJECTION_REASONS: Record<string, string> = {
   EXCEPTIONAL_CLOSURE: 'Le commerce a dû fermer exceptionnellement.',
   OTHER: 'Le commerce ne peut pas honorer votre commande.',
   NO_RESPONSE: "Le commerce n'a pas confirmé votre commande à temps.",
+  DELIVERY_FAILED: "La livraison n'a pas pu aboutir. Le commerce n'y est pour rien. Un paiement en ligne vous est intégralement remboursé.",
 };
 
 export const VEHICLE_LABELS: Record<string, string> = {

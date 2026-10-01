@@ -6,6 +6,7 @@ import {
   emitDeliveryUpdate,
   emitDriverEvent,
   emitMerchantEvent,
+  emitOrderUpdate,
   emitNotification,
   emitSupportEvent,
 } from "../realtime/socket";
@@ -17,6 +18,8 @@ import { GPS_PERDU_APRES_MS } from "./driver-availability.service";
 import { ATTENTE_CLIENT_MS } from "./delivery-proof.service";
 import { DriverApprovalService } from "./driver-approval.service";
 import { paymentService } from "../payments/payment.service";
+import { emitWebhook } from "../webhooks/webhook.service";
+import { MOTIF_LIVRAISON_ECHOUEE } from "../orders/order-acceptance.service";
 
 /**
  * Surveillance des courses acceptées.
@@ -882,6 +885,16 @@ export class SurveillanceCoursesService {
       });
       if (count === 0) return false;
 
+      // La commande n'arrivera pas : elle est annulée pour le client, avec un
+      // motif qui ne met pas le restaurant en cause. Elle reste due au
+      // commerçant (merchant-payout.service.ts). Le motif de la plateforme
+      // reste interne : rejectionNote est lue par le client comme une
+      // « précision du restaurant ».
+      await tx.order.updateMany({
+        where: { id: course.orderId, status: { in: ["ACCEPTED", "PREPARING", "READY"] } },
+        data: { status: "REJECTED", rejectedAt: maintenant, rejectionReason: MOTIF_LIVRAISON_ECHOUEE, rejectionNote: null },
+      });
+
       const resolution = "Course déclarée échouée par la plateforme";
       await tx.deliveryIncident.createMany({
         data: [
@@ -926,6 +939,26 @@ export class SurveillanceCoursesService {
     );
 
     emitDeliveryUpdate(course.orderId, { status: "FAILED", location: null });
+    emitOrderUpdate(course.orderId, "REJECTED", {
+      title: "Livraison échouée",
+      message: "Votre commande n'a pas pu être livrée.",
+    });
+    if (course.order) {
+      // Caisse, logiciel de cuisine : ils doivent savoir que la commande est close.
+      emitWebhook("order.status_changed", {
+        orderId: course.orderId,
+        storeId: course.order.storeId,
+        previousStatus: course.order.status,
+        status: "REJECTED",
+      });
+      enArrierePlan(
+        emitMerchantEvent(course.order.storeId, "commande-traitee", {
+          orderId: course.orderId,
+          storeId: course.order.storeId,
+          status: "REJECTED",
+        })
+      );
+    }
 
     // La course est close avant tout : un remboursement ou une suspension qui
     // échoue ne la rouvre pas, et se rattrape à part.
@@ -940,7 +973,7 @@ export class SurveillanceCoursesService {
           course.order,
           "DELIVERY_CANCELLED",
           "Livraison échouée",
-          `La livraison de la commande #${numero} a échoué. La plateforme s'occupe du client.`
+          `La livraison de la commande #${numero} a échoué. La plateforme s'occupe du client et vous la paie sur votre prochain relevé, comme une vente.`
         )
       );
       enArrierePlan(
