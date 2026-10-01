@@ -1239,16 +1239,20 @@ export default function StorefrontPage() {
                             + {item.supplements.map((sup) => sup.label).join(', ')}
                           </p>
                         )}
-                        <p className="mt-1 text-sm font-semibold">{euro(prixDeLaLigne(item) * item.quantity)}</p>
+                        <p className="mt-1 text-sm font-semibold">
+                          {euro(prixDeLaLigne(item) * item.quantity)}
+                          {item.quantity > 1 && (
+                            <span className="font-normal text-gray-500">
+                              {' '}· {t('unitPrice', { n: item.quantity, prix: euro(prixDeLaLigne(item)) })}
+                            </span>
+                          )}
+                        </p>
                       </div>
                       <div className="flex items-center rounded-full border border-gray-200">
                         <button
                           onClick={() => updateQuantity(cle, item.quantity - 1)}
-                          aria-label={
-                            item.quantity === 1
-                              ? t('remove', { name: item.product.name })
-                              : t('removeOne', { name: item.product.name })
-                          }
+                          aria-label={t('removeOne', { name: item.product.name })}
+                          title={item.quantity === 1 ? t('remove', { name: item.product.name }) : undefined}
                           className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-gray-100"
                         >
                           {item.quantity === 1 ? <Trash2 size={15} /> : <Minus size={15} />}

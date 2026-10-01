@@ -2658,6 +2658,7 @@
     "quantity": "Quantity",
     "items": "{n, plural, one {# item} other {# items}}",
     "categoriesNav": "Menu categories",
-    "cart": "Cart"
+    "cart": "Cart",
+    "unitPrice": "{n} × {prix}"
   }
 }
