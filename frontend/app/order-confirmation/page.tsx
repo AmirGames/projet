@@ -3,7 +3,7 @@ import OrderConfirmationContent from "./order-confirmation-content";
 
 export default function OrderConfirmationPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">Chargement...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 text-gray-500 flex items-center justify-center">Chargement...</div>}>
       <OrderConfirmationContent />
     </Suspense>
   );

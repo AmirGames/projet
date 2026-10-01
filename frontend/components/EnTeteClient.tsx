@@ -57,7 +57,7 @@ export function EnTeteClient() {
           </SelecteurEspace>
 
           <div className="flex items-center gap-2">
-            <PaniersAccueil clair />
+            <PaniersAccueil />
             <LanguageSwitcher clair />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -145,7 +145,7 @@ export function EnTeteClient() {
           </div>
 
           <div className="flex items-center gap-4">
-            <PaniersAccueil clair />
+            <PaniersAccueil />
             {!isLoading && user && (
               <button
                 onClick={seDeconnecter}
