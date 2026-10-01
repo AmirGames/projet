@@ -54,7 +54,7 @@ async function slugDuCommerce(storeId: string): Promise<string | null> {
  * commerce. Ici, comme sur les grandes plateformes, on voit d'un coup d'œil
  * chaque panier, son sous-total et l'adresse de livraison, et on y retourne.
  */
-export function PaniersAccueil() {
+export function PaniersAccueil({ clair = false }: { clair?: boolean } = {}) {
   const [paniers, setPaniers] = useState<PanierBoutique[]>([]);
   const [adresse, setAdresse] = useState<AdresseLivraison | null>(null);
   const [ouvert, setOuvert] = useState(false);
@@ -138,7 +138,9 @@ export function PaniersAccueil() {
         onClick={() => setOuvert((o) => !o)}
         aria-label={`Paniers (${paniers.length})`}
         aria-expanded={ouvert}
-        className="relative p-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-700"
+        className={`relative p-2 rounded-lg ${
+          clair ? 'text-gray-900 hover:bg-gray-100' : 'text-gray-300 hover:text-white hover:bg-gray-700'
+        }`}
       >
         <ShoppingCart size={22} />
         {paniers.length > 0 && (

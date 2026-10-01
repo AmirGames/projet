@@ -50,23 +50,23 @@ export default function ClientLayout({
    */
   return (
     <>
-      <div className="min-h-screen bg-gray-900">
+      <div className="min-h-screen bg-white">
         {/* Mobile Navigation */}
-        <nav className="md:hidden bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
+        <nav className="md:hidden bg-white/95 backdrop-blur border-b border-gray-100 sticky top-0 z-40">
           <div className="flex items-center justify-between p-4">
-            <SelecteurEspace actuel="client" href="/client" className="gap-2 -ml-2 px-2 py-1">
-              <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
+            <SelecteurEspace actuel="client" href="/client" clair className="gap-2 -ml-2 px-2 py-1">
+              <div className="w-8 h-8 bg-orange-600 rounded-xl flex items-center justify-center font-extrabold text-sm text-white">
                 Z
               </div>
-              <span className="font-bold text-white">ZupEat</span>
+              <span className="font-extrabold tracking-tight text-gray-900">ZupEat</span>
             </SelecteurEspace>
 
             <div className="flex items-center gap-2">
-              <PaniersAccueil />
-              <LanguageSwitcher />
+              <PaniersAccueil clair />
+              <LanguageSwitcher clair />
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 hover:bg-gray-700 rounded-lg"
+                className="p-2 text-gray-900 hover:bg-gray-100 rounded-lg"
               >
                 {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
@@ -75,7 +75,7 @@ export default function ClientLayout({
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="border-t border-gray-700 pb-4 space-y-2">
+            <div className="border-t border-gray-100 pb-4 space-y-1">
               {navItems.map(item => {
                 const Icon = item.icon;
                 return (
@@ -85,8 +85,8 @@ export default function ClientLayout({
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-4 py-3 transition ${
                       isActive(item.href)
-                        ? 'bg-orange-600 text-white'
-                        : 'text-gray-400 hover:text-white'
+                        ? 'bg-gray-100 text-gray-900 font-semibold'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                   >
                     <Icon size={20} />
@@ -99,7 +99,7 @@ export default function ClientLayout({
               {!isLoading && user && (
                 <button
                   onClick={seDeconnecter}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 transition"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition"
                 >
                   <LogOut size={20} />
                   Déconnexion
@@ -109,7 +109,7 @@ export default function ClientLayout({
                 <Link
                   href="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-orange-400 hover:text-orange-300 transition"
+                  className="flex w-full items-center gap-3 px-4 py-3 font-semibold text-orange-600 hover:bg-orange-50 transition"
                 >
                   <LogIn size={20} />
                   Connexion
@@ -120,26 +120,26 @@ export default function ClientLayout({
         </nav>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:block bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <SelecteurEspace actuel="client" href="/client" className="gap-2 -ml-2 px-2 py-1">
-              <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
+        <nav className="hidden md:block bg-white/95 backdrop-blur border-b border-gray-100 sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <SelecteurEspace actuel="client" href="/client" clair className="gap-2 -ml-2 px-2 py-1">
+              <div className="w-8 h-8 bg-orange-600 rounded-xl flex items-center justify-center font-extrabold text-sm text-white">
                 Z
               </div>
-              <span className="font-bold text-white text-lg">ZupEat</span>
+              <span className="font-extrabold tracking-tight text-gray-900 text-xl">ZupEat</span>
             </SelecteurEspace>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 rounded-full bg-gray-100 p-1">
               {navItems.map(item => {
                 const Icon = item.icon;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition ${
                       isActive(item.href)
-                        ? 'bg-orange-600 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     <Icon size={18} />
@@ -150,11 +150,11 @@ export default function ClientLayout({
             </div>
 
             <div className="flex items-center gap-4">
-              <PaniersAccueil />
+              <PaniersAccueil clair />
               {!isLoading && user && (
                 <button
                   onClick={seDeconnecter}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition"
+                  className="px-4 py-2 rounded-full text-sm text-gray-700 font-semibold hover:bg-gray-100 transition"
                 >
                   Déconnexion
                 </button>
@@ -162,12 +162,12 @@ export default function ClientLayout({
               {!isLoading && !user && (
                 <Link
                   href="/login"
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-white font-semibold transition"
+                  className="px-5 py-2 bg-gray-900 hover:bg-gray-800 rounded-full text-sm text-white font-semibold transition"
                 >
                   Connexion
                 </Link>
               )}
-              <LanguageSwitcher />
+              <LanguageSwitcher clair />
             </div>
           </div>
         </nav>

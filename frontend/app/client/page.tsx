@@ -7,7 +7,7 @@ import { filtrePays } from '@/i18n/regions';
 import { useRegion } from '@/lib/region-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MapPin, Star, Clock, TrendingUp, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, Heart, ChevronLeft, ChevronRight, ChevronDown, Search, Check, Bike, Clock, Tag } from 'lucide-react';
 
 import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
 import {
@@ -63,9 +63,45 @@ interface Famille {
   emoji: string;
 }
 
+type Filtre = 'livraisonOfferte' | 'mieuxNotes' | 'ouvert';
+
 /** Les frais qui s'appliquent vraiment : ceux de la zone, sinon le forfait. */
 const fraisDe = (store: Store) =>
   store.livraison ? (store.livraison.livrable ? store.livraison.frais : Infinity) : store.deliveryCost || 0;
+
+/** Livre-t-il à l'adresse ? Sans adresse connue, on ne le sait pas : oui par défaut. */
+const livrable = (store: Store) => store.livraison?.livrable !== false;
+
+const livraisonOfferte = (store: Store) => livrable(store) && fraisDe(store) === 0;
+
+const minutesDe = (store: Store) => store.livraison?.deliveryMinutes ?? null;
+
+/** Une note qui compte : au moins un avis, et 4 étoiles ou plus. */
+const bienNote = (store: Store) => !!store.totalRatings && (store.rating ?? 0) >= 4;
+
+const note = (valeur: number) =>
+  valeur.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/**
+ * Le fond de la vignette d'un commerce. Les boutiques n'ont pas (encore) de
+ * photo de couverture : un aplat doux, toujours le même pour une boutique
+ * donnée, met son logo en valeur sans que la liste ressemble à un damier.
+ */
+const FONDS = [
+  'bg-orange-100',
+  'bg-rose-100',
+  'bg-amber-100',
+  'bg-lime-100',
+  'bg-sky-100',
+  'bg-violet-100',
+  'bg-emerald-100',
+  'bg-red-100',
+];
+const fondDe = (store: Store) => {
+  let somme = 0;
+  for (const lettre of store.id) somme = (somme + lettre.charCodeAt(0)) % 997;
+  return FONDS[somme % FONDS.length];
+};
 
 export default function ClientHomePage() {
   const t = useTranslations('clientHome');
@@ -80,6 +116,8 @@ export default function ClientHomePage() {
   // Les familles de cuisine (Pizzas, Sushis…), et celle que le client a choisie.
   const [familles, setFamilles] = useState<Famille[]>([]);
   const [familleChoisie, setFamilleChoisie] = useState<string | null>(null);
+  // Les filtres rapides, à la manière des pastilles des grandes plateformes.
+  const [filtres, setFiltres] = useState<Set<Filtre>>(new Set());
   const router = useRouter();
   // Les commerces mis en favoris par le client connecté.
   const [favoris, setFavoris] = useState<Set<string>>(new Set());
@@ -191,11 +229,28 @@ export default function ClientHomePage() {
     if (stockageLu) chargerPour(lireAdresseLivraison());
   }, [stockageLu, chargerPour]);
 
+  const basculerFiltre = (filtre: Filtre) =>
+    setFiltres((actuels) => {
+      const suivants = new Set(actuels);
+      if (suivants.has(filtre)) suivants.delete(filtre);
+      else suivants.add(filtre);
+      return suivants;
+    });
+
+  const effacerFiltres = () => {
+    setFiltres(new Set());
+    setFamilleChoisie(null);
+  };
+
   const filteredStores = useMemo(() => {
     // Copie : trier `stores` en place modifiait l'état sans que React le sache.
-    const filtered = familleChoisie
+    let filtered = familleChoisie
       ? stores.filter((store) => store.famille === familleChoisie)
       : [...stores];
+
+    if (filtres.has('livraisonOfferte')) filtered = filtered.filter(livraisonOfferte);
+    if (filtres.has('mieuxNotes')) filtered = filtered.filter(bienNote);
+    if (filtres.has('ouvert')) filtered = filtered.filter((store) => store.isOpenNow !== false);
 
     if (sortBy === 'rating') {
       filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -206,69 +261,128 @@ export default function ClientHomePage() {
     }
 
     // Quel que soit le tri, celles qui livrent à l'adresse passent devant
-    // celles où l'on ne peut que retirer sur place (tri stable).
-    filtered.sort(
-      (a, b) => Number(b.livraison?.livrable !== false) - Number(a.livraison?.livrable !== false)
-    );
+    // celles où l'on ne peut que retirer sur place, et les ouvertes devant
+    // les fermées (tri stable).
+    filtered.sort((a, b) => Number(livrable(b)) - Number(livrable(a)));
+    filtered.sort((a, b) => Number(b.isOpenNow !== false) - Number(a.isOpenNow !== false));
 
     return filtered;
-  }, [stores, sortBy, familleChoisie]);
+  }, [stores, sortBy, familleChoisie, filtres]);
+
+  /**
+   * Les rangées mises en avant, seulement sur la vue d'ensemble : un client
+   * qui filtre veut une liste, pas des vitrines. Une rangée de deux
+   * commerces n'apporte rien : il en faut au moins trois.
+   */
+  const vueDEnsemble = !familleChoisie && filtres.size === 0;
+  const rangees = useMemo(() => {
+    if (!vueDEnsemble || stores.length < 4) return [];
+    const ouverts = stores.filter((store) => store.isOpenNow !== false && livrable(store));
+    const liste = [
+      {
+        cle: 'mieuxNotes',
+        titre: t('sectionTopRated'),
+        commerces: ouverts.filter(bienNote).sort((a, b) => (b.rating || 0) - (a.rating || 0)),
+      },
+      {
+        cle: 'livraisonOfferte',
+        titre: t('sectionFreeDelivery'),
+        commerces: ouverts.filter(livraisonOfferte),
+      },
+      {
+        cle: 'rapides',
+        titre: t('sectionFastest'),
+        commerces: ouverts
+          .filter((store) => minutesDe(store) != null)
+          .sort((a, b) => (minutesDe(a) ?? 0) - (minutesDe(b) ?? 0)),
+      },
+    ];
+    return liste
+      .map((rangee) => ({ ...rangee, commerces: rangee.commerces.slice(0, 10) }))
+      .filter((rangee) => rangee.commerces.length >= 3);
+  }, [vueDEnsemble, stores, t]);
+
+  const carte = (store: Store, enRangee = false) => (
+    <CarteCommerce
+      key={store.id}
+      store={store}
+      emoji={familles.find((famille) => famille.code === store.famille)?.emoji}
+      favori={favoris.has(store.id)}
+      onFavori={(e) => basculerFavori(e, store.id)}
+      enRangee={enRangee}
+    />
+  );
+
+  const filtresRapides: { cle: Filtre; libelle: string; icone: typeof Tag }[] = [
+    { cle: 'livraisonOfferte', libelle: t('filterFreeDelivery'), icone: Tag },
+    { cle: 'mieuxNotes', libelle: t('filterTopRated'), icone: Star },
+    { cle: 'ouvert', libelle: t('filterOpenNow'), icone: Clock },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-white text-gray-900">
       <title>Accueil client — ZupEat</title>
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-12 px-4">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl font-bold mb-4">{t('title')}</h1>
-          <p className="text-xl mb-8 text-orange-100">{t('subtitle')}</p>
 
-          {/* Adresse de livraison — une fois retenue, elle se résume à une
-              pastille qu'on touche pour la changer. */}
-          <div className="flex flex-col md:flex-row md:items-start gap-3 mb-6">
-            <ChoixAdresseLivraison
-              adresse={adresse}
-              saisieOuverteSansAdresse
-              onChange={(choisie) => {
-                setAdresse(choisie);
-                chargerPour(choisie);
-              }}
-            />
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="md:ml-auto h-12 px-4 rounded-lg text-gray-900 bg-white focus:outline-none"
-            >
-              <option value="rating">{t('sortByRating')}</option>
-              <option value="distance">{t('sortByDistance')}</option>
-              <option value="delivery">{t('sortByDelivery')}</option>
-            </select>
+      <div className="max-w-7xl mx-auto px-4 md:px-6 pt-4 md:pt-6">
+        {/* L'accroche : un grand aplat chaleureux, et l'adresse au centre du
+            jeu — sans elle, ni frais ni délais justes. */}
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 px-6 py-10 md:px-12 md:py-14 text-white">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 hidden select-none lg:grid grid-cols-3 gap-x-10 gap-y-8 text-7xl rotate-6"
+          >
+            <span className="drop-shadow-xl">🍕</span>
+            <span className="drop-shadow-xl">🍔</span>
+            <span className="drop-shadow-xl">🥗</span>
+            <span className="drop-shadow-xl">🍣</span>
+            <span className="drop-shadow-xl">🥐</span>
+            <span className="drop-shadow-xl">🌮</span>
           </div>
-        </div>
-      </section>
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-white/10" />
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="relative max-w-2xl">
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05]">{t('heroTitle')}</h1>
+            <p className="mt-4 text-lg md:text-xl text-orange-50/90">{t('heroSubtitle')}</p>
+
+            {/* Adresse de livraison — une fois retenue, elle se résume à une
+                pastille qu'on touche pour la changer. */}
+            <div className="mt-8 flex flex-col md:flex-row md:items-start gap-3">
+              <ChoixAdresseLivraison
+                adresse={adresse}
+                saisieOuverteSansAdresse
+                onChange={(choisie) => {
+                  setAdresse(choisie);
+                  chargerPour(choisie);
+                }}
+              />
+            </div>
+
+            <p className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-white/90">
+              <Check size={16} className="rounded-full bg-white/20 p-0.5" />
+              {t('heroOrderWithoutAccount')}
+            </p>
+          </div>
+        </section>
+
         {/* Les catégories, à la manière des grandes plateformes : une rangée
             qui défile, un clic filtre, un second clic annule. */}
         {familles.length > 0 && (
-          <nav aria-label={t('categories')} className="relative mb-10">
+          <nav aria-label={t('categories')} className="relative mt-8">
             {/* Un fondu sous la flèche : les catégories y glissent au lieu de
                 buter contre elle. */}
-            <div className="hidden md:flex absolute inset-y-0 left-0 z-10 w-16 items-center justify-start pointer-events-none bg-gradient-to-r from-gray-900 via-gray-900/90 to-transparent">
+            <div className="hidden md:flex absolute inset-y-0 left-0 z-10 w-16 items-center justify-start pointer-events-none bg-gradient-to-r from-white via-white/90 to-transparent">
               <button
                 type="button"
                 onClick={() => defiler(-1)}
                 aria-label={t('previous')}
-                className="pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full bg-gray-700 text-white shadow-lg hover:bg-gray-600"
+                className="pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full bg-white text-gray-900 shadow-md ring-1 ring-gray-200 hover:bg-gray-50"
               >
                 <ChevronLeft size={20} />
               </button>
             </div>
             <ul
               ref={rangee}
-              className="flex gap-2 pb-2 md:px-10 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="flex gap-1 md:gap-3 pb-2 md:px-10 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {familles.map((famille) => {
                 const choisie = familleChoisie === famille.code;
@@ -279,16 +393,21 @@ export default function ClientHomePage() {
                       aria-pressed={choisie}
                       title={famille.libelle}
                       onClick={() => setFamilleChoisie(choisie ? null : famille.code)}
-                      className={`w-24 flex-shrink-0 flex flex-col items-center gap-2 rounded-xl py-3 transition ${
-                        choisie ? 'bg-orange-600/20 ring-2 ring-orange-500' : 'hover:bg-gray-800'
-                      }`}
+                      className="group w-20 flex-shrink-0 flex flex-col items-center gap-2 py-1"
                     >
-                      <span className="text-4xl leading-none" aria-hidden="true">
+                      <span
+                        aria-hidden="true"
+                        className={`flex h-16 w-16 items-center justify-center rounded-full text-3xl leading-none transition ${
+                          choisie
+                            ? 'bg-orange-100 ring-2 ring-orange-500 scale-105'
+                            : 'bg-gray-100 group-hover:bg-orange-50 group-hover:scale-105'
+                        }`}
+                      >
                         {famille.emoji}
                       </span>
                       <span
-                        className={`w-full px-1 truncate text-center text-sm ${
-                          choisie ? 'text-white font-semibold' : 'text-gray-300'
+                        className={`w-full px-1 truncate text-center text-xs ${
+                          choisie ? 'font-bold text-gray-900' : 'font-medium text-gray-700'
                         }`}
                       >
                         {famille.libelle}
@@ -298,14 +417,12 @@ export default function ClientHomePage() {
                 );
               })}
             </ul>
-            {/* Un fondu sous la flèche : les catégories y glissent au lieu de
-                buter contre elle. */}
-            <div className="hidden md:flex absolute inset-y-0 right-0 z-10 w-16 items-center justify-end pointer-events-none bg-gradient-to-l from-gray-900 via-gray-900/90 to-transparent">
+            <div className="hidden md:flex absolute inset-y-0 right-0 z-10 w-16 items-center justify-end pointer-events-none bg-gradient-to-l from-white via-white/90 to-transparent">
               <button
                 type="button"
                 onClick={() => defiler(1)}
                 aria-label={t('next')}
-                className="pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full bg-gray-700 text-white shadow-lg hover:bg-gray-600"
+                className="pointer-events-auto w-9 h-9 flex items-center justify-center rounded-full bg-white text-gray-900 shadow-md ring-1 ring-gray-200 hover:bg-gray-50"
               >
                 <ChevronRight size={20} />
               </button>
@@ -313,201 +430,302 @@ export default function ClientHomePage() {
           </nav>
         )}
 
+        {/* Les filtres rapides et le tri, en pastilles. */}
+        <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {filtresRapides.map(({ cle, libelle, icone: Icone }) => {
+            const actif = filtres.has(cle);
+            return (
+              <button
+                key={cle}
+                type="button"
+                aria-pressed={actif}
+                onClick={() => basculerFiltre(cle)}
+                className={`flex flex-shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  actif ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                <Icone size={15} className={actif && cle === 'mieuxNotes' ? 'fill-white' : ''} />
+                {libelle}
+              </button>
+            );
+          })}
+
+          <label className="relative flex-shrink-0">
+            <span className="sr-only">{t('sortByRating')}</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="appearance-none cursor-pointer rounded-full bg-gray-100 py-2 pl-4 pr-9 text-sm font-semibold text-gray-900 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="rating">{t('sortByRating')}</option>
+              <option value="distance">{t('sortByDistance')}</option>
+              <option value="delivery">{t('sortByDelivery')}</option>
+            </select>
+            <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
+          </label>
+
+          {(filtres.size > 0 || familleChoisie) && (
+            <button
+              type="button"
+              onClick={effacerFiltres}
+              className="flex-shrink-0 px-3 py-2 text-sm font-semibold text-orange-600 hover:text-orange-700"
+            >
+              {t('resetFilters')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-10">
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <p className="text-white text-lg">{t('loadingRestaurants')}</p>
-          </div>
+          <GrilleEnChargement />
         ) : filteredStores.length === 0 ? (
-          <div className="text-center py-20">
-            <TrendingUp size={48} className="mx-auto text-gray-600 mb-4" />
-            {familleChoisie ? (
+          <div className="mx-auto max-w-md rounded-3xl bg-gray-50 px-6 py-14 text-center">
+            <Search size={40} className="mx-auto mb-4 text-gray-300" />
+            {familleChoisie || filtres.size > 0 ? (
               <>
-                <p className="text-white text-lg">{t('emptyCategory')}</p>
+                <p className="text-lg font-semibold">
+                  {familleChoisie && filtres.size === 0 ? t('emptyCategory') : t('emptyFilters')}
+                </p>
                 <button
                   type="button"
-                  onClick={() => setFamilleChoisie(null)}
-                  className="mt-3 text-orange-400 hover:text-orange-300 font-semibold"
+                  onClick={effacerFiltres}
+                  className="mt-5 rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800"
                 >
                   {t('seeAll')}
                 </button>
               </>
             ) : (
               <>
-                <p className="text-white text-lg">{t('noRestaurantsFound')}</p>
-                <p className="text-gray-400">{t('tryAnotherAddress')}</p>
+                <p className="text-lg font-semibold">{t('noRestaurantsFound')}</p>
+                <p className="mt-1 text-gray-500">{t('tryAnotherAddress')}</p>
               </>
             )}
           </div>
         ) : (
-          <>
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-4">
+          <div className="space-y-12">
+            {rangees.map((rangee) => (
+              <Rangee key={rangee.cle} titre={rangee.titre} precedent={t('previous')} suivant={t('next')}>
+                {rangee.commerces.map((store) => carte(store, true))}
+              </Rangee>
+            ))}
+
+            <section>
+              <h2 className="mb-5 text-2xl font-bold tracking-tight">
                 {familleChoisie
                   ? familles.find((famille) => famille.code === familleChoisie)?.libelle
                   : adresse?.latitude != null
                     ? t('nearbyRestaurants')
                     : t('allRestaurants')}{' '}
-                ({filteredStores.length})
+                <span className="font-medium text-gray-400">({filteredStores.length})</span>
               </h2>
 
-              {/* Restaurants Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Une seule vitrine désormais, à l'adresse lisible. */}
-                {filteredStores.map((store) => (
-                  <Link key={store.id} href={`/store/${store.slug}`}>
-                    <div className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-xl transition transform hover:scale-105 cursor-pointer h-full">
-                      {/* Le logo du commerce ; à défaut, son initiale. */}
-                      {/* Sur fond blanc : le dégradé orange effaçait les logos
-                          orange et encadrait mal ceux sur fond blanc. */}
-                      <div
-                        className={`relative h-40 flex items-center justify-center ${
-                          store.settings?.logo ? 'bg-white' : 'bg-gradient-to-r from-orange-500 to-red-500'
-                        }`}
-                      >
-                        {store.settings?.logo ? (
-                          <img
-                            src={store.settings.logo}
-                            alt={store.name}
-                            className="absolute inset-0 h-full w-full object-contain p-3"
-                          />
-                        ) : (
-                          <div className="text-center">
-                            <div className="text-white text-4xl font-bold opacity-50">{store.name.charAt(0)}</div>
-                          </div>
-                        )}
-
-                        {/* Une boutique fermée disparaissait de la liste : le
-                            client croyait le commerce parti. */}
-                        {store.isOpenNow === false && (
-                          <span className="absolute inset-x-0 bottom-0 bg-gray-900/80 py-1.5 text-center text-xs font-semibold text-amber-300">
-                            {store.isOpen === false ? t('temporarilyUnavailable') : t('closedNow')}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="p-4">
-                        {/* Name & Badge */}
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="min-w-0">
-                            <h3 className="text-lg font-bold text-white">{store.name}</h3>
-                            {store.genreLibelle && (
-                              <p className="text-sm text-orange-400">{store.genreLibelle}</p>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => basculerFavori(e, store.id)}
-                            aria-pressed={favoris.has(store.id)}
-                            className="flex-shrink-0 p-1 -m-1"
-                          >
-                            <Heart
-                              size={18}
-                              className={
-                                favoris.has(store.id)
-                                  ? 'text-red-500 fill-red-500'
-                                  : 'text-gray-400 hover:text-red-500'
-                              }
-                            />
-                          </button>
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-sm text-gray-400 mb-3 line-clamp-2">{store.description}</p>
-
-                        {/* Rating & Reviews */}
-                        <div className="flex items-center gap-2 mb-3 flex-wrap">
-                          {store.totalRatings && store.rating != null ? (
-                            <>
-                              <div className="flex items-center gap-1">
-                                <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                                <span className="text-white font-semibold">
-                                  {store.rating.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-                                </span>
-                              </div>
-                              <span className="text-gray-500 text-sm">({store.totalRatings} {t('reviews')})</span>
-                              {store.satisfactionPercentage != null && (
-                                <span className="text-green-400 text-sm font-semibold">
-                                  👍 {store.satisfactionPercentage}%
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-gray-500 text-sm">{t('noReviewsYet')}</span>
-                          )}
-                        </div>
-
-                        {/* Location & Delivery */}
-                        <div className="space-y-2 text-sm">
-                          {store.address && (
-                            <div className="flex items-center gap-2 text-gray-400">
-                              <MapPin size={14} />
-                              <span>{store.address}</span>
-                            </div>
-                          )}
-
-                          {(store.livraison?.deliveryMinutes != null || store.estimatedDeliveryTime) && (
-                            <div className="flex items-center gap-2 text-gray-400">
-                              <Clock size={14} />
-                              <span>
-                                {store.livraison?.deliveryMinutes != null
-                                  ? `${store.livraison.deliveryMinutes} min`
-                                  : store.estimatedDeliveryTime}
-                              </span>
-                            </div>
-                          )}
-
-                          {store.distance && (
-                            <div className="text-gray-400">
-                              📍 {store.distance} km
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Delivery Cost */}
-                        {/* Les frais jusqu'à l'adresse retenue ; à défaut, le
-                            forfait de la boutique. */}
-                        {store.livraison ? (
-                          <div className="mt-3 pt-3 border-t border-gray-700 text-sm">
-                            {store.livraison.livrable ? (
-                              <>
-                                <span className="text-orange-400 font-semibold">
-                                  {store.livraison.frais > 0
-                                    ? `${t('deliveryFee')} ${euro(store.livraison.frais)}`
-                                    : t('freeDelivery')}
-                                </span>
-                                {store.livraison.minimum > 0 && (
-                                  <span className="text-gray-400">
-                                    {' '}· {t('minimum')} {euro(store.livraison.minimum)}
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-amber-400 font-semibold">{t('notDelivered')}</span>
-                            )}
-                          </div>
-                        ) : (
-                          store.deliveryCost !== undefined && (
-                            <div className="mt-3 pt-3 border-t border-gray-700">
-                              <span className="text-orange-400 font-semibold">
-                                {t('fees')} {euro(store.deliveryCost)}
-                              </span>
-                            </div>
-                          )
-                        )}
-
-                        {/* CTA Button */}
-                        <button className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition">
-                          {t('seeMenu')}
-                        </button>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-8">
+                {filteredStores.map((store) => carte(store))}
               </div>
-            </div>
-          </>
+            </section>
+          </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Une rangée qui défile horizontalement, avec ses flèches sur grand écran. */
+function Rangee({
+  titre,
+  precedent,
+  suivant,
+  children,
+}: {
+  titre: string;
+  precedent: string;
+  suivant: string;
+  children: React.ReactNode;
+}) {
+  const liste = useRef<HTMLDivElement>(null);
+  const defiler = (sens: 1 | -1) =>
+    liste.current?.scrollBy({ left: sens * liste.current.clientWidth * 0.8, behavior: 'smooth' });
+
+  return (
+    <section>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold tracking-tight">{titre}</h2>
+        <div className="hidden md:flex gap-2">
+          <button
+            type="button"
+            onClick={() => defiler(-1)}
+            aria-label={precedent}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            type="button"
+            onClick={() => defiler(1)}
+            aria-label={suivant}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+      <div
+        ref={liste}
+        className="-mx-4 flex snap-x snap-mandatory scroll-pl-4 md:scroll-pl-0 gap-5 overflow-x-auto scroll-smooth px-4 pb-2 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * La carte d'un commerce : une grande vignette, le nom, la note, puis une
+ * ligne d'infos (frais, délai, distance). Toute la carte mène à la vitrine.
+ */
+function CarteCommerce({
+  store,
+  emoji,
+  favori,
+  onFavori,
+  enRangee,
+}: {
+  store: Store;
+  emoji?: string;
+  favori: boolean;
+  onFavori: (e: React.MouseEvent) => void;
+  enRangee: boolean;
+}) {
+  const t = useTranslations('clientHome');
+  const ferme = store.isOpenNow === false;
+  const minutes = minutesDe(store);
+  const delai = minutes != null ? t('minutes', { n: minutes }) : store.estimatedDeliveryTime;
+  const nouveau = !store.totalRatings;
+
+  // Les frais jusqu'à l'adresse retenue ; à défaut, le forfait de la boutique.
+  let frais: React.ReactNode = null;
+  if (store.livraison) {
+    frais = store.livraison.livrable
+      ? store.livraison.frais > 0
+        ? t('deliveryFeeShort', { montant: euro(store.livraison.frais) })
+        : null
+      : <span className="text-amber-600">{t('pickupOnly')}</span>;
+  } else if (store.deliveryCost) {
+    frais = t('deliveryFeeShort', { montant: euro(store.deliveryCost) });
+  }
+
+  const infos = [
+    store.genreLibelle,
+    frais,
+    delai,
+    store.distance ? t('distance', { km: store.distance.toLocaleString('fr-FR') }) : null,
+  ].filter(Boolean);
+
+  return (
+    <Link
+      href={`/store/${store.slug}`}
+      className={`group block rounded-2xl text-gray-900 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-4 ${
+        enRangee ? 'w-[78%] sm:w-[300px] flex-shrink-0 snap-start' : ''
+      }`}
+    >
+      <div className={`relative aspect-[16/9] overflow-hidden rounded-2xl ${fondDe(store)}`}>
+        {/* Le motif de la famille, en filigrane, puis le logo en majesté. */}
+        {emoji && (
+          <span
+            aria-hidden="true"
+            className="absolute -right-3 -bottom-5 select-none text-[7rem] leading-none opacity-30 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6"
+          >
+            {emoji}
+          </span>
+        )}
+        <div className="absolute inset-0 flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
+          {store.settings?.logo ? (
+            <img
+              src={store.settings.logo}
+              alt={store.name}
+              className="h-20 w-20 md:h-24 md:w-24 rounded-2xl bg-white object-contain p-2 shadow-lg"
+            />
+          ) : (
+            <span className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl bg-white text-4xl font-extrabold text-orange-600 shadow-lg">
+              {store.name.charAt(0)}
+            </span>
+          )}
+        </div>
+
+        {/* Ce qui fait cliquer : la livraison offerte, en étiquette. */}
+        {!ferme && livraisonOfferte(store) && (
+          <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-xs font-bold text-white shadow">
+            <Bike size={13} />
+            {t('filterFreeDelivery')}
+          </span>
+        )}
+
+        <button
+          type="button"
+          onClick={onFavori}
+          aria-pressed={favori}
+          aria-label={favori ? t('removeFavorite') : t('addFavorite')}
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow transition hover:scale-110"
+        >
+          <Heart size={18} className={favori ? 'fill-red-500 text-red-500' : 'text-gray-900'} />
+        </button>
+
+        {/* Une boutique fermée disparaissait de la liste : le client croyait
+            le commerce parti. Elle reste, voilée. */}
+        {ferme && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/55">
+            <span className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-gray-900">
+              {store.isOpen === false ? t('temporarilyUnavailable') : t('closedNow')}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 flex items-start justify-between gap-3">
+        <h3 className="min-w-0 truncate text-base font-semibold">{store.name}</h3>
+        {store.totalRatings && store.rating != null ? (
+          <span
+            className="flex flex-shrink-0 items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-sm font-semibold"
+            title={`${store.totalRatings} ${t('reviews')}`}
+          >
+            {note(store.rating)}
+            <Star size={13} className="fill-gray-900" />
+            <span className="font-normal text-gray-500">({store.totalRatings})</span>
+          </span>
+        ) : (
+          nouveau && (
+            <span className="flex-shrink-0 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-700">
+              {t('newStore')}
+            </span>
+          )
+        )}
+      </div>
+      {infos.length > 0 && (
+        <p className="mt-0.5 truncate text-sm text-gray-500">
+          {infos.map((info, i) => (
+            <span key={i}>
+              {i > 0 && ' · '}
+              {info}
+            </span>
+          ))}
+        </p>
+      )}
+    </Link>
+  );
+}
+
+/** Des cartes grises en attendant les commerces : la page ne saute pas. */
+function GrilleEnChargement() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-8" aria-busy="true">
+      {Array.from({ length: 8 }, (_, i) => (
+        <div key={i} className="animate-pulse">
+          <div className="aspect-[16/9] rounded-2xl bg-gray-100" />
+          <div className="mt-3 h-4 w-2/3 rounded bg-gray-100" />
+          <div className="mt-2 h-3 w-1/2 rounded bg-gray-100" />
+        </div>
+      ))}
     </div>
   );
 }

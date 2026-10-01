@@ -31,7 +31,8 @@ function poserCookie(nom: string, valeur: string) {
  * nouvelle région (/gb-en/restaurants) ; ailleurs, l'adresse reste et
  * Next.js re-rend les pages serveur avec les nouveaux cookies.
  */
-export function LanguageSwitcher() {
+/** `clair` : sur un en-tête blanc (accueil client), le bouton passe en sombre. */
+export function LanguageSwitcher({ clair = false }: { clair?: boolean } = {}) {
   const locale = useLocale() as Langue;
   const t = useTranslations('nav');
   const router = useRouter();
@@ -92,7 +93,9 @@ export function LanguageSwitcher() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-1.5 p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
+        className={`flex items-center gap-1.5 p-2 rounded-lg transition ${
+          clair ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-100' : 'text-gray-300 hover:text-white hover:bg-gray-700'
+        }`}
         aria-label={`${t('region')} : ${region.nomPays} (${region.nomLangue})`}
         title={`${region.nomPays} · ${region.nomLangue}`}
       >
