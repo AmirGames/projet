@@ -218,6 +218,19 @@ export default function SettingsScreen({
               </TouchableOpacity>
             ))}
           </View>
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={styles.switchLabel}>Annonces vocales</Text>
+              <Text style={styles.help}>
+                Sur la carte de l’application, les consignes sont dites à voix haute : « Dans 200 mètres, tournez à droite ».
+              </Text>
+            </View>
+            <Switch
+              value={prefs.voiceGuidance}
+              onValueChange={(voiceGuidance) => onChangePrefs({ voiceGuidance })}
+              trackColor={{ true: COLORS.success, false: COLORS.raised }}
+            />
+          </View>
         </Card>
 
         <Card title="Localisation">

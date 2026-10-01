@@ -35,10 +35,18 @@ const DIRECTION: Record<string, string> = {
   'sharp left': 'Tournez franchement à gauche',
 };
 
-const ordinal = (n: number) => (n === 1 ? '1re' : `${n}e`);
+const writtenOrdinal = (n: number) => (n === 1 ? '1re' : `${n}e`);
 
-/** « Tournez à droite sur Rue de Fer », « Au rond-point, prenez la 2e sortie ». */
-export function instruction(step: NavStep): string {
+/** À voix haute, « 2e » se lit mal : « deuxième ». */
+const SPOKEN_ORDINALS = ['', 'première', 'deuxième', 'troisième', 'quatrième', 'cinquième', 'sixième', 'septième', 'huitième', 'neuvième', 'dixième'];
+const spokenOrdinal = (n: number) => SPOKEN_ORDINALS[n] || writtenOrdinal(n);
+
+/**
+ * « Tournez à droite sur Rue de Fer », « Au rond-point, prenez la 2e sortie ».
+ * `spoken` : la même consigne, écrite pour la synthèse vocale.
+ */
+export function instruction(step: NavStep, spoken = false): string {
+  const ordinal = spoken ? spokenOrdinal : writtenOrdinal;
   const on = step.name ? ` sur ${step.name}` : '';
   const toward = step.name ? ` vers ${step.name}` : '';
   const side = step.modifier?.includes('left') ? 'à gauche' : step.modifier?.includes('right') ? 'à droite' : '';
@@ -108,4 +116,54 @@ export function nextManeuver(steps: NavStep[], from: number, driver: { lat: numb
   if (!driver) return i;
   while (i < steps.length - 1 && distanceM(driver, steps[i]) < MANEUVER_DONE_M) i++;
   return i;
+}
+
+/** « 200 mètres », « 1,5 kilomètre » : arrondi comme le dirait un GPS. */
+function spokenDistance(metres: number): string {
+  if (metres >= 950) {
+    const km = Math.round(metres / 100) / 10;
+    return `${String(km).replace('.', ',')} kilomètre${km >= 2 ? 's' : ''}`;
+  }
+  const rounded = metres >= 100 ? Math.round(metres / 50) * 50 : Math.max(10, Math.round(metres / 10) * 10);
+  return `${rounded} mètres`;
+}
+
+/**
+ * La consigne à annoncer : avec la distance (« Dans 200 mètres, tournez à
+ * droite sur Rue de Fer ») à l'approche, sans elle au moment de tourner.
+ */
+export function spokenInstruction(step: NavStep, metres: number | null): string {
+  if (step.type === 'arrive') {
+    return metres == null ? 'Vous êtes arrivé à destination' : `Dans ${spokenDistance(metres)}, vous arriverez à destination`;
+  }
+  const text = instruction(step, true);
+  if (metres == null) return text;
+  return `Dans ${spokenDistance(metres)}, ${text.charAt(0).toLowerCase()}${text.slice(1)}`;
+}
+
+/** Au moment de la manœuvre : la consigne seule, sans distance. */
+const NOW_M = 60;
+/** À l'approche d'une manœuvre lointaine : un rappel, avec la distance. */
+const APPROACH_M = 400;
+/** Une manœuvre annoncée de plus loin que ceci aura son rappel à l'approche. */
+const FAR_M = 600;
+
+/** Ce qui a déjà été dit d'une manœuvre. */
+export type Phase = 'announced' | 'approach' | 'now';
+
+/**
+ * Faut-il parler, et pour dire quoi : une manœuvre est annoncée en la
+ * découvrant, rappelée à 400 m si elle était à plus de 600 m, puis dite au
+ * moment de tourner (60 m). Rien n'est dit deux fois.
+ */
+export function voiceAnnouncement(
+  step: NavStep,
+  metres: number,
+  phase: Phase | undefined
+): { next: Phase; text: string } | null {
+  if (metres <= NOW_M) return phase === 'now' ? null : { next: 'now', text: spokenInstruction(step, null) };
+  // Déjà proche : pas de rappel à 400 m, ce serait la même phrase.
+  if (!phase) return { next: metres <= FAR_M ? 'approach' : 'announced', text: spokenInstruction(step, metres) };
+  if (phase === 'announced' && metres <= APPROACH_M) return { next: 'approach', text: spokenInstruction(step, metres) };
+  return null;
 }

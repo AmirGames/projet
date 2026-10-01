@@ -21,9 +21,16 @@ export interface Prefs {
    * suit le mode clair ou sombre réglé sur le téléphone.
    */
   theme: 'dark' | 'light' | 'system';
+  /** Les consignes du guidage dites à voix haute, sur la carte de l'application. */
+  voiceGuidance: boolean;
 }
 
-export const DEFAULT_PREFS: Prefs = { soundEnabled: true, navigationApp: 'zupeat', theme: 'dark' };
+export const DEFAULT_PREFS: Prefs = {
+  soundEnabled: true,
+  navigationApp: 'zupeat',
+  theme: 'dark',
+  voiceGuidance: true,
+};
 
 /** Version des préférences : la 2 a amené la carte intégrée. */
 const PREFS_VERSION = 2;

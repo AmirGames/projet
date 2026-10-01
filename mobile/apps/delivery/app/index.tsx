@@ -618,6 +618,8 @@ export default function DeliveryApp() {
           token={token}
           position={position}
           navigationApp={prefs.navigationApp}
+          voiceGuidance={prefs.voiceGuidance}
+          onVoiceGuidanceChange={(voiceGuidance) => updatePrefs({ voiceGuidance })}
           onBack={() => setOpenDeliveryId(null)}
           onChanged={() => loadAll(token)}
           onTrackingChange={setTracking}
@@ -695,6 +697,8 @@ export default function DeliveryApp() {
             token={token}
             position={position}
             navigationApp={prefs.navigationApp}
+            voiceGuidance={prefs.voiceGuidance}
+            onVoiceGuidanceChange={(voiceGuidance) => updatePrefs({ voiceGuidance })}
             onBack={() => {
               setCourseSel(null);
               // Il reste des courses : retour à la tournée (ou à la suivante).

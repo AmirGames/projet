@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, Vibration, View } from 'react-native';
 import { distanceM, formatDistance } from '../lib/deliveries';
 import { instruction, maneuverIcon, NavStep, nextManeuver } from '../lib/navigation';
+import { useVoiceGuidance } from '../lib/useVoiceGuidance';
 import { COLORS, themedStyles } from './ui';
 
 /**
@@ -9,14 +10,19 @@ import { COLORS, themedStyles } from './ui';
  * prochaine manœuvre (flèche, distance, consigne), celle d'après, et la liste
  * de toutes les étapes d'un toucher. Le guidage avance seul avec le GPS ;
  * l'itinéraire, recalculé par la carte quand le livreur avance ou s'écarte,
- * le remet à jour.
+ * le remet à jour. Les consignes sont aussi dites à voix haute, sauf si le
+ * livreur coupe le son (bouton 🔊, ou les paramètres).
  */
 export default function GuidanceCard({
   steps,
   driver,
+  voice,
+  onToggleVoice,
 }: {
   steps: NavStep[];
   driver: { lat: number; lng: number } | null;
+  voice: boolean;
+  onToggleVoice: () => void;
 }) {
   const [listOpen, setListOpen] = useState(false);
   // La manœuvre en cours, pour cet itinéraire : un nouvel itinéraire repart
@@ -31,6 +37,8 @@ export default function GuidanceCard({
     if (sameRoute) Vibration.vibrate(60);
     setProgress({ steps, index: current });
   }, [sameRoute, progress.index, current, steps]);
+
+  useVoiceGuidance(steps, current, driver, voice);
 
   if (steps.length < 2) return null;
   const step = steps[current];
@@ -48,6 +56,14 @@ export default function GuidanceCard({
           </Text>
         </View>
         <Text style={styles.toggle}>{listOpen ? '▲' : '▼'}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.voice}
+        onPress={onToggleVoice}
+        hitSlop={10}
+        accessibilityLabel={voice ? 'Couper les annonces vocales' : 'Activer les annonces vocales'}
+      >
+        <Text style={styles.voiceText}>{voice ? '🔊' : '🔇'}</Text>
       </TouchableOpacity>
       {then && !listOpen && (
         <Text style={styles.then} numberOfLines={1}>
@@ -80,7 +96,19 @@ const styles = themedStyles(() => ({
   arrow: { fontSize: 40, fontWeight: '800', color: COLORS.link, width: 56, textAlign: 'center', marginRight: 8 },
   distance: { fontSize: 22, fontWeight: '800', color: COLORS.text },
   instruction: { fontSize: 16, fontWeight: '600', color: COLORS.text, marginTop: 2 },
-  toggle: { fontSize: 14, color: COLORS.muted, marginLeft: 8 },
+  toggle: { fontSize: 14, color: COLORS.muted, marginLeft: 8, marginRight: 36 },
+  voice: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.raised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceText: { fontSize: 18 },
   then: {
     fontSize: 13,
     color: COLORS.secondary,

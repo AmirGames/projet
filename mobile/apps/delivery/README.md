@@ -17,7 +17,10 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
   l'itinéraire par la route, le temps et la distance restants, et en plein
   écran le **guidage virage par virage** (flèche, distance jusqu'à la
   manœuvre, consigne, la suivante, toutes les étapes d'un toucher ; avance seul
-  avec le GPS, brève vibration à chaque manœuvre faite) (OpenStreetMap et
+  avec le GPS, brève vibration à chaque manœuvre faite) et ses **annonces
+  vocales** (« Dans 200 mètres, tournez à droite », rappel à 400 m, puis au
+  moment de tourner ; bouton 🔊 sur le bandeau et réglage dans les
+  paramètres) (OpenStreetMap et
   OSRM, sans clé ; Google Maps, Waze ou Plans restent au choix dans les
   paramètres), prise en
   charge **déverrouillée à moins de 150 m du commerce** par un curseur à glisser
@@ -54,7 +57,7 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
 - **Revenus** : jour / semaine / mois, ce qui reste dû, ce qui attend le
   virement, ce qui a été versé, et les relevés.
 - **Mes avis**, **Notifications**, **Support** (discussion en direct),
-  **Paramètres** (thème sombre, clair ou comme le téléphone, sonnerie, application de navigation, état du GPS et des push),
+  **Paramètres** (thème sombre, clair ou comme le téléphone, sonnerie, application de navigation, annonces vocales, état du GPS et des push),
   **Mon compte** (profil, véhicule, **dossier** avec envoi des pièces depuis
   l'appareil photo ou la galerie).
 
