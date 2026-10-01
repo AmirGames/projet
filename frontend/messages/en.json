@@ -73,6 +73,7 @@
       "profile": "My profile",
       "accessLogs": "Access Log",
       "driverSupport": "Driver chat",
+      "deliveryIncidents": "Delivery incidents",
       "reviews": "Reported reviews",
       "monitoring": "Monitoring",
       "roles": "Roles & access",
@@ -2136,6 +2137,61 @@
     "gpsLost": "GPS lost",
     "loadError": "Could not load.",
     "sendError": "The message was not sent."
+  },
+  "superownerDeliveryIncidents": {
+    "title": "Delivery incidents",
+    "description": "Drivers who don't show up at the store, drift away or don't deliver: what monitoring has detected.",
+    "rulePickup": "Order at the store: the driver is warned after 20 min (or 5 min away from their route), then the delivery goes to another driver after 30 min (or 10 min off route).",
+    "ruleDelivery": "Order picked up: after 30 min (more depending on distance and batch), or 5 min off route, the driver, store, customer and platform are notified. The decision is yours.",
+    "refresh": "Refresh",
+    "tabOpen": "To handle",
+    "tabAll": "All",
+    "loading": "Loading...",
+    "loadError": "Unable to load incidents",
+    "actionError": "The action could not be saved",
+    "emptyOpen": "No delivery is going wrong right now.",
+    "empty": "No incident recorded.",
+    "minutesAgo": "{minutes} min ago",
+    "hoursAgo": "{hours} h ago",
+    "order": "Order #{numero}",
+    "closed": "Handled: {resolution}",
+    "driver": "Driver",
+    "store": "Store",
+    "customer": "Customer",
+    "gpsLost": "Location lost",
+    "chat": "Message the driver",
+    "withdraw": "Withdraw delivery",
+    "fail": "Mark delivery as failed",
+    "close": "Mark as handled",
+    "confirmButton": "Confirm",
+    "cancel": "Cancel",
+    "reasonPlaceholder": "Reason (shown to the driver)",
+    "resolutionPlaceholder": "What was done",
+    "confirm": {
+      "retirer": "The order is still at the store: the delivery will be taken from this driver and offered to another.",
+      "echec": "The order left with the driver: the delivery will be closed as failed and the driver released, unpaid. Then refund the customer from billing.",
+      "clore": "The incident will be marked as handled."
+    },
+    "type": {
+      "RETARD_RETRAIT": "Not showing up at the store",
+      "ECART_RETRAIT": "Moving away from the store",
+      "RETARD_LIVRAISON": "Late delivery",
+      "ECART_LIVRAISON": "Off route to the customer",
+      "COURSE_RETIREE": "Delivery withdrawn",
+      "COURSE_ECHOUEE": "Delivery failed"
+    },
+    "courseStatus": {
+      "PENDING": "looking for a driver",
+      "ACCEPTED": "at the store",
+      "PICKED_UP": "on the way",
+      "DELIVERED": "delivered",
+      "FAILED": "failed"
+    }
+  },
+  "driverCourseAlerts": {
+    "warningTitle": "Delivery needs attention",
+    "withdrawnTitle": "Delivery withdrawn",
+    "dismiss": "Close"
   },
   "superownerReviews": {
     "title": "Reported reviews",

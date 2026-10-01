@@ -65,6 +65,7 @@ const PAGES: [string, string | null][] = [
   ['/superowner/members', 'members'],
   ['/superowner/versements', 'payouts'],
   ['/superowner/reviews', 'reviews'],
+  ['/superowner/incidents-livraison', 'driver-support'],
   ['/superowner/zupdrive/chauffeurs', 'chauffeurs'],
   ['/superowner/zupdrive/tarifs', 'courses-drive'],
   ['/superowner/zupdrive/courses', 'courses-drive'],

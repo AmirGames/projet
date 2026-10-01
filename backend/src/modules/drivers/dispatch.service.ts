@@ -370,6 +370,9 @@ export class DispatchService {
         OR: [{ pausedUntil: null }, { pausedUntil: { lte: new Date() } }],
         gpsLostAt: null,
         offers: { none: { status: "PENDING", expiresAt: { gt: new Date() } } },
+        // Un livreur en retard ou hors trajet (voir surveillance-courses.service.ts)
+        // ne reçoit pas de course en plus.
+        deliveryIncidents: { none: { closedAt: null } },
       },
       select: {
         id: true,

@@ -73,6 +73,7 @@
       "profile": "Mon profil",
       "accessLogs": "Connexions",
       "driverSupport": "Chat livreurs",
+      "deliveryIncidents": "Incidents de livraison",
       "reviews": "Avis signalés",
       "monitoring": "Surveillance",
       "roles": "Rôles et accès",
@@ -2136,6 +2137,61 @@
     "gpsLost": "GPS perdu",
     "loadError": "Chargement impossible.",
     "sendError": "Le message n'est pas parti."
+  },
+  "superownerDeliveryIncidents": {
+    "title": "Incidents de livraison",
+    "description": "Livreurs qui ne viennent pas au commerce, s'éloignent ou ne livrent pas : ce que la surveillance a constaté.",
+    "rulePickup": "Commande au commerce : le livreur est averti après 20 min (ou 5 min loin de son trajet), puis la course est confiée à un autre livreur après 30 min (ou 10 min d'écart).",
+    "ruleDelivery": "Commande récupérée : après 30 min (plus selon la distance et la tournée), ou 5 min hors trajet, le livreur, le commerce, le client et la plateforme sont prévenus. La décision vous revient.",
+    "refresh": "Actualiser",
+    "tabOpen": "À traiter",
+    "tabAll": "Tous",
+    "loading": "Chargement...",
+    "loadError": "Impossible de charger les incidents",
+    "actionError": "L'action n'a pas pu être enregistrée",
+    "emptyOpen": "Aucune course ne dérape en ce moment.",
+    "empty": "Aucun incident enregistré.",
+    "minutesAgo": "il y a {minutes} min",
+    "hoursAgo": "il y a {hours} h",
+    "order": "Commande #{numero}",
+    "closed": "Traité : {resolution}",
+    "driver": "Livreur",
+    "store": "Commerce",
+    "customer": "Client",
+    "gpsLost": "Position perdue",
+    "chat": "Écrire au livreur",
+    "withdraw": "Retirer la course",
+    "fail": "Déclarer la course échouée",
+    "close": "Marquer comme traité",
+    "confirmButton": "Confirmer",
+    "cancel": "Annuler",
+    "reasonPlaceholder": "Motif (visible par le livreur)",
+    "resolutionPlaceholder": "Ce qui a été fait",
+    "confirm": {
+      "retirer": "La commande est encore au commerce : la course sera retirée au livreur et proposée à un autre.",
+      "echec": "La commande est partie avec le livreur : la course sera close comme échouée et le livreur libéré, sans paiement. Remboursez ensuite le client depuis la facturation.",
+      "clore": "L'incident sera marqué comme traité."
+    },
+    "type": {
+      "RETARD_RETRAIT": "Ne vient pas au commerce",
+      "ECART_RETRAIT": "S'éloigne du commerce",
+      "RETARD_LIVRAISON": "Livraison en retard",
+      "ECART_LIVRAISON": "Hors trajet vers le client",
+      "COURSE_RETIREE": "Course retirée",
+      "COURSE_ECHOUEE": "Course échouée"
+    },
+    "courseStatus": {
+      "PENDING": "recherche d'un livreur",
+      "ACCEPTED": "au commerce",
+      "PICKED_UP": "en route",
+      "DELIVERED": "livrée",
+      "FAILED": "échouée"
+    }
+  },
+  "driverCourseAlerts": {
+    "warningTitle": "Course à surveiller",
+    "withdrawnTitle": "Course retirée",
+    "dismiss": "Fermer"
   },
   "superownerReviews": {
     "title": "Avis signalés",

@@ -6,7 +6,8 @@ import { authMiddleware } from "../auth/auth.middleware";
 import { DriverApprovalService, libelleDuDocument, piecesAttendues } from "./driver-approval.service";
 import { DriverPayoutService } from "../payouts/driver-payout.service";
 import { DriverSupportService, LONGUEUR_MAX } from "./driver-support.service";
-import { isSuperOwner } from "../superowner/shared";
+import { isSuperOwner, journaliser } from "../superowner/shared";
+import { SurveillanceCoursesService } from "./surveillance-courses.service";
 
 const router = Router();
 
@@ -336,5 +337,121 @@ router.post("/driver-support/:driverId", authMiddleware, isSuperOwner, async (re
     next(err);
   }
 });
+
+/**
+ * GET /superowner/delivery-incidents?etat=ouverts|tous - Les courses qui dérapent
+ *
+ * Livreur qui ne vient pas au commerce, qui s'éloigne, livraison en retard,
+ * courses retirées : ce que la surveillance a constaté (voir
+ * surveillance-courses.service.ts), les ouverts d'abord.
+ */
+router.get("/delivery-incidents", authMiddleware, isSuperOwner, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { etat } = z.object({ etat: z.enum(["ouverts", "tous"]).default("ouverts") }).parse(req.query);
+    res.json({ success: true, data: await SurveillanceCoursesService.liste({ ouverts: etat === "ouverts" }) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const motif = z.object({ motif: z.string().trim().min(3, "Donnez le motif").max(500) });
+
+/**
+ * POST /superowner/delivery-incidents/courses/:deliveryId/retirer - Retirer la course au livreur
+ *
+ * Commande encore au commerce (ACCEPTED) : la course repart chercher un autre
+ * livreur, et ne sera plus proposée d'office à celui-ci. 409 si elle a déjà
+ * été récupérée (DELIVERY_NOT_WITHDRAWABLE) ou a changé entre-temps.
+ */
+router.post(
+  "/delivery-incidents/courses/:deliveryId/retirer",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const body = motif.parse(req.body);
+      const resultat = await SurveillanceCoursesService.retirerCourse(req.params.deliveryId as string, {
+        par: { userId: req.userId as string },
+        motif: body.motif,
+      });
+
+      await journaliser(req, "WITHDRAW_DELIVERY_FROM_DRIVER", req.params.deliveryId as string, {
+        driverId: resultat?.driverId,
+        orderId: resultat?.orderId,
+        avant: { status: "ACCEPTED", driverId: resultat?.driverId },
+        apres: { status: "PENDING", driverId: null },
+        motif: body.motif,
+      });
+
+      res.json({ success: true, data: resultat });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * POST /superowner/delivery-incidents/courses/:deliveryId/echec - Déclarer la course échouée
+ *
+ * Commande partie avec le livreur (PICKED_UP) et qui n'arrivera pas : la
+ * course passe à FAILED, le livreur est libéré et n'est pas payé. Le
+ * remboursement du client reste à faire depuis la facturation.
+ */
+router.post(
+  "/delivery-incidents/courses/:deliveryId/echec",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const body = motif.parse(req.body);
+      const resultat = await SurveillanceCoursesService.declarerEchec(req.params.deliveryId as string, {
+        par: { userId: req.userId as string },
+        motif: body.motif,
+      });
+
+      await journaliser(req, "FAIL_DELIVERY", req.params.deliveryId as string, {
+        driverId: resultat.driverId,
+        orderId: resultat.orderId,
+        avant: { status: "PICKED_UP" },
+        apres: { status: "FAILED" },
+        motif: body.motif,
+      });
+
+      res.json({ success: true, data: resultat });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /superowner/delivery-incidents/:id/clore - Marquer un incident comme traité
+router.post(
+  "/delivery-incidents/:id/clore",
+  authMiddleware,
+  isSuperOwner,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const body = z
+        .object({ resolution: z.string().trim().min(3, "Dites ce qui a été fait").max(500) })
+        .parse(req.body);
+      const { avant, apres } = await SurveillanceCoursesService.clore(
+        req.params.id as string,
+        { userId: req.userId as string },
+        body.resolution
+      );
+
+      await journaliser(req, "CLOSE_DELIVERY_INCIDENT", apres.id, {
+        deliveryId: apres.deliveryId,
+        driverId: apres.driverId,
+        avant: { closedAt: avant.closedAt },
+        apres: { closedAt: apres.closedAt, resolution: apres.resolution },
+      });
+
+      res.json({ success: true, data: apres });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 export default router;

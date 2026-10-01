@@ -221,6 +221,17 @@ le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
   avant que le serveur accepte la photo du dépôt. **« Tout va bien ? »** :
   immobile plus de 3 minutes hors commerce et client, il confirme ou appelle
   le 112, le support reçoit sa position
+- **Course acceptée surveillée** (`surveillance-courses.service.ts`, toutes
+  les 30 s avec la surveillance des livreurs). Commande au commerce : averti à
+  20 min sans y être (ou après 5 min à plus du rayon d'attribution + 3 km),
+  la course lui est **retirée et reproposée** à 30 min (ou 10 min d'écart) —
+  sauf s'il est au commerce, ou à moins de 2 km d'une commande pas encore
+  prête. Elle ne lui revient plus d'office et reste dans son historique,
+  annulée avec le motif. Commande récupérée : à 30 min (4 min/km + 10 min si
+  plus long, + 10 min par autre remise de la tournée) ou 5 min à plus de 5 km
+  de détour, **alerte** au livreur, au commerce, au client et à la plateforme,
+  sans rien retirer. Chaque constat est unique par attribution
+  (`DeliveryIncident`) ; un livreur en incident ne reçoit pas de course en plus
 - **Application** : course gardée et étapes mises en file **sans réseau**
   (envoyées au retour, `effectueLe` garde l'heure réelle) ; position en
   **arrière-plan** (expo-location + expo-task-manager) ; course proposée
@@ -244,6 +255,14 @@ le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
   `EAT`, `DRIVE`) ; `User.platformRole` a disparu. La gestion de l'équipe et
   des rôles reste au superowner seul. Les chiffres financiers ne partent
   qu'aux rôles qui ont `billing`
+- **Incidents de livraison** (`/superowner/incidents-livraison`, section
+  `driver-support`) : les courses qui dérapent, avec livreur, commerce et
+  client à joindre. **Retirer la course** (commande au commerce, elle repart
+  en recherche) ou **la déclarer échouée** (commande partie avec le livreur :
+  `FAILED`, `cancelledBy: PLATFORM`, livreur libéré sans paiement ; le
+  remboursement se fait depuis la facturation), ou **marquer traité** — tout
+  journalisé. Alerte aussi par courriel et webhook (`prevenirPlateforme`,
+  `vigie.service.ts`)
 - Commerçants : formule, suspension, fermeture (**section à part**,
   `organizations-close` : elle archive puis efface à 60 jours ; le Support
   suspend et réactive mais ne ferme pas), réouverture depuis sauvegarde
@@ -432,7 +451,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 56 | **1872** |
+| **API** (`backend/scripts/verification/`) | 57 | **1892** |
 | **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
 
 Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1841

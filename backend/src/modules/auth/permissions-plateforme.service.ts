@@ -148,6 +148,8 @@ const ROUTES: Record<Routeur, [RegExp, string][]> = {
     [/^\/financial-reports/, "financial-reports"],
     [/^\/support-tickets/, "support-tickets"],
     [/^\/driver-support/, "driver-support"],
+    // Les courses qui dérapent : le support livreurs les suit et les traite.
+    [/^\/delivery-incidents/, "driver-support"],
     [/^\/review-reports/, "reviews"],
     [/^\/api-keys/, "api-keys"],
     [/^\/webhooks/, "webhooks"],

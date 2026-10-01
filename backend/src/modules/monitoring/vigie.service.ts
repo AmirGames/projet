@@ -326,24 +326,30 @@ async function destinataires(): Promise<string[]> {
   }
 }
 
-async function alerter(incident: Incident, ouverture: boolean) {
+/**
+ * Prévient l'équipe de la plateforme : webhook (Slack, Mattermost, Discord)
+ * et courriel aux superowners et aux adresses de MONITORING_ALERT_EMAILS.
+ *
+ * Sert à la vigie comme aux autres surveillances (courses en retard…) : un
+ * seul chemin pour toutes les alertes, et un seul réglage pour les couper.
+ */
+export async function prevenirPlateforme(alerte: {
+  sujet: string;
+  texte: string;
+  /** La page de l'espace plateforme à ouvrir, par exemple /superowner/monitoring. */
+  chemin: string;
+  bouton: string;
+  couleur?: string;
+  /** Prévenir par courriel que les courriels ne partent plus n'arriverait pas. */
+  sansCourriel?: boolean;
+}) {
   if (process.env.NODE_ENV === "test" || process.env.MONITORING_ALERTS === "false") return;
 
-  const derniere = derniereAlerte.get(incident.cle) ?? 0;
-  if (ouverture && Date.now() - derniere < RELANCE_MIN_MS) return;
-  if (ouverture) derniereAlerte.set(incident.cle, Date.now());
-
-  const prefixe = ouverture ? (incident.niveau === "CRITIQUE" ? "🔴" : "🟠") : "✅";
-  const sujet = ouverture
-    ? `${prefixe} [ZupEat] ${incident.titre}`
-    : `${prefixe} [ZupEat] Rétabli : ${incident.titre}`;
-  const texte = ouverture
-    ? `${incident.detail}\n\nOuvert le ${new Date(incident.ouvertLe).toLocaleString("fr-FR")}.`
-    : `L'incident est clos (ouvert le ${new Date(incident.ouvertLe).toLocaleString("fr-FR")}).`;
+  const { sujet, texte } = alerte;
   // Le panneau de la plateforme a son propre domaine (manager.zupone.com) :
   // passer par FRONTEND_URL imposait une redirection, et une session
   // ouverte sur l'autre domaine.
-  const lien = `${process.env.PLATEFORME_URL || process.env.FRONTEND_URL || "http://localhost:3000"}/superowner/monitoring`;
+  const lien = `${process.env.PLATEFORME_URL || process.env.FRONTEND_URL || "http://localhost:3000"}${alerte.chemin}`;
 
   const webhook = process.env.MONITORING_WEBHOOK_URL;
   if (webhook) {
@@ -360,8 +366,7 @@ async function alerter(incident: Incident, ouverture: boolean) {
     );
   }
 
-  // Prévenir par courriel que les courriels ne partent plus n'arriverait pas.
-  if (incident.cle === "dependance:email") return;
+  if (alerte.sansCourriel) return;
 
   for (const email of await destinataires()) {
     EmailService.sendEmail({
@@ -369,14 +374,39 @@ async function alerter(incident: Incident, ouverture: boolean) {
       subject: sujet,
       text: `${texte}\n\n${lien}`,
       html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937">
-        <h2 style="color:${ouverture ? "#dc2626" : "#16a34a"}">${sujet}</h2>
+        <h2 style="color:${alerte.couleur || "#dc2626"}">${sujet}</h2>
         <p>${texte.replace(/\n/g, "<br>")}</p>
-        <p><a href="${lien}" style="display:inline-block;background:#ea580c;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">Ouvrir la surveillance</a></p>
+        <p><a href="${lien}" style="display:inline-block;background:#ea580c;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">${alerte.bouton}</a></p>
       </div>`,
     }).catch(() => {
       // EmailService journalise déjà l'échec.
     });
   }
+}
+
+async function alerter(incident: Incident, ouverture: boolean) {
+  if (process.env.NODE_ENV === "test" || process.env.MONITORING_ALERTS === "false") return;
+
+  const derniere = derniereAlerte.get(incident.cle) ?? 0;
+  if (ouverture && Date.now() - derniere < RELANCE_MIN_MS) return;
+  if (ouverture) derniereAlerte.set(incident.cle, Date.now());
+
+  const prefixe = ouverture ? (incident.niveau === "CRITIQUE" ? "🔴" : "🟠") : "✅";
+  const sujet = ouverture
+    ? `${prefixe} [ZupEat] ${incident.titre}`
+    : `${prefixe} [ZupEat] Rétabli : ${incident.titre}`;
+  const texte = ouverture
+    ? `${incident.detail}\n\nOuvert le ${new Date(incident.ouvertLe).toLocaleString("fr-FR")}.`
+    : `L'incident est clos (ouvert le ${new Date(incident.ouvertLe).toLocaleString("fr-FR")}).`;
+
+  await prevenirPlateforme({
+    sujet,
+    texte,
+    chemin: "/superowner/monitoring",
+    bouton: "Ouvrir la surveillance",
+    couleur: ouverture ? "#dc2626" : "#16a34a",
+    sansCourriel: incident.cle === "dependance:email",
+  });
 }
 
 // ---------------------------------------------------------------------------
