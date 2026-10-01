@@ -14,7 +14,10 @@ Course en cours), même tiroir latéral, mêmes composants (`components/ui.tsx`)
   course en cours, gains du jour et de la semaine, note, **pause** (15, 30, 60 min).
 - **Course** : les quatre étapes (aller au commerce, prendre en charge, aller au
   client, remettre), **carte intégrée** qui suit le livreur en direct avec
-  l'itinéraire par la route, le temps et la distance restants (OpenStreetMap et
+  l'itinéraire par la route, le temps et la distance restants, et en plein
+  écran le **guidage virage par virage** (flèche, distance jusqu'à la
+  manœuvre, consigne, la suivante, toutes les étapes d'un toucher ; avance seul
+  avec le GPS, brève vibration à chaque manœuvre faite) (OpenStreetMap et
   OSRM, sans clé ; Google Maps, Waze ou Plans restent au choix dans les
   paramètres), prise en
   charge **déverrouillée à moins de 150 m du commerce** par un curseur à glisser
