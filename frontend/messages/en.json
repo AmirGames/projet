@@ -2214,7 +2214,9 @@
       "REVIEW": "Driver payment on hold, awaiting your decision.",
       "REFUSED": "Drop-off refused: the delivery will not be paid."
     },
-    "alreadyOnStatement": "The delivery was already on a payout statement: refusing the drop-off refunds the customer and suspends the driver, but does not take back what they were paid."
+    "alreadyOnStatement": "The delivery was already on a payout statement: refusing the drop-off refunds the customer and suspends the driver, but does not take back what they were paid.",
+    "depositDistance": "Photo taken {distance} km from the customer's address (phone accuracy: ± {precision} m). A hint only: a location can be faked.",
+    "depositNoPosition": "Phone location unknown when the photo was taken."
   },
   "driverCourseAlerts": {
     "warningTitle": "Delivery needs attention",

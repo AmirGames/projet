@@ -1292,6 +1292,14 @@ model OrderDelivery {
   proofPhoto      String?   // Photo du dépôt, quand le client est absent
   proofNote       String?
   proofAt         DateTime?
+  /// Où le téléphone du livreur se trouvait quand il a pris la photo du
+  /// dépôt, et quand. Un indice, pas une preuve (une position se falsifie) :
+  /// une photo prise loin de l'adresse suspend le paiement pour examen.
+  proofLat        Float?
+  proofLng        Float?
+  /// Précision annoncée par le téléphone, en mètres.
+  proofAccuracy   Float?
+  proofPositionAt DateTime?
 
   /// Le client a été prévenu que le livreur approche (à moins de 300 m).
   ///

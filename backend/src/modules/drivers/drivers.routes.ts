@@ -24,6 +24,7 @@ import {
   exigerAttenteTerminee,
   exigerPresenceChezClient,
   finAttente,
+  lirePositionDepot,
 } from "./delivery-proof.service";
 import { FileUploadService } from "../files/file-upload.service";
 import { notesDuLivreur } from "./driver-rating.service";
@@ -1182,6 +1183,9 @@ router.patch(
           code: req.body?.code,
           photoUrl: req.body?.photoUrl,
           note: req.body?.note,
+          // Où le téléphone était quand la photo a été prise (indice, voir
+          // photoPriseLoinDuClient).
+          position: lirePositionDepot(req.body?.positionDepot),
         });
       }
 

@@ -16,7 +16,7 @@ import { prevenirPlateforme } from "../monitoring/vigie.service";
 import { DispatchService, MAX_SOLLICITATIONS, STATUTS_EN_COURSE } from "./dispatch.service";
 import { GPS_PERDU_APRES_MS } from "./driver-availability.service";
 import { presenter } from "../files/fichiers-prives.service";
-import { ATTENTE_CLIENT_MS, RAYON_ATTENTE_CLIENT_KM } from "./delivery-proof.service";
+import { ATTENTE_CLIENT_MS, RAYON_ATTENTE_CLIENT_KM, photoPriseLoinDuClient } from "./delivery-proof.service";
 import { DriverApprovalService } from "./driver-approval.service";
 import { paymentService } from "../payments/payment.service";
 import { emitWebhook } from "../webhooks/webhook.service";
@@ -331,6 +331,18 @@ const auteurDe = (par: Auteur) => (par === "SYSTEM" ? "SYSTEM" : par.userId);
 
 const numeroDe = (orderId: string) => orderId.slice(-6).toUpperCase();
 const prenom = (nom: string | null | undefined, defaut: string) => nom?.split(" ")[0] || defaut;
+
+/** Distance entre l'endroit de la photo du dépôt et l'adresse du client. */
+function distanceDuDepot(c: {
+  proofLat: number | null;
+  proofLng: number | null;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
+}) {
+  const prise = { latitude: c.proofLat, longitude: c.proofLng };
+  const adresse = { latitude: c.deliveryLat, longitude: c.deliveryLng };
+  return estUnPoint(prise) && estUnPoint(adresse) ? distanceKm(prise, adresse) : null;
+}
 
 export class SurveillanceCoursesService {
   /**
@@ -1083,8 +1095,9 @@ export class SurveillanceCoursesService {
 
   /**
    * Un dépôt en photo vient de clore la course : s'il s'est fait pendant un
-   * incident de livraison (retard, livreur hors trajet), le paiement au
-   * livreur est suspendu jusqu'à la décision de la plateforme.
+   * incident de livraison (retard, livreur hors trajet), ou si la photo a été
+   * prise loin de l'adresse du client (position jointe par le téléphone), le
+   * paiement au livreur est suspendu jusqu'à la décision de la plateforme.
    *
    * C'est le garde-fou de dernier recours : un livreur parti avec la commande
    * qui parvient à la « déposer » n'est pas payé sans examen.
@@ -1092,10 +1105,25 @@ export class SurveillanceCoursesService {
   static async apresDepotPhoto(deliveryId: string) {
     const course = await db.orderDelivery.findUnique({
       where: { id: deliveryId },
-      select: { ...COURSE_EN_COURS, proofType: true, payoutId: true, payoutHold: true },
+      select: {
+        ...COURSE_EN_COURS,
+        proofType: true,
+        payoutId: true,
+        payoutHold: true,
+        proofLat: true,
+        proofLng: true,
+        proofAccuracy: true,
+        proofPositionAt: true,
+        proofAt: true,
+        deliveryTime: true,
+      },
     });
     if (!course || course.status !== "DELIVERED" || course.proofType !== "PHOTO") return false;
     if (!course.driverId || !course.assignedAt || course.payoutId || course.payoutHold) return false;
+
+    // La photo a été prise loin de l'adresse du client.
+    const loin = photoPriseLoinDuClient(course);
+    const raisons = loin != null ? [`Photo prise à ${km(loin)} km de l'adresse du client.`] : [];
 
     const incidents = await db.deliveryIncident.findMany({
       where: {
@@ -1108,9 +1136,12 @@ export class SurveillanceCoursesService {
       },
       select: { detail: true },
     });
-    if (incidents.length === 0) return false;
+    if (incidents.length > 0) {
+      raisons.push(`Dépôt en photo pendant un incident de livraison : ${incidents.map((i) => i.detail).join(" ")}`);
+    }
+    if (raisons.length === 0) return false;
 
-    const motif = `Dépôt en photo pendant un incident de livraison : ${incidents.map((i) => i.detail).join(" ")}`;
+    const motif = raisons.join(" ");
     await this.suspendrePaiement(course, "DEPOT_CONTESTE", motif);
     return true;
   }
@@ -1470,6 +1501,11 @@ export class SurveillanceCoursesService {
             proofType: true,
             proofPhoto: true,
             proofNote: true,
+            proofLat: true,
+            proofLng: true,
+            proofAccuracy: true,
+            deliveryLat: true,
+            deliveryLng: true,
             payoutHold: true,
             payoutHoldReason: true,
             payoutId: true,
@@ -1523,7 +1559,15 @@ export class SurveillanceCoursesService {
           paiement: { blocage: i.delivery.payoutHold, motif: i.delivery.payoutHoldReason, surUnReleve: Boolean(i.delivery.payoutId) },
           depot:
             i.delivery.proofType === "PHOTO"
-              ? { photo: presenter(i.delivery.proofPhoto), note: i.delivery.proofNote, le: i.delivery.deliveryTime }
+              ? {
+                  photo: presenter(i.delivery.proofPhoto),
+                  note: i.delivery.proofNote,
+                  le: i.delivery.deliveryTime,
+                  // Où la photo a été prise, par rapport à l'adresse du client :
+                  // un indice (la position se falsifie), null si inconnue.
+                  distanceAdresseKm: distanceDuDepot(i.delivery),
+                  precisionM: i.delivery.proofAccuracy,
+                }
               : null,
           boutique: i.delivery.order?.store ?? null,
           client: i.delivery.order

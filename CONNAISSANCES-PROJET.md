@@ -252,6 +252,14 @@ le premier compte qu'ils inscrivent (`plateformeSiAucune`, voir §6).
   plateforme : validé, il est payé avec le relevé de la semaine de la
   validation (`payoutHoldReleasedAt`) ; refusé (`REFUSED`), jamais payé,
   commande annulée, client remboursé, livreur suspendu
+- **Position de la photo du dépôt** : l'application livreur (et l'espace web)
+  joint au dépôt la position du téléphone au moment de la photo
+  (`positionDepot` : latitude, longitude, précision, heure ; gardée dans la
+  file hors réseau). Stockée (`proofLat`, `proofLng`, `proofAccuracy`,
+  `proofPositionAt`), elle est comparée à l'adresse : à plus de 500 m (plus
+  la précision annoncée, jusqu'à 200 m), le paiement est suspendu pour
+  examen. Un indice, pas une preuve : le dépôt n'est jamais refusé pour ça,
+  et une position absente (anciennes versions) ne bloque rien
 - **Livraison échouée** (course échouée ou dépôt refusé) : la commande passe à
   `REJECTED`, motif `DELIVERY_FAILED`, et reste **due au commerçant** comme
   une vente (ligne 130 du relevé) : la plateforme rembourse le client et
@@ -479,7 +487,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 
 | | Suites | Contrôles |
 |---|---|---|
-| **API** (`backend/scripts/verification/`) | 57 | **1933** |
+| **API** (`backend/scripts/verification/`) | 57 | **1940** |
 | **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
 
 Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1841

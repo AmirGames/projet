@@ -53,7 +53,14 @@ interface Incident {
     /** Le paiement au livreur : REVIEW (suspendu, en examen), REFUSED, ou null. */
     paiement: { blocage: string | null; motif: string | null; surUnReleve: boolean };
     /** Le dépôt en photo, quand la course a été close ainsi. */
-    depot: { photo: string | null; note: string | null; le: string | null } | null;
+    depot: {
+      photo: string | null;
+      note: string | null;
+      le: string | null;
+      /** Distance entre l'endroit de la photo et l'adresse du client (indice). */
+      distanceAdresseKm: number | null;
+      precisionM: number | null;
+    } | null;
     boutique: { id: string; name: string; phone: string | null } | null;
     client: { nom: string; telephone: string | null; ville: string | null } | null;
     commande: string | null;
@@ -288,6 +295,20 @@ export default function IncidentsLivraisonPage() {
                           className="mt-1 h-32 w-auto max-w-full rounded border border-gray-700 object-cover"
                         />
                       </a>
+                    )}
+                    {incident.course.depot && (
+                      <p
+                        className={`text-xs ${
+                          (incident.course.depot.distanceAdresseKm ?? 0) > 0.5 ? 'text-red-300' : 'text-gray-400'
+                        }`}
+                      >
+                        {incident.course.depot.distanceAdresseKm == null
+                          ? t('depositNoPosition')
+                          : t('depositDistance', {
+                              distance: incident.course.depot.distanceAdresseKm.toFixed(2).replace('.', ','),
+                              precision: Math.round(incident.course.depot.precisionM ?? 0),
+                            })}
+                      </p>
                     )}
                     {incident.course.depot?.note && (
                       <p className="text-xs text-gray-400">{t('depositNote', { note: incident.course.depot.note })}</p>

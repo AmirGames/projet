@@ -404,4 +404,57 @@ check(
   Number(await sqlScalaire(`SELECT count(*) FROM "SystemAuditLog" WHERE action = 'REFUSE_DELIVERY_DEPOSIT' AND target = '${course6.courseId}'`)) === 1
 );
 
+titre('Position du téléphone jointe à la photo du dépôt');
+const E = await nouveauLivreur('Elsa', COMMERCE);
+
+async function deposeePar(positionDepot) {
+  const course = await commander();
+  await patch('/api/drivers/location', COMMERCE, E);
+  await patch(`/api/drivers/deliveries/${course.courseId}/accept`, null, E);
+  await declarerPrete(storeId, course.orderId, T);
+  await patch(`/api/drivers/deliveries/${course.courseId}`, { status: 'PICKED_UP' }, E);
+  await patch('/api/drivers/location', CHEZ_LE_CLIENT, E);
+  await post(`/api/drivers/deliveries/${course.courseId}/attente`, {}, E);
+  await attenteClientEcoulee(course.courseId);
+  const depot = await patch(
+    `/api/drivers/deliveries/${course.courseId}`,
+    { status: 'DELIVERED', photoUrl: 'https://exemple.fr/depot.jpg', note: 'Devant la porte', positionDepot },
+    E
+  );
+  return { ...course, depot };
+}
+
+const illisible = await deposeePar({ latitude: 'ici' });
+check('une position mal formée est refusée', illisible.depot.status === 400, `statut ${illisible.depot.status}`);
+const remiseIllisible = await patch(
+  `/api/drivers/deliveries/${illisible.courseId}`,
+  { status: 'DELIVERED', photoUrl: 'https://exemple.fr/depot.jpg', note: 'Devant la porte' },
+  E
+);
+check('sans position, le dépôt reste possible (anciennes applications)', remiseIllisible.status === 200, `statut ${remiseIllisible.status}`);
+
+const photoALaPorte = await deposeePar({ ...CHEZ_LE_CLIENT, precision: 12, releveeLe: new Date().toISOString() });
+check('une photo prise à la porte se dépose', photoALaPorte.depot.status === 200, `statut ${photoALaPorte.depot.status}`);
+check(
+  'sa position est gardée, et le paiement suit son cours',
+  (await sqlScalaire(
+    `SELECT round("proofLat"::numeric, 4) || '/' || coalesce("payoutHold", 'aucun') FROM "OrderDelivery" WHERE id = '${photoALaPorte.courseId}'`
+  )) === '45.7801/aucun'
+);
+
+const ailleurs = await deposeePar({ ...LOIN, precision: 10, releveeLe: new Date().toISOString() });
+check('une photo prise ailleurs se dépose aussi (un indice, pas une preuve)', ailleurs.depot.status === 200, `statut ${ailleurs.depot.status}`);
+check(
+  'mais son paiement est suspendu, avec la distance',
+  /Photo prise à \d+,\d km/.test(
+    await sqlScalaire(`SELECT "payoutHold" || ' ' || "payoutHoldReason" FROM "OrderDelivery" WHERE id = '${ailleurs.courseId}' AND "payoutHold" = 'REVIEW'`)
+  )
+);
+const vueAilleurs = (await incidents('ouverts')).find((i) => i.course.id === ailleurs.courseId);
+check(
+  'la plateforme voit où la photo a été prise',
+  vueAilleurs?.course?.depot?.distanceAdresseKm > 4,
+  JSON.stringify(vueAilleurs?.course?.depot)
+);
+
 await terminer();

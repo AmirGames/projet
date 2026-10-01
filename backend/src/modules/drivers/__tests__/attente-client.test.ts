@@ -11,6 +11,8 @@ import {
   exigerPresenceChezClient,
   exigerResteChezClient,
   finAttente,
+  lirePositionDepot,
+  photoPriseLoinDuClient,
   quitteLAdressePendantLAttente,
 } from "../delivery-proof.service";
 
@@ -82,5 +84,50 @@ describe("livreur qui quitte l'adresse pendant l'attente", () => {
   it("perd le dépôt en photo, même revenu à la porte", () => {
     expect(() => exigerResteChezClient({ customerWaitLeftAt: new Date() })).toThrow(/code du client/);
     expect(() => exigerResteChezClient({ customerWaitLeftAt: null })).not.toThrow();
+  });
+});
+
+describe("position jointe à la photo du dépôt", () => {
+  const remise = new Date("2026-10-01T12:30:00Z");
+  const depot = (extra = {}) => ({
+    deliveryLat: 45.78,
+    deliveryLng: 4.86,
+    proofLat: 45.78,
+    proofLng: 4.86,
+    proofAccuracy: 15,
+    proofPositionAt: remise,
+    proofAt: remise,
+    deliveryTime: remise,
+    ...extra,
+  });
+
+  it("ne dit rien d'une photo prise devant chez le client, ou sans position", () => {
+    expect(photoPriseLoinDuClient(depot())).toBeNull();
+    expect(photoPriseLoinDuClient(depot({ proofLat: null, proofLng: null }))).toBeNull();
+  });
+
+  it("signale une photo prise loin de l'adresse", () => {
+    expect(photoPriseLoinDuClient(depot({ proofLat: 45.764, proofLng: 4.8357 }))).toBeCloseTo(2.6, 1);
+  });
+
+  it("tient compte de la précision annoncée, jusqu'à 200 m", () => {
+    // ~600 m au nord : suspect avec 15 m de précision, pas avec 150 m.
+    const a600m = { proofLat: 45.7854, proofLng: 4.86 };
+    expect(photoPriseLoinDuClient(depot(a600m))).not.toBeNull();
+    expect(photoPriseLoinDuClient(depot({ ...a600m, proofAccuracy: 150 }))).toBeNull();
+  });
+
+  it("ignore une position relevée bien avant la remise", () => {
+    const ancienne = new Date(remise.getTime() - 20 * 60 * 1000);
+    expect(photoPriseLoinDuClient(depot({ proofLat: 45.764, proofLng: 4.8357, proofPositionAt: ancienne }))).toBeNull();
+  });
+
+  it("lit une position bien formée et refuse le reste", () => {
+    expect(lirePositionDepot(undefined)).toBeNull();
+    expect(lirePositionDepot({ latitude: 45.78, longitude: 4.86, precision: 12, releveeLe: "2026-10-01T12:29:00.000Z" })).toMatchObject({
+      latitude: 45.78,
+    });
+    expect(() => lirePositionDepot({ latitude: 120, longitude: 4.86 })).toThrow(/illisible/);
+    expect(() => lirePositionDepot("ici")).toThrow(/illisible/);
   });
 });

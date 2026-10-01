@@ -2214,7 +2214,9 @@
       "REVIEW": "Paiement du livreur suspendu, en attente de votre décision.",
       "REFUSED": "Dépôt refusé : la course ne sera pas payée."
     },
-    "alreadyOnStatement": "La course était déjà sur un relevé de versement : refuser le dépôt rembourse le client et suspend le livreur, mais ne reprend pas ce qui lui a été payé."
+    "alreadyOnStatement": "La course était déjà sur un relevé de versement : refuser le dépôt rembourse le client et suspend le livreur, mais ne reprend pas ce qui lui a été payé.",
+    "depositDistance": "Photo prise à {distance} km de l'adresse du client (précision du téléphone : ± {precision} m). Un indice : une position peut être falsifiée.",
+    "depositNoPosition": "Position du téléphone inconnue au moment de la photo."
   },
   "driverCourseAlerts": {
     "warningTitle": "Course à surveiller",

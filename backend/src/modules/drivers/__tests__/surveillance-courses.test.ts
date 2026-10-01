@@ -50,7 +50,11 @@ jest.mock("../dispatch.service", () => ({
   },
 }));
 jest.mock("../driver-availability.service", () => ({ GPS_PERDU_APRES_MS: 2 * 60000 }));
-jest.mock("../delivery-proof.service", () => ({ ATTENTE_CLIENT_MS: 6 * 60000, RAYON_ATTENTE_CLIENT_KM: 0.5 }));
+jest.mock("../delivery-proof.service", () => ({
+  ATTENTE_CLIENT_MS: 6 * 60000,
+  RAYON_ATTENTE_CLIENT_KM: 0.5,
+  photoPriseLoinDuClient: (c: { proofLat?: number | null }) => (c.proofLat === 45.764 ? 2.6 : null),
+}));
 jest.mock("../driver-approval.service", () => ({ DriverApprovalService: { ecarter: jest.fn(async () => ({})) } }));
 jest.mock("../../webhooks/webhook.service", () => ({ emitWebhook: jest.fn() }));
 jest.mock("../../files/fichiers-prives.service", () => ({ presenter: (v: string | null) => v }));
@@ -541,6 +545,18 @@ describe("SurveillanceCoursesService", () => {
       });
       expect(db.deliveryIncident.createMany).toHaveBeenCalledWith(
         expect.objectContaining({ data: [expect.objectContaining({ type: "DEPOT_CONTESTE" })] })
+      );
+    });
+
+    it("suspend aussi le paiement d'une photo prise loin de l'adresse, sans incident", async () => {
+      db.orderDelivery.findUnique.mockResolvedValue(livree({ proofLat: 45.764, proofLng: 4.8357 }));
+      db.deliveryIncident.findMany.mockResolvedValue([]);
+
+      expect(await SurveillanceCoursesService.apresDepotPhoto("course-1")).toBe(true);
+      expect(db.orderDelivery.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { payoutHold: "REVIEW", payoutHoldReason: expect.stringContaining("Photo prise à 2,6 km") },
+        })
       );
     });
 
