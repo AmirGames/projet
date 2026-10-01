@@ -6,6 +6,7 @@ import { LogOut, Menu, X, Home, DollarSign, FileText, BarChart3, MessageCircle }
 import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SelecteurEspace } from '@/components/SelecteurEspace';
+import { AlertesCourseLivreur } from '@/components/AlertesCourseLivreur';
 import { useStockageLocal } from '@/lib/navigateur';
 import { fermerSessionPartout } from '@/lib/sso';
 
@@ -159,6 +160,7 @@ export default function DriverLayout({
         )}
 
         {/* Main Content */}
+        {afficherBarre && <AlertesCourseLivreur />}
         <main>{children}</main>
       </div>
     </>

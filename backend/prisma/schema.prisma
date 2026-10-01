@@ -1159,6 +1159,8 @@ model Courier {
   accountHolder   String?
   ratings         CourierRating[]
   supportMessages CourierSupportMessage[]
+  /// Retards, écarts de trajet et courses retirées (voir DeliveryIncident).
+  deliveryIncidents DeliveryIncident[]
 
   /// Le livreur a demandé la suppression de son compte (application ou
   /// site). Le compte est désactivé aussitôt ; ses données ne s'effacent
@@ -1290,6 +1292,14 @@ model OrderDelivery {
   proofPhoto      String?   // Photo du dépôt, quand le client est absent
   proofNote       String?
   proofAt         DateTime?
+  /// Où le téléphone du livreur se trouvait quand il a pris la photo du
+  /// dépôt, et quand. Un indice, pas une preuve (une position se falsifie) :
+  /// une photo prise loin de l'adresse suspend le paiement pour examen.
+  proofLat        Float?
+  proofLng        Float?
+  /// Précision annoncée par le téléphone, en mètres.
+  proofAccuracy   Float?
+  proofPositionAt DateTime?
 
   /// Le client a été prévenu que le livreur approche (à moins de 300 m).
   ///
@@ -1304,6 +1314,22 @@ model OrderDelivery {
   /// cette attente, un livreur pressé posait le sac et partait.
   customerWaitStartedAt DateTime?
 
+  /// Le livreur s'est éloigné de l'adresse pendant cette attente (à plus de
+  /// 500 m, relevé à chaque position reçue). Le dépôt en photo lui est alors
+  /// refusé : sans cette marque, il pouvait lancer l'attente à la porte,
+  /// repartir avec la commande et la « déposer » ailleurs.
+  customerWaitLeftAt DateTime?
+
+  /// Le paiement de la course au livreur est suspendu : REVIEW (dépôt contesté
+  /// ou fait pendant un incident, en examen par la plateforme), REFUSED (la
+  /// plateforme a jugé la commande non livrée : la course n'est jamais payée).
+  /// Vide : la course suit son relevé normalement.
+  payoutHold       String?
+  payoutHoldReason String?
+  /// Le dépôt contesté a été validé : la course est payée avec le relevé de
+  /// la semaine de cette validation, et non celle de sa livraison, déjà arrêtée.
+  payoutHoldReleasedAt DateTime?
+
   /// Le relevé de versement qui paie cette course.
   ///
   /// Tant qu'il est vide, la course est due au livreur. C'est ce lien qui
@@ -1312,7 +1338,9 @@ model OrderDelivery {
   payoutId        String?
 
   // Annulation de course
-  cancelledBy     String?   // DRIVER, RESTAURANT, CLIENT, SYSTEM
+  // DRIVER, RESTAURANT, CLIENT, SYSTEM (retrait automatique d'une course en
+  // retard), PLATFORM (retrait ou échec décidé par l'équipe de la plateforme).
+  cancelledBy     String?
   cancellationReason String?
 
   // Relations
@@ -1327,11 +1355,18 @@ model OrderDelivery {
   /// attendent. Remis à zéro à chaque nouveau retrait.
   ordreRemise     Int?
 
+  /// Depuis quand le livreur est loin de son trajet (voir
+  /// surveillance-courses.service.ts). Effacé dès qu'il y revient : seul un
+  /// écart qui dure déclenche quelque chose, pas un détour d'une minute.
+  driftStartedAt  DateTime?
+  incidents       DeliveryIncident[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([orderId])
   @@index([driverId])
+  @@index([payoutHold])
   @@index([status])
   @@index([payoutId])
 }
@@ -1471,6 +1506,58 @@ model DeliveryOffer {
   @@index([driverId, status])
   @@index([status, expiresAt])
   @@index([batchId])
+}
+
+/// Ce qui a mal tourné pendant une course : le livreur traîne, s'éloigne de
+/// son trajet, ou la course lui a été retirée.
+///
+/// Une course acceptée n'était plus surveillée : un livreur parti dans la
+/// mauvaise direction, ou qui ne livrait pas, gardait la commande
+/// indéfiniment sans que personne ne le sache. Chaque ligne garde la trace
+/// de ce qui a été constaté et de ce qui a été fait, pour le support et pour
+/// l'historique du livreur.
+model DeliveryIncident {
+  id          String    @id @default(cuid())
+  deliveryId  String
+  driverId    String
+  /// L'attribution concernée : une course peut changer de livreur, et le même
+  /// livreur la reprendre plus tard. Un même constat ne se répète pas pour
+  /// une même attribution (voir la contrainte d'unicité).
+  assignedAt  DateTime
+  /// RETARD_RETRAIT, ECART_RETRAIT, RETARD_LIVRAISON, ECART_LIVRAISON,
+  /// COURSE_RETIREE (rendue à la recherche), COURSE_ECHOUEE (perdue en route).
+  type        String
+  /// RETRAIT : la commande attendait au commerce. LIVRAISON : elle était
+  /// dans le sac du livreur.
+  phase       String
+  detail      String
+  /// Minutes écoulées depuis l'attribution (RETRAIT) ou la récupération (LIVRAISON).
+  minutes     Int?
+  /// L'écart constaté, en kilomètres, pour un livreur hors trajet.
+  distanceKm  Float?
+
+  /// Dernière alerte envoyée pour ce constat. Une commande partie avec le
+  /// livreur ne se règle pas toute seule : tant que personne n'a traité le
+  /// constat, la plateforme est relancée (voir surveillance-courses.service.ts).
+  lastAlertAt DateTime?
+  /// Combien d'alertes sont parties, la première comprise.
+  alertCount  Int       @default(0)
+
+  /// Traité : par le système (course livrée, retirée) ou par la plateforme.
+  closedAt    DateTime?
+  /// SYSTEM, ou l'identifiant de l'utilisateur de la plateforme.
+  closedBy    String?
+  resolution  String?
+
+  delivery    OrderDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  driver      Courier       @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([deliveryId, driverId, assignedAt, type])
+  @@index([closedAt, createdAt])
+  @@index([driverId, createdAt])
 }
 
 // ============================================================================
@@ -1999,6 +2086,10 @@ enum NotificationType {
   SUPPORT_MESSAGE
   // Le livreur est à moins de 300 m : le client peut descendre
   DRIVER_NEARBY
+  // La livraison prend du retard, ou le livreur s'éloigne de son trajet
+  DELIVERY_LATE
+  // Le livreur ne venait pas : la course a été confiée à un autre
+  DRIVER_REPLACED
 }
 
 model Notification {

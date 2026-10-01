@@ -24,6 +24,7 @@ export const MOTIFS_POUR_LE_CLIENT: Record<string, string> = {
   EXCEPTIONAL_CLOSURE: 'Le restaurant a dû fermer exceptionnellement.',
   OTHER: 'Le restaurant ne peut pas honorer votre commande.',
   NO_RESPONSE: "Le restaurant n'a pas confirmé votre commande à temps.",
+  DELIVERY_FAILED: "La livraison n'a pas pu aboutir. Le restaurant n'y est pour rien. Un paiement en ligne vous est intégralement remboursé.",
 };
 
 /** Le motif, tel que le commerçant le relit. */
@@ -33,6 +34,7 @@ export const MOTIFS_POUR_LE_COMMERCANT: Record<string, string> = {
   EXCEPTIONAL_CLOSURE: 'Fermeture exceptionnelle',
   OTHER: 'Autre raison',
   NO_RESPONSE: 'Refusée automatiquement : pas de réponse à temps',
+  DELIVERY_FAILED: 'Livraison échouée : payée sur votre prochain relevé',
 };
 
 /** Les temps de préparation proposés, en minutes. */

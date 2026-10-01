@@ -102,6 +102,9 @@ const SEGMENTS: Record<EspaceHeberge, string[]> = {
  */
 const CHEMINS: Partial<Record<EspaceHeberge, string[]>> = {
   pro: ['/store/new'],
+  // Le dossier d'un incident de livraison s'imprime hors du châssis de
+  // l'administration, mais reste sur son domaine (et sa session).
+  groupe: ['/impression/dossier-incident'],
 };
 
 /**

@@ -53,6 +53,7 @@ import {
   Navigation,
   Euro,
   UtensilsCrossed,
+  AlertTriangle,
 } from 'lucide-react';
 
 /** Les plateformes que l'espace administre ; les sections sans plateforme sont communes. */
@@ -215,6 +216,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
       items: [
         { label: t('nav.supportTickets'), icon: LifeBuoy, href: '/superowner/support-tickets', section: 'support-tickets' },
         { label: t('nav.driverSupport'), icon: MessageCircle, href: '/superowner/driver-support', section: 'driver-support' },
+        { label: t('nav.deliveryIncidents'), icon: AlertTriangle, href: '/superowner/incidents-livraison', section: 'driver-support' },
         { label: t('nav.reviews'), icon: Flag, href: '/superowner/reviews', section: 'reviews' },
         { label: t('nav.notifications'), icon: Megaphone, href: '/superowner/notifications', section: 'notifications' },
       ],
