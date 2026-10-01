@@ -41,6 +41,10 @@ function aSaPropreNavigation(pathname: string | null): boolean {
 
   if (ESPACES_AVEC_NAVIGATION.some(sousChemin)) return true;
 
+  // La vitrine d'un commerce porte l'en-tête du parcours client ; la
+  // création d'une boutique (/store/new) relève de l'espace commerçant.
+  if (sousChemin('/store')) return pathname !== '/store/new';
+
   if (sousChemin('/driver')) {
     return !PAGES_LIVREUR_SANS_NAVIGATION.some(sousChemin);
   }
