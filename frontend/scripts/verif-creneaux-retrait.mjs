@@ -122,8 +122,7 @@ check('la Margherita est au menu', vitrine.includes('Margherita'), vitrine.slice
 
 // Au panier, puis au tunnel de commande.
 await page
-  .locator('button')
-  .filter({ hasText: /^Ajouter/ })
+  .locator('button[aria-label="Ajouter Margherita au panier"]')
   .first()
   .click()
   .catch(() => undefined);

@@ -24,20 +24,20 @@ export function AttenteLivreur({ finLe, maintenant }: { finLe: string; maintenan
   const secondes = Math.floor((reste % 60000) / 1000);
 
   return (
-    <div role="alert" className="rounded-lg border border-amber-600/60 bg-amber-900/30 px-4 py-3">
-      <p className="font-semibold text-amber-200">Votre livreur est devant chez vous et vous attend</p>
+    <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+      <p className="font-semibold text-amber-800">Votre livreur est devant chez vous et vous attend</p>
       {reste > 0 ? (
         <>
-          <p className="text-3xl font-bold text-white tabular-nums my-1">
+          <p className="text-3xl font-bold text-gray-900 tabular-nums my-1">
             {minutes}:{String(secondes).padStart(2, '0')}
           </p>
-          <p className="text-sm text-amber-100/90">
+          <p className="text-sm text-amber-800/90">
             Il n&apos;arrive pas à vous joindre. Descendez ou appelez-le : passé ce délai, il déposera votre
             commande en lieu sûr et vous enverra la photo.
           </p>
         </>
       ) : (
-        <p className="text-sm text-amber-100/90 mt-1">
+        <p className="text-sm text-amber-800/90 mt-1">
           Le délai est écoulé : votre livreur dépose la commande en lieu sûr. La photo et l&apos;endroit
           s&apos;afficheront ici.
         </p>

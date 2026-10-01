@@ -580,10 +580,10 @@ export function TunnelCommande({
   };
 
   const champ =
-    'w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-red-500';
-  const carte = 'bg-gray-800 border border-gray-700 rounded-2xl';
+    'w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500';
+  const carte = 'bg-white border border-gray-200 rounded-2xl';
   const boutonModifier =
-    'shrink-0 rounded-full bg-gray-700 hover:bg-gray-600 px-4 py-2 text-sm font-semibold transition-colors';
+    'shrink-0 rounded-full bg-gray-100 hover:bg-gray-200 px-4 py-2 text-sm font-semibold transition-colors';
 
   const enLivraison = checkoutForm.deliveryType === 'DELIVERY';
   const articles = nombreDArticles(lignes);
@@ -594,9 +594,9 @@ export function TunnelCommande({
   const adresseComplete = Boolean(checkoutForm.deliveryAddress && checkoutForm.deliveryCity);
 
   const alerte = checkoutError ? (
-    <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 flex gap-3">
-      <AlertCircle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
-      <p className="text-red-400 text-sm">{checkoutError}</p>
+    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+      <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+      <p className="text-red-600 text-sm">{checkoutError}</p>
     </div>
   ) : null;
 
@@ -644,7 +644,7 @@ export function TunnelCommande({
       <div className={`${carte} max-w-xl mx-auto p-6 space-y-4`}>
         {delai}
         <h3 className="font-bold text-lg">Paiement en ligne</h3>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500">
           Commande n° {aPayer.numero} — {euro(aPayer.montant)}. Elle sera transmise à{' '}
           {boutique.name} dès le paiement accepté.
         </p>
@@ -673,16 +673,16 @@ export function TunnelCommande({
           </h2>
 
           {/* L'adresse, ou la boutique où passer prendre la commande. */}
-          <div className="py-4 border-b border-gray-700">
+          <div className="py-4 border-b border-gray-200">
             {enLivraison ? (
               <>
                 <div className="flex items-center gap-4">
-                  <MapPin size={22} className="text-gray-300 shrink-0" />
+                  <MapPin size={22} className="text-gray-700 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold truncate">
                       {checkoutForm.deliveryAddress || 'Adresse de livraison'}
                     </p>
-                    <p className="text-sm text-gray-400 truncate">
+                    <p className="text-sm text-gray-500 truncate">
                       {adresseComplete
                         ? [checkoutForm.deliveryPostal, checkoutForm.deliveryCity]
                             .filter(Boolean)
@@ -706,7 +706,7 @@ export function TunnelCommande({
                     <div>
                       <label
                         htmlFor="livraison-adresse"
-                        className="text-sm text-gray-400 block mb-2"
+                        className="text-sm text-gray-500 block mb-2"
                       >
                         Adresse *
                       </label>
@@ -745,7 +745,7 @@ export function TunnelCommande({
                       <div className="sm:col-span-2">
                         <label
                           htmlFor="livraison-ville"
-                          className="text-sm text-gray-400 block mb-2"
+                          className="text-sm text-gray-500 block mb-2"
                         >
                           Ville *
                         </label>
@@ -764,7 +764,7 @@ export function TunnelCommande({
                       <div>
                         <label
                           htmlFor="livraison-code-postal"
-                          className="text-sm text-gray-400 block mb-2"
+                          className="text-sm text-gray-500 block mb-2"
                         >
                           Code postal
                         </label>
@@ -800,10 +800,10 @@ export function TunnelCommande({
                     role="status"
                     className={`mt-4 rounded-lg px-3 py-2 text-sm border ${
                       !livraison.livrable
-                        ? 'border-red-700/50 bg-red-900/20 text-red-200'
+                        ? 'border-red-200 bg-red-50 text-red-800'
                         : sousTotal < livraison.minimum
-                          ? 'border-amber-700/50 bg-amber-900/20 text-amber-200'
-                          : 'border-green-700/50 bg-green-900/20 text-green-200'
+                          ? 'border-amber-200 bg-amber-50 text-amber-800'
+                          : 'border-green-200 bg-green-50 text-green-800'
                     }`}
                   >
                     {!livraison.livrable ? (
@@ -822,7 +822,7 @@ export function TunnelCommande({
                           {livraison.minimum > 0 && ` — minimum ${euro(livraison.minimum)}`}
                         </p>
                         {manquePourOfferte > 0 && (
-                          <p className="mt-1 text-green-300">
+                          <p className="mt-1 text-green-700">
                             Encore {euro(manquePourOfferte)} pour la livraison offerte.
                           </p>
                         )}
@@ -839,10 +839,10 @@ export function TunnelCommande({
               </>
             ) : (
               <div className="flex items-center gap-4">
-                <IconeBoutique size={22} className="text-gray-300 shrink-0" />
+                <IconeBoutique size={22} className="text-gray-700 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">Retrait chez {boutique.name}</p>
-                  <p className="text-sm text-gray-400 truncate">
+                  <p className="text-sm text-gray-500 truncate">
                     {adresseBoutique || 'À la boutique'}
                   </p>
                 </div>
@@ -851,14 +851,14 @@ export function TunnelCommande({
           </div>
 
           {/* Les coordonnées du client. */}
-          <div className="py-4 border-b border-gray-700">
+          <div className="py-4 border-b border-gray-200">
             <div className="flex items-center gap-4">
-              <User size={22} className="text-gray-300 shrink-0" />
+              <User size={22} className="text-gray-700 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold truncate">
                   {checkoutForm.customerName || 'Vos informations'}
                 </p>
-                <p className="text-sm text-gray-400 truncate">
+                <p className="text-sm text-gray-500 truncate">
                   {contactComplet
                     ? `${checkoutForm.customerEmail} · ${checkoutForm.customerPhone}`
                     : 'Nom, e-mail et téléphone pour vous tenir informé'}
@@ -878,7 +878,7 @@ export function TunnelCommande({
             {contactOuvert && (
               <div className="mt-4 space-y-4">
                 <div>
-                  <label htmlFor="client-nom" className="text-sm text-gray-400 block mb-2">
+                  <label htmlFor="client-nom" className="text-sm text-gray-500 block mb-2">
                     Nom complet *
                   </label>
                   <input
@@ -895,7 +895,7 @@ export function TunnelCommande({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="client-email" className="text-sm text-gray-400 block mb-2">
+                    <label htmlFor="client-email" className="text-sm text-gray-500 block mb-2">
                       Email *
                     </label>
                     <input
@@ -913,7 +913,7 @@ export function TunnelCommande({
                   <div>
                     <label
                       htmlFor="client-telephone"
-                      className="text-sm text-gray-400 block mb-2"
+                      className="text-sm text-gray-500 block mb-2"
                     >
                       Téléphone *
                     </label>
@@ -946,10 +946,10 @@ export function TunnelCommande({
           {/* Les instructions : sonnette, étage, allergies. */}
           <div className="pt-4">
             <div className="flex items-center gap-4">
-              <MessageSquare size={22} className="text-gray-300 shrink-0" />
+              <MessageSquare size={22} className="text-gray-700 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold">Instructions</p>
-                <p className="text-sm text-gray-400 truncate">
+                <p className="text-sm text-gray-500 truncate">
                   {checkoutForm.notes ||
                     (enLivraison
                       ? 'Étage, code d’entrée, allergies…'
@@ -991,11 +991,11 @@ export function TunnelCommande({
           <div className="space-y-3" role="radiogroup" aria-label="Mode de livraison">
             <label
               className={`flex items-center gap-4 rounded-xl border-2 px-5 py-4 transition-colors ${
-                enLivraison ? 'border-white bg-gray-700/40' : 'border-gray-700'
+                enLivraison ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900' : 'border-gray-200 hover:border-gray-300'
               } ${
                 livraisonFermee
                   ? 'opacity-50 cursor-not-allowed'
-                  : 'cursor-pointer hover:border-gray-500'
+                  : 'cursor-pointer hover:border-gray-400'
               }`}
             >
               <input
@@ -1007,10 +1007,10 @@ export function TunnelCommande({
                 onChange={() => setCheckoutForm({ ...checkoutForm, deliveryType: 'DELIVERY' })}
                 className="sr-only"
               />
-              <Bike size={24} className="text-green-400 shrink-0" />
+              <Bike size={24} className="text-green-600 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold">Livraison</p>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-gray-500">
                   {livraisonFermee
                     ? 'Indisponible : la boutique est fermée pour le moment'
                     : livraison?.livrable && livraison.zone?.deliveryMinutes
@@ -1019,15 +1019,15 @@ export function TunnelCommande({
                 </p>
               </div>
               {livraison?.livrable && (
-                <span className="text-sm text-gray-300 whitespace-nowrap">
+                <span className="text-sm text-gray-700 whitespace-nowrap">
                   {livraison.frais > 0 && !livraisonOfferte ? `+${euro(livraison.frais)}` : 'Offerte'}
                 </span>
               )}
             </label>
 
             <label
-              className={`flex items-center gap-4 rounded-xl border-2 px-5 py-4 cursor-pointer transition-colors hover:border-gray-500 ${
-                !enLivraison ? 'border-white bg-gray-700/40' : 'border-gray-700'
+              className={`flex items-center gap-4 rounded-xl border-2 px-5 py-4 cursor-pointer transition-colors hover:border-gray-400 ${
+                !enLivraison ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900' : 'border-gray-200 hover:border-gray-300'
               }`}
             >
               <input
@@ -1038,10 +1038,10 @@ export function TunnelCommande({
                 onChange={() => setCheckoutForm({ ...checkoutForm, deliveryType: 'PICKUP' })}
                 className="sr-only"
               />
-              <CalendarClock size={24} className="text-gray-300 shrink-0" />
+              <CalendarClock size={24} className="text-gray-700 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold">Retrait sur place</p>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-gray-500">
                   Choisissez une heure et passez la récupérer
                 </p>
               </div>
@@ -1052,12 +1052,12 @@ export function TunnelCommande({
               est fermée : seuls ses vrais créneaux sont proposés. */}
           {!enLivraison && (
             <div className="mt-4">
-              <label htmlFor="creneau" className="text-sm text-gray-400 block mb-2">
+              <label htmlFor="creneau" className="text-sm text-gray-500 block mb-2">
                 Heure de retrait *
               </label>
 
               {creneaux.length === 0 ? (
-                <p className="text-sm text-amber-300 bg-amber-900/20 border border-amber-700/40 rounded-lg px-3 py-2">
+                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                   Aucun créneau de retrait disponible pour les prochains jours. Choisissez la
                   livraison, ou revenez plus tard.
                 </p>
@@ -1093,8 +1093,8 @@ export function TunnelCommande({
               {moyens.map((moyen) => (
                 <label
                   key={moyen.id}
-                  className={`flex items-center gap-4 rounded-xl border-2 px-5 py-4 cursor-pointer transition-colors hover:border-gray-500 ${
-                    moyenChoisi === moyen.id ? 'border-white bg-gray-700/40' : 'border-gray-700'
+                  className={`flex items-center gap-4 rounded-xl border-2 px-5 py-4 cursor-pointer transition-colors hover:border-gray-400 ${
+                    moyenChoisi === moyen.id ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900' : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <input
@@ -1105,7 +1105,7 @@ export function TunnelCommande({
                     onChange={() => setMoyenChoisi(moyen.id)}
                     className="sr-only"
                   />
-                  <CreditCard size={22} className="text-gray-300 shrink-0" />
+                  <CreditCard size={22} className="text-gray-700 shrink-0" />
                   <span className="flex-1 font-semibold">{moyen.name}</span>
                 </label>
               ))}
@@ -1120,10 +1120,10 @@ export function TunnelCommande({
         {boutique.slug ? (
           <Link
             href={`/store/${boutique.slug}`}
-            className="flex items-center gap-4 p-6 text-white hover:text-white hover:bg-gray-700/40 transition-colors"
+            className="flex items-center gap-4 p-6 text-gray-900 hover:text-gray-900 hover:bg-gray-50 transition-colors"
           >
             <EnTeteBoutique boutique={boutique} adresse={adresseBoutique} />
-            <ChevronRight size={20} className="text-gray-400 shrink-0" />
+            <ChevronRight size={20} className="text-gray-500 shrink-0" />
           </Link>
         ) : (
           <div className="flex items-center gap-4 p-6">
@@ -1132,20 +1132,20 @@ export function TunnelCommande({
         )}
 
         {/* Le récapitulatif du panier, replié comme un reçu. */}
-        <div className="border-t-8 border-gray-900">
+        <div className="border-t-8 border-white">
           <button
             type="button"
             onClick={() => setPanierDeplie((deplie) => !deplie)}
             aria-expanded={panierDeplie}
-            className="w-full flex items-center gap-4 px-6 py-5 hover:bg-gray-700/40 transition-colors text-left"
+            className="w-full flex items-center gap-4 px-6 py-5 hover:bg-gray-50 transition-colors text-left"
           >
-            <ShoppingCart size={22} className="text-gray-300 shrink-0" />
+            <ShoppingCart size={22} className="text-gray-700 shrink-0" />
             <span className="flex-1 font-semibold">
               Récapitulatif du panier ({articles} article{articles > 1 ? 's' : ''})
             </span>
             <ChevronDown
               size={20}
-              className={`text-gray-400 transition-transform ${panierDeplie ? 'rotate-180' : ''}`}
+              className={`text-gray-500 transition-transform ${panierDeplie ? 'rotate-180' : ''}`}
             />
           </button>
 
@@ -1157,15 +1157,15 @@ export function TunnelCommande({
                   className="flex justify-between gap-4 text-sm"
                 >
                   <span className="min-w-0">
-                    <span className="text-gray-400">{ligne.quantity} × </span>
+                    <span className="text-gray-500">{ligne.quantity} × </span>
                     {ligne.name}
                     {/* Sans le nom de la déclinaison, deux lignes du même plat
                         seraient indistinguables. */}
                     {ligne.variantNom && (
-                      <span className="text-gray-400"> — {ligne.variantNom}</span>
+                      <span className="text-gray-500"> — {ligne.variantNom}</span>
                     )}
                     {(ligne.supplements?.length ?? 0) > 0 && (
-                      <span className="block text-xs text-gray-400">
+                      <span className="block text-xs text-gray-500">
                         + {ligne.supplements!.map((sup) => sup.label).join(', ')}
                       </span>
                     )}
@@ -1178,18 +1178,18 @@ export function TunnelCommande({
         </div>
 
         {/* Le code promo, derrière son lien comme le reste des options. */}
-        <div className="border-t-8 border-gray-900 px-6 py-5">
+        <div className="border-t-8 border-white px-6 py-5">
           <h3 className="text-lg font-bold mb-3">Promotion</h3>
 
           {remise ? (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-green-700/50 bg-green-900/20 px-3 py-2 text-sm text-green-200">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
               <span>
                 Code « {remise.code} » appliqué — {euro(remise.montant)} de remise
               </span>
               <button
                 type="button"
                 onClick={retirerLeCode}
-                className="text-green-300 underline hover:text-green-100"
+                className="text-green-700 underline hover:text-green-800"
               >
                 Retirer
               </button>
@@ -1213,7 +1213,7 @@ export function TunnelCommande({
                 type="button"
                 onClick={appliquerLeCode}
                 disabled={codeEnCours || code.trim().length === 0}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-colors disabled:opacity-50 whitespace-nowrap"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold transition-colors disabled:opacity-50 whitespace-nowrap"
               >
                 {codeEnCours ? 'Vérification…' : 'Appliquer'}
               </button>
@@ -1222,35 +1222,35 @@ export function TunnelCommande({
             <button
               type="button"
               onClick={() => setPromoOuverte(true)}
-              className="w-full flex items-center gap-4 text-left hover:text-white text-gray-200"
+              className="w-full flex items-center gap-4 text-left hover:text-gray-900 text-gray-800"
             >
-              <Tag size={20} className="text-gray-300 shrink-0" />
+              <Tag size={20} className="text-gray-700 shrink-0" />
               <span className="flex-1 font-semibold">Ajouter un code promotionnel</span>
-              <ChevronRight size={20} className="text-gray-400" />
+              <ChevronRight size={20} className="text-gray-500" />
             </button>
           )}
 
           {codeRefuse && (
-            <p role="status" className="mt-2 text-sm text-amber-300">
+            <p role="status" className="mt-2 text-sm text-amber-700">
               {codeRefuse}
             </p>
           )}
         </div>
 
         {/* Le total, puis le bouton : on sait ce qu'on paie avant de cliquer. */}
-        <div className="border-t-8 border-gray-900 px-6 py-5 space-y-3">
+        <div className="border-t-8 border-white px-6 py-5 space-y-3">
           <h3 className="text-lg font-bold">Total de la commande</h3>
-          <div className="flex justify-between text-gray-300">
+          <div className="flex justify-between text-gray-700">
             <span>Sous-total</span>
             <span>{euro(sousTotal)}</span>
           </div>
           {fraisDeService > 0 && (
-            <div className="flex justify-between text-gray-300">
+            <div className="flex justify-between text-gray-700">
               <span>Frais de service</span>
               <span>{euro(fraisDeService)}</span>
             </div>
           )}
-          <div className="flex justify-between text-gray-300">
+          <div className="flex justify-between text-gray-700">
             <span>
               Livraison
               {enLivraison && livraison?.zone ? ` — ${livraison.zone.name}` : ''}
@@ -1258,14 +1258,14 @@ export function TunnelCommande({
             <span>{enLivraison ? euro(fraisDeLivraison) : 'Retrait sur place'}</span>
           </div>
           {remise && (
-            <div className="flex justify-between text-green-300">
+            <div className="flex justify-between text-green-700">
               <span>Remise — {remise.code}</span>
               <span>− {euro(remise.montant)}</span>
             </div>
           )}
           {pourboirePossible && (
             <div className="pt-1">
-              <div className="flex justify-between text-gray-300">
+              <div className="flex justify-between text-gray-700">
                 <span>Pourboire pour le livreur</span>
                 <span>{pourboire > 0 ? euro(pourboire) : '—'}</span>
               </div>
@@ -1276,7 +1276,7 @@ export function TunnelCommande({
               <p className="mt-1 text-xs text-gray-500">Il revient en entier à votre livreur.</p>
             </div>
           )}
-          <div className="flex justify-between text-lg font-bold border-t border-gray-700 pt-3">
+          <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-3">
             <span>Total</span>
             <span>{euro(total)}</span>
           </div>
@@ -1287,6 +1287,7 @@ export function TunnelCommande({
             coche={conditionsAcceptees}
             onChange={setConditionsAcceptees}
             documents={[{ href: '/cgv', libelle: 'les conditions générales de vente' }]}
+            clair
           />
 
           <button
@@ -1299,7 +1300,7 @@ export function TunnelCommande({
               sousLeMinimum ||
               (enLivraison && livraison?.livrable === false)
             }
-            className="w-full py-4 bg-red-600 hover:bg-red-700 rounded-xl text-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-orange-600 hover:bg-orange-700 rounded-full text-lg text-white font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting
               ? 'Traitement...'
@@ -1328,7 +1329,7 @@ function EnTeteBoutique({ boutique, adresse }: { boutique: BoutiqueCommandee; ad
         <img
           src={boutique.logo}
           alt=""
-          className="w-14 h-14 rounded-full object-cover bg-gray-700 shrink-0"
+          className="w-14 h-14 rounded-full object-cover bg-gray-100 shrink-0"
         />
       ) : (
         <span className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center text-xl font-bold shrink-0">
@@ -1337,7 +1338,7 @@ function EnTeteBoutique({ boutique, adresse }: { boutique: BoutiqueCommandee; ad
       )}
       <span className="flex-1 min-w-0">
         <span className="block font-semibold text-lg truncate">{boutique.name}</span>
-        {adresse && <span className="block text-sm text-gray-400 truncate">{adresse}</span>}
+        {adresse && <span className="block text-sm text-gray-500 truncate">{adresse}</span>}
       </span>
     </>
   );

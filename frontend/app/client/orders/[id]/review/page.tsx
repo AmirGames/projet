@@ -260,25 +260,25 @@ export default function ReviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <p className="text-white">{t('loading')}</p>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-gray-900">{t('loading')}</p>
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gray-900">
+      <div className="min-h-screen bg-white">
         <header className="pt-4">
           <div className="max-w-2xl mx-auto px-4 py-4">
-            <Link href="/client/orders" className="flex items-center gap-2 text-orange-500 hover:text-orange-400">
+            <Link href="/client/orders" className="flex items-center gap-2 text-orange-500 hover:text-orange-600">
               <ArrowLeft size={20} />
               {t('backToOrder')}
             </Link>
           </div>
         </header>
         <div className="max-w-2xl mx-auto px-4 py-8">
-          <p className="text-white">{t('orderNotFound')}</p>
+          <p className="text-gray-900">{t('orderNotFound')}</p>
         </div>
       </div>
     );
@@ -306,10 +306,10 @@ export default function ReviewPage() {
     });
     return (
       <div className="mb-3">
-        <p className="text-orange-300 text-sm">
+        <p className="text-orange-700 text-sm">
           {t('previousReview', { note: avis.rating, date: dateAvis })}
         </p>
-        {avis.retire && <p className="text-gray-400 text-xs mt-1">{t('previousRemoved')}</p>}
+        {avis.retire && <p className="text-gray-500 text-xs mt-1">{t('previousRemoved')}</p>}
       </div>
     );
   };
@@ -322,7 +322,7 @@ export default function ReviewPage() {
           type="button"
           onClick={() => onRate(star)}
           className={`transition transform hover:scale-110 cursor-pointer ${
-            star <= rating ? 'text-yellow-400' : 'text-gray-700'
+            star <= rating ? 'text-yellow-600' : 'text-gray-700'
           }`}
         >
           ★
@@ -332,10 +332,10 @@ export default function ReviewPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-white">
       <header className="pt-4">
         <div className="max-w-2xl mx-auto px-4 py-4">
-          <Link href={`/client/orders/${orderId}`} className="flex items-center gap-2 text-orange-500 hover:text-orange-400">
+          <Link href={`/client/orders/${orderId}`} className="flex items-center gap-2 text-orange-500 hover:text-orange-600">
             <ArrowLeft size={20} />
             {t('backToOrder')}
           </Link>
@@ -343,11 +343,11 @@ export default function ReviewPage() {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="bg-gray-800 rounded-lg p-8">
+        <div className="bg-white ring-1 ring-gray-200 rounded-lg p-8">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">{t('reviewTitle')}</h1>
-              <p className="text-gray-400">{t('reviewSubtitle')}</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('reviewTitle')}</h1>
+              <p className="text-gray-500">{t('reviewSubtitle')}</p>
             </div>
             <button
               type="button"
@@ -355,7 +355,7 @@ export default function ReviewPage() {
               className={`px-4 py-2 rounded-lg font-semibold transition whitespace-nowrap ml-4 ${
                 expressMode
                   ? 'bg-orange-600 text-white hover:bg-orange-700'
-                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
               }`}
             >
               ⚡ {expressMode ? t('expressMode') : t('detailedMode')}
@@ -365,26 +365,26 @@ export default function ReviewPage() {
           {success ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">✓</div>
-              <p className="text-white text-xl font-semibold mb-2">{t('thankYou')}</p>
-              <p className="text-gray-400">{t('redirecting')}</p>
+              <p className="text-gray-900 text-xl font-semibold mb-2">{t('thankYou')}</p>
+              <p className="text-gray-500">{t('redirecting')}</p>
             </div>
           ) : (
             <form onSubmit={handleSubmitReview} className="space-y-8">
               {error && (
-                <div className="bg-red-900 border border-red-700 rounded-lg p-4 text-red-200">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
                   {error}
                 </div>
               )}
 
               {/* Tabs */}
-              <div className="flex gap-2 border-b border-gray-700">
+              <div className="flex gap-2 border-b border-gray-200">
                 <button
                   type="button"
                   onClick={() => setActiveTab('restaurant')}
                   className={`px-4 py-3 font-semibold transition ${
                     activeTab === 'restaurant'
                       ? 'text-orange-500 border-b-2 border-orange-500'
-                      : 'text-gray-400 hover:text-white'
+                      : 'text-gray-500 hover:text-gray-900'
                   }`}
                 >
                   {t('restaurantTab')}
@@ -396,7 +396,7 @@ export default function ReviewPage() {
                     className={`px-4 py-3 font-semibold transition ${
                       activeTab === 'delivery'
                         ? 'text-orange-500 border-b-2 border-orange-500'
-                        : 'text-gray-400 hover:text-white'
+                        : 'text-gray-500 hover:text-gray-900'
                     }`}
                   >
                     {t('deliveryTab')}
@@ -408,7 +408,7 @@ export default function ReviewPage() {
                   className={`px-4 py-3 font-semibold transition ${
                     activeTab === 'products'
                       ? 'text-orange-500 border-b-2 border-orange-500'
-                      : 'text-gray-400 hover:text-white'
+                      : 'text-gray-500 hover:text-gray-900'
                   }`}
                 >
                   {t('productsTab')}
@@ -419,17 +419,17 @@ export default function ReviewPage() {
               {activeTab === 'restaurant' && (
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-white font-semibold mb-4">{t('restaurantQuestion')}</label>
+                    <label className="block text-gray-900 font-semibold mb-4">{t('restaurantQuestion')}</label>
                     {renderAvisPrecedent(dejaDonnes.restaurant)}
                     {renderStars(reviews.restaurant.rating, (r) =>
                       setReviews(prev => ({ ...prev, restaurant: { ...prev.restaurant, rating: r } }))
                     )}
-                    <p className="text-gray-400 text-sm mt-2">{getRatingText(reviews.restaurant.rating)}</p>
+                    <p className="text-gray-500 text-sm mt-2">{getRatingText(reviews.restaurant.rating)}</p>
                   </div>
 
                   {!expressMode && (
                     <div>
-                      <label className="block text-white font-semibold mb-4">{t('commentOptional')}</label>
+                      <label className="block text-gray-900 font-semibold mb-4">{t('commentOptional')}</label>
                       <textarea
                         value={reviews.restaurant.comment}
                         onChange={(e) => setReviews(prev => ({
@@ -438,7 +438,7 @@ export default function ReviewPage() {
                         }))}
                         placeholder={t('restaurantPlaceholder')}
                         rows={4}
-                        className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
+                        className="w-full px-4 py-3 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-400"
                       />
                     </div>
                   )}
@@ -449,16 +449,16 @@ export default function ReviewPage() {
               {activeTab === 'delivery' && livreurANoter && (
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-white font-semibold mb-4">{t('deliveryQuestion')}</label>
+                    <label className="block text-gray-900 font-semibold mb-4">{t('deliveryQuestion')}</label>
                     {renderStars(reviews.delivery.rating, (r) =>
                       setReviews(prev => ({ ...prev, delivery: { ...prev.delivery, rating: r } }))
                     )}
-                    <p className="text-gray-400 text-sm mt-2">{getRatingText(reviews.delivery.rating)}</p>
+                    <p className="text-gray-500 text-sm mt-2">{getRatingText(reviews.delivery.rating)}</p>
                   </div>
 
                   {!expressMode && (
                     <div>
-                      <label className="block text-white font-semibold mb-4">{t('commentOptional')}</label>
+                      <label className="block text-gray-900 font-semibold mb-4">{t('commentOptional')}</label>
                       <textarea
                         value={reviews.delivery.comment}
                         onChange={(e) => setReviews(prev => ({
@@ -467,7 +467,7 @@ export default function ReviewPage() {
                         }))}
                         placeholder={t('deliveryPlaceholder')}
                         rows={4}
-                        className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
+                        className="w-full px-4 py-3 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-400"
                       />
                     </div>
                   )}
@@ -479,11 +479,11 @@ export default function ReviewPage() {
                 <div className="space-y-6">
                   {produits.length > 0 ? (
                     produits.map((item) => (
-                      <div key={item.productId} className="bg-gray-700 rounded-lg p-4">
+                      <div key={item.productId} className="bg-gray-100 rounded-lg p-4">
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            <p className="text-white font-semibold">{item.name}</p>
-                            <p className="text-gray-400 text-sm">x{item.quantity} • {euro(item.total)}</p>
+                            <p className="text-gray-900 font-semibold">{item.name}</p>
+                            <p className="text-gray-500 text-sm">x{item.quantity} • {euro(item.total)}</p>
                           </div>
                         </div>
 
@@ -498,7 +498,7 @@ export default function ReviewPage() {
                               }
                             }))
                           )}
-                          <p className="text-gray-400 text-sm mt-2">{getRatingText(reviews.products[item.productId]?.rating || 5)}</p>
+                          <p className="text-gray-500 text-sm mt-2">{getRatingText(reviews.products[item.productId]?.rating || 5)}</p>
                         </div>
 
                         {!expressMode && (
@@ -513,13 +513,13 @@ export default function ReviewPage() {
                             }))}
                             placeholder={t('productPlaceholder')}
                             rows={3}
-                            className="w-full px-4 py-3 bg-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500 text-sm"
+                            className="w-full px-4 py-3 bg-gray-200 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-400 text-sm"
                           />
                         )}
                       </div>
                     ))
                   ) : (
-                    <p className="text-gray-400">{t('noProducts')}</p>
+                    <p className="text-gray-500">{t('noProducts')}</p>
                   )}
                 </div>
               )}
@@ -528,12 +528,12 @@ export default function ReviewPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-3 rounded-lg transition"
+                className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-200 text-white font-bold py-3 rounded-lg transition"
               >
                 {submitting ? t('submitting') : expressMode ? t('submitExpress') : t('submitReview')}
               </button>
 
-              <p className="text-gray-400 text-xs text-center">
+              <p className="text-gray-500 text-xs text-center">
                 {expressMode ? t('expressMessage') : t('detailedMessage')}
               </p>
             </form>

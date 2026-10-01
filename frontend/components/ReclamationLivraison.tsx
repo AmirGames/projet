@@ -40,7 +40,7 @@ export function ReclamationLivraison({
 
   if (deposee) {
     return (
-      <div role="status" className="rounded-lg border border-gray-600 bg-gray-800 px-4 py-3 text-sm text-gray-200">
+      <div role="status" className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-800">
         {t('deposee')}
       </div>
     );
@@ -72,7 +72,7 @@ export function ReclamationLivraison({
     return (
       <button
         onClick={() => setOuvert(true)}
-        className="flex items-center gap-2 text-sm text-red-300 hover:text-red-200 underline underline-offset-2"
+        className="flex items-center gap-2 text-sm text-red-700 hover:text-red-800 underline underline-offset-2"
       >
         <PackageX size={16} />
         {t('bouton')}
@@ -81,18 +81,18 @@ export function ReclamationLivraison({
   }
 
   return (
-    <div className="rounded-lg border border-red-800/60 bg-red-950/30 px-4 py-3 space-y-2">
-      <p className="font-semibold text-red-200">{t('titre')}</p>
-      <p className="text-sm text-red-200/80">{t('explication')}</p>
+    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 space-y-2">
+      <p className="font-semibold text-red-800">{t('titre')}</p>
+      <p className="text-sm text-red-800/80">{t('explication')}</p>
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         maxLength={500}
         rows={2}
         placeholder={t('placeholder')}
-        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-500"
+        className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500"
       />
-      {erreur && <p className="text-sm text-red-400">{erreur}</p>}
+      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
       <div className="flex gap-2 flex-wrap">
         <button
           disabled={envoi}
@@ -101,7 +101,7 @@ export function ReclamationLivraison({
         >
           {t('envoyer')}
         </button>
-        <button onClick={() => setOuvert(false)} className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm">
+        <button onClick={() => setOuvert(false)} className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm">
           {t('annuler')}
         </button>
       </div>

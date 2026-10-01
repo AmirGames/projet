@@ -132,19 +132,19 @@ export default function ProfilClientPage() {
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <User size={28} className="text-orange-500" />
           {t('title')}
         </h1>
         {profil && (
-          <p className="text-gray-400 mt-1">
+          <p className="text-gray-500 mt-1">
             {t('memberSince', { date: new Date(profil.memberSince).toLocaleDateString('fr-FR') })}
           </p>
         )}
       </div>
 
       {erreur && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 text-gray-300">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 text-gray-700">
           {erreur}
         </div>
       )}
@@ -152,32 +152,32 @@ export default function ProfilClientPage() {
       {profil && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm">{t('ordersPlaced')}</p>
+                <p className="text-gray-500 text-sm">{t('ordersPlaced')}</p>
                 <ShoppingBag size={20} className="text-blue-500" />
               </div>
-              <p className="text-3xl font-bold text-white">{profil.totalOrders}</p>
+              <p className="text-3xl font-bold text-gray-900">{profil.totalOrders}</p>
             </div>
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm">{t('totalSpent')}</p>
+                <p className="text-gray-500 text-sm">{t('totalSpent')}</p>
                 <Wallet size={20} className="text-green-500" />
               </div>
-              <p className="text-3xl font-bold text-white">{euro(profil.totalSpent)}</p>
+              <p className="text-3xl font-bold text-gray-900">{euro(profil.totalSpent)}</p>
             </div>
           </div>
 
-          <form onSubmit={enregistrer} className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
-            <h2 className="text-lg font-bold text-white">{t('myInfo')}</h2>
+          <form onSubmit={enregistrer} className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+            <h2 className="text-lg font-bold text-gray-900">{t('myInfo')}</h2>
 
             {message && (
-              <div className="bg-gray-700 rounded-lg p-3 text-sm text-white">{message}</div>
+              <div className="bg-gray-100 rounded-lg p-3 text-sm text-gray-900">{message}</div>
             )}
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1">{t('email')}</label>
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-gray-400">
+              <label className="block text-sm text-gray-500 mb-1">{t('email')}</label>
+              <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-500">
                 <Mail size={16} />
                 <span className="break-all">{profil.email}</span>
               </div>
@@ -187,27 +187,27 @@ export default function ProfilClientPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1">{t('fullName')}</label>
+              <label className="block text-sm text-gray-500 mb-1">{t('fullName')}</label>
               <input
                 type="text"
                 required
                 minLength={2}
                 {...champ('name')}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1">{t('phone')}</label>
+              <label className="block text-sm text-gray-500 mb-1">{t('phone')}</label>
               <input
                 type="tel"
                 {...champ('phone')}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1">{t('deliveryAddress')}</label>
+              <label className="block text-sm text-gray-500 mb-1">{t('deliveryAddress')}</label>
               <AddressAutocomplete
                 value={formulaire.address}
                 onChange={(valeur) => setFormulaire({ ...formulaire, address: valeur })}
@@ -219,25 +219,25 @@ export default function ProfilClientPage() {
                     postalCode: adresse.postalCode || formulaire.postalCode,
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
+                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-1">
-                <label className="block text-sm text-gray-400 mb-1">{t('postalCode')}</label>
+                <label className="block text-sm text-gray-500 mb-1">{t('postalCode')}</label>
                 <input
                   type="text"
                   {...champ('postalCode')}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm text-gray-400 mb-1">{t('city')}</label>
+                <label className="block text-sm text-gray-500 mb-1">{t('city')}</label>
                 <input
                   type="text"
                   {...champ('city')}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
                 />
               </div>
             </div>
@@ -251,7 +251,7 @@ export default function ProfilClientPage() {
             </button>
           </form>
 
-          <ChangerMotDePasse />
+          <ChangerMotDePasse clair />
         </>
       )}
     </div>

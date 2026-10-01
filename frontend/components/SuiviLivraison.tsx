@@ -13,7 +13,7 @@ import { ReclamationLivraison, type EtatReclamation } from '@/components/Reclama
 const CarteTrajet = dynamic(() => import('@/components/CarteTrajet'), {
   ssr: false,
   loading: () => (
-    <div className="h-[260px] w-full rounded-lg border border-gray-700 bg-gray-900 flex items-center justify-center text-sm text-gray-500">
+    <div className="h-[260px] w-full rounded-lg border border-gray-200 bg-white flex items-center justify-center text-sm text-gray-500">
       Chargement de la carte…
     </div>
   ),
@@ -159,11 +159,11 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
   const surLaCarte = !!course.retrait && !!course.destination;
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6 space-y-5">
+    <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-5">
       {/* La pastille immobile ne veut pas dire que le livreur est arrêté :
           le dire, plutôt que de laisser le client s'inquiéter. */}
       {gpsPerdu && (
-        <div role="status" className="bg-amber-900/30 border border-amber-700/50 text-amber-200 rounded-lg p-3 text-sm">
+        <div role="status" className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm">
           Le livreur a momentanément perdu le signal GPS. Sa position s&apos;actualisera dès le retour
           du réseau{course.position?.misAJourLe ? ` (dernière position ${ilYA(course.position.misAJourLe)})` : ''}.
         </div>
@@ -171,8 +171,8 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-lg font-semibold text-white">Suivi de la livraison</h3>
-          <p className="text-sm text-gray-400">{LIBELLES[course.status] || course.status}</p>
+          <h3 className="text-lg font-semibold text-gray-900">Suivi de la livraison</h3>
+          <p className="text-sm text-gray-500">{LIBELLES[course.status] || course.status}</p>
         </div>
 
         {minutes != null && !livree && (
@@ -186,10 +186,10 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
       {/* Le code de remise : c'est lui qui prouve que le repas a bien changé de
           mains. Sans lui, une course se cloturait sur un simple clic. */}
       {!livree && course.codeRemise && (
-        <div className="rounded-lg border border-orange-700/50 bg-orange-900/20 px-4 py-3">
-          <p className="text-sm text-orange-200">Votre code de remise</p>
-          <p className="text-3xl font-bold tracking-[0.3em] text-white">{course.codeRemise}</p>
-          <p className="text-xs text-orange-200/80 mt-1">
+        <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+          <p className="text-sm text-orange-800">Votre code de remise</p>
+          <p className="text-3xl font-bold tracking-[0.3em] text-gray-900">{course.codeRemise}</p>
+          <p className="text-xs text-orange-800/80 mt-1">
             Donnez-le au livreur à la remise, et à personne d&apos;autre.
           </p>
         </div>
@@ -206,16 +206,16 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
 
       {/* Prévenu à 300 m : le temps de descendre, le livreur est là. */}
       {!livree && course.status === 'PICKED_UP' && course.livreurProche && !course.attenteFinLe && (
-        <div role="status" className="rounded-lg border border-green-700/60 bg-green-900/30 px-4 py-3">
-          <p className="font-semibold text-green-200">Votre livreur est bientôt là</p>
-          <p className="text-sm text-green-300/90">
+        <div role="status" className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+          <p className="font-semibold text-green-800">Votre livreur est bientôt là</p>
+          <p className="text-sm text-green-700/90">
             Il arrive dans un instant : vous pouvez descendre devant la porte.
           </p>
         </div>
       )}
 
       {livree && course.preuve && (
-        <p className="text-sm text-green-300">
+        <p className="text-sm text-green-700">
           {course.preuve === 'CODE'
             ? 'Remise confirmée par votre code.'
             : 'Dépôt confirmé par photo, en votre absence.'}
@@ -229,9 +229,9 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
           <img
             src={course.photoDepot}
             alt="Photo du dépôt de votre commande"
-            className="w-full max-h-80 object-cover rounded-lg border border-gray-700"
+            className="w-full max-h-80 object-cover rounded-lg border border-gray-200"
           />
-          {course.noteDepot && <p className="text-sm text-gray-400">Déposée : {course.noteDepot}</p>}
+          {course.noteDepot && <p className="text-sm text-gray-500">Déposée : {course.noteDepot}</p>}
         </div>
       )}
 
@@ -279,11 +279,11 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
         )}
 
         <div className={`flex items-start justify-between text-xs ${surLaCarte ? 'mt-2' : '-mt-2'}`}>
-          <span className="flex items-center gap-1 text-gray-400 max-w-[45%]">
+          <span className="flex items-center gap-1 text-gray-500 max-w-[45%]">
             <Store size={12} className="flex-shrink-0" />
             <span className="truncate">{course.boutique || 'Le commerce'}</span>
           </span>
-          <span className="flex items-center gap-1 text-gray-400 max-w-[45%] justify-end text-right">
+          <span className="flex items-center gap-1 text-gray-500 max-w-[45%] justify-end text-right">
             <MapPin size={12} className="flex-shrink-0" />
             <span className="truncate">{course.adresseLivraison || 'Chez vous'}</span>
           </span>
@@ -291,20 +291,20 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="bg-gray-900/50 rounded-lg p-3">
+        <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-gray-500 text-xs flex items-center gap-1">
             <Navigation size={12} /> Distance restante
           </p>
-          <p className="text-white font-semibold mt-1">
+          <p className="text-gray-900 font-semibold mt-1">
             {livree ? 'Arrivée' : restante != null ? distanceLisible(restante) : 'En attente'}
           </p>
         </div>
 
-        <div className="bg-gray-900/50 rounded-lg p-3">
+        <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-gray-500 text-xs flex items-center gap-1">
             <Clock size={12} /> Position reçue
           </p>
-          <p className="text-white font-semibold mt-1">
+          <p className="text-gray-900 font-semibold mt-1">
             {positionDirecte
               ? "à l'instant"
               : ilYA(course.position?.misAJourLe) || 'Pas encore'}
@@ -313,13 +313,13 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
       </div>
 
       {course.driver && (
-        <div className="flex items-center gap-3 border-t border-gray-700 pt-4">
-          <div className="w-10 h-10 rounded-full bg-orange-600/20 text-orange-400 flex items-center justify-center flex-shrink-0">
+        <div className="flex items-center gap-3 border-t border-gray-200 pt-4">
+          <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
             <Bike size={20} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-white font-semibold truncate">{course.driver.name}</p>
-            <p className="text-xs text-gray-400 flex items-center gap-1">
+            <p className="text-gray-900 font-semibold truncate">{course.driver.name}</p>
+            <p className="text-xs text-gray-500 flex items-center gap-1">
               {course.driver.vehicleType}
               {/* « 5 ★ » s'affichait pour tout le monde, y compris pour un
                   livreur qui n'avait jamais été noté. */}
@@ -338,7 +338,7 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
           {course.driver.phone && !livree && (
             <a
               href={`tel:${course.driver.phone}`}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm text-white transition flex-shrink-0"
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-900 transition flex-shrink-0"
             >
               Appeler
             </a>

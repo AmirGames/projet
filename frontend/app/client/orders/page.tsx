@@ -30,13 +30,15 @@ interface Order {
  * DELIVERED et CANCELLED, qui n'existent pas : l'onglet « Terminées » restait
  * vide et les étiquettes affichaient le code brut.
  */
+// Classes écrites en entier : Tailwind ne génère pas une classe composée
+// à l'exécution (`bg-${couleur}-50`).
 const statusColors: Record<string, string> = {
-  PENDING: 'yellow',
-  ACCEPTED: 'blue',
-  PREPARING: 'orange',
-  READY: 'green',
-  COMPLETED: 'green',
-  REJECTED: 'red'
+  PENDING: 'bg-yellow-50 text-yellow-800',
+  ACCEPTED: 'bg-blue-50 text-blue-700',
+  PREPARING: 'bg-orange-50 text-orange-700',
+  READY: 'bg-green-50 text-green-700',
+  COMPLETED: 'bg-green-50 text-green-700',
+  REJECTED: 'bg-red-50 text-red-700'
 };
 
 const statusTranslationKeys: Record<string, string> = {
@@ -133,15 +135,15 @@ export default function OrdersPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="pt-4">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <Link href="/client" className="flex items-center gap-2 text-orange-500 hover:text-orange-400 mb-4">
+          <Link href="/client" className="flex items-center gap-2 text-orange-500 hover:text-orange-600 mb-4">
             <ArrowLeft size={20} />
             {t('back')}
           </Link>
-          <h1 className="text-3xl font-bold text-white">{t('title')}</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
         </div>
       </header>
 
@@ -161,7 +163,7 @@ export default function OrdersPage() {
               className={`px-4 py-2 rounded-lg font-semibold transition ${
                 filter === tab.value
                   ? 'bg-orange-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  : 'bg-white text-gray-500 hover:bg-gray-100'
               }`}
             >
               {t(tab.key)}
@@ -171,12 +173,12 @@ export default function OrdersPage() {
 
         {loading ? (
           <div className="text-center py-20">
-            <p className="text-white text-lg">{t('loading')}</p>
+            <p className="text-gray-900 text-lg">{t('loading')}</p>
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="text-center py-20 bg-gray-800 rounded-lg">
-            <p className="text-white text-xl mb-4">{t('noOrders')}</p>
-            <Link href="/client" className="text-orange-500 hover:text-orange-400">
+          <div className="text-center py-20 bg-white ring-1 ring-gray-200 rounded-lg">
+            <p className="text-gray-900 text-xl mb-4">{t('noOrders')}</p>
+            <Link href="/client" className="text-orange-500 hover:text-orange-600">
               {t('startSearching')}
             </Link>
           </div>
@@ -185,7 +187,7 @@ export default function OrdersPage() {
             {filteredOrders.map(order => {
               const statusKey = statusTranslationKeys[order.status];
               const statusLabel = statusKey ? t(statusKey) : order.status;
-              const statusColor = statusColors[order.status] || 'gray';
+              const statusColor = statusColors[order.status] || 'bg-gray-100 text-gray-700';
 
               return (
                 <Link
@@ -193,31 +195,31 @@ export default function OrdersPage() {
                   href={`/client/orders/${order.id}`}
                   className="block"
                 >
-                  <div className="bg-gray-800 rounded-lg p-4 hover:bg-gray-750 hover:shadow-lg transition cursor-pointer">
+                  <div className="bg-white ring-1 ring-gray-200 rounded-lg p-4 hover:bg-gray-100 hover:shadow-lg transition cursor-pointer">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
-                        <p className="text-white font-bold text-lg">
+                        <p className="text-gray-900 font-bold text-lg">
                           Commande #{order.id.slice(0, 8)}
                         </p>
-                        <p className="text-gray-400 text-sm flex items-center gap-2 mt-1">
+                        <p className="text-gray-500 text-sm flex items-center gap-2 mt-1">
                           <Clock size={14} />
                           {new Date(order.createdAt).toLocaleString('fr-FR')}
                         </p>
                       </div>
-                      <ChevronRight size={24} className="text-gray-600" />
+                      <ChevronRight size={24} className="text-gray-400" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-3">
                       <div>
-                        <p className="text-gray-400 text-sm mb-1">{t('address')}</p>
-                        <p className="text-white flex items-center gap-2">
+                        <p className="text-gray-500 text-sm mb-1">{t('address')}</p>
+                        <p className="text-gray-900 flex items-center gap-2">
                           <MapPin size={14} />
                           <span className="line-clamp-1">{order.deliveryAddress || t('pickup')}</span>
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-gray-400 text-sm mb-1">{t('amount')}</p>
-                        <p className="text-orange-400 font-bold text-lg">
+                        <p className="text-gray-500 text-sm mb-1">{t('amount')}</p>
+                        <p className="text-orange-600 font-bold text-lg">
                           {euro(order.totalAmount)}
                         </p>
                       </div>
@@ -225,12 +227,12 @@ export default function OrdersPage() {
 
                     <div className="flex items-center justify-between">
                       <span
-                        className={`px-3 py-1 rounded-full text-sm font-semibold bg-${statusColor}-900 text-${statusColor}-400 border border-${statusColor}-700`}
+                        className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColor}`}
                       >
                         {statusLabel}
                       </span>
                       {order.avisARedemander && (
-                        <span className="px-3 py-1 rounded-full text-sm font-semibold bg-orange-900 text-orange-300 border border-orange-700">
+                        <span className="px-3 py-1 rounded-full text-sm font-semibold bg-orange-50 text-orange-700 border border-orange-200">
                           {t('reviewWanted')}
                         </span>
                       )}
@@ -240,7 +242,7 @@ export default function OrdersPage() {
                     </div>
 
                     {TERMINEES.includes(order.status) && order.store && (order.items?.length ?? 0) > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-700 flex flex-wrap items-center gap-3">
+                      <div className="mt-3 pt-3 border-t border-gray-200 flex flex-wrap items-center gap-3">
                         <button
                           type="button"
                           onClick={(e) => commanderANouveau(e, order)}
@@ -251,7 +253,7 @@ export default function OrdersPage() {
                           {reprise?.orderId === order.id && !reprise.message ? t('reordering') : t('reorder')}
                         </button>
                         {reprise?.orderId === order.id && reprise.message && (
-                          <p role="status" className="text-sm text-amber-300 flex-1 min-w-[12rem]">
+                          <p role="status" className="text-sm text-amber-700 flex-1 min-w-[12rem]">
                             {reprise.message}{' '}
                             {reprise.slug && (
                               <button
@@ -261,7 +263,7 @@ export default function OrdersPage() {
                                   e.stopPropagation();
                                   router.push(`/store/${reprise.slug}?panier=1`);
                                 }}
-                                className="underline text-orange-400 hover:text-orange-300"
+                                className="underline text-orange-600 hover:text-orange-700"
                               >
                                 {t('reorderSeeCart')}
                               </button>

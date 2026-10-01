@@ -14,6 +14,7 @@ import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
 import { useParametreAdresse } from '@/lib/navigateur';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { cheminCommande, jetonDeSuivi, memoriserJetonDeSuivi } from '@/lib/suivi-commande';
+import { EnTeteClient } from '@/components/EnTeteClient';
 import { RetardLivraison, type Retard } from '@/components/RetardLivraison';
 import { ReclamationLivraison, type EtatReclamation } from '@/components/ReclamationLivraison';
 
@@ -107,20 +108,20 @@ function lireSuivi(orderId: string, suite = '') {
 }
 
 const statusSteps = [
-  { status: 'PENDING', label: 'En Attente', icon: Clock, color: 'text-yellow-400' },
-  { status: 'ACCEPTED', label: 'Acceptée', icon: CheckCircle, color: 'text-blue-400' },
-  { status: 'PREPARING', label: 'En préparation', icon: Clock, color: 'text-orange-400' },
-  { status: 'READY', label: 'Prête', icon: Package, color: 'text-green-400' },
-  { status: 'COMPLETED', label: 'Livrée', icon: Truck, color: 'text-purple-400' },
+  { status: 'PENDING', label: 'En Attente', icon: Clock, color: 'text-yellow-600' },
+  { status: 'ACCEPTED', label: 'Acceptée', icon: CheckCircle, color: 'text-blue-600' },
+  { status: 'PREPARING', label: 'En préparation', icon: Clock, color: 'text-orange-600' },
+  { status: 'READY', label: 'Prête', icon: Package, color: 'text-green-600' },
+  { status: 'COMPLETED', label: 'Livrée', icon: Truck, color: 'text-purple-600' },
 ];
 
 const statusColors: { [key: string]: string } = {
-  PENDING: 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50',
-  ACCEPTED: 'bg-blue-600/20 text-blue-400 border-blue-600/50',
-  PREPARING: 'bg-orange-600/20 text-orange-400 border-orange-600/50',
-  READY: 'bg-green-600/20 text-green-400 border-green-600/50',
-  COMPLETED: 'bg-purple-600/20 text-purple-400 border-purple-600/50',
-  REJECTED: 'bg-red-600/20 text-red-400 border-red-600/50',
+  PENDING: 'bg-yellow-50 text-yellow-600 border-yellow-200',
+  ACCEPTED: 'bg-blue-50 text-blue-600 border-blue-200',
+  PREPARING: 'bg-orange-50 text-orange-600 border-orange-200',
+  READY: 'bg-green-50 text-green-600 border-green-200',
+  COMPLETED: 'bg-purple-50 text-purple-600 border-purple-200',
+  REJECTED: 'bg-red-50 text-red-600 border-red-200',
 };
 
 export default function TrackOrderPage() {
@@ -245,16 +246,17 @@ export default function TrackOrderPage() {
   const currentStatusIndex = order ? getStatusIndex(order.status) : -1;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <EnTeteClient />
+      <div className="max-w-4xl mx-auto space-y-8 p-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold">📍 Suivre Ma Commande</h1>
-          <p className="text-gray-400">Ouvrez le lien reçu par e-mail ou SMS, ou entrez votre numéro de commande</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">📍 Suivre ma commande</h1>
+          <p className="text-gray-500">Ouvrez le lien reçu par e-mail ou SMS, ou entrez votre numéro de commande</p>
         </div>
 
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <form onSubmit={handleSearch} className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 text-gray-500" size={20} />
@@ -263,13 +265,13 @@ export default function TrackOrderPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Numéro de commande..."
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-red-500 placeholder-gray-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg pl-10 pr-4 py-3 text-gray-900 focus:outline-none focus:border-orange-500 placeholder-gray-400"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="px-8 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-colors disabled:opacity-50"
+              className="px-8 py-3 bg-orange-600 hover:bg-orange-700 rounded-full text-white font-semibold transition-colors disabled:opacity-50"
             >
               {loading ? 'Recherche...' : 'Rechercher'}
             </button>
@@ -278,9 +280,9 @@ export default function TrackOrderPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 flex gap-3">
-            <AlertCircle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
-            <p className="text-red-400">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-red-600">{error}</p>
           </div>
         )}
 
@@ -288,17 +290,17 @@ export default function TrackOrderPage() {
         {order && (
           <div className="space-y-6">
             {/* Order Header */}
-            <div className="bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-600/50 rounded-lg p-6">
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-gray-400 text-sm mb-1">Numéro de Commande</p>
-                  <p className="text-2xl font-bold text-red-400">#{order.id.slice(-8).toUpperCase()}</p>
+                  <p className="text-gray-500 text-sm mb-1">Numéro de Commande</p>
+                  <p className="text-2xl font-bold text-orange-600">#{order.id.slice(-8).toUpperCase()}</p>
                   <p className="text-xs text-gray-500 mt-2">
                     Créée le {new Date(order.createdAt).toLocaleString('fr-FR')}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-gray-400 text-sm mb-1">Statut Actuel</p>
+                  <p className="text-gray-500 text-sm mb-1">Statut Actuel</p>
                   <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold border ${statusColors[order.status]}`}>
                     {order.status === 'PENDING' && '⏳ En attente de confirmation'}
                     {order.status === 'ACCEPTED' && '✅ Acceptée'}
@@ -313,7 +315,7 @@ export default function TrackOrderPage() {
 
             {/* Status Timeline */}
             {order.status !== 'REJECTED' && (
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h2 className="text-lg font-bold mb-6">Progression de la Commande</h2>
                 <div className="space-y-6">
                   {statusSteps.map((step, index) => {
@@ -328,16 +330,16 @@ export default function TrackOrderPage() {
                           <div
                             className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-colors ${
                               isCompleted
-                                ? 'bg-red-600 text-white'
-                                : 'bg-gray-700 text-gray-400'
-                            } ${isCurrent ? 'ring-2 ring-red-600 ring-offset-2 ring-offset-gray-800' : ''}`}
+                                ? 'bg-orange-600 text-white'
+                                : 'bg-gray-100 text-gray-500'
+                            } ${isCurrent ? 'ring-2 ring-orange-600 ring-offset-2 ring-offset-white' : ''}`}
                           >
                             <Icon size={24} />
                           </div>
                           {index < statusSteps.length - 1 && (
                             <div
                               className={`w-1 h-12 mt-2 ${
-                                isCompleted ? 'bg-red-600' : 'bg-gray-700'
+                                isCompleted ? 'bg-orange-600' : 'bg-gray-100'
                               }`}
                             />
                           )}
@@ -345,7 +347,7 @@ export default function TrackOrderPage() {
 
                         {/* Step Info */}
                         <div className="flex-1 pt-2 pb-6">
-                          <p className={`font-semibold text-lg ${isCompleted ? 'text-white' : 'text-gray-400'}`}>
+                          <p className={`font-semibold text-lg ${isCompleted ? 'text-gray-900' : 'text-gray-500'}`}>
                             {step.label}
                           </p>
                           <p className="text-sm text-gray-500 mt-1">
@@ -370,25 +372,25 @@ export default function TrackOrderPage() {
 
             {/* Rejection Message */}
             {order.status === 'REJECTED' && (
-              <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-6">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6">
                 <div className="flex gap-4">
-                  <AlertCircle size={24} className="text-red-400 flex-shrink-0" />
+                  <AlertCircle size={24} className="text-red-600 flex-shrink-0" />
                   <div>
-                    <h3 className="text-lg font-bold text-red-400 mb-2">Commande annulée</h3>
-                    <p className="text-red-300">
+                    <h3 className="text-lg font-bold text-red-600 mb-2">Commande annulée</h3>
+                    <p className="text-red-700">
                       {MOTIFS_POUR_LE_CLIENT[order.rejectionReason || ''] ||
                         'Désolé, votre commande a été refusée par la boutique.'}
                     </p>
                     {order.rejectionNote && (
-                      <p className="text-red-200 mt-2">« {order.rejectionNote} »</p>
+                      <p className="text-red-800 mt-2">« {order.rejectionNote} »</p>
                     )}
                     {order.paymentStatus === 'REFUNDED' && (
-                      <p className="text-red-200 mt-2">
+                      <p className="text-red-800 mt-2">
                         Vous avez payé en ligne : vous êtes remboursé, sous 5 à 10 jours sur votre compte.
                       </p>
                     )}
                     {order.paymentStatus === 'SUCCEEDED' && (
-                      <p className="text-red-200 mt-2">
+                      <p className="text-red-800 mt-2">
                         Vous avez payé en ligne : votre remboursement est en cours de traitement.
                       </p>
                     )}
@@ -401,7 +403,7 @@ export default function TrackOrderPage() {
             {order.deliveryType === 'DELIVERY' &&
              ['READY', 'COMPLETED'].includes(order.status) &&
              delivery && (
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h2 className="text-lg font-bold mb-4">Suivi en Temps Réel</h2>
                 <SuiviLivraisonClient
                   orderId={order.id}
@@ -411,20 +413,20 @@ export default function TrackOrderPage() {
             )}
 
             {/* Delivery Information */}
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h2 className="text-lg font-bold mb-4">Informations de Livraison</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-gray-400 text-sm mb-1">Mode</p>
+                  <p className="text-gray-500 text-sm mb-1">Mode</p>
                   <p className="font-semibold flex items-center gap-2">
                     {order.deliveryType === 'PICKUP' ? (
                       <>
-                        <MapPin size={18} className="text-blue-400" />
+                        <MapPin size={18} className="text-blue-600" />
                         Retrait en boutique
                       </>
                     ) : (
                       <>
-                        <Truck size={18} className="text-green-400" />
+                        <Truck size={18} className="text-green-600" />
                         Livraison à domicile
                       </>
                     )}
@@ -433,7 +435,7 @@ export default function TrackOrderPage() {
 
                 {order.deliveryType === 'PICKUP' && order.pickupTime && (
                   <div>
-                    <p className="text-gray-400 text-sm mb-1">Heure de Retrait</p>
+                    <p className="text-gray-500 text-sm mb-1">Heure de Retrait</p>
                     <p className="font-semibold">
                       {new Date(order.pickupTime).toLocaleString('fr-FR')}
                     </p>
@@ -442,7 +444,7 @@ export default function TrackOrderPage() {
 
                 {order.deliveryType === 'DELIVERY' && order.deliveryAddress && (
                   <div>
-                    <p className="text-gray-400 text-sm mb-1">Adresse de Livraison</p>
+                    <p className="text-gray-500 text-sm mb-1">Adresse de Livraison</p>
                     <p className="font-semibold">
                       {order.deliveryAddress}
                     </p>
@@ -467,28 +469,28 @@ export default function TrackOrderPage() {
               )}
 
               {order.codeRemise && order.livreurProche && !order.attenteFinLe && (
-                <div role="status" className="mt-4 rounded-lg border border-green-700/60 bg-green-900/30 px-4 py-3">
-                  <p className="font-semibold text-green-200">Votre livreur est bientôt là</p>
-                  <p className="text-sm text-green-300/90">
+                <div role="status" className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                  <p className="font-semibold text-green-800">Votre livreur est bientôt là</p>
+                  <p className="text-sm text-green-700/90">
                     Il arrive dans un instant : vous pouvez descendre devant la porte.
                   </p>
                 </div>
               )}
 
               {order.codeRemise && (
-                <div className="mt-4 rounded-lg border border-orange-700/50 bg-orange-900/20 px-4 py-3">
-                  <p className="text-sm text-orange-200">Votre code de remise</p>
-                  <p className="text-3xl font-bold tracking-[0.3em] text-white">
+                <div className="mt-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+                  <p className="text-sm text-orange-800">Votre code de remise</p>
+                  <p className="text-3xl font-bold tracking-[0.3em] text-gray-900">
                     {order.codeRemise}
                   </p>
-                  <p className="text-xs text-orange-200/80 mt-1">
+                  <p className="text-xs text-orange-800/80 mt-1">
                     Donnez-le au livreur à la remise, et à personne d&apos;autre.
                   </p>
                 </div>
               )}
 
               {order.preuveDeLivraison && (
-                <p className="mt-4 text-sm text-green-300">
+                <p className="mt-4 text-sm text-green-700">
                   {order.preuveDeLivraison === 'CODE'
                     ? 'Remise confirmée par votre code.'
                     : 'Dépôt confirmé par photo, en votre absence.'}
@@ -500,10 +502,10 @@ export default function TrackOrderPage() {
                   <img
                     src={order.photoDepot}
                     alt="Photo du dépôt de votre commande"
-                    className="w-full max-h-80 object-cover rounded-lg border border-gray-700"
+                    className="w-full max-h-80 object-cover rounded-lg border border-gray-200"
                   />
                   {order.noteDepot && (
-                    <p className="text-sm text-gray-400">Déposée : {order.noteDepot}</p>
+                    <p className="text-sm text-gray-500">Déposée : {order.noteDepot}</p>
                   )}
                 </div>
               )}
@@ -518,19 +520,19 @@ export default function TrackOrderPage() {
             {/* Customer Information — lue seulement par le compte du client :
                 le suivi par lien ne transporte ni e-mail ni téléphone. */}
             {(order.customerName || order.customerEmail || order.customerPhone) && (
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h2 className="text-lg font-bold mb-4">Vos Informations</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-gray-400 text-sm mb-1">Nom</p>
+                    <p className="text-gray-500 text-sm mb-1">Nom</p>
                     <p className="font-semibold">{order.customerName}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-sm mb-1">Email</p>
+                    <p className="text-gray-500 text-sm mb-1">Email</p>
                     <p className="font-semibold text-sm">{order.customerEmail}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-sm mb-1">Téléphone</p>
+                    <p className="text-gray-500 text-sm mb-1">Téléphone</p>
                     <p className="font-semibold">{order.customerPhone}</p>
                   </div>
                 </div>
@@ -538,11 +540,11 @@ export default function TrackOrderPage() {
             )}
 
             {/* Order Items */}
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h2 className="text-lg font-bold mb-4">Articles Commandés</h2>
               <div className="space-y-3">
                 {order.items && order.items.map(item => (
-                  <div key={item.id} className="flex justify-between items-center bg-gray-700 p-3 rounded">
+                  <div key={item.id} className="flex justify-between items-center bg-gray-100 p-3 rounded">
                     <div>
                       {/* `item.name` n'existe pas sur une ligne de commande :
                           l'article s'affichait sans nom. */}
@@ -552,15 +554,15 @@ export default function TrackOrderPage() {
                       <p className="font-semibold">
                         {intituleDeLaLigne(item).plat}
                         {intituleDeLaLigne(item).declinaison && (
-                          <span className="text-red-400"> — {intituleDeLaLigne(item).declinaison}</span>
+                          <span className="text-orange-600"> — {intituleDeLaLigne(item).declinaison}</span>
                         )}
                       </p>
                       {intituleDeLaLigne(item).supplements && (
-                        <p className="text-xs text-gray-400">+ {intituleDeLaLigne(item).supplements}</p>
+                        <p className="text-xs text-gray-500">+ {intituleDeLaLigne(item).supplements}</p>
                       )}
-                      <p className="text-sm text-gray-400">Quantité: {item.quantity}</p>
+                      <p className="text-sm text-gray-500">Quantité: {item.quantity}</p>
                     </div>
-                    <p className="text-red-400 font-semibold">
+                    <p className="text-orange-600 font-semibold">
                       {euro(Number(item.price) * item.quantity)}
                     </p>
                   </div>
@@ -576,15 +578,15 @@ export default function TrackOrderPage() {
               cle={delivery?.status}
             />
 
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <DetailDuTotal commande={order} couleurTotal="text-red-400" />
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <DetailDuTotal commande={order} couleurTotal="text-orange-600" />
             </div>
 
             {/* Notes */}
             {order.notes && (
-              <div className="bg-yellow-600/20 border border-yellow-600/50 rounded-lg p-4">
-                <p className="text-yellow-400 text-sm mb-2 font-semibold">Notes Spéciales:</p>
-                <p className="text-yellow-300">{order.notes}</p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-yellow-600 text-sm mb-2 font-semibold">Notes Spéciales:</p>
+                <p className="text-yellow-700">{order.notes}</p>
               </div>
             )}
 
@@ -597,7 +599,7 @@ export default function TrackOrderPage() {
                   setError('');
                   setHasSearched(false);
                 }}
-                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-colors"
+                className="px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold transition-colors"
               >
                 Rechercher une autre commande
               </button>
@@ -608,14 +610,14 @@ export default function TrackOrderPage() {
         {/* Empty State */}
         {!order && hasSearched && !loading && !error && (
           <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">Aucune commande trouvée</p>
+            <p className="text-gray-500 text-lg">Aucune commande trouvée</p>
           </div>
         )}
 
         {/* Initial State */}
         {!order && !hasSearched && (
-          <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-6 text-center">
-            <p className="text-blue-400">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+            <p className="text-blue-600">
               ℹ️ Entrez votre numéro de commande (les 8 derniers caractères visibles sur la confirmation) ou votre adresse email pour suivre votre commande.
             </p>
           </div>

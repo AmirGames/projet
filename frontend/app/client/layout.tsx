@@ -1,46 +1,13 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { Home, ShoppingCart, Heart, User, Menu, X, LogOut, LogIn } from 'lucide-react';
-import { useState } from 'react';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { PaniersAccueil } from '@/components/PaniersAccueil';
 import { BandeauCommandeEnCours } from '@/components/BandeauCommandeEnCours';
-import { SelecteurEspace } from '@/components/SelecteurEspace';
-import { useAuth } from '@/lib/auth-context';
+import { EnTeteClient } from '@/components/EnTeteClient';
 
 export default function ClientLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const router = useRouter();
-  const { logout, user, isLoading } = useAuth();
-
-  // Un simple lien vers /login laissait la session ouverte : on revenait
-  // connecté au premier clic sur « Accueil ».
-  //
-  // Retour direct à /client : « / » y menait aussi, mais après deux
-  // redirections (région, puis réécriture), d'où une déconnexion qui
-  // semblait lente.
-  const seDeconnecter = () => {
-    setMobileMenuOpen(false);
-    logout();
-    router.replace('/client');
-  };
-
-  const navItems = [
-    { href: '/client', label: 'Accueil', icon: Home },
-    { href: '/client/favorites', label: 'Favoris', icon: Heart },
-    { href: '/client/orders', label: 'Commandes', icon: ShoppingCart },
-    { href: '/client/profile', label: 'Profil', icon: User },
-  ];
-
-  const isActive = (href: string) => pathname === href;
-
   /**
    * Le panier global a disparu avec l'ancien tunnel.
    *
@@ -49,134 +16,12 @@ export default function ClientLayout({
    * lise, et laissait croire à deux systèmes de panier concurrents.
    */
   return (
-    <>
-      <div className="min-h-screen bg-gray-900">
-        {/* Mobile Navigation */}
-        <nav className="md:hidden bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
-          <div className="flex items-center justify-between p-4">
-            <SelecteurEspace actuel="client" href="/client" className="gap-2 -ml-2 px-2 py-1">
-              <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
-                Z
-              </div>
-              <span className="font-bold text-white">ZupEat</span>
-            </SelecteurEspace>
+    <div className="min-h-screen bg-white">
+      <EnTeteClient />
 
-            <div className="flex items-center gap-2">
-              <PaniersAccueil />
-              <LanguageSwitcher />
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 hover:bg-gray-700 rounded-lg"
-              >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            </div>
-          </div>
+      <BandeauCommandeEnCours />
 
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <div className="border-t border-gray-700 pb-4 space-y-2">
-              {navItems.map(item => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 transition ${
-                      isActive(item.href)
-                        ? 'bg-orange-600 text-white'
-                        : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    <Icon size={20} />
-                    {item.label}
-                  </Link>
-                );
-              })}
-              {/* Le bouton suit la session : toujours affiché, il laissait
-                  croire, une fois déconnecté, qu'on l'était encore. */}
-              {!isLoading && user && (
-                <button
-                  onClick={seDeconnecter}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 transition"
-                >
-                  <LogOut size={20} />
-                  Déconnexion
-                </button>
-              )}
-              {!isLoading && !user && (
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-orange-400 hover:text-orange-300 transition"
-                >
-                  <LogIn size={20} />
-                  Connexion
-                </Link>
-              )}
-            </div>
-          )}
-        </nav>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:block bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <SelecteurEspace actuel="client" href="/client" className="gap-2 -ml-2 px-2 py-1">
-              <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
-                Z
-              </div>
-              <span className="font-bold text-white text-lg">ZupEat</span>
-            </SelecteurEspace>
-
-            <div className="flex items-center gap-4">
-              {navItems.map(item => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
-                      isActive(item.href)
-                        ? 'bg-orange-600 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                    }`}
-                  >
-                    <Icon size={18} />
-                    <span className="hidden lg:inline">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center gap-4">
-              <PaniersAccueil />
-              {!isLoading && user && (
-                <button
-                  onClick={seDeconnecter}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition"
-                >
-                  Déconnexion
-                </button>
-              )}
-              {!isLoading && !user && (
-                <Link
-                  href="/login"
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-white font-semibold transition"
-                >
-                  Connexion
-                </Link>
-              )}
-              <LanguageSwitcher />
-            </div>
-          </div>
-        </nav>
-
-        <BandeauCommandeEnCours />
-
-        {/* Main Content */}
-        <main>{children}</main>
-      </div>
-    </>
+      <main>{children}</main>
+    </div>
   );
 }

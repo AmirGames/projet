@@ -67,9 +67,9 @@ export function PourboireApresLivraison({
   const donneApres = merci ?? (situation.donne?.quand === 'APRES_LIVRAISON' ? situation.donne.montant : null);
   if (donneApres != null) {
     return (
-      <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-4 flex items-center gap-3">
-        <Heart className="text-green-400 fill-green-400 shrink-0" size={20} />
-        <p className="text-green-100 text-sm">
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+        <Heart className="text-green-600 fill-green-400 shrink-0" size={20} />
+        <p className="text-green-800 text-sm">
           Merci ! {euro(donneApres)} de pourboire pour {nom}. Il le recevra avec son prochain versement.
         </p>
       </div>
@@ -81,13 +81,13 @@ export function PourboireApresLivraison({
   const montantValide = montant >= situation.minimum && montant <= situation.maximum;
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-4">
+    <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
       <div>
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Heart className="text-red-400" size={20} />
+        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <Heart className="text-red-600" size={20} />
           Votre commande est arrivée. Laisser un pourboire à {nom} ?
         </h2>
-        <p className="text-sm text-gray-400 mt-1">Il revient en entier à {nom}.</p>
+        <p className="text-sm text-gray-500 mt-1">Il revient en entier à {nom}.</p>
       </div>
 
       {!aPayer ? (
@@ -106,9 +106,9 @@ export function PourboireApresLivraison({
         </>
       ) : (
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm text-gray-300">
+          <div className="flex items-center justify-between text-sm text-gray-700">
             <span>Pourboire pour {nom}</span>
-            <button type="button" onClick={() => setAPayer(false)} className="text-red-400 hover:text-red-300 underline">
+            <button type="button" onClick={() => setAPayer(false)} className="text-red-600 hover:text-red-700 underline">
               Modifier ({euro(montant)})
             </button>
           </div>
