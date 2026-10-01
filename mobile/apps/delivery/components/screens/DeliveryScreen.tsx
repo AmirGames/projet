@@ -38,6 +38,7 @@ import type { Position, Tracking } from '../../lib/useDriverLocation';
 import SlideToConfirm from '../SlideToConfirm';
 import CompletionSummary from '../CompletionSummary';
 import LiveMap, { RouteInfo } from '../LiveMap';
+import GuidanceCard from '../GuidanceCard';
 import { Card, COLORS, ErrorBox, isDarkTheme, Loading, Row, ScreenHeader, themedStyles, ui } from '../ui';
 
 /** En deçà, le livreur est au commerce : la prise en charge se déverrouille. */
@@ -57,6 +58,8 @@ export default function DeliveryScreen({
   token,
   position,
   navigationApp,
+  voiceGuidance,
+  onVoiceGuidanceChange,
   onBack,
   onChanged,
   onTrackingChange,
@@ -68,6 +71,9 @@ export default function DeliveryScreen({
   token: string;
   position: Position | null;
   navigationApp: Prefs['navigationApp'];
+  /** Les consignes du guidage à voix haute, et le bouton qui les coupe. */
+  voiceGuidance: boolean;
+  onVoiceGuidanceChange: (on: boolean) => void;
   onBack: () => void;
   onChanged: () => void;
   /** La prochaine étape et la carte en plein écran décident de la précision du GPS. */
@@ -896,6 +902,14 @@ export default function DeliveryScreen({
               <Text style={styles.fullMapCloseText}>✕</Text>
             </TouchableOpacity>
           </View>
+          {route?.steps && route.steps.length > 1 && (
+            <GuidanceCard
+              steps={route.steps}
+              driver={driverPoint}
+              voice={voiceGuidance}
+              onToggleVoice={() => onVoiceGuidanceChange(!voiceGuidance)}
+            />
+          )}
           <LiveMap
             dark={isDarkTheme()}
             driver={driverPoint}
