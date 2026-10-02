@@ -228,7 +228,10 @@ reçoit un 429.
 ```
 Étapes :
 1. Se connecter avec test-user-001@example.com
-2. DevTools → Application → Local Storage : copier accessToken
+2. DevTools → Réseau : réponse de POST /api/auth/login (ou /api/auth/refresh),
+   copier `accessToken` — il n'est plus dans le Local Storage : le jeton
+   d'accès ne vit qu'en mémoire, le renouvellement dans le cookie httpOnly
+   `zup_refresh`
 3. Le décoder (https://jwt.io ou `node -e`)
 
 Attendu :
@@ -236,19 +239,27 @@ Attendu :
 ❌ Ni orgId, ni rôle, ni storeIds : tout se relit en base à chaque requête
 ```
 
-Durées par défaut : 7 jours pour le jeton d'accès (`JWT_EXPIRES_IN`), 30 jours
-pour le jeton de renouvellement (`JWT_REFRESH_EXPIRES_IN`).
+Durées : 15 minutes par défaut pour le jeton d'accès (`JWT_EXPIRES_IN`,
+`backend/src/config/env.ts`) — `.env.example` le règle à 7 jours —, 30 jours
+pour le jeton de renouvellement (`JWT_REFRESH_EXPIRES_IN`). Le site renouvelle
+le jeton d'accès en silence avant son échéance.
 
 ### Test 2.2 : session expirée ou révoquée
 
 ```
 Étapes :
-1. Remplacer accessToken par une valeur invalide dans le Local Storage
+1. DevTools → Application → Cookies : remplacer la valeur de `zup_refresh`
+   par une valeur invalide (c'est là que vit la session ; un jeton posé dans
+   le Local Storage n'est plus lu)
 2. Recharger une page d'un espace
 
 Attendu :
-✅ L'API répond 401 (INVALID_TOKEN)
-✅ Le site renvoie vers la connexion, sans boucle
+✅ Le renouvellement de la session est refusé (401)
+✅ Le site renvoie vers la connexion de l'espace, sans boucle
+✅ La page de connexion dit « Votre session n'est plus valable » ; le message
+   disparaît au rechargement suivant
+
+Automatisé : `frontend/scripts/verif-session-perimee.mjs`.
 ```
 
 ### Test 2.3 : trop d'essais de connexion

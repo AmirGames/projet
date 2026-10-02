@@ -114,9 +114,19 @@ const produits = [
   [gare, "Brioche", 4.5],
 ];
 
+// Les identifiants sont gardés : une commande porte ses articles, dont le
+// serveur recalcule les prix — sans eux, l'API la refuse (400).
+const produitId = {};
 for (const [storeId, name, price] of produits) {
-  await post("/api/products", { storeId, name, price, status: "ACTIVE" }, jetonCommercant);
+  const cree = await j(await post("/api/products", { storeId, name, price, status: "ACTIVE" }, jetonCommercant));
+  produitId[name] = cree?.product?.id || cree?.id;
 }
+
+/** Des articles pour environ `montant` euros, d'un seul plat. */
+const articles = (nom, prix, montant) => {
+  const quantity = Math.max(1, Math.round(montant / prix));
+  return { items: [{ productId: produitId[nom], quantity, price: prix }], totalAmount: Number((quantity * prix).toFixed(2)) };
+};
 
 // ===== Commandes =====
 
@@ -143,7 +153,7 @@ const commander = async (storeId, totalAmount, customerEmail) =>
       customerEmail,
       customerPhone: "0600000000",
       deliveryType: "PICKUP",
-      totalAmount,
+      ...(storeId === centre ? articles("Baguette", 1.2, totalAmount) : articles("Brioche", 4.5, totalAmount)),
     })
   );
 
@@ -186,7 +196,7 @@ const aLivrer = attendu(
       deliveryCity: "Lyon",
       deliveryLat: 45.78,
       deliveryLng: 4.86,
-      totalAmount: 28,
+      ...articles("Brioche", 4.5, 28),
       feesAmount: 4.5,
     })
   ),

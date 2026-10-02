@@ -82,13 +82,24 @@ emporter ou à livrer.
   **duplique** : catalogue, taxes, zones, promotions, thème, horaires et
   réglages repris, seuls le nom, l'adresse et le téléphone sont nouveaux.
   L'adresse web (slug) se déduit toute seule du nom
-- Catalogue : catégories et plats réordonnables au glisser-déposer, déclinaisons,
-  disponibilité basculable en direct (le client la voit changer sans recharger)
+- **Tableau de bord** de la journée : ventes, commandes et panier moyen du
+  jour, ventes des sept derniers jours (comptées à l'heure de Bruxelles, sans
+  les commandes refusées), plats épuisés à remettre en vente d'un clic, dernier
+  relevé de reversement et commandes en cours
+- Catalogue : catégories et plats réordonnables au glisser-déposer, chaque plat
+  sur une ligne avec sa photo, disponibilité basculable d'un interrupteur et en
+  direct (le client la voit changer sans recharger) ; la modification s'ouvre
+  dans un panneau latéral qui porte aussi déclinaisons et suppléments
 - **Suppléments payants** par plat, en groupes (« Suppléments », « Sauce ») :
   un prix par choix (0 pour un choix offert), un groupe obligatoire ou plafonné,
   un choix épuisé d'un clic. Le serveur les tarife à chaque commande, et la
   fiche commande, le ticket et la facture les nomment
-- Commandes : liste, détail, changement d'état, facture imprimable. Il y lit
+- **Écran des commandes en colonnes** — à accepter, en préparation, prêtes —
+  chaque carte portant son action suivante : accepter en choisissant le temps
+  de préparation, lancer, marquer prête, remettre au livreur ou au client,
+  refuser avec un motif ; le retard se voit en rouge, la recherche du livreur
+  sur la carte. Un onglet Historique garde toutes les commandes, filtrables
+- Commandes : détail, changement d'état, facture imprimable. Il y lit
   **le montant de ses articles** (remise déduite), pas le total payé par le
   client : la livraison d'un livreur de la plateforme et les frais de service
   ne sont pas à lui. Une nouvelle commande sonne aussi sur la page qui réunit
@@ -223,6 +234,13 @@ emporter ou à livrer.
   l'acceptation des conditions est enregistrée à l'inscription et à la commande
 
 ### Partout
+- **Un seul thème, clair**, de la vitrine à l'administration, adapté au
+  téléphone (les barres latérales deviennent des tiroirs) ; une couleur par
+  marque : orange pour ZupEat, noir pour ZupOne, bleu pour ZupDrive. Un
+  commerce sans photo ni logo prend l'illustration de sa catégorie
+- **Une session qui n'est plus valable** (compte supprimé, base remise à zéro)
+  ramène à la connexion avec le message « Votre session n'est plus valable »,
+  même quand elle était déjà morte à l'ouverture de la page
 - **Un mot de passe solide** à chaque création ou changement (inscription
   client, commerçant, livreur, réinitialisation, sur le site comme dans les
   applications) : 8 caractères minimum, dont un chiffre, une minuscule et une

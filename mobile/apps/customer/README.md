@@ -20,6 +20,10 @@ même tiroir latéral, mêmes composants (`components/ui.tsx`).
   téléphone), recherche, catégories de cuisine (Pizzas, Sushis…), tri (note,
   distance, frais), commerces qui livrent à l'adresse d'abord, avec leurs frais
   et leur minimum, et les **paniers en cours**.
+- **Aux couleurs de ZupEat** : l'orange de la marque (`COLORS.primary`
+  `#EA580C` dans `components/ui.tsx`), et chaque commerce montré par sa
+  **photo de couverture** avec son logo en pastille — ou, sans photo,
+  l'illustration de sa catégorie (une pizza pour une pizzeria).
 - **Vitrine** : menu rangé par catégories dans l'ordre du commerçant, plats
   épuisés en direct (retirés du panier s'ils y étaient), déclinaisons, favori,
   livraison ou non à l'adresse retenue.
@@ -66,12 +70,14 @@ paiement en ligne est actif, l'application ne propose que les espèces.
 app/index.tsx              écran racine : session, onglets, tiroir, bandeau, écrans empilés
 components/LiveMap.tsx     carte de la livraison en direct (Leaflet dans une WebView)
 components/ui.tsx          en-tête, cartes, lignes, chargement (commun aux trois applications)
+components/CouvertureCommerce.tsx  photo de couverture d'un commerce, ou l'illustration de sa catégorie
 components/screens/        un fichier par écran
 lib/api.ts                 appels au serveur, montants, adresses des images
 lib/session.ts             session et adresse de livraison (SecureStore)
 lib/carts.ts               un panier par commerce (AsyncStorage)
 lib/useCartSync.ts         paniers partagés avec le compte (site ↔ téléphone)
 lib/stores.ts              commerces, menus, zones de livraison
+lib/visuels.ts             emoji et couleurs par famille de commerce (copie de frontend/lib/visuels-familles.ts)
 lib/orders.ts              commandes, statuts, suivi
 lib/useCustomerRealtime.ts connexion temps réel et salons des commandes
 lib/push.ts                notifications push (app « customer »)

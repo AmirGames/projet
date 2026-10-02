@@ -458,16 +458,63 @@ page fait le même travail.
 
 ## Style
 
-- **Tailwind**, classes dans le JSX. Thème **sombre** par défaut :
-  fond `bg-gray-900`, cartes `bg-slate-800` avec `border-slate-700`, texte
-  `text-white` et `text-gray-400`. Reprenez les classes d'une page voisine pour
-  rester cohérent.
+- **Tailwind**, classes dans le JSX. **Tout le site est en thème clair** : la
+  vitrine, le client, le commerçant, le livreur, l'administration, les pages
+  d'erreur. Il n'y a plus d'espace sombre ; ne réintroduisez pas
+  `bg-gray-900` comme fond de page. Reprenez les classes d'une page voisine.
+  - **Fond de page** `bg-[#F7F7F6]`, posé par le cadre de l'espace (une page
+    n'ajoute ni fond ni `min-h-screen`, ni une seconde marge : le `<main>` du
+    cadre a déjà `p-4 sm:p-6`).
+  - **Cartes** `bg-white` avec `border border-[#ECECEA]` (ou
+    `ring-1 ring-gray-200`), coins `rounded-[18px]` pour les blocs principaux.
+  - **Texte** `text-gray-900`, secondaire `text-gray-500` ; titres en
+    `font-extrabold tracking-tight`.
+  - **Barres latérales** blanches, rubrique active en `bg-orange-50
+    text-orange-700` (gris foncé sur fond gris pâle dans l'administration).
+- **Les couleurs ont un sens, une par marque** (`lib/marques.ts`) :
+  - **ZupEat** (client, commerçant, livreur) : l'action principale est
+    **orange** — `bg-orange-600 hover:bg-orange-700 text-white`, en pilule
+    (`rounded-full`) ;
+  - **ZupOne** (le groupe, la connexion, l'administration) : **noir** —
+    `bg-gray-900 hover:bg-black text-white` ;
+  - **ZupDrive** : **bleu**, sur ses pages et dans sa partie de
+    l'administration ;
+  - partout : le **filtre ou l'onglet choisi** en noir, les petits boutons
+    **Modifier** en gris (`bg-gray-100`), **Supprimer** en rouge pâle
+    (`bg-red-50 text-red-700`). Le **vert** reste pour accepter, valider,
+    reprendre, et le **rouge plein** pour les vraies confirmations de
+    suppression et les interrupteurs Ouvert / Fermé.
+- **Un fond saturé porte toujours sa couleur de texte** (`text-white`) dans
+  la même chaîne de classes : hérité d'un parent, le texte peut être foncé et
+  devenir illisible. Même règle pour les icônes posées sur de l'orange.
+- **Bouton désactivé** : `disabled:opacity-50`, jamais
+  `disabled:bg-gray-100` ou `-200` sur un bouton à texte blanc — le texte
+  disparaît. Une variante désactivée qui change le fond change aussi le texte
+  (`disabled:text-gray-500`).
+- **Pas de variantes `dark:`** : la configuration Tailwind n'a pas de
+  `darkMode`, elles suivraient le réglage du système et repasseraient une page
+  en sombre au milieu d'un espace clair.
+- **Composants partagés avec une variante `clair`** : certains servaient à des
+  espaces sombres et en gardent la variante par défaut. Sur une page, passez
+  `clair` : `SelecteurEspace`, `LanguageSwitcher`, `NotificationBell`,
+  `StoreSwitcher`, `AddressAutocomplete`, `AcceptationConditions`,
+  `ChangerMotDePasse`, `TicketConversation`, `FilSupport`,
+  `GraphiqueColonnes`. Sans elle, le menu ou le champ s'affiche en sombre.
 - **Couleurs du thème** : `primary`, `accent`… sont des variables CSS
-  (`app/globals.css`, `lib/theme-config.ts`), modifiables par la plateforme.
-  Préférez `bg-primary` à un bleu en dur quand la couleur doit suivre le thème.
+  (`app/globals.css`, `lib/theme-config.ts`), modifiables par la plateforme
+  (Administration → Configuration). Les espaces repris en clair utilisent les
+  couleurs de marque ci-dessus, écrites en entier : Tailwind ne génère pas une
+  classe composée à l'exécution (`bg-${couleur}-600`).
+- **Numéro de commande affiché** : `#` et les 8 **derniers** caractères de
+  l'identifiant, en majuscules (`numeroCourt()` de
+  `components/CarteCommandeCuisine.tsx`), comme la fiche commande et le ticket
+  imprimé. Le début d'un identifiant est horodaté, presque le même d'une
+  commande à l'autre.
 - **Icônes** : `lucide-react`.
 - **Responsive** : pensez téléphone d'abord. Les espaces à barre latérale la
-  transforment en tiroir sur petit écran (voir `app/superowner/layout.tsx`).
+  transforment en tiroir sur petit écran, fermé par défaut et refermé à chaque
+  lien suivi (`app/merchant/[orgId]/layout.tsx`, `app/merchant/layout.tsx`,
+  `app/superowner/layout.tsx`) ; sur grand écran, elle se replie en icônes.
 
 ## Vérifier son travail
 
@@ -495,6 +542,18 @@ Pour une nouvelle fonctionnalité importante, écrire un script `verif-*.mjs` su
 le modèle des existants est la manière du projet de la prouver ; ajoutez-le
 aux `scripts` de `package.json` (`verif:<nom>`).
 
+**La session d'un script passe par le cookie, comme un vrai navigateur.** Le
+jeton d'accès ne vit qu'en mémoire et le renouvellement dans un cookie
+`httpOnly` (`lib/jeton-session.ts`) : poser `accessToken` dans `localStorage`
+avant d'ouvrir une page ne connecte plus personne, l'appli renvoie vers la
+connexion. Utilisez `connecterNavigateur(page, SITE, { email, password })` de
+`scripts/inscription.mjs` avant d'ouvrir la page voulue, un contexte
+Playwright par compte.
+
+En mode développement, le premier passage après une modification du code peut
+dépasser le délai d'un script, le temps que les pages se compilent : relancez
+avant de conclure à une régression.
+
 ## Pièges fréquents
 
 1. **Une page « au mauvais endroit »** : son premier segment n'est dans aucun
@@ -511,10 +570,13 @@ aux `scripts` de `package.json` (`verif:<nom>`).
    client, dans un effet ou un gestionnaire ; `dynamic(..., { ssr: false })`
    pour les bibliothèques qui l'exigent.
 6. **Page livreur avec le mauvais jeton** : `driverToken`, pas `accessToken`.
-7. **Nouvelle page superowner qui n'apparaît pas, ou renvoie 403** : la section
+7. **Un texte devenu illisible après un changement de fond** : une classe
+   `text-white` héritée d'un parent sombre disparaît sur fond clair, et un
+   bouton saturé sans couleur de texte prend celle du parent. Voir « Style ».
+8. **Nouvelle page superowner qui n'apparaît pas, ou renvoie 403** : la section
    n'existe pas côté backend (`SECTIONS` et `ROUTES`), ou le lien n'a pas le
    bon `section` dans le layout.
-8. **Oublier que Next 16 a changé** : `proxy.ts` (et non `middleware.ts`),
+9. **Oublier que Next 16 a changé** : `proxy.ts` (et non `middleware.ts`),
    comportements de cache et de composants serveur différents. Lisez
    `node_modules/next/dist/docs/` avant de vous fier à vos habitudes.
 
@@ -530,5 +592,7 @@ aux `scripts` de `package.json` (`verif:<nom>`).
 - [ ] Le chargement, l'erreur et l'état vide sont gérés
 - [ ] Aucun jeton stocké ailleurs qu'en `localStorage` (qui est en mémoire)
 - [ ] `npx tsc --noEmit` et `npm run lint` passent
+- [ ] Thème clair et couleurs de la marque (voir « Style »), variante `clair`
+      passée aux composants partagés
 - [ ] Vérifiée dans un navigateur, sur téléphone aussi
 - [ ] Un ancien lien déplacé a sa redirection dans `next.config.js`

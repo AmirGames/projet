@@ -57,6 +57,11 @@ VERIF_SITE_URL=http://localhost:3000 npm run verif:versements   # relevés et ve
 VERIF_SITE_URL=http://localhost:3000 npm run verif:preuve       # code de remise et photo du dépôt
 VERIF_SITE_URL=http://localhost:3000 npm run verif:vitrine      # une seule vitrine, anciennes adresses redirigées
 VERIF_SITE_URL=http://localhost:3000 npm run verif:fiche        # fiche boutique et corrections de la plateforme
+VERIF_SITE_URL=http://localhost:3000 npm run verif:cuisine      # écran des commandes du commerçant, en colonnes
+VERIF_SITE_URL=http://localhost:3000 npm run verif:tableau      # tableau de bord et catalogue du commerçant
+VERIF_SITE_URL=http://localhost:3000 npm run verif:session      # session refusée : retour à la connexion, et pourquoi
+VERIF_SITE_URL=http://localhost:3000 npm run verif:commandes-direct  # les commandes suivent en direct
+VERIF_SITE_URL=http://localhost:3000 npm run verif:catalogue-direct  # catalogue, support et plateforme en direct
 ```
 
 Cinq scripts — `verif:courses`, `verif:suivi`, `verif:livreurs`,
@@ -127,6 +132,37 @@ pour le lancer.
 | `verif-horaires-genre.mjs` | Services multiples, fermeture après minuit, genre du commerce, TVA par boutique |
 | `verif-session-perimee.mjs` | Session qui n'est plus valable : retour à la connexion, et pourquoi |
 | `verif-webhooks.mjs` | Webhooks : événements servis par le serveur, secret montré une fois, envoi d'essai |
+| `verif-ecran-cuisine.mjs` | L'écran des commandes en colonnes : rangement, accepter avec un temps, préparer, prête, remise, refus avec motif, historique, filtre de l'API et cloisonnement |
+| `verif-tableau-de-bord.mjs` | Le tableau de bord (ventes du jour sans les commandes refusées, remise en vente d'un plat) et le catalogue (vignette, interrupteur de disponibilité, panneau de modification) |
+| `verif-commandes-direct.mjs` | Les écrans de commandes du client et du commerçant suivent en direct, refus automatique compris |
+| `verif-catalogue-support-direct.mjs` | Le catalogue, les tickets et l'espace plateforme suivent en direct |
+
+## Ouvrir une session dans le navigateur
+
+Le jeton d'accès ne vit qu'en mémoire, et le renouvellement dans un cookie
+`httpOnly` posé par l'API (`lib/jeton-session.ts`). **Poser `accessToken`
+dans `localStorage` avant d'ouvrir une page ne connecte plus personne** :
+l'appli ne retrouve aucune session et renvoie vers la connexion, et un
+contrôle qui lit ensuite la page échoue sans que rien ne soit cassé.
+
+Un script qui ouvre un espace connecté passe donc par la vraie route, comme
+le formulaire :
+
+```js
+import { connecterNavigateur } from './inscription.mjs';
+
+const page = await (await nav.newContext()).newPage();
+await connecterNavigateur(page, SITE, { email, password }); // pose le cookie
+await page.goto(`${SITE}/merchant/${orgId}/orders`);
+```
+
+Un contexte Playwright par compte : deux pages du même contexte partagent le
+cookie. `verif-session-perimee` simule une session morte en remplaçant le
+cookie `zup_refresh` par une valeur refusée.
+
+En mode développement, le premier passage après une modification du code peut
+dépasser le délai d'un script, le temps que les pages se compilent : relancez
+avant de conclure à une régression.
 
 Le parcours mot de passe ouvre un serveur SMTP minimal sur le port 1025 pour
 lire le message envoyé : le jeton n'existe en clair que dans ce lien, la base
@@ -135,8 +171,10 @@ n'en garde qu'une empreinte. Laissez ce port libre pendant l'exécution.
 ## Le faux service d'adresses
 
 Plusieurs suites saisissent une adresse que le serveur doit situer :
-`verif-commande-invite`, `verif-zones-livraison`, `verif-courses-livreur`,
-`verif-carte-suivi`. Sans service d'adresses joignable, la commande n'est pas
+`verif-commande-invite`, `verif-zones-livraison`, `verif-carte-suivi`.
+(`verif-courses-livreur` envoie la position de son adresse avec la commande,
+comme une adresse choisie dans les suggestions : sans elle, l'API refuse
+désormais une commande livrée, faute de pouvoir en calculer les frais.) Sans service d'adresses joignable, la commande n'est pas
 située, sa zone reste inconnue et la course n'est proposée à personne — les
 suites échouent sans que rien ne soit cassé. Le faux service du dépôt suffit,
 et évite de dépendre d'Internet : c'est le terminal 0 ci-dessus, et les deux
