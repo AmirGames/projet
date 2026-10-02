@@ -16,6 +16,10 @@ export default function PiedDeGroupe() {
         <div>
           <h4 className="mb-3 text-lg font-bold">ZupOne</h4>
           <p className="mb-3 text-gray-600">Le groupe derrière ZupEat et ZupDrive.</p>
+          {/* Le retour au site du groupe, depuis ZupEat comme depuis ZupDrive. */}
+          <Link href={accueilDe('vitrine')} className="mb-3 block font-semibold text-gray-900 hover:underline">
+            zupone.com →
+          </Link>
           <a href={`mailto:${EMAIL_CONTACT}`} className="text-gray-600 hover:text-gray-900">
             {EMAIL_CONTACT}
           </a>
