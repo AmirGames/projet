@@ -39,9 +39,9 @@ const ROLE_LABELS: { [key in StaffRole]: string } = {
 };
 
 const STATUS_COLORS: { [key in StaffStatus]: string } = {
-  ACTIVE: 'text-green-400',
-  INACTIVE: 'text-slate-400',
-  SUSPENDED: 'text-red-400',
+  ACTIVE: 'text-green-600',
+  INACTIVE: 'text-gray-500',
+  SUSPENDED: 'text-red-600',
 };
 
 export default function StaffPage() {
@@ -215,27 +215,27 @@ export default function StaffPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-900">
+      <div className="flex items-center justify-center py-24">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-8">
+    <div className="text-gray-900">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <Users className="text-amber-500" />
               Équipe
             </h1>
-            <p className="text-slate-400 mt-2">Gérez les membres de votre équipe</p>
+            <p className="text-gray-500 mt-2">Gérez les membres de votre équipe</p>
           </div>
           <button
             onClick={handleAddStaff}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition"
+            className="bg-orange-600 text-white hover:bg-orange-700 flex items-center gap-2 px-4 py-2 rounded-lg transition"
           >
             <Plus size={20} />
             Ajouter Membre
@@ -244,64 +244,64 @@ export default function StaffPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-            <p className="text-slate-400 text-sm">Total Membres</p>
-            <p className="text-3xl font-bold text-white mt-1">{stats.total}</p>
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <p className="text-gray-500 text-sm">Total Membres</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</p>
           </div>
-          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-            <p className="text-slate-400 text-sm">Actifs</p>
-            <p className="text-3xl font-bold text-green-400 mt-1">{stats.active}</p>
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <p className="text-gray-500 text-sm">Actifs</p>
+            <p className="text-3xl font-bold text-green-600 mt-1">{stats.active}</p>
           </div>
         </div>
 
         {/* Create/Edit Form */}
         {showForm && (
-          <div className="bg-slate-800 rounded-lg p-6 mb-8 border border-slate-700">
-            <h2 className="text-xl font-bold text-white mb-4">
+          <div className="bg-white rounded-lg p-6 mb-8 border border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
               {editingStaff ? 'Modifier Membre' : 'Nouveau Membre'}
             </h2>
             {formError && (
-              <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 mb-4 text-red-200">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-red-800">
                 {formError}
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="text-slate-300 text-sm block mb-2">Nom</label>
+                <label className="text-gray-700 text-sm block mb-2">Nom</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Jean Dupont"
-                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-slate-300 text-sm block mb-2">Email</label>
+                <label className="text-gray-700 text-sm block mb-2">Email</label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="jean@example.com"
-                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-slate-300 text-sm block mb-2">Téléphone</label>
+                <label className="text-gray-700 text-sm block mb-2">Téléphone</label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+33 6 XX XX XX XX"
-                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-slate-300 text-sm block mb-2">Rôle</label>
+                <label className="text-gray-700 text-sm block mb-2">Rôle</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as StaffRole })}
-                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded border border-gray-300 focus:border-amber-500 focus:outline-none"
                 >
                   <option value="CASHIER">Caissier</option>
                   <option value="KITCHEN">Cuisine</option>
@@ -315,7 +315,7 @@ export default function StaffPage() {
               <button
                 onClick={handleSaveStaff}
                 disabled={saving}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
+                className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded transition disabled:opacity-50"
               >
                 {editingStaff ? 'Mettre à Jour' : t('create')}
               </button>
@@ -325,7 +325,7 @@ export default function StaffPage() {
                   setEditingStaff(null);
                   setFormData({ name: '', email: '', phone: '', role: 'CASHIER' });
                 }}
-                className="px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-600 transition"
+                className="px-4 py-2 bg-gray-100 text-gray-900 rounded hover:bg-gray-200 transition"
               >
                 Annuler
               </button>
@@ -336,38 +336,38 @@ export default function StaffPage() {
         {/* Search */}
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-3 text-slate-400" size={20} />
+            <Search className="absolute left-3 top-3 text-gray-500" size={20} />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Rechercher un membre..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-amber-500 focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 bg-white text-gray-900 rounded-lg border border-gray-200 focus:border-amber-500 focus:outline-none"
             />
           </div>
         </div>
 
         {/* Staff Table */}
         {filteredStaff.length > 0 ? (
-          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-700 border-b border-slate-600">
+                <thead className="bg-gray-100 border-b border-gray-300">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Nom</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Email</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Téléphone</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Rôle</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Statut</th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-white">Actions</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Nom</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Téléphone</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Rôle</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Statut</th>
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredStaff.map((s, idx) => (
-                    <tr key={s.id} className={idx % 2 === 0 ? 'bg-slate-800' : 'bg-slate-750'}>
-                      <td className="px-6 py-4 text-sm text-white font-medium">{s.name}</td>
-                      <td className="px-6 py-4 text-sm text-slate-300">{s.email}</td>
-                      <td className="px-6 py-4 text-sm text-slate-300">{s.phone || '-'}</td>
+                    <tr key={s.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">{s.name}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{s.email}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{s.phone || '-'}</td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`px-3 py-1 rounded-full text-white text-xs font-medium ${ROLE_COLORS[s.role]}`}>
                           {ROLE_LABELS[s.role]}
@@ -392,14 +392,14 @@ export default function StaffPage() {
                         </button>
                         <button
                           onClick={() => handleEditStaff(s)}
-                          className="p-2 text-amber-400 hover:bg-slate-700 rounded transition"
+                          className="p-2 text-amber-600 hover:bg-gray-100 rounded transition"
                         >
                           <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleDeleteStaff(s.id)}
                           disabled={saving}
-                          className="p-2 text-red-400 hover:bg-slate-700 rounded transition disabled:opacity-50"
+                          className="p-2 text-red-600 hover:bg-gray-100 rounded transition disabled:opacity-50"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -412,14 +412,14 @@ export default function StaffPage() {
           </div>
         ) : (
           <div className="text-center py-16">
-            <Users className="mx-auto text-slate-600 mb-4" size={48} />
-            <p className="text-slate-400 text-lg">
+            <Users className="mx-auto text-gray-400 mb-4" size={48} />
+            <p className="text-gray-500 text-lg">
               {staff.length === 0 ? 'Aucun membre' : t('empty')}
             </p>
             {staff.length === 0 && (
               <button
                 onClick={handleAddStaff}
-                className="mt-4 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition inline-flex items-center gap-2"
+                className="bg-orange-600 text-white hover:bg-orange-700 mt-4 px-4 py-2 rounded-lg transition inline-flex items-center gap-2"
               >
                 <Plus size={20} />
                 Ajouter votre premier membre

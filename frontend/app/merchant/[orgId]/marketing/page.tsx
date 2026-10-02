@@ -180,12 +180,12 @@ export default function MarketingPage() {
 
   if (loading && campaigns.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+      <div className="text-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-400">Chargement des campagnes...</p>
+              <p className="text-gray-500">Chargement des campagnes...</p>
             </div>
           </div>
         </div>
@@ -194,7 +194,7 @@ export default function MarketingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="text-gray-900">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -202,16 +202,16 @@ export default function MarketingPage() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => { setMessage(''); setModaleOuverte(true); }}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-medium transition-colors"
+                className="bg-orange-600 text-white hover:bg-orange-700 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
               >
                 <Plus size={18} /> Nouvelle campagne
               </button>
-              <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-400 hover:text-gray-300 text-sm">
+              <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-500 hover:text-gray-700 text-sm">
                 ← Retour
               </Link>
             </div>
           </div>
-          <p className="text-gray-400">Créez et gérez vos campagnes marketing</p>
+          <p className="text-gray-500">Créez et gérez vos campagnes marketing</p>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-6">
@@ -221,8 +221,8 @@ export default function MarketingPage() {
               onClick={() => { setFilter(s); setPage(0); }}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 filter === s
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white hover:bg-gray-100 text-gray-500 border border-gray-200'
               }`}
             >
               {s === 'ALL' ? t('all') : s}
@@ -232,43 +232,43 @@ export default function MarketingPage() {
 
         <div className="space-y-4">
           {campaigns.length === 0 ? (
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center text-gray-400">
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
               Aucune campagne trouvée
             </div>
           ) : (
             campaigns.map((campaign) => (
-              <div key={campaign.id} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div key={campaign.id} className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-bold">{campaign.name}</h3>
-                    <p className="text-sm text-gray-400">{campaign.type} · {campaign.targetAudience}</p>
+                    <p className="text-sm text-gray-500">{campaign.type} · {campaign.targetAudience}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                    campaign.status === 'ACTIVE' ? 'bg-green-600/20 text-green-400 border-green-600/50'
-                    : campaign.status === 'DRAFT' ? 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50'
-                    : 'bg-gray-600/20 text-gray-400 border-gray-600/50'
+                    campaign.status === 'ACTIVE' ? 'bg-green-50 text-green-600 border-green-200'
+                    : campaign.status === 'DRAFT' ? 'bg-yellow-50 text-yellow-600 border-yellow-200'
+                    : 'bg-gray-600/20 text-gray-500 border-gray-600/50'
                   }`}>
                     {campaign.status}
                   </span>
                 </div>
 
-                <p className="text-sm text-gray-300 mb-3">{campaign.message.substring(0, 100)}...</p>
+                <p className="text-sm text-gray-700 mb-3">{campaign.message.substring(0, 100)}...</p>
 
                 <div className="grid grid-cols-4 gap-2 mb-4 text-xs">
-                  <div className="bg-gray-700/30 p-2 rounded">
-                    <p className="text-gray-400">Envoyés</p>
+                  <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-gray-500">Envoyés</p>
                     <p className="font-bold">{campaign.sentCount}</p>
                   </div>
-                  <div className="bg-gray-700/30 p-2 rounded">
-                    <p className="text-gray-400">Ouverts</p>
+                  <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-gray-500">Ouverts</p>
                     <p className="font-bold">{campaign.openCount}</p>
                   </div>
-                  <div className="bg-gray-700/30 p-2 rounded">
-                    <p className="text-gray-400">Clics</p>
+                  <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-gray-500">Clics</p>
                     <p className="font-bold">{campaign.clickCount}</p>
                   </div>
-                  <div className="bg-gray-700/30 p-2 rounded">
-                    <p className="text-gray-400">Taux ouverture</p>
+                  <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-gray-500">Taux ouverture</p>
                     <p className="font-bold">{campaign.sentCount > 0 ? Math.round((campaign.openCount / campaign.sentCount) * 100) : 0}%</p>
                   </div>
                 </div>
@@ -277,7 +277,7 @@ export default function MarketingPage() {
                   {campaign.status === 'ACTIVE' ? (
                     <button
                       onClick={() => changerStatut(campaign, 'COMPLETED')}
-                      className="px-3 py-1 bg-green-600/20 text-green-400 rounded text-xs hover:bg-green-600/30 transition"
+                      className="px-3 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition"
                     >
                       Terminer
                     </button>
@@ -286,7 +286,7 @@ export default function MarketingPage() {
                   ) : (
                     <button
                       onClick={() => changerStatut(campaign, 'ACTIVE')}
-                      className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded text-xs hover:bg-blue-600/30 transition"
+                      className="px-3 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100 transition"
                     >
                       <Send size={14} className="inline mr-1" />
                       Envoyer
@@ -294,7 +294,7 @@ export default function MarketingPage() {
                   )}
                   <button
                     onClick={() => handleDeleteCampaign(campaign.id)}
-                    className="px-3 py-1 bg-red-600/20 text-red-400 rounded text-xs hover:bg-red-600/30 transition"
+                    className="px-3 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100 transition"
                   >
                     <Trash2 size={14} className="inline mr-1" />
                     Supprimer
@@ -306,20 +306,20 @@ export default function MarketingPage() {
         </div>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-8 px-6 py-4 bg-gray-800 border border-gray-700 rounded-lg">
-            <p className="text-sm text-gray-400">Page {page + 1} sur {totalPages}</p>
+          <div className="flex items-center justify-between mt-8 px-6 py-4 bg-white border border-gray-200 rounded-lg">
+            <p className="text-sm text-gray-500">Page {page + 1} sur {totalPages}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded"
               >
                 Précédent
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded"
               >
                 Suivant
               </button>
@@ -331,23 +331,23 @@ export default function MarketingPage() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
             <form
               onSubmit={creerCampagne}
-              className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto"
+              className="bg-white border border-gray-200 rounded-lg p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold">Nouvelle campagne</h2>
                 <button
                   type="button"
                   onClick={() => setModaleOuverte(false)}
-                  className="p-1 hover:bg-gray-700 rounded"
+                  className="p-1 hover:bg-gray-100 rounded"
                 >
                   <X size={20} />
                 </button>
               </div>
 
-              {message && <div className="bg-gray-700 rounded-lg p-3 text-sm">{message}</div>}
+              {message && <div className="bg-gray-100 rounded-lg p-3 text-sm">{message}</div>}
 
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Nom de la campagne</label>
+                <label className="block text-sm text-gray-500 mb-1">Nom de la campagne</label>
                 <input
                   type="text"
                   required
@@ -355,17 +355,17 @@ export default function MarketingPage() {
                   value={formulaire.name}
                   onChange={(e) => setFormulaire({ ...formulaire, name: e.target.value })}
                   placeholder="Ex : Offre de rentrée"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Canal</label>
+                  <label className="block text-sm text-gray-500 mb-1">Canal</label>
                   <select
                     value={formulaire.type}
                     onChange={(e) => setFormulaire({ ...formulaire, type: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                   >
                     <option value="EMAIL">E-mail</option>
                     <option value="SMS">SMS</option>
@@ -374,13 +374,13 @@ export default function MarketingPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Destinataires</label>
+                  <label className="block text-sm text-gray-500 mb-1">Destinataires</label>
                   <select
                     value={formulaire.targetAudience}
                     onChange={(e) =>
                       setFormulaire({ ...formulaire, targetAudience: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                   >
                     <option value="all">Tous les clients</option>
                     <option value="new">Nouveaux clients</option>
@@ -391,26 +391,26 @@ export default function MarketingPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-gray-400 mb-1">
+                <label className="block text-sm text-gray-500 mb-1">
                   Description <span className="text-gray-500">(interne, facultative)</span>
                 </label>
                 <input
                   type="text"
                   value={formulaire.description}
                   onChange={(e) => setFormulaire({ ...formulaire, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Message envoyé</label>
+                <label className="block text-sm text-gray-500 mb-1">Message envoyé</label>
                 <textarea
                   required
                   rows={5}
                   value={formulaire.message}
                   onChange={(e) => setFormulaire({ ...formulaire, message: e.target.value })}
                   placeholder="Bonjour, profitez de -10 % sur votre prochaine commande..."
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                 />
               </div>
 
@@ -418,14 +418,14 @@ export default function MarketingPage() {
                 <button
                   type="submit"
                   disabled={envoi}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
+                  className="bg-orange-600 text-white hover:bg-orange-700 flex-1 px-4 py-2 disabled:opacity-40 rounded-lg font-medium transition-colors"
                 >
                   {envoi ? t('creating') : 'Créer la campagne'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setModaleOuverte(false)}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
                   Annuler
                 </button>

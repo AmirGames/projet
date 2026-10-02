@@ -389,11 +389,11 @@ export default function StoreSettings() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-gray-900">
+      <div className="flex h-screen">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">Chargement des paramètres...</p>
+            <p className="text-gray-500">Chargement des paramètres...</p>
           </div>
         </div>
       </div>
@@ -401,36 +401,36 @@ export default function StoreSettings() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="text-gray-900">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <Link href={`/merchant/${orgId}/dashboard`} className="text-red-400 hover:text-red-300 text-sm mb-4 inline-block">
+          <Link href={`/merchant/${orgId}/dashboard`} className="text-red-600 hover:text-red-700 text-sm mb-4 inline-block">
             ← Retour au tableau de bord
           </Link>
           <h1 className="text-3xl font-bold mb-2">Paramètres de la Boutique</h1>
-          <p className="text-gray-400">Gérez les informations et les préférences de votre boutique</p>
+          <p className="text-gray-500">Gérez les informations et les préférences de votre boutique</p>
         </div>
 
         {/* Message */}
         {message && (
-          <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${message.type === 'success' ? 'bg-green-600/20 border border-green-600/50 text-green-400' : 'bg-red-600/20 border border-red-600/50 text-red-400'}`}>
+          <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-600' : 'bg-red-50 border border-red-200 text-red-600'}`}>
             {message.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
             <span>{message.text}</span>
           </div>
         )}
 
         {/* Tabs */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg mb-6">
-          <div className="flex border-b border-gray-700 overflow-x-auto">
+        <div className="bg-white border border-gray-200 rounded-lg mb-6">
+          <div className="flex border-b border-gray-200 overflow-x-auto">
             {(['general', 'contact', 'notifications', 'facturation', 'livraison'] as TabType[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 px-4 py-4 font-medium transition-colors text-center whitespace-nowrap ${
                   activeTab === tab
-                    ? 'border-b-2 border-red-600 text-red-400'
-                    : 'text-gray-400 hover:text-gray-300'
+                    ? 'border-b-2 border-red-600 text-red-600'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 {tab === 'general' && '🏪 Général'}
@@ -448,19 +448,19 @@ export default function StoreSettings() {
             {activeTab === 'general' && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Logo de la boutique</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo de la boutique</label>
                   <div className="flex items-center gap-4">
                     {/* Le même fond que la carte vue par les clients : blanc avec
                         un logo, dégradé avec l'initiale. */}
                     <div
-                      className={`h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-600 flex items-center justify-center ${
+                      className={`h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-300 flex items-center justify-center ${
                         logo ? 'bg-white p-1.5' : 'bg-gradient-to-r from-orange-500 to-red-500'
                       }`}
                     >
                       {logo ? (
                         <img src={logo} alt="Logo de la boutique" className="h-full w-full object-contain" />
                       ) : (
-                        <span className="text-2xl font-bold text-white opacity-50">
+                        <span className="text-2xl font-bold text-gray-900 opacity-50">
                           {formData.name.charAt(0).toUpperCase()}
                         </span>
                       )}
@@ -468,7 +468,7 @@ export default function StoreSettings() {
                     <div className="space-y-2">
                       <div className="flex flex-wrap gap-2">
                         <label
-                          className={`inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 ${
+                          className={`bg-orange-600 text-white hover:bg-orange-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${
                             logoEnCours ? 'pointer-events-none opacity-50' : 'cursor-pointer'
                           }`}
                         >
@@ -491,7 +491,7 @@ export default function StoreSettings() {
                             type="button"
                             onClick={() => retirerImage('logo')}
                             disabled={logoEnCours}
-                            className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50"
+                            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                           >
                             <Trash2 size={16} />
                             Retirer
@@ -508,10 +508,10 @@ export default function StoreSettings() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Photo de couverture</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Photo de couverture</label>
                   {/* L'aperçu au format de la vitrine : la grande image en tête
                       de page, et la carte du commerce dans la liste. */}
-                  <div className="relative aspect-[16/6] w-full max-w-xl overflow-hidden rounded-lg border border-gray-600 bg-gradient-to-br from-orange-500 via-orange-600 to-red-600">
+                  <div className="relative aspect-[16/6] w-full max-w-xl overflow-hidden rounded-lg border border-gray-300 bg-gradient-to-br from-orange-500 via-orange-600 to-red-600">
                     {couverture ? (
                       <img src={couverture} alt="Photo de couverture" className="h-full w-full object-cover" />
                     ) : (
@@ -522,7 +522,7 @@ export default function StoreSettings() {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <label
-                      className={`inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 ${
+                      className={`bg-orange-600 text-white hover:bg-orange-700 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${
                         couvertureEnCours ? 'pointer-events-none opacity-50' : 'cursor-pointer'
                       }`}
                     >
@@ -545,7 +545,7 @@ export default function StoreSettings() {
                         type="button"
                         onClick={() => retirerImage('banner')}
                         disabled={couvertureEnCours}
-                        className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                       >
                         <Trash2 size={16} />
                         Retirer
@@ -560,22 +560,22 @@ export default function StoreSettings() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Nom de la boutique</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nom de la boutique</label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
                     placeholder="Nom de votre boutique"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600 resize-none"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600 resize-none"
                     placeholder="Description de votre boutique"
                     rows={3}
                   />
@@ -583,23 +583,23 @@ export default function StoreSettings() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Site web</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Site web</label>
                   <input
                     type="url"
                     value={formData.website}
                     onChange={(e) => handleInputChange('website', e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
                     placeholder="https://votre-site.com"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Fuseau horaire</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Fuseau horaire</label>
                     <select
                       value={formData.timezone}
                       onChange={(e) => handleInputChange('timezone', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                     >
                       <option value="">Sélectionner</option>
                       <option value="UTC">UTC</option>
@@ -611,11 +611,11 @@ export default function StoreSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Devise</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Devise</label>
                     <select
                       value={formData.currency}
                       onChange={(e) => handleInputChange('currency', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                     >
                       <option value="">Sélectionner</option>
                       <option value="EUR">EUR (€)</option>
@@ -626,11 +626,11 @@ export default function StoreSettings() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Langue</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Langue</label>
                     <select
                       value={formData.language}
                       onChange={(e) => handleInputChange('language', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                     >
                       <option value="">Sélectionner</option>
                       <option value="fr">Français</option>
@@ -647,7 +647,7 @@ export default function StoreSettings() {
             {activeTab === 'contact' && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Adresse</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Adresse</label>
                   <AddressAutocomplete
                     value={formData.address}
                     onChange={(valeur) => handleInputChange('address', valeur)}
@@ -661,53 +661,53 @@ export default function StoreSettings() {
                         longitude: adresse.longitude ?? undefined,
                       }))
                     }
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
                     placeholder="Votre adresse"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Ville</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Ville</label>
                     <input
                       type="text"
                       value={formData.city}
                       onChange={(e) => handleInputChange('city', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
                       placeholder={t('city')}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Code postal</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Code postal</label>
                     <input
                       type="text"
                       value={formData.postalCode}
                       onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
                       placeholder="Code postal"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Téléphone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
                     placeholder="+33 1 23 45 67 89"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-600"
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-600"
                     placeholder="contact@votre-boutique.com"
                   />
                 </div>
@@ -717,10 +717,10 @@ export default function StoreSettings() {
             {/* Notifications Tab */}
             {activeTab === 'notifications' && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-300">
                   <div>
                     <p className="font-medium">Notifications de commandes</p>
-                    <p className="text-sm text-gray-400">Recevoir une alerte pour chaque nouvelle commande</p>
+                    <p className="text-sm text-gray-500">Recevoir une alerte pour chaque nouvelle commande</p>
                   </div>
                   <input
                     type="checkbox"
@@ -730,10 +730,10 @@ export default function StoreSettings() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-300">
                   <div>
                     <p className="font-medium">Alertes de faible stock</p>
-                    <p className="text-sm text-gray-400">Recevoir une alerte quand un produit est en rupture</p>
+                    <p className="text-sm text-gray-500">Recevoir une alerte quand un produit est en rupture</p>
                   </div>
                   <input
                     type="checkbox"
@@ -743,10 +743,10 @@ export default function StoreSettings() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-300">
                   <div>
                     <p className="font-medium">Notifications d'avis</p>
-                    <p className="text-sm text-gray-400">Recevoir une notification pour chaque nouvel avis client</p>
+                    <p className="text-sm text-gray-500">Recevoir une notification pour chaque nouvel avis client</p>
                   </div>
                   <input
                     type="checkbox"
@@ -756,10 +756,10 @@ export default function StoreSettings() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-300">
                   <div>
                     <p className="font-medium">Notifications par email</p>
-                    <p className="text-sm text-gray-400">Recevoir des notifications par email en plus du tableau de bord</p>
+                    <p className="text-sm text-gray-500">Recevoir des notifications par email en plus du tableau de bord</p>
                   </div>
                   <input
                     type="checkbox"
@@ -778,8 +778,8 @@ export default function StoreSettings() {
               <div className="space-y-8">
                 <section className="space-y-4">
                   <div>
-                    <h3 className="font-semibold text-gray-100">Genre du commerce</h3>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <h3 className="font-semibold text-gray-900">Genre du commerce</h3>
+                    <p className="text-sm text-gray-500 mt-1">
                       Ce que vend ce commerce, et ce qu&apos;on y mange. Le client s&apos;en
                       sert pour vous trouver.
                     </p>
@@ -787,7 +787,7 @@ export default function StoreSettings() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="businessType" className="block text-sm font-medium text-gray-300 mb-2">
+                      <label htmlFor="businessType" className="block text-sm font-medium text-gray-700 mb-2">
                         Type d&apos;établissement
                       </label>
                       <select
@@ -799,7 +799,7 @@ export default function StoreSettings() {
                             e.target.value,
                           )
                         }
-                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                       >
                         <option value="">Choisir…</option>
                         {etablissements.map((genre) => (
@@ -814,14 +814,14 @@ export default function StoreSettings() {
                         que là où il a un sens. */}
                     {formData.businessType === 'restaurant' && (
                       <div>
-                        <label htmlFor="cuisineType" className="block text-sm font-medium text-gray-300 mb-2">
+                        <label htmlFor="cuisineType" className="block text-sm font-medium text-gray-700 mb-2">
                           Type de cuisine
                         </label>
                         <select
                           id="cuisineType"
                           value={formData.cuisineType}
                           onChange={(e) => handleInputChange('cuisineType', e.target.value)}
-                          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                          className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                         >
                           <option value="">Choisir…</option>
                           {cuisines.map((genre) => (
@@ -835,10 +835,10 @@ export default function StoreSettings() {
                   </div>
                 </section>
 
-                <section className="space-y-4 border-t border-gray-700 pt-6">
+                <section className="space-y-4 border-t border-gray-200 pt-6">
                   <div>
-                    <h3 className="font-semibold text-gray-100">Identité de facturation</h3>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <h3 className="font-semibold text-gray-900">Identité de facturation</h3>
+                    <p className="text-sm text-gray-500 mt-1">
                       Ce qui figure sur les factures de <em>cette boutique</em>. Laissez vide si
                       elle relève de votre société : c&apos;est le cas le plus courant.
                     </p>
@@ -848,8 +848,8 @@ export default function StoreSettings() {
                     <div
                       className={`rounded-lg border p-4 text-sm ${
                         facturation.propre
-                          ? 'border-amber-600/40 bg-amber-900/20 text-amber-200'
-                          : 'border-gray-600 bg-gray-700/50 text-gray-300'
+                          ? 'border-amber-200 bg-amber-50 text-amber-800'
+                          : 'border-gray-300 bg-gray-50 text-gray-700'
                       }`}
                     >
                       {facturation.propre ? (
@@ -866,7 +866,7 @@ export default function StoreSettings() {
                           {!facturation.societe.legalName && (
                             <>
                               {' — '}
-                              <Link href="/merchant/profil" className="underline hover:text-white">
+                              <Link href="/merchant/profil" className="underline hover:text-gray-900">
                                 complétez votre profil
                               </Link>
                             </>
@@ -878,7 +878,7 @@ export default function StoreSettings() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="legalName" className="block text-sm font-medium text-gray-300 mb-2">
+                      <label htmlFor="legalName" className="block text-sm font-medium text-gray-700 mb-2">
                         Raison sociale de la boutique
                       </label>
                       <input
@@ -886,12 +886,12 @@ export default function StoreSettings() {
                         value={formData.legalName}
                         onChange={(e) => handleInputChange('legalName', e.target.value)}
                         placeholder={facturation?.societe.legalName || 'Celle de votre société'}
-                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="vatNumber" className="block text-sm font-medium text-gray-300 mb-2">
+                      <label htmlFor="vatNumber" className="block text-sm font-medium text-gray-700 mb-2">
                         Numéro de TVA
                       </label>
                       <input
@@ -899,12 +899,12 @@ export default function StoreSettings() {
                         value={formData.vatNumber}
                         onChange={(e) => handleInputChange('vatNumber', e.target.value)}
                         placeholder={facturation?.societe.vatNumber || 'Celui de votre société'}
-                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="registrationNumber" className="block text-sm font-medium text-gray-300 mb-2">
+                      <label htmlFor="registrationNumber" className="block text-sm font-medium text-gray-700 mb-2">
                         Numéro d&apos;immatriculation
                       </label>
                       <input
@@ -912,7 +912,7 @@ export default function StoreSettings() {
                         value={formData.registrationNumber}
                         onChange={(e) => handleInputChange('registrationNumber', e.target.value)}
                         placeholder={facturation?.societe.registrationNumber || 'Celui de votre société'}
-                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:border-red-600"
+                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-600"
                       />
                     </div>
                   </div>
@@ -920,14 +920,14 @@ export default function StoreSettings() {
                   <p className="text-xs text-gray-500">
                     Le compte bancaire et les justificatifs restent au niveau de votre société,
                     dans{' '}
-                    <Link href="/merchant/profil" className="underline hover:text-gray-300">
+                    <Link href="/merchant/profil" className="underline hover:text-gray-700">
                       votre profil
                     </Link>
                     .
                   </p>
                 </section>
 
-                <p className="text-sm text-gray-400 border-t border-gray-700 pt-6">
+                <p className="text-sm text-gray-500 border-t border-gray-200 pt-6">
                   Les horaires d&apos;ouverture se règlent dans l&apos;onglet{' '}
                   <strong>Horaires</strong> de la barre latérale, service par service.
                 </p>
@@ -939,16 +939,16 @@ export default function StoreSettings() {
               <div className="space-y-6">
                 <section className="space-y-4">
                   <div>
-                    <h3 className="font-semibold text-gray-100">Gestion de la livraison</h3>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <h3 className="font-semibold text-gray-900">Gestion de la livraison</h3>
+                    <p className="text-sm text-gray-500 mt-1">
                       Configurez comment vous gérez les livraisons de vos commandes.
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-300">
                     <div>
                       <p className="font-medium">J&apos;utilise ma propre livraison</p>
-                      <p className="text-sm text-gray-400">Activez cette option si vous livrez uniquement avec vos propres livreurs</p>
+                      <p className="text-sm text-gray-500">Activez cette option si vous livrez uniquement avec vos propres livreurs</p>
                     </div>
                     <input
                       type="checkbox"
@@ -960,32 +960,32 @@ export default function StoreSettings() {
 
                   {formData.delivery.useOwnDelivery ? (
                     <div className="space-y-4">
-                      <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-4 space-y-1">
-                        <p className="text-sm text-blue-300">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-1">
+                        <p className="text-sm text-blue-700">
                           ✓ Vous livrez vous-même : les frais de livraison de vos zones vous reviennent.
                         </p>
-                        <p className="text-sm text-blue-300">
+                        <p className="text-sm text-blue-700">
                           Commission de la plateforme :{' '}
                           <strong>{commissions ? `${commissions.propre} %` : 'celle de votre formule'}</strong>{' '}
                           sur vos ventes.
                         </p>
                       </div>
 
-                      <div className="bg-amber-600/10 border border-amber-600/30 rounded-lg p-4">
-                        <p className="text-sm text-amber-300">
-                          📍 Gérez votre rayon et vos frais de livraison dans l&apos;onglet <Link href={`/merchant/${orgId}/delivery-zones`} className="underline hover:text-amber-200">Zones de livraison</Link>
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <p className="text-sm text-amber-700">
+                          📍 Gérez votre rayon et vos frais de livraison dans l&apos;onglet <Link href={`/merchant/${orgId}/delivery-zones`} className="underline hover:text-amber-800">Zones de livraison</Link>
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-4 space-y-1">
-                      <p className="text-sm text-blue-300">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-1">
+                      <p className="text-sm text-blue-700">
                         ✓ Vos commandes sont livrées par les livreurs de la plateforme. Lorsqu&apos;une commande est prête, un bouton vous permet d&apos;appeler un livreur.
                       </p>
-                      <p className="text-sm text-blue-300">
+                      <p className="text-sm text-blue-700">
                         Le rayon de livraison est fixé par la plateforme, et les frais sont calculés selon la distance entre votre boutique et l&apos;adresse du client. Le client les paie à la plateforme, qui les reverse au livreur.
                       </p>
-                      <p className="text-sm text-blue-300">
+                      <p className="text-sm text-blue-700">
                         Commission de la plateforme :{' '}
                         <strong>{commissions ? `${commissions.plateforme} %` : 'majorée'}</strong>{' '}
                         sur vos ventes (hors frais de livraison)
@@ -1003,14 +1003,14 @@ export default function StoreSettings() {
         <div className="flex gap-4 justify-end">
           <Link
             href={`/merchant/${orgId}/dashboard`}
-            className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+            className="px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
           >
             Annuler
           </Link>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 rounded-lg font-medium transition-colors"
+            className="bg-orange-600 text-white hover:bg-orange-700 px-6 py-2 rounded-lg font-medium transition-colors"
           >
             {saving ? t('saving') : 'Enregistrer les modifications'}
           </button>

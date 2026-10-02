@@ -97,8 +97,8 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
       style={style}
       className={`border rounded-lg p-4 transition-colors ${
         !product.isAvailable
-          ? 'bg-orange-600/10 border-orange-600/50 hover:border-orange-600'
-          : 'bg-gray-800 border-gray-700 hover:border-red-600'
+          ? 'bg-orange-50 border-orange-200 hover:border-orange-600'
+          : 'bg-white border-gray-200 hover:border-red-600'
       } ${isDragging ? 'shadow-lg shadow-red-600' : ''}`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -109,7 +109,7 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
             disabled={!triManuel}
             className={`mt-1 ${
               triManuel
-                ? 'cursor-grab active:cursor-grabbing text-gray-600 hover:text-gray-400'
+                ? 'cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-500'
                 : 'cursor-not-allowed text-gray-800'
             }`}
             title={triManuel ? t('dragToReorder') : t('autoSortDisabled')}
@@ -120,27 +120,27 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-lg font-bold">{product.name}</h3>
               {!product.isAvailable && (
-                <span className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-orange-600/30 text-orange-400">
+                <span className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-orange-100 text-orange-600">
                   <AlertCircle size={12} /> {t('outOfStock')}
                 </span>
               )}
               <span className={`text-xs px-2 py-1 rounded ${
                 product.status === 'ACTIVE'
-                  ? 'bg-green-600/30 text-green-400'
+                  ? 'bg-green-100 text-green-600'
                   : product.status === 'DRAFT'
-                  ? 'bg-gray-600/30 text-gray-400'
-                  : 'bg-red-600/30 text-red-400'
+                  ? 'bg-gray-600/30 text-gray-500'
+                  : 'bg-red-100 text-red-600'
               }`}>
                 {product.status}
               </span>
             </div>
             {product.description && (
-              <p className="text-sm text-gray-400 mb-2">{product.description}</p>
+              <p className="text-sm text-gray-500 mb-2">{product.description}</p>
             )}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
               <div>
                 <p className="text-gray-500">{t('price')}</p>
-                <p className="font-semibold text-red-400">{euro(product.price)}</p>
+                <p className="font-semibold text-red-600">{euro(product.price)}</p>
               </div>
               <div>
                 <p className="text-gray-500">{t('sku')}</p>
@@ -148,7 +148,7 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
               </div>
               <div>
                 <p className="text-gray-500">{t('availability')}</p>
-                <p className={`font-semibold ${product.isAvailable ? 'text-green-400' : 'text-orange-400'}`}>
+                <p className={`font-semibold ${product.isAvailable ? 'text-green-600' : 'text-orange-600'}`}>
                   {product.isAvailable ? t('availableYes') : t('availableNo')}
                 </p>
               </div>
@@ -156,16 +156,16 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
                 <div>
                   <p className="text-gray-500">Avis</p>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-yellow-400">★ {stats.averageRating}</span>
-                    <span className="text-gray-400">({stats.totalReviews})</span>
+                    <span className="font-semibold text-yellow-600">★ {stats.averageRating}</span>
+                    <span className="text-gray-500">({stats.totalReviews})</span>
                   </div>
-                  <p className="text-xs text-green-400 mt-1">👍 {stats.satisfactionPercentage}%</p>
+                  <p className="text-xs text-green-600 mt-1">👍 {stats.satisfactionPercentage}%</p>
                 </div>
               )}
             </div>
             {product.category && (
               <div className="mt-2">
-                <span className="text-xs bg-blue-600/30 text-blue-400 px-2 py-1 rounded">
+                <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
                   {product.category.name}
                 </span>
               </div>
@@ -176,14 +176,14 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
         <div className="flex flex-col gap-2">
           <button
             onClick={() => onEdit(product)}
-            className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            className="bg-gray-100 text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors"
             title={t('edit')}
           >
             <Edit2 size={16} />
           </button>
           <button
             onClick={() => onDelete(product.id)}
-            className="p-2 bg-red-600 hover:bg-red-700 rounded transition-colors"
+            className="bg-red-50 text-red-700 hover:bg-red-100 p-2 rounded transition-colors"
             title={t('delete')}
           >
             <Trash2 size={16} />
@@ -199,14 +199,14 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
       <SupplementsProduit productId={product.id} />
 
       {product.status === 'ACTIVE' && (
-        <div className="mt-4 pt-4 border-t border-gray-700 flex items-center gap-3">
+        <div className="mt-4 pt-4 border-t border-gray-200 flex items-center gap-3">
           <Package size={16} className="text-gray-500" />
           <button
             onClick={() => onToggleAvailability(product)}
             className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
               product.isAvailable
-                ? 'bg-orange-600/20 text-orange-400 hover:bg-orange-600/30'
-                : 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+                ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                : 'bg-green-50 text-green-600 hover:bg-green-100'
             }`}
           >
             {product.isAvailable ? t('outOfStock') : t('restockButton')}
@@ -601,11 +601,11 @@ export default function ProductsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-gray-900">
+      <div className="flex h-screen">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">{t('loading')}</p>
+            <p className="text-gray-500">{t('loading')}</p>
           </div>
         </div>
       </div>
@@ -613,16 +613,16 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="text-gray-900">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">{t('title')}</h1>
-            <p className="text-gray-400 mt-1">{t('description')}</p>
+            <p className="text-gray-500 mt-1">{t('description')}</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors disabled:opacity-50"
+            className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors disabled:opacity-50"
             disabled={isReordering}
           >
             <Plus size={20} /> {t('addButton')}
@@ -632,19 +632,19 @@ export default function ProductsPage() {
         {message && (
           <div className={`p-4 rounded-lg ${
             message.includes('✅')
-              ? 'bg-green-600/20 border border-green-600/50 text-green-400'
-              : 'bg-red-600/20 border border-red-600/50 text-red-400'
+              ? 'bg-green-50 border border-green-200 text-green-600'
+              : 'bg-red-50 border border-red-200 text-red-600'
           }`}>
             {message}
           </div>
         )}
 
         {produitsEpuises.length > 0 && (
-          <div className="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
             <div className="flex gap-3">
-              <AlertCircle size={20} className="text-orange-400 flex-shrink-0 mt-0.5" />
+              <AlertCircle size={20} className="text-orange-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-orange-400 mb-2">
+                <p className="font-semibold text-orange-600 mb-2">
                   {t('outOfStockProducts', { count: produitsEpuises.length })}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -652,14 +652,14 @@ export default function ProductsPage() {
                     <button
                       key={p.id}
                       onClick={() => basculerDisponibilite(p)}
-                      className="bg-orange-700/30 hover:bg-orange-700/50 px-2 py-1 rounded text-sm transition-colors"
+                      className="bg-orange-100 hover:bg-orange-700/50 px-2 py-1 rounded text-sm transition-colors"
                       title="Remettre en vente"
                     >
                       {p.name} ↺
                     </button>
                   ))}
                   {produitsEpuises.length > 6 && (
-                    <span className="text-orange-300 text-sm">
+                    <span className="text-orange-700 text-sm">
                       +{produitsEpuises.length - 6} autres
                     </span>
                   )}
@@ -670,23 +670,23 @@ export default function ProductsPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">{t('stats_total')}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <p className="text-gray-500 text-sm">{t('stats_total')}</p>
             <p className="text-3xl font-bold">{products.length}</p>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">{t('stats_active')}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <p className="text-gray-500 text-sm">{t('stats_active')}</p>
             <p className="text-3xl font-bold">{products.filter(p => p.status === 'ACTIVE').length}</p>
           </div>
-          <div className="bg-orange-600/20 border border-orange-600/50 rounded-lg p-4">
-            <p className="text-orange-400 text-sm">{t('stats_exhausted')}</p>
-            <p className="text-3xl font-bold text-orange-400">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <p className="text-orange-600 text-sm">{t('stats_exhausted')}</p>
+            <p className="text-3xl font-bold text-orange-600">
               {products.filter((p) => !p.isAvailable).length}
             </p>
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex gap-3">
             <Search size={20} className="text-gray-500 mt-2" />
             <input
@@ -694,15 +694,15 @@ export default function ProductsPage() {
               placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+              className="flex-1 bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
             />
           </div>
         </div>
 
         <div className="space-y-6">
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-12 bg-gray-800 border border-gray-700 rounded-lg">
-              <p className="text-gray-400">{t('empty')}</p>
+            <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+              <p className="text-gray-500">{t('empty')}</p>
             </div>
           ) : (
             <DndContext
@@ -723,12 +723,12 @@ export default function ProductsPage() {
                     <div key={group.category.id} className="space-y-3">
                       <div className="flex items-center gap-3 pt-2">
                         <h2 className="text-xl font-bold">{group.category.name}</h2>
-                        <span className="text-sm text-gray-400">({group.products.length} produit{group.products.length !== 1 ? 's' : ''})</span>
+                        <span className="text-sm text-gray-500">({group.products.length} produit{group.products.length !== 1 ? 's' : ''})</span>
                         {group.category.id !== 'uncategorized' && (
                           <select
                             value={group.sortMode}
                             onChange={(e) => changerTriCategorie(group.category.id, e.target.value as CategorySortMode)}
-                            className="ml-auto bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-red-500"
+                            className="ml-auto bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm text-gray-800 focus:outline-none focus:border-red-500"
                             title={t('sortTitle')}
                           >
                             <option value="MANUAL">{t('sortMode_manual')}</option>
@@ -763,14 +763,14 @@ export default function ProductsPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="border-b border-gray-700 p-6 flex items-center justify-between sticky top-0 bg-gray-800">
+          <div className="bg-white border border-gray-200 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="border-b border-gray-200 p-6 flex items-center justify-between sticky top-0 bg-white">
               <h2 className="text-2xl font-bold">
                 {editingProduct ? t('formTitle_edit') : t('formTitle_add')}
               </h2>
               <button
                 onClick={resetForm}
-                className="text-gray-400 hover:text-white text-2xl"
+                className="text-gray-500 hover:text-gray-900 text-2xl"
               >
                 ✕
               </button>
@@ -778,34 +778,34 @@ export default function ProductsPage() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="text-sm text-gray-400 block mb-2">{t('formLabel_name')}</label>
+                <label className="text-sm text-gray-500 block mb-2">{t('formLabel_name')}</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                   placeholder={t('formPlaceholder_name')}
                   required
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">{t('formLabel_sku')}</label>
+                <label className="text-sm text-gray-500 block mb-2">{t('formLabel_sku')}</label>
                 <input
                   type="text"
                   value={formData.sku}
                   onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                   placeholder={t('formPlaceholder_sku')}
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">{t('formLabel_category')}</label>
+                <label className="text-sm text-gray-500 block mb-2">{t('formLabel_category')}</label>
                 <select
                   value={formData.categoryId}
                   onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                 >
                   <option value="">{t('formSelect_category')}</option>
                   {categories.map(cat => (
@@ -815,11 +815,11 @@ export default function ProductsPage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">{t('formLabel_description')}</label>
+                <label className="text-sm text-gray-500 block mb-2">{t('formLabel_description')}</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                   placeholder={t('formPlaceholder_description')}
                   rows={3}
                 />
@@ -827,26 +827,26 @@ export default function ProductsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">{t('formLabel_price')}</label>
+                  <label className="text-sm text-gray-500 block mb-2">{t('formLabel_price')}</label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                     placeholder="0.00"
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">{t('formLabel_availability')}</label>
+                  <label className="text-sm text-gray-500 block mb-2">{t('formLabel_availability')}</label>
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, isAvailable: !formData.isAvailable })}
                     className={`w-full px-3 py-2 rounded font-medium transition-colors ${
                       formData.isAvailable
-                        ? 'bg-green-600/20 text-green-400 border border-green-600/50'
-                        : 'bg-orange-600/20 text-orange-400 border border-orange-600/50'
+                        ? 'bg-green-50 text-green-600 border border-green-200'
+                        : 'bg-orange-50 text-orange-600 border border-orange-200'
                     }`}
                   >
                     {formData.isAvailable ? t('formButton_available') : t('formButton_exhausted')}
@@ -855,11 +855,11 @@ export default function ProductsPage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">{t('formLabel_status')}</label>
+                <label className="text-sm text-gray-500 block mb-2">{t('formLabel_status')}</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                 >
                   <option value="DRAFT">{t('statusDraft')}</option>
                   <option value="ACTIVE">{t('statusActive')}</option>
@@ -871,13 +871,13 @@ export default function ProductsPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors"
+                  className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded font-semibold transition-colors"
                 >
                   {t('formButton_cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors"
+                  className="bg-orange-600 text-white hover:bg-orange-700 flex-1 py-2 rounded font-semibold transition-colors"
                 >
                   {editingProduct ? t('formButton_update') : t('formButton_create')}
                 </button>

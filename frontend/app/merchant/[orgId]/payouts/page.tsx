@@ -71,36 +71,36 @@ export default function ReversementsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <Banknote /> Reversements
         </h1>
-        <p className="text-gray-400 mt-1">
+        <p className="text-gray-500 mt-1">
           Chaque lundi, la plateforme vous vire vos ventes payées en ligne de la semaine écoulée,
           commission déduite.
         </p>
       </div>
 
-      {erreur && <p className="text-red-400">{erreur}</p>}
+      {erreur && <p className="text-red-600">{erreur}</p>}
 
       {releves.length === 0 ? (
-        <p className="text-gray-400">Aucun relevé pour l&apos;instant : le premier arrive le lundi qui suit vos premières ventes.</p>
+        <p className="text-gray-500">Aucun relevé pour l&apos;instant : le premier arrive le lundi qui suit vos premières ventes.</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg divide-y divide-gray-700">
+          <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
             {releves.map((r) => {
               const veille = new Date(new Date(r.periodEnd).getTime() - 1);
               return (
                 <button
                   key={r.id}
                   onClick={() => ouvrir(r.id)}
-                  className={`w-full text-left p-4 hover:bg-gray-700/50 ${ouvert?.id === r.id ? 'bg-gray-700/60' : ''}`}
+                  className={`w-full text-left p-4 hover:bg-gray-50 ${ouvert?.id === r.id ? 'bg-gray-50' : ''}`}
                 >
-                  <p className="text-white font-semibold">
+                  <p className="text-gray-900 font-semibold">
                     {new Date(r.periodStart).toLocaleDateString('fr-FR')} – {veille.toLocaleDateString('fr-FR')}
                   </p>
                   <p className="text-sm flex justify-between">
-                    <span className="text-gray-400">{ETATS[r.status] || r.status}</span>
-                    <span className={r.amount < 0 ? 'text-red-400' : 'text-green-400'}>{euro(r.amount)}</span>
+                    <span className="text-gray-500">{ETATS[r.status] || r.status}</span>
+                    <span className={r.amount < 0 ? 'text-red-600' : 'text-green-600'}>{euro(r.amount)}</span>
                   </p>
                 </button>
               );

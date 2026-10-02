@@ -154,12 +154,12 @@ export function SupplementsProduit({ productId }: { productId: string }) {
   const nombreDeChoix = groupes.reduce((n, g) => n + g.choices.length, 0);
 
   return (
-    <div className="mt-4 pt-4 border-t border-gray-700">
+    <div className="mt-4 pt-4 border-t border-gray-200">
       <button
         type="button"
         onClick={() => setOuvert(!ouvert)}
         aria-expanded={ouvert}
-        className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition"
+        className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition"
       >
         <PlusCircle size={16} />
         <span>
@@ -182,10 +182,10 @@ export function SupplementsProduit({ productId }: { productId: string }) {
           <p className="text-xs text-gray-500">{t('help')}</p>
 
           {groupes.map((groupe, gi) => (
-            <fieldset key={gi} className="bg-gray-700/40 rounded-lg p-3 space-y-3">
+            <fieldset key={gi} className="bg-gray-50 rounded-lg p-3 space-y-3">
               <div className="flex flex-wrap items-end gap-2">
                 <div className="flex-1 min-w-[10rem]">
-                  <label htmlFor={`groupe-${productId}-${gi}`} className="block text-xs text-gray-400 mb-1">
+                  <label htmlFor={`groupe-${productId}-${gi}`} className="block text-xs text-gray-500 mb-1">
                     {t('groupName')}
                   </label>
                   <input
@@ -193,11 +193,11 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                     value={groupe.name}
                     onChange={(e) => changerGroupe(gi, { name: e.target.value })}
                     placeholder={t('groupPlaceholder')}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
                   />
                 </div>
                 <div>
-                  <label htmlFor={`max-${productId}-${gi}`} className="block text-xs text-gray-400 mb-1">
+                  <label htmlFor={`max-${productId}-${gi}`} className="block text-xs text-gray-500 mb-1">
                     {t('maxChoices')}
                   </label>
                   <input
@@ -207,10 +207,10 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                     value={groupe.maxChoices}
                     onChange={(e) => changerGroupe(gi, { maxChoices: e.target.value })}
                     placeholder={t('unlimited')}
-                    className="w-24 bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
+                    className="w-24 bg-gray-100 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-orange-500"
                   />
                 </div>
-                <label className="flex items-center gap-2 text-sm text-gray-300 py-1.5">
+                <label className="flex items-center gap-2 text-sm text-gray-700 py-1.5">
                   <input
                     type="checkbox"
                     checked={groupe.isRequired}
@@ -223,7 +223,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                   type="button"
                   onClick={() => setGroupes((actuels) => actuels.filter((_, i) => i !== gi))}
                   aria-label={t('removeGroup', { nom: groupe.name || '…' })}
-                  className="p-1.5 text-gray-400 hover:text-red-400 transition"
+                  className="p-1.5 text-gray-500 hover:text-red-600 transition"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -237,7 +237,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                       onChange={(e) => changerChoix(gi, ci, { label: e.target.value })}
                       placeholder={t('choicePlaceholder')}
                       aria-label={t('choiceName')}
-                      className="flex-1 min-w-[8rem] bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
+                      className="flex-1 min-w-[8rem] bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
                     />
                     <input
                       type="number"
@@ -247,7 +247,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                       onChange={(e) => changerChoix(gi, ci, { price: e.target.value })}
                       placeholder="0"
                       aria-label={t('choicePrice', { nom: choix.label || '…' })}
-                      className="w-24 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
+                      className="w-24 bg-gray-100 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-orange-500"
                     />
                     <span className="text-xs text-gray-500 w-20">
                       {Number(choix.price) > 0 ? `+ ${euro(Number(choix.price))}` : t('free')}
@@ -257,8 +257,8 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                       onClick={() => changerChoix(gi, ci, { isAvailable: !choix.isAvailable })}
                       className={`px-2 py-1 rounded text-xs font-medium transition ${
                         choix.isAvailable
-                          ? 'bg-orange-600/20 text-orange-300 hover:bg-orange-600/30'
-                          : 'bg-green-600/20 text-green-300 hover:bg-green-600/30'
+                          ? 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+                          : 'bg-green-50 text-green-700 hover:bg-green-100'
                       }`}
                     >
                       {choix.isAvailable ? t('depleted') : t('restore')}
@@ -269,7 +269,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                         changerGroupe(gi, { choices: groupe.choices.filter((_, j) => j !== ci) })
                       }
                       aria-label={t('removeChoice', { nom: choix.label || '…' })}
-                      className="p-1 text-gray-400 hover:text-red-400 transition"
+                      className="p-1 text-gray-500 hover:text-red-600 transition"
                     >
                       <X size={14} />
                     </button>
@@ -284,7 +284,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
                     choices: [...groupe.choices, { label: '', price: '', isAvailable: true }],
                   })
                 }
-                className="flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300"
+                className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700"
               >
                 <Plus size={14} />
                 {t('addChoice')}
@@ -296,7 +296,7 @@ export function SupplementsProduit({ productId }: { productId: string }) {
             <button
               type="button"
               onClick={() => setGroupes((actuels) => [...actuels, groupeVide(actuels.length === 0 ? t('defaultGroup') : '')])}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600 text-sm transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-sm transition"
             >
               <Plus size={14} />
               {t('addGroup')}
@@ -305,16 +305,16 @@ export function SupplementsProduit({ productId }: { productId: string }) {
               type="button"
               onClick={enregistrer}
               disabled={chargement || !modifie}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-orange-600 hover:bg-orange-700 disabled:bg-gray-700 disabled:text-gray-500 text-sm font-medium transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-orange-600 text-white hover:bg-orange-700 disabled:bg-gray-100 disabled:text-gray-500 text-sm font-medium transition"
             >
               <Save size={14} />
               {t('save')}
             </button>
-            {message && !modifie && <span className="text-xs text-green-400">{message}</span>}
+            {message && !modifie && <span className="text-xs text-green-600">{message}</span>}
           </div>
 
           {erreur && (
-            <p className="text-sm text-red-300 bg-red-900/20 border border-red-700/40 rounded px-3 py-2">
+            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
               {erreur}
             </p>
           )}

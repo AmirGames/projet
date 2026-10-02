@@ -119,11 +119,11 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-gray-900">
+      <div className="flex h-screen">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">{t('loading')}</p>
+            <p className="text-gray-500">{t('loading')}</p>
           </div>
         </div>
       </div>
@@ -132,27 +132,27 @@ export default function AnalyticsPage() {
 
   if (!analytics) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+      <div className="text-gray-900">
         <div className="text-center py-12">
-          <p className="text-gray-400">{t('empty')}</p>
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="text-gray-900">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">{t('title')}</h1>
-            <p className="text-gray-400 mt-1">{t('description')}</p>
+            <p className="text-gray-500 mt-1">{t('description')}</p>
           </div>
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-red-500"
+            className="px-3 py-2 bg-white border border-gray-200 rounded text-gray-900 focus:outline-none focus:border-red-500"
           >
             <option value="7">{t('timeRange7')}</option>
             <option value="30">{t('timeRange30')}</option>
@@ -163,80 +163,80 @@ export default function AnalyticsPage() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-lg bg-blue-600/20 text-blue-400">
+              <div className="p-3 rounded-lg bg-blue-50 text-blue-600">
                 <ShoppingCart size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">{t('kpiTotalOrders')}</p>
+            <p className="text-gray-500 text-sm mb-1">{t('kpiTotalOrders')}</p>
             <p className="text-3xl font-bold">{analytics.totalOrders}</p>
             <p className="text-xs text-gray-500 mt-2">{t('since')}</p>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-lg bg-green-600/20 text-green-400">
+              <div className="p-3 rounded-lg bg-green-50 text-green-600">
                 <DollarSign size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">{t('kpiTotalRevenue')}</p>
+            <p className="text-gray-500 text-sm mb-1">{t('kpiTotalRevenue')}</p>
             <p className="text-3xl font-bold">{euro(analytics.totalRevenue, 0)}</p>
             <p className="text-xs text-gray-500 mt-2">{t('since')}</p>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-lg bg-purple-600/20 text-purple-400">
+              <div className="p-3 rounded-lg bg-purple-50 text-purple-600">
                 <TrendingUp size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">{t('kpiAverageOrder')}</p>
+            <p className="text-gray-500 text-sm mb-1">{t('kpiAverageOrder')}</p>
             <p className="text-3xl font-bold">{euro(analytics.averageOrderValue)}</p>
             <p className="text-xs text-gray-500 mt-2">{t('perOrder')}</p>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-lg bg-orange-600/20 text-orange-400">
+              <div className="p-3 rounded-lg bg-orange-50 text-orange-600">
                 <Calendar size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">{t('kpiOrdersThisMonth')}</p>
+            <p className="text-gray-500 text-sm mb-1">{t('kpiOrdersThisMonth')}</p>
             <p className="text-3xl font-bold">{analytics.ordersThisMonth}</p>
             <p className="text-xs text-gray-500 mt-2">{t('currentMonth')}</p>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-lg bg-red-600/20 text-red-400">
+              <div className="p-3 rounded-lg bg-red-50 text-red-600">
                 <Clock size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">{t('kpiPending')}</p>
-            <p className="text-3xl font-bold text-yellow-400">{analytics.pendingOrders}</p>
+            <p className="text-gray-500 text-sm mb-1">{t('kpiPending')}</p>
+            <p className="text-3xl font-bold text-yellow-600">{analytics.pendingOrders}</p>
             <p className="text-xs text-gray-500 mt-2">{t('toProcess')}</p>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 rounded-lg bg-green-600/20 text-green-400">
+              <div className="p-3 rounded-lg bg-green-50 text-green-600">
                 <Users size={24} />
               </div>
             </div>
-            <p className="text-gray-400 text-sm mb-1">{t('kpiCompleted')}</p>
-            <p className="text-3xl font-bold text-green-400">{analytics.completedOrders}</p>
+            <p className="text-gray-500 text-sm mb-1">{t('kpiCompleted')}</p>
+            <p className="text-3xl font-bold text-green-600">{analytics.completedOrders}</p>
             <p className="text-xs text-gray-500 mt-2">{t('delivered')}</p>
           </div>
         </div>
 
         {/* Status Breakdown */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="text-lg font-bold mb-4">{t('statusBreakdown')}</h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {analytics.statusBreakdown.map(item => (
-              <div key={item.status} className="text-center p-4 bg-gray-700 rounded-lg">
-                <p className="text-gray-400 text-sm mb-1">{item.status}</p>
+              <div key={item.status} className="text-center p-4 bg-gray-100 rounded-lg">
+                <p className="text-gray-500 text-sm mb-1">{item.status}</p>
                 <p className="text-2xl font-bold">{item.count}</p>
               </div>
             ))}
@@ -245,21 +245,21 @@ export default function AnalyticsPage() {
 
         {/* Daily Revenue Chart */}
         {analytics.dailyRevenue.length > 0 && (
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-bold mb-4">{t('dailyRevenue')}</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-700">
+                  <tr className="border-b border-gray-200">
                     <th className="text-left py-2">{t('tableDate')}</th>
                     <th className="text-right py-2">{t('tableRevenue')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {[...analytics.dailyRevenue].reverse().map((item, index) => (
-                    <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50">
+                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
                       <td className="py-2">{item.date}</td>
-                      <td className="text-right font-semibold text-green-400">
+                      <td className="text-right font-semibold text-green-600">
                         {euro(item.revenue)}
                       </td>
                     </tr>

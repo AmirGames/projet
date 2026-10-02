@@ -282,11 +282,11 @@ export default function PromotionsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-gray-900">
+      <div className="flex h-screen">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">Chargement des codes promo...</p>
+            <p className="text-gray-500">Chargement des codes promo...</p>
           </div>
         </div>
       </div>
@@ -297,16 +297,16 @@ export default function PromotionsPage() {
   const totalDiscount = promotions.reduce((acc, p) => acc + p.currentUses, 0);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="text-gray-900">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">🎟️ Codes Promo</h1>
-            <p className="text-gray-400 mt-1">Gérez vos promotions et réductions</p>
+            <p className="text-gray-500 mt-1">Gérez vos promotions et réductions</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors"
+            className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors"
           >
             <Plus size={20} /> Ajouter Code
           </button>
@@ -315,29 +315,29 @@ export default function PromotionsPage() {
         {message && (
           <div className={`p-4 rounded-lg ${
             message.includes('✅')
-              ? 'bg-green-600/20 border border-green-600/50 text-green-400'
-              : 'bg-red-600/20 border border-red-600/50 text-red-400'
+              ? 'bg-green-50 border border-green-200 text-green-600'
+              : 'bg-red-50 border border-red-200 text-red-600'
           }`}>
             {message}
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Total de codes</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <p className="text-gray-500 text-sm">Total de codes</p>
             <p className="text-3xl font-bold">{promotions.length}</p>
           </div>
-          <div className="bg-green-600/20 border border-green-600/50 rounded-lg p-4">
-            <p className="text-green-400 text-sm">Codes actifs</p>
-            <p className="text-3xl font-bold text-green-400">{activePromos.length}</p>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-green-600 text-sm">Codes actifs</p>
+            <p className="text-3xl font-bold text-green-600">{activePromos.length}</p>
           </div>
-          <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
-            <p className="text-blue-400 text-sm">Utilisations totales</p>
-            <p className="text-3xl font-bold text-blue-400">{totalDiscount}</p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-blue-600 text-sm">Utilisations totales</p>
+            <p className="text-3xl font-bold text-blue-600">{totalDiscount}</p>
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex gap-3">
             <Search size={20} className="text-gray-500 mt-2" />
             <input
@@ -345,15 +345,15 @@ export default function PromotionsPage() {
               placeholder="Rechercher par code ou description..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+              className="flex-1 bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
             />
           </div>
         </div>
 
         <div className="space-y-3">
           {filteredPromotions.length === 0 ? (
-            <div className="text-center py-12 bg-gray-800 border border-gray-700 rounded-lg">
-              <p className="text-gray-400">Aucun code promo trouvé</p>
+            <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+              <p className="text-gray-500">Aucun code promo trouvé</p>
             </div>
           ) : (
             filteredPromotions.map(promo => (
@@ -361,10 +361,10 @@ export default function PromotionsPage() {
                 key={promo.id}
                 className={`border rounded-lg p-4 transition-colors ${
                   isExpired(promo)
-                    ? 'bg-gray-700 border-gray-600 opacity-70'
+                    ? 'bg-gray-100 border-gray-300 opacity-70'
                     : isActive(promo)
-                    ? 'bg-green-600/10 border-green-600/50 hover:border-green-600'
-                    : 'bg-gray-800 border-gray-700 hover:border-red-600'
+                    ? 'bg-green-50 border-green-200 hover:border-green-600'
+                    : 'bg-white border-gray-200 hover:border-red-600'
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -372,24 +372,24 @@ export default function PromotionsPage() {
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="text-lg font-mono font-bold">{promo.code}</h3>
                       {isActive(promo) && (
-                        <Zap size={16} className="text-green-400" />
+                        <Zap size={16} className="text-green-600" />
                       )}
                       {isExpired(promo) && (
-                        <span className="text-xs bg-red-600/30 text-red-400 px-2 py-1 rounded">
+                        <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
                           Expiré
                         </span>
                       )}
                       <span className={`text-xs px-2 py-1 rounded ${
                         promo.status === 'ACTIVE'
-                          ? 'bg-green-600/30 text-green-400'
-                          : 'bg-gray-600/30 text-gray-400'
+                          ? 'bg-green-100 text-green-600'
+                          : 'bg-gray-600/30 text-gray-500'
                       }`}>
                         {promo.status === 'ACTIVE' ? t('active') : 'Inactif'}
                       </span>
                     </div>
 
                     {promo.description && (
-                      <p className="text-sm text-gray-400 mb-2">{promo.description}</p>
+                      <p className="text-sm text-gray-500 mb-2">{promo.description}</p>
                     )}
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -427,13 +427,13 @@ export default function PromotionsPage() {
                     </div>
 
                     {libellePlage(promo) && (
-                      <div className="mt-2 text-xs text-orange-400 flex items-center gap-1">
+                      <div className="mt-2 text-xs text-orange-600 flex items-center gap-1">
                         🕐 {libellePlage(promo)}
                       </div>
                     )}
 
                     {!promo.applicableToAll && (
-                      <div className="mt-1 text-xs text-yellow-400">
+                      <div className="mt-1 text-xs text-yellow-600">
                         ⚠️ Limité à certains produits/catégories
                       </div>
                     )}
@@ -444,8 +444,8 @@ export default function PromotionsPage() {
                       onClick={() => handleToggleStatus(promo.id)}
                       className={`p-2 rounded transition-colors ${
                         promo.status === 'ACTIVE'
-                          ? 'bg-green-600 hover:bg-green-700'
-                          : 'bg-gray-600 hover:bg-gray-700'
+                          ? 'bg-green-600 text-white hover:bg-green-700'
+                          : 'bg-gray-200 hover:bg-gray-100'
                       }`}
                       title={promo.status === 'ACTIVE' ? 'Désactiver' : 'Activer'}
                     >
@@ -457,14 +457,14 @@ export default function PromotionsPage() {
                     </button>
                     <button
                       onClick={() => handleEdit(promo)}
-                      className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                      className="bg-gray-100 text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors"
                       title={t('edit')}
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(promo.id)}
-                      className="p-2 bg-red-600 hover:bg-red-700 rounded transition-colors"
+                      className="bg-red-50 text-red-700 hover:bg-red-100 p-2 rounded transition-colors"
                       title={t('delete')}
                     >
                       <Trash2 size={16} />
@@ -479,14 +479,14 @@ export default function PromotionsPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="border-b border-gray-700 p-6 flex items-center justify-between sticky top-0 bg-gray-800">
+          <div className="bg-white border border-gray-200 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="border-b border-gray-200 p-6 flex items-center justify-between sticky top-0 bg-white">
               <h2 className="text-2xl font-bold">
                 {editingPromo ? 'Modifier Code Promo' : 'Ajouter Code Promo'}
               </h2>
               <button
                 onClick={resetForm}
-                className="text-gray-400 hover:text-white text-2xl"
+                className="text-gray-500 hover:text-gray-900 text-2xl"
               >
                 ✕
               </button>
@@ -494,12 +494,12 @@ export default function PromotionsPage() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Code promo *</label>
+                <label className="text-sm text-gray-500 block mb-2">Code promo *</label>
                 <input
                   type="text"
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500 font-mono"
+                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500 font-mono"
                   placeholder="EX: SAVE20"
                   disabled={!!editingPromo}
                   required
@@ -507,11 +507,11 @@ export default function PromotionsPage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Description</label>
+                <label className="text-sm text-gray-500 block mb-2">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                   placeholder="Description du code..."
                   rows={2}
                 />
@@ -519,24 +519,24 @@ export default function PromotionsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Type</label>
+                  <label className="text-sm text-gray-500 block mb-2">Type</label>
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                   >
                     <option value="PERCENTAGE">Pourcentage (%)</option>
                     <option value="FIXED_AMOUNT">Montant ($)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Valeur *</label>
+                  <label className="text-sm text-gray-500 block mb-2">Valeur *</label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.discountValue}
                     onChange={(e) => setFormData({ ...formData, discountValue: e.target.value })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                     placeholder={formData.type === 'PERCENTAGE' ? '20' : '10.00'}
                     required
                   />
@@ -544,41 +544,41 @@ export default function PromotionsPage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Utilisations max</label>
+                <label className="text-sm text-gray-500 block mb-2">Utilisations max</label>
                 <input
                   type="number"
                   min="1"
                   value={formData.maxUses}
                   onChange={(e) => setFormData({ ...formData, maxUses: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                   placeholder="Laisser vide pour illimité"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Date début</label>
+                  <label className="text-sm text-gray-500 block mb-2">Date début</label>
                   <input
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Date fin</label>
+                  <label className="text-sm text-gray-500 block mb-2">Date fin</label>
                   <input
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                   />
                 </div>
               </div>
 
               {/* ── Plage horaire d'activation ─────────────────────────────── */}
               <div>
-                <label className="text-sm text-gray-400 block mb-2">
+                <label className="text-sm text-gray-500 block mb-2">
                   Plage horaire d&apos;activation
                   <span className="ml-1 text-gray-500">(facultatif)</span>
                 </label>
@@ -589,7 +589,7 @@ export default function PromotionsPage() {
                       type="time"
                       value={formData.activeFromTime}
                       onChange={(e) => setFormData({ ...formData, activeFromTime: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-orange-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-orange-500"
                     />
                   </div>
                   <div>
@@ -598,12 +598,12 @@ export default function PromotionsPage() {
                       type="time"
                       value={formData.activeToTime}
                       onChange={(e) => setFormData({ ...formData, activeToTime: e.target.value })}
-                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-orange-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-orange-500"
                     />
                   </div>
                 </div>
                 {formData.activeFromTime && formData.activeToTime && (
-                  <p className="mt-1 text-xs text-orange-400">
+                  <p className="mt-1 text-xs text-orange-600">
                     La promo ne sera valable qu&apos;entre {formData.activeFromTime} et {formData.activeToTime}.
                   </p>
                 )}
@@ -611,7 +611,7 @@ export default function PromotionsPage() {
 
               {/* ── Jours de la semaine ──────────────────────────────────────── */}
               <div>
-                <label className="text-sm text-gray-400 block mb-2">
+                <label className="text-sm text-gray-500 block mb-2">
                   Jours actifs
                   <span className="ml-1 text-gray-500">(tous si aucun coché)</span>
                 </label>
@@ -624,7 +624,7 @@ export default function PromotionsPage() {
                       className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
                         formData.activeDays.includes(j)
                           ? 'bg-orange-600 text-white'
-                          : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       }`}
                     >
                       {nom}
@@ -641,7 +641,7 @@ export default function PromotionsPage() {
                   onChange={(e) => setFormData({ ...formData, applicableToAll: e.target.checked })}
                   className="rounded"
                 />
-                <label htmlFor="applicableToAll" className="text-sm text-gray-400">
+                <label htmlFor="applicableToAll" className="text-sm text-gray-500">
                   S&apos;applique à tous les produits
                 </label>
               </div>
@@ -650,13 +650,13 @@ export default function PromotionsPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors"
+                  className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded font-semibold transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors"
+                  className="bg-orange-600 text-white hover:bg-orange-700 flex-1 py-2 rounded font-semibold transition-colors"
                 >
                   {editingPromo ? t('update') : t('create')}
                 </button>

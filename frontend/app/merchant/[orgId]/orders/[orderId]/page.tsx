@@ -86,12 +86,12 @@ const STATUTS: { valeur: string; libelle: string }[] = [
 ];
 
 const COULEURS: Record<string, string> = {
-  PENDING: 'bg-orange-500/20 text-orange-400',
-  ACCEPTED: 'bg-blue-500/20 text-blue-400',
-  PREPARING: 'bg-amber-500/20 text-amber-400',
-  READY: 'bg-purple-500/20 text-purple-400',
-  COMPLETED: 'bg-green-500/20 text-green-400',
-  REJECTED: 'bg-red-500/20 text-red-400',
+  PENDING: 'bg-orange-100 text-orange-600',
+  ACCEPTED: 'bg-blue-100 text-blue-600',
+  PREPARING: 'bg-amber-100 text-amber-600',
+  READY: 'bg-purple-100 text-purple-600',
+  COMPLETED: 'bg-green-100 text-green-600',
+  REJECTED: 'bg-red-100 text-red-600',
 };
 
 export default function DetailCommandePage() {
@@ -184,18 +184,18 @@ export default function DetailCommandePage() {
     }
   };
 
-  if (loading) return <div className="text-center py-8 text-gray-400">Chargement...</div>;
+  if (loading) return <div className="text-center py-8 text-gray-500">Chargement...</div>;
 
   if (erreur || !commande) {
     return (
       <div className="space-y-4">
         <Link
           href={`/merchant/${orgId}/orders`}
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-white"
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900"
         >
           <ArrowLeft size={18} /> Retour aux commandes
         </Link>
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
+        <div className="bg-red-100 border border-red-500/50 rounded-lg p-4 text-red-600">
           {erreur || 'Commande introuvable'}
         </div>
       </div>
@@ -211,14 +211,14 @@ export default function DetailCommandePage() {
         <div>
           <Link
             href={`/merchant/${orgId}/orders`}
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-2"
+            className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 text-sm mb-2"
           >
             <ArrowLeft size={16} /> Retour aux commandes
           </Link>
           <h1 className="text-3xl font-bold">
             Commande {commande.id.slice(-8).toUpperCase()}
           </h1>
-          <p className="text-gray-400 mt-1 flex items-center gap-2">
+          <p className="text-gray-500 mt-1 flex items-center gap-2">
             <Clock size={16} />
             {new Date(commande.createdAt).toLocaleString('fr-FR')}
           </p>
@@ -234,13 +234,13 @@ export default function DetailCommandePage() {
                 'width=460,height=820'
               )
             }
-            className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white hover:bg-orange-500 rounded-lg text-sm font-medium transition-colors"
           >
             <Printer size={16} /> Imprimer le ticket
           </button>
           <span
             className={`px-4 py-2 rounded-full text-sm font-medium ${
-              COULEURS[commande.status] || 'bg-gray-500/20 text-gray-400'
+              COULEURS[commande.status] || 'bg-gray-500/20 text-gray-500'
             }`}
           >
             {STATUTS.find((s) => s.valeur === commande.status)?.libelle || commande.status}
@@ -249,22 +249,22 @@ export default function DetailCommandePage() {
       </div>
 
       {message && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm">{message}</div>
+        <div className="bg-white border border-gray-200 rounded-lg p-3 text-sm">{message}</div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 lg:col-span-2">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 lg:col-span-2">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Package size={20} className="text-blue-500" />
             Articles ({lignes.length})
           </h2>
 
           {lignes.length === 0 ? (
-            <p className="text-gray-400">Aucun article enregistré sur cette commande</p>
+            <p className="text-gray-500">Aucun article enregistré sur cette commande</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-gray-400 border-b border-gray-700">
+                <thead className="text-gray-500 border-b border-gray-200">
                   <tr>
                     <th className="text-left py-2">Produit</th>
                     <th className="text-center py-2">Qté</th>
@@ -272,7 +272,7 @@ export default function DetailCommandePage() {
                     <th className="text-right py-2">Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-700">
+                <tbody className="divide-y divide-gray-100">
                   {lignes.map((ligne) => (
                     <tr key={ligne.id}>
                       <td className="py-3">
@@ -285,13 +285,13 @@ export default function DetailCommandePage() {
                         )}
                         {intituleDeLaLigne(ligne).plat}
                         {intituleDeLaLigne(ligne).declinaison && (
-                          <span className="text-orange-400">
+                          <span className="text-orange-600">
                             {' '}
                             — {intituleDeLaLigne(ligne).declinaison}
                           </span>
                         )}
                         {intituleDeLaLigne(ligne).supplements && (
-                          <span className="block text-xs text-gray-400">
+                          <span className="block text-xs text-gray-500">
                             + {intituleDeLaLigne(ligne).supplements}
                           </span>
                         )}
@@ -306,13 +306,13 @@ export default function DetailCommandePage() {
             </div>
           )}
 
-          <div className="mt-4 pt-4 border-t border-gray-700 space-y-2 text-sm">
-            <div className="flex justify-between text-gray-400">
+          <div className="mt-4 pt-4 border-t border-gray-200 space-y-2 text-sm">
+            <div className="flex justify-between text-gray-500">
               <span>Sous-total</span>
               <span>{euro(sousTotal)}</span>
             </div>
             {Number(commande.discountAmount) > 0 && (
-              <div className="flex justify-between text-gray-400">
+              <div className="flex justify-between text-gray-500">
                 <span>Remise{commande.promoCode ? ` (${commande.promoCode})` : ''}</span>
                 <span>−{euro(commande.discountAmount)}</span>
               </div>
@@ -321,13 +321,13 @@ export default function DetailCommandePage() {
                 Le total payé par le client (livraison et frais de service
                 compris) passait pour son montant : 15 € d'articles
                 s'affichaient 20,25 €. */}
-            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-700">
+            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
               <span>Montant de la commande</span>
-              <span className="text-green-400">{euro(montantCommercant(commande))}</span>
+              <span className="text-green-600">{euro(montantCommercant(commande))}</span>
             </div>
             {/* Il livre lui-même : la livraison est à lui, sur sa propre ligne. */}
             {commande.deliveryMode !== 'PLATFORM' && Number(commande.feesAmount) > 0 && (
-              <div className="flex justify-between text-gray-400">
+              <div className="flex justify-between text-gray-500">
                 <span>+ Frais de livraison (pour vous)</span>
                 <span>{euro(commande.feesAmount)}</span>
               </div>
@@ -336,7 +336,7 @@ export default function DetailCommandePage() {
             {/* Ce qui ne lui revient pas : pour information seulement. */}
             {(Number(commande.serviceFeeAmount) > 0 ||
               (commande.deliveryMode === 'PLATFORM' && Number(commande.feesAmount) > 0)) && (
-              <div className="pt-2 border-t border-gray-700 space-y-1 text-xs text-gray-500">
+              <div className="pt-2 border-t border-gray-200 space-y-1 text-xs text-gray-500">
                 <div className="flex justify-between">
                   <span>Payé par le client</span>
                   <span>{euro(commande.totalAmount)}</span>
@@ -353,7 +353,7 @@ export default function DetailCommandePage() {
                     <span>{euro(commande.serviceFeeAmount)}</span>
                   </div>
                 )}
-                <p className="text-amber-300">
+                <p className="text-amber-700">
                   Ces sommes ne vous reviennent pas : elles sont reportées sur votre relevé du mois,
                   avec la commission.
                 </p>
@@ -364,7 +364,7 @@ export default function DetailCommandePage() {
                 ne s'y ajoute pas. Elle valait zéro sur toute commande, faute
                 d'être calculée au serveur — le taux réglé ne servait à rien. */}
             {Number(commande.taxAmount) > 0 ? (
-              <div className="pt-2 border-t border-gray-700 space-y-1 text-gray-400">
+              <div className="pt-2 border-t border-gray-200 space-y-1 text-gray-500">
                 <div className="flex justify-between">
                   <span>Total HT</span>
                   <span>{euro(montantCommercant(commande) - Number(commande.taxAmount))}</span>
@@ -386,23 +386,23 @@ export default function DetailCommandePage() {
         </div>
 
         <div className="space-y-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
               <User size={20} className="text-purple-500" />
               Client
             </h2>
             <p className="font-medium">{commande.customerName}</p>
-            <p className="text-sm text-gray-400 break-all">{commande.customerEmail}</p>
-            <p className="text-sm text-gray-400">{commande.customerPhone}</p>
+            <p className="text-sm text-gray-500 break-all">{commande.customerEmail}</p>
+            <p className="text-sm text-gray-500">{commande.customerPhone}</p>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
               <MapPin size={20} className="text-orange-500" />
               {commande.deliveryType === 'DELIVERY' ? t('delivery') : 'Retrait'}
             </h2>
             {commande.deliveryType === 'DELIVERY' ? (
-              <div className="text-sm text-gray-300 space-y-1">
+              <div className="text-sm text-gray-700 space-y-1">
                 <p>{commande.deliveryAddress || 'Adresse non renseignée'}</p>
                 <p>
                   {[commande.deliveryPostal, commande.deliveryCity].filter(Boolean).join(' ') ||
@@ -410,18 +410,18 @@ export default function DetailCommandePage() {
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-gray-300">
+              <p className="text-sm text-gray-700">
                 {commande.pickupTime
                   ? new Date(commande.pickupTime).toLocaleString('fr-FR')
                   : 'Heure de retrait non précisée'}
               </p>
             )}
-            <p className="text-sm text-gray-400 mt-3">
-              Paiement : <span className="text-gray-200">{commande.paymentStatus}</span>
+            <p className="text-sm text-gray-500 mt-3">
+              Paiement : <span className="text-gray-800">{commande.paymentStatus}</span>
             </p>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-bold mb-4">
               {commande.status === 'PENDING' ? 'Accepter ou refuser' : 'Suivi de la commande'}
             </h2>
@@ -432,20 +432,20 @@ export default function DetailCommandePage() {
 
           <Link
             href={`/merchant/${orgId}/invoices/${commande.id}`}
-            className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
           >
             <FileText size={18} /> Voir la facture
           </Link>
         </div>
       </div>
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
           <StickyNote size={20} className="text-yellow-500" />
           Note interne
         </h2>
         {commande.notes && (
-          <p className="text-sm text-gray-300 bg-gray-700 rounded-lg p-3 mb-3 whitespace-pre-wrap">
+          <p className="text-sm text-gray-700 bg-gray-100 rounded-lg p-3 mb-3 whitespace-pre-wrap">
             {commande.notes}
           </p>
         )}
@@ -454,12 +454,12 @@ export default function DetailCommandePage() {
           onChange={(e) => setNote(e.target.value)}
           rows={3}
           placeholder="Ajouter une note visible uniquement par votre équipe"
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
+          className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
         />
         <button
           onClick={ajouterNote}
           disabled={enregistrement || !note.trim()}
-          className="mt-3 px-4 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
+          className="mt-3 px-4 py-2 bg-orange-600 text-white hover:bg-orange-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
         >
           Enregistrer la note
         </button>
