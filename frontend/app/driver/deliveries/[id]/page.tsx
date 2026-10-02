@@ -22,7 +22,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const CarteTrajet = dynamic(() => import('@/components/CarteTrajet'), {
   ssr: false,
   loading: () => (
-    <div className="h-[320px] w-full rounded-lg border border-gray-700 bg-gray-900 flex items-center justify-center text-sm text-gray-500">
+    <div className="h-[320px] w-full rounded-lg border border-gray-200 bg-white flex items-center justify-center text-sm text-gray-500">
       Chargement de la carte…
     </div>
   ),
@@ -393,10 +393,10 @@ export default function DeliveryTrackingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader size={48} className="text-orange-600 animate-spin mx-auto mb-4" />
-          <p className="text-white">Chargement de la livraison...</p>
+          <p className="text-gray-900">Chargement de la livraison...</p>
         </div>
       </div>
     );
@@ -404,17 +404,17 @@ export default function DeliveryTrackingPage() {
 
   if (error || !delivery) {
     return (
-      <div className="min-h-screen bg-gray-900">
+      <div className="min-h-screen">
         <header className="pt-4">
           <div className="max-w-7xl mx-auto px-4 py-4">
-            <Link href="/driver" className="flex items-center gap-2 text-orange-500 hover:text-orange-400">
+            <Link href="/driver" className="flex items-center gap-2 text-orange-500 hover:text-orange-600">
               <ArrowLeft size={20} />
               Retour
             </Link>
           </div>
         </header>
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="bg-red-900 border border-red-700 rounded-lg p-4 text-red-200 flex items-center gap-3">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 flex items-center gap-3">
             <AlertCircle size={24} />
             <p>{error || 'Erreur lors du chargement de la livraison'}</p>
           </div>
@@ -424,23 +424,23 @@ export default function DeliveryTrackingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="pt-4">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <Link href="/driver" className="flex items-center gap-2 text-orange-500 hover:text-orange-400 mb-4">
+          <Link href="/driver" className="flex items-center gap-2 text-orange-500 hover:text-orange-600 mb-4">
             <ArrowLeft size={20} />
             Retour au tableau de bord
           </Link>
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-white">Livraison #{delivery.orderId.slice(0, 8)}</h1>
-              <p className="text-gray-400">{delivery.customerName}</p>
+              <h1 className="text-2xl font-bold text-gray-900">Livraison #{delivery.orderId.slice(0, 8)}</h1>
+              <p className="text-gray-500">{delivery.customerName}</p>
             </div>
             {location && (
               <div className="text-right">
-                <p className="text-gray-400 text-sm">Localisation active</p>
-                <p className="text-green-400 font-semibold text-sm">✓ GPS activé</p>
+                <p className="text-gray-500 text-sm">Localisation active</p>
+                <p className="text-green-600 font-semibold text-sm">✓ GPS activé</p>
               </div>
             )}
           </div>
@@ -455,8 +455,8 @@ export default function DeliveryTrackingPage() {
         )}
 
         {/* Progress */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-bold text-white mb-6">Étapes de la livraison</h2>
+        <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Étapes de la livraison</h2>
 
           <div className="space-y-4">
             {steps.map((step, index) => {
@@ -471,13 +471,13 @@ export default function DeliveryTrackingPage() {
                         ? 'bg-green-600 text-white'
                         : isCurrent
                         ? 'bg-orange-600 text-white'
-                        : 'bg-gray-700 text-gray-400'
+                        : 'bg-gray-100 text-gray-500'
                     }`}
                   >
                     {isCompleted ? '✓' : index + 1}
                   </div>
                   <div className="flex-1">
-                    <p className={`font-semibold ${isCompleted || isCurrent ? 'text-white' : 'text-gray-500'}`}>
+                    <p className={`font-semibold ${isCompleted || isCurrent ? 'text-gray-900' : 'text-gray-500'}`}>
                       {step}
                     </p>
                   </div>
@@ -505,8 +505,8 @@ export default function DeliveryTrackingPage() {
               : null;
 
           return (
-            <div className="bg-gray-800 rounded-lg p-6 mb-8 space-y-4">
-              <h2 className="text-xl font-bold text-white">
+            <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 mb-8 space-y-4">
+              <h2 className="text-xl font-bold text-gray-900">
                 {versClient ? 'Itinéraire vers le client' : 'Itinéraire vers le commerce'}
               </h2>
               {(retrait || destination) && (
@@ -522,7 +522,7 @@ export default function DeliveryTrackingPage() {
                   href={lien}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
+                  className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
                 >
                   <Navigation size={20} />
                   Lancer le GPS {versClient ? 'vers le client' : 'vers le commerce'}
@@ -536,8 +536,8 @@ export default function DeliveryTrackingPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Current Step Details */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-bold text-white mb-6">
+            <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">
                 {currentStep === 0 && '📍 Allez au commerce'}
                 {currentStep === 1 && '📦 Prenez en charge la commande'}
                 {currentStep === 2 && '🚗 Allez chez le client'}
@@ -546,18 +546,18 @@ export default function DeliveryTrackingPage() {
 
               {currentStep === 0 && (
                 <div className="space-y-4">
-                  <p className="text-gray-300 mb-4">Rendez-vous au commerce pour récupérer la commande</p>
-                  <div className="bg-gray-700 rounded-lg p-4 flex gap-3">
+                  <p className="text-gray-700 mb-4">Rendez-vous au commerce pour récupérer la commande</p>
+                  <div className="bg-gray-100 rounded-lg p-4 flex gap-3">
                     <MapPin size={24} className="text-orange-500 flex-shrink-0" />
                     <div>
-                      <p className="text-white font-semibold">{delivery.pickupStore || 'Commerce'}</p>
-                      <p className="text-gray-400">{delivery.pickupAddress}</p>
+                      <p className="text-gray-900 font-semibold">{delivery.pickupStore || 'Commerce'}</p>
+                      <p className="text-gray-500">{delivery.pickupAddress}</p>
                     </div>
                   </div>
 
                   {/* La prise en charge se déverrouille à l'arrivée : elle ne
                       se valide pas depuis chez soi. */}
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-500">
                     {distanceCommerce != null
                       ? `Encore ${
                           distanceCommerce >= 1000
@@ -573,7 +573,7 @@ export default function DeliveryTrackingPage() {
                     <button
                       type="button"
                       onClick={() => setArriveeDeclaree(true)}
-                      className="block text-sm text-orange-400 hover:underline"
+                      className="block text-sm text-orange-600 hover:underline"
                     >
                       Le GPS ne me situe pas : je suis bien au commerce
                     </button>
@@ -583,11 +583,11 @@ export default function DeliveryTrackingPage() {
 
               {currentStep === 1 && (
                 <div className="space-y-4">
-                  <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
-                    <p className="text-green-200 font-semibold">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-green-800 font-semibold">
                       Vous êtes arrivé chez {delivery.pickupStore || 'le commerce'}
                     </p>
-                    <p className="text-green-300/80 text-sm">
+                    <p className="text-green-700/80 text-sm">
                       {commandePrete
                         ? 'Vérifiez la commande, puis glissez pour la prendre en charge. Le GPS partira aussitôt vers le client.'
                         : 'La commande est encore en préparation. Vous pourrez la prendre en charge dès que le commerçant la déclarera prête.'}
@@ -595,16 +595,16 @@ export default function DeliveryTrackingPage() {
                   </div>
 
                   {refus && (
-                    <p role="status" className="text-sm text-red-400">
+                    <p role="status" className="text-sm text-red-600">
                       {refus}
                     </p>
                   )}
 
                   {delivery.items && delivery.items.length > 0 && (
-                    <div className="bg-gray-700 rounded-lg p-4 space-y-2">
-                      <p className="text-white font-semibold mb-3">Articles à récupérer:</p>
+                    <div className="bg-gray-100 rounded-lg p-4 space-y-2">
+                      <p className="text-gray-900 font-semibold mb-3">Articles à récupérer:</p>
                       {delivery.items.map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between text-gray-300 text-sm">
+                        <div key={idx} className="flex justify-between text-gray-700 text-sm">
                           <span>{item.product?.name || item.name} x{item.quantity}</span>
                         </div>
                       ))}
@@ -619,7 +619,7 @@ export default function DeliveryTrackingPage() {
                       enCours={updating}
                     />
                   ) : (
-                    <div className="flex items-center justify-center gap-2 rounded-lg border border-amber-700 bg-amber-900/30 p-4 text-amber-200">
+                    <div className="flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
                       <Loader size={18} className="animate-spin" />
                       <span className="text-sm font-medium">En attente : commande en préparation…</span>
                     </div>
@@ -629,18 +629,18 @@ export default function DeliveryTrackingPage() {
 
               {currentStep === 2 && (
                 <div className="space-y-4">
-                  <p className="text-gray-300 mb-4">Livrez la commande à l&apos;adresse du client</p>
-                  <div className="bg-gray-700 rounded-lg p-4 flex gap-3">
+                  <p className="text-gray-700 mb-4">Livrez la commande à l&apos;adresse du client</p>
+                  <div className="bg-gray-100 rounded-lg p-4 flex gap-3">
                     <MapPin size={24} className="text-green-500 flex-shrink-0" />
                     <div>
-                      <p className="text-white font-semibold">Client</p>
-                      <p className="text-gray-400">{delivery.deliveryAddress}</p>
+                      <p className="text-gray-900 font-semibold">Client</p>
+                      <p className="text-gray-500">{delivery.deliveryAddress}</p>
                     </div>
                   </div>
 
                   {/* À 300 m, le serveur prévient le client de descendre. */}
                   {distanceClient != null && distanceClient <= RAYON_APPROCHE_CLIENT_M && (
-                    <p className="flex items-center gap-2 text-sm text-green-300">
+                    <p className="flex items-center gap-2 text-sm text-green-700">
                       <BellRing size={16} />
                       Le client est prévenu de votre arrivée : il peut descendre.
                     </p>
@@ -649,18 +649,18 @@ export default function DeliveryTrackingPage() {
                   {/* La preuve de la remise. Une course se clôturait sur un
                       simple clic : rien ne distinguait un repas remis en main
                       propre d'un repas jamais sorti du sac. */}
-                  <div className="border-t border-gray-700 pt-4 space-y-3">
-                    <h3 className="text-white font-semibold">Preuve de la remise</h3>
+                  <div className="border-t border-gray-200 pt-4 space-y-3">
+                    <h3 className="text-gray-900 font-semibold">Preuve de la remise</h3>
 
                     {refus && (
-                      <p role="status" className="text-sm text-red-400">
+                      <p role="status" className="text-sm text-red-600">
                         {refus}
                       </p>
                     )}
 
                     {!modePhoto ? (
                       <>
-                        <label htmlFor="code-remise" className="block text-sm text-gray-400">
+                        <label htmlFor="code-remise" className="block text-sm text-gray-500">
                           Code à quatre chiffres, demandé au client
                         </label>
                         <div className="flex items-center gap-3">
@@ -672,10 +672,10 @@ export default function DeliveryTrackingPage() {
                             autoComplete="one-time-code"
                             placeholder="0000"
                             disabled={updating}
-                            className="w-32 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-2xl tracking-[0.3em] text-center disabled:opacity-60"
+                            className="w-32 bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-2xl tracking-[0.3em] text-center disabled:opacity-60"
                           />
                           {updating && (
-                            <span className="flex items-center gap-2 text-sm text-gray-400">
+                            <span className="flex items-center gap-2 text-sm text-gray-500">
                               <Loader size={16} className="animate-spin" /> Vérification…
                             </span>
                           )}
@@ -684,7 +684,7 @@ export default function DeliveryTrackingPage() {
                           Le code se vérifie tout seul dès le quatrième chiffre.
                         </p>
                         {delivery.essaisRestants != null && delivery.essaisRestants < 5 && (
-                          <p className="text-xs text-amber-300">
+                          <p className="text-xs text-amber-700">
                             {delivery.essaisRestants} essai
                             {delivery.essaisRestants > 1 ? 's' : ''} restant
                             {delivery.essaisRestants > 1 ? 's' : ''}
@@ -718,13 +718,13 @@ export default function DeliveryTrackingPage() {
                             <img
                               src={apercuPhoto || photoUrl}
                               alt="Photo du dépôt"
-                              className="w-full max-h-72 object-cover rounded-lg border border-gray-600"
+                              className="w-full max-h-72 object-cover rounded-lg border border-gray-300"
                             />
                             <button
                               type="button"
                               onClick={() => appareil.current?.click()}
                               disabled={envoiPhoto}
-                              className="text-sm text-orange-400 hover:underline"
+                              className="text-sm text-orange-600 hover:underline"
                             >
                               Reprendre la photo
                             </button>
@@ -734,7 +734,7 @@ export default function DeliveryTrackingPage() {
                             type="button"
                             onClick={() => appareil.current?.click()}
                             disabled={envoiPhoto}
-                            className="w-full bg-gray-700 hover:bg-gray-600 border border-dashed border-gray-500 text-white font-semibold py-6 rounded-lg flex flex-col items-center justify-center gap-2 disabled:opacity-60"
+                            className="w-full bg-gray-100 hover:bg-gray-200 border border-dashed border-gray-400 text-gray-900 font-semibold py-6 rounded-lg flex flex-col items-center justify-center gap-2 disabled:opacity-60"
                           >
                             {envoiPhoto ? (
                               <>
@@ -750,7 +750,7 @@ export default function DeliveryTrackingPage() {
                           </button>
                         )}
 
-                        <label htmlFor="note-depot" className="block text-sm text-gray-400">
+                        <label htmlFor="note-depot" className="block text-sm text-gray-500">
                           Où avez-vous déposé ?
                         </label>
                         <input
@@ -758,14 +758,14 @@ export default function DeliveryTrackingPage() {
                           value={note}
                           onChange={(e) => setNote(e.target.value)}
                           placeholder="Devant la porte, chez le gardien…"
-                          className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
                         />
 
                         <button
                           type="button"
                           onClick={() => confirmerRemise({ photoUrl, note })}
                           disabled={!photoUrl || updating || envoiPhoto}
-                          className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
+                          className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
                         >
                           {updating ? <Loader size={18} className="animate-spin" /> : <CheckCircle size={18} />}
                           Confirmer le dépôt
@@ -775,7 +775,7 @@ export default function DeliveryTrackingPage() {
                           <button
                             type="button"
                             onClick={() => setModePhoto(false)}
-                            className="block text-sm text-orange-400 hover:underline"
+                            className="block text-sm text-orange-600 hover:underline"
                           >
                             Revenir au code du client
                           </button>
@@ -788,11 +788,11 @@ export default function DeliveryTrackingPage() {
 
               {currentStep === 3 && (
                 <div className="space-y-4">
-                  <div className="bg-green-900 border border-green-700 rounded-lg p-4 flex gap-3">
-                    <CheckCircle size={24} className="text-green-400 flex-shrink-0" />
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex gap-3">
+                    <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
                     <div>
-                      <p className="text-green-200 font-semibold">Livraison complétée !</p>
-                      <p className="text-green-300 text-sm">
+                      <p className="text-green-800 font-semibold">Livraison complétée !</p>
+                      <p className="text-green-700 text-sm">
                         {delivery.preuve === 'PHOTO'
                           ? 'Dépôt prouvé par photo.'
                           : 'Remise confirmée par le code du client.'}
@@ -804,16 +804,16 @@ export default function DeliveryTrackingPage() {
             </div>
 
             {/* Customer Info */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Information du client</h2>
+            <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Information du client</h2>
 
               <div className="space-y-4">
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <p className="text-gray-400 text-sm mb-1">Nom</p>
-                  <p className="text-white font-semibold">{delivery.customerName}</p>
+                <div className="bg-gray-100 rounded-lg p-4">
+                  <p className="text-gray-500 text-sm mb-1">Nom</p>
+                  <p className="text-gray-900 font-semibold">{delivery.customerName}</p>
                 </div>
 
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2">
+                <button className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2">
                   <Phone size={18} />
                   Appeler {delivery.customerPhone}
                 </button>
@@ -823,21 +823,21 @@ export default function DeliveryTrackingPage() {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-gray-800 rounded-lg p-6 sticky top-20 space-y-6">
+            <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 sticky top-20 space-y-6">
               {/* Stats */}
               <div>
-                <p className="text-gray-400 text-sm mb-2">Distance</p>
-                <p className="text-white text-2xl font-bold">{delivery.distance || 0} km</p>
+                <p className="text-gray-500 text-sm mb-2">Distance</p>
+                <p className="text-gray-900 text-2xl font-bold">{delivery.distance || 0} km</p>
               </div>
 
               <div>
-                <p className="text-gray-400 text-sm mb-2">Votre gain</p>
-                <p className="text-green-400 text-2xl font-bold">{euro(delivery.payout || 0)}</p>
+                <p className="text-gray-500 text-sm mb-2">Votre gain</p>
+                <p className="text-green-600 text-2xl font-bold">{euro(delivery.payout || 0)}</p>
                 {(delivery.pourboire ?? 0) > 0 && (
-                  <p className="text-green-300 text-sm mt-1">dont {euro(delivery.pourboire!)} de pourboire 🙏</p>
+                  <p className="text-green-700 text-sm mt-1">dont {euro(delivery.pourboire!)} de pourboire 🙏</p>
                 )}
                 {(delivery.pourboireApres ?? 0) > 0 && (
-                  <p className="text-green-300 text-sm mt-1">
+                  <p className="text-green-700 text-sm mt-1">
                     + {euro(delivery.pourboireApres!)} de pourboire laissé après la livraison 🎉
                   </p>
                 )}
@@ -848,7 +848,7 @@ export default function DeliveryTrackingPage() {
               {currentStep < 2 && (
                 <button
                   onClick={() => setShowCancelModal(true)}
-                  className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 border border-red-600/50"
+                  className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 border border-red-200"
                 >
                   <X size={18} />
                   Annuler la course
@@ -857,8 +857,8 @@ export default function DeliveryTrackingPage() {
 
               {currentStep === 3 && (
                 <div className="text-center py-4">
-                  <p className="text-green-400 font-semibold mb-4">✓ Livraison complétée !</p>
-                  <p className="text-gray-400 text-sm">Retour au tableau de bord dans 2 secondes...</p>
+                  <p className="text-green-600 font-semibold mb-4">✓ Livraison complétée !</p>
+                  <p className="text-gray-500 text-sm">Retour au tableau de bord dans 2 secondes...</p>
                 </div>
               )}
             </div>

@@ -54,11 +54,11 @@ interface Props {
 export function AlerteSignal({ enLigne, gps, perduCoteServeur }: Props) {
   if (!enLigne) {
     return (
-      <div role="alert" className="bg-red-900/40 border border-red-700/60 text-red-100 rounded-lg p-3 text-sm flex gap-3">
+      <div role="alert" className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm flex gap-3">
         <WifiOff size={20} className="flex-shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold">Pas de connexion internet</p>
-          <p className="text-red-200/80">
+          <p className="text-red-800/80">
             Votre position n&apos;est plus transmise. Elle repartira automatiquement dès le retour du
             réseau.
           </p>
@@ -69,11 +69,11 @@ export function AlerteSignal({ enLigne, gps, perduCoteServeur }: Props) {
 
   if (gps === 'refuse') {
     return (
-      <div role="alert" className="bg-red-900/40 border border-red-700/60 text-red-100 rounded-lg p-3 text-sm flex gap-3">
+      <div role="alert" className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm flex gap-3">
         <MapPinOff size={20} className="flex-shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold">Localisation refusée</p>
-          <p className="text-red-200/80">
+          <p className="text-red-800/80">
             Autorisez la localisation pour ce site dans les réglages du navigateur : sans elle, aucune
             course ne peut vous être proposée.
           </p>
@@ -84,11 +84,11 @@ export function AlerteSignal({ enLigne, gps, perduCoteServeur }: Props) {
 
   if (gps === 'faible' || perduCoteServeur) {
     return (
-      <div role="alert" className="bg-amber-900/30 border border-amber-700/50 text-amber-100 rounded-lg p-3 text-sm flex gap-3">
+      <div role="alert" className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm flex gap-3">
         <SatelliteDish size={20} className="flex-shrink-0 mt-0.5" />
         <div>
           <p className="font-semibold">Signal GPS faible ou perdu</p>
-          <p className="text-amber-200/80">
+          <p className="text-amber-800/80">
             Activez la localisation précise et gardez l&apos;application au premier plan. Sans position
             pendant 10 minutes, vous serez mis hors ligne.
           </p>

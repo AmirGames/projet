@@ -32,8 +32,19 @@ interface Order {
   createdAt: string;
 }
 
+/** Les couleurs des statuts, les mêmes que sur l'écran des commandes. */
+const PASTILLES: Record<string, string> = {
+  PENDING: 'bg-amber-100 text-amber-900',
+  ACCEPTED: 'bg-sky-100 text-sky-900',
+  PREPARING: 'bg-orange-100 text-orange-900',
+  READY: 'bg-green-100 text-green-900',
+  COMPLETED: 'bg-gray-100 text-gray-700',
+  REJECTED: 'bg-red-100 text-red-800',
+};
+
 export default function MerchantDashboard() {
   const t = useTranslations('merchantMainDashboard');
+  const tStatut = useTranslations('merchantOrders.statusLabel');
   const router = useRouter();
   const [stores, setStores] = useState<Store[]>([]);
   const [orgId, setOrgId] = useState('');
@@ -135,40 +146,40 @@ export default function MerchantDashboard() {
       <title>Espace commerçant — ZupEat</title>
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <TrendingUp size={32} className="text-orange-600" />
           {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">{t('subtitle')}</p>
+        <p className="text-gray-500 mt-2">{t('subtitle')}</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">{t('totalStores')}</p>
-              <p className="text-3xl font-bold text-white mt-2">{stats.totalStores}</p>
+              <p className="text-gray-500 text-sm">{t('totalStores')}</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalStores}</p>
             </div>
             <Store size={32} className="text-orange-600" />
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">{t('orders')}</p>
-              <p className="text-3xl font-bold text-white mt-2">{stats.totalOrders}</p>
+              <p className="text-gray-500 text-sm">{t('orders')}</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalOrders}</p>
             </div>
             <ShoppingCart size={32} className="text-orange-600" />
           </div>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">{t('totalRevenue')}</p>
-              <p className="text-3xl font-bold text-white mt-2">{euro(stats.totalRevenue)}</p>
+              <p className="text-gray-500 text-sm">{t('totalRevenue')}</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{euro(stats.totalRevenue)}</p>
             </div>
             <TrendingUp size={32} className="text-orange-600" />
           </div>
@@ -179,9 +190,9 @@ export default function MerchantDashboard() {
       <div>
         <div className="flex justify-between items-center mb-4 gap-4 flex-wrap">
           <div>
-            <h2 className="text-xl font-bold text-white">{t('myStores')}</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t('myStores')}</h2>
             {quota && (
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-gray-500 mt-1">
                 {t('plan')} {quota.tierLabel} — {t('storeCount', { used: quota.used, max: quota.max })}
               </p>
             )}
@@ -189,7 +200,7 @@ export default function MerchantDashboard() {
 
           {quota && !quota.canCreate ? (
             <div className="text-right">
-              <p className="text-sm text-orange-400">
+              <p className="text-sm text-orange-600">
                 {t('limitReached')}
               </p>
               {/* La page des formules dit ce que chacune contient ; le support
@@ -202,7 +213,7 @@ export default function MerchantDashboard() {
                       ? `/merchant/${orgId}/support`
                       : '/merchant'
                 }
-                className="text-sm text-orange-500 hover:text-orange-400 underline"
+                className="text-sm text-orange-500 hover:text-orange-600 underline"
               >
                 {quota.upgradeAvailable
                   ? t('seePlans')
@@ -220,9 +231,9 @@ export default function MerchantDashboard() {
         </div>
 
         {stores.length === 0 ? (
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
-            <Store size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-gray-400">{t('noStores')}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+            <Store size={48} className="mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500">{t('noStores')}</p>
             <Link
               href="/store/new"
               className="inline-block mt-4 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition"
@@ -239,16 +250,16 @@ export default function MerchantDashboard() {
               // effet.
               <div
                 key={store.id}
-                className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-orange-600 transition flex items-start justify-between gap-4"
+                className="bg-white border border-gray-200 rounded-lg p-4 hover:border-orange-600 transition flex items-start justify-between gap-4"
               >
                 <button
                   type="button"
                   onClick={() => ouvrirBoutique(store.id)}
                   className="flex-1 text-left cursor-pointer"
                 >
-                  <h3 className="text-white font-semibold">{store.name}</h3>
+                  <h3 className="text-gray-900 font-semibold">{store.name}</h3>
                   {store.description && (
-                    <p className="text-gray-400 text-sm mt-1">{store.description}</p>
+                    <p className="text-gray-500 text-sm mt-1">{store.description}</p>
                   )}
                   {store.address && (
                     <p className="text-gray-500 text-xs mt-2">{store.address}</p>
@@ -268,7 +279,7 @@ export default function MerchantDashboard() {
                     <button
                       type="button"
                       onClick={() => setADupliquer(store)}
-                      className="text-sm text-gray-400 hover:text-white flex items-center gap-1 transition"
+                      className="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1 transition"
                     >
                       <Copy size={14} />
                       {t('duplicate')}
@@ -294,40 +305,38 @@ export default function MerchantDashboard() {
 
       {/* Recent Orders Section */}
       <div>
-        <h2 className="text-xl font-bold text-white mb-4">{t('recentOrders')}</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">{t('recentOrders')}</h2>
 
         {recentOrders.length === 0 ? (
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
-            <ShoppingCart size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-gray-400">{t('noOrders')}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+            <ShoppingCart size={48} className="mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500">{t('noOrders')}</p>
           </div>
         ) : (
           <div className="space-y-3">
             {recentOrders.map((order) => (
               <div
                 key={order.id}
-                className="bg-gray-800 border border-gray-700 rounded-lg p-4"
+                className="bg-white border border-gray-200 rounded-lg p-4"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white font-semibold">{t('orderNumber', { id: order.id.slice(0, 8) })}</p>
-                    <p className="text-gray-400 text-sm mt-1">
+                    <p className="text-gray-900 font-semibold">{t('orderNumber', { id: order.id.slice(-8).toUpperCase() })}</p>
+                    <p className="text-gray-500 text-sm mt-1">
                       {new Date(order.createdAt).toLocaleDateString('fr-FR')}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-white font-bold">{euro(montantCommercant(order))}</p>
-                    <div
-                      className={`text-xs px-2 py-1 rounded mt-2 ${
-                        order.status === 'DELIVERED'
-                          ? 'bg-green-900/20 text-green-400'
-                          : order.status === 'PENDING'
-                          ? 'bg-yellow-900/20 text-yellow-400'
-                          : 'bg-blue-900/20 text-blue-400'
+                    <p className="text-gray-900 font-bold">{euro(montantCommercant(order))}</p>
+                    {/* Le statut en clair, aux couleurs de l'écran des commandes ;
+                        « DELIVERED », testé ici, n'existe pas pour une commande. */}
+                    <span
+                      className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                        PASTILLES[order.status] || 'bg-gray-100 text-gray-700'
                       }`}
                     >
-                      {order.status}
-                    </div>
+                      {tStatut.has(order.status as any) ? tStatut(order.status as any) : order.status}
+                    </span>
                   </div>
                 </div>
               </div>

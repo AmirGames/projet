@@ -136,7 +136,7 @@ export default function DriverOnboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 py-12 px-4">
+    <div className="min-h-screen py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -144,30 +144,30 @@ export default function DriverOnboardPage() {
               <Bike size={32} className="text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">{t('heading')}</h1>
-              <p className="text-slate-400">{t('subtitle', { email: user?.email || '' })}</p>
+              <h1 className="text-3xl font-bold text-gray-900">{t('heading')}</h1>
+              <p className="text-gray-500">{t('subtitle', { email: user?.email || '' })}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
+        <div className="bg-white border border-gray-200 rounded-lg p-8">
           {apiError && (
-            <div className="mb-6 bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex gap-3">
-              <AlertCircle className="text-red-400 flex-shrink-0" size={20} />
-              <p className="text-red-400">{apiError}</p>
+            <div className="mb-6 bg-red-100 border border-red-500/50 rounded-lg p-4 flex gap-3">
+              <AlertCircle className="text-red-600 flex-shrink-0" size={20} />
+              <p className="text-red-600">{apiError}</p>
             </div>
           )}
 
           {successMessage && (
-            <div className="mb-6 bg-green-500/20 border border-green-500/50 rounded-lg p-4 flex gap-3">
-              <CheckCircle className="text-green-400 flex-shrink-0" size={20} />
-              <p className="text-green-400">{successMessage}</p>
+            <div className="mb-6 bg-green-100 border border-green-500/50 rounded-lg p-4 flex gap-3">
+              <CheckCircle className="text-green-600 flex-shrink-0" size={20} />
+              <p className="text-green-600">{successMessage}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t('phoneLabel')}
               </label>
               <input
@@ -176,13 +176,13 @@ export default function DriverOnboardPage() {
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder={t('phonePlaceholder')}
-                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
+                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
               />
-              {errors.phone && <p className="text-red-400 text-sm mt-1">{errors.phone}</p>}
+              {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 {t('vehicleLabel')}
               </label>
               <div className="grid grid-cols-3 gap-3">
@@ -195,12 +195,12 @@ export default function DriverOnboardPage() {
                       onClick={() => setFormData({ ...formData, vehicleType: valeur as any })}
                       className={`p-4 rounded-lg border-2 transition flex flex-col items-center gap-2 ${
                         formData.vehicleType === valeur
-                          ? 'border-orange-500 bg-orange-500/20'
-                          : 'border-slate-600 hover:border-slate-500'
+                          ? 'border-orange-500 bg-orange-100'
+                          : 'border-gray-300 hover:border-gray-400'
                       }`}
                     >
-                      <Icon size={24} className={formData.vehicleType === valeur ? 'text-orange-400' : 'text-slate-400'} />
-                      <span className={formData.vehicleType === valeur ? 'text-orange-400 font-medium' : 'text-slate-400'}>
+                      <Icon size={24} className={formData.vehicleType === valeur ? 'text-orange-600' : 'text-gray-500'} />
+                      <span className={formData.vehicleType === valeur ? 'text-orange-600 font-medium' : 'text-gray-500'}>
                         {t(labelKey)}
                       </span>
                     </button>
@@ -211,7 +211,7 @@ export default function DriverOnboardPage() {
 
             {formData.vehicleType !== 'bike' && (
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('plateLabelRequired')}
                 </label>
                 <input
@@ -220,14 +220,14 @@ export default function DriverOnboardPage() {
                   value={formData.vehiclePlate}
                   onChange={handleChange}
                   placeholder={t('platePlaceholder')}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-orange-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-orange-500"
                 />
-                {errors.vehiclePlate && <p className="text-red-400 text-sm mt-1">{errors.vehiclePlate}</p>}
+                {errors.vehiclePlate && <p className="text-red-600 text-sm mt-1">{errors.vehiclePlate}</p>}
               </div>
             )}
 
-            <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
-              <p className="text-slate-400 text-sm">
+            <div className="bg-gray-100 border border-gray-300 rounded-lg p-4">
+              <p className="text-gray-500 text-sm">
                 {t('infoMessage')}
               </p>
             </div>
@@ -236,14 +236,14 @@ export default function DriverOnboardPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-600 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2"
+                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2"
               >
                 {loading ? <Loader className="animate-spin" size={20} /> : null}
                 {loading ? t('registering') : t('registerButton')}
               </button>
               <Link
                 href="/"
-                className="px-6 py-3 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white font-bold rounded-lg transition"
+                className="px-6 py-3 border border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 font-bold rounded-lg transition"
               >
                 {t('cancelButton')}
               </Link>

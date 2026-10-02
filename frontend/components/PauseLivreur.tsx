@@ -89,14 +89,14 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
     const ss = String(reste % 60).padStart(2, '0');
 
     return (
-      <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-4 space-y-3">
-        <div className="flex items-center gap-2 text-amber-200 font-semibold">
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+        <div className="flex items-center gap-2 text-amber-800 font-semibold">
           <Coffee size={18} /> En pause{pauseReason ? ` — ${pauseReason}` : ''}
         </div>
-        <p className="text-3xl font-bold text-white tabular-nums">
+        <p className="text-3xl font-bold text-gray-900 tabular-nums">
           {mm}:{ss}
         </p>
-        <p className="text-xs text-amber-200/80">Aucune course ne vous sera proposée d&apos;ici là.</p>
+        <p className="text-xs text-amber-800/80">Aucune course ne vous sera proposée d&apos;ici là.</p>
         <button
           onClick={() => appeler('DELETE')}
           disabled={enCours}
@@ -104,14 +104,14 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
         >
           <Play size={16} /> Reprendre maintenant
         </button>
-        {erreur && <p className="text-sm text-red-400">{erreur}</p>}
+        {erreur && <p className="text-sm text-red-600">{erreur}</p>}
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <p className="text-gray-400 text-sm flex items-center gap-2">
+      <p className="text-gray-500 text-sm flex items-center gap-2">
         <Coffee size={16} /> Faire une pause
       </p>
       {enCourse ? (
@@ -121,7 +121,7 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
           <select
             value={raison}
             onChange={(e) => setRaison(e.target.value)}
-            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white"
+            className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
             aria-label="Motif de la pause"
           >
             {RAISONS.map((r) => (
@@ -134,7 +134,7 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
                 key={d}
                 onClick={() => appeler('POST', { minutes: d, reason: raison })}
                 disabled={enCours}
-                className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-sm font-semibold py-2 rounded-lg"
+                className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-900 text-sm font-semibold py-2 rounded-lg"
               >
                 {d} min
               </button>
@@ -142,7 +142,7 @@ export function PauseLivreur({ isOnline, enCourse, pausedUntil, pauseReason, sur
           </div>
         </>
       )}
-      {erreur && <p className="text-sm text-red-400">{erreur}</p>}
+      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
     </div>
   );
 }

@@ -237,9 +237,9 @@ export default function DriverDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-white text-lg">{t('loading')}</p>
+          <p className="text-gray-900 text-lg">{t('loading')}</p>
           <div className="w-12 h-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mt-4"></div>
         </div>
       </div>
@@ -248,9 +248,9 @@ export default function DriverDashboard() {
 
   if (!driver) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-white text-lg mb-4">{t('loadingError')}</p>
+          <p className="text-gray-900 text-lg mb-4">{t('loadingError')}</p>
           <button
             onClick={() => router.push('/driver/login')}
             className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg"
@@ -265,7 +265,7 @@ export default function DriverDashboard() {
   const isAccountActive = driver.status === 'ACTIVE';
 
   return (
-    <div className="bg-gray-900 min-h-screen">
+    <div className="min-h-screen">
       <title>Espace livreur — ZupEat</title>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Le dossier passe avant tout le reste : sans validation, aucune
@@ -276,17 +276,17 @@ export default function DriverDashboard() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-          <div className="bg-gray-800 rounded-lg p-6">
+          <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">{t('rating')}</p>
+                <p className="text-gray-500 text-sm">{t('rating')}</p>
                 {/* « 5 » s'affichait dès l'inscription : c'était la valeur par
                     défaut de la colonne, pas une note gagnée. */}
                 {driver.rating == null ? (
                   <p className="text-gray-500 text-lg font-semibold mt-1">{t('notRatedYet')}</p>
                 ) : (
                   <>
-                    <p className="text-white text-3xl font-bold">
+                    <p className="text-gray-900 text-3xl font-bold">
                       {driver.rating.toFixed(1).replace('.', ',')}
                     </p>
                     <p className="text-gray-500 text-xs">
@@ -299,45 +299,45 @@ export default function DriverDashboard() {
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-lg p-6">
+          <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">{t('dailyEarnings')}</p>
-                <p className="text-white text-3xl font-bold">{euro(earnings)}</p>
+                <p className="text-gray-500 text-sm">{t('dailyEarnings')}</p>
+                <p className="text-gray-900 text-3xl font-bold">{euro(earnings)}</p>
               </div>
               <DollarSign size={32} className="text-green-500" />
             </div>
           </div>
 
-          <Link href="/driver/earnings" className="block bg-gray-800 rounded-lg p-6 hover:ring-1 hover:ring-yellow-600">
+          <Link href="/driver/earnings" className="block bg-white ring-1 ring-gray-200 rounded-lg p-6 hover:ring-1 hover:ring-yellow-600">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">{t('dailyTips')}</p>
-                <p className={`text-3xl font-bold ${pourboiresDuJour > 0 ? 'text-yellow-400' : 'text-white'}`}>
+                <p className="text-gray-500 text-sm">{t('dailyTips')}</p>
+                <p className={`text-3xl font-bold ${pourboiresDuJour > 0 ? 'text-yellow-600' : 'text-gray-900'}`}>
                   {euro(pourboiresDuJour)}
                 </p>
               </div>
-              <Gift size={32} className="text-yellow-400" />
+              <Gift size={32} className="text-yellow-600" />
             </div>
           </Link>
 
-          <div className="bg-gray-800 rounded-lg p-6">
+          <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">{t('completedDeliveries')}</p>
-                <p className="text-white text-3xl font-bold">{driver.completedDeliveries}</p>
+                <p className="text-gray-500 text-sm">{t('completedDeliveries')}</p>
+                <p className="text-gray-900 text-3xl font-bold">{driver.completedDeliveries}</p>
               </div>
               <Package size={32} className="text-blue-500" />
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-lg p-6">
+          <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">{t('status')}</p>
+                <p className="text-gray-500 text-sm">{t('status')}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-                  <p className="text-white font-semibold">{isOnline ? t('online') : t('offline')}</p>
+                  <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                  <p className="text-gray-900 font-semibold">{isOnline ? t('online') : t('offline')}</p>
                 </div>
               </div>
             </div>
@@ -347,7 +347,7 @@ export default function DriverDashboard() {
         {/* Courses proposées : elles n'ont que quelques dizaines de secondes de
             vie, elles passent donc avant tout le reste. */}
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-white mb-3">{t('proposedDeliveries')}</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('proposedDeliveries')}</h2>
           <PropositionsCourses
             isOnline={isOnline}
             isAvailable={isAvailable}
@@ -360,18 +360,18 @@ export default function DriverDashboard() {
           {/* Active Delivery */}
           {activeDelivery ? (
             <div className="lg:col-span-2">
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-bold text-white mb-6">{t('activeDelivery')}</h2>
+              <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">{t('activeDelivery')}</h2>
 
                 <div className="space-y-6">
                   {/* Pickup Location */}
                   <div>
                     <p className="text-orange-500 font-semibold mb-2">{t('toPickup')}</p>
-                    <div className="bg-gray-700 rounded-lg p-4 flex gap-3">
+                    <div className="bg-gray-100 rounded-lg p-4 flex gap-3">
                       <MapPin size={24} className="text-orange-500 flex-shrink-0" />
                       <div>
-                        <p className="text-white font-semibold">{activeDelivery.pickupAddress}</p>
-                        <p className="text-gray-400 text-sm">{activeDelivery.customerName}</p>
+                        <p className="text-gray-900 font-semibold">{activeDelivery.pickupAddress}</p>
+                        <p className="text-gray-500 text-sm">{activeDelivery.customerName}</p>
                       </div>
                     </div>
                   </div>
@@ -379,37 +379,37 @@ export default function DriverDashboard() {
                   {/* Delivery Location */}
                   <div>
                     <p className="text-green-500 font-semibold mb-2">{t('deliverTo')}</p>
-                    <div className="bg-gray-700 rounded-lg p-4 flex gap-3">
+                    <div className="bg-gray-100 rounded-lg p-4 flex gap-3">
                       <MapPin size={24} className="text-green-500 flex-shrink-0" />
                       <div>
-                        <p className="text-white font-semibold">{activeDelivery.deliveryAddress}</p>
-                        <p className="text-gray-400 text-sm">{activeDelivery.customerName}</p>
+                        <p className="text-gray-900 font-semibold">{activeDelivery.deliveryAddress}</p>
+                        <p className="text-gray-500 text-sm">{activeDelivery.customerName}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Delivery Info */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-700 rounded-lg p-4">
-                      <p className="text-gray-400 text-sm mb-2">{t('distance')}</p>
-                      <p className="text-white text-2xl font-bold">{activeDelivery.distance || 0} km</p>
+                    <div className="bg-gray-100 rounded-lg p-4">
+                      <p className="text-gray-500 text-sm mb-2">{t('distance')}</p>
+                      <p className="text-gray-900 text-2xl font-bold">{activeDelivery.distance || 0} km</p>
                     </div>
-                    <div className="bg-gray-700 rounded-lg p-4">
-                      <p className="text-gray-400 text-sm mb-2">Votre gain</p>
-                      <p className="text-white text-2xl font-bold">{euro(activeDelivery.payout || 0)}</p>
+                    <div className="bg-gray-100 rounded-lg p-4">
+                      <p className="text-gray-500 text-sm mb-2">Votre gain</p>
+                      <p className="text-gray-900 text-2xl font-bold">{euro(activeDelivery.payout || 0)}</p>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="space-y-3 pt-4 border-t border-gray-600">
+                  <div className="space-y-3 pt-4 border-t border-gray-300">
                     <Link href={`/driver/deliveries/${activeDelivery.id}`} className="block">
-                      <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2">
+                      <button className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2">
                         <MapPin size={20} />
                         {t('startDelivery')}
                       </button>
                     </Link>
 
-                    <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
+                    <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold py-2 rounded-lg transition">
                       {t('callCustomer')}
                     </button>
                   </div>
@@ -418,36 +418,36 @@ export default function DriverDashboard() {
             </div>
           ) : (
             <div className="lg:col-span-2">
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-bold text-white mb-6">{t('availableDeliveries')}</h2>
+              <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">{t('availableDeliveries')}</h2>
 
                 {deliveries.length === 0 ? (
                   <div className="text-center py-12">
-                    <Package size={48} className="mx-auto text-gray-600 mb-4" />
-                    <p className="text-white text-lg">{t('noDeliveries')}</p>
-                    <p className="text-gray-400">{t('newDeliveriesHere')}</p>
+                    <Package size={48} className="mx-auto text-gray-400 mb-4" />
+                    <p className="text-gray-900 text-lg">{t('noDeliveries')}</p>
+                    <p className="text-gray-500">{t('newDeliveriesHere')}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {deliveries.map((delivery) => (
                       <div
                         key={delivery.id}
-                        className="bg-gray-700 rounded-lg p-4 hover:bg-gray-650 transition cursor-pointer"
+                        className="bg-gray-100 rounded-lg p-4 hover:bg-gray-650 transition cursor-pointer"
                       >
                         <div className="flex justify-between items-start mb-3">
                           <div>
-                            <p className="text-white font-semibold">{t('orderNumber', { id: delivery.orderId.slice(0, 8) })}</p>
-                            <p className="text-gray-400 text-sm">{delivery.customerName}</p>
+                            <p className="text-gray-900 font-semibold">{t('orderNumber', { id: delivery.orderId.slice(0, 8) })}</p>
+                            <p className="text-gray-500 text-sm">{delivery.customerName}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-orange-400 font-bold">+ {euro(delivery.payout || 0)}</p>
+                            <p className="text-orange-600 font-bold">+ {euro(delivery.payout || 0)}</p>
                             {delivery.distance && (
-                              <p className="text-gray-400 text-sm">{delivery.distance} km</p>
+                              <p className="text-gray-500 text-sm">{delivery.distance} km</p>
                             )}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 text-gray-400 text-sm mb-4">
+                        <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
                           <Clock size={14} />
                           <span>{delivery.estimatedTime || 15} min</span>
                         </div>
@@ -468,24 +468,24 @@ export default function DriverDashboard() {
 
           {/* Driver Info Sidebar */}
           <div className="lg:col-span-1 space-y-8">
-            <div className="bg-gray-800 rounded-lg p-6 space-y-6">
+            <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-6">
               <div>
-                <p className="text-gray-400 text-sm mb-2">{t('profile')}</p>
+                <p className="text-gray-500 text-sm mb-2">{t('profile')}</p>
                 <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                   {driver.name.charAt(0)}
                 </div>
-                <p className="text-white font-semibold mt-3">{driver.name}</p>
-                <p className="text-gray-400 text-sm">{driver.phone}</p>
+                <p className="text-gray-900 font-semibold mt-3">{driver.name}</p>
+                <p className="text-gray-500 text-sm">{driver.phone}</p>
               </div>
 
-              <div className="pt-6 border-t border-gray-700 space-y-4">
+              <div className="pt-6 border-t border-gray-200 space-y-4">
                 <button
                   onClick={basculerDisponibilite}
                   disabled={!isAccountActive}
                   className={`w-full font-semibold py-2 rounded-lg transition ${
                     isOnline
                       ? 'bg-green-600 hover:bg-green-700 text-white'
-                      : 'bg-gray-700 hover:bg-gray-600 text-white'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
                   } ${!isAccountActive ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {/* Le bouton reflète le choix du livreur (en ligne), pas la
@@ -494,7 +494,7 @@ export default function DriverDashboard() {
                 </button>
 
                 {refus && (
-                  <p role="status" className="text-sm text-red-400">
+                  <p role="status" className="text-sm text-red-600">
                     {refus}
                   </p>
                 )}
@@ -510,25 +510,25 @@ export default function DriverDashboard() {
                 <ActiverNotifications />
 
                 <Link href="/driver/profile" className="block">
-                  <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
+                  <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold py-2 rounded-lg transition">
                     {t('myProfile')}
                   </button>
                 </Link>
 
                 <Link href="/driver/deliveries" className="block">
-                  <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
+                  <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold py-2 rounded-lg transition">
                     {t('myDeliveries')}
                   </button>
                 </Link>
 
                 {isAccountActive ? (
                   <Link href="/driver/earnings" className="block">
-                    <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition">
+                    <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold py-2 rounded-lg transition">
                       {t('seeEarnings')}
                     </button>
                   </Link>
                 ) : (
-                  <button disabled className="w-full bg-gray-600 text-gray-400 font-semibold py-2 rounded-lg opacity-50 cursor-not-allowed">
+                  <button disabled className="w-full bg-gray-200 text-gray-500 font-semibold py-2 rounded-lg opacity-50 cursor-not-allowed">
                     {t('earningsAccountValidation')}
                   </button>
                 )}

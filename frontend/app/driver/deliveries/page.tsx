@@ -65,14 +65,14 @@ function debutPeriode(periode: Periode): Date | null {
 }
 
 const STATUTS: Record<string, { label: string; classes: string; Icon: typeof Clock }> = {
-  ACCEPTED: { label: 'Acceptée', classes: 'bg-blue-900 text-blue-300', Icon: Package },
-  PICKED_UP: { label: 'En route', classes: 'bg-purple-900 text-purple-300', Icon: Navigation },
-  DELIVERED: { label: 'Livrée', classes: 'bg-green-900 text-green-300', Icon: CheckCircle },
-  CANCELLED: { label: 'Annulée', classes: 'bg-red-900 text-red-300', Icon: AlertCircle },
+  ACCEPTED: { label: 'Acceptée', classes: 'bg-blue-50 text-blue-700', Icon: Package },
+  PICKED_UP: { label: 'En route', classes: 'bg-purple-50 text-purple-700', Icon: Navigation },
+  DELIVERED: { label: 'Livrée', classes: 'bg-green-50 text-green-700', Icon: CheckCircle },
+  CANCELLED: { label: 'Annulée', classes: 'bg-red-50 text-red-700', Icon: AlertCircle },
 };
 
 function Badge({ status }: { status: string }) {
-  const s = STATUTS[status] || { label: status, classes: 'bg-gray-700 text-gray-300', Icon: Clock };
+  const s = STATUTS[status] || { label: status, classes: 'bg-gray-100 text-gray-700', Icon: Clock };
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold ${s.classes}`}>
       <s.Icon size={14} />
@@ -156,15 +156,15 @@ export default function HistoriqueCoursesPage() {
   const courses = reponse?.data || [];
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen">
       <header className="pt-4">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href="/driver" className="p-2 hover:bg-gray-700 rounded-lg transition" aria-label="Retour">
-            <ArrowLeft size={20} className="text-gray-400" />
+          <Link href="/driver" className="p-2 hover:bg-gray-100 rounded-lg transition" aria-label="Retour">
+            <ArrowLeft size={20} className="text-gray-500" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">Historique des courses</h1>
-            <p className="text-gray-400 text-sm">Toutes vos livraisons, gains et avis</p>
+            <h1 className="text-2xl font-bold text-gray-900">Historique des courses</h1>
+            <p className="text-gray-500 text-sm">Toutes vos livraisons, gains et avis</p>
           </div>
         </div>
       </header>
@@ -173,17 +173,17 @@ export default function HistoriqueCoursesPage() {
         {/* Résumé de la période */}
         {reponse && (
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-gray-800 rounded-lg p-4">
-              <p className="text-gray-400 text-xs">Livrées</p>
-              <p className="text-white text-2xl font-bold">{reponse.resume.livrees}</p>
+            <div className="bg-white ring-1 ring-gray-200 rounded-lg p-4">
+              <p className="text-gray-500 text-xs">Livrées</p>
+              <p className="text-gray-900 text-2xl font-bold">{reponse.resume.livrees}</p>
             </div>
-            <div className="bg-gray-800 rounded-lg p-4">
-              <p className="text-gray-400 text-xs">Gains</p>
-              <p className="text-white text-2xl font-bold">{euro(reponse.resume.gains)}</p>
+            <div className="bg-white ring-1 ring-gray-200 rounded-lg p-4">
+              <p className="text-gray-500 text-xs">Gains</p>
+              <p className="text-gray-900 text-2xl font-bold">{euro(reponse.resume.gains)}</p>
             </div>
-            <div className="bg-gray-800 rounded-lg p-4">
-              <p className="text-gray-400 text-xs">Distance</p>
-              <p className="text-white text-2xl font-bold">{km(reponse.resume.distanceKm)} km</p>
+            <div className="bg-white ring-1 ring-gray-200 rounded-lg p-4">
+              <p className="text-gray-500 text-xs">Distance</p>
+              <p className="text-gray-900 text-2xl font-bold">{km(reponse.resume.distanceKm)} km</p>
             </div>
           </div>
         )}
@@ -195,8 +195,8 @@ export default function HistoriqueCoursesPage() {
               <button
                 key={f.id}
                 onClick={() => changerFiltre(f.id)}
-                className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                  filtre === f.id ? 'bg-orange-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                className={`px-4 py-2 rounded-full font-semibold text-sm transition ${
+                  filtre === f.id ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-100'
                 }`}
               >
                 {f.label}
@@ -206,7 +206,7 @@ export default function HistoriqueCoursesPage() {
           <select
             value={periode}
             onChange={(e) => changerPeriode(e.target.value as Periode)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"
+            className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900"
             aria-label="Période"
           >
             {PERIODES.map((p) => (
@@ -218,7 +218,7 @@ export default function HistoriqueCoursesPage() {
         </div>
 
         {erreur && (
-          <div className="bg-red-900/30 border border-red-700/50 text-red-200 rounded-lg p-3 text-sm">{erreur}</div>
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm">{erreur}</div>
         )}
 
         {loading ? (
@@ -226,9 +226,9 @@ export default function HistoriqueCoursesPage() {
             <div className="w-10 h-10 border-4 border-orange-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : courses.length === 0 ? (
-          <div className="bg-gray-800 rounded-lg p-12 text-center">
-            <Package size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-white text-lg">Aucune course sur cette période</p>
+          <div className="bg-white ring-1 ring-gray-200 rounded-lg p-12 text-center">
+            <Package size={48} className="mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-900 text-lg">Aucune course sur cette période</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -236,56 +236,56 @@ export default function HistoriqueCoursesPage() {
               const enCours = c.status === 'ACCEPTED' || c.status === 'PICKED_UP';
               const contenu = (
                 <div
-                  className={`bg-gray-800 rounded-lg p-4 border border-gray-700 ${
+                  className={`bg-white rounded-lg p-4 border border-gray-200 ${
                     enCours ? 'hover:border-orange-600 cursor-pointer' : ''
                   }`}
                 >
                   <div className="flex flex-wrap justify-between items-start gap-3">
                     <div>
-                      <p className="text-white font-semibold">{c.store || 'Commerce'}</p>
+                      <p className="text-gray-900 font-semibold">{c.store || 'Commerce'}</p>
                       <p className="text-gray-500 text-xs">
                         #{c.orderId.slice(0, 8)} · {date(c.createdAt)}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
                       {c.status === 'DELIVERED' && (
-                        <span className="text-green-400 font-bold text-lg">{euro(c.payout)}</span>
+                        <span className="text-green-600 font-bold text-lg">{euro(c.payout)}</span>
                       )}
                       <Badge status={c.status} />
                     </div>
                   </div>
 
                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                    <p className="flex items-start gap-2 text-gray-300">
+                    <p className="flex items-start gap-2 text-gray-700">
                       <MapPin size={14} className="text-orange-500 mt-0.5 flex-shrink-0" />
                       {c.pickupAddress || '—'}
                     </p>
-                    <p className="flex items-start gap-2 text-gray-300">
+                    <p className="flex items-start gap-2 text-gray-700">
                       <MapPin size={14} className="text-green-500 mt-0.5 flex-shrink-0" />
                       {c.deliveryCity || '—'}
                     </p>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-400">
+                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500">
                     {c.distanceKm != null && <span>{km(c.distanceKm)} km</span>}
                     {c.durationMin != null && <span>{c.durationMin} min de course</span>}
                     {c.deliveredAt && <span>Livrée {date(c.deliveredAt)}</span>}
                     {c.proofType && <span>Preuve : {c.proofType === 'CODE' ? 'code client' : 'photo'}</span>}
                     {c.rating && (
-                      <span className="inline-flex items-center gap-1 text-yellow-400">
+                      <span className="inline-flex items-center gap-1 text-yellow-600">
                         <Star size={12} fill="currentColor" /> {c.rating.note}/5
-                        {c.rating.commentaire && <span className="text-gray-400"> — « {c.rating.commentaire} »</span>}
+                        {c.rating.commentaire && <span className="text-gray-500"> — « {c.rating.commentaire} »</span>}
                       </span>
                     )}
                     {(c.pourboire ?? 0) > 0 && (
-                      <span className="inline-flex items-center gap-1 text-yellow-400 font-semibold">
+                      <span className="inline-flex items-center gap-1 text-yellow-600 font-semibold">
                         <Gift size={12} /> Pourboire ({euro(c.pourboire!)})
                       </span>
                     )}
                   </div>
 
                   {c.status === 'CANCELLED' && c.cancellationReason && (
-                    <p className="mt-2 text-xs text-red-300">Motif : {c.cancellationReason}</p>
+                    <p className="mt-2 text-xs text-red-700">Motif : {c.cancellationReason}</p>
                   )}
                 </div>
               );
@@ -308,17 +308,17 @@ export default function HistoriqueCoursesPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-4 py-2 bg-gray-800 rounded-lg text-white disabled:opacity-40"
+              className="px-4 py-2 bg-white ring-1 ring-gray-200 rounded-lg text-gray-900 disabled:opacity-40"
             >
               Précédent
             </button>
-            <span className="text-gray-400 text-sm">
+            <span className="text-gray-500 text-sm">
               Page {reponse.pagination.page} / {reponse.pagination.pages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(reponse.pagination.pages, p + 1))}
               disabled={page >= reponse.pagination.pages}
-              className="px-4 py-2 bg-gray-800 rounded-lg text-white disabled:opacity-40"
+              className="px-4 py-2 bg-white ring-1 ring-gray-200 rounded-lg text-gray-900 disabled:opacity-40"
             >
               Suivant
             </button>

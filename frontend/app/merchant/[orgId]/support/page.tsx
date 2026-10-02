@@ -221,7 +221,7 @@ export default function SupportPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-200 text-white font-bold py-2 rounded-lg"
+                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-2 rounded-lg"
               >
                 {submitting ? 'Envoi...' : 'Soumettre'}
               </button>

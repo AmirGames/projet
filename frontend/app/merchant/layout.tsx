@@ -14,7 +14,8 @@ import {
   Plus,
   Store,
   UserCog,
-  X,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 
 import { memoriserBoutique } from '@/lib/current-store';
@@ -39,9 +40,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 // Seule la couleur reste ici : le nom d'une formule se règle côté plateforme,
 // et une copie locale afficherait « Premium » après un renommage.
 const COULEURS: Record<string, string> = {
-  FREE: 'bg-gray-600/40 text-gray-300 border-gray-500/40',
-  PREMIUM: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-  PRO: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+  FREE: 'bg-gray-100 text-gray-600 border-gray-200',
+  PREMIUM: 'bg-sky-50 text-sky-800 border-sky-200',
+  PRO: 'bg-amber-50 text-amber-800 border-amber-200',
 };
 
 interface Boutique {
@@ -51,7 +52,10 @@ interface Boutique {
 }
 
 export default function MerchantLayout({ children }: { children: React.ReactNode }) {
+  // Sur grand écran, la barre se replie en icônes ; sur téléphone, c'est un
+  // tiroir fermé par défaut, qui se referme à chaque lien suivi.
   const [menuOuvert, setMenuOuvert] = useState(true);
+  const [tiroir, setTiroir] = useState(false);
   const [boutiques, setBoutiques] = useState<Boutique[]>([]);
   const [formule, setFormule] = useState<{ code: string; libelle: string } | null>(null);
   const [orgId, setOrgId] = useState('');
@@ -114,25 +118,35 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
   if (!auNiveauDuChoix) return <>{children}</>;
 
   const lienSecondaire =
-    'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-700 hover:text-white';
+    'flex items-center gap-3 px-3 py-2 rounded-[10px] text-sm font-semibold transition-colors text-gray-700 hover:bg-gray-100 hover:text-gray-900';
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-gray-100">
+    <div className="flex min-h-screen bg-[#F7F7F6] text-gray-900">
+      {/* Le voile derrière le tiroir, sur téléphone. */}
+      {tiroir && (
+        <button
+          type="button"
+          aria-label="Fermer le menu"
+          onClick={() => setTiroir(false)}
+          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+        />
+      )}
+
       <aside
-        className={`${
-          menuOuvert ? 'w-64' : 'w-20'
-        } bg-gray-800 border-r border-gray-700 transition-all duration-300 flex flex-col`}
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-[#ECECEA] bg-white transition-all duration-300 lg:static lg:translate-x-0 ${
+          tiroir ? 'translate-x-0' : '-translate-x-full'
+        } ${menuOuvert ? 'lg:w-64' : 'lg:w-20'}`}
       >
-        <div className="p-6 border-b border-gray-700">
-          <SelecteurEspace actuel="merchant" href="/merchant" className="gap-3 -m-2 p-2 w-full min-w-0" chevron={menuOuvert}>
-            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+        <div className="p-6 border-b border-gray-200">
+          <SelecteurEspace actuel="merchant" href="/merchant" clair className="gap-3 -m-2 p-2 w-full min-w-0" chevron={menuOuvert || tiroir}>
+            <div className="w-10 h-10 bg-orange-600 text-white rounded-xl flex items-center justify-center font-extrabold flex-shrink-0">
               <LayoutGrid size={20} />
             </div>
-            {menuOuvert && (
+            {(menuOuvert || tiroir) && (
               <div className="min-w-0">
                 <p className="font-bold text-sm truncate">Mes commerces</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-gray-400">Commerçant</span>
+                  <span className="text-xs text-gray-500">Commerçant</span>
                   {formule && (
                     <span
                       title={`Formule ${formule.libelle}`}
@@ -150,7 +164,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {menuOuvert && (
+          {(menuOuvert || tiroir) && (
             <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
               Boutiques
             </p>
@@ -161,11 +175,11 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
               key={boutique.id}
               type="button"
               onClick={() => ouvrirBoutique(boutique.id)}
-              title={menuOuvert ? undefined : boutique.name}
+              title={menuOuvert || tiroir ? undefined : boutique.name}
               className={`${lienSecondaire} w-full text-left`}
             >
               <Store size={20} className="flex-shrink-0" />
-              {menuOuvert && (
+              {(menuOuvert || tiroir) && (
                 <span className="min-w-0">
                   <span className="block truncate">{boutique.name}</span>
                   {boutique.city && (
@@ -180,65 +194,77 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             <p className="px-4 py-3 text-sm text-gray-500">Aucune boutique pour l&apos;instant.</p>
           )}
 
-          <div className="pt-3 mt-3 border-t border-gray-700 space-y-1">
-            <Link href="/store/new" title={menuOuvert ? undefined : 'Nouvelle boutique'} className={lienSecondaire}>
+          <div className="pt-3 mt-3 border-t border-gray-200 space-y-1">
+            <Link href="/store/new" onClick={() => setTiroir(false)} title={menuOuvert ? undefined : 'Nouvelle boutique'} className={lienSecondaire}>
               <Plus size={20} className="flex-shrink-0" />
-              {menuOuvert && <span className="truncate">Nouvelle boutique</span>}
+              {(menuOuvert || tiroir) && <span className="truncate">Nouvelle boutique</span>}
             </Link>
 
             <Link
               href="/merchant/formule"
+              onClick={() => setTiroir(false)}
               title={menuOuvert ? undefined : 'Ma formule'}
               className={lienSecondaire}
             >
               <CreditCard size={20} className="flex-shrink-0" />
-              {menuOuvert && <span className="truncate">Ma formule</span>}
+              {(menuOuvert || tiroir) && <span className="truncate">Ma formule</span>}
             </Link>
 
             <Link
               href="/merchant/profil"
+              onClick={() => setTiroir(false)}
               title={menuOuvert ? undefined : 'Mon profil'}
               className={lienSecondaire}
             >
               <UserCog size={20} className="flex-shrink-0" />
-              {menuOuvert && <span className="truncate">Mon profil</span>}
+              {(menuOuvert || tiroir) && <span className="truncate">Mon profil</span>}
             </Link>
 
             {orgId && (
               <Link
                 href={`/merchant/${orgId}/support`}
+                onClick={() => setTiroir(false)}
                 title={menuOuvert ? undefined : 'Support'}
                 className={lienSecondaire}
               >
                 <MessageCircle size={20} className="flex-shrink-0" />
-                {menuOuvert && <span className="truncate">Support</span>}
+                {(menuOuvert || tiroir) && <span className="truncate">Support</span>}
               </Link>
             )}
           </div>
         </nav>
 
-        <div className="p-4 border-t border-gray-700">
+        <div className="p-4 border-t border-gray-200">
           <button
             onClick={seDeconnecter}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-900/20 transition-colors text-red-400"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-50 transition-colors text-red-600"
           >
             <LogOut size={20} className="flex-shrink-0" />
-            {menuOuvert && <span className="truncate">Déconnexion</span>}
+            {(menuOuvert || tiroir) && <span className="truncate">Déconnexion</span>}
           </button>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col">
-        <header className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 bg-white border-b border-[#ECECEA] px-4 py-3 sm:px-6 flex items-center justify-between gap-3">
           <button
-            onClick={() => setMenuOuvert(!menuOuvert)}
-            title={menuOuvert ? 'Replier le menu' : 'Déplier le menu'}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+            type="button"
+            onClick={() => setTiroir(true)}
+            aria-label="Ouvrir le menu"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
           >
-            {menuOuvert ? <X size={24} /> : <Menu size={24} />}
+            <Menu size={22} />
           </button>
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-400">
+          <button
+            type="button"
+            onClick={() => setMenuOuvert(!menuOuvert)}
+            aria-label={menuOuvert ? 'Replier le menu' : 'Déplier le menu'}
+            className="hidden p-2 hover:bg-gray-100 rounded-lg transition-colors lg:block"
+          >
+            {menuOuvert ? <ChevronsLeft size={20} /> : <ChevronsRight size={20} />}
+          </button>
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+            <div className="hidden text-sm text-gray-500 md:block">
               {pathname === '/merchant/formule'
                 ? 'Votre formule et la grille tarifaire'
                 : pathname === '/merchant/profil'
@@ -247,8 +273,8 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             </div>
             {/* Une réponse du support arrive souvent pendant qu'on choisit sa
                 boutique : la cloche manquait à ce niveau-là. */}
-            <NotificationBell />
-            <LanguageSwitcher />
+            <NotificationBell clair />
+            <LanguageSwitcher clair />
           </div>
         </header>
 
@@ -256,7 +282,7 @@ export default function MerchantLayout({ children }: { children: React.ReactNode
             cela, elle ne sonnait qu'une fois une boutique ouverte. */}
         {orgId && <AlerteCommandes orgId={orgId} toutesBoutiques />}
 
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 overflow-auto">{children}</main>
       </div>
     </div>
   );

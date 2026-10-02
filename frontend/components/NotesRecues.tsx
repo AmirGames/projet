@@ -54,15 +54,15 @@ export function NotesRecues() {
   if (chargement) return null;
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6">
+    <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
           <Star size={18} className="text-orange-500" />
           Ce que disent les clients
         </h2>
 
         {moyenne != null && (
-          <span className="flex items-center gap-2 text-sm text-gray-300">
+          <span className="flex items-center gap-2 text-sm text-gray-700">
             <Etoiles valeur={moyenne} taille={14} />
             {moyenne.toFixed(1).replace('.', ',')} · {avis} avis
           </span>
@@ -76,7 +76,7 @@ export function NotesRecues() {
       ) : (
         <ul className="space-y-3">
           {notes.map((ligne) => (
-            <li key={ligne.id} className="border-b border-gray-700 last:border-0 pb-3 last:pb-0">
+            <li key={ligne.id} className="border-b border-gray-200 last:border-0 pb-3 last:pb-0">
               <div className="flex items-center gap-2">
                 <Etoiles valeur={ligne.note} taille={14} />
                 <span className="text-xs text-gray-500">
@@ -84,7 +84,7 @@ export function NotesRecues() {
                 </span>
               </div>
               {ligne.commentaire && (
-                <p className="text-sm text-gray-300 mt-1">{ligne.commentaire}</p>
+                <p className="text-sm text-gray-700 mt-1">{ligne.commentaire}</p>
               )}
             </li>
           ))}

@@ -528,7 +528,7 @@ export default function ReviewPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-200 text-white font-bold py-3 rounded-lg transition"
+                className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition"
               >
                 {submitting ? t('submitting') : expressMode ? t('submitExpress') : t('submitReview')}
               </button>

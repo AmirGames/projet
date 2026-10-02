@@ -132,60 +132,60 @@ export default function MaFormulePage() {
   };
 
   if (chargement) {
-    return <div className="p-8 text-gray-400">Chargement de votre formule…</div>;
+    return <div className="p-8 text-gray-500">Chargement de votre formule…</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="text-gray-900">
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
           <Link
             href="/merchant"
             aria-label={t('back')}
             title={t('back')}
-            className="p-2 hover:bg-gray-800 rounded-lg transition"
+            className="p-2 hover:bg-white rounded-lg transition"
           >
             <ArrowLeft size={20} />
           </Link>
           <div>
             <h1 className="text-3xl font-bold">Ma formule</h1>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-500 text-sm">
               Ce à quoi vous avez souscrit, et ce que proposent les autres formules.
             </p>
           </div>
         </div>
 
         {erreur && (
-          <div className="bg-red-900/30 border border-red-700 text-red-200 rounded-lg px-4 py-3">
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3">
             {erreur}
           </div>
         )}
         {message && (
-          <div className="bg-green-900/30 border border-green-700 text-green-200 rounded-lg px-4 py-3">
+          <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3">
             {message}
           </div>
         )}
 
         {quota && (
-          <section className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-sm text-gray-400 mb-1">Formule en cours</p>
+          <section className="bg-white border border-gray-200 rounded-lg p-6">
+            <p className="text-sm text-gray-500 mb-1">Formule en cours</p>
             <div className="flex items-baseline gap-3 flex-wrap">
               <h2 className="text-2xl font-bold">{quota.tierLabel}</h2>
-              <span className="flex items-center gap-1 text-gray-400">
+              <span className="flex items-center gap-1 text-gray-500">
                 <Store size={16} />
                 {quota.used} boutique{quota.used > 1 ? 's' : ''} sur {quota.max}
               </span>
             </div>
 
             {quota.customTerms && (
-              <p className="mt-3 text-sm text-amber-300">
+              <p className="mt-3 text-sm text-amber-700">
                 Vous bénéficiez de conditions négociées avec la plateforme : elles remplacent celles de la
                 formule.
               </p>
             )}
 
             {quota.commissionFree && (
-              <p className="mt-3 flex items-center gap-2 text-sm text-pink-300">
+              <p className="mt-3 flex items-center gap-2 text-sm text-pink-700">
                 <Gift size={16} className="flex-shrink-0" />
                 Offert : aucune commission sur vos ventes
                 {quota.commissionFreeUntil
@@ -195,7 +195,7 @@ export default function MaFormulePage() {
             )}
 
             {!quota.canCreate && (
-              <p className="mt-3 text-sm text-amber-300">
+              <p className="mt-3 text-sm text-amber-700">
                 Vous avez atteint la limite de votre formule.
                 {quota.upgradeAvailable
                   ? ` La formule ${quota.nextTierLabel} en autorise davantage.`
@@ -206,11 +206,11 @@ export default function MaFormulePage() {
         )}
 
         {demande && (
-          <section className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 flex items-start gap-3">
-            <Clock size={20} className="text-blue-300 flex-shrink-0 mt-0.5" />
+          <section className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+            <Clock size={20} className="text-blue-700 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-blue-200">{demande.title}</p>
-              <p className="text-sm text-blue-300/80">
+              <p className="font-semibold text-blue-800">{demande.title}</p>
+              <p className="text-sm text-blue-700/80">
                 Demande déposée le{' '}
                 {new Date(demande.createdAt).toLocaleDateString('fr-FR', {
                   day: 'numeric',
@@ -234,14 +234,14 @@ export default function MaFormulePage() {
                 key={formule.code}
                 className={`rounded-lg p-6 border flex flex-col ${
                   actuelle
-                    ? 'bg-gray-800 border-orange-500'
-                    : 'bg-gray-800/60 border-gray-700'
+                    ? 'bg-white border-orange-500'
+                    : 'bg-gray-50 border-gray-200'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xl font-bold">{formule.libelle}</h3>
                   {actuelle && (
-                    <span className="px-2 py-0.5 rounded border border-orange-500/50 bg-orange-500/15 text-orange-300 text-xs font-semibold uppercase tracking-wide">
+                    <span className="px-2 py-0.5 rounded border border-orange-500/50 bg-orange-100 text-orange-700 text-xs font-semibold uppercase tracking-wide">
                       En cours
                     </span>
                   )}
@@ -252,7 +252,7 @@ export default function MaFormulePage() {
                 <p className="text-3xl font-bold mb-1">
                   {formule.prixMensuel === 0 ? 'Gratuit' : euro(parSemaine(formule.prixMensuel))}
                   {formule.prixMensuel > 0 && (
-                    <span className="text-sm font-normal text-gray-400"> / semaine</span>
+                    <span className="text-sm font-normal text-gray-500"> / semaine</span>
                   )}
                 </p>
                 {formule.prixMensuel > 0 && (
@@ -260,14 +260,14 @@ export default function MaFormulePage() {
                     Soit {euro(formule.prixMensuel)} facturés par mois
                   </p>
                 )}
-                <p className="text-sm text-gray-400 mb-4">
+                <p className="text-sm text-gray-500 mb-4">
                   {formule.maxBoutiques} boutique{formule.maxBoutiques > 1 ? 's' : ''}
                 </p>
 
                 <ul className="space-y-2 mb-6 flex-1">
                   {formule.avantages.map((avantage) => (
-                    <li key={avantage} className="flex items-start gap-2 text-sm text-gray-300">
-                      <Check size={16} className="text-green-400 flex-shrink-0 mt-0.5" />
+                    <li key={avantage} className="flex items-start gap-2 text-sm text-gray-700">
+                      <Check size={16} className="text-green-600 flex-shrink-0 mt-0.5" />
                       {avantage}
                     </li>
                   ))}
@@ -287,7 +287,7 @@ export default function MaFormulePage() {
                     }
                     className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg font-semibold transition ${
                       demande
-                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                         : 'bg-orange-600 hover:bg-orange-700'
                     }`}
                   >

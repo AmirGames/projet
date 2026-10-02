@@ -252,14 +252,14 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
       {alerte}
 
       {erreur && (
-        <div className="bg-red-900/30 border border-red-700/50 text-red-200 rounded-lg p-3 text-sm">
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm">
           {erreur}
         </div>
       )}
 
       {visibles.length === 0 && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center text-gray-400">
-          <Navigation size={28} className="mx-auto mb-2 text-gray-600" />
+        <div className="bg-white border border-gray-200 rounded-lg p-6 text-center text-gray-500">
+          <Navigation size={28} className="mx-auto mb-2 text-gray-400" />
           <p>En attente d&apos;une course...</p>
           <p className="text-xs text-gray-500 mt-1">
             Vous serez prévenu dès qu&apos;une commande est prête près de vous.
@@ -290,7 +290,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
         return (
           <div
             key={proposition.id}
-            className="bg-gradient-to-b from-gray-800 to-gray-900 border-2 border-green-600 rounded-xl p-6 space-y-4 shadow-lg overflow-hidden relative"
+            className="bg-white border-2 border-green-600 rounded-xl p-6 space-y-4 shadow-lg overflow-hidden relative"
           >
             {/* Timer indicator */}
             <div className="absolute top-3 right-3">
@@ -310,37 +310,37 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
 
             {/* Montant principal */}
             <div className="pt-2">
-              <p className="text-gray-400 text-sm mb-1">Vous gagnerez</p>
-              <p className="text-4xl font-bold text-white">{euro(proposition.payout)}</p>
+              <p className="text-gray-500 text-sm mb-1">Vous gagnerez</p>
+              <p className="text-4xl font-bold text-gray-900">{euro(proposition.payout)}</p>
             </div>
 
             {/* Distance et temps */}
-            <div className="bg-gray-800/50 rounded-lg p-3 flex gap-6">
+            <div className="bg-gray-50 rounded-lg p-3 flex gap-6">
               {/* Le trajet de livraison est ce qui est payé ; l'approche
                   aide seulement à décider. */}
               <div>
-                <p className="text-gray-400 text-xs mb-1">Livraison (payée)</p>
-                <div className="flex items-center gap-1 text-white font-semibold">
+                <p className="text-gray-500 text-xs mb-1">Livraison (payée)</p>
+                <div className="flex items-center gap-1 text-gray-900 font-semibold">
                   <MapPin size={16} className="text-orange-500" />
                   {proposition.distanceKm != null ? `${km(proposition.distanceKm)} km` : '?'}
                 </div>
               </div>
               {proposition.approcheKm != null && (
                 <>
-                  <div className="border-l border-gray-700"></div>
+                  <div className="border-l border-gray-200"></div>
                   <div>
-                    <p className="text-gray-400 text-xs mb-1">Jusqu&apos;au commerce</p>
-                    <div className="flex items-center gap-1 text-white font-semibold">
-                      <Navigation size={16} className="text-gray-400" />
+                    <p className="text-gray-500 text-xs mb-1">Jusqu&apos;au commerce</p>
+                    <div className="flex items-center gap-1 text-gray-900 font-semibold">
+                      <Navigation size={16} className="text-gray-500" />
                       {km(proposition.approcheKm)} km
                     </div>
                   </div>
                 </>
               )}
-              <div className="border-l border-gray-700"></div>
+              <div className="border-l border-gray-200"></div>
               <div>
-                <p className="text-gray-400 text-xs mb-1">Durée estimée</p>
-                <div className="flex items-center gap-1 text-white font-semibold">
+                <p className="text-gray-500 text-xs mb-1">Durée estimée</p>
+                <div className="flex items-center gap-1 text-gray-900 font-semibold">
                   <Timer size={16} className="text-blue-500" />
                   {tempsEstime} min
                 </div>
@@ -349,10 +349,10 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
 
             {/* Lieu de prise en charge */}
             <div>
-              <p className="text-gray-400 text-xs uppercase tracking-wider mb-2 font-semibold">À récupérer</p>
-              <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-3">
-                <p className="text-white font-semibold text-sm">{pickupName}</p>
-                <p className="text-gray-300 text-xs mt-1">
+              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2 font-semibold">À récupérer</p>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                <p className="text-gray-900 font-semibold text-sm">{pickupName}</p>
+                <p className="text-gray-700 text-xs mt-1">
                   {pickupAddr}
                   {pickupCity ? `, ${pickupCity}` : ''}
                 </p>
@@ -361,13 +361,13 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
 
             {/* Lieu de livraison */}
             <div>
-              <p className="text-gray-400 text-xs uppercase tracking-wider mb-2 font-semibold">À livrer</p>
-              <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-3">
-                <p className="text-white font-semibold text-sm flex items-center gap-2">
+              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2 font-semibold">À livrer</p>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-gray-900 font-semibold text-sm flex items-center gap-2">
                   <MapPin size={14} className="text-green-500" />
                   Adresse de livraison
                 </p>
-                <p className="text-gray-300 text-xs mt-1">
+                <p className="text-gray-700 text-xs mt-1">
                   {deliveryAddr}
                   {deliveryPostal || deliveryCity
                     ? `, ${[deliveryPostal, deliveryCity].filter(Boolean).join(' ')}`
@@ -393,7 +393,7 @@ export function PropositionsCourses({ isOnline, isAvailable, surAcceptation, sur
                 type="button"
                 onClick={() => repondre(proposition.id, 'decline')}
                 disabled={enCours === proposition.id}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-gray-200 font-semibold py-3 rounded-lg transition"
+                className="flex-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-800 font-semibold py-3 rounded-lg transition"
               >
                 {enCours === proposition.id ? '...' : 'Refuser'}
               </button>

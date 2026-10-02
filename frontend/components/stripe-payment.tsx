@@ -160,7 +160,7 @@ function StripePaymentForm({
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-200 text-white font-semibold py-3 rounded-lg transition"
+        className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition"
       >
         {loading ? t('loading') : t('payButton', { amount: euro(amount) })}
       </button>
