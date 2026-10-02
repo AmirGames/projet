@@ -51,11 +51,11 @@ export default function MotDePasseOublie() {
   // le profil, pas par un lien envoyé par e-mail.
   if (!isLoading && isAuthenticated) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
-        <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg w-full max-w-md text-center space-y-4">
-          <h1 className="text-2xl font-bold text-slate-900">Vous êtes connecté</h1>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10 text-center space-y-4">
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Vous êtes connecté</h1>
           <p className="text-slate-600">Veuillez changer votre mot de passe depuis votre profil.</p>
-          <Link href="/" className="inline-block mt-2 text-primary hover:text-primary-hover font-medium transition">
+          <Link href="/" className="inline-block mt-2 font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600">
             Retour à l&apos;accueil
           </Link>
         </div>
@@ -64,12 +64,12 @@ export default function MotDePasseOublie() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
-      <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10">
         {envoye ? (
           <div className="text-center space-y-4">
-            <MailCheck size={48} className="mx-auto text-primary" />
-            <h1 className="text-2xl font-bold text-slate-900">Regardez vos e-mails</h1>
+            <MailCheck size={48} className="mx-auto text-gray-900" />
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Regardez vos e-mails</h1>
             <p className="text-slate-600">
               Si un compte existe pour <strong className="text-slate-900">{email}</strong>, un lien de
               réinitialisation vient d&apos;y être envoyé.
@@ -79,14 +79,14 @@ export default function MotDePasseOublie() {
             </p>
             <Link
               href="/login"
-              className="inline-block mt-2 text-primary hover:text-primary-hover font-medium transition"
+              className="inline-block mt-2 font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600"
             >
               Retour à la connexion
             </Link>
           </div>
         ) : (
           <>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2 text-center">Mot de passe oublié</h1>
+            <h1 className="mb-2 text-center text-3xl font-extrabold tracking-tight text-gray-900">Mot de passe oublié</h1>
             <p className="text-slate-600 text-center mb-6">
               Indiquez votre adresse, nous vous enverrons un lien pour en choisir un nouveau.
             </p>
@@ -95,7 +95,7 @@ export default function MotDePasseOublie() {
 
             <form onSubmit={envoyer} className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-slate-700 font-medium mb-2">
+                <label htmlFor="email" className="mb-1.5 block text-sm font-semibold text-gray-700">
                   Adresse e-mail
                 </label>
                 <input
@@ -103,7 +103,7 @@ export default function MotDePasseOublie() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
                   placeholder="vous@exemple.fr"
                   required
                   autoFocus
@@ -113,14 +113,14 @@ export default function MotDePasseOublie() {
               <button
                 type="submit"
                 disabled={envoiEnCours}
-                className="w-full bg-accent hover:bg-accent-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 transition"
+                className="w-full rounded-full bg-gray-900 px-4 py-3.5 font-bold text-white transition hover:bg-gray-800 disabled:opacity-50"
               >
                 {envoiEnCours ? 'Envoi...' : 'Envoyer le lien'}
               </button>
             </form>
 
             <div className="mt-6 text-center">
-              <Link href="/login" className="text-slate-600 hover:text-primary font-medium transition">
+              <Link href="/login" className="font-medium text-gray-600 transition hover:text-gray-900">
                 Retour à la connexion
               </Link>
             </div>

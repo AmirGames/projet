@@ -66,14 +66,14 @@ function Formulaire() {
   if (!jeton) {
     return (
       <div className="text-center space-y-4">
-        <h1 className="text-2xl font-bold text-slate-900">Lien incomplet</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Lien incomplet</h1>
         <p className="text-slate-600">
           Cette adresse ne contient pas de jeton. Ouvrez le lien depuis l&apos;e-mail reçu, ou
           demandez-en un nouveau.
         </p>
         <Link
           href="/mot-de-passe-oublie"
-          className="inline-block text-primary hover:text-primary-hover font-medium transition"
+          className="inline-block font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600"
         >
           Demander un nouveau lien
         </Link>
@@ -84,10 +84,10 @@ function Formulaire() {
   if (reussi) {
     return (
       <div className="text-center space-y-4">
-        <CheckCircle2 size={48} className="mx-auto text-primary" />
-        <h1 className="text-2xl font-bold text-slate-900">Mot de passe modifié</h1>
+        <CheckCircle2 size={48} className="mx-auto text-gray-900" />
+        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Mot de passe modifié</h1>
         <p className="text-slate-600">Vous allez être redirigé vers la connexion.</p>
-        <Link href="/login" className="inline-block text-primary hover:text-primary-hover font-medium transition">
+        <Link href="/login" className="inline-block font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600">
           Se connecter maintenant
         </Link>
       </div>
@@ -96,7 +96,7 @@ function Formulaire() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold text-slate-900 mb-2 text-center">Nouveau mot de passe</h1>
+      <h1 className="mb-2 text-center text-3xl font-extrabold tracking-tight text-gray-900">Nouveau mot de passe</h1>
       <p className="text-slate-600 text-center mb-6">
         Au moins 8 caractères, dont un chiffre, une minuscule et une majuscule.
       </p>
@@ -105,7 +105,7 @@ function Formulaire() {
 
       <form onSubmit={valider} className="space-y-4">
         <div>
-          <label htmlFor="motdepasse" className="block text-slate-700 font-medium mb-2">
+          <label htmlFor="motdepasse" className="mb-1.5 block text-sm font-semibold text-gray-700">
             Mot de passe
           </label>
           <input
@@ -113,7 +113,7 @@ function Formulaire() {
             type="password"
             value={motDePasse}
             onChange={(e) => setMotDePasse(e.target.value)}
-            className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
             placeholder="••••••••"
             minLength={8}
             autoComplete="new-password"
@@ -124,7 +124,7 @@ function Formulaire() {
         </div>
 
         <div>
-          <label htmlFor="confirmation" className="block text-slate-700 font-medium mb-2">
+          <label htmlFor="confirmation" className="mb-1.5 block text-sm font-semibold text-gray-700">
             Confirmation
           </label>
           <input
@@ -132,7 +132,7 @@ function Formulaire() {
             type="password"
             value={confirmation}
             onChange={(e) => setConfirmation(e.target.value)}
-            className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
             placeholder="••••••••"
             minLength={8}
             autoComplete="new-password"
@@ -143,7 +143,7 @@ function Formulaire() {
         <button
           type="submit"
           disabled={enCours}
-          className="w-full bg-accent hover:bg-accent-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 transition"
+          className="w-full rounded-full bg-gray-900 px-4 py-3.5 font-bold text-white transition hover:bg-gray-800 disabled:opacity-50"
         >
           {enCours ? 'Enregistrement...' : t('save')}
         </button>
@@ -154,8 +154,8 @@ function Formulaire() {
 
 export default function Reinitialiser() {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
-      <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10">
         {/* useSearchParams impose une frontière de suspense au rendu statique. */}
         <Suspense fallback={<p className="text-center text-slate-600">Chargement...</p>}>
           <Formulaire />
