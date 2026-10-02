@@ -2,23 +2,23 @@ import Link from '@/components/LienRegional';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+    <div className="min-h-screen bg-[#F7F7F6] text-gray-900 flex items-center justify-center px-4">
       <div className="text-center max-w-md">
-        <h1 className="text-8xl font-bold mb-4 text-blue-500">404</h1>
-        <h2 className="text-3xl font-bold mb-4">Page non trouvée</h2>
-        <p className="text-xl text-gray-400 mb-8">
+        <h1 className="text-8xl font-extrabold tracking-tight mb-4 text-orange-600">404</h1>
+        <h2 className="text-3xl font-extrabold tracking-tight mb-4">Page non trouvée</h2>
+        <p className="text-lg text-gray-500 mb-8">
           Désolé, la page que vous recherchez n'existe pas ou a été supprimée.
         </p>
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-wrap gap-3 justify-center">
           <Link
             href="/"
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
+            className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-full font-bold"
           >
             Retour à l'accueil
           </Link>
           <Link
             href="/dashboard"
-            className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold"
+            className="px-6 py-3 bg-white border border-gray-200 hover:border-gray-400 text-gray-900 rounded-full font-bold"
           >
             Tableau de bord
           </Link>

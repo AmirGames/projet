@@ -187,36 +187,36 @@ export default function UserManagementPage() {
 
   const getRoleColor = (role: string) => {
     const colors: { [key: string]: string } = {
-      SUPEROWNER: 'bg-red-600',
-      ADMIN: 'bg-blue-600',
-      SUPER_ADMIN: 'bg-orange-600',
-      SUPPORT: 'bg-purple-600',
+      SUPEROWNER: 'bg-red-100',
+      ADMIN: 'bg-sky-100',
+      SUPER_ADMIN: 'bg-orange-100',
+      SUPPORT: 'bg-purple-100',
     };
-    return colors[role] || 'bg-gray-600';
+    return colors[role] || 'bg-gray-200';
   };
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
-      ACTIVE: 'text-green-400',
-      INACTIVE: 'text-gray-400',
-      SUSPENDED: 'text-red-400',
+      ACTIVE: 'text-green-600',
+      INACTIVE: 'text-gray-500',
+      SUSPENDED: 'text-red-600',
     };
-    return colors[status] || 'text-gray-400';
+    return colors[status] || 'text-gray-500';
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <Users className="w-8 h-8" />
             {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">{t('subtitle')}</p>
+          <p className="text-gray-500 mt-2">{t('subtitle')}</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg transition"
         >
           <Plus size={20} />
           {t('addAdmin')}
@@ -224,14 +224,14 @@ export default function UserManagementPage() {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20">
           {error}
         </div>
       )}
 
       {showForm && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-white mb-4">{t('newAdminTitle')}</h2>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">{t('newAdminTitle')}</h2>
           <form onSubmit={handleAddAdmin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">{t('email')}</label>
@@ -239,7 +239,7 @@ export default function UserManagementPage() {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
                 placeholder="admin@example.com"
                 required
               />
@@ -250,7 +250,7 @@ export default function UserManagementPage() {
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
                 placeholder={t('namePlaceholder')}
                 required
               />
@@ -260,7 +260,7 @@ export default function UserManagementPage() {
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
               >
                 {rolesDe(formData.plateforme).map((r) => (
                   <option key={r.code} value={r.code}>
@@ -274,13 +274,13 @@ export default function UserManagementPage() {
               <select
                 value={formData.plateforme}
                 onChange={(e) => setFormData({ ...formData, plateforme: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
               >
                 {plateformes.map((p) => (
                   <option key={p.code} value={p.code}>{p.label}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-400 mt-1">{t('platformHint')}</p>
+              <p className="text-xs text-gray-500 mt-1">{t('platformHint')}</p>
             </div>
             <div className="flex gap-2">
               <button type="submit" className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
@@ -289,7 +289,7 @@ export default function UserManagementPage() {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded"
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded"
               >
                 {t('cancel')}
               </button>
@@ -303,14 +303,14 @@ export default function UserManagementPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : admins.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800/50 rounded-lg">
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">{t('empty')}</p>
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       ) : (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <table className="w-full">
-            <thead className="bg-gray-700/50 border-b border-gray-700">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-sm font-semibold">{t('colEmail')}</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold">{t('colName')}</th>
@@ -322,9 +322,9 @@ export default function UserManagementPage() {
                 <th className="px-6 py-3 text-right text-sm font-semibold">{t('colActions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-gray-100">
               {admins.map((admin) => (
-                <tr key={admin.id} className="hover:bg-gray-700/50 transition">
+                <tr key={admin.id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4 text-sm">{admin.email}</td>
                   <td className="px-6 py-4 text-sm">{admin.name}</td>
                   {plateformes.map((p) => {
@@ -332,7 +332,7 @@ export default function UserManagementPage() {
                     return (
                       <td key={p.code} className="px-6 py-4 text-sm">
                         {admin.role === 'SUPEROWNER' ? (
-                          <span className={`px-2 py-1 rounded text-xs font-semibold text-white ${getRoleColor('SUPEROWNER')}`}>
+                          <span className={`px-2 py-1 rounded text-xs font-semibold text-gray-900 ${getRoleColor('SUPEROWNER')}`}>
                             {t('roleSuperOwner')}
                           </span>
                         ) : (
@@ -340,7 +340,7 @@ export default function UserManagementPage() {
                             value={role}
                             onChange={(e) => handleChangeRole(admin.id, p, e.target.value)}
                             aria-label={`${t('colRole')} ${p.label}`}
-                            className={`px-2 py-1 rounded text-xs font-semibold text-white border-0 ${getRoleColor(role)}`}
+                            className={`px-2 py-1 rounded text-xs font-semibold text-gray-900 border-0 ${getRoleColor(role)}`}
                           >
                             <option value="">{t('noAccess')}</option>
                             {rolesDe(p.code).map((r) => (
@@ -356,13 +356,13 @@ export default function UserManagementPage() {
                   <td className={`px-6 py-4 text-sm font-semibold ${getStatusColor(admin.status)}`}>
                     {admin.status}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-400">
+                  <td className="px-6 py-4 text-sm text-gray-500">
                     {new Date(admin.lastLogin).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR')}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => handleDeleteAdmin(admin.id)}
-                      className="p-2 text-red-400 hover:bg-red-900/20 rounded transition"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded transition"
                       title={t('delete')}
                     >
                       <Trash2 size={18} />
@@ -376,21 +376,21 @@ export default function UserManagementPage() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500">
           {t('showingRange', { from: offset + 1, to: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
           >
             {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
           >
             {t('next')}
           </button>

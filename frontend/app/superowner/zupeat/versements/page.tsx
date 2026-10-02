@@ -153,44 +153,44 @@ export default function VersementsSepaPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <Banknote /> Versements du lundi
         </h1>
-        <p className="text-gray-400 mt-1">
+        <p className="text-gray-500 mt-1">
           Commerçants et livreurs, en un seul fichier à importer dans votre banque. La semaine
           s&apos;arrête d&apos;elle-même chaque lundi à 00 h 00.
         </p>
       </div>
 
-      {message && <div className="bg-green-900/30 border border-green-700 text-green-300 rounded p-3">{message}</div>}
-      {erreur && <div className="bg-red-900/30 border border-red-700 text-red-300 rounded p-3">{erreur}</div>}
+      {message && <div className="bg-green-50 border border-green-200 text-green-700 rounded p-3">{message}</div>}
+      {erreur && <div className="bg-red-50 border border-red-200 text-red-700 rounded p-3">{erreur}</div>}
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
-        <h2 className="text-xl font-semibold text-white">Lot à verser</h2>
+      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+        <h2 className="text-xl font-semibold text-gray-900">Lot à verser</h2>
         {lotErreur ? (
-          <p className="text-amber-300">{lotErreur}</p>
+          <p className="text-amber-700">{lotErreur}</p>
         ) : lot ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <p className="text-gray-400 text-sm">Total</p>
-                <p className="text-3xl font-bold text-green-400">{euro(lot.total)}</p>
+                <p className="text-gray-500 text-sm">Total</p>
+                <p className="text-3xl font-bold text-green-600">{euro(lot.total)}</p>
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Virements</p>
-                <p className="text-3xl font-bold text-white">{lot.nombre}</p>
+                <p className="text-gray-500 text-sm">Virements</p>
+                <p className="text-3xl font-bold text-gray-900">{lot.nombre}</p>
                 <p className="text-xs text-gray-500">
                   {lot.inclus.commercants.length} commerçant(s) · {lot.inclus.livreurs.length} livreur(s)
                 </p>
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Référence</p>
-                <p className="text-white font-mono text-sm break-all">{lot.reference}</p>
+                <p className="text-gray-500 text-sm">Référence</p>
+                <p className="text-gray-900 font-mono text-sm break-all">{lot.reference}</p>
               </div>
             </div>
 
             {lot.ecartes.length > 0 && (
-              <div className="bg-amber-900/20 border border-amber-700 rounded p-3 text-sm text-amber-200 space-y-1">
+              <div className="bg-amber-50 border border-amber-200 rounded p-3 text-sm text-amber-800 space-y-1">
                 <p className="font-semibold flex items-center gap-2">
                   <AlertTriangle size={16} /> Écartés du fichier (à corriger avant le prochain lot)
                 </p>
@@ -206,7 +206,7 @@ export default function VersementsSepaPage() {
               <button
                 onClick={telecharger}
                 disabled={!lot.pret}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
+                className="bg-gray-900 hover:bg-black disabled:opacity-40 text-white font-semibold px-4 py-2 rounded flex items-center gap-2"
               >
                 <Download size={18} /> Télécharger le fichier SEPA
               </button>
@@ -220,7 +220,7 @@ export default function VersementsSepaPage() {
               <button
                 onClick={arreter}
                 disabled={occupe}
-                className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center gap-2"
+                className="bg-gray-100 hover:bg-gray-200 text-gray-900 px-4 py-2 rounded flex items-center gap-2"
               >
                 <RefreshCw size={18} /> Arrêter la semaine maintenant
               </button>
@@ -231,17 +231,17 @@ export default function VersementsSepaPage() {
             </p>
           </>
         ) : (
-          <p className="text-gray-400">Chargement…</p>
+          <p className="text-gray-500">Chargement…</p>
         )}
       </div>
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-white">Relevés des commerçants</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Relevés des commerçants</h2>
           <select
             value={filtre}
             onChange={(e) => setFiltre(e.target.value)}
-            className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+            className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
           >
             <option value="PENDING">À verser</option>
             <option value="PAID">Versés</option>
@@ -250,25 +250,25 @@ export default function VersementsSepaPage() {
           </select>
         </div>
         {releves.length === 0 ? (
-          <p className="text-gray-400">Aucun relevé.</p>
+          <p className="text-gray-500">Aucun relevé.</p>
         ) : (
-          <div className="divide-y divide-gray-700">
+          <div className="divide-y divide-gray-100">
             {releves.map((r) => (
               <button
                 key={r.id}
                 onClick={() => ouvrir(r.id)}
-                className="w-full text-left py-3 flex flex-wrap justify-between gap-2 hover:bg-gray-700/40 px-2 rounded"
+                className="w-full text-left py-3 flex flex-wrap justify-between gap-2 hover:bg-gray-50 px-2 rounded"
               >
                 <span>
-                  <span className="text-white font-semibold">{r.organization}</span>
-                  <span className="block text-xs text-gray-400">
+                  <span className="text-gray-900 font-semibold">{r.organization}</span>
+                  <span className="block text-xs text-gray-500">
                     {periode(r.periodStart, r.periodEnd)} · {r.orderCount} commande(s) ·{' '}
-                    {r.ibanValide ? `IBAN …${r.ibanFin}` : <span className="text-amber-300">IBAN manquant ou invalide</span>}
+                    {r.ibanValide ? `IBAN …${r.ibanFin}` : <span className="text-amber-700">IBAN manquant ou invalide</span>}
                   </span>
                 </span>
                 <span className="text-right">
-                  <span className={`font-bold ${r.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>{euro(r.amount)}</span>
-                  <span className="block text-xs text-gray-400">{ETATS[r.status] || r.status}</span>
+                  <span className={`font-bold ${r.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>{euro(r.amount)}</span>
+                  <span className="block text-xs text-gray-500">{ETATS[r.status] || r.status}</span>
                 </span>
               </button>
             ))}
@@ -280,7 +280,7 @@ export default function VersementsSepaPage() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={() => setOuvert(null)}>
           <div className="max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <ReleveReversement releve={ouvert} />
-            <button onClick={() => setOuvert(null)} className="mt-3 w-full bg-gray-700 text-white py-2 rounded">
+            <button onClick={() => setOuvert(null)} className="mt-3 w-full bg-gray-100 text-gray-900 py-2 rounded">
               Fermer
             </button>
           </div>

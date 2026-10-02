@@ -201,7 +201,7 @@ export default function RolesPage() {
           <ShieldCheck className="text-red-500" />
           {t('title')}
         </h1>
-        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
+        <p className="text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
 
       <div role="tablist" aria-label={t('platform')} className="flex gap-2">
@@ -212,7 +212,7 @@ export default function RolesPage() {
             aria-selected={p.code === plateforme}
             onClick={() => setPlateforme(p.code)}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-              p.code === plateforme ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+              p.code === plateforme ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'
             }`}
           >
             {p.label}
@@ -222,13 +222,13 @@ export default function RolesPage() {
 
       <form onSubmit={creerRole} className="flex flex-wrap items-end gap-2">
         <label className="flex-1 min-w-[200px] max-w-sm">
-          <span className="block text-sm text-gray-400 mb-1">{t('newRole')}</span>
+          <span className="block text-sm text-gray-500 mb-1">{t('newRole')}</span>
           <input
             value={nouveauRole}
             onChange={(e) => setNouveauRole(e.target.value)}
             placeholder={t('newRolePlaceholder')}
             maxLength={40}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
           />
         </label>
         <button
@@ -246,23 +246,23 @@ export default function RolesPage() {
           role="status"
           className={`p-3 rounded-lg text-sm ${
             message.type === 'ok'
-              ? 'bg-green-900/30 border border-green-700 text-green-300'
-              : 'bg-red-900/30 border border-red-700 text-red-300'
+              ? 'bg-green-50 border border-green-200 text-green-700'
+              : 'bg-red-50 border border-red-200 text-red-700'
           }`}
         >
           {message.texte}
         </div>
       )}
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-x-auto">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-700/50 border-b border-gray-700">
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th rowSpan={2} className="px-4 py-3 text-left font-semibold align-bottom">
                 {t('section')}
               </th>
               {roles.map((role) => (
-                <th key={role.code} colSpan={2} className="px-4 pt-3 text-center font-semibold border-l border-gray-700">
+                <th key={role.code} colSpan={2} className="px-4 pt-3 text-center font-semibold border-l border-gray-200">
                   <div className="flex items-center justify-center gap-1">
                     {role.label}
                     {!role.deBase && (
@@ -270,23 +270,23 @@ export default function RolesPage() {
                         onClick={() => supprimerRole(role)}
                         title={t('delete')}
                         aria-label={`${t('delete')} ${role.label}`}
-                        className="p-1 text-red-400 hover:bg-red-900/30 rounded"
+                        className="p-1 text-red-600 hover:bg-red-50 rounded"
                       >
                         <Trash2 size={14} />
                       </button>
                     )}
                   </div>
-                  <div className="text-xs font-normal text-gray-400">
+                  <div className="text-xs font-normal text-gray-500">
                     {t('members', { count: role.membres })}
                   </div>
                   <div className="flex justify-center gap-2 mt-2 text-xs font-normal">
-                    <button onClick={() => toutCocher(role.code, 'read')} className="text-blue-400 hover:underline">
+                    <button onClick={() => toutCocher(role.code, 'read')} className="text-blue-600 hover:underline">
                       {t('allView')}
                     </button>
-                    <button onClick={() => toutCocher(role.code, 'write')} className="text-blue-400 hover:underline">
+                    <button onClick={() => toutCocher(role.code, 'write')} className="text-blue-600 hover:underline">
                       {t('allEdit')}
                     </button>
-                    <button onClick={() => toutCocher(role.code, null)} className="text-gray-400 hover:underline">
+                    <button onClick={() => toutCocher(role.code, null)} className="text-gray-500 hover:underline">
                       {t('none')}
                     </button>
                   </div>
@@ -295,8 +295,8 @@ export default function RolesPage() {
             </tr>
             <tr>
               {roles.map((role) => (
-                <th key={role.code} colSpan={2} className="px-4 pb-2 border-l border-gray-700">
-                  <div className="grid grid-cols-2 text-xs font-normal text-gray-400">
+                <th key={role.code} colSpan={2} className="px-4 pb-2 border-l border-gray-200">
+                  <div className="grid grid-cols-2 text-xs font-normal text-gray-500">
                     <span>{t('view')}</span>
                     <span>{t('edit')}</span>
                   </div>
@@ -317,14 +317,14 @@ export default function RolesPage() {
               />
             ))}
           </tbody>
-          <tfoot className="border-t border-gray-700">
+          <tfoot className="border-t border-gray-200">
             <tr>
               <td className="px-4 py-3"></td>
               {roles.map((role) => (
-                <td key={role.code} colSpan={2} className="px-4 py-3 border-l border-gray-700">
+                <td key={role.code} colSpan={2} className="px-4 py-3 border-l border-gray-200">
                   <div className="flex flex-col items-center gap-2">
                     {modifie(role.code) && (
-                      <span className="text-xs text-yellow-400">{t('unsaved')}</span>
+                      <span className="text-xs text-yellow-600">{t('unsaved')}</span>
                     )}
                     <div className="flex gap-2">
                       <button
@@ -340,7 +340,7 @@ export default function RolesPage() {
                           onClick={() => annuler(role.code)}
                           title={t('reset')}
                           aria-label={t('reset')}
-                          className="p-1.5 rounded bg-gray-700 hover:bg-gray-600 text-white"
+                          className="p-1.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-900"
                         >
                           <RotateCcw size={14} />
                         </button>
@@ -374,18 +374,18 @@ function GroupeLignes({
 }) {
   return (
     <>
-      <tr className="bg-gray-900/40">
+      <tr className="bg-gray-50">
         <td colSpan={1 + roles.length * 2} className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
           {nom}
         </td>
       </tr>
       {sections.map((section) => (
-        <tr key={section.id} className="border-t border-gray-700/50 hover:bg-gray-700/30">
+        <tr key={section.id} className="border-t border-gray-200/50 hover:bg-gray-50">
           <td className="px-4 py-2">{section.label}</td>
           {roles.map((role) => {
             const niveau = brouillon[role.code]?.[section.id];
             return [
-              <td key={`${role.code}-r`} className="px-4 py-2 text-center border-l border-gray-700">
+              <td key={`${role.code}-r`} className="px-4 py-2 text-center border-l border-gray-200">
                 <input
                   type="checkbox"
                   checked={!!niveau}

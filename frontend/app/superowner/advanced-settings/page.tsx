@@ -126,39 +126,39 @@ export default function AdvancedSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <Sliders className="w-8 h-8" />
           {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">{t('subtitle')}</p>
+        <p className="text-gray-500 mt-2">{t('subtitle')}</p>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-4 bg-green-900/20 text-green-400 rounded-lg border border-green-500/20">
+        <div className="p-4 bg-green-50 text-green-600 rounded-lg border border-green-500/20">
           {success}
         </div>
       )}
 
       {settings && (
         <>
-          <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6 space-y-4">
-            <h2 className="text-lg font-bold text-white">{t('systemMode')}</h2>
+          <div className="bg-gray-50 border border-gray-200/50 rounded-lg p-6 space-y-4">
+            <h2 className="text-lg font-bold text-gray-900">{t('systemMode')}</h2>
 
             <div className="space-y-4">
               {/* Le mode maintenance se réglait ici et dans Configuration : deux
                   interrupteurs pour le même réglage, dont l'un pouvait défaire
                   l'autre sans le montrer. Il n'est réglable qu'à un endroit,
                   avec son message ; ici on ne fait que son état. */}
-              <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-700/30 p-4">
+              <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-50 p-4">
                 <div>
-                  <p className="text-white font-medium">{t('maintenanceMode')}</p>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-gray-900 font-medium">{t('maintenanceMode')}</p>
+                  <p className="text-sm text-gray-500">
                     {settings.maintenanceMode
                       ? t('maintenanceOn')
                       : t('maintenanceOff')}
@@ -166,7 +166,7 @@ export default function AdvancedSettingsPage() {
                 </div>
                 <Link
                   href="/superowner/system-config"
-                  className="whitespace-nowrap rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                  className="whitespace-nowrap rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 hover:bg-gray-100"
                 >
                   {t('configureInConfig')}
                 </Link>
@@ -180,19 +180,19 @@ export default function AdvancedSettingsPage() {
                     onChange={(e) =>
                       setSettings((prev) => prev ? { ...prev, debugMode: e.target.checked } : prev)
                     }
-                    className="w-5 h-5 rounded border-gray-600"
+                    className="w-5 h-5 rounded border-gray-300"
                   />
-                  <span className="text-white font-medium">{t('debugMode')}</span>
+                  <span className="text-gray-900 font-medium">{t('debugMode')}</span>
                 </label>
-                <p className="text-sm text-gray-400 ml-8 mt-1">
+                <p className="text-sm text-gray-500 ml-8 mt-1">
                   {t('debugModeNote')}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6 space-y-4">
-            <h2 className="text-lg font-bold text-white">{t('featuresTitle')}</h2>
+          <div className="bg-gray-50 border border-gray-200/50 rounded-lg p-6 space-y-4">
+            <h2 className="text-lg font-bold text-gray-900">{t('featuresTitle')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {AVAILABLE_FEATURES.map((feature) => (
                 <label key={feature.id} className="flex items-center gap-3 cursor-pointer">
@@ -200,16 +200,16 @@ export default function AdvancedSettingsPage() {
                     type="checkbox"
                     checked={settings?.enabledFeatures?.includes(feature.id) ?? false}
                     onChange={() => toggleFeature(feature.id)}
-                    className="w-5 h-5 rounded border-gray-600"
+                    className="w-5 h-5 rounded border-gray-300"
                   />
-                  <span className="text-gray-300">{feature.label}</span>
+                  <span className="text-gray-700">{feature.label}</span>
                 </label>
               ))}
             </div>
           </div>
 
-          <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6 space-y-4">
-            <h2 className="text-lg font-bold text-white">{t('performanceTitle')}</h2>
+          <div className="bg-gray-50 border border-gray-200/50 rounded-lg p-6 space-y-4">
+            <h2 className="text-lg font-bold text-gray-900">{t('performanceTitle')}</h2>
 
             <div className="space-y-4">
               <div>
@@ -230,15 +230,15 @@ export default function AdvancedSettingsPage() {
                           : prev
                       )
                     }
-                    className="w-5 h-5 rounded border-gray-600"
+                    className="w-5 h-5 rounded border-gray-300"
                   />
-                  <span className="text-white font-medium">{t('cacheEnabled')}</span>
+                  <span className="text-gray-900 font-medium">{t('cacheEnabled')}</span>
                 </label>
               </div>
 
               {settings.performanceOptimizations.cacheEnabled && (
-                <div className="ml-8 bg-gray-700/30 p-4 rounded-lg">
-                  <label className="block text-sm text-gray-400 mb-2">{t('cacheDuration')}</label>
+                <div className="ml-8 bg-gray-50 p-4 rounded-lg">
+                  <label className="block text-sm text-gray-500 mb-2">{t('cacheDuration')}</label>
                   <input
                     type="number"
                     value={settings.performanceOptimizations.cacheDuration}
@@ -255,7 +255,7 @@ export default function AdvancedSettingsPage() {
                           : prev
                       )
                     }
-                    className="w-full px-4 py-2 bg-gray-600 border border-gray-600 rounded-lg text-white text-sm"
+                    className="w-full px-4 py-2 bg-gray-200 border border-gray-300 rounded-lg text-gray-900 text-sm"
                   />
                 </div>
               )}
@@ -278,11 +278,11 @@ export default function AdvancedSettingsPage() {
                           : prev
                       )
                     }
-                    className="w-5 h-5 rounded border-gray-600"
+                    className="w-5 h-5 rounded border-gray-300"
                   />
-                  <span className="text-white font-medium">{t('compressionEnabled')}</span>
+                  <span className="text-gray-900 font-medium">{t('compressionEnabled')}</span>
                 </label>
-                <p className="text-sm text-gray-400 ml-8 mt-1">
+                <p className="text-sm text-gray-500 ml-8 mt-1">
                   {t('compressionNote')}
                 </p>
               </div>
@@ -293,7 +293,7 @@ export default function AdvancedSettingsPage() {
             <button
               onClick={saveSettings}
               disabled={saving}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition font-medium flex items-center gap-2"
+              className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-black disabled:opacity-50 transition font-medium flex items-center gap-2"
             >
               <Save size={18} />
               {saving ? t('saving') : t('save')}
@@ -301,7 +301,7 @@ export default function AdvancedSettingsPage() {
             <button
               onClick={fetchSettings}
               disabled={loading}
-              className="px-6 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition font-medium"
+              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
             >
               {t('cancel')}
             </button>

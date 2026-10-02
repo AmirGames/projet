@@ -137,26 +137,26 @@ interface Instantane {
 type TriRoutes = 'requetes' | 'p95Ms' | 'erreurs5xx';
 
 const TEINTE_ETAT: Record<string, string> = {
-  OK: 'text-green-400',
-  ATTENTION: 'text-amber-400',
-  RETARD: 'text-amber-400',
-  DEGRADE: 'text-amber-400',
-  PANNE: 'text-red-400',
-  CRITIQUE: 'text-red-400',
+  OK: 'text-green-600',
+  ATTENTION: 'text-amber-600',
+  RETARD: 'text-amber-600',
+  DEGRADE: 'text-amber-600',
+  PANNE: 'text-red-600',
+  CRITIQUE: 'text-red-600',
   NON_CONFIGURE: 'text-gray-500',
 };
 
 function IconeEtat({ etat, taille = 18 }: { etat: string; taille?: number }) {
-  if (etat === 'OK') return <CheckCircle2 size={taille} className="text-green-400" />;
-  if (etat === 'PANNE' || etat === 'CRITIQUE') return <XCircle size={taille} className="text-red-400" />;
+  if (etat === 'OK') return <CheckCircle2 size={taille} className="text-green-600" />;
+  if (etat === 'PANNE' || etat === 'CRITIQUE') return <XCircle size={taille} className="text-red-600" />;
   if (etat === 'NON_CONFIGURE') return <span className="inline-block w-[18px] text-center text-gray-500">–</span>;
-  return <AlertTriangle size={taille} className="text-amber-400" />;
+  return <AlertTriangle size={taille} className="text-amber-600" />;
 }
 
 function Section({ titre, icone, children, action }: { titre: string; icone?: ReactNode; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="bg-gray-800 border border-gray-700 rounded-lg">
-      <header className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-700">
+    <section className="bg-white border border-gray-200 rounded-lg">
+      <header className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-200">
         <h2 className="font-semibold flex items-center gap-2">
           {icone}
           {titre}
@@ -169,11 +169,11 @@ function Section({ titre, icone, children, action }: { titre: string; icone?: Re
 }
 
 function Tuile({ libelle, valeur, detail, alerte, icone }: { libelle: string; valeur: string; detail?: string; alerte?: 'ATTENTION' | 'PANNE'; icone: ReactNode }) {
-  const bord = alerte === 'PANNE' ? 'border-red-700' : alerte === 'ATTENTION' ? 'border-amber-700' : 'border-gray-700';
-  const teinte = alerte === 'PANNE' ? 'text-red-400' : alerte === 'ATTENTION' ? 'text-amber-400' : 'text-white';
+  const bord = alerte === 'PANNE' ? 'border-red-200' : alerte === 'ATTENTION' ? 'border-amber-200' : 'border-gray-200';
+  const teinte = alerte === 'PANNE' ? 'text-red-600' : alerte === 'ATTENTION' ? 'text-amber-600' : 'text-gray-900';
   return (
-    <div className={`bg-gray-800 border ${bord} rounded-lg p-4`}>
-      <p className="text-xs uppercase tracking-wide text-gray-400 flex items-center gap-1.5">
+    <div className={`bg-white border ${bord} rounded-lg p-4`}>
+      <p className="text-xs uppercase tracking-wide text-gray-500 flex items-center gap-1.5">
         {icone}
         {libelle}
       </p>
@@ -289,9 +289,9 @@ export default function SurveillancePage() {
   );
 
   const STATUTS: Record<Statut, { libelle: string; fond: string }> = {
-    OK: { libelle: t('statusOk'), fond: 'bg-green-900/30 border-green-700' },
-    DEGRADE: { libelle: t('statusDegraded'), fond: 'bg-amber-900/30 border-amber-700' },
-    PANNE: { libelle: t('statusDown'), fond: 'bg-red-900/30 border-red-700' },
+    OK: { libelle: t('statusOk'), fond: 'bg-green-50 border-green-200' },
+    DEGRADE: { libelle: t('statusDegraded'), fond: 'bg-amber-50 border-amber-200' },
+    PANNE: { libelle: t('statusDown'), fond: 'bg-red-50 border-red-200' },
   };
 
   const ETATS_TACHE: Record<EtatTache, string> = {
@@ -310,7 +310,7 @@ export default function SurveillancePage() {
     <div className="grid grid-cols-1 gap-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
-          <Link href="/superowner" aria-label={t('back')} title={t('back')} className="p-2 hover:bg-gray-800 rounded-lg transition">
+          <Link href="/superowner" aria-label={t('back')} title={t('back')} className="p-2 hover:bg-white rounded-lg transition">
             <ArrowLeft size={20} />
           </Link>
           <div>
@@ -318,12 +318,12 @@ export default function SurveillancePage() {
               <Radio size={28} className="text-red-500" />
               {t('title')}
             </h1>
-            <p className="text-gray-400 text-sm mt-1">{t('subtitle')}</p>
+            <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
             <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} className="accent-orange-600" />
             {t('autoRefresh')}
           </label>
@@ -331,7 +331,7 @@ export default function SurveillancePage() {
             type="button"
             onClick={() => charger(true)}
             disabled={chargement}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 hover:bg-gray-700 rounded-lg transition disabled:opacity-60"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-100 rounded-lg transition disabled:opacity-60"
           >
             <RefreshCw size={16} className={chargement ? 'animate-spin' : ''} />
             {t('checkNow')}
@@ -339,9 +339,9 @@ export default function SurveillancePage() {
         </div>
       </div>
 
-      {erreur && <div className="bg-red-900/30 border border-red-700 text-red-200 rounded-lg px-4 py-3">{erreur}</div>}
+      {erreur && <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3">{erreur}</div>}
 
-      {!donnees && chargement && <p className="text-gray-400">{t('loading')}</p>}
+      {!donnees && chargement && <p className="text-gray-500">{t('loading')}</p>}
 
       {donnees && cinq && processus && (
         <>
@@ -350,7 +350,7 @@ export default function SurveillancePage() {
             <div className="flex items-center gap-3 flex-wrap">
               <IconeEtat etat={donnees.statut === 'DEGRADE' ? 'ATTENTION' : donnees.statut} taille={28} />
               <p className={`text-2xl font-bold ${TEINTE_ETAT[donnees.statut]}`}>{STATUTS[donnees.statut].libelle}</p>
-              <p className="text-sm text-gray-400 ml-auto">
+              <p className="text-sm text-gray-500 ml-auto">
                 {t('lastCheck', { time: heure(donnees.dernierPassage) })}
               </p>
             </div>
@@ -358,11 +358,11 @@ export default function SurveillancePage() {
             {donnees.incidents.ouverts.length > 0 && (
               <ul className="mt-4 space-y-2">
                 {donnees.incidents.ouverts.map((incident) => (
-                  <li key={incident.cle} className="flex items-start gap-3 bg-gray-900/40 rounded-lg px-4 py-3">
+                  <li key={incident.cle} className="flex items-start gap-3 bg-gray-50 rounded-lg px-4 py-3">
                     <IconeEtat etat={incident.niveau} />
                     <div className="min-w-0">
                       <p className={`font-semibold ${TEINTE_ETAT[incident.niveau]}`}>{incident.titre}</p>
-                      <p className="text-sm text-gray-300 break-words">{incident.detail}</p>
+                      <p className="text-sm text-gray-700 break-words">{incident.detail}</p>
                       <p className="text-xs text-gray-500 mt-1">{t('openedAt', { time: dateHeure(incident.ouvertLe) })}</p>
                     </div>
                   </li>
@@ -370,7 +370,7 @@ export default function SurveillancePage() {
               </ul>
             )}
 
-            <p className="text-xs text-gray-400 mt-3">
+            <p className="text-xs text-gray-500 mt-3">
               {donnees.alertes.courriel || donnees.alertes.webhook
                 ? t('alertsOn', {
                     channels: [
@@ -385,20 +385,20 @@ export default function SurveillancePage() {
           </section>
 
           {/* Dans la durée : l'historique survit aux redémarrages. */}
-          <section className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+          <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <button
               type="button"
               onClick={() => setDisponibiliteOuverte(!disponibiliteOuverte)}
-              className="w-full flex items-center justify-between px-5 py-3 border-b border-gray-700 hover:bg-gray-700/50 transition"
+              className="w-full flex items-center justify-between px-5 py-3 border-b border-gray-200 hover:bg-gray-50 transition"
               aria-expanded={disponibiliteOuverte}
             >
               <h2 className="font-semibold flex items-center gap-2">
-                <Clock size={18} className="text-gray-400" />
+                <Clock size={18} className="text-gray-500" />
                 {t('uptimeTitle')}
               </h2>
               <ChevronDown
                 size={20}
-                className={`text-gray-400 transition-transform ${disponibiliteOuverte ? '' : '-rotate-90'}`}
+                className={`text-gray-500 transition-transform ${disponibiliteOuverte ? '' : '-rotate-90'}`}
               />
             </button>
             {disponibiliteOuverte && (
@@ -410,29 +410,29 @@ export default function SurveillancePage() {
 
           {/* SLA Summary */}
           {donnees && (
-            <section className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+            <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
               <button
                 type="button"
                 onClick={() => setSlaOuvert(!slaOuvert)}
-                className="w-full flex items-center justify-between px-5 py-3 border-b border-gray-700 hover:bg-gray-700/50 transition"
+                className="w-full flex items-center justify-between px-5 py-3 border-b border-gray-200 hover:bg-gray-50 transition"
                 aria-expanded={slaOuvert}
               >
                 <h2 className="font-semibold flex items-center gap-2">
-                  <Gauge size={18} className="text-gray-400" />
+                  <Gauge size={18} className="text-gray-500" />
                   {t('slaTitle')}
                 </h2>
                 <ChevronDown
                   size={20}
-                  className={`text-gray-400 transition-transform ${slaOuvert ? '' : '-rotate-90'}`}
+                  className={`text-gray-500 transition-transform ${slaOuvert ? '' : '-rotate-90'}`}
                 />
               </button>
               {slaOuvert && (
                 <div className="p-5 space-y-4">
-                  <p className="text-sm text-gray-300">{t('slaIntro')}</p>
-                  <div className="pt-3 border-t border-gray-700">
-                    <h3 className="text-xs font-semibold text-gray-400 mb-2">{t('slaThresholds')}</h3>
+                  <p className="text-sm text-gray-700">{t('slaIntro')}</p>
+                  <div className="pt-3 border-t border-gray-200">
+                    <h3 className="text-xs font-semibold text-gray-500 mb-2">{t('slaThresholds')}</h3>
                     {/* Mêmes seuils que les teintes de DisponibiliteSite. */}
-                    <ul className="space-y-1 text-xs text-gray-400">
+                    <ul className="space-y-1 text-xs text-gray-500">
                       <li className="flex items-center gap-2">
                         <span className="inline-block w-3 h-3 bg-green-500 rounded-sm"></span>
                         <span>{t('slaGreen')}</span>
@@ -487,7 +487,7 @@ export default function SurveillancePage() {
 
           {/* L'heure écoulée */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <GraphiqueColonnes
+            <GraphiqueColonnes clair
               titre={t('chartRequests')}
               colonnes={colonnes.requetes}
               format={(v) => `${v}`}
@@ -495,7 +495,7 @@ export default function SurveillancePage() {
               messageVide={t('chartEmpty')}
               hauteur={150}
             />
-            <GraphiqueColonnes
+            <GraphiqueColonnes clair
               titre={t('chartLatency')}
               colonnes={colonnes.p95}
               format={(v) => `${v} ms`}
@@ -503,7 +503,7 @@ export default function SurveillancePage() {
               messageVide={t('chartEmpty')}
               hauteur={150}
             />
-            <GraphiqueColonnes
+            <GraphiqueColonnes clair
               titre={t('chartErrors')}
               colonnes={colonnes.erreurs}
               format={(v) => `${v}`}
@@ -515,18 +515,18 @@ export default function SurveillancePage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Le serveur */}
-            <Section titre={t('serverTitle')} icone={<Server size={18} className="text-gray-400" />}>
+            <Section titre={t('serverTitle')} icone={<Server size={18} className="text-gray-500" />}>
               <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <div>
-                  <dt className="text-gray-400 flex items-center gap-1.5"><Cpu size={14} />{t('cpu')}</dt>
+                  <dt className="text-gray-500 flex items-center gap-1.5"><Cpu size={14} />{t('cpu')}</dt>
                   <dd className="text-lg font-semibold tabular-nums">{processus.cpuPourcent} %</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-400 flex items-center gap-1.5"><MemoryStick size={14} />{t('heap')}</dt>
-                  <dd className={`text-lg font-semibold tabular-nums ${processus.memoire.tasPourcent >= 85 ? 'text-amber-400' : ''}`}>
+                  <dt className="text-gray-500 flex items-center gap-1.5"><MemoryStick size={14} />{t('heap')}</dt>
+                  <dd className={`text-lg font-semibold tabular-nums ${processus.memoire.tasPourcent >= 85 ? 'text-amber-600' : ''}`}>
                     {processus.memoire.tasUtiliseMo} / {processus.memoire.tasLimiteMo} Mo
                   </dd>
-                  <div className="mt-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                  <div className="mt-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className={`h-full ${processus.memoire.tasPourcent >= 85 ? 'bg-amber-500' : 'bg-green-500'}`}
                       style={{ width: `${Math.min(100, processus.memoire.tasPourcent)}%` }}
@@ -534,15 +534,15 @@ export default function SurveillancePage() {
                   </div>
                 </div>
                 <div>
-                  <dt className="text-gray-400">{t('rss')}</dt>
+                  <dt className="text-gray-500">{t('rss')}</dt>
                   <dd className="font-semibold tabular-nums">{processus.memoire.residenteMo} Mo</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-400 flex items-center gap-1.5"><MemoryStick size={14} />{t('diskSpace')}</dt>
-                  <dd className={`text-lg font-semibold tabular-nums ${processus.systeme.disque.pourcentUtilise >= 85 ? 'text-amber-400' : ''}`}>
+                  <dt className="text-gray-500 flex items-center gap-1.5"><MemoryStick size={14} />{t('diskSpace')}</dt>
+                  <dd className={`text-lg font-semibold tabular-nums ${processus.systeme.disque.pourcentUtilise >= 85 ? 'text-amber-600' : ''}`}>
                     {processus.systeme.disque.libreMo} / {processus.systeme.disque.totaleMo} Mo
                   </dd>
-                  <div className="mt-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                  <div className="mt-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className={`h-full ${processus.systeme.disque.pourcentUtilise >= 85 ? 'bg-amber-500' : 'bg-green-500'}`}
                       style={{ width: `${Math.min(100, processus.systeme.disque.pourcentUtilise)}%` }}
@@ -550,19 +550,19 @@ export default function SurveillancePage() {
                   </div>
                 </div>
                 <div>
-                  <dt className="text-gray-400">{t('load')}</dt>
+                  <dt className="text-gray-500">{t('load')}</dt>
                   <dd className="font-semibold tabular-nums">
                     {processus.systeme.charge.join(' · ')} <span className="text-gray-500 font-normal">({t('cores', { n: processus.systeme.coeurs })})</span>
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-gray-400">{t('eventLoop')}</dt>
-                  <dd className={`font-semibold tabular-nums ${processus.boucle.p99Ms >= 200 ? 'text-amber-400' : ''}`}>
+                  <dt className="text-gray-500">{t('eventLoop')}</dt>
+                  <dd className={`font-semibold tabular-nums ${processus.boucle.p99Ms >= 200 ? 'text-amber-600' : ''}`}>
                     {t('eventLoopValue', { p99: processus.boucle.p99Ms, max: processus.boucle.maxMs })}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-gray-400">{t('systemMemory')}</dt>
+                  <dt className="text-gray-500">{t('systemMemory')}</dt>
                   <dd className="font-semibold tabular-nums">
                     {t('systemMemoryValue', { free: processus.systeme.memoireLibreMo, total: processus.systeme.memoireTotaleMo })}
                   </dd>
@@ -575,13 +575,13 @@ export default function SurveillancePage() {
 
             {/* Les services dont le site dépend */}
             <Section titre={t('dependenciesTitle')}>
-              <ul className="divide-y divide-gray-700 -my-2">
+              <ul className="divide-y divide-gray-100 -my-2">
                 {donnees.dependances.map((d) => (
                   <li key={d.cle} className="py-2.5 flex items-start gap-3">
                     <span className="mt-0.5"><IconeEtat etat={d.etat} /></span>
                     <div className="min-w-0">
                       <p className="font-medium">{d.libelle}</p>
-                      <p className={`text-sm break-words ${d.etat === 'OK' ? 'text-gray-400' : TEINTE_ETAT[d.etat]}`}>{d.detail}</p>
+                      <p className={`text-sm break-words ${d.etat === 'OK' ? 'text-gray-500' : TEINTE_ETAT[d.etat]}`}>{d.detail}</p>
                     </div>
                   </li>
                 ))}
@@ -594,7 +594,7 @@ export default function SurveillancePage() {
             <div className="overflow-x-auto -mx-5">
               <table className="w-full text-sm min-w-[640px]">
                 <thead>
-                  <tr className="text-left text-gray-400">
+                  <tr className="text-left text-gray-500">
                     <th className="font-medium px-5 py-2">{t('taskName')}</th>
                     <th className="font-medium px-3 py-2">{t('taskState')}</th>
                     <th className="font-medium px-3 py-2">{t('taskEvery')}</th>
@@ -605,22 +605,22 @@ export default function SurveillancePage() {
                 </thead>
                 <tbody>
                   {donnees.taches.map((tache) => (
-                    <tr key={tache.cle} className="border-t border-gray-700 align-top">
+                    <tr key={tache.cle} className="border-t border-gray-200 align-top">
                       <td className="px-5 py-2.5">
                         <p className="font-medium">{tache.libelle}</p>
                         {tache.derniereErreur && tache.etat !== 'OK' && (
-                          <p className="text-xs text-red-300 mt-0.5 break-words">{tache.derniereErreur}</p>
+                          <p className="text-xs text-red-700 mt-0.5 break-words">{tache.derniereErreur}</p>
                         )}
                       </td>
                       <td className={`px-3 py-2.5 whitespace-nowrap ${TEINTE_ETAT[tache.etat]}`}>
                         {tache.enCours ? t('taskRunning') : ETATS_TACHE[tache.etat]}
                       </td>
-                      <td className="px-3 py-2.5 text-gray-300">{intervalle(tache.intervalleMs)}</td>
-                      <td className="px-3 py-2.5 text-gray-300 tabular-nums">{tache.derniereFin ? heure(tache.derniereFin) : t('taskNever')}</td>
-                      <td className="px-3 py-2.5 text-right text-gray-300 tabular-nums">{tache.derniereDureeMs != null ? `${tache.derniereDureeMs} ms` : '—'}</td>
+                      <td className="px-3 py-2.5 text-gray-700">{intervalle(tache.intervalleMs)}</td>
+                      <td className="px-3 py-2.5 text-gray-700 tabular-nums">{tache.derniereFin ? heure(tache.derniereFin) : t('taskNever')}</td>
+                      <td className="px-3 py-2.5 text-right text-gray-700 tabular-nums">{tache.derniereDureeMs != null ? `${tache.derniereDureeMs} ms` : '—'}</td>
                       <td className="px-5 py-2.5 text-right tabular-nums">
                         {tache.executions}
-                        {tache.echecs > 0 && <span className="text-red-400"> ({t('taskFailures', { n: tache.echecs })})</span>}
+                        {tache.echecs > 0 && <span className="text-red-600"> ({t('taskFailures', { n: tache.echecs })})</span>}
                       </td>
                     </tr>
                   ))}
@@ -646,7 +646,7 @@ export default function SurveillancePage() {
                     type="button"
                     onClick={() => setTri(cle)}
                     aria-pressed={tri === cle}
-                    className={`px-2.5 py-1 rounded ${tri === cle ? 'bg-orange-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                    className={`px-2.5 py-1 rounded ${tri === cle ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                   >
                     {libelle}
                   </button>
@@ -659,8 +659,8 @@ export default function SurveillancePage() {
             ) : (
               <div className="overflow-x-auto -mx-5 max-h-[28rem] overflow-y-auto">
                 <table className="w-full text-sm min-w-[720px]">
-                  <thead className="sticky top-0 bg-gray-800">
-                    <tr className="text-left text-gray-400">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="text-left text-gray-500">
                       <th className="font-medium px-5 py-2">{t('routesRoute')}</th>
                       <th className="font-medium px-3 py-2 text-right">{t('routesCount')}</th>
                       <th className="font-medium px-3 py-2 text-right">5xx</th>
@@ -672,17 +672,17 @@ export default function SurveillancePage() {
                   </thead>
                   <tbody>
                     {routesTriees.map((r) => (
-                      <tr key={r.route} className="border-t border-gray-700">
-                        <td className="px-5 py-2 font-mono text-xs text-gray-200 break-all">{r.route}</td>
+                      <tr key={r.route} className="border-t border-gray-200">
+                        <td className="px-5 py-2 font-mono text-xs text-gray-800 break-all">{r.route}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{r.requetes}</td>
-                        <td className={`px-3 py-2 text-right tabular-nums ${r.erreurs5xx > 0 ? 'text-red-400' : 'text-gray-500'}`}>
+                        <td className={`px-3 py-2 text-right tabular-nums ${r.erreurs5xx > 0 ? 'text-red-600' : 'text-gray-500'}`}>
                           {r.erreurs5xx}
                           {r.erreurs5xx > 0 && <span className="text-xs"> ({r.tauxErreur5xx} %)</span>}
                         </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-gray-400">{r.erreurs4xx}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-gray-500">{r.erreurs4xx}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{r.moyenneMs} ms</td>
-                        <td className={`px-3 py-2 text-right tabular-nums ${r.p95Ms >= 1500 ? 'text-amber-400' : ''}`}>{r.p95Ms} ms</td>
-                        <td className="px-5 py-2 text-right tabular-nums text-gray-400">{r.maxMs} ms</td>
+                        <td className={`px-3 py-2 text-right tabular-nums ${r.p95Ms >= 1500 ? 'text-amber-600' : ''}`}>{r.p95Ms} ms</td>
+                        <td className="px-5 py-2 text-right tabular-nums text-gray-500">{r.maxMs} ms</td>
                       </tr>
                     ))}
                   </tbody>
@@ -702,15 +702,15 @@ export default function SurveillancePage() {
                   {donnees.erreurs.serveur.map((e, i) => {
                     const cle = `s-${i}-${e.instant}`;
                     return (
-                      <li key={cle} className="bg-gray-900/50 rounded-lg px-3 py-2">
+                      <li key={cle} className="bg-gray-50 rounded-lg px-3 py-2">
                         <button type="button" className="w-full text-left" onClick={() => setOuverte(ouverte === cle ? null : cle)} aria-expanded={ouverte === cle}>
                           <p className="text-xs text-gray-500 tabular-nums">
-                            {dateHeure(e.instant)} · <span className="text-red-400">{e.statut}</span> · <span className="font-mono">{e.route}</span>
+                            {dateHeure(e.instant)} · <span className="text-red-600">{e.statut}</span> · <span className="font-mono">{e.route}</span>
                           </p>
-                          <p className="text-sm text-red-200 break-words">{e.message}</p>
+                          <p className="text-sm text-red-800 break-words">{e.message}</p>
                         </button>
                         {ouverte === cle && e.pile && (
-                          <pre className="mt-2 text-[11px] text-gray-400 whitespace-pre-wrap break-all">{e.pile}</pre>
+                          <pre className="mt-2 text-[11px] text-gray-500 whitespace-pre-wrap break-all">{e.pile}</pre>
                         )}
                       </li>
                     );
@@ -728,16 +728,16 @@ export default function SurveillancePage() {
                   {donnees.erreurs.navigateur.map((e) => {
                     const cle = `n-${e.empreinte}`;
                     return (
-                      <li key={cle} className="bg-gray-900/50 rounded-lg px-3 py-2">
+                      <li key={cle} className="bg-gray-50 rounded-lg px-3 py-2">
                         <button type="button" className="w-full text-left" onClick={() => setOuverte(ouverte === cle ? null : cle)} aria-expanded={ouverte === cle}>
                           <p className="text-xs text-gray-500">
-                            <span className="text-amber-400 font-semibold">×{e.occurrences}</span> · {t('lastSeen', { time: dateHeure(e.derniereFois) })} ·{' '}
+                            <span className="text-amber-600 font-semibold">×{e.occurrences}</span> · {t('lastSeen', { time: dateHeure(e.derniereFois) })} ·{' '}
                             <span className="font-mono">{e.page}</span>
                           </p>
-                          <p className="text-sm text-amber-100 break-words">{e.message}</p>
+                          <p className="text-sm text-amber-800 break-words">{e.message}</p>
                         </button>
                         {ouverte === cle && (
-                          <div className="mt-2 text-[11px] text-gray-400 space-y-1">
+                          <div className="mt-2 text-[11px] text-gray-500 space-y-1">
                             {e.source && <p className="font-mono break-all">{e.source}</p>}
                             {e.navigateur && <p className="break-all">{e.navigateur}</p>}
                             <p>{t('firstSeen', { time: dateHeure(e.premiereFois) })}</p>
@@ -757,13 +757,13 @@ export default function SurveillancePage() {
             {donnees.incidents.historique.length === 0 ? (
               <p className="text-sm text-gray-500">{t('historyEmpty')}</p>
             ) : (
-              <ul className="divide-y divide-gray-700 -my-2">
+              <ul className="divide-y divide-gray-100 -my-2">
                 {donnees.incidents.historique.map((incident) => (
                   <li key={`${incident.cle}-${incident.ouvertLe}`} className="py-2.5 flex items-start gap-3">
                     <IconeEtat etat={incident.niveau} />
                     <div className="min-w-0">
                       <p className="font-medium">{incident.titre}</p>
-                      <p className="text-sm text-gray-400 break-words">{incident.detail}</p>
+                      <p className="text-sm text-gray-500 break-words">{incident.detail}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {t('historyRange', { from: dateHeure(incident.ouvertLe), to: incident.resoluLe ? dateHeure(incident.resoluLe) : '—' })}
                       </p>
@@ -776,7 +776,7 @@ export default function SurveillancePage() {
 
           <p className="text-sm text-gray-500">
             {t('footerNote')}{' '}
-            <Link href="/superowner/health" className="underline hover:text-gray-300">
+            <Link href="/superowner/health" className="underline hover:text-gray-700">
               {t('footerHealthLink')}
             </Link>
           </p>

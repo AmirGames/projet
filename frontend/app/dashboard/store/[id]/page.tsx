@@ -49,10 +49,10 @@ export default function AncienneGestionBoutique() {
   }, [storeId, router]);
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+    <div className="min-h-screen bg-[#F7F7F6] flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mx-auto mb-4" />
-        <p className="text-gray-400">Ouverture de votre boutique...</p>
+        <p className="text-gray-500">Ouverture de votre boutique...</p>
       </div>
     </div>
   );

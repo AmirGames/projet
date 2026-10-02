@@ -55,13 +55,13 @@ export default function DriversPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-600/20 text-green-400';
+        return 'bg-green-50 text-green-600';
       case 'suspended':
-        return 'bg-orange-600/20 text-orange-400';
+        return 'bg-orange-50 text-orange-600';
       case 'inactive':
-        return 'bg-gray-600/20 text-gray-400';
+        return 'bg-gray-600/20 text-gray-500';
       default:
-        return 'bg-gray-600/20 text-gray-400';
+        return 'bg-gray-600/20 text-gray-500';
     }
   };
 
@@ -89,14 +89,14 @@ export default function DriversPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Car size={32} className="text-yellow-400" />
+          <Car size={32} className="text-yellow-600" />
           {t('driversTitle')}
         </h1>
-        <p className="text-gray-400 mt-1">{t('driversSubtitle')}</p>
+        <p className="text-gray-500 mt-1">{t('driversSubtitle')}</p>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
         <div className="flex gap-3">
           <div className="flex-1 relative">
             <Search size={18} className="absolute left-3 top-3 text-gray-500" />
@@ -105,10 +105,10 @@ export default function DriversPage() {
               placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-yellow-500"
+              className="w-full bg-gray-100 border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-yellow-500"
             />
           </div>
-          <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg flex items-center gap-2 text-gray-300 transition-colors">
+          <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg flex items-center gap-2 text-gray-700 transition-colors">
             <Filter size={18} />
             {t('filters')}
           </button>
@@ -122,8 +122,8 @@ export default function DriversPage() {
               onClick={() => setStatusFilter(status)}
               className={`px-4 py-2 rounded-lg border transition-colors ${
                 statusFilter === status
-                  ? 'bg-yellow-600/20 border-yellow-600 text-yellow-400'
-                  : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                  ? 'bg-yellow-50 border-yellow-600 text-yellow-600'
+                  : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
               }`}
             >
               {t(`status.${status}`)}
@@ -133,25 +133,25 @@ export default function DriversPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         {filteredDrivers.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-700 border-b border-gray-600">
+              <thead className="bg-gray-100 border-b border-gray-300">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('name')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('email')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('vehicleType')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('statusColumn')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('actions')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('name')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('email')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('vehicleType')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('statusColumn')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('actions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700">
+              <tbody className="divide-y divide-gray-100">
                 {filteredDrivers.map((driver) => (
-                  <tr key={driver.id} className="hover:bg-gray-700/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-gray-100">{driver.name}</td>
-                    <td className="px-6 py-4 text-gray-400 text-sm">{driver.email}</td>
-                    <td className="px-6 py-4 text-gray-400 text-sm">{driver.vehicleType || '-'}</td>
+                  <tr key={driver.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-gray-900">{driver.name}</td>
+                    <td className="px-6 py-4 text-gray-500 text-sm">{driver.email}</td>
+                    <td className="px-6 py-4 text-gray-500 text-sm">{driver.vehicleType || '-'}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(driver.status)}`}>
                         {getStatusIcon(driver.status)}
@@ -160,13 +160,13 @@ export default function DriversPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        <button className="p-2 hover:bg-gray-600 rounded transition-colors text-gray-400 hover:text-gray-300" title={t('view')}>
+                        <button className="p-2 hover:bg-gray-200 rounded transition-colors text-gray-500 hover:text-gray-700" title={t('view')}>
                           <Eye size={18} />
                         </button>
-                        <button className="p-2 hover:bg-gray-600 rounded transition-colors text-gray-400 hover:text-gray-300" title={t('edit')}>
+                        <button className="p-2 hover:bg-gray-200 rounded transition-colors text-gray-500 hover:text-gray-700" title={t('edit')}>
                           <Edit2 size={18} />
                         </button>
-                        <button className="p-2 hover:bg-red-600/20 rounded transition-colors text-gray-400 hover:text-red-400" title={t('delete')}>
+                        <button className="p-2 hover:bg-red-50 rounded transition-colors text-gray-500 hover:text-red-600" title={t('delete')}>
                           <Trash2 size={18} />
                         </button>
                       </div>
@@ -178,8 +178,8 @@ export default function DriversPage() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <Car size={48} className="mx-auto text-gray-600 mb-4" />
-            <p className="text-gray-400">{t('empty')}</p>
+            <Car size={48} className="mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500">{t('empty')}</p>
           </div>
         )}
       </div>

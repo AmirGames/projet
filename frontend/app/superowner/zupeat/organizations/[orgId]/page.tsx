@@ -248,23 +248,23 @@ export default function MerchantDetailPage() {
   };
 
   if (loading) return <div className="text-center py-8">Chargement...</div>;
-  if (!merchant) return <div className="text-center py-8 text-red-400">Commerçant non trouvé</div>;
+  if (!merchant) return <div className="text-center py-8 text-red-600">Commerçant non trouvé</div>;
 
   return (
     <div className="space-y-6 max-w-6xl">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/superowner/zupeat/organizations" className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+        <Link href="/superowner/zupeat/organizations" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
           <ArrowLeft size={20} />
         </Link>
         <div>
           <h1 className="text-3xl font-bold">{merchant.name}</h1>
-          <p className="text-gray-400 mt-1">{merchant.slug}</p>
+          <p className="text-gray-500 mt-1">{merchant.slug}</p>
         </div>
       </div>
 
       {actionError && (
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
+        <div className="bg-red-100 border border-red-500/50 rounded-lg p-4 text-red-600">
           {actionError}
         </div>
       )}
@@ -272,57 +272,57 @@ export default function MerchantDetailPage() {
       {/* Status Alert & Timeline */}
       {merchant.status !== 'ACTIVE' && (
         <div className={`${
-          merchant.status === 'SUSPENDED' ? 'bg-yellow-500/20 border-yellow-500/50' : 'bg-red-500/20 border-red-500/50'
+          merchant.status === 'SUSPENDED' ? 'bg-yellow-100 border-yellow-500/50' : 'bg-red-100 border-red-500/50'
         } border rounded-lg p-4 space-y-3`}>
           <div className="flex items-center gap-3">
-            <AlertCircle size={20} className={merchant.status === 'SUSPENDED' ? 'text-yellow-400' : 'text-red-400'} />
-            <span className={merchant.status === 'SUSPENDED' ? 'text-yellow-400' : 'text-red-400'}>
+            <AlertCircle size={20} className={merchant.status === 'SUSPENDED' ? 'text-yellow-600' : 'text-red-600'} />
+            <span className={merchant.status === 'SUSPENDED' ? 'text-yellow-600' : 'text-red-600'}>
               Statut: {merchant.status}
             </span>
           </div>
 
           {merchant.status === 'SUSPENDED' && merchant.suspensionReason && (
-            <div className="text-sm text-gray-300 ml-8">
+            <div className="text-sm text-gray-700 ml-8">
               <p className="font-medium mb-1">Raison:</p>
               <p>{merchant.suspensionReason}</p>
               {merchant.suspensionDate && (
-                <p className="text-gray-400 mt-1">Depuis le {new Date(merchant.suspensionDate).toLocaleDateString('fr-FR')}</p>
+                <p className="text-gray-500 mt-1">Depuis le {new Date(merchant.suspensionDate).toLocaleDateString('fr-FR')}</p>
               )}
             </div>
           )}
 
           {merchant.status === 'CLOSED' && merchant.closureReason && (
-            <div className="text-sm text-gray-300 ml-8 space-y-2">
+            <div className="text-sm text-gray-700 ml-8 space-y-2">
               <p className="font-medium">Raison de fermeture:</p>
               <p>{merchant.closureReason}</p>
               {merchant.closureDate && (
-                <p className="text-gray-400">Fermé le {new Date(merchant.closureDate).toLocaleDateString('fr-FR')}</p>
+                <p className="text-gray-500">Fermé le {new Date(merchant.closureDate).toLocaleDateString('fr-FR')}</p>
               )}
 
               {/* Timeline */}
-              <div className="mt-4 space-y-2 pt-2 border-t border-gray-700">
+              <div className="mt-4 space-y-2 pt-2 border-t border-gray-200">
                 <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-gray-400" />
+                  <Clock size={16} className="text-gray-500" />
                   <span className="text-sm">
                     {getDaysUntilHardDelete()}j avant suppression permanente
                   </span>
                 </div>
 
                 {merchant.closedUntil && (
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-500">
                     Suppression prévue le {new Date(merchant.closedUntil).toLocaleDateString('fr-FR')}
                   </p>
                 )}
 
                 {!merchant.isArchivedPermanently && merchant.archiveBackupId && (
-                  <p className="text-sm text-green-400 flex items-center gap-2">
+                  <p className="text-sm text-green-600 flex items-center gap-2">
                     <Archive size={16} />
                     Backup disponible pour restauration
                   </p>
                 )}
 
                 {merchant.isArchivedPermanently && (
-                  <p className="text-sm text-red-400 flex items-center gap-2">
+                  <p className="text-sm text-red-600 flex items-center gap-2">
                     <XCircle size={16} />
                     Données définitivement supprimées
                   </p>
@@ -338,7 +338,7 @@ export default function MerchantDetailPage() {
       <DossierCommercant orgId={merchantId} />
 
       {/* Quick Actions */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <h2 className="text-lg font-bold">Actions rapides</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -346,13 +346,13 @@ export default function MerchantDetailPage() {
             <>
               {peutSuspendre && (<button
                 onClick={() => setShowActionModal('suspend')}
-                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors font-medium text-sm"
+                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors font-medium text-sm text-white"
               >
                 Suspendre
               </button>)}
               {peutFermer && (<button
                 onClick={() => setShowActionModal('close')}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors font-medium text-sm"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors font-medium text-sm text-white"
               >
                 Fermer le compte
               </button>)}
@@ -363,7 +363,7 @@ export default function MerchantDetailPage() {
             <button
               onClick={handleUnsuspend}
               disabled={saving}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors font-medium text-sm col-span-2"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors font-medium text-sm col-span-2 text-white"
             >
               {saving ? 'Réactivation...' : t('reactivate')}
             </button>
@@ -373,7 +373,7 @@ export default function MerchantDetailPage() {
             <button
               onClick={() => setShowActionModal('restore')}
               disabled={saving}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors font-medium text-sm col-span-2"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors font-medium text-sm col-span-2 text-white"
             >
               {saving ? 'Restauration...' : t('restoreFromBackup')}
             </button>
@@ -382,7 +382,7 @@ export default function MerchantDetailPage() {
       </div>
 
       {/* Controls */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <h2 className="text-lg font-bold">Gestion générale</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -391,7 +391,7 @@ export default function MerchantDetailPage() {
             <select
               value={newTier}
               onChange={(e) => setNewTier(e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
             >
               <option value="FREE">FREE</option>
               <option value="PREMIUM">PREMIUM</option>
@@ -403,7 +403,7 @@ export default function MerchantDetailPage() {
             <button
               onClick={handleUpdate}
               disabled={saving}
-              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors font-medium"
+              className="w-full px-4 py-2 bg-gray-900 hover:bg-black disabled:opacity-50 rounded-lg transition-colors font-medium text-white"
             >
               {saving ? t('saving') : t('update')}
             </button>
@@ -414,7 +414,7 @@ export default function MerchantDetailPage() {
       {/* Action Modal */}
       {showActionModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full space-y-4">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 max-w-md w-full space-y-4">
             <h3 className="text-xl font-bold">
               {showActionModal === 'suspend' && t('suspendAccount')}
               {showActionModal === 'close' && t('closeAccountModal')}
@@ -422,12 +422,12 @@ export default function MerchantDetailPage() {
             </h3>
 
             {showActionModal === 'restore' ? (
-              <p className="text-gray-300">
+              <p className="text-gray-700">
                 Êtes-vous sûr de vouloir restaurer ce compte ? Les données supprimées seront restaurées et le statut passera à ACTIVE.
               </p>
             ) : (
               <>
-                <p className="text-gray-300 text-sm">
+                <p className="text-gray-700 text-sm">
                   {showActionModal === 'suspend' && 'Le commerçant ne pourra plus accéder à son compte'}
                   {showActionModal === 'close' && 'Les données seront sauvegardées et progressivement supprimées'}
                 </p>
@@ -435,7 +435,7 @@ export default function MerchantDetailPage() {
                   placeholder="Raison..."
                   value={actionReason}
                   onChange={(e) => setActionReason(e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500 resize-none"
                   rows={3}
                 />
               </>
@@ -448,7 +448,7 @@ export default function MerchantDetailPage() {
                   setActionReason('');
                   setActionError('');
                 }}
-                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors font-medium"
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium"
               >
                 Annuler
               </button>
@@ -474,71 +474,71 @@ export default function MerchantDetailPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Chiffre d'affaires</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <p className="text-gray-500 text-sm mb-2">Chiffre d'affaires</p>
           <p className="text-3xl font-bold">{merchant.stats.totalRevenue.toFixed(2)} €</p>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Commission</p>
-          <p className="text-3xl font-bold text-green-400">{merchant.stats.commission.toFixed(2)} €</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <p className="text-gray-500 text-sm mb-2">Commission</p>
+          <p className="text-3xl font-bold text-green-600">{merchant.stats.commission.toFixed(2)} €</p>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <p className="text-gray-400 text-sm mb-2">Commandes</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <p className="text-gray-500 text-sm mb-2">Commandes</p>
           <p className="text-3xl font-bold">{merchant.stats.ordersCount}</p>
         </div>
       </div>
 
       {/* Stores */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-lg font-bold mb-4">Boutiques ({merchant.stores.length})</h2>
         {merchant.stores.length > 0 ? (
           <div className="space-y-2">
             {merchant.stores.map((store) => (
-              <div key={store.id} className="p-3 bg-gray-700 rounded-lg flex justify-between items-center">
+              <div key={store.id} className="p-3 bg-gray-100 rounded-lg flex justify-between items-center">
                 <div>
                   <p className="font-medium">{store.name}</p>
-                  <p className="text-sm text-gray-400">{store.id}</p>
+                  <p className="text-sm text-gray-500">{store.id}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-400">Aucune boutique</p>
+          <p className="text-gray-500">Aucune boutique</p>
         )}
       </div>
 
       {/* Team Members */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-lg font-bold mb-4">Équipe ({merchant.memberships.length})</h2>
         {merchant.memberships.length > 0 ? (
           <div className="space-y-2">
             {merchant.memberships.map((member) => (
-              <div key={member.id} className="p-3 bg-gray-700 rounded-lg flex justify-between items-center">
+              <div key={member.id} className="p-3 bg-gray-100 rounded-lg flex justify-between items-center">
                 <div>
                   <p className="font-medium">{member.user.email}</p>
-                  <p className="text-sm text-gray-400">{member.role}</p>
+                  <p className="text-sm text-gray-500">{member.role}</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-400">Aucun membre</p>
+          <p className="text-gray-500">Aucun membre</p>
         )}
       </div>
 
       {/* Recent Tickets */}
       {merchant.tickets.length > 0 && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="text-lg font-bold mb-4">Tickets récents</h2>
           <div className="space-y-2">
             {merchant.tickets.slice(0, 5).map((ticket) => (
-              <div key={ticket.id} className="p-3 bg-gray-700 rounded-lg">
+              <div key={ticket.id} className="p-3 bg-gray-100 rounded-lg">
                 <p className="font-medium">{ticket.title}</p>
-                <div className="text-sm text-gray-400 mt-1 flex gap-2">
-                  <span className="px-2 py-1 bg-gray-600 rounded">{ticket.status}</span>
-                  <span className="px-2 py-1 bg-gray-600 rounded">{ticket.priority}</span>
+                <div className="text-sm text-gray-500 mt-1 flex gap-2">
+                  <span className="px-2 py-1 bg-gray-200 rounded">{ticket.status}</span>
+                  <span className="px-2 py-1 bg-gray-200 rounded">{ticket.priority}</span>
                 </div>
               </div>
             ))}

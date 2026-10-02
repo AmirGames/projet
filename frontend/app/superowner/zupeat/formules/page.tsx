@@ -132,7 +132,7 @@ export default function FormulesPage() {
 
   if (chargement) {
     return (
-      <div className="p-8 text-gray-400">{t('loading')}</div>
+      <div className="p-8 text-gray-500">{t('loading')}</div>
     );
   }
 
@@ -142,19 +142,19 @@ export default function FormulesPage() {
         <Layers size={28} className="text-red-500" />
         <div>
           <h1 className="text-3xl font-bold">{t('title')}</h1>
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-500 text-sm">
             {t('subtitle')}
           </p>
         </div>
       </div>
 
       {erreur && (
-        <div className="bg-red-900/30 border border-red-700 text-red-200 rounded-lg px-4 py-3">
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3">
           {erreur}
         </div>
       )}
       {message && (
-        <div className="bg-green-900/30 border border-green-700 text-green-200 rounded-lg px-4 py-3">
+        <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3">
           {message}
         </div>
       )}
@@ -166,13 +166,13 @@ export default function FormulesPage() {
           return (
             <section
               key={formule.code}
-              className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4"
+              className="bg-white border border-gray-200 rounded-lg p-6 space-y-4"
             >
               <div className="flex items-start justify-between">
                 <span className="text-xs uppercase tracking-wide text-gray-500">
                   {formule.code}
                 </span>
-                <span className="flex items-center gap-1 text-xs text-gray-400">
+                <span className="flex items-center gap-1 text-xs text-gray-500">
                   <Users size={14} />
                   {t('subscribers', { count: formule.abonnes })}
                 </span>
@@ -180,21 +180,21 @@ export default function FormulesPage() {
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1" htmlFor={`nom-${formule.code}`}>
+                  <label className="block text-sm text-gray-500 mb-1" htmlFor={`nom-${formule.code}`}>
                     {t('displayName')}
                   </label>
                   <input
                     id={`nom-${formule.code}`}
                     value={brouillon.libelle}
                     onChange={(e) => modifier(formule.code, { libelle: e.target.value })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-500"
                   />
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label
-                      className="block text-sm text-gray-400 mb-1"
+                      className="block text-sm text-gray-500 mb-1"
                       htmlFor={`prix-${formule.code}`}
                     >
                       {t('priceMonthly')}
@@ -208,7 +208,7 @@ export default function FormulesPage() {
                       onChange={(e) =>
                         modifier(formule.code, { prixMensuel: Number(e.target.value) })
                       }
-                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       {t('priceWeekly', { price: euro(parSemaine(brouillon.prixMensuel)) })}
@@ -217,7 +217,7 @@ export default function FormulesPage() {
 
                   <div>
                     <label
-                      className="block text-sm text-gray-400 mb-1"
+                      className="block text-sm text-gray-500 mb-1"
                       htmlFor={`quota-${formule.code}`}
                     >
                       {t('stores')}
@@ -230,7 +230,7 @@ export default function FormulesPage() {
                       onChange={(e) =>
                         modifier(formule.code, { maxBoutiques: Number(e.target.value) })
                       }
-                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-500"
                     />
                   </div>
 
@@ -238,7 +238,7 @@ export default function FormulesPage() {
                       pour tous, quel que soit l'abonnement payé. */}
                   <div>
                     <label
-                      className="block text-sm text-gray-400 mb-1"
+                      className="block text-sm text-gray-500 mb-1"
                       htmlFor={`commission-${formule.code}`}
                     >
                       {t('commission')}
@@ -253,7 +253,7 @@ export default function FormulesPage() {
                       onChange={(e) =>
                         modifier(formule.code, { commission: Number(e.target.value) })
                       }
-                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-500"
                     />
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export default function FormulesPage() {
                     livreur, et lui reverse les frais de livraison. */}
                 <div>
                   <label
-                    className="block text-sm text-gray-400 mb-1"
+                    className="block text-sm text-gray-500 mb-1"
                     htmlFor={`commission-plateforme-${formule.code}`}
                   >
                     {t('platformCommission')}
@@ -277,13 +277,13 @@ export default function FormulesPage() {
                     onChange={(e) =>
                       modifier(formule.code, { commissionLivreursPlateforme: Number(e.target.value) })
                     }
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-red-500"
+                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-red-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">{t('platformCommissionHelp')}</p>
                 </div>
 
                 <div>
-                  <span className="block text-sm text-gray-400 mb-1">{t('sellingPoints')}</span>
+                  <span className="block text-sm text-gray-500 mb-1">{t('sellingPoints')}</span>
                   <div className="space-y-2">
                     {brouillon.avantages.map((avantage, index) => (
                       <div key={index} className="flex items-center gap-2">
@@ -295,7 +295,7 @@ export default function FormulesPage() {
                             copie[index] = e.target.value;
                             modifier(formule.code, { avantages: copie });
                           }}
-                          className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500"
+                          className="flex-1 bg-gray-100 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-red-500"
                         />
                         <button
                           type="button"
@@ -305,7 +305,7 @@ export default function FormulesPage() {
                               avantages: brouillon.avantages.filter((_, i) => i !== index),
                             })
                           }
-                          className="p-2 text-gray-400 hover:text-red-400 transition"
+                          className="p-2 text-gray-500 hover:text-red-600 transition"
                         >
                           <X size={16} />
                         </button>
@@ -317,7 +317,7 @@ export default function FormulesPage() {
                       onClick={() =>
                         modifier(formule.code, { avantages: [...brouillon.avantages, ''] })
                       }
-                      className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition"
+                      className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition"
                     >
                       <Plus size={16} /> {t('addLine')}
                     </button>
@@ -347,7 +347,7 @@ export default function FormulesPage() {
         className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition ${
           codesModifies.length > 0
             ? 'bg-red-600 hover:bg-red-700'
-            : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+            : 'bg-gray-100 text-gray-500 cursor-not-allowed'
         }`}
       >
         <Save size={18} />

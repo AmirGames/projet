@@ -23,10 +23,10 @@ export interface PieceAExaminer {
 }
 
 const COULEURS_PIECE: Record<string, string> = {
-  APPROVED: 'text-green-400',
-  REJECTED: 'text-red-400',
-  EXPIRED: 'text-red-400',
-  PENDING: 'text-amber-300',
+  APPROVED: 'text-green-600',
+  REJECTED: 'text-red-600',
+  EXPIRED: 'text-red-600',
+  PENDING: 'text-amber-700',
 };
 
 const date = (valeur: string) => new Date(valeur).toLocaleDateString('fr-FR');
@@ -54,24 +54,24 @@ export function LignePieceAExaminer({
   const t = useTranslations('superownerChauffeurs');
 
   return (
-    <li className="rounded bg-gray-700/40 px-3 py-2">
+    <li className="rounded bg-gray-50 px-3 py-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm text-white">
+          <p className="text-sm text-gray-900">
             {piece.libelle}
-            {facultative && <span className="ml-2 text-xs text-gray-400">{t('optional')}</span>}
-            {piece.renouvellement && <span className="ml-2 text-xs text-blue-300">{t('renewal')}</span>}
-            {versionEnVigueur && <span className="ml-2 text-xs text-gray-400">{t('currentVersion')}</span>}
-            <span className={`ml-2 text-xs ${COULEURS_PIECE[piece.statut] || 'text-gray-400'}`}>
+            {facultative && <span className="ml-2 text-xs text-gray-500">{t('optional')}</span>}
+            {piece.renouvellement && <span className="ml-2 text-xs text-blue-700">{t('renewal')}</span>}
+            {versionEnVigueur && <span className="ml-2 text-xs text-gray-500">{t('currentVersion')}</span>}
+            <span className={`ml-2 text-xs ${COULEURS_PIECE[piece.statut] || 'text-gray-500'}`}>
               {t(`documentStatus.${piece.statut}`)}
             </span>
           </p>
           {piece.dateExpiration && <p className="text-xs text-gray-500">{t('expiresOn', { date: date(piece.dateExpiration) })}</p>}
-          {piece.noteExamen && <p className="text-xs text-red-300">{piece.noteExamen}</p>}
+          {piece.noteExamen && <p className="text-xs text-red-700">{piece.noteExamen}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* Aperçu dans la page ; l'adresse signée est redemandée à l'ouverture. */}
-          <button type="button" onClick={onVoir} className="flex items-center gap-1 text-xs text-blue-400 hover:underline">
+          <button type="button" onClick={onVoir} className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
             <Eye size={12} />
             {t('view')}
           </button>
@@ -95,7 +95,7 @@ export function LignePieceAExaminer({
             onChange={(e) => onNote(e.target.value)}
             placeholder={t('documentReasonPlaceholder')}
             aria-label={`${t('documentReasonPlaceholder')} — ${piece.libelle}`}
-            className="min-w-0 flex-1 rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-white"
+            className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900"
           />
           <button
             onClick={() => onExaminer(false)}

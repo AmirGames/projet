@@ -83,22 +83,22 @@ export function DocumentPreviewModal({ documentUrl, libelle, onClose }: Document
         className="relative max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
-          <h2 id="preview-title" className="text-white font-semibold">
+        <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+          <h2 id="preview-title" className="text-gray-900 font-semibold">
             {libelle}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-700 rounded transition"
+            className="p-1 hover:bg-gray-100 rounded transition"
             aria-label="Close preview"
           >
-            <X size={20} className="text-gray-300" />
+            <X size={20} className="text-gray-700" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-auto bg-gray-900 flex items-center justify-center">
+        <div className="flex-1 overflow-auto bg-white flex items-center justify-center">
           {apercu.etat === 'chargement' && (
-            <p className="p-8 text-gray-400">Chargement…</p>
+            <p className="p-8 text-gray-500">Chargement…</p>
           )}
 
           {apercu.etat === 'pret' && apercu.type === 'application/pdf' && (
@@ -122,7 +122,7 @@ export function DocumentPreviewModal({ documentUrl, libelle, onClose }: Document
             (apercu.etat === 'pret' &&
               apercu.type !== 'application/pdf' &&
               !apercu.type.startsWith('image/'))) && (
-            <div className="p-8 text-center text-gray-300">
+            <div className="p-8 text-center text-gray-700">
               <p>Impossible d&apos;afficher ce fichier ici.</p>
               <a
                 href={apercu.etat === 'pret' ? apercu.url : documentUrl}
@@ -133,7 +133,7 @@ export function DocumentPreviewModal({ documentUrl, libelle, onClose }: Document
                   e.preventDefault();
                   void ouvrirPiece(documentUrl);
                 }}
-                className="mt-2 inline-block text-blue-400 underline"
+                className="mt-2 inline-block text-blue-600 underline"
               >
                 Ouvrir dans un nouvel onglet
               </a>

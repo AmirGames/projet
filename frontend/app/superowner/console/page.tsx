@@ -22,9 +22,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const MAX_LIGNES = 2000;
 
 const COULEURS: Record<string, string> = {
-  error: 'text-red-400',
-  warn: 'text-amber-400',
-  info: 'text-sky-400',
+  error: 'text-red-600',
+  warn: 'text-amber-600',
+  info: 'text-sky-600',
   http: 'text-gray-500',
   debug: 'text-fuchsia-400',
 };
@@ -102,7 +102,7 @@ export default function ConsolePage() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
-          <Link href="/superowner" aria-label={t('back')} className="p-2 hover:bg-gray-800 rounded-lg transition">
+          <Link href="/superowner" aria-label={t('back')} className="p-2 hover:bg-white rounded-lg transition">
             <ArrowLeft size={20} />
           </Link>
           <div>
@@ -110,7 +110,7 @@ export default function ConsolePage() {
               <Terminal size={28} className="text-red-500" />
               {t('title')}
             </h1>
-            <p className="text-gray-400 text-sm mt-1">{t('subtitle')}</p>
+            <p className="text-gray-500 text-sm mt-1">{t('subtitle')}</p>
           </div>
         </div>
 
@@ -118,7 +118,7 @@ export default function ConsolePage() {
           <button
             type="button"
             onClick={() => setEnPause((p) => !p)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 hover:bg-gray-700 rounded-lg transition"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-100 rounded-lg transition"
           >
             {enPause ? <Play size={16} /> : <Pause size={16} />}
             {enPause ? t('resume') : t('pause')}
@@ -126,7 +126,7 @@ export default function ConsolePage() {
           <button
             type="button"
             onClick={() => setLignes([])}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 hover:bg-gray-700 rounded-lg transition"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-100 rounded-lg transition"
           >
             <Trash2 size={16} />
             {t('clear')}
@@ -141,7 +141,7 @@ export default function ConsolePage() {
             type="button"
             onClick={() => setNiveaux((n) => ({ ...n, [niveau]: !n[niveau] }))}
             className={`px-3 py-1 rounded-full text-xs font-mono border transition ${
-              niveaux[niveau] ? `border-gray-600 bg-gray-800 ${COULEURS[niveau]}` : 'border-gray-800 text-gray-600 line-through'
+              niveaux[niveau] ? `border-gray-600 bg-gray-800 ${COULEURS[niveau]}` : 'border-gray-100 text-gray-500 line-through'
             }`}
           >
             {niveau.toUpperCase()} ({compte(niveau)})
@@ -151,16 +151,16 @@ export default function ConsolePage() {
           value={recherche}
           onChange={(e) => setRecherche(e.target.value)}
           placeholder={t('search')}
-          className="flex-1 min-w-[12rem] px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm"
+          className="flex-1 min-w-[12rem] px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm"
         />
       </div>
 
       {erreur && (
-        <div className="bg-red-900/30 border border-red-700 text-red-200 rounded-lg px-4 py-3">{erreur}</div>
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3">{erreur}</div>
       )}
 
       <div
-        className="bg-black border border-gray-700 rounded-lg p-3 h-[70vh] overflow-auto font-mono text-xs leading-5"
+        className="bg-black border border-gray-200 rounded-lg p-3 h-[70vh] overflow-auto font-mono text-xs leading-5"
         onScroll={(e) => {
           const el = e.currentTarget;
           suivre.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
@@ -169,10 +169,10 @@ export default function ConsolePage() {
         {visibles.length === 0 && <p className="text-gray-500">{t('empty')}</p>}
         {visibles.map((l) => (
           <div key={l.id} className="whitespace-pre-wrap break-all">
-            <span className={COULEURS[l.niveau] ?? 'text-gray-300'}>
+            <span className={COULEURS[l.niveau] ?? 'text-gray-700'}>
               [{new Date(l.date).toLocaleString('fr-FR')}] {l.niveau.toUpperCase()}
             </span>{' '}
-            <span className="text-gray-200">{l.message}</span>
+            <span className="text-gray-800">{l.message}</span>
             {l.meta && <span className="text-gray-500"> {l.meta}</span>}
           </div>
         ))}

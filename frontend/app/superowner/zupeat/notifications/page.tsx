@@ -128,26 +128,26 @@ export default function NotificationsPage() {
   const getIcon = (type: string) => {
     switch (type) {
       case 'ALERT':
-        return <AlertCircle size={20} className="text-red-400" />;
+        return <AlertCircle size={20} className="text-red-600" />;
       case 'WARNING':
-        return <AlertCircle size={20} className="text-yellow-400" />;
+        return <AlertCircle size={20} className="text-yellow-600" />;
       case 'SUCCESS':
-        return <CheckCircle size={20} className="text-green-400" />;
+        return <CheckCircle size={20} className="text-green-600" />;
       default:
-        return <Info size={20} className="text-blue-400" />;
+        return <Info size={20} className="text-blue-600" />;
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'CRITICAL':
-        return 'bg-red-600/20 text-red-400 border-red-600/50';
+        return 'bg-red-50 text-red-600 border-red-200';
       case 'HIGH':
-        return 'bg-orange-600/20 text-orange-400 border-orange-600/50';
+        return 'bg-orange-50 text-orange-600 border-orange-200';
       case 'MEDIUM':
-        return 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50';
+        return 'bg-yellow-50 text-yellow-600 border-yellow-200';
       default:
-        return 'bg-blue-600/20 text-blue-400 border-blue-600/50';
+        return 'bg-blue-50 text-blue-600 border-blue-200';
     }
   };
 
@@ -161,33 +161,33 @@ export default function NotificationsPage() {
             <Bell size={32} />
             {t('title')}
           </h1>
-          <p className="text-gray-400 mt-1">{t('subtitle')}</p>
+          <p className="text-gray-500 mt-1">{t('subtitle')}</p>
         </div>
         <div className="text-right">
-          <p className="text-3xl font-bold text-red-400">{unreadCount}</p>
-          <p className="text-sm text-gray-400">{t('unread')}</p>
+          <p className="text-3xl font-bold text-red-600">{unreadCount}</p>
+          <p className="text-sm text-gray-500">{t('unread')}</p>
         </div>
       </div>
 
       {message && (
-        <p role="status" className="text-sm text-green-400">
+        <p role="status" className="text-sm text-green-600">
           {message}
         </p>
       )}
 
       <button
         onClick={() => setShowForm(!showForm)}
-        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 rounded-lg px-4 py-2 font-medium transition-colors"
+        className="flex items-center gap-2 bg-gray-900 hover:bg-black rounded-lg px-4 py-2 font-medium transition-colors text-white"
       >
         <Settings size={20} />
         {t('create')}
       </button>
 
       {showForm && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="text-lg font-bold mb-4">{t('createNew')}</h2>
           {erreur && (
-            <p role="status" className="mb-4 text-sm text-red-400">
+            <p role="status" className="mb-4 text-sm text-red-600">
               {erreur}
             </p>
           )}
@@ -198,7 +198,7 @@ export default function NotificationsPage() {
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
                 required
               />
             </div>
@@ -207,7 +207,7 @@ export default function NotificationsPage() {
               <textarea
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
                 rows={3}
                 required
               />
@@ -218,7 +218,7 @@ export default function NotificationsPage() {
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
                 >
                   <option value="INFO">{t('type_info')}</option>
                   <option value="SUCCESS">{t('type_success')}</option>
@@ -231,7 +231,7 @@ export default function NotificationsPage() {
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
                 >
                   <option value="LOW">{t('priority_low')}</option>
                   <option value="MEDIUM">{t('priority_medium')}</option>
@@ -245,7 +245,7 @@ export default function NotificationsPage() {
               <select
                 value={formData.targetAudience}
                 onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
               >
                 <option value="ALL">{t('audience_all')}</option>
                 <option value="MERCHANTS">{t('audience_merchants')}</option>
@@ -257,13 +257,13 @@ export default function NotificationsPage() {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
               >
                 {t('send')}
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+                className="px-4 py-2 bg-gray-900 hover:bg-black rounded-lg font-medium transition-colors text-white"
               >
                 {t('send')}
               </button>
@@ -272,23 +272,23 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-2">
-            <Search size={20} className="text-gray-400" />
+            <Search size={20} className="text-gray-500" />
             <input
               type="text"
               placeholder={t('search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
             />
           </div>
 
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as any)}
-            className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
           >
             <option value="ALL">{t('filterByType')}</option>
             <option value="INFO">{t('type_info')}</option>
@@ -300,7 +300,7 @@ export default function NotificationsPage() {
           <select
             value={readFilter}
             onChange={(e) => setReadFilter(e.target.value as any)}
-            className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
           >
             <option value="ALL">{t('filterByRead')}</option>
             <option value="UNREAD">{t('filterByReadUnread')}</option>
@@ -311,7 +311,7 @@ export default function NotificationsPage() {
 
       <div className="space-y-3">
         {filteredNotifications.length === 0 ? (
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center text-gray-400">
+          <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
             {t('noNotifications')}
           </div>
         ) : (
@@ -320,8 +320,8 @@ export default function NotificationsPage() {
               key={notif.id}
               className={`border rounded-lg p-4 flex gap-4 items-start ${
                 notif.read
-                  ? 'bg-gray-800 border-gray-700'
-                  : 'bg-gray-800/80 border-blue-600/50 shadow-lg shadow-blue-600/20'
+                  ? 'bg-white border-gray-200'
+                  : 'bg-white/90 border-blue-200 shadow-lg shadow-blue-600/20'
               }`}
             >
               <div className="mt-1">{getIcon(notif.type)}</div>
@@ -329,22 +329,22 @@ export default function NotificationsPage() {
               <div className="flex-1">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className={`font-bold ${notif.read ? 'text-white' : 'text-blue-400'}`}>
+                    <h3 className={`font-bold ${notif.read ? 'text-gray-900' : 'text-blue-600'}`}>
                       {notif.title}
                     </h3>
-                    <p className="text-gray-400 text-sm mt-1">{notif.message}</p>
+                    <p className="text-gray-500 text-sm mt-1">{notif.message}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPriorityColor(notif.priority)}`}>
                     {notif.priority}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3 mt-3 text-xs text-gray-400">
+                <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
                   <span>{new Date(notif.createdAt).toLocaleString('fr-FR')}</span>
                   <span>•</span>
-                  <span className="bg-gray-700 px-2 py-1 rounded">{notif.targetAudience}</span>
+                  <span className="bg-gray-100 px-2 py-1 rounded">{notif.targetAudience}</span>
                   <span>•</span>
-                  <span className={`font-medium ${notif.read ? 'text-gray-500' : 'text-blue-400'}`}>
+                  <span className={`font-medium ${notif.read ? 'text-gray-500' : 'text-blue-600'}`}>
                     {notif.read ? 'Lu' : 'Non lu'}
                   </span>
                 </div>
@@ -354,15 +354,15 @@ export default function NotificationsPage() {
                 {!notif.read && (
                   <button
                     onClick={() => handleMarkAsRead(notif.id)}
-                    className="p-2 hover:bg-gray-700 rounded transition-colors"
+                    className="p-2 hover:bg-gray-100 rounded transition-colors"
                     title={t('mark_as_read')}
                   >
-                    <CheckCircle size={18} className="text-green-400" />
+                    <CheckCircle size={18} className="text-green-600" />
                   </button>
                 )}
                 <button
                   onClick={() => handleDelete(notif.id)}
-                  className="p-2 hover:bg-gray-700 rounded transition-colors text-red-400 hover:text-red-300"
+                  className="p-2 hover:bg-gray-100 rounded transition-colors text-red-600 hover:text-red-700"
                   title={t('delete')}
                 >
                   <Trash2 size={18} />
@@ -373,7 +373,7 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      <div className="text-gray-400 text-sm">
+      <div className="text-gray-500 text-sm">
         {t('total')}: <strong>{filteredNotifications.length}</strong> {t('totalCount')} • {t('unread')}: <strong>{unreadCount}</strong>
       </div>
     </div>

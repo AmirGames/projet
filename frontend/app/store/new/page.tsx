@@ -183,10 +183,10 @@ export default function CreateStorePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="bg-gray-800 border-b border-gray-700 p-6">
+    <div className="min-h-screen bg-[#F7F7F6] text-gray-900">
+      <div className="bg-white border-b border-gray-200 p-6">
         <div className="max-w-2xl mx-auto">
-          <Link href="/dashboard" className="text-blue-400 hover:text-blue-300 mb-4 inline-block">
+          <Link href="/dashboard" className="text-blue-600 hover:text-blue-700 mb-4 inline-block">
             ← Retour au tableau de bord
           </Link>
           <h1 className="text-3xl font-bold">Créer une nouvelle boutique</h1>
@@ -194,7 +194,7 @@ export default function CreateStorePage() {
       </div>
 
       <div className="max-w-2xl mx-auto p-6">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-8">
+        <div className="bg-white border border-gray-200 rounded-lg p-8">
           {error && (
             <div className="bg-red-600 text-white p-4 rounded-lg mb-6">
               {error}
@@ -204,15 +204,15 @@ export default function CreateStorePage() {
           {orgBlocked && (
             <div
               className={`${
-                orgBlocked.status === 'SUSPENDED' ? 'bg-yellow-500/20 border-yellow-500/50' : 'bg-red-500/20 border-red-500/50'
+                orgBlocked.status === 'SUSPENDED' ? 'bg-yellow-100 border-yellow-500/50' : 'bg-red-100 border-red-500/50'
               } border p-4 rounded-lg mb-6`}
             >
-              <p className={`font-bold ${orgBlocked.status === 'SUSPENDED' ? 'text-yellow-400' : 'text-red-400'}`}>
+              <p className={`font-bold ${orgBlocked.status === 'SUSPENDED' ? 'text-yellow-600' : 'text-red-600'}`}>
                 {orgBlocked.status === 'SUSPENDED'
                   ? 'Compte temporairement suspendu'
                   : 'Compte fermé'}
               </p>
-              <p className="text-sm text-gray-300 mt-1">
+              <p className="text-sm text-gray-700 mt-1">
                 Vous ne pouvez pas créer de boutique. Raison : {orgBlocked.reason || 'non spécifiée'}.
                 Contactez le support pour rétablir votre compte.
               </p>
@@ -224,7 +224,7 @@ export default function CreateStorePage() {
               <h2 className="text-xl font-bold mb-4">Informations de base</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">
+                  <label className="block text-gray-700 mb-2 font-medium">
                     Nom de la boutique *
                   </label>
                   <input
@@ -233,13 +233,13 @@ export default function CreateStorePage() {
                     value={formData.name}
                     onChange={handleNameChange}
                     placeholder="Ex: Ma Pizzeria"
-                    className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">
+                  <label className="block text-gray-700 mb-2 font-medium">
                     Slug (URL) *
                   </label>
                   <input
@@ -248,14 +248,14 @@ export default function CreateStorePage() {
                     value={formData.slug}
                     onChange={handleChange}
                     placeholder="ma-pizzeria"
-                    className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="businessType" className="block text-gray-300 mb-2 font-medium">
+                    <label htmlFor="businessType" className="block text-gray-700 mb-2 font-medium">
                       Type d&apos;entreprise *
                     </label>
                     <select
@@ -263,7 +263,7 @@ export default function CreateStorePage() {
                       name="businessType"
                       value={formData.businessType}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     >
                       {etablissements.map((genre) => (
@@ -278,7 +278,7 @@ export default function CreateStorePage() {
                       là où il a un sens. */}
                   {formData.businessType === 'restaurant' && (
                     <div>
-                      <label htmlFor="cuisineType" className="block text-gray-300 mb-2 font-medium">
+                      <label htmlFor="cuisineType" className="block text-gray-700 mb-2 font-medium">
                         Type de cuisine
                       </label>
                       <select
@@ -286,7 +286,7 @@ export default function CreateStorePage() {
                         name="cuisineType"
                         value={formData.cuisineType}
                         onChange={handleChange}
-                        className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Sélectionnez…</option>
                         {cuisines.map((genre) => (
@@ -300,7 +300,7 @@ export default function CreateStorePage() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">
+                  <label className="block text-gray-700 mb-2 font-medium">
                     Description
                   </label>
                   <textarea
@@ -309,7 +309,7 @@ export default function CreateStorePage() {
                     onChange={handleChange}
                     placeholder="Décrivez votre boutique..."
                     rows={3}
-                    className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -319,7 +319,7 @@ export default function CreateStorePage() {
               <h2 className="text-xl font-bold mb-4">Adresse</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">
+                  <label className="block text-gray-700 mb-2 font-medium">
                     Adresse
                   </label>
                   <AddressAutocomplete
@@ -345,13 +345,13 @@ export default function CreateStorePage() {
                       })
                     }
                     placeholder="123 rue de la Paix"
-                    className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-gray-300 mb-2 font-medium">
+                    <label className="block text-gray-700 mb-2 font-medium">
                       Ville
                     </label>
                     <input
@@ -360,12 +360,12 @@ export default function CreateStorePage() {
                       value={formData.city}
                       onChange={handleChange}
                       placeholder="Liège"
-                      className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-gray-300 mb-2 font-medium">
+                    <label className="block text-gray-700 mb-2 font-medium">
                       Code postal
                     </label>
                     <input
@@ -374,7 +374,7 @@ export default function CreateStorePage() {
                       value={formData.postalCode}
                       onChange={handleChange}
                       placeholder="4000"
-                      className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -385,7 +385,7 @@ export default function CreateStorePage() {
               <h2 className="text-xl font-bold mb-4">Contact</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">
+                  <label className="block text-gray-700 mb-2 font-medium">
                     Téléphone
                   </label>
                   <input
@@ -394,12 +394,12 @@ export default function CreateStorePage() {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+32 4 XX XX XX XX"
-                    className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 mb-2 font-medium">
+                  <label className="block text-gray-700 mb-2 font-medium">
                     Email
                   </label>
                   <input
@@ -408,7 +408,7 @@ export default function CreateStorePage() {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="contact@boutique.com"
-                    className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -424,7 +424,7 @@ export default function CreateStorePage() {
               </button>
               <Link
                 href="/dashboard"
-                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg text-center"
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3 px-4 rounded-lg text-center"
               >
                 Annuler
               </Link>

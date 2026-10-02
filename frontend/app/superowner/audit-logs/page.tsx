@@ -94,17 +94,17 @@ export default function AuditLogsPage() {
   const getActionColor = (action: string) => {
     switch (action) {
       case 'CREATE':
-        return 'text-green-400';
+        return 'text-green-600';
       case 'UPDATE':
-        return 'text-blue-400';
+        return 'text-blue-600';
       case 'DELETE':
-        return 'text-red-400';
+        return 'text-red-600';
       case 'LOGIN':
-        return 'text-yellow-400';
+        return 'text-yellow-600';
       case 'LOGOUT':
-        return 'text-gray-400';
+        return 'text-gray-500';
       default:
-        return 'text-gray-400';
+        return 'text-gray-500';
     }
   };
 
@@ -112,16 +112,16 @@ export default function AuditLogsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <Shield className="w-8 h-8" />
             {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">{t('subtitle')}</p>
+          <p className="text-gray-500 mt-2">{t('subtitle')}</p>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20 flex items-center gap-2">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20 flex items-center gap-2">
           <AlertCircle size={20} />
           {error}
         </div>
@@ -136,7 +136,7 @@ export default function AuditLogsPage() {
               setFilterAction(e.target.value);
               setOffset(0);
             }}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
           >
             {actions.map((action) => (
               <option key={action} value={action}>
@@ -153,7 +153,7 @@ export default function AuditLogsPage() {
               setFilterStatus(e.target.value);
               setOffset(0);
             }}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
           >
             <option value="ALL">{t('allStatuses')}</option>
             <option value="SUCCESS">{t('success')}</option>
@@ -167,14 +167,14 @@ export default function AuditLogsPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : logs.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800/50 rounded-lg">
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Shield className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">{t('empty')}</p>
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       ) : (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <table className="w-full">
-            <thead className="bg-gray-700/50 border-b border-gray-700">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-sm font-semibold">{t('colAction')}</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold">{t('colActor')}</th>
@@ -184,22 +184,22 @@ export default function AuditLogsPage() {
                 <th className="px-6 py-3 text-right text-sm font-semibold">{t('colDetails')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-gray-100">
               {logs.map((log) => (
                 // La clé doit porter sur l'élément rendu par la boucle : posée
                 // sur le <tr> intérieur, React la perd et réutilise mal les
                 // lignes d'un rafraîchissement à l'autre.
                 <Fragment key={log.id}>
-                  <tr className="hover:bg-gray-700/50 transition">
+                  <tr className="hover:bg-gray-50 transition">
                     <td className={`px-6 py-4 text-sm font-semibold ${getActionColor(log.action)}`}>
                       {log.action}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <div className="text-white">{log.actor}</div>
+                      <div className="text-gray-900">{log.actor}</div>
                       <div className="text-xs text-gray-500">{log.actorEmail}</div>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <div className="text-white">{log.resource}</div>
+                      <div className="text-gray-900">{log.resource}</div>
                       <div className="text-xs text-gray-500">{log.resourceId}</div>
                     </td>
                     <td className="px-6 py-4 text-sm">
@@ -207,43 +207,43 @@ export default function AuditLogsPage() {
                         {log.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-400">
+                    <td className="px-6 py-4 text-sm text-gray-500">
                       {new Date(log.timestamp).toLocaleDateString(localeFormat)}
                       <div className="text-xs">{new Date(log.timestamp).toLocaleTimeString(localeFormat)}</div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
-                        className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition"
+                        className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition"
                       >
                         {expandedLog === log.id ? t('hide') : t('show')}
                       </button>
                     </td>
                   </tr>
                   {expandedLog === log.id && (
-                    <tr className="bg-gray-900/50 border-b border-gray-700">
+                    <tr className="bg-gray-50 border-b border-gray-200">
                       <td colSpan={6} className="px-6 py-4">
                         <div className="space-y-4">
                           <div>
-                            <h4 className="text-sm font-bold text-white mb-2">{t('networkInfo')}</h4>
-                            <div className="bg-gray-800 rounded p-3 text-xs space-y-1 text-gray-400">
-                              <div>IP: <span className="text-gray-300">{log.ipAddress}</span></div>
-                              <div className="break-all">User-Agent: <span className="text-gray-300">{log.userAgent}</span></div>
+                            <h4 className="text-sm font-bold text-gray-900 mb-2">{t('networkInfo')}</h4>
+                            <div className="bg-white ring-1 ring-gray-200 rounded p-3 text-xs space-y-1 text-gray-500">
+                              <div>IP: <span className="text-gray-700">{log.ipAddress}</span></div>
+                              <div className="break-all">User-Agent: <span className="text-gray-700">{log.userAgent}</span></div>
                             </div>
                           </div>
                           {Object.keys(log.changes.before).length > 0 && (
                             <div>
-                              <h4 className="text-sm font-bold text-white mb-2">{t('changes')}</h4>
+                              <h4 className="text-sm font-bold text-gray-900 mb-2">{t('changes')}</h4>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <p className="text-xs text-gray-500 mb-1">{t('before')}</p>
-                                  <pre className="bg-gray-900 rounded p-2 text-xs overflow-auto max-h-48 text-gray-300">
+                                  <pre className="bg-white ring-1 ring-gray-200 rounded p-2 text-xs overflow-auto max-h-48 text-gray-700">
                                     {JSON.stringify(log.changes.before, null, 2)}
                                   </pre>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500 mb-1">{t('after')}</p>
-                                  <pre className="bg-gray-900 rounded p-2 text-xs overflow-auto max-h-48 text-gray-300">
+                                  <pre className="bg-white ring-1 ring-gray-200 rounded p-2 text-xs overflow-auto max-h-48 text-gray-700">
                                     {JSON.stringify(log.changes.after, null, 2)}
                                   </pre>
                                 </div>
@@ -262,21 +262,21 @@ export default function AuditLogsPage() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500">
           {t('showingRange', { from: offset + 1, to: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
           >
             {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
           >
             {t('next')}
           </button>

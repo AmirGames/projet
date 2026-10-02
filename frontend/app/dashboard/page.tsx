@@ -89,10 +89,10 @@ export default function DashboardPage() {
 
   if (isLoading || rolesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F7F6] text-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
-          <p className="text-slate-400">Chargement de votre espace...</p>
+          <p className="text-gray-500">Chargement de votre espace...</p>
         </div>
       </div>
     );
@@ -100,10 +100,10 @@ export default function DashboardPage() {
 
   if (!hasAnyRole) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#F7F7F6] text-gray-900 flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">Aucun rôle trouvé</h1>
-          <p className="text-slate-400 mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Aucun rôle trouvé</h1>
+          <p className="text-gray-500 mb-8">
             Aucun rôle n'est actif pour votre compte. Les rôles pris en charge sont : commerçant, livreur, client et super administrateur.
           </p>
           <Link href="/" className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition">
@@ -117,37 +117,37 @@ export default function DashboardPage() {
   // Redirection automatique si un seul rôle actif (sauf si superowner)
   if (!isSuperOwner && activeRolesCount === 1) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F7F6] text-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
-          <p className="text-slate-400">Redirection vers votre espace...</p>
+          <p className="text-gray-500">Redirection vers votre espace...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 py-12 px-4">
+    <div className="min-h-screen bg-[#F7F7F6] text-gray-900 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold text-white mb-3">Bienvenue, {user?.email}</h1>
-          <p className="text-slate-400">Sélectionnez l'espace que vous souhaitez gérer</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Bienvenue, {user?.email}</h1>
+          <p className="text-gray-500">Sélectionnez l'espace que vous souhaitez gérer</p>
         </div>
 
         <div className={`grid gap-8 ${activeRolesCount >= 3 ? 'grid-cols-1 md:grid-cols-3' : activeRolesCount === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
           {isMerchant && (
             <Link
               href="/merchant"
-              className="group bg-slate-800 border-2 border-slate-700 hover:border-blue-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
+              className="group bg-white border-2 border-gray-200 hover:border-blue-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
             >
-              <div className="flex items-center justify-center w-16 h-16 bg-blue-600 group-hover:bg-blue-700 rounded-lg mb-6 mx-auto transition">
+              <div className="flex items-center justify-center w-16 h-16 bg-blue-600 group-hover:bg-blue-700 text-white rounded-lg mb-6 mx-auto transition">
                 <Store size={32} className="text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white text-center mb-2">Mes commerces</h2>
-              <p className="text-slate-400 text-center mb-6 text-sm">
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Mes commerces</h2>
+              <p className="text-gray-500 text-center mb-6 text-sm">
                 Gérez vos boutiques, produits, commandes et livreurs
               </p>
-              <div className="flex items-center justify-center gap-2 text-blue-400 group-hover:text-blue-300 font-semibold transition">
+              <div className="flex items-center justify-center gap-2 text-blue-600 group-hover:text-blue-700 font-semibold transition">
                 Accéder aux commerces →
               </div>
             </Link>
@@ -156,16 +156,16 @@ export default function DashboardPage() {
           {isDriver && (
             <Link
               href="/driver"
-              className="group bg-slate-800 border-2 border-slate-700 hover:border-orange-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
+              className="group bg-white border-2 border-gray-200 hover:border-orange-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
             >
-              <div className="flex items-center justify-center w-16 h-16 bg-orange-600 group-hover:bg-orange-700 rounded-lg mb-6 mx-auto transition">
+              <div className="flex items-center justify-center w-16 h-16 bg-orange-600 group-hover:bg-orange-700 text-white rounded-lg mb-6 mx-auto transition">
                 <Bike size={32} className="text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white text-center mb-2">Mes livraisons</h2>
-              <p className="text-slate-400 text-center mb-6 text-sm">
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Mes livraisons</h2>
+              <p className="text-gray-500 text-center mb-6 text-sm">
                 Consultez vos courses, revenus et votre historique
               </p>
-              <div className="flex items-center justify-center gap-2 text-orange-400 group-hover:text-orange-300 font-semibold transition">
+              <div className="flex items-center justify-center gap-2 text-orange-600 group-hover:text-orange-700 font-semibold transition">
                 Voir mes courses →
               </div>
             </Link>
@@ -174,16 +174,16 @@ export default function DashboardPage() {
           {isCustomer && (
             <Link
               href="/client/orders"
-              className="group bg-slate-800 border-2 border-slate-700 hover:border-green-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
+              className="group bg-white border-2 border-gray-200 hover:border-green-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
             >
-              <div className="flex items-center justify-center w-16 h-16 bg-green-600 group-hover:bg-green-700 rounded-lg mb-6 mx-auto transition">
+              <div className="flex items-center justify-center w-16 h-16 bg-green-600 group-hover:bg-green-700 text-white rounded-lg mb-6 mx-auto transition">
                 <ShoppingCart size={32} className="text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white text-center mb-2">Mes commandes</h2>
-              <p className="text-slate-400 text-center mb-6 text-sm">
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Mes commandes</h2>
+              <p className="text-gray-500 text-center mb-6 text-sm">
                 Consultez vos commandes, favoris et votre profil
               </p>
-              <div className="flex items-center justify-center gap-2 text-green-400 group-hover:text-green-300 font-semibold transition">
+              <div className="flex items-center justify-center gap-2 text-green-600 group-hover:text-green-700 font-semibold transition">
                 Voir mes commandes →
               </div>
             </Link>
@@ -192,16 +192,16 @@ export default function DashboardPage() {
           {isSuperOwner && (
             <Link
               href="/superowner"
-              className="group bg-slate-800 border-2 border-slate-700 hover:border-purple-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
+              className="group bg-white border-2 border-gray-200 hover:border-purple-500 rounded-xl p-8 transition transform hover:scale-105 cursor-pointer"
             >
-              <div className="flex items-center justify-center w-16 h-16 bg-purple-600 group-hover:bg-purple-700 rounded-lg mb-6 mx-auto transition">
+              <div className="flex items-center justify-center w-16 h-16 bg-purple-600 group-hover:bg-purple-700 text-white rounded-lg mb-6 mx-auto transition">
                 <Crown size={32} className="text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white text-center mb-2">Administration</h2>
-              <p className="text-slate-400 text-center mb-6 text-sm">
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">Administration</h2>
+              <p className="text-gray-500 text-center mb-6 text-sm">
                 Gérez l'ensemble de la plateforme, utilisateurs et paramètres
               </p>
-              <div className="flex items-center justify-center gap-2 text-purple-400 group-hover:text-purple-300 font-semibold transition">
+              <div className="flex items-center justify-center gap-2 text-purple-600 group-hover:text-purple-700 font-semibold transition">
                 Accéder à l'admin →
               </div>
             </Link>

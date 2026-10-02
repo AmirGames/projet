@@ -103,53 +103,53 @@ export default function AccessLogsPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
+        <p className="text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-gray-400 text-sm mb-2">{t('total')}</p>
-          <p className="text-2xl font-bold text-white">{stats.total}</p>
-          <p className="text-xs text-gray-400 mt-1">{t('totalSubtitle')}</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-gray-500 text-sm mb-2">{t('total')}</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+          <p className="text-xs text-gray-500 mt-1">{t('totalSubtitle')}</p>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-gray-400 text-sm mb-2">{t('success')}</p>
-          <p className="text-2xl font-bold text-green-400">{stats.success}</p>
-          <p className="text-xs text-gray-400 mt-1">{((stats.success / stats.total) * 100).toFixed(1)}%</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-gray-500 text-sm mb-2">{t('success')}</p>
+          <p className="text-2xl font-bold text-green-600">{stats.success}</p>
+          <p className="text-xs text-gray-500 mt-1">{((stats.success / stats.total) * 100).toFixed(1)}%</p>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-gray-400 text-sm mb-2">{t('failed')}</p>
-          <p className="text-2xl font-bold text-red-400">{stats.failed}</p>
-          <p className="text-xs text-gray-400 mt-1">{((stats.failed / stats.total) * 100).toFixed(1)}%</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-gray-500 text-sm mb-2">{t('failed')}</p>
+          <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
+          <p className="text-xs text-gray-500 mt-1">{((stats.failed / stats.total) * 100).toFixed(1)}%</p>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-gray-400 text-sm mb-2">{t('denied')}</p>
-          <p className="text-2xl font-bold text-yellow-400">{stats.denied}</p>
-          <p className="text-xs text-gray-400 mt-1">{((stats.denied / stats.total) * 100).toFixed(1)}%</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-gray-500 text-sm mb-2">{t('denied')}</p>
+          <p className="text-2xl font-bold text-yellow-600">{stats.denied}</p>
+          <p className="text-xs text-gray-500 mt-1">{((stats.denied / stats.total) * 100).toFixed(1)}%</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-2">
-            <Search size={20} className="text-gray-400" />
+            <Search size={20} className="text-gray-500" />
             <input
               type="text"
               placeholder={t('searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <Filter size={20} className="text-gray-400" />
+            <Filter size={20} className="text-gray-500" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
             >
               <option value="ALL">{t('allStatuses')}</option>
               <option value="SUCCESS">{t('success')}</option>
@@ -161,7 +161,7 @@ export default function AccessLogsPage() {
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-blue-500"
           >
             <option value="">{t('allActions')}</option>
             {actions.map(action => (
@@ -172,7 +172,7 @@ export default function AccessLogsPage() {
 
         <button
           onClick={exportLogs}
-          className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 rounded-lg px-4 py-2 font-medium transition-colors w-full md:w-auto"
+          className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 rounded-lg px-4 py-2 font-medium transition-colors w-full md:w-auto text-white"
         >
           <Download size={20} />
           {t('exportCsv')}
@@ -180,14 +180,14 @@ export default function AccessLogsPage() {
       </div>
 
       {/* Access Logs Table */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         {filteredLogs.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">
+          <div className="p-8 text-center text-gray-500">
             {t('empty')}
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-700 border-b border-gray-600">
+            <thead className="bg-gray-100 border-b border-gray-300">
               <tr>
                 <th className="px-6 py-4 text-left">{t('colDateTime')}</th>
                 <th className="px-6 py-4 text-left">{t('colUser')}</th>
@@ -200,8 +200,8 @@ export default function AccessLogsPage() {
             </thead>
             <tbody>
               {filteredLogs.map((log) => (
-                <tr key={log.id} className="border-b border-gray-700 hover:bg-gray-700/50">
-                  <td className="px-6 py-4 text-gray-400 text-xs">
+                <tr key={log.id} className="border-b border-gray-200 hover:bg-gray-50">
+                  <td className="px-6 py-4 text-gray-500 text-xs">
                     <div className="flex items-center gap-2">
                       <Clock size={14} />
                       {new Date(log.timestamp).toLocaleString(localeFormat)}
@@ -210,14 +210,14 @@ export default function AccessLogsPage() {
                   <td className="px-6 py-4">
                     <div>
                       <p className="font-medium">{log.user.name}</p>
-                      <p className="text-xs text-gray-400">{log.user.email}</p>
+                      <p className="text-xs text-gray-500">{log.user.email}</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 font-mono text-xs bg-gray-900/50 rounded px-2 py-1">
+                  <td className="px-6 py-4 font-mono text-xs bg-gray-50 rounded px-2 py-1">
                     {log.resource}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="px-2 py-1 bg-blue-600/20 text-blue-400 rounded text-xs font-medium">
+                    <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs font-medium">
                       {log.action}
                     </span>
                   </td>
@@ -225,10 +225,10 @@ export default function AccessLogsPage() {
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium ${
                         log.status === 'SUCCESS'
-                          ? 'bg-green-600/20 text-green-400'
+                          ? 'bg-green-50 text-green-600'
                           : log.status === 'FAILED'
-                          ? 'bg-red-600/20 text-red-400'
-                          : 'bg-yellow-600/20 text-yellow-400'
+                          ? 'bg-red-50 text-red-600'
+                          : 'bg-yellow-50 text-yellow-600'
                       }`}
                     >
                       {log.status === 'SUCCESS' && '✅'}
@@ -237,8 +237,8 @@ export default function AccessLogsPage() {
                       {' '}{log.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-mono text-xs text-gray-400">{log.ipAddress}</td>
-                  <td className="px-6 py-4 text-right text-gray-400">
+                  <td className="px-6 py-4 font-mono text-xs text-gray-500">{log.ipAddress}</td>
+                  <td className="px-6 py-4 text-right text-gray-500">
                     {/* Une entrée d'avant la mesure n'a pas de durée : un tiret
                         vaut mieux qu'un zéro, qui se lirait comme instantané. */}
                     {log.duration === null || log.duration === undefined
@@ -252,7 +252,7 @@ export default function AccessLogsPage() {
         )}
       </div>
 
-      <div className="text-gray-400 text-sm">
+      <div className="text-gray-500 text-sm">
         {t('shown', { shown: filteredLogs.length, total: stats.total })}
       </div>
     </div>
