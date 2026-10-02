@@ -28,6 +28,8 @@ const ESPACES_AVEC_NAVIGATION = [
   '/checkout',
   '/track',
   '/order-confirmation',
+  // Le passager ZupDrive : son layout porte l'en-tête de la plateforme.
+  '/trajet',
 ];
 
 // Pages du livreur affichées sans session : le layout livreur n'y montre

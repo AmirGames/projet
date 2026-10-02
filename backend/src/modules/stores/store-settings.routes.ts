@@ -180,4 +180,62 @@ router.post("/:storeId/banner", authMiddleware, async (req: Request, res: Respon
   }
 });
 
+/**
+ * La photo de couverture : la grande image en tête de la vitrine et sur la
+ * carte du commerce dans la liste. Mêmes formats et même plafond que le logo
+ * (celui du middleware d'envoi pour les images).
+ */
+// POST /store-settings/:storeId/banner/upload - Envoyer la photo de couverture (protected)
+router.post(
+  "/:storeId/banner/upload",
+  authMiddleware,
+  uploadMiddleware.single("file"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const storeId = req.params.storeId as string;
+
+      if (!req.file) {
+        throw new ApiError(400, "Aucun fichier fourni", "NO_FILE");
+      }
+      if (!LOGO_TYPES.includes(req.file.mimetype)) {
+        throw new ApiError(400, "La photo de couverture doit être une image JPG, PNG ou WebP", "INVALID_FILE_TYPE");
+      }
+      if (req.file.size > LOGO_TAILLE_MAX) {
+        throw new ApiError(400, "La photo de couverture ne doit pas dépasser 2 Mo", "FILE_TOO_LARGE");
+      }
+
+      logger.info("Uploading store banner file", { storeId, size: req.file.size });
+
+      const { url } = await FileUploadService.uploadPublicImage(
+        req.file.buffer,
+        req.file.originalname || "couverture",
+        req.file.mimetype
+      );
+      const store = await StoreSettingsService.uploadBanner(storeId, url);
+
+      res.json({
+        message: "Photo de couverture enregistrée",
+        banner: (store.settings as any)?.banner,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// DELETE /store-settings/:storeId/banner - Retirer la photo de couverture (protected)
+router.delete("/:storeId/banner", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const storeId = req.params.storeId as string;
+
+    logger.info("Removing store banner", { storeId });
+
+    await StoreSettingsService.removeBanner(storeId);
+
+    res.json({ message: "Photo de couverture retirée", banner: null });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

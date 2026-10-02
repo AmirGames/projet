@@ -76,9 +76,12 @@ export default function StoreSettings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('general');
-  // Le logo s'enregistre à l'envoi du fichier, sans attendre le bouton du bas.
+  // Le logo et la photo de couverture s'enregistrent à l'envoi du fichier,
+  // sans attendre le bouton du bas.
   const [logo, setLogo] = useState<string | null>(null);
   const [logoEnCours, setLogoEnCours] = useState(false);
+  const [couverture, setCouverture] = useState<string | null>(null);
+  const [couvertureEnCours, setCouvertureEnCours] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -169,6 +172,7 @@ export default function StoreSettings() {
       const data = await response.json();
       const settings_obj = data.settings || {};
       setLogo(settings_obj.logo || null);
+      setCouverture(settings_obj.banner || null);
       setFormData({
         name: data.name || '',
         description: data.description || '',
@@ -213,21 +217,52 @@ export default function StoreSettings() {
     }
   }, [storeId, fetchSettings]);
 
-  const envoyerLogo = async (fichier: File) => {
+  /**
+   * Les deux images de la boutique, envoyées et retirées de la même façon :
+   * le logo (carré, sur fond blanc) et la photo de couverture (la grande image
+   * en tête de la vitrine et sur la carte de la liste).
+   */
+  const IMAGES = {
+    logo: {
+      chemin: 'logo',
+      champ: 'logo',
+      trop: 'Le logo ne doit pas dépasser 2 Mo',
+      envoye: 'Logo enregistré',
+      nonEnvoye: "Le logo n'a pas pu être envoyé",
+      retire: 'Logo retiré',
+      nonRetire: "Le logo n'a pas pu être retiré",
+      appliquer: setLogo,
+      enCours: setLogoEnCours,
+    },
+    banner: {
+      chemin: 'banner',
+      champ: 'banner',
+      trop: 'La photo de couverture ne doit pas dépasser 2 Mo',
+      envoye: 'Photo de couverture enregistrée',
+      nonEnvoye: "La photo de couverture n'a pas pu être envoyée",
+      retire: 'Photo de couverture retirée',
+      nonRetire: "La photo de couverture n'a pas pu être retirée",
+      appliquer: setCouverture,
+      enCours: setCouvertureEnCours,
+    },
+  } as const;
+
+  const envoyerImage = async (quelle: keyof typeof IMAGES, fichier: File) => {
+    const image = IMAGES[quelle];
     const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
     if (!token || !storeId) return;
 
     if (fichier.size > 2 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'Le logo ne doit pas dépasser 2 Mo' });
+      setMessage({ type: 'error', text: image.trop });
       return;
     }
 
     try {
-      setLogoEnCours(true);
+      image.enCours(true);
       const corps = new FormData();
       corps.append('file', fichier);
 
-      const response = await fetch(`${API_URL}/api/store-settings/${storeId}/logo/upload`, {
+      const response = await fetch(`${API_URL}/api/store-settings/${storeId}/${image.chemin}/upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: corps,
@@ -235,42 +270,43 @@ export default function StoreSettings() {
       const lu = await response.json().catch(() => null);
 
       if (!response.ok) {
-        setMessage({ type: 'error', text: lu?.error || "Le logo n'a pas pu être envoyé" });
+        setMessage({ type: 'error', text: lu?.error || image.nonEnvoye });
         return;
       }
 
-      setLogo(lu?.logo || null);
-      setMessage({ type: 'success', text: 'Logo enregistré' });
+      image.appliquer(lu?.[image.champ] || null);
+      setMessage({ type: 'success', text: image.envoye });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
-      signalerErreur('Error uploading logo:', error);
-      setMessage({ type: 'error', text: "Le logo n'a pas pu être envoyé" });
+      signalerErreur(`Error uploading ${quelle}:`, error);
+      setMessage({ type: 'error', text: image.nonEnvoye });
     } finally {
-      setLogoEnCours(false);
+      image.enCours(false);
     }
   };
 
-  const retirerLogo = async () => {
+  const retirerImage = async (quelle: keyof typeof IMAGES) => {
+    const image = IMAGES[quelle];
     const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
     if (!token || !storeId) return;
 
     try {
-      setLogoEnCours(true);
-      const response = await fetch(`${API_URL}/api/store-settings/${storeId}/logo`, {
+      image.enCours(true);
+      const response = await fetch(`${API_URL}/api/store-settings/${storeId}/${image.chemin}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
-        setMessage({ type: 'error', text: "Le logo n'a pas pu être retiré" });
+        setMessage({ type: 'error', text: image.nonRetire });
         return;
       }
 
-      setLogo(null);
-      setMessage({ type: 'success', text: 'Logo retiré' });
+      image.appliquer(null);
+      setMessage({ type: 'success', text: image.retire });
       setTimeout(() => setMessage(null), 3000);
     } finally {
-      setLogoEnCours(false);
+      image.enCours(false);
     }
   };
 
@@ -445,7 +481,7 @@ export default function StoreSettings() {
                             disabled={logoEnCours}
                             onChange={(e) => {
                               const fichier = e.target.files?.[0];
-                              if (fichier) envoyerLogo(fichier);
+                              if (fichier) envoyerImage('logo', fichier);
                               e.target.value = '';
                             }}
                           />
@@ -453,7 +489,7 @@ export default function StoreSettings() {
                         {logo && (
                           <button
                             type="button"
-                            onClick={retirerLogo}
+                            onClick={() => retirerImage('logo')}
                             disabled={logoEnCours}
                             className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50"
                           >
@@ -469,6 +505,58 @@ export default function StoreSettings() {
                       </p>
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Photo de couverture</label>
+                  {/* L'aperçu au format de la vitrine : la grande image en tête
+                      de page, et la carte du commerce dans la liste. */}
+                  <div className="relative aspect-[16/6] w-full max-w-xl overflow-hidden rounded-lg border border-gray-600 bg-gradient-to-br from-orange-500 via-orange-600 to-red-600">
+                    {couverture ? (
+                      <img src={couverture} alt="Photo de couverture" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="absolute inset-0 flex items-center justify-center text-sm font-medium text-white/80">
+                        Sans photo : la vitrine garde ce dégradé
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <label
+                      className={`inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 ${
+                        couvertureEnCours ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                      }`}
+                    >
+                      <ImagePlus size={16} />
+                      {couverture ? 'Changer la photo' : 'Ajouter une photo de couverture'}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        disabled={couvertureEnCours}
+                        onChange={(e) => {
+                          const fichier = e.target.files?.[0];
+                          if (fichier) envoyerImage('banner', fichier);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                    {couverture && (
+                      <button
+                        type="button"
+                        onClick={() => retirerImage('banner')}
+                        disabled={couvertureEnCours}
+                        className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50"
+                      >
+                        <Trash2 size={16} />
+                        Retirer
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    Une belle photo de vos plats ou de votre devanture, en paysage (idéalement 1600 × 600). JPG, PNG ou WebP, 2 Mo maximum.
+                    <br />
+                    Affichée en tête de votre vitrine et sur votre carte dans la liste des commerces.
+                  </p>
                 </div>
 
                 <div>

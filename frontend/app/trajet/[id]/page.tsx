@@ -108,9 +108,9 @@ export default function SuiviTrajetPage({ params }: { params: Promise<{ id: stri
       )}
 
       {trajet && (
-        <section className="mt-4 rounded-xl border border-slate-200 bg-white p-6" data-statut={trajet.statut}>
+        <section className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200" data-statut={trajet.statut}>
           <p className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-            {actif && <Car className="text-accent" />}
+            {actif && <Car className="text-blue-600" />}
             {t(`statutDetail.${trajet.statut}`)}
           </p>
           {trajet.statut === 'ANNULEE' && trajet.annuleePar === 'CHAUFFEUR' && (

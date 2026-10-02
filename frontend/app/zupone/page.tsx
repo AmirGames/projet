@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { accueilDe, lienVersEspace } from '@/lib/domaines';
+import { MARQUES, type Marque } from '@/lib/marques';
+import { EnTeteMarque } from '@/components/EnTeteMarque';
+import { BandeauMarque } from '@/components/BandeauMarque';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('vitrineZupone');
@@ -19,9 +22,20 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function VitrineZupOne() {
   const t = await getTranslations('vitrineZupone');
 
-  const plateformes = [
+  const plateformes: {
+    nom: string;
+    marque: Marque;
+    emoji: string;
+    etat: string;
+    texte: string;
+    lien: string;
+    action: string;
+    disponible: boolean;
+  }[] = [
     {
       nom: 'ZupEat',
+      marque: 'zupeat',
+      emoji: '🍔',
       etat: t('available'),
       texte: t('eatText'),
       lien: accueilDe('public'),
@@ -30,6 +44,8 @@ export default async function VitrineZupOne() {
     },
     {
       nom: 'ZupDrive',
+      marque: 'zupdrive',
+      emoji: '🚗',
       etat: t('comingSoon'),
       texte: t('driveText'),
       lien: accueilDe('drive'),
@@ -39,14 +55,15 @@ export default async function VitrineZupOne() {
   ];
 
   const atouts = [
-    { titre: t('singleSignupTitle'), texte: t('singleSignupText') },
-    { titre: t('localTitle'), texte: t('localText') },
-    { titre: t('paymentTitle'), texte: t('paymentText') },
+    { icone: '🔑', titre: t('singleSignupTitle'), texte: t('singleSignupText') },
+    { icone: '📍', titre: t('localTitle'), texte: t('localText') },
+    { icone: '🔒', titre: t('paymentTitle'), texte: t('paymentText') },
   ];
 
-  const rejoindre = [
+  const rejoindre: { icone: string; marque: Marque; titre: string; texte: string; lien: string; action: string }[] = [
     {
       icone: '🏪',
+      marque: 'zupeat',
       titre: t('merchantTitle'),
       texte: t('merchantText'),
       lien: lienVersEspace('pro', '/devenir-commercant'),
@@ -54,6 +71,7 @@ export default async function VitrineZupOne() {
     },
     {
       icone: '🛵',
+      marque: 'zupeat',
       titre: t('courierTitle'),
       texte: t('courierText'),
       lien: lienVersEspace('livreur', '/devenir-livreur'),
@@ -61,6 +79,7 @@ export default async function VitrineZupOne() {
     },
     {
       icone: '🚗',
+      marque: 'zupdrive',
       titre: t('driverTitle'),
       texte: t('driverText'),
       lien: lienVersEspace('drive', '/devenir-chauffeur'),
@@ -69,80 +88,109 @@ export default async function VitrineZupOne() {
   ];
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4 md:px-10">
-        <span className="text-2xl font-black text-primary md:text-3xl">ZupOne</span>
-        <nav className="flex items-center gap-6 text-sm font-semibold md:text-base">
-          <a href="#plateformes" className="hidden hover:text-primary sm:inline">
-            {t('navPlatforms')}
-          </a>
-          <a href="#rejoindre" className="hidden hover:text-primary sm:inline">
-            {t('navJoin')}
-          </a>
-          <Link href={accueilDe('public')} className="rounded-full bg-accent px-5 py-2 text-white hover:bg-accent-hover">
-            {t('navOrder')}
-          </Link>
-        </nav>
-      </header>
+    <div className="min-h-screen bg-white text-gray-900">
+      <EnTeteMarque marque="zupone">
+        <a href="#plateformes" className="hidden text-sm font-semibold text-gray-700 hover:text-gray-900 sm:inline">
+          {t('navPlatforms')}
+        </a>
+        <a href="#rejoindre" className="hidden text-sm font-semibold text-gray-700 hover:text-gray-900 sm:inline">
+          {t('navJoin')}
+        </a>
+        <Link
+          href={accueilDe('public')}
+          className={`rounded-full px-5 py-2 text-sm font-semibold hover:no-underline ${MARQUES.zupeat.bouton}`}
+        >
+          {t('navOrder')}
+        </Link>
+      </EnTeteMarque>
 
-      <section className="bg-gradient-to-b from-white to-slate-100 px-6 py-16 text-center md:py-24">
-        <span className="mb-6 inline-block rounded-full bg-blue-100 px-4 py-2 font-bold text-primary">
-          {t('badge')}
-        </span>
-        <h1 className="mx-auto mb-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
-          {t('heroTitle')}
-        </h1>
-        <p className="mx-auto max-w-2xl text-lg text-slate-500">{t('heroText')}</p>
-      </section>
+      <BandeauMarque
+        marque="zupone"
+        badge={t('badge')}
+        titre={t('heroTitle')}
+        texte={t('heroText')}
+        emojis={['🍕', '🚗', '🥐', '🛵', '🏪', '📍']}
+      >
+        <Link
+          href={accueilDe('public')}
+          className="rounded-full bg-white px-8 py-4 text-center font-bold text-gray-900 hover:bg-gray-100 hover:no-underline"
+        >
+          {t('eatAction')}
+        </Link>
+        <a
+          href="#rejoindre"
+          className="rounded-full bg-white/15 px-8 py-4 text-center font-bold text-white ring-1 ring-white/40 hover:bg-white/25 hover:no-underline"
+        >
+          {t('navJoin')}
+        </a>
+      </BandeauMarque>
 
-      <section id="plateformes" className="mx-auto grid max-w-5xl grid-cols-1 gap-6 px-6 py-16 md:grid-cols-2">
-        {plateformes.map((p) => (
-          <div key={p.nom} className="flex flex-col rounded-3xl border border-slate-200 p-8">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-3xl font-black text-primary">{p.nom}</h2>
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-bold ${
-                  p.disponible ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                }`}
-              >
-                {p.etat}
-              </span>
+      {/* Une carte par plateforme, à ses couleurs. */}
+      <section id="plateformes" className="mx-auto grid max-w-7xl scroll-mt-20 grid-cols-1 gap-6 px-4 py-14 md:grid-cols-2 md:px-6">
+        {plateformes.map((p) => {
+          const theme = MARQUES[p.marque];
+          return (
+            <div key={p.nom} className="group flex flex-col overflow-hidden rounded-3xl ring-1 ring-gray-200 transition hover:shadow-xl">
+              <div className={`relative h-36 ${theme.bandeau}`}>
+                <span aria-hidden="true" className="absolute -bottom-6 right-6 select-none text-8xl transition-transform duration-500 group-hover:-rotate-6 group-hover:scale-110">
+                  {p.emoji}
+                </span>
+                <span
+                  className={`absolute left-6 top-6 rounded-full px-3 py-1 text-xs font-bold ${
+                    p.disponible ? 'bg-white text-green-700' : 'bg-white/20 text-white'
+                  }`}
+                >
+                  {p.etat}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col p-8">
+                <h2 className="text-3xl font-extrabold tracking-tight">{p.nom}</h2>
+                <p className="mb-8 mt-3 flex-1 text-gray-600">{p.texte}</p>
+                <Link
+                  href={p.lien}
+                  className={`self-start rounded-full px-6 py-3 font-bold hover:no-underline ${theme.bouton}`}
+                >
+                  {p.action}
+                </Link>
+              </div>
             </div>
-            <p className="mb-8 flex-1 text-slate-600">{p.texte}</p>
-            <Link
-              href={p.lien}
-              className="self-start rounded-full bg-primary px-6 py-3 font-bold text-white hover:bg-primary-hover"
-            >
-              {p.action}
-            </Link>
-          </div>
-        ))}
+          );
+        })}
       </section>
 
-      <section className="bg-slate-50 px-6 py-16 md:px-10">
-        <h2 className="mb-10 text-center text-3xl font-black">{t('oneAccountTitle')}</h2>
+      <section className="bg-gray-50 px-4 py-16 md:px-6">
+        <h2 className="mb-10 text-center text-3xl font-extrabold tracking-tight md:text-4xl">{t('oneAccountTitle')}</h2>
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
           {atouts.map((point) => (
-            <div key={point.titre} className="rounded-3xl border border-slate-200 bg-white p-6">
-              <h3 className="mb-2 font-bold">{point.titre}</h3>
-              <p className="text-sm text-slate-500">{point.texte}</p>
+            <div key={point.titre} className="rounded-3xl bg-white p-7 ring-1 ring-gray-200">
+              <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-gray-900 text-xl" aria-hidden="true">
+                {point.icone}
+              </span>
+              <h3 className="mb-2 text-lg font-bold">{point.titre}</h3>
+              <p className="text-gray-600">{point.texte}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section id="rejoindre" className="px-6 py-16 md:px-10">
-        <h2 className="mb-10 text-center text-3xl font-black">{t('joinTitle')}</h2>
+      <section id="rejoindre" className="scroll-mt-20 px-4 py-16 md:px-6">
+        <h2 className="mb-10 text-center text-3xl font-extrabold tracking-tight md:text-4xl">{t('joinTitle')}</h2>
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
           {rejoindre.map((r) => (
-            <div key={r.titre} className="flex flex-col rounded-3xl border border-slate-200 p-8">
-              <div className="mb-3 text-4xl">{r.icone}</div>
+            <Link
+              key={r.titre}
+              href={r.lien}
+              className="group flex flex-col rounded-3xl p-8 text-gray-900 ring-1 ring-gray-200 transition hover:-translate-y-1 hover:no-underline hover:shadow-xl"
+            >
+              <span className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-3xl ${MARQUES[r.marque].teinte}`} aria-hidden="true">
+                {r.icone}
+              </span>
               <h3 className="mb-2 text-xl font-bold">{r.titre}</h3>
-              <p className="mb-6 flex-1 text-slate-500">{r.texte}</p>
-              <Link href={r.lien} className="font-bold text-primary hover:underline">
-                {r.action} →
-              </Link>
-            </div>
+              <p className="mb-6 flex-1 text-gray-600">{r.texte}</p>
+              <span className={`font-bold ${MARQUES[r.marque].accent}`}>
+                {r.action} <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+              </span>
+            </Link>
           ))}
         </div>
       </section>

@@ -73,6 +73,7 @@ export function ChoixAdresseLivraison({ adresse, onChange, saisieOuverteSansAdre
         <div className="relative flex-1">
           <MapPin className="absolute left-4 top-3 z-10 text-gray-400 pointer-events-none" size={20} />
           <AddressAutocomplete
+            clair
             value={saisie}
             onChange={setSaisie}
             onSelect={(choisie) =>

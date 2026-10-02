@@ -130,13 +130,13 @@ export default function CommanderTrajetPage() {
   if (!user) {
     return (
       <main className="mx-auto max-w-xl px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-slate-900">{t('titre')}</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">{t('titre')}</h1>
         <p className="mt-3 text-slate-600">{t('connexionRequise')}</p>
         <div className="mt-6 flex justify-center gap-3">
-          <Link href="/login" className="rounded-full bg-accent px-5 py-2 text-white hover:bg-accent-hover">
+          <Link href="/login" className="rounded-full bg-blue-600 px-5 py-2 text-white hover:bg-blue-700 hover:no-underline">
             {t('seConnecter')}
           </Link>
-          <Link href="/signup" className="rounded-full border border-slate-300 px-5 py-2 text-slate-800 hover:border-slate-400">
+          <Link href="/signup" className="rounded-full bg-white px-5 py-2 text-gray-900 ring-1 ring-gray-300 hover:bg-gray-100 hover:no-underline">
             {t('creerCompte')}
           </Link>
         </div>
@@ -148,21 +148,24 @@ export default function CommanderTrajetPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="flex items-center gap-2 text-3xl font-bold text-slate-900">
-        <Car /> {t('titre')}
+      <h1 className="flex items-center gap-3 text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
+        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
+          <Car size={22} />
+        </span>
+        {t('titre')}
       </h1>
       <p className="mt-2 text-slate-600">{t('intro')}</p>
 
       {enCours && (
         <Link
           href={`/trajet/${enCours.id}`}
-          className="mt-6 block rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-800 hover:bg-blue-100"
+          className="mt-6 block rounded-2xl bg-blue-50 p-4 font-semibold text-blue-800 ring-1 ring-blue-200 hover:bg-blue-100 hover:no-underline"
         >
           {t('trajetEnCours', { destination: enCours.arriveeAdresse })}
         </Link>
       )}
 
-      <section className="mt-8 space-y-4 rounded-xl border border-slate-200 bg-white p-6">
+      <section className="mt-8 space-y-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
         <label className="block text-sm">
           <span className="flex items-center gap-1 font-medium text-slate-700">
             <MapPin size={14} /> {t('depart')}
@@ -182,7 +185,8 @@ export default function CommanderTrajetPage() {
             }}
             placeholder={t('departPlaceholder')}
             pays="BE"
-            className="mt-1"
+            clair
+            className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
           />
         </label>
         <label className="block text-sm">
@@ -204,7 +208,8 @@ export default function CommanderTrajetPage() {
             }}
             placeholder={t('destinationPlaceholder')}
             pays="BE"
-            className="mt-1"
+            clair
+            className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
           />
         </label>
 
@@ -220,8 +225,8 @@ export default function CommanderTrajetPage() {
         )}
 
         {devis && (
-          <div className="rounded-lg bg-slate-50 p-4" data-devis>
-            <p className="text-3xl font-bold text-slate-900">{prix(devis.prixCentimes)}</p>
+          <div className="rounded-2xl bg-gray-50 p-5 ring-1 ring-gray-200" data-devis>
+            <p className="text-4xl font-extrabold tracking-tight text-gray-900">{prix(devis.prixCentimes)}</p>
             <p className="mt-1 text-sm text-slate-600">
               {t('estimation', { distance: kilometres(devis.distanceMetres), duree: minutes(devis.dureeSecondes) })}
             </p>
@@ -230,7 +235,7 @@ export default function CommanderTrajetPage() {
               type="button"
               onClick={commander}
               disabled={envoi !== null || !!enCours}
-              className="mt-4 w-full rounded-full bg-accent px-5 py-3 font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+              className="mt-4 w-full rounded-full bg-blue-600 px-5 py-4 text-lg font-bold text-white hover:bg-blue-700 disabled:opacity-60"
             >
               {envoi === 'commande' ? t('commandeEnCours') : t('commander', { prix: prix(devis.prixCentimes) })}
             </button>
@@ -241,10 +246,10 @@ export default function CommanderTrajetPage() {
       {trajets.length > 0 && (
         <section className="mt-8">
           <h2 className="text-lg font-semibold text-slate-900">{t('mesTrajets')}</h2>
-          <ul className="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+          <ul className="mt-3 divide-y divide-gray-100 overflow-hidden rounded-3xl bg-white ring-1 ring-gray-200">
             {trajets.map((trajet) => (
               <li key={trajet.id}>
-                <Link href={`/trajet/${trajet.id}`} className="flex justify-between gap-4 px-4 py-3 hover:bg-slate-50">
+                <Link href={`/trajet/${trajet.id}`} className="flex justify-between gap-4 px-5 py-4 text-gray-900 hover:bg-gray-50 hover:no-underline">
                   <span className="min-w-0 truncate text-sm text-slate-700">
                     {trajet.departAdresse} → {trajet.arriveeAdresse}
                   </span>

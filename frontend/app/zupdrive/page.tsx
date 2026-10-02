@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { accueilDe } from '@/lib/domaines';
 import { EMAIL_CONTACT } from '@/lib/editeur';
+import { MARQUES } from '@/lib/marques';
+import { EnTeteMarque } from '@/components/EnTeteMarque';
+import { BandeauMarque } from '@/components/BandeauMarque';
 
 export const metadata: Metadata = {
   title: 'ZupDrive — Transport avec chauffeur, bientôt disponible',
@@ -19,85 +22,91 @@ export const metadata: Metadata = {
 export default function AccueilZupDrive() {
   const prevenir = `mailto:${EMAIL_CONTACT}?subject=${encodeURIComponent('Prévenez-moi de l’ouverture de ZupDrive')}`;
 
+  const atouts = [
+    {
+      icone: '💶',
+      titre: 'Prix connu à l’avance',
+      texte: 'Le montant de la course est affiché avant la réservation.',
+    },
+    {
+      icone: '🪪',
+      titre: 'Chauffeurs professionnels',
+      texte: 'Carte VTC ou autorisation régionale, permis et assurance : chaque dossier est vérifié.',
+    },
+    {
+      icone: '🔑',
+      titre: 'Un seul compte',
+      texte: 'Votre compte ZupOne sert pour vos trajets comme pour vos commandes.',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4 md:px-10">
-        <span className="text-2xl font-black text-primary md:text-3xl">ZupDrive</span>
-        <nav className="flex items-center gap-6 text-sm font-semibold md:text-base">
-          <Link href={accueilDe('public')} className="hidden hover:text-primary sm:inline">
-            Commander sur ZupEat
-          </Link>
-          <Link href="/devenir-chauffeur" className="rounded-full bg-accent px-5 py-2 text-white hover:bg-accent-hover">
-            Devenir chauffeur
-          </Link>
-        </nav>
-      </header>
+    <div className="min-h-screen bg-white text-gray-900">
+      <EnTeteMarque marque="zupdrive">
+        <Link
+          href={accueilDe('public')}
+          className="hidden text-sm font-semibold text-gray-700 hover:text-gray-900 sm:inline"
+        >
+          Commander sur ZupEat
+        </Link>
+        <Link
+          href="/devenir-chauffeur"
+          className={`rounded-full px-5 py-2 text-sm font-semibold hover:no-underline ${MARQUES.zupdrive.bouton}`}
+        >
+          Devenir chauffeur
+        </Link>
+      </EnTeteMarque>
 
-      <section className="bg-gradient-to-b from-white to-slate-100 px-6 py-16 text-center md:py-24">
-        <span className="mb-6 inline-block rounded-full bg-amber-100 px-4 py-2 font-bold text-amber-700">
-          Bientôt disponible
-        </span>
-        <h1 className="mx-auto mb-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
-          Vos trajets avec chauffeur, près de chez vous
-        </h1>
-        <p className="mx-auto mb-9 max-w-2xl text-lg text-slate-500">
-          ZupDrive prépare son service de transport de personnes (VTC). Vous réserverez votre
-          chauffeur depuis le même compte que vos commandes ZupEat.
-        </p>
-        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Link
-            href="/devenir-chauffeur"
-            className="rounded-full bg-accent px-8 py-4 font-bold text-white hover:bg-accent-hover"
-          >
-            Je suis chauffeur
-          </Link>
-          <a
-            href={prevenir}
-            className="rounded-full border-2 border-slate-300 px-8 py-4 font-bold text-slate-900 hover:border-slate-900"
-          >
-            Être prévenu de l&apos;ouverture
-          </a>
-        </div>
-      </section>
+      <BandeauMarque
+        marque="zupdrive"
+        badge="Bientôt disponible"
+        titre="Vos trajets avec chauffeur, près de chez vous"
+        texte="ZupDrive prépare son service de transport de personnes (VTC). Vous réserverez votre chauffeur depuis le même compte que vos commandes ZupEat."
+        emojis={['🚗', '📍', '🧳', '🚕', '🛣️', '⭐']}
+      >
+        <Link
+          href="/devenir-chauffeur"
+          className="rounded-full bg-white px-8 py-4 text-center font-bold text-gray-900 hover:bg-gray-100 hover:no-underline"
+        >
+          Je suis chauffeur
+        </Link>
+        <a
+          href={prevenir}
+          className="rounded-full bg-white/15 px-8 py-4 text-center font-bold text-white ring-1 ring-white/40 hover:bg-white/25 hover:no-underline"
+        >
+          Être prévenu de l&apos;ouverture
+        </a>
+      </BandeauMarque>
 
-      <section className="grid grid-cols-1 gap-6 px-6 py-16 md:grid-cols-3 md:px-10">
-        {[
-          {
-            icone: '💶',
-            titre: 'Prix connu à l’avance',
-            texte: 'Le montant de la course est affiché avant la réservation.',
-          },
-          {
-            icone: '🪪',
-            titre: 'Chauffeurs professionnels',
-            texte: 'Carte VTC ou autorisation régionale, permis et assurance : chaque dossier est vérifié.',
-          },
-          {
-            icone: '🔑',
-            titre: 'Un seul compte',
-            texte: 'Votre compte ZupOne sert pour vos trajets comme pour vos commandes.',
-          },
-        ].map((a) => (
-          <div key={a.titre} className="rounded-3xl border border-slate-200 p-8">
-            <div className="mb-3 text-4xl">{a.icone}</div>
+      <section className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-14 md:grid-cols-3 md:px-6">
+        {atouts.map((a) => (
+          <div key={a.titre} className="rounded-3xl p-8 ring-1 ring-gray-200">
+            <span className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-3xl ${MARQUES.zupdrive.teinte}`} aria-hidden="true">
+              {a.icone}
+            </span>
             <h2 className="mb-2 text-xl font-bold">{a.titre}</h2>
-            <p className="text-slate-500">{a.texte}</p>
+            <p className="text-gray-600">{a.texte}</p>
           </div>
         ))}
       </section>
 
-      <section className="bg-blue-50 px-6 py-16 text-center">
-        <h2 className="mb-4 text-3xl font-black">En attendant, ZupEat est ouvert</h2>
-        <p className="mx-auto mb-8 max-w-xl text-slate-600">
-          Commandez chez les restaurants et commerces de votre quartier, livrés ou à emporter.
-        </p>
-        <Link
-          href={accueilDe('public')}
-          className="inline-block rounded-full bg-primary px-8 py-4 font-bold text-white hover:bg-primary-hover"
-        >
-          Découvrir ZupEat
-        </Link>
-      </section>
+      {/* En attendant l'ouverture : la plateforme sœur, à ses couleurs. */}
+      <div className="mx-auto max-w-7xl px-4 pb-16 md:px-6">
+        <section className="flex flex-col items-start gap-6 rounded-3xl bg-orange-50 p-8 md:flex-row md:items-center md:justify-between md:p-12">
+          <div>
+            <h2 className="text-3xl font-extrabold tracking-tight">En attendant, ZupEat est ouvert</h2>
+            <p className="mt-3 max-w-xl text-gray-600">
+              Commandez chez les restaurants et commerces de votre quartier, livrés ou à emporter.
+            </p>
+          </div>
+          <Link
+            href={accueilDe('public')}
+            className={`flex-shrink-0 rounded-full px-8 py-4 font-bold hover:no-underline ${MARQUES.zupeat.bouton}`}
+          >
+            Découvrir ZupEat
+          </Link>
+        </section>
+      </div>
     </div>
   );
 }
