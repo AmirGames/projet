@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 /**
  * Le livreur est à la porte et n'arrive pas à joindre le client : six minutes
@@ -11,6 +12,7 @@ import { useEffect, useState } from 'react';
  * annoncerait une échéance fausse.
  */
 export function AttenteLivreur({ finLe, maintenant }: { finLe: string; maintenant?: string | null }) {
+  const t = useTranslations('attenteLivreur');
   const [ecart] = useState(() => (maintenant ? new Date(maintenant).getTime() - Date.now() : 0));
   const [instant, setInstant] = useState(() => Date.now());
 
@@ -25,21 +27,19 @@ export function AttenteLivreur({ finLe, maintenant }: { finLe: string; maintenan
 
   return (
     <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-      <p className="font-semibold text-amber-800">Votre livreur est devant chez vous et vous attend</p>
+      <p className="font-semibold text-amber-800">{t('titre')}</p>
       {reste > 0 ? (
         <>
           <p className="text-3xl font-bold text-gray-900 tabular-nums my-1">
             {minutes}:{String(secondes).padStart(2, '0')}
           </p>
           <p className="text-sm text-amber-800/90">
-            Il n&apos;arrive pas à vous joindre. Descendez ou appelez-le : passé ce délai, il déposera votre
-            commande en lieu sûr et vous enverra la photo.
+            {t('aide')}
           </p>
         </>
       ) : (
         <p className="text-sm text-amber-800/90 mt-1">
-          Le délai est écoulé : votre livreur dépose la commande en lieu sûr. La photo et l&apos;endroit
-          s&apos;afficheront ici.
+          {t('ecoule')}
         </p>
       )}
     </div>

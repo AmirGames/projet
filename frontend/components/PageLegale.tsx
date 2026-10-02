@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from '@/components/LienRegional';
 import ReactMarkdown from 'react-markdown';
+import { getLocale, getTranslations } from 'next-intl/server';
 import remarkGfm from 'remark-gfm';
 
 // Côté serveur, l'API peut avoir une autre adresse que celle vue du navigateur.
@@ -21,8 +22,8 @@ async function lirePage(slug: string): Promise<Page | null> {
 }
 
 export async function metadataLegale(slug: string): Promise<Metadata> {
-  const page = await lirePage(slug);
-  return { title: `${page?.titre ?? 'Informations légales'} — ZupEat` };
+  const [page, t] = await Promise.all([lirePage(slug), getTranslations('pageLegale')]);
+  return { title: `${page?.titre ?? t('titre')} — ZupEat` };
 }
 
 /**
@@ -31,13 +32,13 @@ export async function metadataLegale(slug: string): Promise<Metadata> {
  * de script dans la page.
  */
 export default async function PageLegale({ slug }: { slug: string }) {
-  const page = await lirePage(slug);
+  const [page, t, locale] = await Promise.all([lirePage(slug), getTranslations('pageLegale'), getLocale()]);
 
   if (!page) {
     return (
       <>
-        <h1>Informations légales</h1>
-        <p>Ce texte est momentanément indisponible. Merci de réessayer dans quelques instants.</p>
+        <h1>{t('titre')}</h1>
+        <p>{t('indisponible')}</p>
       </>
     );
   }
@@ -62,8 +63,8 @@ export default async function PageLegale({ slug }: { slug: string }) {
         {page.contenu}
       </ReactMarkdown>
       <p className="mt-10 text-sm text-slate-500">
-        Version {page.version}
-        {page.publieLe && ` — en vigueur depuis le ${new Date(page.publieLe).toLocaleDateString('fr-FR')}`}
+        {t('version', { version: page.version })}
+        {page.publieLe && t('enVigueur', { date: new Date(page.publieLe).toLocaleDateString(locale) })}
       </p>
     </>
   );

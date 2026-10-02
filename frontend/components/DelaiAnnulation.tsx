@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Clock, MapPin, ShoppingBag } from 'lucide-react';
 
 import type { LignePanier } from '@/lib/paniers';
+import { useTranslations } from 'next-intl';
 
 export const DUREE_DU_DELAI = 10;
 
@@ -37,6 +38,7 @@ export function DelaiAnnulation({
   surPartir,
   surRetour,
 }: Props) {
+  const t = useTranslations('delaiAnnulation');
   const [restant, setRestant] = useState(DUREE_DU_DELAI);
   // Une seule issue : un clic sur « Parfait » au moment où le délai expire ne
   // doit pas envoyer la commande deux fois.
@@ -80,7 +82,7 @@ export function DelaiAnnulation({
     >
       <div className="w-full max-w-md rounded-3xl bg-white text-gray-900 shadow-2xl p-6 space-y-4">
         <h2 id="delai-titre" className="text-2xl font-bold">
-          Commande en cours…
+          {t('titre')}
         </h2>
 
         <div className="flex gap-4 border-b border-gray-200 pb-4">
@@ -124,7 +126,7 @@ export function DelaiAnnulation({
             style={{ width: `${ecoule}%` }}
           />
           <span className="relative">
-            Parfait (00:{String(restant).padStart(2, '0')})
+            {t('parfait', { secondes: String(restant).padStart(2, '0') })}
           </span>
         </button>
 
@@ -133,7 +135,7 @@ export function DelaiAnnulation({
           onClick={retour}
           className="w-full py-2 text-lg font-semibold hover:underline"
         >
-          Retour
+          {t('retour')}
         </button>
       </div>
     </div>

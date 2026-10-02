@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { euro } from '@/lib/format';
+import { useTranslations } from 'next-intl';
 
 /** Les pourcentages proposés d'un clic, calculés sur le montant des articles. */
 export const POURCENTAGES_POURBOIRE = [5, 10, 15];
@@ -34,6 +35,7 @@ export function ChoixPourboire({
   sansAucun?: boolean;
   initial?: Choix;
 }) {
+  const t = useTranslations('choixPourboire');
   const [choix, setChoix] = useState<Choix>(initial ?? (sansAucun ? 10 : 'aucun'));
   const [libre, setLibre] = useState('');
 
@@ -56,10 +58,10 @@ export function ChoixPourboire({
 
   return (
     <div>
-      <div role="group" aria-label="Pourboire pour le livreur" className="flex flex-wrap gap-2">
+      <div role="group" aria-label={t('groupe')} className="flex flex-wrap gap-2">
         {!sansAucun && (
           <button type="button" aria-pressed={choix === 'aucun'} onClick={() => choisir('aucun')} className={pastille(choix === 'aucun')}>
-            <span className="font-semibold">Aucun</span>
+            <span className="font-semibold">{t('aucun')}</span>
             <span className="text-xs opacity-70">&nbsp;</span>
           </button>
         )}
@@ -68,7 +70,7 @@ export function ChoixPourboire({
             key={pourcentage}
             type="button"
             aria-pressed={choix === pourcentage}
-            aria-label={`${pourcentage} %, soit ${euro(montantDuPourcentage(base, pourcentage))}`}
+            aria-label={t('pourcentageSoit', { pourcentage, montant: euro(montantDuPourcentage(base, pourcentage)) })}
             onClick={() => choisir(pourcentage)}
             className={pastille(choix === pourcentage)}
           >
@@ -77,13 +79,13 @@ export function ChoixPourboire({
           </button>
         ))}
         <button type="button" aria-pressed={choix === 'autre'} onClick={() => choisir('autre')} className={pastille(choix === 'autre')}>
-          <span className="font-semibold">Autre</span>
-          <span className="text-xs opacity-70">montant</span>
+          <span className="font-semibold">{t('autre')}</span>
+          <span className="text-xs opacity-70">{t(t('montant'))}</span>
         </button>
       </div>
       {choix === 'autre' && (
         <label className="mt-2 flex items-center gap-2 text-sm text-gray-700">
-          Montant
+          {t('montantSaisi')}
           <input
             type="number"
             min={0}
@@ -91,7 +93,7 @@ export function ChoixPourboire({
             step="0.5"
             inputMode="decimal"
             autoFocus
-            aria-label="Montant du pourboire"
+            aria-label={t('montantPourboire')}
             value={libre}
             onChange={(e) => {
               setLibre(e.target.value);

@@ -15,19 +15,14 @@
 
 import { useState } from 'react';
 import { Star } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export const NOTES = [1, 2, 3, 4, 5] as const;
 
 /** Ce que chaque étoile veut dire, pour que le client ne devine pas. */
-const LIBELLES: Record<number, string> = {
-  1: 'Très mauvaise',
-  2: 'Mauvaise',
-  3: 'Correcte',
-  4: 'Bonne',
-  5: 'Excellente',
-};
+// Le libellé de chaque note : `libelles.<note>` des traductions.
 
 export interface MaNote {
   note: number;
@@ -43,6 +38,7 @@ interface Props {
 }
 
 export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) {
+  const t = useTranslations('noterLivreur');
   const [choisie, setChoisie] = useState(0);
   const [survolee, setSurvolee] = useState(0);
   const [commentaire, setCommentaire] = useState('');
@@ -51,11 +47,11 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
 
   if (maNote) {
     return (
-      <div className="border-t border-gray-700 pt-4">
-        <p className="text-sm text-gray-400 mb-2">Votre note</p>
+      <div className="border-t border-gray-200 pt-4">
+        <p className="text-sm text-gray-500 mb-2">{t('votreNote')}</p>
         <Etoiles valeur={maNote.note} />
         {maNote.commentaire && (
-          <p className="text-sm text-gray-300 mt-2 italic">« {maNote.commentaire} »</p>
+          <p className="text-sm text-gray-600 mt-2 italic">« {maNote.commentaire} »</p>
         )}
       </div>
     );
@@ -85,13 +81,13 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
       if (!reponse.ok) {
         // Le message du serveur dit ce qui ne va pas — déjà notée, course non
         // remise. Le remplacer par « une erreur est survenue » le perdrait.
-        setErreur(donnees?.message || donnees?.error || "La note n'a pas pu être enregistrée");
+        setErreur(donnees?.message || donnees?.error || t('erreurEnregistrement'));
         return;
       }
 
       onNote?.({ note: choisie, commentaire: commentaire.trim() || null });
     } catch {
-      setErreur("La note n'a pas pu être envoyée : vérifiez votre connexion.");
+      setErreur(t('erreurEnvoi'));
     } finally {
       setEnvoi(false);
     }
@@ -100,16 +96,16 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
   const affichee = survolee || choisie;
 
   return (
-    <div className="border-t border-gray-700 pt-4">
-      <p className="text-sm text-white font-semibold">
-        Comment s'est passée votre livraison{prenomLivreur ? ` avec ${prenomLivreur}` : ''} ?
+    <div className="border-t border-gray-200 pt-4">
+      <p className="text-sm text-gray-900 font-semibold">
+        {prenomLivreur ? t('questionAvec', { prenom: prenomLivreur }) : t('question')}
       </p>
 
       <div
         className="flex items-center gap-2 mt-3"
         onMouseLeave={() => setSurvolee(0)}
         role="radiogroup"
-        aria-label="Note du livreur"
+        aria-label={t('note')}
       >
         {NOTES.map((valeur) => (
           <button
@@ -117,8 +113,8 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
             type="button"
             role="radio"
             aria-checked={choisie === valeur}
-            aria-label={`${valeur} étoile${valeur > 1 ? 's' : ''} — ${LIBELLES[valeur]}`}
-            title={LIBELLES[valeur]}
+            aria-label={t('etoiles', { n: valeur, libelle: t(`libelles.${valeur}`) })}
+            title={t(`libelles.${valeur}`)}
             onMouseEnter={() => setSurvolee(valeur)}
             onFocus={() => setSurvolee(valeur)}
             onClick={() => setChoisie(valeur)}
@@ -126,13 +122,13 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
           >
             <Star
               size={28}
-              className={valeur <= affichee ? 'text-orange-500' : 'text-gray-600'}
+              className={valeur <= affichee ? 'text-orange-500' : 'text-gray-300'}
               fill={valeur <= affichee ? 'currentColor' : 'none'}
             />
           </button>
         ))}
 
-        {affichee > 0 && <span className="text-sm text-gray-400 ml-1">{LIBELLES[affichee]}</span>}
+        {affichee > 0 && <span className="text-sm text-gray-500 ml-1">{t(`libelles.${affichee}`)}</span>}
       </div>
 
       {/* Le commentaire n'apparaît qu'une fois la note choisie : demandé avant,
@@ -144,35 +140,37 @@ export function NoterLivreur({ orderId, prenomLivreur, maNote, onNote }: Props) 
             onChange={(e) => setCommentaire(e.target.value)}
             maxLength={500}
             rows={2}
-            placeholder="Un mot sur la livraison (facultatif)"
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+            placeholder={t('commentaire')}
+            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500"
           />
 
           <button
             type="button"
             onClick={envoyer}
             disabled={envoi}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 rounded-lg text-sm text-white transition"
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 rounded-lg text-sm text-white transition"
           >
-            {envoi ? 'Envoi…' : 'Envoyer ma note'}
+            {envoi ? t('envoi') : t('envoyer')}
           </button>
         </div>
       )}
 
-      {erreur && <p className="text-sm text-red-400 mt-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-red-600 mt-2">{erreur}</p>}
     </div>
   );
 }
 
 /** Les étoiles en lecture seule : la note donnée, ou celle d'un livreur. */
 export function Etoiles({ valeur, taille = 16 }: { valeur: number; taille?: number }) {
+  const t = useTranslations('noterLivreur');
+
   return (
-    <span className="flex items-center gap-0.5" aria-label={`${valeur} sur 5`}>
+    <span className="flex items-center gap-0.5" aria-label={t('surCinq', { valeur })}>
       {NOTES.map((n) => (
         <Star
           key={n}
           size={taille}
-          className={n <= Math.round(valeur) ? 'text-orange-500' : 'text-gray-600'}
+          className={n <= Math.round(valeur) ? 'text-orange-500' : 'text-gray-300'}
           fill={n <= Math.round(valeur) ? 'currentColor' : 'none'}
         />
       ))}

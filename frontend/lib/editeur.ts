@@ -6,11 +6,11 @@
 export const EMAIL_CONTACT = 'contact@zupeat.com';
 
 export const PAGES_LEGALES = [
-  { href: '/mentions-legales', titre: 'Mentions légales' },
-  { href: '/cgu', titre: 'Conditions générales d’utilisation' },
-  { href: '/cgv', titre: 'Conditions générales de vente' },
-  { href: '/conditions-commercants', titre: 'Conditions commerçants' },
-  { href: '/conditions-livreurs', titre: 'Conditions livreurs' },
-  { href: '/confidentialite', titre: 'Politique de confidentialité' },
-  { href: '/cookies', titre: 'Cookies et traceurs' },
+  { href: '/mentions-legales', cle: 'mentions', titre: 'Mentions légales' },
+  { href: '/cgu', cle: 'cgu', titre: 'Conditions générales d’utilisation' },
+  { href: '/cgv', cle: 'cgv', titre: 'Conditions générales de vente' },
+  { href: '/conditions-commercants', cle: 'commercants', titre: 'Conditions commerçants' },
+  { href: '/conditions-livreurs', cle: 'livreurs', titre: 'Conditions livreurs' },
+  { href: '/confidentialite', cle: 'confidentialite', titre: 'Politique de confidentialité' },
+  { href: '/cookies', cle: 'cookies', titre: 'Cookies et traceurs' },
 ] as const;

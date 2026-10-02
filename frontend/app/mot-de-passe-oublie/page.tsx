@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { MailCheck } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { useTranslations } from 'next-intl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -14,6 +15,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
  * pas devenir un moyen de savoir qui est inscrit.
  */
 export default function MotDePasseOublie() {
+  const t = useTranslations('motDePasseOublie');
   const [email, setEmail] = useState('');
   const [envoye, setEnvoye] = useState(false);
   const [erreur, setErreur] = useState('');
@@ -35,13 +37,13 @@ export default function MotDePasseOublie() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || "L'envoi a échoué. Réessayez dans un instant.");
+        setErreur(donnees.error || t('envoiEchoue'));
         return;
       }
 
       setEnvoye(true);
     } catch {
-      setErreur('Serveur injoignable. Vérifiez votre connexion.');
+      setErreur(t('injoignable'));
     } finally {
       setEnvoiEnCours(false);
     }
@@ -53,10 +55,10 @@ export default function MotDePasseOublie() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm ring-1 ring-gray-200 md:p-10 text-center space-y-4">
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Vous êtes connecté</h1>
-          <p className="text-slate-600">Veuillez changer votre mot de passe depuis votre profil.</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">{t('connecte')}</h1>
+          <p className="text-slate-600">{t('changerDepuisProfil')}</p>
           <Link href="/" className="inline-block mt-2 font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600">
-            Retour à l&apos;accueil
+            {t('retourAccueil')}
           </Link>
         </div>
       </div>
@@ -69,26 +71,28 @@ export default function MotDePasseOublie() {
         {envoye ? (
           <div className="text-center space-y-4">
             <MailCheck size={48} className="mx-auto text-gray-900" />
-            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Regardez vos e-mails</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">{t('regardezEmails')}</h1>
             <p className="text-slate-600">
-              Si un compte existe pour <strong className="text-slate-900">{email}</strong>, un lien de
-              réinitialisation vient d&apos;y être envoyé.
+              {t.rich('lienEnvoye', {
+                email,
+                fort: (contenu) => <strong className="text-slate-900">{contenu}</strong>,
+              })}
             </p>
             <p className="text-sm text-slate-500">
-              Le lien est valable une heure. Pensez à regarder dans les indésirables.
+              {t('valable')}
             </p>
             <Link
               href="/login"
               className="inline-block mt-2 font-semibold text-gray-900 underline underline-offset-4 transition hover:text-gray-600"
             >
-              Retour à la connexion
+              {t('retourConnexion')}
             </Link>
           </div>
         ) : (
           <>
-            <h1 className="mb-2 text-center text-3xl font-extrabold tracking-tight text-gray-900">Mot de passe oublié</h1>
+            <h1 className="mb-2 text-center text-3xl font-extrabold tracking-tight text-gray-900">{t('titre')}</h1>
             <p className="text-slate-600 text-center mb-6">
-              Indiquez votre adresse, nous vous enverrons un lien pour en choisir un nouveau.
+              {t('intro')}
             </p>
 
             {erreur && <div className="bg-red-50 border border-red-200 text-red-900 p-4 rounded-lg mb-4">{erreur}</div>}
@@ -96,7 +100,7 @@ export default function MotDePasseOublie() {
             <form onSubmit={envoyer} className="space-y-4">
               <div>
                 <label htmlFor="email" className="mb-1.5 block text-sm font-semibold text-gray-700">
-                  Adresse e-mail
+                  {t('email')}
                 </label>
                 <input
                   id="email"
@@ -104,7 +108,7 @@ export default function MotDePasseOublie() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-                  placeholder="vous@exemple.fr"
+                  placeholder={t('exempleEmail')}
                   required
                   autoFocus
                 />
@@ -115,13 +119,13 @@ export default function MotDePasseOublie() {
                 disabled={envoiEnCours}
                 className="w-full rounded-full bg-gray-900 px-4 py-3.5 font-bold text-white transition hover:bg-gray-800 disabled:opacity-50"
               >
-                {envoiEnCours ? 'Envoi...' : 'Envoyer le lien'}
+                {envoiEnCours ? t('envoi') : t('envoyer')}
               </button>
             </form>
 
             <div className="mt-6 text-center">
               <Link href="/login" className="font-medium text-gray-600 transition hover:text-gray-900">
-                Retour à la connexion
+                {t('retourConnexion')}
               </Link>
             </div>
           </>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from '@/components/LienRegional';
+import { useTranslations } from 'next-intl';
 
 type Document = { href: string; libelle: string };
 
@@ -21,6 +22,7 @@ export default function AcceptationConditions({
   documents: Document[];
   clair?: boolean;
 }) {
+  const t = useTranslations('acceptationConditions');
   // En clair, les liens suivent le texte (noir) au lieu du bleu global des liens.
   const lien = `underline hover:no-underline ${clair ? 'font-medium text-gray-900' : ''}`;
   return (
@@ -33,18 +35,18 @@ export default function AcceptationConditions({
         className="mt-1 h-4 w-4 shrink-0"
       />
       <span>
-        J&apos;ai lu et j&apos;accepte{' '}
+        {t('jAiLu')}{' '}
         {documents.map((doc, i) => (
           <span key={doc.href}>
-            {i > 0 && (i === documents.length - 1 ? ' et ' : ', ')}
+            {i > 0 && (i === documents.length - 1 ? ` ${t('et')} ` : ', ')}
             <Link href={doc.href} target="_blank" className={lien}>
               {doc.libelle}
             </Link>
           </span>
         ))}
-        , et je prends connaissance de la{' '}
+        {t('etJePrends')}{' '}
         <Link href="/confidentialite" target="_blank" className={lien}>
-          politique de confidentialité
+          {t('politique')}
         </Link>
         .
       </span>

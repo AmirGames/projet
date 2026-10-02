@@ -4,6 +4,7 @@ import { PAYS, type Pays } from '@/lib/pays-infos';
 import { MARQUES, marqueDuNom } from '@/lib/marques';
 import { EnTeteMarque } from '@/components/EnTeteMarque';
 import { BandeauMarque } from '@/components/BandeauMarque';
+import { useTranslations } from 'next-intl';
 
 export interface Etape {
   titre: string;
@@ -59,7 +60,9 @@ export function PageDevenir({
   pays,
   chemin,
 }: Props) {
+  const t = useTranslations('pageDevenir');
   // Le formulaire d'inscription reprend le pays affiché ici.
+  const tPays = useTranslations('pays');
   const lienCta = cta.href.startsWith('/') ? `${cta.href}?pays=${pays}` : cta.href;
   const cle = marqueDuNom(marque);
   const theme = MARQUES[cle];
@@ -77,7 +80,7 @@ export function PageDevenir({
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <EnTeteMarque marque={cle}>
-        <nav aria-label="Pays" className="flex gap-1 rounded-full bg-gray-100 p-1 text-sm">
+        <nav aria-label={t('pays')} className="flex gap-1 rounded-full bg-gray-100 p-1 text-sm">
           {(Object.keys(PAYS) as Pays[]).map((code) => (
             <Link
               key={code}
@@ -87,7 +90,7 @@ export function PageDevenir({
                 code === pays ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              {PAYS[code].drapeau} <span className="hidden sm:inline">{PAYS[code].nom}</span>
+              {PAYS[code].drapeau} <span className="hidden sm:inline">{tPays(code)}</span>
             </Link>
           ))}
         </nav>
@@ -102,7 +105,7 @@ export function PageDevenir({
           <>
             {accroche}
             <span className="mt-3 block text-sm text-white/80">
-              Informations pour : {PAYS[pays].drapeau} {PAYS[pays].nom}
+              {t('informationsPour', { drapeau: PAYS[pays].drapeau, pays: tPays(pays) })}
             </span>
           </>
         }
@@ -124,7 +127,7 @@ export function PageDevenir({
       </section>
 
       <section className="bg-gray-50 px-4 py-16 md:px-6">
-        <h2 className="mb-10 text-center text-3xl font-extrabold tracking-tight md:text-4xl">Comment ça se passe</h2>
+        <h2 className="mb-10 text-center text-3xl font-extrabold tracking-tight md:text-4xl">{t('comment')}</h2>
         <ol className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-4">
           {etapes.map((e, i) => (
             <li key={e.titre} className="rounded-3xl bg-white p-6 ring-1 ring-gray-200">
@@ -139,7 +142,7 @@ export function PageDevenir({
       </section>
 
       <section className="mx-auto max-w-3xl px-4 py-16 md:px-6">
-        <h2 className="mb-6 text-3xl font-extrabold tracking-tight">Ce qu&apos;il vous faut en {PAYS[pays].nom}</h2>
+        <h2 className="mb-6 text-3xl font-extrabold tracking-tight">{t('ilVousFaut', { pays: tPays(pays) })}</h2>
         <ul className="space-y-3">
           {prerequis.map((p) => (
             <li key={p} className="flex gap-3">
@@ -151,7 +154,7 @@ export function PageDevenir({
           ))}
         </ul>
 
-        <h2 className="mb-6 mt-14 text-3xl font-extrabold tracking-tight">Questions fréquentes</h2>
+        <h2 className="mb-6 mt-14 text-3xl font-extrabold tracking-tight">{t('questions')}</h2>
         <div className="space-y-3">
           {questions.map((q) => (
             <details key={q.question} className="group rounded-2xl p-5 ring-1 ring-gray-200 open:bg-gray-50">
@@ -169,11 +172,11 @@ export function PageDevenir({
 
       <div className="mx-auto max-w-7xl px-4 pb-16 md:px-6">
         <section className={`rounded-3xl px-6 py-14 text-center ${theme.teinte}`}>
-          <h2 className="mb-6 text-3xl font-extrabold tracking-tight text-gray-900">Prêt à commencer ?</h2>
+          <h2 className="mb-6 text-3xl font-extrabold tracking-tight text-gray-900">{t('pret')}</h2>
           {bouton(false)}
           {conditions && (
             <p className="mt-6 text-sm text-gray-600">
-              En continuant, vous acceptez les{' '}
+              {t('enContinuant')}{' '}
               <Link href={conditions.href} className="text-gray-900 underline hover:text-gray-700">
                 {conditions.libelle}
               </Link>

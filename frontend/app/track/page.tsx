@@ -10,7 +10,8 @@ import { Search, Clock, CheckCircle, AlertCircle, Package, Truck, MapPin } from 
 import { euro } from '@/lib/format';
 import { AttenteLivreur } from '@/components/AttenteLivreur';
 import { intituleDeLaLigne } from '@/lib/ligne-commande';
-import { MOTIFS_POUR_LE_CLIENT, heure } from '@/lib/reponse-commande';
+import { heure } from '@/lib/reponse-commande';
+import { useLocale, useTranslations } from 'next-intl';
 import { useParametreAdresse } from '@/lib/navigateur';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { cheminCommande, jetonDeSuivi, memoriserJetonDeSuivi } from '@/lib/suivi-commande';
@@ -108,11 +109,12 @@ function lireSuivi(orderId: string, suite = '') {
 }
 
 const statusSteps = [
-  { status: 'PENDING', label: 'En Attente', icon: Clock, color: 'text-yellow-600' },
-  { status: 'ACCEPTED', label: 'Acceptée', icon: CheckCircle, color: 'text-blue-600' },
-  { status: 'PREPARING', label: 'En préparation', icon: Clock, color: 'text-orange-600' },
-  { status: 'READY', label: 'Prête', icon: Package, color: 'text-green-600' },
-  { status: 'COMPLETED', label: 'Livrée', icon: Truck, color: 'text-purple-600' },
+  // Le libellé de chaque étape : `etapes.<status>` des traductions.
+  { status: 'PENDING', icon: Clock, color: 'text-yellow-600' },
+  { status: 'ACCEPTED', icon: CheckCircle, color: 'text-blue-600' },
+  { status: 'PREPARING', icon: Clock, color: 'text-orange-600' },
+  { status: 'READY', icon: Package, color: 'text-green-600' },
+  { status: 'COMPLETED', icon: Truck, color: 'text-purple-600' },
 ];
 
 const statusColors: { [key: string]: string } = {
@@ -125,6 +127,9 @@ const statusColors: { [key: string]: string } = {
 };
 
 export default function TrackOrderPage() {
+  const t = useTranslations('suiviCommande');
+  const locale = useLocale();
+  const tMotif = useTranslations('motifsRefus');
   const [searchQuery, setSearchQuery] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
   const [delivery, setDelivery] = useState<Delivery | null>(null);
@@ -142,7 +147,7 @@ export default function TrackOrderPage() {
     try {
       const query = valeur.trim();
       if (!query) {
-        setError('Veuillez entrer votre numéro de commande');
+        setError(t('saisirNumero'));
         setLoading(false);
         return;
       }
@@ -152,10 +157,10 @@ export default function TrackOrderPage() {
       if (!response.ok) {
         if (response.status === 404) {
           setError(
-            'Commande introuvable. Ouvrez le lien de suivi reçu par e-mail ou SMS, ou connectez-vous au compte qui a passé la commande.'
+            t('introuvable')
           );
         } else {
-          setError('Erreur lors de la recherche. Veuillez réessayer.');
+          setError(t('erreurRecherche'));
         }
         setLoading(false);
         return;
@@ -183,11 +188,11 @@ export default function TrackOrderPage() {
       }
     } catch (err) {
       signalerErreur('Search error:', err);
-      setError('Erreur de connexion. Veuillez réessayer.');
+      setError(t('erreurConnexion'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,8 +256,8 @@ export default function TrackOrderPage() {
       <div className="max-w-4xl mx-auto space-y-8 p-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">📍 Suivre ma commande</h1>
-          <p className="text-gray-500">Ouvrez le lien reçu par e-mail ou SMS, ou entrez votre numéro de commande</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">{t('titre')}</h1>
+          <p className="text-gray-500">{t('intro')}</p>
         </div>
 
         {/* Search Form */}
@@ -264,7 +269,7 @@ export default function TrackOrderPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Numéro de commande..."
+                placeholder={t('placeholder')}
                 className="w-full bg-gray-100 border border-gray-300 rounded-lg pl-10 pr-4 py-3 text-gray-900 focus:outline-none focus:border-orange-500 placeholder-gray-400"
               />
             </div>
@@ -273,7 +278,7 @@ export default function TrackOrderPage() {
               disabled={loading}
               className="px-8 py-3 bg-orange-600 hover:bg-orange-700 rounded-full text-white font-semibold transition-colors disabled:opacity-50"
             >
-              {loading ? 'Recherche...' : 'Rechercher'}
+              {loading ? t('recherche') : t('rechercher')}
             </button>
           </div>
         </form>
@@ -293,21 +298,16 @@ export default function TrackOrderPage() {
             <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-gray-500 text-sm mb-1">Numéro de Commande</p>
+                  <p className="text-gray-500 text-sm mb-1">{t('numero')}</p>
                   <p className="text-2xl font-bold text-orange-600">#{order.id.slice(-8).toUpperCase()}</p>
                   <p className="text-xs text-gray-500 mt-2">
-                    Créée le {new Date(order.createdAt).toLocaleString('fr-FR')}
+                    {t('creeeLe', { date: new Date(order.createdAt).toLocaleString(locale) })}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-gray-500 text-sm mb-1">Statut Actuel</p>
+                  <p className="text-gray-500 text-sm mb-1">{t('statutActuel')}</p>
                   <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold border ${statusColors[order.status]}`}>
-                    {order.status === 'PENDING' && '⏳ En attente de confirmation'}
-                    {order.status === 'ACCEPTED' && '✅ Acceptée'}
-                    {order.status === 'PREPARING' && '👨‍🍳 En préparation'}
-                    {order.status === 'READY' && '📦 Prête'}
-                    {order.status === 'COMPLETED' && '✓ Livrée'}
-                    {order.status === 'REJECTED' && '❌ Annulée'}
+                    {t.has(`statut.${order.status}`) ? t(`statut.${order.status}`) : order.status}
                   </span>
                 </div>
               </div>
@@ -316,7 +316,7 @@ export default function TrackOrderPage() {
             {/* Status Timeline */}
             {order.status !== 'REJECTED' && (
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-lg font-bold mb-6">Progression de la Commande</h2>
+                <h2 className="text-lg font-bold mb-6">{t('progression')}</h2>
                 <div className="space-y-6">
                   {statusSteps.map((step, index) => {
                     const isCompleted = index <= currentStatusIndex;
@@ -348,19 +348,16 @@ export default function TrackOrderPage() {
                         {/* Step Info */}
                         <div className="flex-1 pt-2 pb-6">
                           <p className={`font-semibold text-lg ${isCompleted ? 'text-gray-900' : 'text-gray-500'}`}>
-                            {step.label}
+                            {t(`etapes.${step.status}`)}
                           </p>
                           <p className="text-sm text-gray-500 mt-1">
-                            {step.status === 'PENDING' && 'Votre commande a été reçue et attend la confirmation du restaurant'}
-                            {step.status === 'ACCEPTED' &&
-                              (order.estimatedReadyAt
+                            {step.status === 'ACCEPTED'
+                              ? order.estimatedReadyAt
                                 ? order.deliveryType === 'PICKUP' && order.pickupTime
-                                  ? `La boutique a accepté votre commande : elle vous attendra à ${heure(order.pickupTime)}`
-                                  : `La boutique a accepté votre commande : prête vers ${heure(order.estimatedReadyAt)}`
-                                : 'La boutique a accepté votre commande')}
-                            {step.status === 'PREPARING' && 'Votre commande est en cuisine'}
-                            {step.status === 'READY' && 'Votre commande est prête à être livrée/retirée'}
-                            {step.status === 'COMPLETED' && 'Commande livrée avec succès'}
+                                  ? t('accepteeAttendra', { heure: heure(order.pickupTime) })
+                                  : t('accepteePreteVers', { heure: heure(order.estimatedReadyAt) })
+                                : t('etapesAide.ACCEPTED')
+                              : t(`etapesAide.${step.status}`)}
                           </p>
                         </div>
                       </div>
@@ -376,22 +373,23 @@ export default function TrackOrderPage() {
                 <div className="flex gap-4">
                   <AlertCircle size={24} className="text-red-600 flex-shrink-0" />
                   <div>
-                    <h3 className="text-lg font-bold text-red-600 mb-2">Commande annulée</h3>
+                    <h3 className="text-lg font-bold text-red-600 mb-2">{t('annulee')}</h3>
                     <p className="text-red-700">
-                      {MOTIFS_POUR_LE_CLIENT[order.rejectionReason || ''] ||
-                        'Désolé, votre commande a été refusée par la boutique.'}
+                      {order.rejectionReason && tMotif.has(`client.${order.rejectionReason}`)
+                        ? tMotif(`client.${order.rejectionReason}`)
+                        : t('refuseeParDefaut')}
                     </p>
                     {order.rejectionNote && (
                       <p className="text-red-800 mt-2">« {order.rejectionNote} »</p>
                     )}
                     {order.paymentStatus === 'REFUNDED' && (
                       <p className="text-red-800 mt-2">
-                        Vous avez payé en ligne : vous êtes remboursé, sous 5 à 10 jours sur votre compte.
+                        {t('rembourse')}
                       </p>
                     )}
                     {order.paymentStatus === 'SUCCEEDED' && (
                       <p className="text-red-800 mt-2">
-                        Vous avez payé en ligne : votre remboursement est en cours de traitement.
+                        {t('remboursementEnCours')}
                       </p>
                     )}
                   </div>
@@ -404,7 +402,7 @@ export default function TrackOrderPage() {
              ['READY', 'COMPLETED'].includes(order.status) &&
              delivery && (
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-lg font-bold mb-4">Suivi en Temps Réel</h2>
+                <h2 className="text-lg font-bold mb-4">{t('tempsReel')}</h2>
                 <SuiviLivraisonClient
                   orderId={order.id}
                   delivery={delivery}
@@ -414,20 +412,20 @@ export default function TrackOrderPage() {
 
             {/* Delivery Information */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h2 className="text-lg font-bold mb-4">Informations de Livraison</h2>
+              <h2 className="text-lg font-bold mb-4">{t('infosLivraison')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-gray-500 text-sm mb-1">Mode</p>
+                  <p className="text-gray-500 text-sm mb-1">{t('mode')}</p>
                   <p className="font-semibold flex items-center gap-2">
                     {order.deliveryType === 'PICKUP' ? (
                       <>
                         <MapPin size={18} className="text-blue-600" />
-                        Retrait en boutique
+                        {t('retraitBoutique')}
                       </>
                     ) : (
                       <>
                         <Truck size={18} className="text-green-600" />
-                        Livraison à domicile
+                        {t('livraisonDomicile')}
                       </>
                     )}
                   </p>
@@ -435,16 +433,16 @@ export default function TrackOrderPage() {
 
                 {order.deliveryType === 'PICKUP' && order.pickupTime && (
                   <div>
-                    <p className="text-gray-500 text-sm mb-1">Heure de Retrait</p>
+                    <p className="text-gray-500 text-sm mb-1">{t('heureRetrait')}</p>
                     <p className="font-semibold">
-                      {new Date(order.pickupTime).toLocaleString('fr-FR')}
+                      {new Date(order.pickupTime).toLocaleString(locale)}
                     </p>
                   </div>
                 )}
 
                 {order.deliveryType === 'DELIVERY' && order.deliveryAddress && (
                   <div>
-                    <p className="text-gray-500 text-sm mb-1">Adresse de Livraison</p>
+                    <p className="text-gray-500 text-sm mb-1">{t('adresseLivraison')}</p>
                     <p className="font-semibold">
                       {order.deliveryAddress}
                     </p>
@@ -470,21 +468,21 @@ export default function TrackOrderPage() {
 
               {order.codeRemise && order.livreurProche && !order.attenteFinLe && (
                 <div role="status" className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-                  <p className="font-semibold text-green-800">Votre livreur est bientôt là</p>
+                  <p className="font-semibold text-green-800">{t('bientotLa')}</p>
                   <p className="text-sm text-green-700/90">
-                    Il arrive dans un instant : vous pouvez descendre devant la porte.
+                    {t('bientotLaAide')}
                   </p>
                 </div>
               )}
 
               {order.codeRemise && (
                 <div className="mt-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
-                  <p className="text-sm text-orange-800">Votre code de remise</p>
+                  <p className="text-sm text-orange-800">{t('codeRemise')}</p>
                   <p className="text-3xl font-bold tracking-[0.3em] text-gray-900">
                     {order.codeRemise}
                   </p>
                   <p className="text-xs text-orange-800/80 mt-1">
-                    Donnez-le au livreur à la remise, et à personne d&apos;autre.
+                    {t('codeRemiseAide')}
                   </p>
                 </div>
               )}
@@ -492,8 +490,8 @@ export default function TrackOrderPage() {
               {order.preuveDeLivraison && (
                 <p className="mt-4 text-sm text-green-700">
                   {order.preuveDeLivraison === 'CODE'
-                    ? 'Remise confirmée par votre code.'
-                    : 'Dépôt confirmé par photo, en votre absence.'}
+                    ? t('remiseParCode')
+                    : t('depotParPhoto')}
                 </p>
               )}
 
@@ -501,7 +499,7 @@ export default function TrackOrderPage() {
                 <div className="mt-3 space-y-1">
                   <img
                     src={order.photoDepot}
-                    alt="Photo du dépôt de votre commande"
+                    alt={t('photoDepot')}
                     className="w-full max-h-80 object-cover rounded-lg border border-gray-200"
                   />
                   {order.noteDepot && (
@@ -521,18 +519,18 @@ export default function TrackOrderPage() {
                 le suivi par lien ne transporte ni e-mail ni téléphone. */}
             {(order.customerName || order.customerEmail || order.customerPhone) && (
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-lg font-bold mb-4">Vos Informations</h2>
+                <h2 className="text-lg font-bold mb-4">{t('vosInformations')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-gray-500 text-sm mb-1">Nom</p>
+                    <p className="text-gray-500 text-sm mb-1">{t('nom')}</p>
                     <p className="font-semibold">{order.customerName}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm mb-1">Email</p>
+                    <p className="text-gray-500 text-sm mb-1">{t('email')}</p>
                     <p className="font-semibold text-sm">{order.customerEmail}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm mb-1">Téléphone</p>
+                    <p className="text-gray-500 text-sm mb-1">{t('telephone')}</p>
                     <p className="font-semibold">{order.customerPhone}</p>
                   </div>
                 </div>
@@ -541,7 +539,7 @@ export default function TrackOrderPage() {
 
             {/* Order Items */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h2 className="text-lg font-bold mb-4">Articles Commandés</h2>
+              <h2 className="text-lg font-bold mb-4">{t('articles')}</h2>
               <div className="space-y-3">
                 {order.items && order.items.map(item => (
                   <div key={item.id} className="flex justify-between items-center bg-gray-100 p-3 rounded">
@@ -585,7 +583,7 @@ export default function TrackOrderPage() {
             {/* Notes */}
             {order.notes && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-yellow-600 text-sm mb-2 font-semibold">Notes Spéciales:</p>
+                <p className="text-yellow-600 text-sm mb-2 font-semibold">{t('notes')}</p>
                 <p className="text-yellow-700">{order.notes}</p>
               </div>
             )}
@@ -601,7 +599,7 @@ export default function TrackOrderPage() {
                 }}
                 className="px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold transition-colors"
               >
-                Rechercher une autre commande
+                {t('autreCommande')}
               </button>
             </div>
           </div>
@@ -610,7 +608,7 @@ export default function TrackOrderPage() {
         {/* Empty State */}
         {!order && hasSearched && !loading && !error && (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">Aucune commande trouvée</p>
+            <p className="text-gray-500 text-lg">{t('aucune')}</p>
           </div>
         )}
 
@@ -618,7 +616,7 @@ export default function TrackOrderPage() {
         {!order && !hasSearched && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
             <p className="text-blue-600">
-              ℹ️ Entrez votre numéro de commande (les 8 derniers caractères visibles sur la confirmation) ou votre adresse email pour suivre votre commande.
+              {t('aideInitiale')}
             </p>
           </div>
         )}

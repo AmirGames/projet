@@ -21,6 +21,7 @@ import type { Socket } from 'socket.io-client';
 import { connexionTempsReel, suivreSalon } from '@/lib/temps-reel';
 
 import 'leaflet/dist/leaflet.css';
+import { useTranslations } from 'next-intl';
 
 interface DeliveryTracking {
   orderId: string;
@@ -77,6 +78,7 @@ const estimatedTimeFromDistance = (km: number): number => {
 };
 
 export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
+  const t = useTranslations('suiviLivraisonClient');
   const mapRef = useRef<CarteLeaflet | null>(null);
   const markersRef = useRef<{ [key: string]: CircleMarker }>({});
   const lineRef = useRef<L.Polyline | null>(null);
@@ -112,7 +114,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
       opacity: 1,
       fillOpacity: 0.8,
     })
-      .bindPopup('🏪 Restaurant')
+      .bindPopup(t('popupCommerce'))
       .addTo(map);
 
     markersRef.current.pickup = pickupMarker;
@@ -126,7 +128,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
       opacity: 1,
       fillOpacity: 0.8,
     })
-      .bindPopup('📍 Destination')
+      .bindPopup(t('popupDestination'))
       .addTo(map);
 
     markersRef.current.delivery = deliveryMarker;
@@ -141,7 +143,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
         opacity: 1,
         fillOpacity: 0.9,
       })
-        .bindPopup('🚗 Livreur')
+        .bindPopup(t('popupLivreur'))
         .addTo(map);
 
       markersRef.current.driver = driverMarker;
@@ -172,7 +174,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
       markersRef.current = {};
       lineRef.current = null;
     };
-  }, [orderId, delivery]);
+  }, [orderId, delivery, t]);
 
   // Écouter les mises à jour WebSocket
   useEffect(() => {
@@ -219,7 +221,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
                     fillOpacity: 0.9,
                   }
                 )
-                  .bindPopup('🚗 Livreur')
+                  .bindPopup(t('popupLivreur'))
                   .addTo(mapRef.current);
 
                 markersRef.current.driver = driverMarker;
@@ -254,7 +256,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
       }
     };
 
-    const surErreur = () => setError('Erreur de connexion au suivi');
+    const surErreur = () => setError(t('erreurConnexion'));
     const surConnexion = () => setError('');
 
     socket.on('delivery-update', surLivraison);
@@ -270,7 +272,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
       socket.off('connect', surConnexion);
       quitter();
     };
-  }, [orderId, destinationRef]);
+  }, [orderId, destinationRef, t]);
 
   const distance =
     estUneCoordonnee(currentDelivery.driverLat) &&
@@ -300,7 +302,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
         />
       ) : (
         <div className="w-full rounded-lg border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-          La carte s&apos;affichera dès que le trajet sera localisé.
+          {t('carteBientot')}
         </div>
       )}
 
@@ -318,9 +320,9 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
             <Truck size={18} className="text-blue-600 flex-shrink-0" />
             <div>
               <p className="text-blue-600 font-semibold text-sm">
-                {driverName || 'Livreur'} est en route
+                {t('enRoute', { nom: driverName || t('livreur') })}
               </p>
-              <p className="text-gray-500 text-xs">La course est acceptée</p>
+              <p className="text-gray-500 text-xs">{t('acceptee')}</p>
             </div>
           </div>
         )}
@@ -328,17 +330,17 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
         {timeRemaining && distance !== undefined && (
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gray-50 rounded p-3">
-              <p className="text-gray-500 text-xs mb-1">Distance</p>
+              <p className="text-gray-500 text-xs mb-1">{t('distance')}</p>
               <p className="text-gray-900 font-bold text-lg flex items-center gap-1">
                 <MapPin size={16} className="text-orange-500" />
                 {distance.toFixed(1)} km
               </p>
             </div>
             <div className="bg-gray-50 rounded p-3">
-              <p className="text-gray-500 text-xs mb-1">Temps estimé</p>
+              <p className="text-gray-500 text-xs mb-1">{t('tempsEstime')}</p>
               <p className="text-gray-900 font-bold text-lg flex items-center gap-1">
                 <Clock size={16} className="text-green-500" />
-                {timeRemaining} min
+                {t('minutes', { n: timeRemaining })}
               </p>
             </div>
           </div>
@@ -346,7 +348,7 @@ export function SuiviLivraisonClient({ orderId, delivery, driverName }: Props) {
 
         {currentDelivery.status === 'COMPLETED' && (
           <div className="bg-green-50 border border-green-200 rounded p-3 text-center">
-            <p className="text-green-600 font-semibold">✓ Commande livrée</p>
+            <p className="text-green-600 font-semibold">{t('livree')}</p>
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Bike, Clock, MapPin, Navigation, Store } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Etoiles, NoterLivreur, type MaNote } from '@/components/NoterLivreur';
 import { AttenteLivreur } from '@/components/AttenteLivreur';
 import { RetardLivraison, type Retard } from '@/components/RetardLivraison';
@@ -10,13 +11,19 @@ import { ReclamationLivraison, type EtatReclamation } from '@/components/Reclama
 
 // Leaflet touche `window` dès son chargement : il ne peut pas être rendu côté
 // serveur.
+function ChargementCarte() {
+  const t = useTranslations('suiviLivraison');
+
+  return (
+    <div className="h-[260px] w-full rounded-lg border border-gray-200 bg-white flex items-center justify-center text-sm text-gray-500">
+      {t('chargementCarte')}
+    </div>
+  );
+}
+
 const CarteTrajet = dynamic(() => import('@/components/CarteTrajet'), {
   ssr: false,
-  loading: () => (
-    <div className="h-[260px] w-full rounded-lg border border-gray-200 bg-white flex items-center justify-center text-sm text-gray-500">
-      Chargement de la carte…
-    </div>
-  ),
+  loading: () => <ChargementCarte />,
 });
 
 export interface Point {
@@ -85,13 +92,8 @@ interface Props {
  * page.
  */
 
-const LIBELLES: Record<string, string> = {
-  PENDING: "En attente d'un livreur",
-  ACCEPTED: 'Livreur en route vers le commerce',
-  PICKED_UP: 'Commande récupérée, en route vers vous',
-  DELIVERED: 'Livrée',
-  FAILED: 'Livraison interrompue',
-};
+/** Les états de la course qui ont un libellé (`statut.*` des traductions). */
+const STATUTS_CONNUS = ['PENDING', 'ACCEPTED', 'PICKED_UP', 'DELIVERED', 'FAILED'];
 
 /** Vitesse moyenne d'un deux-roues en ville, embouteillages compris. */
 const KM_PAR_MINUTE = 0.25;
@@ -99,19 +101,22 @@ const KM_PAR_MINUTE = 0.25;
 const distanceLisible = (km: number) =>
   km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1).replace('.', ',')} km`;
 
-function ilYA(horodatage?: string | null) {
+type Traduire = ReturnType<typeof useTranslations>;
+
+function ilYA(t: Traduire, horodatage?: string | null) {
   if (!horodatage) return null;
 
   const secondes = Math.round((Date.now() - new Date(horodatage).getTime()) / 1000);
 
-  if (secondes < 0) return "à l'instant";
-  if (secondes < 60) return `il y a ${secondes} s`;
-  if (secondes < 3600) return `il y a ${Math.floor(secondes / 60)} min`;
+  if (secondes < 0) return t('aLInstant');
+  if (secondes < 60) return t('ilYASecondes', { n: secondes });
+  if (secondes < 3600) return t('ilYAMinutes', { n: Math.floor(secondes / 60) });
 
-  return `il y a ${Math.floor(secondes / 3600)} h`;
+  return t('ilYAHeures', { n: Math.floor(secondes / 3600) });
 }
 
 export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirect }: Props) {
+  const t = useTranslations('suiviLivraison');
   // La note donnée reste à l'écran sans recharger la page : sans cela le client
   // ne saurait pas si son geste a été pris.
   const [maNote, setMaNote] = useState<MaNote | null>(course.maNote ?? null);
@@ -164,21 +169,22 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
           le dire, plutôt que de laisser le client s'inquiéter. */}
       {gpsPerdu && (
         <div role="status" className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3 text-sm">
-          Le livreur a momentanément perdu le signal GPS. Sa position s&apos;actualisera dès le retour
-          du réseau{course.position?.misAJourLe ? ` (dernière position ${ilYA(course.position.misAJourLe)})` : ''}.
+          {course.position?.misAJourLe
+            ? t('gpsPerduDepuis', { depuis: ilYA(t, course.position.misAJourLe) ?? '' })
+            : t('gpsPerdu')}
         </div>
       )}
 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-lg font-semibold text-gray-900">Suivi de la livraison</h3>
-          <p className="text-sm text-gray-500">{LIBELLES[course.status] || course.status}</p>
+          <h3 className="text-lg font-semibold text-gray-900">{t('titre')}</h3>
+          <p className="text-sm text-gray-500">{STATUTS_CONNUS.includes(course.status) ? t(`statut.${course.status}`) : course.status}</p>
         </div>
 
         {minutes != null && !livree && (
           <div className="text-right flex-shrink-0">
-            <p className="text-2xl font-bold text-orange-500">{minutes} min</p>
-            <p className="text-xs text-gray-500">estimé</p>
+            <p className="text-2xl font-bold text-orange-500">{t('minutes', { n: minutes })}</p>
+            <p className="text-xs text-gray-500">{t('estime')}</p>
           </div>
         )}
       </div>
@@ -187,10 +193,10 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
           mains. Sans lui, une course se cloturait sur un simple clic. */}
       {!livree && course.codeRemise && (
         <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
-          <p className="text-sm text-orange-800">Votre code de remise</p>
+          <p className="text-sm text-orange-800">{t('codeRemise')}</p>
           <p className="text-3xl font-bold tracking-[0.3em] text-gray-900">{course.codeRemise}</p>
           <p className="text-xs text-orange-800/80 mt-1">
-            Donnez-le au livreur à la remise, et à personne d&apos;autre.
+            {t('codeRemiseAide')}
           </p>
         </div>
       )}
@@ -207,9 +213,9 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
       {/* Prévenu à 300 m : le temps de descendre, le livreur est là. */}
       {!livree && course.status === 'PICKED_UP' && course.livreurProche && !course.attenteFinLe && (
         <div role="status" className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-          <p className="font-semibold text-green-800">Votre livreur est bientôt là</p>
+          <p className="font-semibold text-green-800">{t('bientotLa')}</p>
           <p className="text-sm text-green-700/90">
-            Il arrive dans un instant : vous pouvez descendre devant la porte.
+            {t('bientotLaAide')}
           </p>
         </div>
       )}
@@ -217,8 +223,8 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
       {livree && course.preuve && (
         <p className="text-sm text-green-700">
           {course.preuve === 'CODE'
-            ? 'Remise confirmée par votre code.'
-            : 'Dépôt confirmé par photo, en votre absence.'}
+            ? t('remiseParCode')
+            : t('depotParPhoto')}
         </p>
       )}
 
@@ -228,10 +234,10 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
         <div className="space-y-1">
           <img
             src={course.photoDepot}
-            alt="Photo du dépôt de votre commande"
+            alt={t('photoDepot')}
             className="w-full max-h-80 object-cover rounded-lg border border-gray-200"
           />
-          {course.noteDepot && <p className="text-sm text-gray-500">Déposée : {course.noteDepot}</p>}
+          {course.noteDepot && <p className="text-sm text-gray-500">{t('deposee', { ou: course.noteDepot })}</p>}
         </div>
       )}
 
@@ -250,7 +256,7 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
             livree={livree}
           />
         ) : (
-          <svg viewBox="0 0 100 24" className="w-full h-16" role="img" aria-label="Avancement du livreur">
+          <svg viewBox="0 0 100 24" className="w-full h-16" role="img" aria-label={t('avancement')}>
             <line x1="8" y1="16" x2="92" y2="16" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" />
 
             {avancement != null && (
@@ -281,11 +287,11 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
         <div className={`flex items-start justify-between text-xs ${surLaCarte ? 'mt-2' : '-mt-2'}`}>
           <span className="flex items-center gap-1 text-gray-500 max-w-[45%]">
             <Store size={12} className="flex-shrink-0" />
-            <span className="truncate">{course.boutique || 'Le commerce'}</span>
+            <span className="truncate">{course.boutique || t('leCommerce')}</span>
           </span>
           <span className="flex items-center gap-1 text-gray-500 max-w-[45%] justify-end text-right">
             <MapPin size={12} className="flex-shrink-0" />
-            <span className="truncate">{course.adresseLivraison || 'Chez vous'}</span>
+            <span className="truncate">{course.adresseLivraison || t('chezVous')}</span>
           </span>
         </div>
       </div>
@@ -293,21 +299,21 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-gray-500 text-xs flex items-center gap-1">
-            <Navigation size={12} /> Distance restante
+            <Navigation size={12} /> {t('distanceRestante')}
           </p>
           <p className="text-gray-900 font-semibold mt-1">
-            {livree ? 'Arrivée' : restante != null ? distanceLisible(restante) : 'En attente'}
+            {livree ? t('arrivee') : restante != null ? distanceLisible(restante) : t('enAttente')}
           </p>
         </div>
 
         <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-gray-500 text-xs flex items-center gap-1">
-            <Clock size={12} /> Position reçue
+            <Clock size={12} /> {t('positionRecue')}
           </p>
           <p className="text-gray-900 font-semibold mt-1">
             {positionDirecte
-              ? "à l'instant"
-              : ilYA(course.position?.misAJourLe) || 'Pas encore'}
+              ? t('aLInstant')
+              : ilYA(t, course.position?.misAJourLe) || t('pasEncore')}
           </p>
         </div>
       </div>
@@ -340,7 +346,7 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
               href={`tel:${course.driver.phone}`}
               className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-900 transition flex-shrink-0"
             >
-              Appeler
+              {t('appeler')}
             </a>
           )}
         </div>
@@ -359,7 +365,7 @@ export function SuiviLivraison({ course, orderId, positionDirecte, gpsPerduDirec
 
       {!position && !livree && (
         <p className="text-xs text-gray-500">
-          La position du livreur s&apos;affichera dès qu&apos;il aura pris la route.
+          {t('positionBientot')}
         </p>
       )}
     </div>
