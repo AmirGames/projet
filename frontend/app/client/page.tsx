@@ -47,7 +47,7 @@ interface Store {
   famille?: string | null;
   genreLibelle?: string | null;
   /** Le logo que le commerçant a déposé depuis ses paramètres. */
-  settings?: { logo?: string | null } | null;
+  settings?: { logo?: string | null; banner?: string | null } | null;
   /** Les frais jusqu'à l'adresse du client, quand elle est connue. */
   livraison?: {
     livrable: boolean;
@@ -630,28 +630,55 @@ function CarteCommerce({
       }`}
     >
       <div className={`relative aspect-[16/9] overflow-hidden rounded-2xl ${fondDe(store)}`}>
-        {/* Le motif de la famille, en filigrane, puis le logo en majesté. */}
-        {emoji && (
-          <span
-            aria-hidden="true"
-            className="absolute -right-3 -bottom-5 select-none text-[7rem] leading-none opacity-30 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6"
-          >
-            {emoji}
-          </span>
-        )}
-        <div className="absolute inset-0 flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
-          {store.settings?.logo ? (
+        {/* La photo de couverture du commerçant, avec son logo en pastille ;
+            à défaut, le motif de la famille en filigrane et le logo en
+            majesté. */}
+        {store.settings?.banner ? (
+          <>
             <img
-              src={store.settings.logo}
-              alt={store.name}
-              className="h-20 w-20 md:h-24 md:w-24 rounded-2xl bg-white object-contain p-2 shadow-lg"
+              src={store.settings.banner}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-          ) : (
-            <span className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl bg-white text-4xl font-extrabold text-orange-600 shadow-lg">
-              {store.name.charAt(0)}
-            </span>
-          )}
-        </div>
+            <div className="absolute bottom-3 left-3">
+              {store.settings.logo ? (
+                <img
+                  src={store.settings.logo}
+                  alt={store.name}
+                  className="h-12 w-12 rounded-xl bg-white object-contain p-1 shadow-md"
+                />
+              ) : (
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-xl font-extrabold text-orange-600 shadow-md">
+                  {store.name.charAt(0)}
+                </span>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            {emoji && (
+              <span
+                aria-hidden="true"
+                className="absolute -right-3 -bottom-5 select-none text-[7rem] leading-none opacity-30 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6"
+              >
+                {emoji}
+              </span>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
+              {store.settings?.logo ? (
+                <img
+                  src={store.settings.logo}
+                  alt={store.name}
+                  className="h-20 w-20 md:h-24 md:w-24 rounded-2xl bg-white object-contain p-2 shadow-lg"
+                />
+              ) : (
+                <span className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl bg-white text-4xl font-extrabold text-orange-600 shadow-lg">
+                  {store.name.charAt(0)}
+                </span>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Ce qui fait cliquer : la livraison offerte, en étiquette. */}
         {!ferme && livraisonOfferte(store) && (

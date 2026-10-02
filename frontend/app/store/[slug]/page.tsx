@@ -44,7 +44,7 @@ interface Store {
   /** Commerce pas encore validé : la fiche se lit, aucune commande ne passe. */
   enAttenteDeValidation?: boolean;
   /** Le logo que le commerçant a déposé depuis ses paramètres. */
-  settings?: { logo?: string | null } | null;
+  settings?: { logo?: string | null; banner?: string | null } | null;
   createdAt: string;
 }
 
@@ -702,10 +702,18 @@ export default function StorefrontPage() {
 
       {/* La bannière et l'identité du commerce. */}
       <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4">
-        <div className="relative h-36 md:h-56 overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-orange-600 to-red-600">
-          <div aria-hidden="true" className="absolute -right-10 -top-16 h-64 w-64 rounded-full bg-white/10" />
-          <div aria-hidden="true" className="absolute right-40 -bottom-24 h-56 w-56 rounded-full bg-white/10" />
-          <div aria-hidden="true" className="absolute -left-10 -bottom-20 h-48 w-48 rounded-full bg-black/5" />
+        {/* La photo de couverture du commerçant ; à défaut, le dégradé de la
+            plateforme. */}
+        <div className="relative h-36 md:h-64 overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-orange-600 to-red-600">
+          {store.settings?.banner ? (
+            <img src={store.settings.banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          ) : (
+            <>
+              <div aria-hidden="true" className="absolute -right-10 -top-16 h-64 w-64 rounded-full bg-white/10" />
+              <div aria-hidden="true" className="absolute right-40 -bottom-24 h-56 w-56 rounded-full bg-white/10" />
+              <div aria-hidden="true" className="absolute -left-10 -bottom-20 h-48 w-48 rounded-full bg-black/5" />
+            </>
+          )}
         </div>
 
         <div className="relative -mt-12 md:-mt-14 px-2 md:px-6">
