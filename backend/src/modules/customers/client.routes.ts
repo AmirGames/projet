@@ -899,7 +899,9 @@ router.get("/me/favorites", authMiddleware, async (req: Request, res: Response, 
     const notes = await avecLaVraieNote(favoris.map((f) => f.store));
     res.json({
       success: true,
-      data: favoris.map((f, i) => ({ ...f, store: notes[i] }))
+      // La famille (« pizza », « sushi »…) donne au favori sans photo ni logo
+      // l'illustration de sa catégorie, comme sur l'accueil.
+      data: favoris.map((f, i) => ({ ...f, store: { ...notes[i], ...genreDuCommerce(f.store) } }))
     });
   } catch (err) {
     next(err);

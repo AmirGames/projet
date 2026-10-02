@@ -26,6 +26,8 @@ import {
   Variant,
 } from '../../lib/stores';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
+import { IllustrationFamille } from '../CouvertureCommerce';
+import { visuelDeFamille } from '../../lib/visuels';
 
 /** La vitrine d'un commerce : son menu, rangé par catégorie, et le panier de ce commerce. */
 export default function StoreScreen({
@@ -176,15 +178,21 @@ export default function StoreScreen({
         ListHeaderComponent={
           <View>
             {/* La photo de couverture en bannière, le logo qui la chevauche ;
-                sans photo, l'aplat orange pâle de la marque. */}
+                sans photo, l'illustration de la catégorie (une pizza pour une
+                pizzeria). */}
             <View style={styles.banniere}>
-              {banniere ? <Image source={{ uri: banniere }} style={styles.banniereImage} resizeMode="cover" /> : null}
+              {banniere ? (
+                <Image source={{ uri: banniere }} style={styles.banniereImage} resizeMode="cover" />
+              ) : (
+                <IllustrationFamille famille={store.famille} grande />
+              )}
             </View>
             <View style={styles.logoFlottant}>
               {logo ? (
                 <Image source={{ uri: logo }} style={styles.logo} resizeMode="contain" />
               ) : (
-                <Text style={styles.initiale}>{store.name.trim().charAt(0).toUpperCase()}</Text>
+                // Sans logo : l'emoji de la catégorie plutôt qu'une initiale.
+                <Text style={styles.emojiLogo}>{visuelDeFamille(store.famille).emoji}</Text>
               )}
             </View>
             <View style={styles.info}>
@@ -462,7 +470,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   logo: { width: 66, height: 66 },
-  initiale: { fontSize: 32, fontWeight: '800', color: COLORS.primary },
+  emojiLogo: { fontSize: 36 },
   info: { flexDirection: 'row', gap: 12, paddingHorizontal: 4, paddingTop: 10, marginBottom: 10 },
   storeName: { fontSize: 24, fontWeight: '800', color: '#111', letterSpacing: -0.3 },
   meta: { fontSize: 13, color: '#666', marginTop: 2 },

@@ -9,6 +9,8 @@ import { ArrowLeft, Star, MapPin, Heart, Trash2 } from 'lucide-react';
 
 import { euro } from '@/lib/format';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
+import { IllustrationFamille } from '@/components/IllustrationFamille';
+import { visuelDeFamille } from '@/lib/visuels-familles';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -29,6 +31,8 @@ interface FavoriteStore {
     deliveryCost?: number;
     distance?: number;
     settings?: { logo?: string | null; banner?: string | null } | null;
+    /** La famille (« pizza », « sushi »…), pour l'illustration sans photo. */
+    famille?: string | null;
   };
 }
 
@@ -122,26 +126,28 @@ export default function FavoritesPage() {
               const store = favorite.store;
               return (
                 <div key={favorite.id} className="bg-white ring-1 ring-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition">
-                  {/* La photo de couverture, comme sur l'accueil ; sinon le logo du
-                      commerce, et à défaut son initiale. */}
-                  <div
-                    className={`relative h-40 flex items-center justify-center ${
-                      store.settings?.logo || store.settings?.banner ? 'bg-white' : 'bg-gradient-to-r from-orange-500 to-red-500'
-                    }`}
-                  >
+                  {/* Comme sur l'accueil : la photo de couverture, ou l'illustration
+                      de la catégorie ; le logo en pastille, ou l'emoji de la
+                      catégorie sur une photo. */}
+                  <div className="relative h-40 overflow-hidden bg-gray-100">
                     {store.settings?.banner ? (
-                      <img src={store.settings.banner} alt={store.name} className="absolute inset-0 h-full w-full object-cover" />
-                    ) : store.settings?.logo ? (
-                      <img
-                        src={store.settings.logo}
-                        alt={store.name}
-                        className="absolute inset-0 h-full w-full object-contain p-3"
-                      />
+                      <img src={store.settings.banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
                     ) : (
-                      <div className="text-center">
-                        <div className="text-gray-900 text-4xl font-bold opacity-50">
-                          {store.name.charAt(0)}
-                        </div>
+                      <IllustrationFamille famille={store.famille} />
+                    )}
+                    {(store.settings?.logo || store.settings?.banner) && (
+                      <div className="absolute bottom-3 left-3">
+                        {store.settings?.logo ? (
+                          <img
+                            src={store.settings.logo}
+                            alt={store.name}
+                            className="h-12 w-12 rounded-xl bg-white object-contain p-1 shadow-md"
+                          />
+                        ) : (
+                          <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-2xl shadow-md">
+                            {visuelDeFamille(store.famille).emoji}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
