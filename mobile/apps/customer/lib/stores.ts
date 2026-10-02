@@ -19,7 +19,8 @@ export interface Store {
   isOpenNow?: boolean;
   famille?: string | null;
   genreLibelle?: string | null;
-  settings?: { logo?: string | null } | null;
+  /** Logo et photo de couverture déposés par le commerçant. */
+  settings?: { logo?: string | null; banner?: string | null } | null;
   /** Les frais jusqu'à l'adresse du client, quand elle est connue. */
   livraison?: {
     livrable: boolean;
@@ -99,6 +100,10 @@ export interface DeliveryVerdict {
 }
 
 export const storeLogo = (store?: { settings?: { logo?: string | null } | null } | null) => mediaUrl(store?.settings?.logo);
+
+/** La photo de couverture du commerce, la grande image de sa carte et de sa vitrine. */
+export const storeBanner = (store?: { settings?: { banner?: string | null } | null } | null) =>
+  mediaUrl(store?.settings?.banner);
 
 export const productImage = (product: Product) => mediaUrl((product.media || product.images || [])[0]?.url);
 
