@@ -45,6 +45,8 @@ interface Product {
     id: string;
     name: string;
   };
+  /** La première photo du plat (Photos produits), s'il en a une. */
+  media?: { url: string }[];
   createdAt: string;
 }
 
@@ -113,15 +115,23 @@ function SortableProduct({ product, onEdit, onDelete, onToggleAvailability, triM
         <GripVertical size={18} />
       </button>
 
-      {/* La vignette : l'initiale du plat, grisée quand il est épuisé. */}
-      <div
-        className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-extrabold text-white sm:h-14 sm:w-14 ${
-          product.isAvailable ? 'bg-gradient-to-br from-orange-400 to-orange-700' : 'bg-gray-300'
-        }`}
-        aria-hidden="true"
-      >
-        {product.name.charAt(0).toUpperCase()}
-      </div>
+      {/* La vignette : la photo du plat, ou son initiale ; grisée quand il est épuisé. */}
+      {product.media?.[0]?.url ? (
+        <img
+          src={product.media[0].url}
+          alt=""
+          className={`h-12 w-12 rounded-xl object-cover sm:h-14 sm:w-14 ${product.isAvailable ? '' : 'opacity-40 grayscale'}`}
+        />
+      ) : (
+        <div
+          className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-extrabold text-white sm:h-14 sm:w-14 ${
+            product.isAvailable ? 'bg-gradient-to-br from-orange-400 to-orange-700' : 'bg-gray-300'
+          }`}
+          aria-hidden="true"
+        >
+          {product.name.charAt(0).toUpperCase()}
+        </div>
+      )}
 
       <button type="button" onClick={() => onEdit(product)} className="min-w-0 text-left">
         <span className="flex flex-wrap items-center gap-2">

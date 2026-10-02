@@ -68,6 +68,8 @@ export class ProductService {
       include: {
         category: true,
         images: { take: 1 },
+        // La première photo déposée par le commerçant, pour la vignette du catalogue.
+        media: { take: 1, orderBy: { displayOrder: "asc" }, select: { url: true } },
       },
       orderBy: { createdAt: "desc" },
       take: limit,

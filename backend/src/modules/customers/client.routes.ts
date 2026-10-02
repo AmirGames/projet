@@ -322,7 +322,8 @@ router.get("/stores/:id", async (req: Request, res: Response, next: NextFunction
           where: { status: "ACTIVE", deletedAt: null },
           include: {
             category: true,
-            media: true,
+            // Dans l'ordre choisi par le commerçant : la vitrine affiche la première.
+            media: { orderBy: { displayOrder: "asc" } },
             variants: true
           },
           // L'ordre voulu par le commerçant d'abord ; le nom ne sert qu'à
@@ -518,7 +519,7 @@ router.get("/stores/:id/menu", async (req: Request, res: Response, next: NextFun
       },
       include: {
         category: true,
-        media: true,
+        media: { orderBy: { displayOrder: "asc" } },
         variants: true
       },
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }]

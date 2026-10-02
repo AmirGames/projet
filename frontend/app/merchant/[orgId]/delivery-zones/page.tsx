@@ -420,7 +420,7 @@ export default function DeliveryZonesPage() {
           </div>
           <button
             onClick={handleAddZone}
-            className="bg-orange-600 text-white hover:bg-orange-700 flex items-center gap-2 px-4 py-2 rounded-lg transition"
+            className="bg-orange-600 text-white hover:bg-orange-700 flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2 rounded-lg transition"
           >
             <Plus size={20} />
             Ajouter Zone

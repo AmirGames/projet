@@ -5,7 +5,8 @@
  * est pas une), les commandes en cours et les plats épuisés, qu'on remet en
  * vente d'un clic. Le catalogue range les plats en lignes, avec un
  * interrupteur de disponibilité, et ouvre un panneau de modification qui
- * porte aussi les tailles et les suppléments.
+ * porte aussi les tailles et les suppléments. La vignette d'un plat est sa
+ * première photo.
  *
  *   DATABASE_URL=... VERIF_SITE_URL=http://localhost:3000 \
  *   VERIF_API_URL=http://localhost:3001 node scripts/verif-tableau-de-bord.mjs
@@ -143,6 +144,12 @@ await passerA(prete, 'READY');
 await accepter(terminee, 10);
 await passerA(terminee, 'COMPLETED');
 
+// Deux photos sur la Diavola : la vignette du catalogue doit montrer la première.
+const PHOTO_1 = `${SITE}/photo-diavola-1.jpg`;
+const PHOTO_2 = `${SITE}/photo-diavola-2.jpg`;
+await appeler(`/api/product-media/${storeId}/${diavola}`, { method: 'POST', jeton: T, corps: { url: PHOTO_1 } });
+await appeler(`/api/product-media/${storeId}/${diavola}`, { method: 'POST', jeton: T, corps: { url: PHOTO_2 } });
+
 // Un plat épuisé, et une commande refusée qui ne doit pas compter comme vente.
 await appeler(`/api/products/${tiramisu}/availability`, { method: 'PATCH', jeton: T, corps: { isAvailable: false, storeId } });
 await appeler(`/api/order-management/${storeId}/${aRefuser}/reject`, { method: 'POST', jeton: T, corps: { motif: 'TOO_BUSY' } });
@@ -203,6 +210,8 @@ titre('Le catalogue');
 
 await page.goto(`${SITE}/merchant/${orgId}/products`, { waitUntil: 'networkidle' });
 await page.getByRole('switch', { name: /Margherita/ }).waitFor({ timeout: 30000 });
+const vignette = await page.locator('section', { hasText: 'Diavola' }).locator('img').first().getAttribute('src').catch(() => null);
+check('la vignette de la Diavola est sa première photo', vignette === PHOTO_1, `${vignette}`);
 check('les catégories servent de sommaire', await page.getByRole('navigation', { name: 'Catégories' }).getByText('Pizzas').isVisible());
 
 await page.getByRole('switch', { name: /Margherita/ }).click();
