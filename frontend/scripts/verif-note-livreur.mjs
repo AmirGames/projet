@@ -20,7 +20,7 @@
  */
 
 import { chromium } from 'playwright';
-import { validerLivreur, codeDeRemise, retenirJetonDeSuivi } from './outils-livreur.mjs';
+import { validerLivreur, codeDeRemise, retenirJetonDeSuivi, declarerPrete } from './outils-livreur.mjs';
 import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
@@ -132,8 +132,11 @@ await appeler('/api/drivers/location', { method: 'PATCH', jeton: D, corps: BOUTI
 
 /** Une commande confiée au livreur, remise ou non. */
 const course = async ({ remettre }) => {
+  // Commandée connectée : une commande sans session n'entre plus dans
+  // l'historique du compte qui porte la même adresse.
   const commande = await appeler('/api/orders', {
     method: 'POST',
+    jeton: C,
     corps: { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
@@ -169,6 +172,8 @@ const course = async ({ remettre }) => {
   const deliveryId = acceptees.donnees.data[0].id;
 
   if (remettre) {
+    // Le livreur n'emporte qu'une commande déclarée prête par le commerçant.
+    await declarerPrete(API, storeId, orderId, T);
     await appeler(`/api/drivers/deliveries/${deliveryId}`, {
       method: 'PATCH',
       jeton: D,
@@ -212,6 +217,7 @@ const avantRemise = await appeler(`/api/client/deliveries/${enCours.orderId}/rat
 check('une course non remise ne se note pas', avantRemise.statut === 409, `statut ${avantRemise.statut}`);
 
 // La course en cours doit finir, sinon le livreur n'en reçoit pas d'autre.
+await declarerPrete(API, storeId, enCours.orderId, T);
 await appeler(`/api/drivers/deliveries/${enCours.deliveryId}`, {
   method: 'PATCH',
   jeton: D,

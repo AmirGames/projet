@@ -25,7 +25,7 @@
  */
 
 import { chromium } from 'playwright';
-import { validerLivreur, codeDeRemise, retenirJetonDeSuivi } from './outils-livreur.mjs';
+import { validerLivreur, codeDeRemise, retenirJetonDeSuivi, declarerPrete } from './outils-livreur.mjs';
 import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
@@ -114,15 +114,18 @@ const produit = await appeler('/api/products', {
 });
 const productId = produit.donnees.product?.id || produit.donnees.id;
 
-await inscriptionVia(appeler, {
+const client = await inscriptionVia(appeler, {
   method: 'POST',
   corps: { email: emailClient, password: MDP, name: `Client ${uniq}` },
 });
 
 /** Une commande en livraison, située ou non, confiée à un livreur à elle. */
 const courseEnCours = async (suffixe, coordonneesClient) => {
+  // Commandée connectée : une commande sans session n'entre plus dans
+  // l'historique du compte qui porte la même adresse.
   const commande = await appeler('/api/orders', {
     method: 'POST',
+    jeton: client.donnees.accessToken,
     corps: { conditionsAcceptees: true,
       storeId,
       customerName: `Client ${uniq}`,
@@ -176,7 +179,18 @@ const courseEnCours = async (suffixe, coordonneesClient) => {
   // client voit.
   await appeler('/api/drivers/location', { method: 'PATCH', jeton: D, corps: BOUTIQUE });
 
-  return { orderId, D };
+  // Le client ne voit la position du livreur qu'une fois la commande
+  // récupérée : avant, elle dirait où il se trouve, pas où en est sa course.
+  await declarerPrete(API, storeId, orderId, T);
+  const acceptee = await appeler('/api/drivers/deliveries?status=ACCEPTED', { jeton: D });
+  const deliveryId = acceptee.donnees.data[0].id;
+  await appeler(`/api/drivers/deliveries/${deliveryId}`, {
+    method: 'PATCH',
+    jeton: D,
+    corps: { status: 'PICKED_UP' },
+  });
+
+  return { orderId, D, deliveryId };
 };
 
 const situee = await courseEnCours('situee', CLIENT);
@@ -240,12 +254,18 @@ check(
 );
 
 // Le cadrage ne se refait pas à chaque position : sinon la carte sauterait
-// sous les doigts du client qui vient de la déplacer.
-const commerce = await pastille('Le commerce').boundingBox();
+// sous les doigts du client qui vient de la déplacer. La position se mesure
+// dans la carte : à moins de 300 m, le bandeau « bientôt là » s'insère
+// au-dessus et descend la carte entière, sans rien recadrer.
+const dansLaCarte = async () => {
+  const [p, c] = await Promise.all([pastille('Le commerce').boundingBox(), carte.boundingBox()]);
+  return { x: p.x - c.x, y: p.y - c.y };
+};
+const commerce = await dansLaCarte();
 await appeler('/api/drivers/location', { method: 'PATCH', jeton: situee.D, corps: PRESQUE });
 await page.waitForTimeout(3000);
 
-const commerceApres = await pastille('Le commerce').boundingBox();
+const commerceApres = await dansLaCarte();
 check(
   'la carte ne se recadre pas sous les doigts',
   Math.abs(commerceApres.x - commerce.x) < 2 && Math.abs(commerceApres.y - commerce.y) < 2,
@@ -253,15 +273,7 @@ check(
 );
 
 titre('Une fois remise, le livreur quitte la carte');
-const course = await appeler('/api/drivers/deliveries?status=ACCEPTED', { jeton: situee.D });
-const deliveryId = course.donnees.data[0].id;
-
-await appeler(`/api/drivers/deliveries/${deliveryId}`, {
-  method: 'PATCH',
-  jeton: situee.D,
-  corps: { status: 'PICKED_UP' },
-});
-await appeler(`/api/drivers/deliveries/${deliveryId}`, {
+await appeler(`/api/drivers/deliveries/${situee.deliveryId}`, {
   method: 'PATCH',
   jeton: situee.D,
   corps: { status: 'DELIVERED', code: await codeDeRemise(API, situee.orderId) },
