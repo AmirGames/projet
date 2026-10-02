@@ -1,6 +1,9 @@
 import Link from '@/components/LienRegional';
 import { LienConnexion } from '@/components/LienConnexion';
 import { PAYS, type Pays } from '@/lib/pays-infos';
+import { MARQUES, marqueDuNom } from '@/lib/marques';
+import { EnTeteMarque } from '@/components/EnTeteMarque';
+import { BandeauMarque } from '@/components/BandeauMarque';
 
 export interface Etape {
   titre: string;
@@ -58,110 +61,127 @@ export function PageDevenir({
 }: Props) {
   // Le formulaire d'inscription reprend le pays affiché ici.
   const lienCta = cta.href.startsWith('/') ? `${cta.href}?pays=${pays}` : cta.href;
-  const bouton = (
+  const cle = marqueDuNom(marque);
+  const theme = MARQUES[cle];
+  const bouton = (enBandeau: boolean) => (
     <Link
       href={lienCta}
-      className="inline-block rounded-full bg-accent px-8 py-4 font-bold text-white transition hover:bg-accent-hover"
+      className={`inline-block rounded-full px-8 py-4 text-center font-bold transition hover:no-underline ${
+        enBandeau ? 'bg-white text-gray-900 hover:bg-gray-100' : theme.bouton
+      }`}
     >
       {cta.libelle}
     </Link>
   );
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4 md:px-10">
-        <Link href="/" className="text-2xl font-black text-primary md:text-3xl">
-          {marque}
-        </Link>
-        <div className="flex items-center gap-4">
-          <nav aria-label="Pays" className="flex gap-1 rounded-full border border-slate-200 p-1 text-sm">
-            {(Object.keys(PAYS) as Pays[]).map((code) => (
-              <Link
-                key={code}
-                href={`${chemin}?pays=${code}`}
-                aria-current={code === pays ? 'true' : undefined}
-                className={`rounded-full px-3 py-1 font-semibold ${
-                  code === pays ? 'bg-primary text-white' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {PAYS[code].drapeau} {PAYS[code].nom}
-              </Link>
-            ))}
-          </nav>
-          <LienConnexion />
-        </div>
-      </header>
+    <div className="min-h-screen bg-white text-gray-900">
+      <EnTeteMarque marque={cle}>
+        <nav aria-label="Pays" className="flex gap-1 rounded-full bg-gray-100 p-1 text-sm">
+          {(Object.keys(PAYS) as Pays[]).map((code) => (
+            <Link
+              key={code}
+              href={`${chemin}?pays=${code}`}
+              aria-current={code === pays ? 'true' : undefined}
+              className={`rounded-full px-3 py-1 font-semibold hover:no-underline ${
+                code === pays ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {PAYS[code].drapeau} <span className="hidden sm:inline">{PAYS[code].nom}</span>
+            </Link>
+          ))}
+        </nav>
+        <LienConnexion />
+      </EnTeteMarque>
 
-      <section className="bg-gradient-to-b from-white to-slate-100 px-6 py-16 text-center md:py-24">
-        <span className="mb-6 inline-block rounded-full bg-blue-100 px-4 py-2 font-bold text-primary">
-          {badge}
-        </span>
-        <h1 className="mx-auto mb-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">{titre}</h1>
-        <p className="mx-auto mb-3 max-w-2xl text-lg text-slate-500">{accroche}</p>
-        <p className="mb-9 text-sm text-slate-500">
-          Informations pour : {PAYS[pays].drapeau} {PAYS[pays].nom}
-        </p>
-        {bouton}
-      </section>
+      <BandeauMarque
+        marque={cle}
+        badge={badge}
+        titre={titre}
+        texte={
+          <>
+            {accroche}
+            <span className="mt-3 block text-sm text-white/80">
+              Informations pour : {PAYS[pays].drapeau} {PAYS[pays].nom}
+            </span>
+          </>
+        }
+        emojis={avantages.map((a) => a.icone)}
+      >
+        {bouton(true)}
+      </BandeauMarque>
 
-      <section className="grid grid-cols-1 gap-6 px-6 py-16 md:grid-cols-3 md:px-10">
+      <section className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-14 md:grid-cols-3 md:px-6">
         {avantages.map((a) => (
-          <div key={a.titre} className="rounded-3xl border border-slate-200 p-8">
-            <div className="mb-3 text-4xl">{a.icone}</div>
+          <div key={a.titre} className="rounded-3xl p-8 ring-1 ring-gray-200">
+            <span className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-3xl ${theme.teinte}`} aria-hidden="true">
+              {a.icone}
+            </span>
             <h2 className="mb-2 text-xl font-bold">{a.titre}</h2>
-            <p className="text-slate-500">{a.texte}</p>
+            <p className="text-gray-600">{a.texte}</p>
           </div>
         ))}
       </section>
 
-      <section className="bg-slate-50 px-6 py-16 md:px-10">
-        <h2 className="mb-10 text-center text-3xl font-black">Comment ça se passe</h2>
+      <section className="bg-gray-50 px-4 py-16 md:px-6">
+        <h2 className="mb-10 text-center text-3xl font-extrabold tracking-tight md:text-4xl">Comment ça se passe</h2>
         <ol className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-4">
           {etapes.map((e, i) => (
-            <li key={e.titre} className="rounded-3xl border border-slate-200 bg-white p-6">
-              <span className="text-2xl font-extrabold text-primary">{String(i + 1).padStart(2, '0')}</span>
-              <h3 className="my-2 font-bold">{e.titre}</h3>
-              <p className="text-sm text-slate-500">{e.texte}</p>
+            <li key={e.titre} className="rounded-3xl bg-white p-6 ring-1 ring-gray-200">
+              <span className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-extrabold ${theme.logo}`}>
+                {i + 1}
+              </span>
+              <h3 className="mb-2 mt-4 font-bold">{e.titre}</h3>
+              <p className="text-sm text-gray-600">{e.texte}</p>
             </li>
           ))}
         </ol>
       </section>
 
-      <section className="mx-auto max-w-3xl px-6 py-16">
-        <h2 className="mb-6 text-3xl font-black">Ce qu'il vous faut en {PAYS[pays].nom}</h2>
+      <section className="mx-auto max-w-3xl px-4 py-16 md:px-6">
+        <h2 className="mb-6 text-3xl font-extrabold tracking-tight">Ce qu&apos;il vous faut en {PAYS[pays].nom}</h2>
         <ul className="space-y-3">
           {prerequis.map((p) => (
             <li key={p} className="flex gap-3">
-              <span className="font-bold text-primary">✓</span>
-              <span className="text-slate-700">{p}</span>
+              <span className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${theme.teinte}`}>
+                ✓
+              </span>
+              <span className="text-gray-700">{p}</span>
             </li>
           ))}
         </ul>
 
-        <h2 className="mb-6 mt-14 text-3xl font-black">Questions fréquentes</h2>
+        <h2 className="mb-6 mt-14 text-3xl font-extrabold tracking-tight">Questions fréquentes</h2>
         <div className="space-y-3">
           {questions.map((q) => (
-            <details key={q.question} className="rounded-2xl border border-slate-200 p-5">
-              <summary className="cursor-pointer font-bold">{q.question}</summary>
-              <p className="mt-3 text-slate-600">{q.reponse}</p>
+            <details key={q.question} className="group rounded-2xl p-5 ring-1 ring-gray-200 open:bg-gray-50">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-bold">
+                {q.question}
+                <span className="text-xl text-gray-400 transition-transform group-open:rotate-45" aria-hidden="true">
+                  +
+                </span>
+              </summary>
+              <p className="mt-3 text-gray-600">{q.reponse}</p>
             </details>
           ))}
         </div>
       </section>
 
-      <section className="bg-blue-50 px-6 py-16 text-center">
-        <h2 className="mb-6 text-3xl font-black">Prêt à commencer ?</h2>
-        {bouton}
-        {conditions && (
-          <p className="mt-6 text-sm text-slate-500">
-            En continuant, vous acceptez les{' '}
-            <Link href={conditions.href} className="underline hover:text-slate-900">
-              {conditions.libelle}
-            </Link>
-            .
-          </p>
-        )}
-      </section>
+      <div className="mx-auto max-w-7xl px-4 pb-16 md:px-6">
+        <section className={`rounded-3xl px-6 py-14 text-center ${theme.teinte}`}>
+          <h2 className="mb-6 text-3xl font-extrabold tracking-tight text-gray-900">Prêt à commencer ?</h2>
+          {bouton(false)}
+          {conditions && (
+            <p className="mt-6 text-sm text-gray-600">
+              En continuant, vous acceptez les{' '}
+              <Link href={conditions.href} className="text-gray-900 underline hover:text-gray-700">
+                {conditions.libelle}
+              </Link>
+              .
+            </p>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
