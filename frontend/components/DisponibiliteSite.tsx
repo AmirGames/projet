@@ -51,10 +51,10 @@ interface Bilan {
 
 /** Au-dessus de 99,9 % vert, de 99 % orange, en dessous rouge. */
 const teinte = (valeur: number | null | undefined) =>
-  valeur == null ? 'bg-gray-700' : valeur >= 99.9 ? 'bg-green-500' : valeur >= 99 ? 'bg-amber-500' : 'bg-red-500';
+  valeur == null ? 'bg-gray-100' : valeur >= 99.9 ? 'bg-green-500' : valeur >= 99 ? 'bg-amber-500' : 'bg-red-500';
 
 const teinteTexte = (valeur: number | null | undefined) =>
-  valeur == null ? 'text-gray-500' : valeur >= 99.9 ? 'text-green-400' : valeur >= 99 ? 'text-amber-400' : 'text-red-400';
+  valeur == null ? 'text-gray-500' : valeur >= 99.9 ? 'text-green-600' : valeur >= 99 ? 'text-amber-600' : 'text-red-600';
 
 export function DisponibiliteSite() {
   const t = useTranslations('superownerMonitoring');
@@ -121,10 +121,10 @@ export function DisponibiliteSite() {
 
 
   return (
-    <section className="bg-gray-800 border border-gray-700 rounded-lg">
-      <header className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-700 flex-wrap">
+    <section className="bg-white border border-gray-200 rounded-lg">
+      <header className="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-200 flex-wrap">
         <h2 className="font-semibold flex items-center gap-2">
-          <Globe size={18} className="text-gray-400" />
+          <Globe size={18} className="text-gray-500" />
           {t('uptimeTitle')}
         </h2>
         <div className="flex gap-1 text-xs">
@@ -137,7 +137,7 @@ export function DisponibiliteSite() {
               className={`px-2.5 py-1 rounded ${
                 fenetreSelectionnee === fenetre
                   ? 'bg-orange-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               {t(`uptimeWindow${fenetre}`)}
@@ -147,8 +147,8 @@ export function DisponibiliteSite() {
       </header>
 
       <div className="p-5 space-y-8">
-        {erreur && <p className="text-sm text-red-300">{erreur}</p>}
-        {!bilan && !erreur && <p className="text-sm text-gray-400">{t('loading')}</p>}
+        {erreur && <p className="text-sm text-red-700">{erreur}</p>}
+        {!bilan && !erreur && <p className="text-sm text-gray-500">{t('loading')}</p>}
 
         {bilan?.cibles.map((cible) => (
           <article key={cible.cle} className="space-y-3">
@@ -156,9 +156,9 @@ export function DisponibiliteSite() {
               <div className="min-w-0">
                 <h3 className="font-semibold flex items-center gap-2">
                   {cible.etat === 'OK' ? (
-                    <CheckCircle2 size={18} className="text-green-400" />
+                    <CheckCircle2 size={18} className="text-green-600" />
                   ) : cible.etat === 'PANNE' ? (
-                    <XCircle size={18} className="text-red-400" />
+                    <XCircle size={18} className="text-red-600" />
                   ) : (
                     <HelpCircle size={18} className="text-gray-500" />
                   )}
@@ -169,7 +169,7 @@ export function DisponibiliteSite() {
                   {cible.depuis && ` · ${t('uptimeSince', { date: dateHeure(cible.depuis) })}`}
                 </p>
                 {cible.etat === 'PANNE' && cible.derniereErreur && (
-                  <p className="text-sm text-red-300 mt-1 break-words">
+                  <p className="text-sm text-red-700 mt-1 break-words">
                     {cible.derniereErreur}
                     {cible.etatDepuis && ` — ${t('uptimeDownSince', { date: dateHeure(cible.etatDepuis) })}`}
                   </p>
@@ -218,27 +218,27 @@ export function DisponibiliteSite() {
 
                 {survol?.cible === cible.cle && donneesAffichees(cible).donnees[survol.index] && (
                   <div
-                    className={`absolute z-10 top-11 rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-xs shadow-lg pointer-events-none min-w-[11rem] ${
+                    className={`absolute z-10 top-11 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs shadow-lg pointer-events-none min-w-[11rem] ${
                       survol.index > donneesAffichees(cible).donnees.length / 2 ? 'right-0' : 'left-0'
                     }`}
                   >
                     {donneesAffichees(cible).estHeures ? (
                       <>
-                        <p className="text-gray-400">{heure((donneesAffichees(cible).donnees[survol.index] as Heure).heure)}</p>
+                        <p className="text-gray-500">{heure((donneesAffichees(cible).donnees[survol.index] as Heure).heure)}</p>
                         <p className={`font-semibold text-sm ${teinteTexte(donneesAffichees(cible).donnees[survol.index].disponibilite)}`}>
                           {donneesAffichees(cible).donnees[survol.index].disponibilite == null ? t('uptimeNoDataDay') : pourcent(donneesAffichees(cible).donnees[survol.index].disponibilite)}
                         </p>
                       </>
                     ) : (
                       <>
-                        <p className="text-gray-400">{date((donneesAffichees(cible).donnees[survol.index] as Jour).jour)}</p>
+                        <p className="text-gray-500">{date((donneesAffichees(cible).donnees[survol.index] as Jour).jour)}</p>
                         <p className={`font-semibold text-sm ${teinteTexte(donneesAffichees(cible).donnees[survol.index].disponibilite)}`}>
                           {donneesAffichees(cible).donnees[survol.index].disponibilite == null ? t('uptimeNoDataDay') : pourcent(donneesAffichees(cible).donnees[survol.index].disponibilite)}
                         </p>
                       </>
                     )}
                     {donneesAffichees(cible).donnees[survol.index].indisponibleMin > 0 && (
-                      <p className="text-gray-300">{t('uptimeDowntime', { m: donneesAffichees(cible).donnees[survol.index].indisponibleMin })}</p>
+                      <p className="text-gray-700">{t('uptimeDowntime', { m: donneesAffichees(cible).donnees[survol.index].indisponibleMin })}</p>
                     )}
                   </div>
                 )}
@@ -258,22 +258,22 @@ export function DisponibiliteSite() {
                   type="button"
                   onClick={() => setOuverte(ouverte === cible.cle ? null : cible.cle)}
                   aria-expanded={ouverte === cible.cle}
-                  className="text-sm text-gray-300 hover:text-white flex items-center gap-1"
+                  className="text-sm text-gray-700 hover:text-gray-900 flex items-center gap-1"
                 >
                   <ChevronDown size={16} className={`transition-transform ${ouverte === cible.cle ? '' : '-rotate-90'}`} />
                   {t('uptimeIncidents', { n: cible.incidents.length })}
                 </button>
                 {ouverte === cible.cle && (
-                  <ul className="mt-2 divide-y divide-gray-700 text-sm">
+                  <ul className="mt-2 divide-y divide-gray-100 text-sm">
                     {cible.incidents.map((incident) => (
                       <li key={incident.debut} className="py-2 flex items-start justify-between gap-3 flex-wrap">
                         <div className="min-w-0">
-                          <p className="text-gray-200 break-words">{incident.cause}</p>
+                          <p className="text-gray-800 break-words">{incident.cause}</p>
                           <p className="text-xs text-gray-500">
                             {dateHeure(incident.debut)} → {incident.fin ? dateHeure(incident.fin) : t('uptimeOngoing')}
                           </p>
                         </div>
-                        <span className={`tabular-nums ${incident.fin ? 'text-gray-300' : 'text-red-400'}`}>{duree(incident.dureeS)}</span>
+                        <span className={`tabular-nums ${incident.fin ? 'text-gray-700' : 'text-red-600'}`}>{duree(incident.dureeS)}</span>
                       </li>
                     ))}
                   </ul>

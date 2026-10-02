@@ -35,7 +35,7 @@ export default function SelecteurTheme() {
   const theme = getTheme(selectionne);
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+    <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
       <h2 className="text-lg font-bold">Thème de l&apos;interface</h2>
       <div>
         <label htmlFor="selecteur-theme" className="block text-sm font-medium mb-3">Choisir un thème</label>
@@ -43,7 +43,7 @@ export default function SelecteurTheme() {
           id="selecteur-theme"
           value={selectionne}
           onChange={(e) => changer(e.target.value)}
-          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+          className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-500"
         >
           {Object.entries(AVAILABLE_THEMES).map(([id, t]) => (
             <option key={id} value={id}>
@@ -51,7 +51,7 @@ export default function SelecteurTheme() {
             </option>
           ))}
         </select>
-        <p className="text-sm text-gray-400 mt-2">
+        <p className="text-sm text-gray-500 mt-2">
           Le thème change immédiatement et est sauvegardé automatiquement.
         </p>
       </div>
@@ -60,8 +60,8 @@ export default function SelecteurTheme() {
           const couleur = theme[`${type}Color` as keyof Theme] as string;
           return (
             <div key={type} className="flex flex-col items-center">
-              <div className="w-12 h-12 rounded-lg border border-gray-600 mb-2" style={{ backgroundColor: couleur }} />
-              <span className="text-xs text-gray-400 capitalize">{type}</span>
+              <div className="w-12 h-12 rounded-lg border border-gray-300 mb-2" style={{ backgroundColor: couleur }} />
+              <span className="text-xs text-gray-500 capitalize">{type}</span>
               <span className="text-xs text-gray-500">{couleur}</span>
             </div>
           );

@@ -194,23 +194,23 @@ export default function VersementsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <Banknote className="w-8 h-8" />
           {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">
+        <p className="text-gray-500 mt-2">
           {t('subtitle')}
         </p>
       </div>
 
       {erreur && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20">
           {erreur}
         </div>
       )}
 
       {message && (
-        <div role="status" className="p-4 bg-green-900/20 text-green-300 rounded-lg border border-green-500/20">
+        <div role="status" className="p-4 bg-green-50 text-green-700 rounded-lg border border-green-500/20">
           {message}
         </div>
       )}
@@ -219,30 +219,30 @@ export default function VersementsPage() {
           chiffre qui n'existait nulle part. */}
       {reste && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-2">{t('restAmount')}</p>
-            <p className="text-3xl font-bold text-amber-300">{euro(reste.montant)}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <p className="text-gray-500 text-sm mb-2">{t('restAmount')}</p>
+            <p className="text-3xl font-bold text-amber-700">{euro(reste.montant)}</p>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-2">{t('unpaidDeliveries')}</p>
-            <p className="text-3xl font-bold text-white">{reste.courses}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <p className="text-gray-500 text-sm mb-2">{t('unpaidDeliveries')}</p>
+            <p className="text-3xl font-bold text-gray-900">{reste.courses}</p>
           </div>
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <p className="text-gray-400 text-sm mb-2">{t('concernedDrivers')}</p>
-            <p className="text-3xl font-bold text-white">{reste.livreurs}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <p className="text-gray-500 text-sm mb-2">{t('concernedDrivers')}</p>
+            <p className="text-3xl font-bold text-gray-900">{reste.livreurs}</p>
           </div>
         </div>
       )}
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
-        <h2 className="font-semibold text-white flex items-center gap-2">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+        <h2 className="font-semibold text-gray-900 flex items-center gap-2">
           <CalendarRange size={18} className="text-orange-500" />
           {t('drawPeriod')}
         </h2>
 
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label htmlFor="periode-debut" className="block text-sm text-gray-400 mb-1">
+            <label htmlFor="periode-debut" className="block text-sm text-gray-500 mb-1">
               {t('from')}
             </label>
             <input
@@ -250,12 +250,12 @@ export default function VersementsPage() {
               type="date"
               value={bornes.debut}
               onChange={(e) => setBornes({ ...bornes, debut: e.target.value })}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
             />
           </div>
 
           <div>
-            <label htmlFor="periode-fin" className="block text-sm text-gray-400 mb-1">
+            <label htmlFor="periode-fin" className="block text-sm text-gray-500 mb-1">
               {t('toExcluded')}
             </label>
             <input
@@ -263,7 +263,7 @@ export default function VersementsPage() {
               type="date"
               value={bornes.fin}
               onChange={(e) => setBornes({ ...bornes, fin: e.target.value })}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+              className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
             />
           </div>
 
@@ -292,8 +292,8 @@ export default function VersementsPage() {
             onClick={() => setFiltre(etat.valeur)}
             className={`px-4 py-2 rounded text-sm font-medium transition ${
               filtre === etat.valeur
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             {t(etat.key)}
@@ -312,25 +312,25 @@ export default function VersementsPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : releves.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800/50 rounded-lg">
-          <p className="text-gray-400">{t('noPayouts')}</p>
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-gray-500">{t('noPayouts')}</p>
         </div>
       ) : (
         <div className="space-y-3">
           {releves.map((releve) => (
-            <div key={releve.id} className="bg-gray-800 border border-gray-700 rounded-lg p-5">
+            <div key={releve.id} className="bg-white border border-gray-200 rounded-lg p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <FileText size={16} className="text-gray-500 flex-shrink-0" />
-                    <h3 className="text-white font-semibold">{releve.driverName}</h3>
+                    <h3 className="text-gray-900 font-semibold">{releve.driverName}</h3>
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-semibold ${
                         releve.status === 'PAID'
-                          ? 'bg-green-500/20 text-green-300'
+                          ? 'bg-green-100 text-green-700'
                           : releve.status === 'CANCELLED'
-                            ? 'bg-gray-700 text-gray-300'
-                            : 'bg-amber-500/20 text-amber-300'
+                            ? 'bg-gray-100 text-gray-700'
+                            : 'bg-amber-100 text-amber-700'
                       }`}
                     >
                       {releve.status === 'PAID'
@@ -341,7 +341,7 @@ export default function VersementsPage() {
                     </span>
                   </div>
 
-                  <p className="text-sm text-gray-400">{releve.driverEmail}</p>
+                  <p className="text-sm text-gray-500">{releve.driverEmail}</p>
 
                   <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-500">
                     <span>{periode(releve)}</span>
@@ -358,12 +358,12 @@ export default function VersementsPage() {
                   </div>
 
                   {releve.note && releve.status === 'CANCELLED' && (
-                    <p className="text-xs text-gray-400 mt-2">{t('cancelReason')}: {releve.note}</p>
+                    <p className="text-xs text-gray-500 mt-2">{t('cancelReason')}: {releve.note}</p>
                   )}
                 </div>
 
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-white">{euro(releve.amount)}</p>
+                  <p className="text-2xl font-bold text-gray-900">{euro(releve.amount)}</p>
 
                   {releve.status === 'PENDING' && (
                     <div className="flex gap-2 mt-3">
@@ -379,7 +379,7 @@ export default function VersementsPage() {
                       <button
                         onClick={() => annuler(releve)}
                         aria-label={t('cancelPayout', { driver: releve.driverName })}
-                        className="p-1.5 rounded bg-red-600/20 text-red-300 hover:bg-red-600/40"
+                        className="p-1.5 rounded bg-red-50 text-red-700 hover:bg-red-100"
                       >
                         <X size={14} />
                       </button>
@@ -389,12 +389,12 @@ export default function VersementsPage() {
               </div>
 
               {versement?.id === releve.id && (
-                <div className="border-t border-gray-700 mt-4 pt-4 space-y-3">
+                <div className="border-t border-gray-200 mt-4 pt-4 space-y-3">
                   <div className="flex flex-wrap items-end gap-3">
                     <div>
                       <label
                         htmlFor={`moyen-${releve.id}`}
-                        className="block text-sm text-gray-400 mb-1"
+                        className="block text-sm text-gray-500 mb-1"
                       >
                         {t('method')}
                       </label>
@@ -402,7 +402,7 @@ export default function VersementsPage() {
                         id={`moyen-${releve.id}`}
                         value={versement.method}
                         onChange={(e) => setVersement({ ...versement, method: e.target.value })}
-                        className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                        className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
                       >
                         <option value="BANK_TRANSFER">{t('methodBankTransfer')}</option>
                         <option value="CASH">{t('methodCash')}</option>
@@ -413,7 +413,7 @@ export default function VersementsPage() {
                     <div className="flex-1 min-w-[12rem]">
                       <label
                         htmlFor={`reference-${releve.id}`}
-                        className="block text-sm text-gray-400 mb-1"
+                        className="block text-sm text-gray-500 mb-1"
                       >
                         {t('reference')}
                       </label>
@@ -422,7 +422,7 @@ export default function VersementsPage() {
                         value={versement.reference}
                         onChange={(e) => setVersement({ ...versement, reference: e.target.value })}
                         placeholder={t('referencePlaceholder')}
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                        className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
                       />
                     </div>
 
@@ -435,7 +435,7 @@ export default function VersementsPage() {
 
                     <button
                       onClick={() => setVersement(null)}
-                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition"
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition"
                     >
                       {tCommon('cancel')}
                     </button>

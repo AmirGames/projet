@@ -89,12 +89,12 @@ export default function ExportsPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-gray-400 mt-1">{t('subtitle')}</p>
+        <p className="text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
 
       {/* Message */}
       {message && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
           {message}
         </div>
       )}
@@ -102,17 +102,17 @@ export default function ExportsPage() {
       {/* Export Options */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Merchants Export */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <div>
             <h3 className="text-lg font-bold mb-2">{t('merchantsTitle')}</h3>
-            <p className="text-gray-400 text-sm">{t('merchantsSubtitle')}</p>
+            <p className="text-gray-500 text-sm">{t('merchantsSubtitle')}</p>
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={() => exportData('merchants', 'csv')}
               disabled={loading === 'merchants'}
-              className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 bg-gray-900 hover:bg-black disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors text-white"
             >
               <FileText size={18} />
               CSV
@@ -120,7 +120,7 @@ export default function ExportsPage() {
             <button
               onClick={() => exportData('merchants', 'json')}
               disabled={loading === 'merchants'}
-              className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 bg-gray-900 hover:bg-black disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors text-white"
             >
               <FileJson size={18} />
               JSON
@@ -129,17 +129,17 @@ export default function ExportsPage() {
         </div>
 
         {/* Commissions Export */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <div>
             <h3 className="text-lg font-bold mb-2">{t('commissionsTitle')}</h3>
-            <p className="text-gray-400 text-sm">{t('commissionsSubtitle')}</p>
+            <p className="text-gray-500 text-sm">{t('commissionsSubtitle')}</p>
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={() => exportData('commissions', 'csv')}
               disabled={loading === 'commissions'}
-              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors text-white"
             >
               <FileText size={18} />
               CSV
@@ -147,7 +147,7 @@ export default function ExportsPage() {
             <button
               onClick={() => exportData('commissions', 'json')}
               disabled={loading === 'commissions'}
-              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors text-white"
             >
               <FileJson size={18} />
               JSON
@@ -156,17 +156,17 @@ export default function ExportsPage() {
         </div>
 
         {/* Stats Export */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <div>
             <h3 className="text-lg font-bold mb-2">{t('statsTitle')}</h3>
-            <p className="text-gray-400 text-sm">{t('statsSubtitle')}</p>
+            <p className="text-gray-500 text-sm">{t('statsSubtitle')}</p>
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={() => exportData('stats', 'csv')}
               disabled={loading === 'stats'}
-              className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors text-white"
             >
               <FileText size={18} />
               CSV
@@ -174,7 +174,7 @@ export default function ExportsPage() {
             <button
               onClick={() => exportData('stats', 'json')}
               disabled={loading === 'stats'}
-              className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg px-4 py-2 font-medium transition-colors text-white"
             >
               <FileJson size={18} />
               JSON
@@ -183,23 +183,23 @@ export default function ExportsPage() {
         </div>
 
         {/* Audit Logs Export */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <div>
             <h3 className="text-lg font-bold mb-2">{t('auditTitle')}</h3>
-            <p className="text-gray-400 text-sm">{t('auditSubtitle')}</p>
+            <p className="text-gray-500 text-sm">{t('auditSubtitle')}</p>
           </div>
 
           <div className="flex gap-2">
             <button
               disabled
-              className="flex-1 flex items-center justify-center gap-2 bg-gray-700 opacity-50 rounded-lg px-4 py-2 font-medium"
+              className="flex-1 flex items-center justify-center gap-2 bg-gray-100 opacity-50 rounded-lg px-4 py-2 font-medium"
             >
               <FileText size={18} />
               CSV
             </button>
             <button
               disabled
-              className="flex-1 flex items-center justify-center gap-2 bg-gray-700 opacity-50 rounded-lg px-4 py-2 font-medium"
+              className="flex-1 flex items-center justify-center gap-2 bg-gray-100 opacity-50 rounded-lg px-4 py-2 font-medium"
             >
               <FileJson size={18} />
               JSON
@@ -210,8 +210,8 @@ export default function ExportsPage() {
       </div>
 
       {/* Info */}
-      <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
-        <p className="text-blue-400 text-sm">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-blue-600 text-sm">
           {t('infoNote')}
         </p>
       </div>

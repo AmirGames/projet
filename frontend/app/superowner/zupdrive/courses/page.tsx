@@ -54,14 +54,14 @@ export default function CoursesDrivePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-3xl font-bold text-white">
+        <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-900">
           <Navigation className="h-8 w-8" />
           {t('titre')}
         </h1>
-        <p className="mt-2 text-gray-400">{t('sousTitre')}</p>
+        <p className="mt-2 text-gray-500">{t('sousTitre')}</p>
       </div>
 
-      {erreur && <div role="alert" className="rounded-lg border border-red-500/20 bg-red-900/20 p-4 text-red-400">{erreur}</div>}
+      {erreur && <div role="alert" className="rounded-lg border border-red-500/20 bg-red-50 p-4 text-red-600">{erreur}</div>}
 
       <div className="flex flex-wrap gap-2" role="group" aria-label={t('filtre')}>
         {STATUTS.map((statut) => (
@@ -69,7 +69,7 @@ export default function CoursesDrivePage() {
             key={statut}
             onClick={() => setFiltre(statut)}
             className={`rounded px-3 py-1.5 text-sm font-medium ${
-              filtre === statut ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              filtre === statut ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             {t(`statut.${statut}`)}
@@ -78,11 +78,11 @@ export default function CoursesDrivePage() {
       </div>
 
       {courses.length === 0 ? (
-        <p className="rounded-lg bg-gray-800/50 py-12 text-center text-gray-400">{t('aucune')}</p>
+        <p className="rounded-lg bg-gray-50 py-12 text-center text-gray-500">{t('aucune')}</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-700">
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-800 text-gray-400">
+            <thead className="bg-white text-gray-500">
               <tr>
                 <th className="px-4 py-2">{t('colonne.date')}</th>
                 <th className="px-4 py-2">{t('colonne.trajet')}</th>
@@ -93,7 +93,7 @@ export default function CoursesDrivePage() {
                 <th className="px-4 py-2">{t('colonne.notes')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700 bg-gray-900 text-gray-200">
+            <tbody className="divide-y divide-gray-100 bg-white text-gray-800">
               {courses.map((course) => (
                 <tr key={course.id}>
                   <td className="whitespace-nowrap px-4 py-2">{new Date(course.createdAt).toLocaleString('fr-FR')}</td>
@@ -116,9 +116,9 @@ export default function CoursesDrivePage() {
                     {course.notes.length === 0
                       ? '—'
                       : course.notes.map((n) => (
-                          <span key={n.auteur} className={`block ${n.note <= 2 ? 'text-red-300' : ''}`}>
+                          <span key={n.auteur} className={`block ${n.note <= 2 ? 'text-red-700' : ''}`}>
                             {t(`noteDe.${n.auteur}`, { note: n.note })}
-                            {n.commentaire && <span className="block text-gray-400 italic">« {n.commentaire} »</span>}
+                            {n.commentaire && <span className="block text-gray-500 italic">« {n.commentaire} »</span>}
                           </span>
                         ))}
                   </td>

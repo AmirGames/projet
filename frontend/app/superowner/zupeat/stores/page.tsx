@@ -24,9 +24,9 @@ interface Boutique {
 }
 
 const COULEURS_ORG: Record<string, string> = {
-  ACTIVE: 'bg-green-500/20 text-green-400',
-  SUSPENDED: 'bg-orange-500/20 text-orange-400',
-  CLOSED: 'bg-red-500/20 text-red-400',
+  ACTIVE: 'bg-green-100 text-green-600',
+  SUSPENDED: 'bg-orange-100 text-orange-600',
+  CLOSED: 'bg-red-100 text-red-600',
 };
 
 export default function BoutiquesAdminPage() {
@@ -101,13 +101,13 @@ export default function BoutiquesAdminPage() {
           <StoreIcon size={28} className="text-green-500" />
           {t('title')}
         </h1>
-        <p className="text-gray-400 mt-1">
+        <p className="text-gray-500 mt-1">
           {t('subtitle')}
         </p>
       </div>
 
       {erreur && (
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
+        <div className="bg-red-100 border border-red-500/50 rounded-lg p-4 text-red-600">
           {erreur}
         </div>
       )}
@@ -122,7 +122,7 @@ export default function BoutiquesAdminPage() {
             setRecherche(e.target.value);
           }}
           placeholder={t('searchPlaceholder')}
-          className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-green-500"
+          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-green-500"
         />
       </div>
 
@@ -131,15 +131,15 @@ export default function BoutiquesAdminPage() {
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600" />
         </div>
       ) : boutiques.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800 border border-gray-700 rounded-lg">
-          <StoreIcon size={40} className="text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400">{t('empty')}</p>
+        <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+          <StoreIcon size={40} className="text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       ) : (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-900/50 border-b border-gray-700 text-gray-300">
+              <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
                 <tr>
                   <th className="px-6 py-3 text-left">{t('colStore')}</th>
                   <th className="px-6 py-3 text-left">{t('colMerchant')}</th>
@@ -149,14 +149,14 @@ export default function BoutiquesAdminPage() {
                   <th className="px-6 py-3 text-right">{t('colStorefront')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700">
+              <tbody className="divide-y divide-gray-100">
                 {boutiques.map((boutique) => (
-                  <tr key={boutique.id} className="hover:bg-gray-700/30 transition-colors">
+                  <tr key={boutique.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       {/* La liste ne menait nulle part : ni fiche, ni détail. */}
                       <Link
                         href={`/superowner/zupeat/stores/${boutique.id}`}
-                        className="font-semibold text-white hover:text-blue-300 hover:underline"
+                        className="font-semibold text-gray-900 hover:text-blue-700 hover:underline"
                       >
                         {boutique.name}
                       </Link>
@@ -167,26 +167,26 @@ export default function BoutiquesAdminPage() {
                     <td className="px-6 py-4">
                       <Link
                         href="/superowner/zupeat/organizations"
-                        className="text-blue-400 hover:text-blue-300"
+                        className="text-blue-600 hover:text-blue-700"
                       >
                         {boutique.organization?.name || '—'}
                       </Link>
                       <span
                         className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
                           COULEURS_ORG[boutique.organization?.status] ||
-                          'bg-gray-500/20 text-gray-400'
+                          'bg-gray-500/20 text-gray-500'
                         }`}
                       >
                         {libelleStatutOrg(boutique.organization?.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className="inline-flex items-center gap-1 text-gray-300">
+                      <span className="inline-flex items-center gap-1 text-gray-700">
                         <Package size={14} /> {boutique.productCount}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className="inline-flex items-center gap-1 text-gray-300">
+                      <span className="inline-flex items-center gap-1 text-gray-700">
                         <ShoppingCart size={14} /> {boutique.orderCount}
                       </span>
                     </td>
@@ -194,8 +194,8 @@ export default function BoutiquesAdminPage() {
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${
                           boutique.isOpen
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'bg-gray-500/20 text-gray-400'
+                            ? 'bg-green-100 text-green-600'
+                            : 'bg-gray-500/20 text-gray-500'
                         }`}
                       >
                         {boutique.isOpen ? t('open') : t('closed')}
@@ -206,7 +206,7 @@ export default function BoutiquesAdminPage() {
                         href={lienVersEspace('public', `/store/${boutique.slug}`)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
+                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
                       >
                         {t('view')} <ExternalLink size={14} />
                       </a>
@@ -220,7 +220,7 @@ export default function BoutiquesAdminPage() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500">
           {total === 0
             ? t('noneCount')
             : t('showingRange', { from: offset + 1, to: Math.min(offset + limit, total), total })}
@@ -229,14 +229,14 @@ export default function BoutiquesAdminPage() {
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
           >
             {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
           >
             {t('next')}
           </button>

@@ -103,10 +103,10 @@ export default function AvisSignalesPage() {
       <div className="flex items-center gap-3">
         <Flag className="text-orange-500" size={28} />
         <div>
-          <h1 className="text-2xl font-bold text-white">
-            {t('title')} {onglet === 'EN_ATTENTE' && total > 0 && <span className="text-orange-400">({total})</span>}
+          <h1 className="text-2xl font-bold text-gray-900">
+            {t('title')} {onglet === 'EN_ATTENTE' && total > 0 && <span className="text-orange-600">({total})</span>}
           </h1>
-          <p className="text-gray-400 text-sm">{t('description')}</p>
+          <p className="text-gray-500 text-sm">{t('description')}</p>
         </div>
       </div>
 
@@ -118,7 +118,7 @@ export default function AvisSignalesPage() {
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               onglet === o
                 ? 'bg-orange-600 text-white'
-                : 'bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700'
+                : 'bg-white hover:bg-gray-100 text-gray-500 border border-gray-200'
             }`}
           >
             {o === 'EN_ATTENTE' ? t('tabPending') : t('tabDecided')}
@@ -127,30 +127,30 @@ export default function AvisSignalesPage() {
       </div>
 
       {erreur && (
-        <div className="bg-red-900/30 border border-red-700/50 text-red-200 rounded-lg p-3 text-sm">{erreur}</div>
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm">{erreur}</div>
       )}
 
       {chargement ? (
-        <p className="text-gray-400">{t('loading')}</p>
+        <p className="text-gray-500">{t('loading')}</p>
       ) : signalements.length === 0 ? (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center text-gray-400">
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
           {onglet === 'EN_ATTENTE' ? t('emptyPending') : t('emptyDecided')}
         </div>
       ) : (
         <div className="space-y-4">
           {signalements.map((s) => (
-            <div key={s.id} className="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-4">
+            <div key={s.id} className="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <p className="text-white font-semibold">{s.avis.boutique.name}</p>
-                  <p className="text-gray-400 text-sm">{s.avis.plat ?? t('storeReview')}</p>
+                  <p className="text-gray-900 font-semibold">{s.avis.boutique.name}</p>
+                  <p className="text-gray-500 text-sm">{s.avis.plat ?? t('storeReview')}</p>
                 </div>
                 {s.decision && (
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium border ${
                       s.decision === 'REMOVED'
-                        ? 'bg-red-600/20 text-red-400 border-red-600/50'
-                        : 'bg-green-600/20 text-green-400 border-green-600/50'
+                        ? 'bg-red-50 text-red-600 border-red-200'
+                        : 'bg-green-50 text-green-600 border-green-200'
                     }`}
                   >
                     {s.decision === 'REMOVED' ? t('removed') : t('kept')}
@@ -159,19 +159,19 @@ export default function AvisSignalesPage() {
               </div>
 
               {/* L'avis tel qu'il est publié (ou était, s'il est retiré). */}
-              <div className="bg-gray-900/60 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center gap-1 mb-2">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
                       key={i}
                       size={16}
-                      className={i < s.avis.note ? 'fill-yellow-400 text-yellow-400' : 'text-gray-600'}
+                      className={i < s.avis.note ? 'fill-yellow-400 text-yellow-600' : 'text-gray-400'}
                     />
                   ))}
                   <span className="text-gray-500 text-xs ml-2">{date(s.avis.modifieLe)}</span>
                 </div>
                 {s.avis.commentaire ? (
-                  <p className="text-gray-200 italic">« {s.avis.commentaire} »</p>
+                  <p className="text-gray-800 italic">« {s.avis.commentaire} »</p>
                 ) : (
                   <p className="text-gray-500 text-sm">{t('noComment')}</p>
                 )}
@@ -183,18 +183,18 @@ export default function AvisSignalesPage() {
               </div>
 
               <div className="border-l-2 border-orange-600 pl-3">
-                <p className="text-orange-300 text-sm font-semibold">
+                <p className="text-orange-700 text-sm font-semibold">
                   {s.signalePar
                     ? t('reportedBy', { who: s.signalePar.name || s.signalePar.email, date: date(s.signaleLe) })
                     : t('reportedAuto', { date: date(s.signaleLe) })}
                 </p>
-                <p className="text-gray-200 text-sm">{s.motif}</p>
+                <p className="text-gray-800 text-sm">{s.motif}</p>
               </div>
 
               {s.decision ? (
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-500 text-sm">
                   {t('decidedBy', { who: s.decidePar?.name || s.decidePar?.email || '—', date: s.decideLe ? date(s.decideLe) : '' })}
-                  {s.noteDecision && <span className="text-gray-300"> — {s.noteDecision}</span>}
+                  {s.noteDecision && <span className="text-gray-700"> — {s.noteDecision}</span>}
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -203,20 +203,20 @@ export default function AvisSignalesPage() {
                     onChange={(e) => setNotes((n) => ({ ...n, [s.id]: e.target.value }))}
                     placeholder={t('notePlaceholder')}
                     rows={2}
-                    className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => decider(s.id, 'KEPT')}
                       disabled={enCours === s.id}
-                      className="px-4 py-2 bg-green-600/20 text-green-300 hover:bg-green-600/30 border border-green-600/50 rounded-lg text-sm font-semibold disabled:opacity-50"
+                      className="px-4 py-2 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-lg text-sm font-semibold disabled:opacity-50"
                     >
                       {s.avis.statut === 'REMOVED' ? t('republish') : t('keep')}
                     </button>
                     <button
                       onClick={() => decider(s.id, 'REMOVED')}
                       disabled={enCours === s.id}
-                      className="px-4 py-2 bg-red-600/20 text-red-300 hover:bg-red-600/30 border border-red-600/50 rounded-lg text-sm font-semibold disabled:opacity-50"
+                      className="px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 rounded-lg text-sm font-semibold disabled:opacity-50"
                     >
                       {s.avis.statut === 'REMOVED' ? t('keepRemoved') : t('remove')}
                     </button>

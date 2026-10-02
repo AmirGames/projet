@@ -93,36 +93,36 @@ export default function TarifsDrivePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-3xl font-bold text-white">
+        <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-900">
           <Euro className="h-8 w-8" />
           {t('titre')}
         </h1>
-        <p className="mt-2 text-gray-400">{t('sousTitre')}</p>
+        <p className="mt-2 text-gray-500">{t('sousTitre')}</p>
       </div>
 
-      {erreur && <div role="alert" className="rounded-lg border border-red-500/20 bg-red-900/20 p-4 text-red-400">{erreur}</div>}
-      {message && <div role="status" className="rounded-lg border border-green-500/20 bg-green-900/20 p-4 text-green-300">{message}</div>}
+      {erreur && <div role="alert" className="rounded-lg border border-red-500/20 bg-red-50 p-4 text-red-600">{erreur}</div>}
+      {message && <div role="status" className="rounded-lg border border-green-500/20 bg-green-50 p-4 text-green-700">{message}</div>}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {tarifs.map((tarif) => {
           const saisie = saisies[tarif.region];
           if (!saisie) return null;
           return (
-            <section key={tarif.region} className="space-y-3 rounded-lg border border-gray-700 bg-gray-800 p-5" data-region={tarif.region}>
-              <h2 className="text-lg font-semibold text-white">{t(`region.${tarif.region}`)}</h2>
+            <section key={tarif.region} className="space-y-3 rounded-lg border border-gray-200 bg-white p-5" data-region={tarif.region}>
+              <h2 className="text-lg font-semibold text-gray-900">{t(`region.${tarif.region}`)}</h2>
               {CHAMPS.map((champ) => (
                 <label key={champ} className="block text-sm">
-                  <span className="text-gray-400">{t(`champ.${champ}`)}</span>
+                  <span className="text-gray-500">{t(`champ.${champ}`)}</span>
                   <input
                     name={`${tarif.region}-${champ}`}
                     inputMode="decimal"
                     value={saisie[champ]}
                     onChange={(e) => setSaisies({ ...saisies, [tarif.region]: { ...saisie, [champ]: e.target.value } })}
-                    className="mt-1 w-full rounded border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                    className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900"
                   />
                 </label>
               ))}
-              <label className="flex items-center gap-2 text-sm text-gray-300">
+              <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input
                   type="checkbox"
                   name={`${tarif.region}-actif`}
@@ -135,7 +135,7 @@ export default function TarifsDrivePage() {
                 type="button"
                 onClick={() => enregistrer(tarif.region)}
                 disabled={envoi !== null}
-                className="w-full rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+                className="w-full rounded bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-50"
               >
                 {envoi === tarif.region ? t('enregistrement') : t('enregistrer')}
               </button>

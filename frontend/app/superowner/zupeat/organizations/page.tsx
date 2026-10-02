@@ -287,11 +287,11 @@ export default function OrganizationsPage() {
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
-      ACTIVE: 'bg-green-500/10 text-green-400 border-green-500/20',
-      SUSPENDED: 'bg-red-500/10 text-red-400 border-red-500/20',
-      CLOSED: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+      ACTIVE: 'bg-green-100 text-green-600 border-green-500/20',
+      SUSPENDED: 'bg-red-100 text-red-600 border-red-500/20',
+      CLOSED: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
     };
-    return colors[status] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+    return colors[status] || 'bg-gray-500/10 text-gray-500 border-gray-500/20';
   };
 
   const getStatusLabel = (status: string) => {
@@ -305,21 +305,21 @@ export default function OrganizationsPage() {
 
   const getTierColor = (tier: string) => {
     const colors: { [key: string]: string } = {
-      FREE: 'bg-gray-600',
-      PREMIUM: 'bg-blue-600',
-      PRO: 'bg-purple-600',
+      FREE: 'bg-gray-200',
+      PREMIUM: 'bg-sky-100',
+      PRO: 'bg-purple-100',
     };
-    return colors[tier] || 'bg-gray-600';
+    return colors[tier] || 'bg-gray-200';
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <Building2 className="w-8 h-8" />
           {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">{t('subtitle')}</p>
+        <p className="text-gray-500 mt-2">{t('subtitle')}</p>
       </div>
 
       <div className="flex gap-2">
@@ -333,8 +333,8 @@ export default function OrganizationsPage() {
             }}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
               aValider === filtre
-                ? 'bg-blue-600 border-blue-500 text-white'
-                : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                ? 'bg-gray-900 border-gray-900 text-white'
+                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-100'
             }`}
           >
             {filtre ? t('filterPending') : t('filterAll')}
@@ -343,7 +343,7 @@ export default function OrganizationsPage() {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20">
           {error}
         </div>
       )}
@@ -353,43 +353,43 @@ export default function OrganizationsPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : organizations.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700/50">
+        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200/50">
           <Building2 className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">{t('empty')}</p>
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       ) : (
-        <div className="bg-gray-800/50 rounded-lg border border-gray-700/50 overflow-hidden">
+        <div className="bg-gray-50 rounded-lg border border-gray-200/50 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-900/50 border-b border-gray-700/50">
+              <thead className="bg-gray-50 border-b border-gray-200/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('colName')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('colEmail')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('colPlan')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('colStatus')}</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-300">{t('colUsers')}</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">{t('colRevenue')}</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">{t('colDate')}</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">{t('colActions')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('colName')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('colEmail')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('colPlan')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('colStatus')}</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">{t('colUsers')}</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">{t('colRevenue')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">{t('colDate')}</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">{t('colActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
                 {organizations.map((org) => (
-                  <tr key={org.id} className="hover:bg-gray-700/20 transition">
+                  <tr key={org.id} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4">
                       <div>
-                        <p className="font-semibold text-white">{org.name}</p>
+                        <p className="font-semibold text-gray-900">{org.name}</p>
                         <p className="text-xs text-gray-500 mt-1">{org.id.slice(0, 8)}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{org.email}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{org.email}</td>
                     <td className="px-6 py-4">
                       <select
                         value={org.tier}
                         onChange={(e) => changerFormule(org, e.target.value)}
                         disabled={action === org.id}
                         title={t('tierTitle')}
-                        className={`px-3 py-1 rounded text-xs font-semibold text-white border-0 cursor-pointer disabled:opacity-40 ${getTierColor(
+                        className={`px-3 py-1 rounded text-xs font-semibold text-gray-900 border-0 cursor-pointer disabled:opacity-40 ${getTierColor(
                           org.tier
                         )}`}
                       >
@@ -400,7 +400,7 @@ export default function OrganizationsPage() {
                       {org.customTerms?.actives && (
                         <span
                           title={org.customTerms.note || t('termsBadgeTitle')}
-                          className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border bg-amber-500/10 text-amber-300 border-amber-500/30"
+                          className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border bg-amber-100 text-amber-700 border-amber-500/30"
                         >
                           <Handshake size={12} />
                           {org.customTerms.commission !== null
@@ -411,7 +411,7 @@ export default function OrganizationsPage() {
                       {org.commissionFree.enCours && (
                         <span
                           title={org.commissionFree.note || t('promoBadgeTitle')}
-                          className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border bg-pink-500/10 text-pink-300 border-pink-500/30"
+                          className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border bg-pink-100 text-pink-700 border-pink-500/30"
                         >
                           <Gift size={12} />
                           {org.commissionFree.until
@@ -431,7 +431,7 @@ export default function OrganizationsPage() {
                       {!org.approvedAt && (
                         <span
                           title={t('pendingApprovalTitle')}
-                          className="ml-2 px-3 py-1 rounded-full text-xs font-semibold border bg-blue-500/10 text-blue-300 border-blue-500/30"
+                          className="ml-2 px-3 py-1 rounded-full text-xs font-semibold border bg-blue-100 text-blue-700 border-blue-500/30"
                         >
                           {t('pendingApproval')}
                         </span>
@@ -439,12 +439,12 @@ export default function OrganizationsPage() {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <Users size={16} className="text-blue-400" />
-                        <span className="text-sm text-gray-400">{org.activeUsers}</span>
+                        <Users size={16} className="text-blue-600" />
+                        <span className="text-sm text-gray-500">{org.activeUsers}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <p className="font-bold text-green-400">{Number(org.revenue || 0).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' })}</p>
+                      <p className="font-bold text-green-600">{Number(org.revenue || 0).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' })}</p>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {new Date(org.createdAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR')}
@@ -456,7 +456,7 @@ export default function OrganizationsPage() {
                         <Link
                           href={`/superowner/zupeat/organizations/${org.id}`}
                           title={t('viewDetails')}
-                          className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
+                          className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-900 transition"
                         >
                           <Eye size={16} />
                         </Link>
@@ -464,10 +464,10 @@ export default function OrganizationsPage() {
                           onClick={() => ouvrirConditions(org)}
                           disabled={action === org.id}
                           title={t('termsButton')}
-                          className={`p-2 rounded-lg text-white transition disabled:opacity-40 ${
+                          className={`p-2 rounded-lg text-gray-900 transition disabled:opacity-40 ${
                             org.customTerms?.actives
                               ? 'bg-amber-600/80 hover:bg-amber-600'
-                              : 'bg-gray-700 hover:bg-gray-600'
+                              : 'bg-gray-100 hover:bg-gray-200'
                           }`}
                         >
                           <Handshake size={16} />
@@ -476,10 +476,10 @@ export default function OrganizationsPage() {
                           onClick={() => ouvrirPromo(org)}
                           disabled={action === org.id}
                           title={t('promoButton')}
-                          className={`p-2 rounded-lg text-white transition disabled:opacity-40 ${
+                          className={`p-2 rounded-lg text-gray-900 transition disabled:opacity-40 ${
                             org.commissionFree.enCours
                               ? 'bg-pink-600/80 hover:bg-pink-600'
-                              : 'bg-gray-700 hover:bg-gray-600'
+                              : 'bg-gray-100 hover:bg-gray-200'
                           }`}
                         >
                           <Gift size={16} />
@@ -528,21 +528,21 @@ export default function OrganizationsPage() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500">
           {t('showingRange', { from: offset + 1, to: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition"
           >
             {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition"
           >
             {t('next')}
           </button>
@@ -551,26 +551,26 @@ export default function OrganizationsPage() {
 
       {promo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+          <div className="w-full max-w-md bg-white border border-gray-200 rounded-lg p-6 space-y-4">
             <div className="flex items-start justify-between">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Gift size={20} className="text-pink-400" />
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Gift size={20} className="text-pink-600" />
                 {t('promoTitle', { name: promo.org.name })}
               </h2>
               <button
                 type="button"
                 onClick={() => setPromo(null)}
                 aria-label={t('promoCancel')}
-                className="p-1 text-gray-400 hover:text-white"
+                className="p-1 text-gray-500 hover:text-gray-900"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <p className="text-sm text-gray-400">{t('promoHelp')}</p>
+            <p className="text-sm text-gray-500">{t('promoHelp')}</p>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1" htmlFor="promo-fin">
+              <label className="block text-sm text-gray-500 mb-1" htmlFor="promo-fin">
                 {t('promoUntil')}
               </label>
               <input
@@ -579,13 +579,13 @@ export default function OrganizationsPage() {
                 value={promo.until}
                 min={new Date().toISOString().slice(0, 10)}
                 onChange={(e) => setPromo({ ...promo, until: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-pink-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-pink-500"
               />
               <p className="text-xs text-gray-500 mt-1">{t('promoUntilHelp')}</p>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1" htmlFor="promo-note">
+              <label className="block text-sm text-gray-500 mb-1" htmlFor="promo-note">
                 {t('promoNote')}
               </label>
               <input
@@ -594,7 +594,7 @@ export default function OrganizationsPage() {
                 maxLength={200}
                 placeholder={t('promoNotePlaceholder')}
                 onChange={(e) => setPromo({ ...promo, note: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-pink-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-pink-500"
               />
             </div>
 
@@ -604,7 +604,7 @@ export default function OrganizationsPage() {
                   type="button"
                   onClick={() => reglerPromo(false)}
                   disabled={action === promo.org.id}
-                  className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40 transition"
+                  className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 disabled:opacity-40 transition"
                 >
                   {t('promoRemove')}
                 </button>
@@ -623,26 +623,26 @@ export default function OrganizationsPage() {
       )}
       {conditions && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white border border-gray-200 rounded-lg p-6 space-y-4">
             <div className="flex items-start justify-between">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Handshake size={20} className="text-amber-400" />
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Handshake size={20} className="text-amber-600" />
                 {t('termsTitle', { name: conditions.org.name })}
               </h2>
               <button
                 type="button"
                 onClick={() => setConditions(null)}
                 aria-label={t('promoCancel')}
-                className="p-1 text-gray-400 hover:text-white"
+                className="p-1 text-gray-500 hover:text-gray-900"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <p className="text-sm text-gray-400">{t('termsHelp')}</p>
+            <p className="text-sm text-gray-500">{t('termsHelp')}</p>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1" htmlFor="cond-commission">
+              <label className="block text-sm text-gray-500 mb-1" htmlFor="cond-commission">
                 {t('termsCommission')}
               </label>
               <input
@@ -654,11 +654,11 @@ export default function OrganizationsPage() {
                 value={conditions.commission}
                 placeholder={t('termsPlaceholder')}
                 onChange={(e) => setConditions({ ...conditions, commission: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-amber-500"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1" htmlFor="cond-livreurs">
+              <label className="block text-sm text-gray-500 mb-1" htmlFor="cond-livreurs">
                 {t('termsPlatformDelivery')}
               </label>
               <input
@@ -670,11 +670,11 @@ export default function OrganizationsPage() {
                 value={conditions.commissionLivreurs}
                 placeholder={t('termsPlaceholder')}
                 onChange={(e) => setConditions({ ...conditions, commissionLivreurs: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-amber-500"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1" htmlFor="cond-boutiques">
+              <label className="block text-sm text-gray-500 mb-1" htmlFor="cond-boutiques">
                 {t('termsMaxStores')}
               </label>
               <input
@@ -686,11 +686,11 @@ export default function OrganizationsPage() {
                 value={conditions.maxBoutiques}
                 placeholder={t('termsPlaceholder')}
                 onChange={(e) => setConditions({ ...conditions, maxBoutiques: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-amber-500"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1" htmlFor="cond-prix">
+              <label className="block text-sm text-gray-500 mb-1" htmlFor="cond-prix">
                 {t('termsPrice')}
               </label>
               <input
@@ -702,12 +702,12 @@ export default function OrganizationsPage() {
                 value={conditions.prixMensuel}
                 placeholder={t('termsPlaceholder')}
                 onChange={(e) => setConditions({ ...conditions, prixMensuel: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-amber-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1" htmlFor="cond-note">
+              <label className="block text-sm text-gray-500 mb-1" htmlFor="cond-note">
                 {t('termsNote')}
               </label>
               <input
@@ -716,7 +716,7 @@ export default function OrganizationsPage() {
                 maxLength={500}
                 placeholder={t('termsNotePlaceholder')}
                 onChange={(e) => setConditions({ ...conditions, note: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-amber-500"
               />
             </div>
 
@@ -726,7 +726,7 @@ export default function OrganizationsPage() {
                   type="button"
                   onClick={() => enregistrerConditions(true)}
                   disabled={action === conditions.org.id}
-                  className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40 transition"
+                  className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 disabled:opacity-40 transition"
                 >
                   {t('termsRemove')}
                 </button>

@@ -37,7 +37,7 @@ import { useEffectChargement } from '@/lib/use-effect-chargement';
 const CarteZones = dynamic(() => import('@/components/CarteZones'), {
   ssr: false,
   loading: () => (
-    <div className="h-[320px] w-full rounded-lg border border-gray-700 bg-gray-800 flex items-center justify-center text-gray-500">
+    <div className="h-[320px] w-full rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-500">
       Chargement de la carte…
     </div>
   ),
@@ -287,10 +287,10 @@ export default function FicheBoutiquePage() {
   if (!fiche) {
     return (
       <div className="space-y-4">
-        <Link href="/superowner/zupeat/stores" className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm">
+        <Link href="/superowner/zupeat/stores" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 text-sm">
           <ArrowLeft size={16} /> {t('back')}
         </Link>
-        <p className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+        <p className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20">
           {erreur || t('storeNotFound')}
         </p>
       </div>
@@ -302,18 +302,18 @@ export default function FicheBoutiquePage() {
       <div>
         <Link
           href="/superowner/zupeat/stores"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-2"
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 text-sm mb-2"
         >
           <ArrowLeft size={16} /> {t('back')}
         </Link>
 
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
               <StoreIcon className="w-7 h-7" />
               {fiche.name}
             </h1>
-            <p className="text-gray-400 mt-1">
+            <p className="text-gray-500 mt-1">
               <Link href="/superowner/zupeat/organizations" className="hover:underline">
                 {fiche.org.name}
               </Link>{' '}
@@ -326,7 +326,7 @@ export default function FicheBoutiquePage() {
               href={`/store/${fiche.slug}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition"
+              className="inline-flex items-center gap-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition"
             >
               <ExternalLink size={14} />
               {t('seeShowcase')}
@@ -356,7 +356,7 @@ export default function FicheBoutiquePage() {
             {!enEdition && (
               <button
                 onClick={ouvrirEdition}
-                className="inline-flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm font-medium transition"
+                className="inline-flex items-center gap-1 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded text-sm font-medium transition"
               >
                 <Pencil size={14} />
                 {t('edit')}
@@ -367,10 +367,10 @@ export default function FicheBoutiquePage() {
       </div>
 
       {fermetureEnCours && (
-        <div className="p-4 bg-gray-800 border border-red-600/40 rounded-lg space-y-3">
+        <div className="p-4 bg-white border border-red-200 rounded-lg space-y-3">
           <div>
-            <p className="font-semibold text-white">{t('closeStoreTitle', { name: fiche.name })}</p>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="font-semibold text-gray-900">{t('closeStoreTitle', { name: fiche.name })}</p>
+            <p className="text-sm text-gray-500 mt-1">
               {t('closeStoreExplanation')}
             </p>
           </div>
@@ -381,7 +381,7 @@ export default function FicheBoutiquePage() {
             onChange={(e) => setMotifFermeture(e.target.value)}
             placeholder={t('closureReason')}
             aria-label={t('closureReasonLabel')}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
           />
 
           <div className="flex gap-2">
@@ -397,7 +397,7 @@ export default function FicheBoutiquePage() {
                 setFermetureEnCours(false);
                 setMotifFermeture('');
               }}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition"
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition"
             >
               {tCommon('cancel')}
             </button>
@@ -406,13 +406,13 @@ export default function FicheBoutiquePage() {
       )}
 
       {erreur && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20">
           {erreur}
         </div>
       )}
 
       {message && (
-        <div role="status" className="p-4 bg-green-900/20 text-green-300 rounded-lg border border-green-500/20">
+        <div role="status" className="p-4 bg-green-50 text-green-700 rounded-lg border border-green-500/20">
           {message}
         </div>
       )}
@@ -421,11 +421,11 @@ export default function FicheBoutiquePage() {
           et des zones de livraison. C'est le premier point à regarder quand un
           commerçant dit ne plus recevoir de livreur. */}
       {!fiche.situee && (
-        <div className="p-4 bg-amber-900/20 text-amber-200 rounded-lg border border-amber-600/40 flex gap-3">
-          <AlertTriangle size={20} className="flex-shrink-0 text-amber-400" />
+        <div className="p-4 bg-amber-50 text-amber-800 rounded-lg border border-amber-200 flex gap-3">
+          <AlertTriangle size={20} className="flex-shrink-0 text-amber-600" />
           <div>
             <p className="font-semibold">Cette boutique n&apos;est pas située</p>
-            <p className="text-sm text-amber-200/80">
+            <p className="text-sm text-amber-800/80">
               Sans coordonnées, aucun livreur ne lui est proposé et ses zones de livraison ne
               s&apos;appliquent pas. Corrigez son adresse : elle sera située automatiquement.
             </p>
@@ -434,11 +434,11 @@ export default function FicheBoutiquePage() {
       )}
 
       {enEdition ? (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <div>
-            <h2 className="font-semibold text-white">Corriger la fiche</h2>
+            <h2 className="font-semibold text-gray-900">Corriger la fiche</h2>
             {/* Dire la limite, plutôt que de laisser chercher le champ absent. */}
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-sm text-gray-500 mt-1">
               La plateforme ne corrige que ces champs. Le nom, le catalogue, les prix et les
               horaires appartiennent au commerçant. Chaque correction part au journal et lui est
               annoncée.
@@ -448,7 +448,7 @@ export default function FicheBoutiquePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {CHAMPS.map(({ champ, libelle, type }) => (
               <div key={champ}>
-                <label htmlFor={`champ-${champ}`} className="block text-sm text-gray-400 mb-1">
+                <label htmlFor={`champ-${champ}`} className="block text-sm text-gray-500 mb-1">
                   {libelle}
                 </label>
                 <input
@@ -456,7 +456,7 @@ export default function FicheBoutiquePage() {
                   type={type}
                   value={formulaire[champ] ?? ''}
                   onChange={(e) => setFormulaire({ ...formulaire, [champ]: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
                 />
               </div>
             ))}
@@ -466,7 +466,7 @@ export default function FicheBoutiquePage() {
               sans recours : il fallait trouver des coordonnées ailleurs et les
               recopier. Ici, le point se pose à la main. */}
           <div>
-            <p className="text-sm text-gray-400 mb-2">
+            <p className="text-sm text-gray-500 mb-2">
               Ou posez la boutique directement sur la carte.
             </p>
             <CarteZones
@@ -502,7 +502,7 @@ export default function FicheBoutiquePage() {
             </button>
             <button
               onClick={() => setEnEdition(false)}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition"
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded text-sm transition"
             >
               Annuler
             </button>
@@ -510,8 +510,8 @@ export default function FicheBoutiquePage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-3">
-            <h2 className="font-semibold text-white flex items-center gap-2">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
               <MapPin size={18} className="text-orange-500" />
               Coordonnées
             </h2>
@@ -528,15 +528,15 @@ export default function FicheBoutiquePage() {
                 ],
               ].map(([libelle, valeur]) => (
                 <div key={libelle as string} className="flex justify-between gap-4">
-                  <dt className="text-gray-400">{libelle}</dt>
-                  <dd className="text-white text-right">{valeur || '—'}</dd>
+                  <dt className="text-gray-500">{libelle}</dt>
+                  <dd className="text-gray-900 text-right">{valeur || '—'}</dd>
                 </div>
               ))}
             </dl>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-3">
-            <h2 className="font-semibold text-white">Activité</h2>
+          <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
+            <h2 className="font-semibold text-gray-900">Activité</h2>
 
             <dl className="text-sm space-y-2">
               {[
@@ -552,22 +552,22 @@ export default function FicheBoutiquePage() {
                 ['Ouverte depuis', jour(fiche.createdAt)],
               ].map(([libelle, valeur]) => (
                 <div key={libelle} className="flex justify-between gap-4">
-                  <dt className="text-gray-400">{libelle}</dt>
-                  <dd className="text-white">{valeur}</dd>
+                  <dt className="text-gray-500">{libelle}</dt>
+                  <dd className="text-gray-900">{valeur}</dd>
                 </div>
               ))}
             </dl>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-3">
-            <h2 className="font-semibold text-white">Livraison</h2>
+          <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
+            <h2 className="font-semibold text-gray-900">Livraison</h2>
             {/* En lecture seule : ces montants sont ceux du commerçant. */}
             <p className="text-xs text-gray-500">
               Réglé par le commerçant — la plateforme ne le modifie pas.
             </p>
 
             {fiche.deliveryZones.length === 0 ? (
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-500">
                 Aucune zone : la boutique facture {euro(fiche.deliveryCost)} partout, à partir de{' '}
                 {euro(fiche.minDeliveryAmount)}.
               </p>
@@ -575,11 +575,11 @@ export default function FicheBoutiquePage() {
               <ul className="text-sm space-y-1">
                 {fiche.deliveryZones.map((zone) => (
                   <li key={zone.id} className="flex justify-between gap-4">
-                    <span className="text-gray-400">
+                    <span className="text-gray-500">
                       {zone.name} · {zone.type === 'RADIUS' ? `${zone.radiusKm} km` : `polygone (${zone.polygon?.length ?? 0} pts)`}
                       {!zone.isActive && ' (inactive)'}
                     </span>
-                    <span className="text-white">
+                    <span className="text-gray-900">
                       {euro(zone.baseFee)} · min. {euro(zone.minOrder)}
                     </span>
                   </li>
@@ -589,19 +589,19 @@ export default function FicheBoutiquePage() {
           </div>
 
           {/* ── Dernières commandes avec commission ───────────────────── */}
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-3">
-            <h2 className="font-semibold text-white flex items-center gap-2">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
               <FileText size={18} className="text-orange-500" />
               Dernières commandes
             </h2>
 
             {(!fiche.dernieresCommandes || fiche.dernieresCommandes.length === 0) ? (
-              <p className="text-sm text-gray-400">Aucune commande pour l&apos;instant.</p>
+              <p className="text-sm text-gray-500">Aucune commande pour l&apos;instant.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-gray-400 border-b border-gray-700">
+                    <tr className="text-gray-500 border-b border-gray-200">
                       <th className="text-left py-2 pr-4">Date</th>
                       <th className="text-left py-2 pr-4">Client</th>
                       <th className="text-right py-2 pr-4">Total</th>
@@ -612,8 +612,8 @@ export default function FicheBoutiquePage() {
                   </thead>
                   <tbody>
                     {fiche.dernieresCommandes.map((c) => (
-                      <tr key={c.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                        <td className="py-2 pr-4 text-gray-400">{jour(c.createdAt)}</td>
+                      <tr key={c.id} className="border-b border-gray-200/50 hover:bg-gray-50">
+                        <td className="py-2 pr-4 text-gray-500">{jour(c.createdAt)}</td>
                         <td className="py-2 pr-4">{c.customerName || '—'}</td>
                         <td className="py-2 pr-4 text-right">{euro(c.totalAmount)}</td>
                         <td className="py-2 pr-4 text-right">
@@ -622,60 +622,60 @@ export default function FicheBoutiquePage() {
                               taux pour ne pas afficher "PRO" sur une commande
                               facturée à 8 % (taux FREE). */}
                           {c.tierAtOrder ? (
-                            <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">
+                            <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
                               {c.tierAtOrder}
                             </span>
                           ) : (
-                            <span className="text-xs bg-gray-700/50 px-2 py-0.5 rounded text-gray-400" title="Formule inconnue — migration non appliquée">
+                            <span className="text-xs bg-gray-50 px-2 py-0.5 rounded text-gray-500" title="Formule inconnue — migration non appliquée">
                               ~{c.commissionPercent.toFixed(0)} %
                             </span>
                           )}
                         </td>
                         <td className="py-2 pr-4 text-right">
                           {c.commissionAmount > 0 ? (
-                            <span className="text-blue-400">{c.commissionPercent.toFixed(2)} %</span>
+                            <span className="text-blue-600">{c.commissionPercent.toFixed(2)} %</span>
                           ) : (
-                            <span className="text-yellow-400" title="Commande non encore facturée">
+                            <span className="text-yellow-600" title="Commande non encore facturée">
                               ~{c.commissionPercent.toFixed(2)} %
                             </span>
                           )}
                         </td>
-                        <td className="py-2 text-right font-medium text-orange-400">
+                        <td className="py-2 text-right font-medium text-orange-600">
                           {euro(c.commissionAmount)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t border-gray-600">
-                      <td colSpan={5} className="py-2 text-gray-400 text-xs">
+                    <tr className="border-t border-gray-300">
+                      <td colSpan={5} className="py-2 text-gray-500 text-xs">
                         Total commissions sur ces 20 commandes
                       </td>
-                      <td className="py-2 text-right font-bold text-orange-400">
+                      <td className="py-2 text-right font-bold text-orange-600">
                         {euro(fiche.dernieresCommandes.reduce((s, c) => s + c.commissionAmount, 0))}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
                 <p className="text-xs text-gray-500 mt-2">
-                  <span className="text-blue-400">Bleu</span> = taux figé à la commande. &nbsp;
-                  <span className="text-yellow-400">Jaune</span> = commande ancienne, taux estimé.
+                  <span className="text-blue-600">Bleu</span> = taux figé à la commande. &nbsp;
+                  <span className="text-yellow-600">Jaune</span> = commande ancienne, taux estimé.
                 </p>
               </div>
             )}
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-3">
-            <h2 className="font-semibold text-white">Qui contacter</h2>
+          <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
+            <h2 className="font-semibold text-gray-900">Qui contacter</h2>
 
             {fiche.org.memberships.length === 0 ? (
-              <p className="text-sm text-gray-400">Aucun compte rattaché.</p>
+              <p className="text-sm text-gray-500">Aucun compte rattaché.</p>
             ) : (
               <ul className="text-sm space-y-2">
                 {fiche.org.memberships.map((adhesion) => (
                   <li key={adhesion.user?.id || adhesion.role} className="flex justify-between gap-4">
-                    <span className="text-white">{adhesion.user?.name || '—'}</span>
-                    <span className="text-gray-400">{adhesion.user?.email}</span>
+                    <span className="text-gray-900">{adhesion.user?.name || '—'}</span>
+                    <span className="text-gray-500">{adhesion.user?.email}</span>
                   </li>
                 ))}
               </ul>

@@ -76,11 +76,11 @@ interface Dossier {
 }
 
 const COULEURS: Record<string, string> = {
-  BROUILLON: 'bg-gray-700 text-gray-300',
-  SOUMIS: 'bg-amber-500/20 text-amber-300',
-  VALIDE: 'bg-green-500/20 text-green-300',
-  REFUSE: 'bg-red-500/20 text-red-300',
-  SUSPENDU: 'bg-red-500/20 text-red-300',
+  BROUILLON: 'bg-gray-100 text-gray-700',
+  SOUMIS: 'bg-amber-100 text-amber-700',
+  VALIDE: 'bg-green-100 text-green-700',
+  REFUSE: 'bg-red-100 text-red-700',
+  SUSPENDU: 'bg-red-100 text-red-700',
 };
 
 const jeton = () => localStorage.getItem('accessToken');
@@ -239,15 +239,15 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
     <div className="space-y-6">
       {apercu && <DocumentPreviewModal documentUrl={apercu.url} libelle={apercu.libelle} onClose={() => setApercu(null)} />}
       <div>
-        <h1 className="flex items-center gap-2 text-3xl font-bold text-white">
+        <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-900">
           <Building2 className="h-8 w-8" />
           {t('title')}
         </h1>
-        <p className="mt-2 text-gray-400">{t('subtitle')}</p>
+        <p className="mt-2 text-gray-500">{t('subtitle')}</p>
       </div>
 
       {erreur && (
-        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-900/20 p-4 text-red-400">
+        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-50 p-4 text-red-600">
           {erreur}
         </div>
       )}
@@ -258,7 +258,7 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
             key={statut}
             onClick={() => setFiltre(statut)}
             className={`rounded px-4 py-2 text-sm font-medium transition ${
-              filtre === statut ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              filtre === statut ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             {tC(`status.${statut}`)}
@@ -272,26 +272,26 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
           <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
         </div>
       ) : societes.length === 0 && !dossier ? (
-        <div className="rounded-lg bg-gray-800/50 py-12 text-center">
-          <p className="text-gray-400">{t('empty')}</p>
+        <div className="rounded-lg bg-gray-50 py-12 text-center">
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
           {dossier && !societes.some((s) => s.id === dossier.id) && fiche()}
           {societes.map((societe) => (
-            <div key={societe.id} className="overflow-hidden rounded-lg border border-gray-700 bg-gray-800">
+            <div key={societe.id} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
               <button
                 onClick={() => ouvrir(societe.id)}
-                className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left transition hover:bg-gray-700/50"
+                className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left transition hover:bg-gray-50"
               >
                 <div className="min-w-0">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-white">{societe.raisonSociale}</h3>
+                    <h3 className="font-semibold text-gray-900">{societe.raisonSociale}</h3>
                     <span className={`rounded px-2 py-0.5 text-xs font-semibold ${COULEURS[societe.statut] || COULEURS.BROUILLON}`}>
                       {tC(`status.${societe.statut}`)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-500">
                     {societe.email}
                     {societe.telephone ? ` · ${societe.telephone}` : ''}
                   </p>
@@ -301,9 +301,9 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
                     <span>{t('driversCount', { n: societe.chauffeurs })}</span>
                     {societe.soumisLe && <span>{tC('submittedOn', { date: date(societe.soumisLe) })}</span>}
                   </div>
-                  {societe.motifStatut && <p className="mt-2 text-xs text-red-300">{societe.motifStatut}</p>}
+                  {societe.motifStatut && <p className="mt-2 text-xs text-red-700">{societe.motifStatut}</p>}
                 </div>
-                <span className="shrink-0 text-sm text-gray-400">{dossier?.id === societe.id ? tC('collapse') : tC('open')}</span>
+                <span className="shrink-0 text-sm text-gray-500">{dossier?.id === societe.id ? tC('collapse') : tC('open')}</span>
               </button>
               {dossier?.id === societe.id && fiche()}
             </div>
@@ -328,54 +328,54 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
     const manquantes = dossier.piecesExigees.filter((p) => dossier.piecesManquantes.includes(p.type));
 
     return (
-      <div className="space-y-5 border-t border-gray-700 p-5" data-societe={dossier.id}>
+      <div className="space-y-5 border-t border-gray-200 p-5" data-societe={dossier.id}>
         <div>
-          <h4 className="mb-2 font-semibold text-white">{dossier.raisonSociale}</h4>
+          <h4 className="mb-2 font-semibold text-gray-900">{dossier.raisonSociale}</h4>
           <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             {champs.map(([cle, valeur]) => (
               <div key={cle} className="flex gap-2">
-                <dt className="text-gray-400">{t(`field.${cle}`)}</dt>
-                <dd className="text-white">{valeur || '—'}</dd>
+                <dt className="text-gray-500">{t(`field.${cle}`)}</dt>
+                <dd className="text-gray-900">{valeur || '—'}</dd>
               </div>
             ))}
           </dl>
         </div>
 
         <div>
-          <h4 className="mb-2 font-semibold text-white">{t('companyDocuments')}</h4>
+          <h4 className="mb-2 font-semibold text-gray-900">{t('companyDocuments')}</h4>
           <ul className="space-y-2">{dossier.documents.map((piece) => lignePiece(piece, dossier.documents, exigeesSociete))}</ul>
           {manquantes.length > 0 && (
-            <p className="mt-2 text-xs text-amber-300">{tC('missingDocuments', { liste: manquantes.map((p) => p.libelle).join(', ') })}</p>
+            <p className="mt-2 text-xs text-amber-700">{tC('missingDocuments', { liste: manquantes.map((p) => p.libelle).join(', ') })}</p>
           )}
         </div>
 
         <div>
-          <h4 className="mb-2 font-semibold text-white">{t('vehicles')}</h4>
+          <h4 className="mb-2 font-semibold text-gray-900">{t('vehicles')}</h4>
           {dossier.vehicules.length === 0 ? (
-            <p className="text-sm text-gray-400">{t('noVehicle')}</p>
+            <p className="text-sm text-gray-500">{t('noVehicle')}</p>
           ) : (
             <div className="space-y-3">
               {dossier.vehicules.map((vehicule) => {
                 const exigees = new Set(vehicule.piecesExigees.map((p) => p.type));
                 const manque = vehicule.piecesExigees.filter((p) => vehicule.piecesManquantes.includes(p.type));
                 return (
-                  <div key={vehicule.id} className="rounded-lg border border-gray-700 p-3" data-vehicule={vehicule.plaque}>
+                  <div key={vehicule.id} className="rounded-lg border border-gray-200 p-3" data-vehicule={vehicule.plaque}>
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-white">
+                      <p className="text-sm font-medium text-gray-900">
                         {vehicule.marque} {vehicule.modele} · {vehicule.plaque}
-                        {vehicule.numeroLicence && <span className="ml-2 text-xs text-gray-400">{t('licence', { numero: vehicule.numeroLicence })}</span>}
+                        {vehicule.numeroLicence && <span className="ml-2 text-xs text-gray-500">{t('licence', { numero: vehicule.numeroLicence })}</span>}
                       </p>
                       <span
-                        className={`flex items-center gap-1 text-xs font-semibold ${vehicule.conforme ? 'text-green-400' : 'text-amber-300'}`}
+                        className={`flex items-center gap-1 text-xs font-semibold ${vehicule.conforme ? 'text-green-600' : 'text-amber-700'}`}
                       >
                         {vehicule.conforme ? <CheckCircle size={14} /> : <XCircle size={14} />}
                         {vehicule.conforme ? t('conforme') : t('nonConforme')}
                       </span>
                     </div>
-                    {vehicule.chauffeur && <p className="mb-2 text-xs text-gray-400">{t('drivenBy', { nom: vehicule.chauffeur.nomComplet })}</p>}
+                    {vehicule.chauffeur && <p className="mb-2 text-xs text-gray-500">{t('drivenBy', { nom: vehicule.chauffeur.nomComplet })}</p>}
                     <ul className="space-y-2">{vehicule.documents.map((piece) => lignePiece(piece, vehicule.documents, exigees))}</ul>
                     {manque.length > 0 && (
-                      <p className="mt-2 text-xs text-amber-300">{tC('missingDocuments', { liste: manque.map((p) => p.libelle).join(', ') })}</p>
+                      <p className="mt-2 text-xs text-amber-700">{tC('missingDocuments', { liste: manque.map((p) => p.libelle).join(', ') })}</p>
                     )}
                   </div>
                 );
@@ -385,35 +385,35 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
         </div>
 
         <div>
-          <h4 className="mb-2 font-semibold text-white">{t('drivers')}</h4>
+          <h4 className="mb-2 font-semibold text-gray-900">{t('drivers')}</h4>
           {dossier.chauffeurs.length === 0 ? (
-            <p className="text-sm text-gray-400">{t('noDriver')}</p>
+            <p className="text-sm text-gray-500">{t('noDriver')}</p>
           ) : (
             <ul className="space-y-1 text-sm">
               {dossier.chauffeurs.map((chauffeur) => (
                 <li key={chauffeur.id} className="flex flex-wrap items-center gap-2">
-                  <Link href={`/superowner/zupdrive/chauffeurs/${chauffeur.id}`} className="text-blue-400 hover:underline">
+                  <Link href={`/superowner/zupdrive/chauffeurs/${chauffeur.id}`} className="text-blue-600 hover:underline">
                     {chauffeur.nomComplet}
                   </Link>
-                  <span className="text-gray-400">{chauffeur.email}</span>
+                  <span className="text-gray-500">{chauffeur.email}</span>
                   <span className={`rounded px-2 py-0.5 text-xs ${COULEURS[chauffeur.statut] || COULEURS.BROUILLON}`}>
                     {tC(`status.${chauffeur.statut}`)}
                   </span>
-                  {chauffeur.enLigne && <span className="text-xs text-green-400">{t('online')}</span>}
+                  {chauffeur.enLigne && <span className="text-xs text-green-600">{t('online')}</span>}
                 </li>
               ))}
             </ul>
           )}
           {dossier.invitations.length > 0 && (
-            <p className="mt-2 text-xs text-gray-400">
+            <p className="mt-2 text-xs text-gray-500">
               {t('pendingInvitations', { liste: dossier.invitations.map((i) => i.email).join(', ') })}
             </p>
           )}
         </div>
 
-        <div className="space-y-3 rounded-lg border border-gray-700 p-4">
-          <h4 className="font-semibold text-white">{tC('decision')}</h4>
-          {dossier.statut === 'SOUMIS' && !dossier.dossierValidable && <p className="text-xs text-gray-400">{tC('approveHint')}</p>}
+        <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+          <h4 className="font-semibold text-gray-900">{tC('decision')}</h4>
+          {dossier.statut === 'SOUMIS' && !dossier.dossierValidable && <p className="text-xs text-gray-500">{tC('approveHint')}</p>}
           {(dossier.statut === 'SOUMIS' || dossier.statut === 'VALIDE') && (
             <textarea
               value={motif}
@@ -421,7 +421,7 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
               placeholder={dossier.statut === 'SOUMIS' ? t('rejectReasonPlaceholder') : t('suspendReasonPlaceholder')}
               aria-label={tC('reasonLabel')}
               rows={2}
-              className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white"
+              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
             />
           )}
           <div className="flex flex-wrap gap-2">
@@ -456,19 +456,19 @@ export function FileSocietes({ idInitial }: { idInitial?: string }) {
               <button
                 onClick={() => decider('reactivate')}
                 disabled={envoi}
-                className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+                className="rounded bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-50"
               >
                 {t('reactivate')}
               </button>
             )}
             {(dossier.statut === 'BROUILLON' || dossier.statut === 'REFUSE') && (
-              <p className="text-sm text-gray-400">{t(`waiting.${dossier.statut}`)}</p>
+              <p className="text-sm text-gray-500">{t(`waiting.${dossier.statut}`)}</p>
             )}
           </div>
         </div>
 
         {idInitial && (
-          <Link href="/superowner/zupdrive/societes" className="text-sm text-blue-400 hover:underline">
+          <Link href="/superowner/zupdrive/societes" className="text-sm text-blue-600 hover:underline">
             {tC('backToQueue')}
           </Link>
         )}

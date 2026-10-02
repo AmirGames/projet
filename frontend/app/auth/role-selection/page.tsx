@@ -140,21 +140,21 @@ export default function RoleSelectionPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-gray-900 flex items-center justify-center"><div className="text-white">Chargement...</div></div>;
+    return <div className="min-h-screen bg-[#F7F7F6] flex items-center justify-center"><div className="text-gray-900">Chargement...</div></div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-8">
+    <div className="min-h-screen bg-[#F7F7F6] p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-2 text-center">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2 text-center">
           Mes Rôles
         </h1>
-        <p className="text-gray-400 text-center mb-8">
+        <p className="text-gray-500 text-center mb-8">
           Gérez vos différents rôles dans ZupOne
         </p>
 
         {error && (
-          <div className="bg-red-600/20 border border-red-600/50 text-red-200 p-4 rounded-lg mb-8">
+          <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg mb-8">
             {error}
           </div>
         )}
@@ -162,21 +162,21 @@ export default function RoleSelectionPage() {
         {roles && (
           <div className="grid md:grid-cols-3 gap-6">
             {/* Customer Role */}
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
               <div className="flex items-center mb-4">
                 <div
                   className={`w-4 h-4 rounded-full mr-3 ${
                     roles.customer.active ? "bg-green-500" : "bg-gray-500"
                   }`}
                 />
-                <h2 className="text-xl font-bold text-white">Client</h2>
+                <h2 className="text-xl font-bold text-gray-900">Client</h2>
               </div>
-              <p className="text-gray-400 mb-4">
+              <p className="text-gray-500 mb-4">
                 Commandez auprès des commerçants
               </p>
               <div className="space-y-2 mb-6">
-                <p className="text-sm text-gray-400">
-                  <span className="text-green-400 font-semibold">Actif</span>
+                <p className="text-sm text-gray-500">
+                  <span className="text-green-600 font-semibold">Actif</span>
                 </p>
               </div>
               <button
@@ -188,16 +188,16 @@ export default function RoleSelectionPage() {
             </div>
 
             {/* Merchant Role */}
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
               <div className="flex items-center mb-4">
                 <div
                   className={`w-4 h-4 rounded-full mr-3 ${
                     roles.merchant.active ? "bg-green-500" : "bg-gray-500"
                   }`}
                 />
-                <h2 className="text-xl font-bold text-white">Commerçant</h2>
+                <h2 className="text-xl font-bold text-gray-900">Commerçant</h2>
               </div>
-              <p className="text-gray-400 mb-4">
+              <p className="text-gray-500 mb-4">
                 Gérez votre boutique et vos commandes
               </p>
               {roles.merchant.active ? (
@@ -205,15 +205,15 @@ export default function RoleSelectionPage() {
                   {roles.merchant.organizations.map((org) => (
                     <div
                       key={org.id}
-                      className="text-sm bg-gray-700 p-2 rounded text-gray-200"
+                      className="text-sm bg-gray-100 p-2 rounded text-gray-800"
                     >
                       <p className="font-semibold">{org.name}</p>
-                      <p className="text-xs text-gray-400">{org.role}</p>
+                      <p className="text-xs text-gray-500">{org.role}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-400 mb-6">
+                <p className="text-sm text-gray-500 mb-6">
                   Créer votre première boutique
                 </p>
               )}
@@ -250,28 +250,28 @@ export default function RoleSelectionPage() {
             </div>
 
             {/* Driver Role */}
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
               <div className="flex items-center mb-4">
                 <div
                   className={`w-4 h-4 rounded-full mr-3 ${
                     roles.driver.active ? "bg-green-500" : "bg-gray-500"
                   }`}
                 />
-                <h2 className="text-xl font-bold text-white">Livreur</h2>
+                <h2 className="text-xl font-bold text-gray-900">Livreur</h2>
               </div>
-              <p className="text-gray-400 mb-4">
+              <p className="text-gray-500 mb-4">
                 Livrez les commandes et gagnez
               </p>
               {roles.driver.active ? (
                 <div className="space-y-2 mb-6">
-                  <p className="text-sm text-gray-300">
-                    <span className="text-green-400 font-semibold">
+                  <p className="text-sm text-gray-700">
+                    <span className="text-green-600 font-semibold">
                       {roles.driver.status}
                     </span>
                   </p>
                 </div>
               ) : (
-                <p className="text-sm text-gray-400 mb-6">
+                <p className="text-sm text-gray-500 mb-6">
                   Rejoindre notre réseau de livreurs
                 </p>
               )}
@@ -292,8 +292,8 @@ export default function RoleSelectionPage() {
 
         {/* Merchant Form */}
         {showMerchantForm && (
-          <div className="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h3 className="text-2xl font-bold text-white mb-6">
+          <div className="mt-8 bg-white rounded-lg p-6 border border-gray-200">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">
               Créer une boutique
             </h3>
             <form onSubmit={handleBecomeMerchant} className="space-y-4">
@@ -308,7 +308,7 @@ export default function RoleSelectionPage() {
                       businessName: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <input
@@ -322,7 +322,7 @@ export default function RoleSelectionPage() {
                       storeSlug: slugify(e.target.value),
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <input
@@ -335,7 +335,7 @@ export default function RoleSelectionPage() {
                       storeSlug: slugify(e.target.value, false),
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <select
@@ -346,7 +346,7 @@ export default function RoleSelectionPage() {
                       businessType: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 >
                   <option value="">Type d'entreprise</option>
@@ -366,7 +366,7 @@ export default function RoleSelectionPage() {
                         cuisineType: e.target.value,
                       })
                     }
-                    className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="">Type de cuisine (facultatif)</option>
                     {cuisines.map((cuisine) => (
@@ -386,7 +386,7 @@ export default function RoleSelectionPage() {
                       phone: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <AddressAutocomplete
@@ -403,7 +403,7 @@ export default function RoleSelectionPage() {
                       postalCode: adresse.postalCode || prev.postalCode,
                     }))
                   }
-                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <input
@@ -416,7 +416,7 @@ export default function RoleSelectionPage() {
                       city: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
                 <input
@@ -429,7 +429,7 @@ export default function RoleSelectionPage() {
                       postalCode: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                   required
                 />
               </div>
@@ -442,7 +442,7 @@ export default function RoleSelectionPage() {
                     description: e.target.value,
                   })
                 }
-                className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
               />
               <button
@@ -457,8 +457,8 @@ export default function RoleSelectionPage() {
 
         {/* Driver Form */}
         {showDriverForm && (
-          <div className="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h3 className="text-2xl font-bold text-white mb-6">
+          <div className="mt-8 bg-white rounded-lg p-6 border border-gray-200">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">
               Devenir livreur
             </h3>
             <form onSubmit={handleBecomeDriver} className="space-y-4">
@@ -473,7 +473,7 @@ export default function RoleSelectionPage() {
                       name: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   required
                 />
                 <input
@@ -486,7 +486,7 @@ export default function RoleSelectionPage() {
                       email: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   required
                 />
                 <input
@@ -499,7 +499,7 @@ export default function RoleSelectionPage() {
                       phone: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   required
                 />
                 <select
@@ -510,7 +510,7 @@ export default function RoleSelectionPage() {
                       vehicleType: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   required
                 >
                   <option value="">Type de véhicule</option>
@@ -528,7 +528,7 @@ export default function RoleSelectionPage() {
                       vehiclePlate: e.target.value,
                     })
                   }
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   required
                 />
               </div>
@@ -545,7 +545,7 @@ export default function RoleSelectionPage() {
         <div className="mt-8 text-center">
           <Link
             href="/client"
-            className="text-blue-400 hover:text-blue-300 font-semibold"
+            className="text-blue-600 hover:text-blue-700 font-semibold"
           >
             ← Retour à l'accueil
           </Link>

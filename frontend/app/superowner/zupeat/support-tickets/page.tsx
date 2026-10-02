@@ -163,7 +163,7 @@ export default function SupportTicketsPage() {
       case 'LOW':
         return 'bg-green-600 text-white';
       default:
-        return 'bg-gray-600 text-white';
+        return 'bg-gray-200 text-gray-900';
     }
   };
 
@@ -176,16 +176,16 @@ export default function SupportTicketsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <HelpCircle className="w-8 h-8" />
             {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">{t('subtitle')}</p>
+          <p className="text-gray-500 mt-2">{t('subtitle')}</p>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20 flex items-center gap-2">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20 flex items-center gap-2">
           <AlertCircle size={20} />
           {error}
         </div>
@@ -200,7 +200,7 @@ export default function SupportTicketsPage() {
             setOffset(0);
           }}
           className={`px-4 py-2 rounded text-sm font-medium transition ${
-            voirArchives ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-blue-600 text-white'
+            voirArchives ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-gray-900 text-white'
           }`}
         >
           {t('ongoing')}
@@ -211,7 +211,7 @@ export default function SupportTicketsPage() {
             setOffset(0);
           }}
           className={`px-4 py-2 rounded text-sm font-medium transition ${
-            voirArchives ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            voirArchives ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
           {t('archived')}
@@ -227,7 +227,7 @@ export default function SupportTicketsPage() {
               setFilterStatus(e.target.value);
               setOffset(0);
             }}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
           >
             <option value="ALL">{t('allStatuses')}</option>
             <option value="OPEN">{t('statusOpen')}</option>
@@ -244,7 +244,7 @@ export default function SupportTicketsPage() {
               setFilterPriority(e.target.value);
               setOffset(0);
             }}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
           >
             <option value="ALL">{t('allPriorities')}</option>
             <option value="URGENT">{t('priorityUrgent')}</option>
@@ -260,9 +260,9 @@ export default function SupportTicketsPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : tickets.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800/50 rounded-lg">
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
           <HelpCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">
+          <p className="text-gray-500">
             {voirArchives ? t('emptyArchived') : t('emptyOngoing')}
           </p>
         </div>
@@ -271,25 +271,25 @@ export default function SupportTicketsPage() {
           {tickets.map((ticket) => (
             <div
               key={ticket.id}
-              className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-gray-600 transition"
+              className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-bold text-white">{ticket.title}</h3>
+                    <h3 className="text-lg font-bold text-gray-900">{ticket.title}</h3>
                     <span className={`px-2 py-1 rounded text-xs font-semibold ${getPriorityColor(ticket.priority)}`}>
                       {ticket.priority}
                     </span>
-                    <span className={`px-2 py-1 rounded text-xs font-semibold text-white bg-gray-700`}>
+                    <span className={`px-2 py-1 rounded text-xs font-semibold text-gray-900 bg-gray-100`}>
                       {LIBELLES_STATUT[ticket.status] || ticket.status}
                     </span>
                     {ticket.archivedAt && (
-                      <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-900 text-gray-400">
+                      <span className="px-2 py-1 rounded text-xs font-semibold bg-white ring-1 ring-gray-200 text-gray-500">
                         {t('archivedBadge')}
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-400 text-sm mb-2">{ticket.description}</p>
+                  <p className="text-gray-500 text-sm mb-2">{ticket.description}</p>
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     {ticket.organization && <span>{ticket.organization}</span>}
                     <span>{ticket.userEmail}</span>
@@ -305,11 +305,11 @@ export default function SupportTicketsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-gray-700">
+              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                 <select
                   value={ticket.status}
                   onChange={(e) => handleUpdateStatus(ticket.id, e.target.value)}
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white"
+                  className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-sm text-gray-900"
                 >
                   {statusOptions.map((status) => (
                     <option key={status} value={status}>
@@ -321,7 +321,7 @@ export default function SupportTicketsPage() {
                   <select
                     value={ticket.priority}
                     onChange={(e) => handleUpdatePriority(ticket.id, e.target.value)}
-                    className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white"
+                    className="bg-gray-100 border border-gray-300 rounded px-3 py-2 text-sm text-gray-900"
                     title={t('ticketPriority')}
                   >
                     {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((p) => (
@@ -340,7 +340,7 @@ export default function SupportTicketsPage() {
                   )}
                   <button
                     onClick={() => setTicketOuvert(ticketOuvert === ticket.id ? null : ticket.id)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition"
+                    className="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded text-sm transition"
                   >
                     {ticketOuvert === ticket.id ? t('collapse') : t('viewConversation')}
                   </button>
@@ -348,8 +348,8 @@ export default function SupportTicketsPage() {
               </div>
 
               {ticketOuvert === ticket.id && (
-                <div className="mt-4 pt-4 border-t border-gray-700">
-                  <TicketConversation
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <TicketConversation clair
                     basePath="/api/superowner/support-tickets"
                     ticketId={ticket.id}
                     viewerRole="ADMIN"
@@ -363,21 +363,21 @@ export default function SupportTicketsPage() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500">
           {t('showingRange', { from: offset + 1, to: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
           >
             {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
           >
             {t('next')}
           </button>

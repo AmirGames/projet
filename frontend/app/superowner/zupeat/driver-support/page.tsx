@@ -148,20 +148,20 @@ export default function DriverSupportPage() {
       <div className="flex items-center gap-3">
         <MessageCircle className="text-orange-500" size={28} />
         <div>
-          <h1 className="text-2xl font-bold text-white">
-            {t('title')} {totalNonLus > 0 && <span className="text-orange-400">({totalNonLus})</span>}
+          <h1 className="text-2xl font-bold text-gray-900">
+            {t('title')} {totalNonLus > 0 && <span className="text-orange-600">({totalNonLus})</span>}
           </h1>
-          <p className="text-gray-400 text-sm">{t('description')}</p>
+          <p className="text-gray-500 text-sm">{t('description')}</p>
         </div>
       </div>
 
       {erreur && (
-        <div className="bg-red-900/30 border border-red-700/50 text-red-200 rounded-lg p-3 text-sm">{erreur}</div>
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm">{erreur}</div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Conversations */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden lg:h-[75vh] overflow-y-auto">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden lg:h-[75vh] overflow-y-auto">
           {conversations.length === 0 ? (
             <p className="text-center text-gray-500 text-sm p-8">{t('empty')}</p>
           ) : (
@@ -169,25 +169,25 @@ export default function DriverSupportPage() {
               <button
                 key={c.driverId}
                 onClick={() => ouvrir(c.driverId)}
-                className={`w-full text-left px-4 py-3 border-b border-gray-700 hover:bg-gray-700/50 ${
-                  selection === c.driverId ? 'bg-gray-700' : ''
+                className={`w-full text-left px-4 py-3 border-b border-gray-200 hover:bg-gray-50 ${
+                  selection === c.driverId ? 'bg-gray-100' : ''
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-white flex items-center gap-2 min-w-0">
+                  <span className="font-semibold text-gray-900 flex items-center gap-2 min-w-0">
                     <Circle
                       size={8}
                       className={c.isOnline ? 'fill-green-500 text-green-500' : 'fill-gray-500 text-gray-500'}
                     />
                     <span className="truncate">{c.driverName}</span>
-                    {c.enCourse && <Package size={14} className="text-orange-400 flex-shrink-0" />}
+                    {c.enCourse && <Package size={14} className="text-orange-600 flex-shrink-0" />}
                   </span>
                   {c.unread > 0 && (
                     <span className="bg-orange-600 text-white text-xs font-bold rounded-full px-2 py-0.5">{c.unread}</span>
                   )}
                 </div>
                 {c.lastMessage && (
-                  <p className="text-xs text-gray-400 truncate mt-1">
+                  <p className="text-xs text-gray-500 truncate mt-1">
                     {c.lastMessage.sender === 'SUPPORT' ? `${t('you')} : ` : ''}
                     {c.lastMessage.body}
                   </p>
@@ -200,41 +200,41 @@ export default function DriverSupportPage() {
         {/* Fil */}
         <div className="lg:col-span-2 space-y-3">
           {!selection || !livreur ? (
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center text-gray-500">
+            <div className="bg-white border border-gray-200 rounded-lg p-12 text-center text-gray-500">
               {t('selectConversation')}
             </div>
           ) : (
             <>
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-white font-semibold">{livreur.name}</p>
-                  <p className="text-xs text-gray-400">{livreur.email}</p>
+                  <p className="text-gray-900 font-semibold">{livreur.name}</p>
+                  <p className="text-xs text-gray-500">{livreur.email}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <span className={livreur.isOnline ? 'text-green-400' : 'text-gray-400'}>
+                  <span className={livreur.isOnline ? 'text-green-600' : 'text-gray-500'}>
                     {livreur.isOnline ? t('online') : t('offline')}
                   </span>
                   {livreur.currentOrderId && (
-                    <span className="text-orange-300 flex items-center gap-1">
+                    <span className="text-orange-700 flex items-center gap-1">
                       <Package size={14} /> {t('onDelivery')}
                     </span>
                   )}
                   {livreur.gpsLostAt && (
-                    <span className="text-amber-300 flex items-center gap-1">
+                    <span className="text-amber-700 flex items-center gap-1">
                       <SatelliteDish size={14} /> {t('gpsLost')}
                     </span>
                   )}
                   {livreur.phone && (
                     <a
                       href={`tel:${livreur.phone}`}
-                      className="flex items-center gap-1 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg text-white"
+                      className="flex items-center gap-1 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-900"
                     >
                       <Phone size={14} /> {livreur.phone}
                     </a>
                   )}
                 </div>
               </div>
-              <FilSupport messages={messages} moi="SUPPORT" surEnvoi={repondre} hauteur="h-[58vh]" />
+              <FilSupport clair messages={messages} moi="SUPPORT" surEnvoi={repondre} hauteur="h-[58vh]" />
             </>
           )}
         </div>

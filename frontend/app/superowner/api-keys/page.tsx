@@ -131,15 +131,15 @@ export default function ApiKeysPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <Key className="w-8 h-8" />
             {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">{t('subtitle')}</p>
+          <p className="text-gray-500 mt-2">{t('subtitle')}</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg transition"
         >
           <Plus size={20} />
           {t('newKey')}
@@ -147,28 +147,28 @@ export default function ApiKeysPage() {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20">
           {error}
         </div>
       )}
 
       {nouvelleCle && (
-        <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg space-y-3">
-          <p className="text-green-400 font-semibold">
+        <div className="p-4 bg-green-50 border border-green-500/30 rounded-lg space-y-3">
+          <p className="text-green-600 font-semibold">
             {t('keyCreated')}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <code className="bg-gray-900 px-3 py-2 rounded text-sm break-all">{nouvelleCle}</code>
+            <code className="bg-white ring-1 ring-gray-200 px-3 py-2 rounded text-sm break-all">{nouvelleCle}</code>
             <button
               onClick={() => copyToClipboard(nouvelleCle)}
-              className="p-2 bg-gray-700 hover:bg-gray-600 rounded"
+              className="p-2 bg-gray-100 hover:bg-gray-200 rounded"
               title={t('copy')}
             >
               <Copy size={16} />
             </button>
             <button
               onClick={() => setNouvelleCle(null)}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm"
             >
               {t('copied')}
             </button>
@@ -177,8 +177,8 @@ export default function ApiKeysPage() {
       )}
 
       {showForm && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-white mb-4">{t('newKeyTitle')}</h2>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">{t('newKeyTitle')}</h2>
           <form onSubmit={handleCreateKey} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">{t('keyName')}</label>
@@ -186,7 +186,7 @@ export default function ApiKeysPage() {
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
                 placeholder={t('keyNamePlaceholder')}
                 required
               />
@@ -198,7 +198,7 @@ export default function ApiKeysPage() {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded"
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded"
               >
                 {t('cancel')}
               </button>
@@ -212,14 +212,14 @@ export default function ApiKeysPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : keys.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800/50 rounded-lg">
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Key className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">{t('empty')}</p>
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       ) : (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <table className="w-full">
-            <thead className="bg-gray-700/50 border-b border-gray-700">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-sm font-semibold">{t('colName')}</th>
                 <th className="px-6 py-3 text-left text-sm font-semibold">{t('colKey')}</th>
@@ -228,12 +228,12 @@ export default function ApiKeysPage() {
                 <th className="px-6 py-3 text-right text-sm font-semibold">{t('colActions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-gray-100">
               {keys.map((apiKey) => (
-                <tr key={apiKey.id} className="hover:bg-gray-700/50 transition">
+                <tr key={apiKey.id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4 text-sm">{apiKey.name}</td>
                   <td className="px-6 py-4 text-sm flex items-center gap-2">
-                    <code className="bg-gray-900 px-2 py-1 rounded text-xs">
+                    <code className="bg-white ring-1 ring-gray-200 px-2 py-1 rounded text-xs">
                       {apiKey.key}
                     </code>
                   </td>
@@ -246,13 +246,13 @@ export default function ApiKeysPage() {
                       {apiKey.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-400">
+                  <td className="px-6 py-4 text-sm text-gray-500">
                     {apiKey.lastUsed ? new Date(apiKey.lastUsed).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR') : t('never')}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => handleRevokeKey(apiKey.id)}
-                      className="p-2 text-red-400 hover:bg-red-900/20 rounded transition"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded transition"
                       disabled={apiKey.status === 'REVOKED'}
                     >
                       <Trash2 size={18} />
@@ -266,21 +266,21 @@ export default function ApiKeysPage() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500">
           {t('showingRange', { from: offset + 1, to: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
           >
             {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
           >
             {t('next')}
           </button>

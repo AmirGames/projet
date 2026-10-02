@@ -59,9 +59,9 @@ interface Envoi {
 }
 
 const COULEUR_ETAT: Record<string, string> = {
-  ACTIVE: 'bg-green-500/20 text-green-400',
-  INACTIVE: 'bg-gray-500/20 text-gray-300',
-  FAILED: 'bg-red-500/20 text-red-400',
+  ACTIVE: 'bg-green-100 text-green-600',
+  INACTIVE: 'bg-gray-500/20 text-gray-700',
+  FAILED: 'bg-red-100 text-red-600',
 };
 
 const jeton = () => localStorage.getItem('accessToken');
@@ -258,18 +258,18 @@ export default function WebhooksPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <WebhookIcon className="w-8 h-8" />
             {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">
+          <p className="text-gray-500 mt-2">
             {t('subtitle')}
           </p>
         </div>
 
         <button
           onClick={() => setFormulaireOuvert(!formulaireOuvert)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg font-medium transition"
         >
           <Plus size={16} />
           {t('new_webhook')}
@@ -277,27 +277,27 @@ export default function WebhooksPage() {
       </div>
 
       {erreur && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20">
           {erreur}
         </div>
       )}
 
       {message && (
-        <div className="p-4 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white">
+        <div className="p-4 bg-white border border-gray-200 rounded-lg text-sm text-gray-900">
           {message}
         </div>
       )}
 
       {/* ---- Le secret, montré une fois ---- */}
       {secret && (
-        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg space-y-3">
+        <div className="p-4 bg-green-100 border border-green-500/30 rounded-lg space-y-3">
           <div className="flex items-start gap-2">
-            <AlertCircle size={18} className="text-green-400 mt-0.5 flex-shrink-0" />
+            <AlertCircle size={18} className="text-green-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-green-400 font-semibold">
+              <p className="text-green-600 font-semibold">
                 {t('secret_warning')}
               </p>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-gray-500 mt-1">
                 {t('secret_explanation', { url: secret.url })}
               </p>
             </div>
@@ -306,20 +306,20 @@ export default function WebhooksPage() {
           <div className="flex gap-2">
             <code
               data-secret-webhook
-              className="flex-1 px-3 py-2 bg-gray-900 rounded text-green-300 text-sm break-all"
+              className="flex-1 px-3 py-2 bg-white ring-1 ring-gray-200 rounded text-green-700 text-sm break-all"
             >
               {secret.valeur}
             </code>
             <button
               onClick={() => navigator.clipboard?.writeText(secret.valeur)}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-900 transition"
               title="Copier"
             >
               <Copy size={16} />
             </button>
             <button
               onClick={() => setSecret(null)}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm transition"
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-900 text-sm transition"
             >
               {t('secret_copied')}
             </button>
@@ -331,10 +331,10 @@ export default function WebhooksPage() {
       {formulaireOuvert && (
         <form
           onSubmit={creer}
-          className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-6 space-y-4"
+          className="bg-gray-50 border border-gray-200/50 rounded-lg p-6 space-y-4"
         >
           <div>
-            <label className="block text-sm text-gray-400 mb-2">{t('url')}</label>
+            <label className="block text-sm text-gray-500 mb-2">{t('url')}</label>
             <input
               type="url"
               required
@@ -342,12 +342,12 @@ export default function WebhooksPage() {
               value={formulaire.url}
               onChange={(e) => setFormulaire({ ...formulaire, url: e.target.value })}
               placeholder="https://mon-serveur.fr/zupeat"
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-2">
+            <label className="block text-sm text-gray-500 mb-2">
               {t('events', { count: formulaire.events.length })}
             </label>
 
@@ -355,7 +355,7 @@ export default function WebhooksPage() {
               {evenements.map((evenement) => (
                 <label
                   key={evenement.nom}
-                  className="flex items-start gap-3 p-3 bg-gray-700/40 border border-gray-700 rounded-lg cursor-pointer hover:border-gray-600"
+                  className="flex items-start gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-gray-300"
                 >
                   <input
                     type="checkbox"
@@ -364,8 +364,8 @@ export default function WebhooksPage() {
                     className="w-4 h-4 mt-0.5 accent-blue-500"
                   />
                   <span>
-                    <code className="text-sm text-white">{evenement.nom}</code>
-                    <span className="block text-xs text-gray-400 mt-0.5">
+                    <code className="text-sm text-gray-900">{evenement.nom}</code>
+                    <span className="block text-xs text-gray-500 mt-0.5">
                       {evenement.description}
                     </span>
                   </span>
@@ -378,14 +378,14 @@ export default function WebhooksPage() {
             <button
               type="submit"
               disabled={envoiEnCours}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg font-medium transition"
+              className="px-6 py-2 bg-gray-900 hover:bg-black disabled:opacity-50 text-white rounded-lg font-medium transition"
             >
               {envoiEnCours ? t('creating') : t('create_button')}
             </button>
             <button
               type="button"
               onClick={() => setFormulaireOuvert(false)}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition"
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg transition"
             >
               {tCommon('cancel')}
             </button>
@@ -399,8 +399,8 @@ export default function WebhooksPage() {
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
         </div>
       ) : abonnements.length === 0 ? (
-        <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-8 text-center">
-          <p className="text-gray-400">{t('empty')}</p>
+        <div className="bg-gray-50 border border-gray-200/50 rounded-lg p-8 text-center">
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -408,16 +408,16 @@ export default function WebhooksPage() {
             <div
               key={abonnement.id}
               data-abonnement={abonnement.id}
-              className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 space-y-3"
+              className="bg-gray-50 border border-gray-200/50 rounded-lg p-4 space-y-3"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-white font-medium break-all">{abonnement.url}</p>
+                  <p className="text-gray-900 font-medium break-all">{abonnement.url}</p>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {abonnement.events.map((evenement) => (
                       <code
                         key={evenement}
-                        className="px-2 py-0.5 bg-gray-700 rounded text-xs text-gray-300"
+                        className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700"
                       >
                         {evenement}
                       </code>
@@ -435,7 +435,7 @@ export default function WebhooksPage() {
                   <button
                     onClick={() => essayer(abonnement.id)}
                     aria-label={t('test_send_label', { url: abonnement.url })}
-                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
+                    className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-900 transition"
                     title={t('test_send')}
                   >
                     <Send size={14} />
@@ -444,7 +444,7 @@ export default function WebhooksPage() {
                   <button
                     onClick={() => voirLHistorique(abonnement.id)}
                     aria-label={t('history_label', { url: abonnement.url })}
-                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
+                    className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-900 transition"
                     title={t('history')}
                   >
                     <History size={14} />
@@ -454,7 +454,7 @@ export default function WebhooksPage() {
                     <button
                       onClick={() => changerLEtat(abonnement.id, 'INACTIVE')}
                       aria-label={t('pause_label', { url: abonnement.url })}
-                      className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition"
+                      className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-900 transition"
                       title={t('pause')}
                     >
                       <Pause size={14} />
@@ -491,14 +491,14 @@ export default function WebhooksPage() {
 
               {/* Un abonnement coupé ne dit pas de lui-même comment repartir. */}
               {abonnement.status === 'FAILED' && (
-                <p className="text-xs text-red-400 flex items-start gap-2">
+                <p className="text-xs text-red-600 flex items-start gap-2">
                   <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
                   {t('failedWarning')}
                 </p>
               )}
 
               {historiqueDe === abonnement.id && (
-                <div className="border-t border-gray-700 pt-3">
+                <div className="border-t border-gray-200 pt-3">
                   {historique.length === 0 ? (
                     <p className="text-sm text-gray-500">{t('noDeliveries')}</p>
                   ) : (
@@ -515,27 +515,27 @@ export default function WebhooksPage() {
                         {historique.map((envoi) => (
                           <tr key={envoi.id}>
                             <td className="py-2">
-                              <code className="text-xs text-gray-300">{envoi.event}</code>
+                              <code className="text-xs text-gray-700">{envoi.event}</code>
                             </td>
                             <td className="py-2">
                               {envoi.success ? (
-                                <span className="text-green-400">{envoi.statusCode}</span>
+                                <span className="text-green-600">{envoi.statusCode}</span>
                               ) : (
-                                <span className="text-red-400">
+                                <span className="text-red-600">
                                   {envoi.statusCode || envoi.error || 'échec'}
                                 </span>
                               )}
                             </td>
-                            <td className="py-2 text-gray-400">
+                            <td className="py-2 text-gray-500">
                               {envoi.attempt}
                               {envoi.nextAttemptAt && !envoi.success && (
-                                <span className="text-amber-400">
+                                <span className="text-amber-600">
                                   {' '}
                                   · {t('retryAt', { time: new Date(envoi.nextAttemptAt).toLocaleTimeString('fr-FR') })}
                                 </span>
                               )}
                               {envoi.abandonedAt && (
-                                <span className="text-red-400"> · {t('abandoned')}</span>
+                                <span className="text-red-600"> · {t('abandoned')}</span>
                               )}
                             </td>
                             <td className="py-2 text-gray-500 text-xs">

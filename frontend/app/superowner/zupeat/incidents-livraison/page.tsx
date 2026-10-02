@@ -72,16 +72,16 @@ type Geste = { incidentId: string; type: 'retirer' | 'echec' | 'clore' | 'valide
 
 // Les plus graves en rouge : la commande est partie avec le livreur.
 const COULEURS: Record<TypeIncident, string> = {
-  RETARD_RETRAIT: 'bg-amber-600/20 text-amber-300 border-amber-600/40',
-  ECART_RETRAIT: 'bg-amber-600/20 text-amber-300 border-amber-600/40',
-  RETARD_LIVRAISON: 'bg-red-600/20 text-red-300 border-red-600/40',
-  ECART_LIVRAISON: 'bg-red-600/20 text-red-300 border-red-600/40',
-  COURSE_RETIREE: 'bg-gray-600/30 text-gray-300 border-gray-600/50',
-  COURSE_ECHOUEE: 'bg-gray-600/30 text-gray-300 border-gray-600/50',
-  DEPOT_CONTESTE: 'bg-red-600/20 text-red-300 border-red-600/40',
-  RECLAMATION_CLIENT: 'bg-red-600/20 text-red-300 border-red-600/40',
-  DEPOT_VALIDE: 'bg-gray-600/30 text-gray-300 border-gray-600/50',
-  DEPOT_REFUSE: 'bg-gray-600/30 text-gray-300 border-gray-600/50',
+  RETARD_RETRAIT: 'bg-amber-50 text-amber-700 border-amber-200',
+  ECART_RETRAIT: 'bg-amber-50 text-amber-700 border-amber-200',
+  RETARD_LIVRAISON: 'bg-red-50 text-red-700 border-red-200',
+  ECART_LIVRAISON: 'bg-red-50 text-red-700 border-red-200',
+  COURSE_RETIREE: 'bg-gray-600/30 text-gray-700 border-gray-600/50',
+  COURSE_ECHOUEE: 'bg-gray-600/30 text-gray-700 border-gray-600/50',
+  DEPOT_CONTESTE: 'bg-red-50 text-red-700 border-red-200',
+  RECLAMATION_CLIENT: 'bg-red-50 text-red-700 border-red-200',
+  DEPOT_VALIDE: 'bg-gray-600/30 text-gray-700 border-gray-600/50',
+  DEPOT_REFUSE: 'bg-gray-600/30 text-gray-700 border-gray-600/50',
 };
 
 /**
@@ -221,20 +221,20 @@ export default function IncidentsLivraisonPage() {
         <div className="flex items-center gap-3">
           <AlertTriangle className="text-orange-500" size={28} />
           <div>
-            <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
-            <p className="text-gray-400 text-sm">{t('description')}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+            <p className="text-gray-500 text-sm">{t('description')}</p>
           </div>
         </div>
         <button
           onClick={() => charger()}
-          className="px-3 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg flex items-center gap-2 text-gray-200 text-sm"
+          className="px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg flex items-center gap-2 text-gray-800 text-sm"
         >
           <RefreshCw size={16} />
           {t('refresh')}
         </button>
       </div>
 
-      <div className="bg-gray-800/60 border border-gray-700 rounded-lg p-3 text-xs text-gray-400 space-y-1">
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-500 space-y-1">
         <p>{t('rulePickup')}</p>
         <p>{t('ruleDelivery')}</p>
       </div>
@@ -246,8 +246,8 @@ export default function IncidentsLivraisonPage() {
             onClick={() => setEtat(valeur)}
             className={`px-4 py-2 rounded-lg border text-sm transition-colors ${
               etat === valeur
-                ? 'bg-orange-600/20 border-orange-600 text-orange-300'
-                : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                ? 'bg-orange-50 border-orange-600 text-orange-700'
+                : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
             }`}
           >
             {t(valeur === 'ouverts' ? 'tabOpen' : 'tabAll')}
@@ -256,43 +256,43 @@ export default function IncidentsLivraisonPage() {
       </div>
 
       {bilan && (
-        <div className="bg-green-900/30 border border-green-700/50 text-green-200 rounded-lg p-3 text-sm">{bilan}</div>
+        <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-3 text-sm">{bilan}</div>
       )}
 
       {erreur && (
-        <div className="bg-red-900/30 border border-red-700/50 text-red-200 rounded-lg p-3 text-sm">{erreur}</div>
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm">{erreur}</div>
       )}
 
       {chargement ? (
-        <p className="text-center text-gray-400 py-8">{t('loading')}</p>
+        <p className="text-center text-gray-500 py-8">{t('loading')}</p>
       ) : incidents.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800 border border-gray-700 rounded-lg">
-          <AlertTriangle size={40} className="mx-auto text-gray-600 mb-3" />
-          <p className="text-gray-400">{t(etat === 'ouverts' ? 'emptyOpen' : 'empty')}</p>
+        <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+          <AlertTriangle size={40} className="mx-auto text-gray-400 mb-3" />
+          <p className="text-gray-500">{t(etat === 'ouverts' ? 'emptyOpen' : 'empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
           {incidents.map((incident) => {
             const ouvert = geste?.incidentId === incident.id ? geste : null;
             return (
-              <div key={incident.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
+              <div key={incident.id} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${COULEURS[incident.type]}`}>
                         {t(`type.${incident.type}`)}
                       </span>
-                      <span className="text-sm text-gray-300">
+                      <span className="text-sm text-gray-700">
                         {t('order', { numero: incident.course.numero })} · {t(`courseStatus.${incident.course.status}`)}
                       </span>
                       <span className="text-xs text-gray-500">{depuis(incident.createdAt)}</span>
                     </div>
-                    <p className="text-white">{incident.detail}</p>
+                    <p className="text-gray-900">{incident.detail}</p>
                     {incident.course.actions.depot && incident.course.paiement.surUnReleve && (
-                      <p className="text-xs text-amber-300">{t('alreadyOnStatement')}</p>
+                      <p className="text-xs text-amber-700">{t('alreadyOnStatement')}</p>
                     )}
                     {incident.course.paiement.blocage && (
-                      <p className="text-xs text-amber-300">
+                      <p className="text-xs text-amber-700">
                         {t(`payoutHold.${incident.course.paiement.blocage}`)}
                       </p>
                     )}
@@ -301,14 +301,14 @@ export default function IncidentsLivraisonPage() {
                         <img
                           src={incident.course.depot.photo}
                           alt={t('depositPhoto')}
-                          className="mt-1 h-32 w-auto max-w-full rounded border border-gray-700 object-cover"
+                          className="mt-1 h-32 w-auto max-w-full rounded border border-gray-200 object-cover"
                         />
                       </a>
                     )}
                     {incident.course.depot && (
                       <p
                         className={`text-xs ${
-                          (incident.course.depot.distanceAdresseKm ?? 0) > 0.5 ? 'text-red-300' : 'text-gray-400'
+                          (incident.course.depot.distanceAdresseKm ?? 0) > 0.5 ? 'text-red-700' : 'text-gray-500'
                         }`}
                       >
                         {incident.course.depot.distanceAdresseKm == null
@@ -320,13 +320,13 @@ export default function IncidentsLivraisonPage() {
                       </p>
                     )}
                     {incident.course.depot?.note && (
-                      <p className="text-xs text-gray-400">{t('depositNote', { note: incident.course.depot.note })}</p>
+                      <p className="text-xs text-gray-500">{t('depositNote', { note: incident.course.depot.note })}</p>
                     )}
                     {!incident.closedAt && incident.alertes > 1 && (
-                      <p className="text-xs text-red-300">{t('reminders', { count: incident.alertes - 1 })}</p>
+                      <p className="text-xs text-red-700">{t('reminders', { count: incident.alertes - 1 })}</p>
                     )}
                     {incident.closedAt && (
-                      <p className="text-xs text-green-400">
+                      <p className="text-xs text-green-600">
                         {t('closed', { resolution: incident.resolution || '—' })}
                       </p>
                     )}
@@ -334,9 +334,9 @@ export default function IncidentsLivraisonPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                  <div className="bg-gray-900/40 rounded p-3 space-y-1">
-                    <p className="text-gray-400 text-xs uppercase">{t('driver')}</p>
-                    <p className="text-white flex items-center gap-2">
+                  <div className="bg-gray-50 rounded p-3 space-y-1">
+                    <p className="text-gray-500 text-xs uppercase">{t('driver')}</p>
+                    <p className="text-gray-900 flex items-center gap-2">
                       <Circle
                         size={8}
                         className={incident.driver.isOnline ? 'fill-green-500 text-green-500' : 'fill-gray-500 text-gray-500'}
@@ -344,49 +344,49 @@ export default function IncidentsLivraisonPage() {
                       {incident.driver.name}
                     </p>
                     {incident.driver.status === 'SUSPENDED' && (
-                      <p className="text-red-300 text-xs">{t('driverSuspended')}</p>
+                      <p className="text-red-700 text-xs">{t('driverSuspended')}</p>
                     )}
                     {incident.driver.gpsLostAt && (
-                      <p className="text-amber-300 text-xs flex items-center gap-1">
+                      <p className="text-amber-700 text-xs flex items-center gap-1">
                         <SatelliteDish size={12} /> {t('gpsLost')}
                       </p>
                     )}
                     {incident.driver.phone && (
-                      <a href={`tel:${incident.driver.phone}`} className="text-orange-300 flex items-center gap-1 hover:underline">
+                      <a href={`tel:${incident.driver.phone}`} className="text-orange-700 flex items-center gap-1 hover:underline">
                         <Phone size={12} /> {incident.driver.phone}
                       </a>
                     )}
                     <Link
                       href="/superowner/zupeat/driver-support"
-                      className="text-orange-300 flex items-center gap-1 hover:underline text-xs"
+                      className="text-orange-700 flex items-center gap-1 hover:underline text-xs"
                     >
                       <MessageCircle size={12} /> {t('chat')}
                     </Link>
                   </div>
-                  <div className="bg-gray-900/40 rounded p-3 space-y-1">
-                    <p className="text-gray-400 text-xs uppercase">{t('store')}</p>
-                    <p className="text-white flex items-center gap-2">
+                  <div className="bg-gray-50 rounded p-3 space-y-1">
+                    <p className="text-gray-500 text-xs uppercase">{t('store')}</p>
+                    <p className="text-gray-900 flex items-center gap-2">
                       <Store size={14} /> {incident.course.boutique?.name || '—'}
                     </p>
                     {incident.course.boutique?.phone && (
                       <a
                         href={`tel:${incident.course.boutique.phone}`}
-                        className="text-orange-300 flex items-center gap-1 hover:underline"
+                        className="text-orange-700 flex items-center gap-1 hover:underline"
                       >
                         <Phone size={12} /> {incident.course.boutique.phone}
                       </a>
                     )}
                   </div>
-                  <div className="bg-gray-900/40 rounded p-3 space-y-1">
-                    <p className="text-gray-400 text-xs uppercase">{t('customer')}</p>
-                    <p className="text-white flex items-center gap-2">
+                  <div className="bg-gray-50 rounded p-3 space-y-1">
+                    <p className="text-gray-500 text-xs uppercase">{t('customer')}</p>
+                    <p className="text-gray-900 flex items-center gap-2">
                       <User size={14} /> {incident.course.client?.nom || '—'}
                       {incident.course.client?.ville ? ` · ${incident.course.client.ville}` : ''}
                     </p>
                     {incident.course.client?.telephone && (
                       <a
                         href={`tel:${incident.course.client.telephone}`}
-                        className="text-orange-300 flex items-center gap-1 hover:underline"
+                        className="text-orange-700 flex items-center gap-1 hover:underline"
                       >
                         <Phone size={12} /> {incident.course.client.telephone}
                       </a>
@@ -396,17 +396,17 @@ export default function IncidentsLivraisonPage() {
 
                 {ouvert ? (
                   <div className="space-y-2">
-                    <p className="text-sm text-gray-300">{t(`confirm.${ouvert.type}`)}</p>
+                    <p className="text-sm text-gray-700">{t(`confirm.${ouvert.type}`)}</p>
                     <textarea
                       value={texte}
                       onChange={(e) => setTexte(e.target.value)}
                       rows={2}
                       maxLength={500}
                       placeholder={t(ouvert.type === 'clore' ? 'resolutionPlaceholder' : 'reasonPlaceholder')}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                      className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500"
                     />
                     {(ouvert.type === 'echec' || ouvert.type === 'refuser') && (
-                      <div className="space-y-1 text-sm text-gray-200">
+                      <div className="space-y-1 text-sm text-gray-800">
                         <label className="flex items-center gap-2">
                           <input type="checkbox" checked={rembourser} onChange={(e) => setRembourser(e.target.checked)} />
                           {t('optionRefund')}
@@ -427,7 +427,7 @@ export default function IncidentsLivraisonPage() {
                       </button>
                       <button
                         onClick={() => setGeste(null)}
-                        className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm"
+                        className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm"
                       >
                         {t('cancel')}
                       </button>
@@ -438,7 +438,7 @@ export default function IncidentsLivraisonPage() {
                     {incident.course.actions.retirer && (
                       <button
                         onClick={() => ouvrirGeste(incident.id, 'retirer')}
-                        className="px-3 py-2 rounded-lg bg-amber-600/20 border border-amber-600/50 text-amber-200 hover:bg-amber-600/30 text-sm"
+                        className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 text-sm"
                       >
                         {t('withdraw')}
                       </button>
@@ -446,7 +446,7 @@ export default function IncidentsLivraisonPage() {
                     {incident.course.actions.echec && (
                       <button
                         onClick={() => ouvrirGeste(incident.id, 'echec')}
-                        className="px-3 py-2 rounded-lg bg-red-600/20 border border-red-600/50 text-red-200 hover:bg-red-600/30 text-sm"
+                        className="px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-800 hover:bg-red-100 text-sm"
                       >
                         {t('fail')}
                       </button>
@@ -455,13 +455,13 @@ export default function IncidentsLivraisonPage() {
                       <>
                         <button
                           onClick={() => ouvrirGeste(incident.id, 'valider')}
-                          className="px-3 py-2 rounded-lg bg-green-600/20 border border-green-600/50 text-green-200 hover:bg-green-600/30 text-sm"
+                          className="px-3 py-2 rounded-lg bg-green-50 border border-green-200 text-green-800 hover:bg-green-100 text-sm"
                         >
                           {t('validateDeposit')}
                         </button>
                         <button
                           onClick={() => ouvrirGeste(incident.id, 'refuser')}
-                          className="px-3 py-2 rounded-lg bg-red-600/20 border border-red-600/50 text-red-200 hover:bg-red-600/30 text-sm"
+                          className="px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-800 hover:bg-red-100 text-sm"
                         >
                           {t('refuseDeposit')}
                         </button>
@@ -472,7 +472,7 @@ export default function IncidentsLivraisonPage() {
                         href={`/impression/dossier-incident/${incident.id}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 text-sm"
+                        className="px-3 py-2 rounded-lg bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200 text-sm"
                       >
                         {t('exportFile')}
                       </a>
@@ -480,7 +480,7 @@ export default function IncidentsLivraisonPage() {
                     {!incident.closedAt && !incident.course.actions.depot && (
                       <button
                         onClick={() => ouvrirGeste(incident.id, 'clore')}
-                        className="px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 text-sm"
+                        className="px-3 py-2 rounded-lg bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200 text-sm"
                       >
                         {t('close')}
                       </button>

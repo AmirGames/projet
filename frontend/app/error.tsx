@@ -18,27 +18,27 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+    <div className="min-h-screen bg-[#F7F7F6] text-gray-900 flex items-center justify-center px-4">
       <div className="text-center max-w-md">
-        <h1 className="text-6xl font-bold mb-4">⚠️ Erreur</h1>
-        <p className="text-xl text-gray-400 mb-6">
+        <h1 className="text-5xl font-extrabold tracking-tight mb-4">⚠️ Erreur</h1>
+        <p className="text-lg text-gray-500 mb-6">
           Une erreur inattendue s'est produite
         </p>
         {error.message && (
-          <p className="text-gray-500 mb-8 text-sm bg-gray-800 p-4 rounded">
+          <p className="text-gray-600 mb-8 text-sm bg-white border border-gray-200 p-4 rounded-xl">
             {error.message}
           </p>
         )}
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-wrap gap-3 justify-center">
           <button
             onClick={reset}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
+            className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-full font-bold"
           >
             Réessayer
           </button>
           <Link
             href="/"
-            className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold"
+            className="px-6 py-3 bg-white border border-gray-200 hover:border-gray-400 text-gray-900 rounded-full font-bold"
           >
             Accueil
           </Link>

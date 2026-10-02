@@ -71,7 +71,7 @@ export default function AnalyticsDashboard() {
   }, [timeRange, fetchAnalytics]);
 
   const getGrowthColor = (growth: number) => {
-    return growth >= 0 ? 'text-green-400' : 'text-red-400';
+    return growth >= 0 ? 'text-green-600' : 'text-red-600';
   };
 
   const ranges: { key: TimeRange; label: string }[] = [
@@ -85,16 +85,16 @@ export default function AnalyticsDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <TrendingUp className="w-8 h-8" />
             {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">{t('subtitle')}</p>
+          <p className="text-gray-500 mt-2">{t('subtitle')}</p>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20">
           {error}
         </div>
       )}
@@ -106,8 +106,8 @@ export default function AnalyticsDashboard() {
             onClick={() => setTimeRange(range.key)}
             className={`px-4 py-2 rounded transition ${
               timeRange === range.key
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             {range.label}
@@ -122,42 +122,42 @@ export default function AnalyticsDashboard() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">{t('totalRevenue')}</p>
-              <p className="text-3xl font-bold text-white">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <p className="text-gray-500 text-sm mb-1">{t('totalRevenue')}</p>
+              <p className="text-3xl font-bold text-gray-900">
                 {euro(summary?.totalRevenue)}
               </p>
               <p className="text-xs text-gray-500 mt-2">{t('selectedPeriod')}</p>
             </div>
 
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">{t('transactions')}</p>
-              <p className="text-3xl font-bold text-white">{summary?.totalTransactions || 0}</p>
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <p className="text-gray-500 text-sm mb-1">{t('transactions')}</p>
+              <p className="text-3xl font-bold text-gray-900">{summary?.totalTransactions || 0}</p>
               <p className="text-xs text-gray-500 mt-2">{t('totalCount')}</p>
             </div>
 
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">{t('averageCart')}</p>
-              <p className="text-3xl font-bold text-white">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <p className="text-gray-500 text-sm mb-1">{t('averageCart')}</p>
+              <p className="text-3xl font-bold text-gray-900">
                 {euro(summary?.averageOrderValue)}
               </p>
               <p className="text-xs text-gray-500 mt-2">AOV</p>
             </div>
 
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-1">{t('conversionRate')}</p>
-              <p className="text-3xl font-bold text-white">{(summary?.conversionRate || 0).toFixed(2)}%</p>
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <p className="text-gray-500 text-sm mb-1">{t('conversionRate')}</p>
+              <p className="text-3xl font-bold text-gray-900">{(summary?.conversionRate || 0).toFixed(2)}%</p>
               <p className="text-xs text-gray-500 mt-2">{t('conversionRate')}</p>
             </div>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-            <div className="border-b border-gray-700 p-6">
-              <h2 className="text-xl font-bold text-white">{t('dailyEvolution')}</h2>
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="border-b border-gray-200 p-6">
+              <h2 className="text-xl font-bold text-gray-900">{t('dailyEvolution')}</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-700/50 border-b border-gray-700">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold">{t('colPeriod')}</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold">{t('colRevenue')}</th>
@@ -168,9 +168,9 @@ export default function AnalyticsDashboard() {
                     <th className="px-6 py-3 text-left text-sm font-semibold">{t('colGrowth')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-700">
+                <tbody className="divide-y divide-gray-100">
                   {data.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-gray-700/50 transition">
+                    <tr key={idx} className="hover:bg-gray-50 transition">
                       <td className="px-6 py-4 text-sm">{item.period}</td>
                       <td className="px-6 py-4 text-sm">{euro(item.totalRevenue)}</td>
                       <td className="px-6 py-4 text-sm">{euro(item.platformFees)}</td>

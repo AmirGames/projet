@@ -61,10 +61,10 @@ interface Dossier {
 }
 
 const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
-  APPROVED: { icone: Check, classe: 'text-green-400', libelle: 'Validé' },
-  REJECTED: { icone: X, classe: 'text-red-400', libelle: 'Refusé' },
-  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: "En attente d'examen" },
-  EXPIRED: { icone: AlertTriangle, classe: 'text-amber-400', libelle: 'Expiré' },
+  APPROVED: { icone: Check, classe: 'text-green-600', libelle: 'Validé' },
+  REJECTED: { icone: X, classe: 'text-red-600', libelle: 'Refusé' },
+  PENDING: { icone: Clock, classe: 'text-gray-500', libelle: "En attente d'examen" },
+  EXPIRED: { icone: AlertTriangle, classe: 'text-amber-600', libelle: 'Expiré' },
 };
 
 const dateCourte = (iso: string) => new Date(iso).toLocaleDateString('fr-FR');
@@ -73,7 +73,7 @@ function Ligne({ libelle, valeur }: { libelle: string; valeur: string | null }) 
   return (
     <div>
       <p className="text-xs text-gray-500">{libelle}</p>
-      <p className="text-sm text-white">{valeur || <span className="text-gray-600">—</span>}</p>
+      <p className="text-sm text-gray-900">{valeur || <span className="text-gray-400">—</span>}</p>
     </div>
   );
 }
@@ -269,12 +269,12 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
     .join(' ');
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-5">
+    <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-5">
       <h2 className="text-lg font-bold flex items-center gap-2">
         <FileText size={20} className="text-orange-500" />
         Dossier du commerçant
         {dossier.piecesAExaminer > 0 && (
-          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-semibold">
+          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-500/40 text-xs font-semibold">
             {dossier.piecesAExaminer} pièce{dossier.piecesAExaminer > 1 ? 's' : ''} à examiner
           </span>
         )}
@@ -283,17 +283,17 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       {/* La validation d'abord : tant qu'elle manque, le commerce ne peut ni
           ouvrir ni vendre — c'est ce que la plateforme vient trancher ici. */}
       {dossier.validation?.valide ? (
-        <p className="flex items-center gap-2 text-sm text-green-400">
+        <p className="flex items-center gap-2 text-sm text-green-600">
           <BadgeCheck size={18} />
           Commerce validé
           {dossier.validation.approvedAt && ` le ${dateCourte(dossier.validation.approvedAt)}`}
         </p>
       ) : (
         dossier.validation && (
-          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="rounded-lg border border-amber-500/40 bg-amber-100 p-4 flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-semibold text-amber-300">En attente de validation</p>
-              <p className="text-sm text-gray-300">
+              <p className="font-semibold text-amber-700">En attente de validation</p>
+              <p className="text-sm text-gray-700">
                 {dossier.validation.dossierComplet
                   ? 'Toutes les pièces exigées sont validées : le commerce peut être validé.'
                   : `Reste à valider : ${dossier.validation.piecesManquantes
@@ -319,13 +319,13 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
       )}
 
       {erreur && (
-        <p role="status" className="text-sm text-red-400">
+        <p role="status" className="text-sm text-red-600">
           {erreur}
         </p>
       )}
 
       {(dossier.manquePourFacturer.length > 0 || dossier.manquePourEtrePaye.length > 0) && (
-        <p className="text-sm text-amber-300">
+        <p className="text-sm text-amber-700">
           Dossier incomplet : il manque{' '}
           {[...dossier.manquePourFacturer, ...dossier.manquePourEtrePaye].join(', ')}.
         </p>
@@ -349,9 +349,9 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
         <Ligne libelle="IBAN" valeur={dossier.ibanMasque} />
       </div>
 
-      <div className="border-t border-gray-700 pt-4 space-y-3">
+      <div className="border-t border-gray-200 pt-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-300">Justificatifs</h3>
+          <h3 className="text-sm font-semibold text-gray-700">Justificatifs</h3>
           <button
             type="button"
             onClick={() => setAfficherFormulaire(!afficherFormulaire)}
@@ -363,20 +363,20 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
         </div>
 
         {afficherFormulaire && (
-          <form onSubmit={deposerDocument} className="bg-gray-700/50 border border-gray-600 rounded p-4 space-y-3">
+          <form onSubmit={deposerDocument} className="bg-gray-50 border border-gray-300 rounded p-4 space-y-3">
             {erreurUpload && (
-              <p className="text-sm text-red-400">{erreurUpload}</p>
+              <p className="text-sm text-red-600">{erreurUpload}</p>
             )}
 
             <div>
-              <label htmlFor="type-piece" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="type-piece" className="block text-sm text-gray-500 mb-1">
                 Type de pièce
               </label>
               <select
                 id="type-piece"
                 value={typePiece}
                 onChange={(e) => setTypePiece(e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
               >
                 <option value="">Choisir…</option>
                 <option value="registration">Extrait d'immatriculation (Kbis, BCE)</option>
@@ -388,7 +388,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
             </div>
 
             <div>
-              <label htmlFor="fichier-piece" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="fichier-piece" className="block text-sm text-gray-500 mb-1">
                 Fichier (JPG, PNG, WebP : 2 Mo, PDF : 5 Mo)
               </label>
               <input
@@ -396,10 +396,10 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                 type="file"
                 accept=".jpg,.jpeg,.png,.webp,.pdf"
                 onChange={(e) => setFichier(e.target.files?.[0] || null)}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm file:bg-gray-600 file:border-0 file:px-2 file:py-1 file:text-white file:cursor-pointer"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm file:bg-gray-200 file:border-0 file:px-2 file:py-1 file:text-gray-900 file:cursor-pointer"
               />
               {fichier && (
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   {fichier.name} ({Math.round(fichier.size / 1024)} KB)
                 </p>
               )}
@@ -421,7 +421,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                   setFichier(null);
                   setErreurUpload('');
                 }}
-                className="px-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded transition"
+                className="px-3 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded transition"
               >
                 Annuler
               </button>
@@ -438,10 +438,10 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
               const Icone = marque.icone;
 
               return (
-                <li key={piece.id} className="rounded bg-gray-700/50 px-3 py-2 space-y-2">
+                <li key={piece.id} className="rounded bg-gray-50 px-3 py-2 space-y-2">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-white text-sm font-medium">{piece.libelle}</p>
+                      <p className="text-gray-900 text-sm font-medium">{piece.libelle}</p>
                       <p className={`text-xs ${marque.classe}`}>
                         {marque.libelle}
                         {piece.expiryDate && ` · expire le ${dateCourte(piece.expiryDate)}`}
@@ -452,7 +452,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                               setDateMin(new Date(Date.now() + 86_400_000).toISOString().slice(0, 10));
                               setEcheance({ ...echeance, [piece.id]: piece.expiryDate!.slice(0, 10) });
                             }}
-                            className="ml-2 text-blue-400 hover:underline"
+                            className="ml-2 text-blue-600 hover:underline"
                           >
                             Modifier
                           </button>
@@ -466,40 +466,40 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                             min={dateMin}
                             onChange={(e) => setEcheance({ ...echeance, [piece.id]: e.target.value })}
                             aria-label={`Nouvelle date d'expiration pour ${piece.libelle}`}
-                            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white"
+                            className="bg-white border border-gray-300 rounded px-2 py-1 text-xs text-gray-900"
                           />
                           <button
                             type="button"
                             onClick={() => changerEcheance(piece)}
                             disabled={enCours === piece.id || !echeance[piece.id]}
-                            className="px-2 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded text-xs"
+                            className="px-2 py-1 bg-gray-900 hover:bg-black disabled:opacity-50 text-white rounded text-xs"
                           >
                             Enregistrer
                           </button>
                           <button
                             type="button"
                             onClick={() => setEcheance(({ [piece.id]: _, ...reste }) => reste)}
-                            className="px-2 py-1 text-gray-400 hover:text-white text-xs"
+                            className="px-2 py-1 text-gray-500 hover:text-gray-900 text-xs"
                           >
                             Annuler
                           </button>
                         </div>
                       )}
                       {piece.reviewNote && (
-                        <p className="text-xs text-red-300 mt-1">{piece.reviewNote}</p>
+                        <p className="text-xs text-red-700 mt-1">{piece.reviewNote}</p>
                       )}
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         <button
                           type="button"
                           onClick={() => setApercu(piece)}
-                          className="flex items-center gap-1 text-xs text-blue-400 hover:underline"
+                          className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
                         >
                           <Eye size={12} />
                           Aperçu
                         </button>
                         <LienPiece
                           adresse={piece.documentUrl}
-                          className="text-xs text-orange-400 hover:underline break-all"
+                          className="text-xs text-orange-600 hover:underline break-all"
                         >
                           {piece.fileName || piece.documentUrl}
                         </LienPiece>
@@ -514,7 +514,7 @@ export function DossierCommercant({ orgId }: { orgId: string }) {
                       onChange={(e) => setMotif({ ...motif, [piece.id]: e.target.value })}
                       placeholder="Motif (obligatoire pour refuser)"
                       aria-label={`Motif pour ${piece.libelle}`}
-                      className="flex-1 min-w-[12rem] bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-white placeholder-gray-500"
+                      className="flex-1 min-w-[12rem] bg-white border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 placeholder-gray-400"
                     />
                     <button
                       type="button"

@@ -78,11 +78,11 @@ interface Dossier {
 }
 
 const COULEURS: Record<string, string> = {
-  BROUILLON: 'bg-gray-700 text-gray-300',
-  SOUMIS: 'bg-amber-500/20 text-amber-300',
-  VALIDE: 'bg-green-500/20 text-green-300',
-  REFUSE: 'bg-red-500/20 text-red-300',
-  SUSPENDU: 'bg-red-500/20 text-red-300',
+  BROUILLON: 'bg-gray-100 text-gray-700',
+  SOUMIS: 'bg-amber-100 text-amber-700',
+  VALIDE: 'bg-green-100 text-green-700',
+  REFUSE: 'bg-red-100 text-red-700',
+  SUSPENDU: 'bg-red-100 text-red-700',
 };
 
 const jeton = () => localStorage.getItem('accessToken');
@@ -224,15 +224,15 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
         <DocumentPreviewModal documentUrl={apercu.url} libelle={apercu.libelle} onClose={() => setApercu(null)} />
       )}
       <div>
-        <h1 className="flex items-center gap-2 text-3xl font-bold text-white">
+        <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-900">
           <Car className="h-8 w-8" />
           {t('title')}
         </h1>
-        <p className="mt-2 text-gray-400">{t('subtitle')}</p>
+        <p className="mt-2 text-gray-500">{t('subtitle')}</p>
       </div>
 
       {erreur && (
-        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-900/20 p-4 text-red-400">
+        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-50 p-4 text-red-600">
           {erreur}
         </div>
       )}
@@ -243,7 +243,7 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
             key={statut}
             onClick={() => setFiltre(statut)}
             className={`rounded px-4 py-2 text-sm font-medium transition ${
-              filtre === statut ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              filtre === statut ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             {t(`status.${statut}`)}
@@ -257,8 +257,8 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
           <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
         </div>
       ) : chauffeurs.length === 0 && !dossier ? (
-        <div className="rounded-lg bg-gray-800/50 py-12 text-center">
-          <p className="text-gray-400">{t('empty')}</p>
+        <div className="rounded-lg bg-gray-50 py-12 text-center">
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -267,19 +267,19 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
             ficheDossier()
           )}
           {chauffeurs.map((chauffeur) => (
-            <div key={chauffeur.id} className="overflow-hidden rounded-lg border border-gray-700 bg-gray-800">
+            <div key={chauffeur.id} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
               <button
                 onClick={() => ouvrir(chauffeur.id)}
-                className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left transition hover:bg-gray-700/50"
+                className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left transition hover:bg-gray-50"
               >
                 <div className="min-w-0">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-white">{chauffeur.nomComplet}</h3>
+                    <h3 className="font-semibold text-gray-900">{chauffeur.nomComplet}</h3>
                     <span className={`rounded px-2 py-0.5 text-xs font-semibold ${COULEURS[chauffeur.statut] || COULEURS.BROUILLON}`}>
                       {t(`status.${chauffeur.statut}`)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-500">
                     {chauffeur.email}
                     {chauffeur.telephone ? ` · ${chauffeur.telephone}` : ''}
                   </p>
@@ -300,9 +300,9 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
                       </span>
                     )}
                   </div>
-                  {chauffeur.motifStatut && <p className="mt-2 text-xs text-red-300">{chauffeur.motifStatut}</p>}
+                  {chauffeur.motifStatut && <p className="mt-2 text-xs text-red-700">{chauffeur.motifStatut}</p>}
                 </div>
-                <span className="shrink-0 text-sm text-gray-400">
+                <span className="shrink-0 text-sm text-gray-500">
                   {dossier?.id === chauffeur.id ? t('collapse') : t('open')}
                 </span>
               </button>
@@ -346,13 +346,13 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
     const manquantes = dossier.piecesExigees.filter((p) => !dossier.documents.some((d) => d.type === p.type));
 
     return (
-      <div className="space-y-5 border-t border-gray-700 p-5" data-dossier={dossier.id}>
+      <div className="space-y-5 border-t border-gray-200 p-5" data-dossier={dossier.id}>
         <div>
-          <h4 className="mb-2 font-semibold text-white">{dossier.nomComplet}</h4>
+          <h4 className="mb-2 font-semibold text-gray-900">{dossier.nomComplet}</h4>
           {dossier.societe && (
-            <p className="mb-2 text-sm text-gray-300">
+            <p className="mb-2 text-sm text-gray-700">
               {t('companyDriver')}{' '}
-              <Link href={`/superowner/zupdrive/societes/${dossier.societe.id}`} className="text-blue-400 hover:underline">
+              <Link href={`/superowner/zupdrive/societes/${dossier.societe.id}`} className="text-blue-600 hover:underline">
                 {dossier.societe.raisonSociale}
               </Link>
             </p>
@@ -360,15 +360,15 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
           <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             {champs.map(([cle, valeur]) => (
               <div key={cle} className="flex gap-2">
-                <dt className="text-gray-400">{t(`field.${cle}`)}</dt>
-                <dd className="text-white">{valeur || '—'}</dd>
+                <dt className="text-gray-500">{t(`field.${cle}`)}</dt>
+                <dd className="text-gray-900">{valeur || '—'}</dd>
               </div>
             ))}
           </dl>
         </div>
 
         <div>
-          <h4 className="mb-2 font-semibold text-white">{t('documents')}</h4>
+          <h4 className="mb-2 font-semibold text-gray-900">{t('documents')}</h4>
           <ul className="space-y-2">
             {dossier.documents.map((piece) => (
               <LignePieceAExaminer
@@ -385,16 +385,16 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
             ))}
           </ul>
           {manquantes.length > 0 && (
-            <p className="mt-2 text-xs text-amber-300">
+            <p className="mt-2 text-xs text-amber-700">
               {t('missingDocuments', { liste: manquantes.map((p) => p.libelle).join(', ') })}
             </p>
           )}
         </div>
 
-        <div className="space-y-3 rounded-lg border border-gray-700 p-4">
-          <h4 className="font-semibold text-white">{t('decision')}</h4>
+        <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+          <h4 className="font-semibold text-gray-900">{t('decision')}</h4>
           {dossier.statut === 'SOUMIS' && !dossier.dossierValidable && (
-            <p className="text-xs text-gray-400">{t('approveHint')}</p>
+            <p className="text-xs text-gray-500">{t('approveHint')}</p>
           )}
           {(dossier.statut === 'SOUMIS' || dossier.statut === 'VALIDE') && (
             <textarea
@@ -403,7 +403,7 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
               placeholder={dossier.statut === 'SOUMIS' ? t('rejectReasonPlaceholder') : t('suspendReasonPlaceholder')}
               aria-label={t('reasonLabel')}
               rows={2}
-              className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white"
+              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
             />
           )}
           <div className="flex flex-wrap gap-2">
@@ -438,19 +438,19 @@ export function FileChauffeurs({ idInitial }: { idInitial?: string }) {
               <button
                 onClick={() => decider('reactivate')}
                 disabled={envoi}
-                className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+                className="rounded bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-50"
               >
                 {t('reactivate')}
               </button>
             )}
             {(dossier.statut === 'BROUILLON' || dossier.statut === 'REFUSE') && (
-              <p className="text-sm text-gray-400">{t(`waiting.${dossier.statut}`)}</p>
+              <p className="text-sm text-gray-500">{t(`waiting.${dossier.statut}`)}</p>
             )}
           </div>
         </div>
 
         {idInitial && (
-          <Link href="/superowner/zupdrive/chauffeurs" className="text-sm text-blue-400 hover:underline">
+          <Link href="/superowner/zupdrive/chauffeurs" className="text-sm text-blue-600 hover:underline">
             {t('backToQueue')}
           </Link>
         )}

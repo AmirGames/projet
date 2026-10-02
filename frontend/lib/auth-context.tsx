@@ -5,7 +5,7 @@ import React, { Suspense, createContext, use, useContext, useEffect, useState, u
 import { useRouter } from 'next/navigation';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 import { fermerSessionPartout } from '@/lib/sso';
-import { ENTETE_TRANSPORT, renouveler, sessionARetrouver, sessionPrete } from '@/lib/jeton-session';
+import { ENTETE_TRANSPORT, renouveler, sessionARetrouver, sessionPerdueAuDemarrage, sessionPrete } from '@/lib/jeton-session';
 
 interface User {
   id: string;
@@ -110,8 +110,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [sessionOk, setSessionOk] = useState(() => !sessionARetrouver());
 
   useEffect(() => {
-    if (!sessionOk) sessionPrete().then(() => setSessionOk(true));
-  }, [sessionOk]);
+    if (sessionOk) return;
+    sessionPrete().then(() => {
+      // Refusée au chargement : même suite qu'un refus en cours de route — le
+      // message, puis la connexion de l'espace où l'on se trouve.
+      if (sessionPerdueAuDemarrage()) {
+        oublierLaSession();
+        const connexion = connexionDeLEspace(window.location.pathname);
+        if (connexion) router.replace(connexion);
+      }
+      setSessionOk(true);
+    });
+  }, [sessionOk, router]);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 

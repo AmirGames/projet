@@ -100,7 +100,9 @@ page.on('console', (m) => {
   // les 404 qui en résultent sont ce qu'on vérifie, pas un défaut de la page.
   // « RSC payload » : un préchargement de Next interrompu par le changement
   // de page — le navigateur retombe sur une navigation normale.
-  if (m.type() === 'error' && !/404|RSC payload/.test(m.text())) {
+  // « net::ERR_ » : un service extérieur (Stripe sur /checkout) qu'un bac à
+  // sable sans accès à Internet refuse ; ce n'est pas un défaut de la page.
+  if (m.type() === 'error' && !/404|RSC payload|net::ERR_/.test(m.text())) {
     erreurs.push(`${new URL(page.url()).pathname} : ${m.text()}`);
   }
 });

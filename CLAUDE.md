@@ -107,6 +107,8 @@ Organisé **par domaine métier**, pas par type de fichier : `src/modules/<domai
 - Cette version de Next.js a des changements incompatibles (ex. `middleware.ts` s'appelle `proxy.ts`). Consulter `frontend/node_modules/next/dist/docs/` avant de toucher au routage ; ne pas appliquer des solutions d'anciennes versions.
 - Espaces séparés : client/vitrine, merchant, delivery, superowner — chacun avec son authentification, ses permissions, ses données, son routage, ses traductions et son UI. Ne pas mélanger leur logique sans raison.
 - Traductions dans `frontend/messages/` via `next-intl` : pas de texte utilisateur codé en dur (`<button>Commander</button>`).
+- **Thème clair partout**, une couleur par marque (`lib/marques.ts`) : orange ZupEat, noir ZupOne (connexion, administration), bleu ZupDrive. Pas de fond de page sombre ni de variantes `dark:` ; un fond saturé porte toujours son `text-white` ; un bouton désactivé s'estompe (`disabled:opacity-50`). Règles détaillées : `frontend/ARCHITECTURE.md`, section « Style ».
+- **Scripts de vérification navigateur** : ouvrir une session par `connecterNavigateur()` (`frontend/scripts/inscription.mjs`) ; un jeton posé dans `localStorage` ne connecte plus personne.
 
 ## 10. API et déploiement
 

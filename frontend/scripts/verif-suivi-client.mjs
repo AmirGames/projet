@@ -10,7 +10,7 @@
  */
 
 import { chromium } from 'playwright';
-import { validerLivreur, codeDeRemise, retenirJetonDeSuivi } from './outils-livreur.mjs';
+import { validerLivreur, codeDeRemise, retenirJetonDeSuivi, declarerPrete } from './outils-livreur.mjs';
 import { inscriptionVia, ouvrirToutLeJour } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
@@ -100,8 +100,11 @@ const client = await inscriptionVia(appeler, {
   corps: { email: emailClient, password: motDePasse, name: `Client ${uniq}` },
 });
 
+// Commandée connectée : une commande sans session n'entre plus dans
+// l'historique du compte qui porte la même adresse.
 const commande = await appeler('/api/orders', {
   method: 'POST',
+  jeton: client.donnees.accessToken,
   corps: { conditionsAcceptees: true,
     storeId,
     customerName: `Client ${uniq}`,
@@ -188,6 +191,12 @@ check(
 );
 
 titre('Le livreur avance');
+// Le client ne voit la position du livreur qu'une fois la commande récupérée,
+// et le livreur n'emporte qu'une commande déclarée prête par le commerçant.
+await declarerPrete(API, storeId, orderId, T);
+const acceptee = await appeler('/api/drivers/deliveries?status=ACCEPTED', { jeton: D });
+const deliveryId = acceptee.donnees.data[0].id;
+await appeler(`/api/drivers/deliveries/${deliveryId}`, { method: 'PATCH', jeton: D, corps: { status: 'PICKED_UP' } });
 await appeler('/api/drivers/location', { method: 'PATCH', jeton: D, corps: EN_ROUTE });
 await page.reload();
 await page.waitForTimeout(3500);
@@ -205,10 +214,6 @@ const plan = page.locator('[data-carte-trajet].leaflet-container');
 check('le trajet est posé sur une carte', (await plan.count()) === 1, `n=${await plan.count()}`);
 
 titre('Livraison terminée');
-const course = await appeler('/api/drivers/deliveries?status=ACCEPTED', { jeton: D });
-const deliveryId = course.donnees.data[0].id;
-
-await appeler(`/api/drivers/deliveries/${deliveryId}`, { method: 'PATCH', jeton: D, corps: { status: 'PICKED_UP' } });
 // La remise se prouve par le code du client, sans quoi la course reste ouverte.
 await appeler(`/api/drivers/deliveries/${deliveryId}`, {
   method: 'PATCH',

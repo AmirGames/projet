@@ -161,9 +161,9 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
 
   if (!isReady || !acces) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F7F6] text-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
           <p>{t('loading')}</p>
         </div>
       </div>
@@ -315,11 +315,11 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
   const etendu = sidebarOpen || menuMobile;
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-gray-100">
+    <div className="flex min-h-screen bg-[#F7F7F6] text-gray-900">
       {/* Voile derrière le tiroir : un toucher à côté le referme. */}
       {menuMobile && (
         <div
-          className="fixed inset-0 z-30 bg-black/60 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/30 lg:hidden"
           onClick={() => setMenuMobile(false)}
           aria-hidden="true"
         />
@@ -331,12 +331,12 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
           menuMobile ? 'translate-x-0' : '-translate-x-full'
         } lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           sidebarOpen ? 'lg:w-64' : 'lg:w-20'
-        } flex-shrink-0 bg-gray-800 border-r border-gray-700 transition-all duration-300 flex flex-col`}
+        } flex-shrink-0 bg-white border-r border-[#ECECEA] transition-all duration-300 flex flex-col`}
       >
         {/* Logo */}
-        <div className="p-6 border-b border-gray-700">
-          <SelecteurEspace actuel="superowner" href="/superowner" className="gap-3 -m-2 p-2 w-full min-w-0" chevron={etendu}>
-            <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center font-bold">
+        <div className="p-4 border-b border-[#ECECEA]">
+          <SelecteurEspace clair actuel="superowner" href="/superowner" className="gap-3 -m-2 p-2 w-full min-w-0" chevron={etendu}>
+            <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center font-bold text-white">
               <Lock size={20} />
             </div>
             {etendu && (
@@ -352,7 +352,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
           <div
             role="tablist"
             aria-label={t('nav.platformChoice')}
-            className={`mx-4 mt-4 flex gap-1 rounded-lg bg-gray-900 p-1 ${etendu ? '' : 'flex-col'}`}
+            className={`mx-4 mt-4 flex gap-1 rounded-lg bg-white ring-1 ring-gray-200 p-1 ${etendu ? '' : 'flex-col'}`}
           >
             {plateformesOuvertes.map((code) => {
               const { label, icon: Icone } = ONGLETS[code];
@@ -369,7 +369,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
                     setMenuMobile(false);
                   }}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-2 text-sm font-medium transition-colors hover:no-underline ${
-                    actif ? 'bg-red-600 text-white' : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                    actif ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
                   <Icone size={16} className="flex-shrink-0" />
@@ -392,7 +392,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
                   isCollapsible ? (
                     <button
                       onClick={() => isCollapsible && toggleSection(isCollapsible)}
-                      className="w-full flex items-center justify-between px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-400 transition-colors"
+                      className="w-full flex items-center justify-between px-3 pt-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400 hover:text-gray-700 transition-colors"
                     >
                       <span className="flex items-center gap-2">
                         {section.icon && <section.icon size={16} />}
@@ -404,7 +404,7 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
                       />
                     </button>
                   ) : (
-                    <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    <p className="px-3 pt-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">
                       {section.title}
                     </p>
                   )
@@ -417,13 +417,13 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
                       href={item.href}
                       title={etendu ? undefined : item.label}
                       onClick={() => setMenuMobile(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      className={`flex items-center gap-3 px-3 py-2 rounded-[10px] text-sm transition-colors ${
                         isActive
-                          ? 'bg-red-600/20 text-red-400 font-medium'
-                          : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                          ? 'bg-gray-100 text-gray-900 font-bold'
+                          : 'font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                       }`}
                     >
-                      <item.icon size={20} className="flex-shrink-0" />
+                      <item.icon size={18} className="flex-shrink-0" />
                       {etendu && <span className="truncate">{item.label}</span>}
                     </Link>
                   );
@@ -435,10 +435,10 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-gray-700">
+        <div className="p-3 border-t border-[#ECECEA]">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-900/20 transition-colors text-red-400"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-[10px] text-sm font-semibold hover:bg-red-50 transition-colors text-red-700"
           >
             <LogOut size={20} />
             {etendu && <span>{t('logout')}</span>}
@@ -451,36 +451,36 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
           de défiler dans son cadre. */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <header className="bg-gray-800 border-b border-gray-700 px-4 lg:px-6 py-4 flex items-center justify-between gap-3">
+        <header className="sticky top-0 z-20 bg-white border-b border-[#ECECEA] px-4 lg:px-6 py-3 flex items-center justify-between gap-3">
           <button
             onClick={() => setMenuMobile(!menuMobile)}
             aria-label={t('openMenu')}
             aria-expanded={menuMobile}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors lg:hidden"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
           >
             {menuMobile ? <X size={24} /> : <Menu size={24} />}
           </button>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label={t('toggleSidebar')}
-            className="p-2 hover:bg-gray-700 rounded-lg transition-colors hidden lg:inline-flex"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors hidden lg:inline-flex"
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           <div className="flex items-center gap-4 min-w-0">
-            <div className="text-sm text-gray-400 hidden sm:flex items-center gap-2">
+            <div className="text-sm text-gray-500 hidden sm:flex items-center gap-2">
               <Lock size={16} className="text-red-600" />
               {t('headerTitle')}
               {!acces.isSuperOwner && acces.roleLabel && (
-                <span className="ml-2 px-2 py-0.5 rounded bg-gray-700 text-gray-300 text-xs">
+                <span className="ml-2 px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">
                   {tRoles('yourRole', { role: acces.roleLabel })}
                 </span>
               )}
             </div>
             {/* La cloche suit la plateforme partout : un ticket ouvert pendant
                 qu'on consulte les journaux doit se voir sans changer de page. */}
-            <NotificationBell />
-            <LanguageSwitcher />
+            <NotificationBell clair />
+            <LanguageSwitcher clair />
           </div>
         </header>
 
@@ -493,10 +493,10 @@ export default function SuperOwnerLayout({ children }: { children: React.ReactNo
           ) : pageAutorisee ? (
             children
           ) : (
-            <div className="max-w-lg mx-auto mt-16 text-center bg-gray-800 border border-gray-700 rounded-lg p-8">
+            <div className="max-w-lg mx-auto mt-16 text-center bg-white border border-gray-200 rounded-lg p-8">
               <Lock size={32} className="mx-auto mb-4 text-red-500" />
               <h1 className="text-xl font-bold mb-2">{tRoles('deniedTitle')}</h1>
-              <p className="text-gray-400">{tRoles('deniedText')}</p>
+              <p className="text-gray-500">{tRoles('deniedText')}</p>
             </div>
           )}
         </main>

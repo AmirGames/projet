@@ -33,7 +33,9 @@
     "verif:horaires": "node scripts/verif-horaires-genre.mjs",
     "verif:session": "node scripts/verif-session-perimee.mjs",
     "verif:commandes-direct": "node scripts/verif-commandes-direct.mjs",
-    "verif:catalogue-direct": "node scripts/verif-catalogue-support-direct.mjs"
+    "verif:catalogue-direct": "node scripts/verif-catalogue-support-direct.mjs",
+    "verif:cuisine": "node scripts/verif-ecran-cuisine.mjs",
+    "verif:tableau": "node scripts/verif-tableau-de-bord.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.14.1",

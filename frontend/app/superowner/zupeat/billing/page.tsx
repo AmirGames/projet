@@ -139,11 +139,11 @@ export default function BillingPage() {
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
-      PAID: 'bg-green-500/10 text-green-400 border-green-500/20',
-      PENDING: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-      OVERDUE: 'bg-red-500/10 text-red-400 border-red-500/20',
+      PAID: 'bg-green-100 text-green-600 border-green-500/20',
+      PENDING: 'bg-yellow-100 text-yellow-600 border-yellow-500/20',
+      OVERDUE: 'bg-red-100 text-red-600 border-red-500/20',
     };
-    return colors[status] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+    return colors[status] || 'bg-gray-500/10 text-gray-500 border-gray-500/20';
   };
 
   const ouvrirLeDetail = async (billing: BillingData) => {
@@ -174,14 +174,14 @@ export default function BillingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <CreditCard className="w-8 h-8" />
           {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">{t('subtitle')}</p>
+        <p className="text-gray-500 mt-2">{t('subtitle')}</p>
         <Link
           href="/superowner/zupeat/billing/factures"
-          className="mt-3 inline-block text-sm text-blue-400 hover:text-blue-300 underline"
+          className="mt-3 inline-block text-sm text-blue-600 hover:text-blue-700 underline"
         >
           Factures Peppol (e-facturation mensuelle) →
         </Link>
@@ -190,7 +190,7 @@ export default function BillingPage() {
       {/* La commission se retient désormais sur les reversements du lundi :
           la facturer ici aussi la ferait payer deux fois. */}
       {reversementsDepuis && (
-        <div className="p-4 bg-blue-900/20 text-blue-300 rounded-lg border border-blue-500/20 text-sm">
+        <div className="p-4 bg-blue-50 text-blue-700 rounded-lg border border-blue-500/20 text-sm">
           Depuis le {new Date(reversementsDepuis).toLocaleDateString('fr-FR')}, la commission et les frais
           sont retenus chaque semaine sur les reversements (page Versements SEPA). Cette page ne compte
           plus que les commandes d&apos;avant cette date. Les montants retenus sont facturés quand même,
@@ -199,28 +199,28 @@ export default function BillingPage() {
       )}
 
       {error && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20">
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-6">
-          <p className="text-sm text-green-400 mb-2">{t('totalRevenue')}</p>
-          <p className="text-3xl font-bold text-green-400">{euro(summary.totalRevenue)}</p>
-          <p className="text-xs text-green-400/60 mt-2">{t('allSubscriptions')}</p>
+        <div className="bg-green-100 border border-green-500/20 rounded-lg p-6">
+          <p className="text-sm text-green-600 mb-2">{t('totalRevenue')}</p>
+          <p className="text-3xl font-bold text-green-600">{euro(summary.totalRevenue)}</p>
+          <p className="text-xs text-green-600/60 mt-2">{t('allSubscriptions')}</p>
         </div>
 
-        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-6">
-          <p className="text-sm text-yellow-400 mb-2">{t('pendingAmount')}</p>
-          <p className="text-3xl font-bold text-yellow-400">{euro(summary.pendingAmount)}</p>
-          <p className="text-xs text-yellow-400/60 mt-2">{t('pendingAmount')}</p>
+        <div className="bg-yellow-100 border border-yellow-500/20 rounded-lg p-6">
+          <p className="text-sm text-yellow-600 mb-2">{t('pendingAmount')}</p>
+          <p className="text-3xl font-bold text-yellow-600">{euro(summary.pendingAmount)}</p>
+          <p className="text-xs text-yellow-600/60 mt-2">{t('pendingAmount')}</p>
         </div>
 
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
-          <p className="text-sm text-blue-400 mb-2">{t('activeSubscriptions')}</p>
-          <p className="text-3xl font-bold text-blue-400">{summary.activeSubscriptions}</p>
-          <p className="text-xs text-blue-400/60 mt-2">{t('colOrganization')}</p>
+        <div className="bg-blue-100 border border-blue-500/20 rounded-lg p-6">
+          <p className="text-sm text-blue-600 mb-2">{t('activeSubscriptions')}</p>
+          <p className="text-3xl font-bold text-blue-600">{summary.activeSubscriptions}</p>
+          <p className="text-xs text-blue-600/60 mt-2">{t('colOrganization')}</p>
         </div>
       </div>
 
@@ -229,33 +229,33 @@ export default function BillingPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : billings.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800/50 rounded-lg">
-          <p className="text-gray-400">{t('empty')}</p>
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       ) : (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <table className="w-full">
-            <thead className="bg-gray-700/50 border-b border-gray-700">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                   {t('colOrganization')}
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                   {t('colTier')}
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                   {t('colPeriod')}
                 </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">
                   {t('colRevenue')}
                 </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">
                   {t('colCommission')}
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                   {t('colStatus')}
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                   {t('colNextBilling')}
                 </th>
               </tr>
@@ -267,11 +267,11 @@ export default function BillingPage() {
                   onClick={() => ouvrirLeDetail(billing)}
                   className={`cursor-pointer transition ${
                     detail?.organization.id === billing.id
-                      ? 'bg-blue-900/20'
-                      : 'hover:bg-gray-700/20'
+                      ? 'bg-blue-50'
+                      : 'hover:bg-gray-50'
                   }`}
                 >
-                  <td className="px-6 py-4 text-sm text-white font-medium">
+                  <td className="px-6 py-4 text-sm text-gray-900 font-medium">
                     {billing.organization}
                     <span className="block text-xs text-gray-500">
                       {detailEnCours === billing.id
@@ -281,9 +281,9 @@ export default function BillingPage() {
                           : t('seeOrders')}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-400">{billing.tier}</td>
-                  <td className="px-6 py-4 text-sm text-gray-400">{billing.period}</td>
-                  <td className="px-6 py-4 text-right text-sm text-gray-300">
+                  <td className="px-6 py-4 text-sm text-gray-500">{billing.tier}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{billing.period}</td>
+                  <td className="px-6 py-4 text-right text-sm text-gray-700">
                     {euro(billing.revenue ?? 0)}
                     {billing.ordersCount !== undefined && (
                       <span className="block text-xs text-gray-500">
@@ -292,7 +292,7 @@ export default function BillingPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <p className="font-bold text-green-400">{euro(billing.amount)}</p>
+                    <p className="font-bold text-green-600">{euro(billing.amount)}</p>
                     {billing.commissionPercent !== undefined && (
                       <span className="block text-xs text-gray-500">
                         {billing.commissionPercent} % {t('colRevenue')}
@@ -301,17 +301,17 @@ export default function BillingPage() {
                     {/* Les frais des courses faites par les livreurs de la
                         plateforme : le client les a payés au commerçant. */}
                     {(billing.deliveryFeesDue ?? 0) > 0 && (
-                      <span className="block text-xs text-amber-300">
+                      <span className="block text-xs text-amber-700">
                         + {euro(billing.deliveryFeesDue ?? 0)} de livraison
                       </span>
                     )}
                     {(billing.serviceFeesDue ?? 0) > 0 && (
-                      <span className="block text-xs text-amber-300">
+                      <span className="block text-xs text-amber-700">
                         + {euro(billing.serviceFeesDue ?? 0)} de frais de service
                       </span>
                     )}
                     {(billing.totalDue ?? 0) > billing.amount && (
-                      <span className="block text-xs font-semibold text-white">
+                      <span className="block text-xs font-semibold text-gray-900">
                         {euro(billing.totalDue ?? 0)} dus
                       </span>
                     )}
@@ -332,13 +332,13 @@ export default function BillingPage() {
       )}
 
       {detail && (
-        <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg overflow-hidden">
-          <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-gray-700/50 px-6 py-4">
+        <div className="bg-gray-50 border border-gray-200/50 rounded-lg overflow-hidden">
+          <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-gray-200/50 px-6 py-4">
             <div>
-              <h2 className="text-lg font-bold text-white">
+              <h2 className="text-lg font-bold text-gray-900">
                 {detail.organization.legalName || detail.organization.name}
               </h2>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-500">
                 {[
                   detail.organization.billingAddress,
                   [detail.organization.billingPostalCode, detail.organization.billingCity]
@@ -350,15 +350,15 @@ export default function BillingPage() {
                   .filter(Boolean)
                   .join(' · ') || t('incompleteInvoice')}
               </p>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-500">
                 {detail.period} — {detail.tierLabel}, {detail.commissionPercent} % de commission
               </p>
               {detail.organization.manquePourFacturer.length > 0 && (
-                <p role="status" className="text-sm text-amber-300 mt-1">
+                <p role="status" className="text-sm text-amber-700 mt-1">
                   {t('incompleteInvoice')} {detail.organization.manquePourFacturer.join(', ')}.{' '}
                   <Link
                     href={`/superowner/zupeat/organizations/${detail.organization.id}`}
-                    className="underline hover:text-amber-200"
+                    className="underline hover:text-amber-800"
                   >
                     {t('seeFiled')}
                   </Link>
@@ -366,24 +366,24 @@ export default function BillingPage() {
               )}
             </div>
             <div className="text-right text-sm">
-              <p className="text-gray-300">
+              <p className="text-gray-700">
                 {detail.summary.ordersCount} {detail.summary.ordersCount > 1 ? t('orders_plural') : t('orders')} — {euro(detail.summary.revenue)}
               </p>
-              <p className="font-bold text-green-400">
+              <p className="font-bold text-green-600">
                 {t('commission')}: {euro(detail.summary.commission)}
               </p>
               {(detail.summary.deliveryFees ?? 0) > 0 && (
-                <p className="text-amber-300">
+                <p className="text-amber-700">
                   Livraisons de la plateforme : {euro(detail.summary.deliveryFees ?? 0)}
                 </p>
               )}
               {(detail.summary.serviceFees ?? 0) > 0 && (
-                <p className="text-amber-300">
+                <p className="text-amber-700">
                   Frais de service : {euro(detail.summary.serviceFees ?? 0)}
                 </p>
               )}
               {(detail.summary.totalDue ?? 0) > detail.summary.commission && (
-                <p className="font-bold text-white">
+                <p className="font-bold text-gray-900">
                   Total dû : {euro(detail.summary.totalDue ?? 0)}
                 </p>
               )}
@@ -391,37 +391,37 @@ export default function BillingPage() {
           </div>
 
           {detail.orders.length === 0 ? (
-            <p className="px-6 py-8 text-center text-gray-400">
+            <p className="px-6 py-8 text-center text-gray-500">
               {t('noOrders')}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-900/50 border-b border-gray-700/50">
+                <thead className="bg-gray-50 border-b border-gray-200/50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                       {t('colOrganization')}
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Date</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                       Boutique
                     </th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">
                       {t('total')}
                     </th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">
                       {t('commission')}
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700/50">
                   {detail.orders.map((ligne) => (
-                    <tr key={ligne.id} className="hover:bg-gray-700/20 transition">
-                      <td className="px-6 py-4 text-sm text-white">
+                    <tr key={ligne.id} className="hover:bg-gray-50 transition">
+                      <td className="px-6 py-4 text-sm text-gray-900">
                         #{ligne.numero}
                         <span className="block text-xs text-gray-500">{ligne.client}</span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-400">
+                      <td className="px-6 py-4 text-sm text-gray-500">
                         {new Date(ligne.date).toLocaleString('fr-FR', {
                           day: '2-digit',
                           month: '2-digit',
@@ -429,26 +429,26 @@ export default function BillingPage() {
                           minute: '2-digit',
                         })}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-400">{ligne.boutique}</td>
-                      <td className="px-6 py-4 text-right text-sm text-gray-300">
+                      <td className="px-6 py-4 text-sm text-gray-500">{ligne.boutique}</td>
+                      <td className="px-6 py-4 text-right text-sm text-gray-700">
                         {euro(ligne.total)}
                         {ligne.remise > 0 && (
-                          <span className="block text-xs text-green-400">
+                          <span className="block text-xs text-green-600">
                             − {euro(ligne.remise)} de {t('discount')}
                           </span>
                         )}
                         {(ligne.livraisonDue ?? 0) > 0 && (
-                          <span className="block text-xs text-amber-300">
+                          <span className="block text-xs text-amber-700">
                             dont {euro(ligne.livraisonDue ?? 0)} de livraison dus à la plateforme
                           </span>
                         )}
                         {(ligne.serviceDu ?? 0) > 0 && (
-                          <span className="block text-xs text-amber-300">
+                          <span className="block text-xs text-amber-700">
                             dont {euro(ligne.serviceDu ?? 0)} de frais de service
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right text-sm font-medium text-green-400">
+                      <td className="px-6 py-4 text-right text-sm font-medium text-green-600">
                         {euro(ligne.commission)}
                         <span className="block text-xs text-gray-500">
                           {detail.commissionPercent} %
@@ -464,21 +464,21 @@ export default function BillingPage() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500">
           {t('showingRange', { offset: offset + 1, limit: Math.min(offset + limit, total), total })}
         </p>
         <div className="flex gap-2">
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition"
           >
             {t('previous')}
           </button>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 transition"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition"
           >
             {t('next')}
           </button>

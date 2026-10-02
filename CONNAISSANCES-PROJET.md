@@ -445,7 +445,10 @@ Mot de passe de 8 caractères avec chiffre, minuscule et majuscule à chaque
 création, récupération de mot de passe, confirmation d'adresse e-mail, suspension et
 fermeture de compte en direct, **cloisonnement des commerçants** (une boutique
 n'accepte plus l'identifiant d'une autre), sessions périmées répondant un 401
-explicite, erreurs de validation rendues en français plutôt qu'un
+explicite — et dites à l'utilisateur, y compris quand la session est déjà
+morte à l'ouverture de la page (base remise à zéro, compte supprimé pendant
+l'absence) : « Votre session n'est plus valable », au lieu d'une connexion
+vide —, erreurs de validation rendues en français plutôt qu'un
 « Validation error » muet.
 
 **Support**
@@ -488,6 +491,43 @@ dans l'application, préparation de la publication (`PUBLICATION.md`).
 Métriques en mémoire, vigie, incidents et alertes, disponibilité sur 90 jours,
 sonde externe.
 
+**Un seul thème, clair, aux couleurs de chaque marque**
+Le site mêlait des pages claires (vitrine, client) et des espaces sombres
+(commerçant, livreur, administration). Tout est passé au clair, sur le modèle
+d'Uber Eats : fond `#F7F7F6`, cartes blanches cernées, action principale en
+pilule. Une couleur par marque (`lib/marques.ts`) : orange pour ZupEat, noir
+pour ZupOne — la connexion et l'administration —, bleu pour ZupDrive. Les
+règles (couleurs qui ont un sens, texte toujours posé avec son fond, boutons
+désactivés estompés, pas de `dark:`, variante `clair` des composants partagés)
+sont dans `frontend/ARCHITECTURE.md`, section « Style ». La conversion a
+révélé deux familles de défauts invisibles sur fond sombre : des boutons
+colorés sans couleur de texte, et des boutons désactivés au texte blanc sur
+gris très clair — dont le bouton de paiement. Les commerces sans photo ni logo
+prennent une illustration de leur catégorie (`lib/visuels-familles.ts`), et
+l'application client mobile est passée à l'orange avec les photos de
+couverture.
+
+**Espace commerçant, deuxième version**
+Refait d'après une maquette (artefact « Espace commerçant ZupEat ») :
+- **l'écran des commandes en colonnes** (à accepter, en préparation, prêtes),
+  chaque carte portant son action suivante — accepter avec un temps de
+  préparation, lancer, marquer prête, remettre, refuser avec un motif ;
+- **le tableau de bord** des chiffres du jour, des ventes sur 7 jours, des
+  plats épuisés à remettre en vente et du dernier relevé. Ses chiffres étaient
+  recalculés dans le navigateur sur la première page de `/api/orders`, en
+  comptant les commandes refusées : ils viennent désormais du serveur ;
+- **le catalogue** en lignes, avec la photo du plat, un interrupteur de
+  disponibilité et un panneau latéral qui porte aussi tailles et suppléments ;
+- un cadre adapté au téléphone : la barre latérale devient un tiroir.
+
+Côté API, rien n'est retiré : `GET /api/order-management/:storeId?status=`
+accepte plusieurs statuts séparés par des virgules (validés par Zod, un statut
+inconnu répond 400) ; `stats/overview` renvoie `parJour`, les ventes jour par
+jour à l'heure de Bruxelles (`jourBruxelles`, `derniersJoursBruxelles` dans
+`utils/semaine-bruxelles.ts`) ; la liste des produits d'un commerce renvoie
+`media`, sa première photo ; les menus publics rendent les photos dans l'ordre
+du commerçant.
+
 **Infrastructure de vérification**
 Les scripts de vérification versés dans le dépôt, un `README.md`, et le présent
 document.
@@ -509,7 +549,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 | | Suites | Contrôles |
 |---|---|---|
 | **API** (`backend/scripts/verification/`) | 57 | **1949** |
-| **Navigateur** (`frontend/scripts/`) | 29 | **716** au dernier décompte |
+| **Navigateur** (`frontend/scripts/`) | 34 | **942**, toutes vertes le 2 octobre |
 
 Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1841
 contrôles dans la suite complète, plus les 31 de `verif-paiement`, qui se joue
@@ -517,8 +557,48 @@ contrôles dans la suite complète, plus les 31 de `verif-paiement`, qui se joue
 dans la suite complète est attendue. Rejouée aussi sous Windows, session
 PostgreSQL en UTC (voir le `LISEZ-MOI`).
 
-La suite navigateur n'a pas été rejouée depuis le 24 septembre (716 contrôles,
-alors 27 suites).
+Le **2 octobre**, les 34 suites navigateur ont été rejouées une à une, chacune
+sur une base remise à zéro : **942 contrôles, tous verts**.
+
+| Suite | Contrôles | | Suite | Contrôles |
+|---|---|---|---|---|
+| `verif-carte-suivi` | 15 (réparée) | | `verif-note-livreur` | 32 (réparée) |
+| `verif-carte-zones` | 26 | | `verif-paniers` | 24 |
+| `verif-catalogue-support-direct` | 15 (réparée) | | `verif-preuve-livraison` | 42 (réparée) |
+| `verif-cloche` | 32 (réparée) | | `verif-profil-commercant` | 39 |
+| `verif-commande-invite` | 30 | | `verif-session-perimee` | 9 (réparée) |
+| `verif-commandes-direct` | 8 (réparée) | | `verif-suivi-client` | 14 (réparée) |
+| `verif-compte-restreint` | 21 | | `verif-tableau-de-bord` | 16 |
+| `verif-courses-livreur` | 16 (réparée) | | `verif-validation-livreurs` | 38 |
+| `verif-creneaux-retrait` | 13 | | `verif-versements-livreurs` | 37 |
+| `verif-declinaisons` | 30 (réparée) | | `verif-vitrine-unique` | 15 (réparée) |
+| `verif-domaines` | 57, site à six domaines | | `verif-webhooks` | 27 |
+| `verif-ecran-cuisine` | 24 | | `verif-zones-livraison` | 26 |
+| `verif-espace-administration` | 91, jeu de démonstration | | `verif-zupdrive-chauffeur` | 37 |
+| `verif-fiche-boutique` | 36 | | `verif-zupdrive-courses` | 26 |
+| `verif-formules-pages` | 30 (réparée) | | `verif-zupdrive-societe` | 35 |
+| `verif-horaires-genre` | 29 | | `verif-menu-merchant` | 22, jeu de démonstration |
+| `verif-menu-restaurant` | 18 | | `verif-mot-de-passe-oublie` | 12 |
+
+Aucune réparation ne venait d'une régression du produit : les scripts
+suivaient un parcours que des règles plus strictes refusent désormais.
+- **Session** : poser le jeton dans `localStorage` ne connecte plus personne,
+  et changer de compte par le formulaire non plus (`/login` renvoie ailleurs
+  qui est déjà connecté). D'où `connecterNavigateur()` (voir « Pièges »).
+- **Commande sans session** : elle n'entre plus dans l'historique du compte
+  qui porte la même adresse ; les suites de suivi commandent connectées.
+- **Livraison** : le livreur n'emporte qu'une commande déclarée prête
+  (`declarerPrete()`, `outils-livreur.mjs`), et le client ne voit sa position
+  qu'une fois la commande récupérée. Une commande exige aussi la position de
+  son adresse.
+- **Photo de dépôt** : servie par lien signé sous `/api/files`, plus sous
+  `/uploads`.
+- **Écrans refondus** : les déclinaisons sont dans le panneau du plat, et la
+  grille des formules n'a plus qu'un bouton « Enregistrer ».
+
+Le jeu de démonstration (`backend/scripts/seed-demo.mjs`) ne créait plus
+aucune commande : elles n'avaient pas d'articles, que l'API exige pour en
+recalculer les prix.
 
 Trois réglages rendent les suites indépendantes des nouveautés du produit :
 - la remise à zéro pose une configuration aux **frais de service nuls**
@@ -534,8 +614,8 @@ Trois réglages rendent les suites indépendantes des nouveautés du produit :
 Les suites navigateur ont besoin de `DATABASE_URL` (même base que l'API),
 pour valider leurs commerces.
 
-`verif-domaines` n'a pas tourné : il demande un site construit avec les
-trois domaines.
+`verif-domaines` demande un site lancé avec les six domaines (voir le
+`LISEZ-MOI`), et Next 16 refuse un second `next dev` dans le même dossier.
 
 Depuis la refonte d'identité, `/auth/signup` ne crée plus d'organisation.
 Les suites s'inscrivent par `inscription()` (API, `outils.mjs`) et
@@ -991,10 +1071,19 @@ pas le couple client/livreur. Trois choses à retenir :
   réglerait à la course suivante.
 
 À savoir pour les vérifications : **deux pages du même contexte Playwright
-partagent le `localStorage`, donc le jeton**. Une suite qui connecte la
-plateforme dans un `contexte.newPage()` écrase le jeton du livreur, et l'espace
-livreur repart ensuite avec le mauvais compte — un 404 « aucun profil livreur »
-que rien dans le scénario n'explique. Chaque rôle prend son `nav.newContext()`.
+partagent la session** — le cookie de renouvellement `zup_refresh` et le
+`localStorage`. Une suite qui connecte la plateforme dans un
+`contexte.newPage()` remplace la session du livreur, et l'espace livreur repart
+ensuite avec le mauvais compte — un 404 « aucun profil livreur » que rien dans
+le scénario n'explique. Chaque rôle prend son `nav.newContext()`, et s'y
+connecte par `connecterNavigateur()` (`frontend/scripts/inscription.mjs`) :
+poser `accessToken` dans `localStorage` ne connecte plus personne, le jeton
+d'accès ne vivant qu'en mémoire. Changer de compte dans la même page par le
+formulaire ne marche pas davantage : `/login` renvoie ailleurs qui est déjà
+connecté, le formulaire n'est jamais envoyé, et l'on regarde en silence
+l'espace du compte précédent (une alerte de la plateforme semblait ainsi
+« fuir » chez un commerçant). `connecterNavigateur()` remplace la session et
+retient le commerce du compte (`currentOrgId`), comme le formulaire.
 
 À savoir pour les vérifications : **les tuiles sont bloquées dans le bac à
 sable**. Les suites navigateur ne les contrôlent donc pas — elles contrôlent ce

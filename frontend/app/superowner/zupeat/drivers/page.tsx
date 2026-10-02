@@ -74,11 +74,11 @@ interface Dossier {
 }
 
 const COULEURS: Record<string, string> = {
-  PENDING: 'bg-amber-500/20 text-amber-300',
-  ACTIVE: 'bg-green-500/20 text-green-300',
-  REJECTED: 'bg-red-500/20 text-red-300',
-  SUSPENDED: 'bg-red-500/20 text-red-300',
-  INACTIVE: 'bg-gray-700 text-gray-300',
+  PENDING: 'bg-amber-100 text-amber-700',
+  ACTIVE: 'bg-green-100 text-green-700',
+  REJECTED: 'bg-red-100 text-red-700',
+  SUSPENDED: 'bg-red-100 text-red-700',
+  INACTIVE: 'bg-gray-100 text-gray-700',
 };
 
 const VEHICULES: Record<string, { icone: typeof Car; libelle: string }> = {
@@ -246,17 +246,17 @@ export default function LivreursPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           <Truck className="w-8 h-8" />
           {t('title')}
         </h1>
-        <p className="text-gray-400 mt-2">
+        <p className="text-gray-500 mt-2">
           {t('subtitle')}
         </p>
       </div>
 
       {erreur && (
-        <div className="p-4 bg-red-900/20 text-red-400 rounded-lg border border-red-500/20">
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-500/20">
           {erreur}
         </div>
       )}
@@ -274,8 +274,8 @@ export default function LivreursPage() {
             onClick={() => setFiltre(etat.valeur)}
             className={`px-4 py-2 rounded text-sm font-medium transition ${
               filtre === etat.valeur
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             {t(etat.key)}
@@ -291,8 +291,8 @@ export default function LivreursPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : livreurs.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800/50 rounded-lg">
-          <p className="text-gray-400">{t('empty')}</p>
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-gray-500">{t('empty')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -305,14 +305,14 @@ export default function LivreursPage() {
             const IconeVehicule = vehicule.icone;
 
             return (
-              <div key={livreur.id} className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+              <div key={livreur.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <button
                   onClick={() => ouvrirDossier(livreur)}
-                  className="w-full px-5 py-4 flex items-start justify-between gap-4 hover:bg-gray-700/50 transition"
+                  className="w-full px-5 py-4 flex items-start justify-between gap-4 hover:bg-gray-50 transition"
                 >
                   <div className="min-w-0 text-left">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-white font-semibold">{livreur.name}</h3>
+                      <h3 className="text-gray-900 font-semibold">{livreur.name}</h3>
                       <span
                         className={`px-2 py-0.5 rounded text-xs font-semibold ${
                           COULEURS[livreur.status] || COULEURS.INACTIVE
@@ -322,7 +322,7 @@ export default function LivreursPage() {
                       </span>
                     </div>
 
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-gray-500">
                       {livreur.email} · {livreur.phone}
                     </p>
 
@@ -341,7 +341,7 @@ export default function LivreursPage() {
                         {livreur.totalDeliveries} {livreur.totalDeliveries > 1 ? t('deliveries_plural') : t('delivery')}
                       </span>
                       <span>{euro(livreur.totalEarnings)} {t('earned')}</span>
-                      <span className={livreur.rating != null && livreur.rating < 3 ? 'text-red-300' : ''}>
+                      <span className={livreur.rating != null && livreur.rating < 3 ? 'text-red-700' : ''}>
                         {livreur.rating == null
                           ? t('neverRated')
                           : `${livreur.rating.toFixed(1).replace('.', ',')} ★ (${livreur.avis} ${t('reviews')})`}
@@ -349,25 +349,25 @@ export default function LivreursPage() {
                     </div>
 
                     {livreur.statusReason && (
-                      <p className="text-xs text-red-300 mt-2">{livreur.statusReason}</p>
+                      <p className="text-xs text-red-700 mt-2">{livreur.statusReason}</p>
                     )}
                     {livreur.suppressionDemandeeLe && (
-                      <p className="text-xs text-amber-300 mt-1">🗑️ Suppression du compte demandée</p>
+                      <p className="text-xs text-amber-700 mt-1">🗑️ Suppression du compte demandée</p>
                     )}
                   </div>
 
-                  <span className="text-sm text-gray-400 flex-shrink-0">
+                  <span className="text-sm text-gray-500 flex-shrink-0">
                     {ouvert ? t('collapse') : t('viewFile')}
                   </span>
                 </button>
 
                 {ouvert && dossier && (
-                  <div className="border-t border-gray-700 p-5 space-y-4">
+                  <div className="border-t border-gray-200 p-5 space-y-4">
                     {/* Supprimer son compte ne fait pas perdre ce qui est dû :
                         les données attendent le dernier versement. */}
                     {dossier.suppression && (
-                      <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
-                        <p className="font-semibold text-amber-300">
+                      <div className="rounded-lg border border-amber-500/40 bg-amber-100 p-4 text-sm text-amber-800">
+                        <p className="font-semibold text-amber-700">
                           🗑️ Suppression demandée le{' '}
                           {new Date(dossier.suppression.demandeeLe).toLocaleDateString('fr-FR')}
                         </p>
@@ -394,10 +394,10 @@ export default function LivreursPage() {
                         )}
                       </div>
                     )}
-                    <h4 className="font-semibold text-white">{t('documentsParts')}</h4>
+                    <h4 className="font-semibold text-gray-900">{t('documentsParts')}</h4>
 
                     {dossier.documents.length === 0 ? (
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-gray-500">
                         {t('noDocuments')}
                       </p>
                     ) : (
@@ -405,18 +405,18 @@ export default function LivreursPage() {
                         {dossier.documents.map((piece) => (
                           <li
                             key={piece.id}
-                            className="flex flex-wrap items-center justify-between gap-3 rounded bg-gray-700/40 px-3 py-2"
+                            className="flex flex-wrap items-center justify-between gap-3 rounded bg-gray-50 px-3 py-2"
                           >
                             <div className="min-w-0">
-                              <p className="text-sm text-white">
+                              <p className="text-sm text-gray-900">
                                 {piece.libelle}
                                 <span
                                   className={`ml-2 text-xs ${
                                     piece.status === 'APPROVED'
-                                      ? 'text-green-400'
+                                      ? 'text-green-600'
                                       : piece.status === 'REJECTED'
-                                        ? 'text-red-400'
-                                        : 'text-gray-400'
+                                        ? 'text-red-600'
+                                        : 'text-gray-500'
                                   }`}
                                 >
                                   {getDocumentStatus(piece.status)}
@@ -432,7 +432,7 @@ export default function LivreursPage() {
                                         setDateMin(new Date(Date.now() + 86_400_000).toISOString().slice(0, 10));
                                         setEcheance({ ...echeance, [piece.id]: piece.expiryDate!.slice(0, 10) });
                                       }}
-                                      className="ml-2 text-blue-400 hover:underline"
+                                      className="ml-2 text-blue-600 hover:underline"
                                     >
                                       {t('editExpiry')}
                                     </button>
@@ -447,34 +447,34 @@ export default function LivreursPage() {
                                     min={dateMin}
                                     onChange={(e) => setEcheance({ ...echeance, [piece.id]: e.target.value })}
                                     aria-label={`${t('newExpiryDate')} — ${piece.libelle}`}
-                                    className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white"
+                                    className="bg-white border border-gray-300 rounded px-2 py-1 text-xs text-gray-900"
                                   />
                                   <button
                                     type="button"
                                     onClick={() => changerEcheance(livreur.id, piece)}
                                     disabled={!echeance[piece.id]}
-                                    className="px-2 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded text-xs"
+                                    className="px-2 py-1 bg-gray-900 hover:bg-black disabled:opacity-50 text-white rounded text-xs"
                                   >
                                     {t('saveExpiry')}
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => setEcheance(({ [piece.id]: _, ...reste }) => reste)}
-                                    className="px-2 py-1 text-gray-400 hover:text-white text-xs"
+                                    className="px-2 py-1 text-gray-500 hover:text-gray-900 text-xs"
                                   >
                                     {t('cancelExpiry')}
                                   </button>
                                 </div>
                               )}
                               {piece.reviewNote && (
-                                <p className="text-xs text-red-300">{piece.reviewNote}</p>
+                                <p className="text-xs text-red-700">{piece.reviewNote}</p>
                               )}
                             </div>
 
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => setPreviewPiece(piece)}
-                                className="flex items-center gap-1 text-xs text-blue-400 hover:underline"
+                                className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
                                 aria-label={t('preview')}
                               >
                                 <Eye size={12} />
@@ -482,7 +482,7 @@ export default function LivreursPage() {
                               </button>
                               <LienPiece
                                 adresse={piece.documentUrl}
-                                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-300"
+                                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
                                 title={t('downloadDocument')}
                               >
                                 <ExternalLink size={12} />
@@ -492,7 +492,7 @@ export default function LivreursPage() {
                                   agir(`${livreur.id}/documents/${piece.id}`, { approuve: true })
                                 }
                                 aria-label={t('approveDocument', { name: piece.libelle })}
-                                className="p-1.5 rounded bg-green-600/20 text-green-300 hover:bg-green-600/40"
+                                className="p-1.5 rounded bg-green-50 text-green-700 hover:bg-green-100"
                               >
                                 <Check size={14} />
                               </button>
@@ -504,7 +504,7 @@ export default function LivreursPage() {
                                   })
                                 }
                                 aria-label={t('rejectDocument', { name: piece.libelle })}
-                                className="p-1.5 rounded bg-red-600/20 text-red-300 hover:bg-red-600/40"
+                                className="p-1.5 rounded bg-red-50 text-red-700 hover:bg-red-100"
                               >
                                 <X size={14} />
                               </button>
@@ -515,7 +515,7 @@ export default function LivreursPage() {
                     )}
 
                     {dossier.piecesManquantes.length > 0 && (
-                      <p className="text-sm text-amber-300">
+                      <p className="text-sm text-amber-700">
                         {t('remainingToValidate')}:{' '}
                         {dossier.piecesAttendues
                           .filter((attendue) => dossier.piecesManquantes.includes(attendue.type))
@@ -524,8 +524,8 @@ export default function LivreursPage() {
                       </p>
                     )}
 
-                    <div className="border-t border-gray-700 pt-4 space-y-3">
-                      <label htmlFor={`motif-${livreur.id}`} className="block text-sm text-gray-400">
+                    <div className="border-t border-gray-200 pt-4 space-y-3">
+                      <label htmlFor={`motif-${livreur.id}`} className="block text-sm text-gray-500">
                         {t('reasonLabel')}
                       </label>
                       <input
@@ -533,7 +533,7 @@ export default function LivreursPage() {
                         value={motif}
                         onChange={(e) => setMotif(e.target.value)}
                         placeholder={t('reasonPlaceholder')}
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
+                        className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm"
                       />
 
                       <div className="flex flex-wrap gap-2">

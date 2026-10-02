@@ -113,24 +113,24 @@ export default function TableauDeBordZupDrive() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="flex items-center gap-2 text-3xl font-bold text-white">
+        <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-900">
           <Car className="h-8 w-8" />
           {t('titre')}
         </h1>
-        <p className="mt-2 text-gray-400">{t('sousTitre')}</p>
+        <p className="mt-2 text-gray-500">{t('sousTitre')}</p>
       </div>
 
       {erreur && (
-        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-900/20 p-4 text-red-400">
+        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-50 p-4 text-red-600">
           {erreur}
         </div>
       )}
 
-      {!chiffres && !erreur && <p className="text-gray-400">{t('chargement')}</p>}
+      {!chiffres && !erreur && <p className="text-gray-500">{t('chargement')}</p>}
 
       {chiffres?.chauffeurs && (
         <section className="space-y-4" aria-labelledby="bloc-chauffeurs">
-          <h2 id="bloc-chauffeurs" className="text-xl font-semibold text-white">
+          <h2 id="bloc-chauffeurs" className="text-xl font-semibold text-gray-900">
             {t('chauffeurs.titre')}
           </h2>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -154,24 +154,24 @@ export default function TableauDeBordZupDrive() {
             <Tuile libelle={t('chauffeurs.societesValidees')} valeur={chiffres.chauffeurs.societes.VALIDE ?? 0} />
           </div>
 
-          <div className="rounded-lg border border-gray-700 bg-gray-800">
-            <h3 className="flex items-center gap-2 border-b border-gray-700 px-4 py-3 text-sm font-semibold text-gray-300">
+          <div className="rounded-lg border border-gray-200 bg-white">
+            <h3 className="flex items-center gap-2 border-b border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700">
               <Clock size={16} />
               {t('chauffeurs.plusAnciens')}
             </h3>
             {chiffres.chauffeurs.enAttente.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-gray-400">{t('chauffeurs.aucunEnAttente')}</p>
+              <p className="px-4 py-6 text-center text-sm text-gray-500">{t('chauffeurs.aucunEnAttente')}</p>
             ) : (
-              <ul className="divide-y divide-gray-700">
+              <ul className="divide-y divide-gray-100">
                 {chiffres.chauffeurs.enAttente.map((dossier) => (
                   <li key={dossier.id}>
                     <Link
                       href={`/superowner/zupdrive/chauffeurs/${dossier.id}`}
-                      className="flex items-center justify-between gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-gray-700/50 hover:no-underline"
+                      className="flex items-center justify-between gap-3 px-4 py-3 text-sm text-gray-800 hover:bg-gray-50 hover:no-underline"
                     >
                       <span className="min-w-0">
-                        <span className="block truncate font-medium text-white">{dossier.nomComplet}</span>
-                        <span className="text-xs text-gray-400">
+                        <span className="block truncate font-medium text-gray-900">{dossier.nomComplet}</span>
+                        <span className="text-xs text-gray-500">
                           {dossier.soumisLe ? t('chauffeurs.soumisLe', { date: date(dossier.soumisLe) }) : ''}
                           {' · '}
                           {t('chauffeurs.pieces', { validees: dossier.piecesValidees, exigees: dossier.piecesExigees })}
@@ -189,7 +189,7 @@ export default function TableauDeBordZupDrive() {
 
       {chiffres?.courses && (
         <section className="space-y-4" aria-labelledby="bloc-courses">
-          <h2 id="bloc-courses" className="text-xl font-semibold text-white">
+          <h2 id="bloc-courses" className="text-xl font-semibold text-gray-900">
             {t('courses.titre')}
           </h2>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -203,27 +203,27 @@ export default function TableauDeBordZupDrive() {
             <Tuile libelle={t('courses.terminees')} valeur={chiffres.courses.parStatut.TERMINEE ?? 0} />
           </div>
 
-          <div className="rounded-lg border border-gray-700 bg-gray-800">
-            <h3 className="flex items-center justify-between gap-2 border-b border-gray-700 px-4 py-3 text-sm font-semibold text-gray-300">
+          <div className="rounded-lg border border-gray-200 bg-white">
+            <h3 className="flex items-center justify-between gap-2 border-b border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700">
               <span className="flex items-center gap-2">
                 <Navigation size={16} />
                 {t('courses.dernieres')}
               </span>
-              <Link href="/superowner/zupdrive/courses" className="text-xs font-normal text-blue-400">
+              <Link href="/superowner/zupdrive/courses" className="text-xs font-normal text-blue-600">
                 {t('courses.toutes')}
               </Link>
             </h3>
             {chiffres.courses.dernieres.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-gray-400">{t('courses.aucune')}</p>
+              <p className="px-4 py-6 text-center text-sm text-gray-500">{t('courses.aucune')}</p>
             ) : (
-              <ul className="divide-y divide-gray-700">
+              <ul className="divide-y divide-gray-100">
                 {chiffres.courses.dernieres.map((course) => (
-                  <li key={course.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm text-gray-200">
+                  <li key={course.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm text-gray-800">
                     <span className="min-w-0">
                       <span className="block truncate">
                         {course.departAdresse} → {course.arriveeAdresse}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-500">
                         {new Date(course.createdAt).toLocaleString('fr-FR')} · {tCourses(`statut.${course.statut}`)}
                       </span>
                     </span>
@@ -242,13 +242,13 @@ export default function TableauDeBordZupDrive() {
 function Tuile({ libelle, valeur, accent, href }: { libelle: string; valeur: number; accent?: boolean; href?: string }) {
   const contenu = (
     <>
-      <p className="text-sm text-gray-400">{libelle}</p>
-      <p className={`mt-2 text-3xl font-bold ${accent ? 'text-amber-400' : 'text-white'}`}>{valeur}</p>
+      <p className="text-sm text-gray-500">{libelle}</p>
+      <p className={`mt-2 text-3xl font-bold ${accent ? 'text-amber-600' : 'text-gray-900'}`}>{valeur}</p>
     </>
   );
-  const classes = 'block rounded-lg border border-gray-700 bg-gray-800 p-5';
+  const classes = 'block rounded-lg border border-gray-200 bg-white p-5';
   return href ? (
-    <Link href={href} className={`${classes} hover:border-gray-500 hover:no-underline`}>
+    <Link href={href} className={`${classes} hover:border-gray-400 hover:no-underline`}>
       {contenu}
     </Link>
   ) : (
