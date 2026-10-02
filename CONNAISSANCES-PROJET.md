@@ -549,7 +549,7 @@ qu'elle a bougé.** C'est ce qui attrape les fonctionnalités en trompe-l'œil.
 | | Suites | Contrôles |
 |---|---|---|
 | **API** (`backend/scripts/verification/`) | 57 | **1949** |
-| **Navigateur** (`frontend/scripts/`) | 34 | **716** au dernier décompte complet (24 septembre) |
+| **Navigateur** (`frontend/scripts/`) | 34 | **942**, toutes vertes le 2 octobre |
 
 Dernier passage de la suite d'API : **27 septembre**, tout est vert — 1841
 contrôles dans la suite complète, plus les 31 de `verif-paiement`, qui se joue
@@ -557,26 +557,48 @@ contrôles dans la suite complète, plus les 31 de `verif-paiement`, qui se joue
 dans la suite complète est attendue. Rejouée aussi sous Windows, session
 PostgreSQL en UTC (voir le `LISEZ-MOI`).
 
-La suite navigateur n'a pas été rejouée en entier depuis le 24 septembre (716
-contrôles, alors 27 suites ; il y en a 34 aujourd'hui). Le **2 octobre**, les
-suites des espaces connectés ont été rejouées et sont vertes :
+Le **2 octobre**, les 34 suites navigateur ont été rejouées une à une, chacune
+sur une base remise à zéro : **942 contrôles, tous verts**.
 
-| Suite | Contrôles |
-|---|---|
-| `verif-ecran-cuisine` | 24 |
-| `verif-tableau-de-bord` | 16 |
-| `verif-courses-livreur` | 16 (réparée) |
-| `verif-commandes-direct` | 8 (réparée) |
-| `verif-catalogue-support-direct` | 15 (réparée) |
-| `verif-session-perimee` | 9 (réparée) |
-| `verif-espace-administration` | 91, sur le jeu de démonstration |
-| `verif-menu-merchant` | 22, sur le jeu de démonstration |
+| Suite | Contrôles | | Suite | Contrôles |
+|---|---|---|---|---|
+| `verif-carte-suivi` | 15 (réparée) | | `verif-note-livreur` | 32 (réparée) |
+| `verif-carte-zones` | 26 | | `verif-paniers` | 24 |
+| `verif-catalogue-support-direct` | 15 (réparée) | | `verif-preuve-livraison` | 42 (réparée) |
+| `verif-cloche` | 32 (réparée) | | `verif-profil-commercant` | 39 |
+| `verif-commande-invite` | 30 | | `verif-session-perimee` | 9 (réparée) |
+| `verif-commandes-direct` | 8 (réparée) | | `verif-suivi-client` | 14 (réparée) |
+| `verif-compte-restreint` | 21 | | `verif-tableau-de-bord` | 16 |
+| `verif-courses-livreur` | 16 (réparée) | | `verif-validation-livreurs` | 38 |
+| `verif-creneaux-retrait` | 13 | | `verif-versements-livreurs` | 37 |
+| `verif-declinaisons` | 30 (réparée) | | `verif-vitrine-unique` | 15 (réparée) |
+| `verif-domaines` | 57, site à six domaines | | `verif-webhooks` | 27 |
+| `verif-ecran-cuisine` | 24 | | `verif-zones-livraison` | 26 |
+| `verif-espace-administration` | 91, jeu de démonstration | | `verif-zupdrive-chauffeur` | 37 |
+| `verif-fiche-boutique` | 36 | | `verif-zupdrive-courses` | 26 |
+| `verif-formules-pages` | 30 (réparée) | | `verif-zupdrive-societe` | 35 |
+| `verif-horaires-genre` | 29 | | `verif-menu-merchant` | 22, jeu de démonstration |
+| `verif-menu-restaurant` | 18 | | `verif-mot-de-passe-oublie` | 12 |
 
-Les réparations : trois suites ne savaient plus ouvrir de session (voir
-« Pièges »), et `verif-courses-livreur` créait une commande sans la position de
-son adresse, que l'API exige désormais. Le jeu de démonstration
-(`backend/scripts/seed-demo.mjs`) ne créait plus aucune commande : elles
-n'avaient pas d'articles, que l'API exige pour en recalculer les prix.
+Aucune réparation ne venait d'une régression du produit : les scripts
+suivaient un parcours que des règles plus strictes refusent désormais.
+- **Session** : poser le jeton dans `localStorage` ne connecte plus personne,
+  et changer de compte par le formulaire non plus (`/login` renvoie ailleurs
+  qui est déjà connecté). D'où `connecterNavigateur()` (voir « Pièges »).
+- **Commande sans session** : elle n'entre plus dans l'historique du compte
+  qui porte la même adresse ; les suites de suivi commandent connectées.
+- **Livraison** : le livreur n'emporte qu'une commande déclarée prête
+  (`declarerPrete()`, `outils-livreur.mjs`), et le client ne voit sa position
+  qu'une fois la commande récupérée. Une commande exige aussi la position de
+  son adresse.
+- **Photo de dépôt** : servie par lien signé sous `/api/files`, plus sous
+  `/uploads`.
+- **Écrans refondus** : les déclinaisons sont dans le panneau du plat, et la
+  grille des formules n'a plus qu'un bouton « Enregistrer ».
+
+Le jeu de démonstration (`backend/scripts/seed-demo.mjs`) ne créait plus
+aucune commande : elles n'avaient pas d'articles, que l'API exige pour en
+recalculer les prix.
 
 Trois réglages rendent les suites indépendantes des nouveautés du produit :
 - la remise à zéro pose une configuration aux **frais de service nuls**
@@ -592,8 +614,8 @@ Trois réglages rendent les suites indépendantes des nouveautés du produit :
 Les suites navigateur ont besoin de `DATABASE_URL` (même base que l'API),
 pour valider leurs commerces.
 
-`verif-domaines` n'a pas tourné : il demande un site construit avec les
-trois domaines.
+`verif-domaines` demande un site lancé avec les six domaines (voir le
+`LISEZ-MOI`), et Next 16 refuse un second `next dev` dans le même dossier.
 
 Depuis la refonte d'identité, `/auth/signup` ne crée plus d'organisation.
 Les suites s'inscrivent par `inscription()` (API, `outils.mjs`) et
@@ -1056,7 +1078,12 @@ ensuite avec le mauvais compte — un 404 « aucun profil livreur » que rien da
 le scénario n'explique. Chaque rôle prend son `nav.newContext()`, et s'y
 connecte par `connecterNavigateur()` (`frontend/scripts/inscription.mjs`) :
 poser `accessToken` dans `localStorage` ne connecte plus personne, le jeton
-d'accès ne vivant qu'en mémoire.
+d'accès ne vivant qu'en mémoire. Changer de compte dans la même page par le
+formulaire ne marche pas davantage : `/login` renvoie ailleurs qui est déjà
+connecté, le formulaire n'est jamais envoyé, et l'on regarde en silence
+l'espace du compte précédent (une alerte de la plateforme semblait ainsi
+« fuir » chez un commerçant). `connecterNavigateur()` remplace la session et
+retient le commerce du compte (`currentOrgId`), comme le formulaire.
 
 À savoir pour les vérifications : **les tuiles sont bloquées dans le bac à
 sable**. Les suites navigateur ne les contrôlent donc pas — elles contrôlent ce

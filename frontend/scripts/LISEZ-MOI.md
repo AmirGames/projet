@@ -82,13 +82,17 @@ cd backend && node scripts/verification/reinitialiser.mjs
 ## La répartition par domaine
 
 `verif:domaines` a ses propres prérequis : le site doit tourner **avec les
-trois domaines renseignés**, les mêmes que ceux passés au script.
+six domaines renseignés**, les mêmes que ceux passés au script. Sans la
+vitrine du groupe et ZupDrive, une dizaine de contrôles échouent alors que le
+routage est juste.
 
 ```bash
 NEXT_PUBLIC_DOMAINE_PUBLIC=monsite.local \
 NEXT_PUBLIC_DOMAINE_PRO=commercant.monsite.local \
 NEXT_PUBLIC_DOMAINE_LIVREUR=livreur.monsite.local \
 NEXT_PUBLIC_DOMAINE_CHAUFFEUR=chauffeur.drive.local \
+NEXT_PUBLIC_DOMAINE_VITRINE=groupe.local \
+NEXT_PUBLIC_DOMAINE_DRIVE=drive.local \
 npm run dev
 
 # dans un autre terminal, les mêmes valeurs
@@ -96,8 +100,13 @@ NEXT_PUBLIC_DOMAINE_PUBLIC=monsite.local \
 NEXT_PUBLIC_DOMAINE_PRO=commercant.monsite.local \
 NEXT_PUBLIC_DOMAINE_LIVREUR=livreur.monsite.local \
 NEXT_PUBLIC_DOMAINE_CHAUFFEUR=chauffeur.drive.local \
+NEXT_PUBLIC_DOMAINE_VITRINE=groupe.local \
+NEXT_PUBLIC_DOMAINE_DRIVE=drive.local \
 npm run verif:domaines
 ```
+
+Next 16 refuse un second `next dev` dans le même dossier : arrêter d'abord le
+site lancé pour les autres suites.
 
 Ce script-là n'a pas besoin de Playwright : il forge l'en-tête `Host`
 directement, sans rien résoudre — inutile donc de toucher au fichier `hosts`
