@@ -9,7 +9,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia } from './inscription.mjs';
+import { inscriptionVia, connecterNavigateur } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -80,12 +80,11 @@ page.on('console', (m) => {
   if (m.type() === 'error') erreurs.push(`${new URL(page.url()).pathname} : ${m.text()}`);
 });
 
+// Comme un vrai navigateur, par le cookie de renouvellement : changer de
+// compte par le formulaire ne marche plus, /login renvoie ailleurs qui est
+// déjà connecté, et le compte précédent restait ouvert.
 const connecter = async (email) => {
-  await page.goto(`${SITE}/login`);
-  await page.fill('input[type="email"]', email);
-  await page.fill('input[type="password"]', MDP);
-  await page.click('button[type="submit"]');
-  await page.waitForTimeout(3000);
+  await connecterNavigateur(page, SITE, { email, password: MDP });
 };
 
 // ===== Côté plateforme =====
@@ -150,7 +149,7 @@ await page.waitForTimeout(300);
 
 const champs = sectionPremium.locator('input[aria-label^="Argument"]');
 await champs.last().fill(`Livraison offerte ${uniq}`);
-await sectionPremium.locator('button', { hasText: 'Enregistrer' }).first().click();
+await boutonPremium.first().click();
 await page.waitForTimeout(2500);
 
 const avecArgument = await appeler('/api/superowner/plans', {
@@ -167,12 +166,7 @@ check(
 titre('Un quota sous l’existant est refusé');
 await page.locator('#quota-FREE').fill('0');
 await page.waitForTimeout(300);
-await page
-  .locator('section')
-  .filter({ hasText: 'FREE' })
-  .locator('button', { hasText: 'Enregistrer' })
-  .first()
-  .click();
+await boutonPremium.first().click();
 await page.waitForTimeout(2500);
 
 const refus = await page.locator('body').innerText();

@@ -134,7 +134,8 @@ export async function ouvrirToutLeJour(appeler, storeId, jeton) {
  * en mémoire seulement (lib/jeton-session.ts) : poser `accessToken` dans
  * localStorage ne suffit plus, l'appli renvoie vers la connexion. La page se
  * connecte donc par la même route que le formulaire, qui pose le cookie, puis
- * marque la session ouverte pour que l'appli la retrouve au chargement.
+ * marque la session ouverte pour que l'appli la retrouve au chargement, et
+ * retient le commerce du compte comme le fait le formulaire.
  *
  * À appeler avant d'ouvrir la page voulue. Renvoie le statut de la connexion.
  */
@@ -148,7 +149,14 @@ export async function connecterNavigateur(page, site, { email, password }) {
         body: JSON.stringify({ email: courriel, password: motDePasse }),
         credentials: 'same-origin',
       });
-      if (reponse.ok) localStorage.setItem('sessionOuverte', '1');
+      if (reponse.ok) {
+        localStorage.setItem('sessionOuverte', '1');
+        // Comme le formulaire : le commerce du compte devient le commerce
+        // courant, sans quoi l'espace commerçant n'a aucune boutique à montrer.
+        const donnees = await reponse.json().catch(() => null);
+        if (donnees?.organization?.id) localStorage.setItem('currentOrgId', donnees.organization.id);
+        else localStorage.removeItem('currentOrgId');
+      }
       return reponse.status;
     },
     [email, password]

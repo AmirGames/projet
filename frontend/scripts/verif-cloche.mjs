@@ -10,7 +10,7 @@
  */
 
 import { chromium } from 'playwright';
-import { inscriptionVia } from './inscription.mjs';
+import { inscriptionVia, connecterNavigateur } from './inscription.mjs';
 
 const SITE = process.env.VERIF_SITE_URL || 'http://localhost:3000';
 const API = process.env.VERIF_API_URL || 'http://localhost:3001';
@@ -82,12 +82,11 @@ page.on('console', (m) => {
   if (m.type() === 'error') erreurs.push(`${new URL(page.url()).pathname} : ${m.text()}`);
 });
 
+// Comme un vrai navigateur, par le cookie de renouvellement : changer de
+// compte par le formulaire ne marche plus, /login renvoie ailleurs qui est
+// déjà connecté, et le compte précédent restait ouvert.
 const connecter = async (email) => {
-  await page.goto(`${SITE}/login`);
-  await page.fill('input[type="email"]', email);
-  await page.fill('input[type="password"]', MDP);
-  await page.click('button[type="submit"]');
-  await page.waitForTimeout(3000);
+  await connecterNavigateur(page, SITE, { email, password: MDP });
 };
 
 const cloche = () => page.locator('button[aria-label^="Notifications"]');
