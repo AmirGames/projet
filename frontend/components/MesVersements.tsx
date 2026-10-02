@@ -80,9 +80,9 @@ export function MesVersements() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">{t('notYetStopped')}</p>
+            <p className="text-gray-500 text-sm">{t('notYetStopped')}</p>
             <Hourglass size={18} className="text-gray-500" />
           </div>
           <p className="text-3xl font-bold">{euro(situation.duNonArrete)}</p>
@@ -93,41 +93,41 @@ export function MesVersements() {
           </p>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">{t('pendingPayout')}</p>
+            <p className="text-gray-500 text-sm">{t('pendingPayout')}</p>
             <Clock size={18} className="text-amber-500" />
           </div>
-          <p className="text-3xl font-bold text-amber-300">
+          <p className="text-3xl font-bold text-amber-700">
             {euro(situation.enAttenteDeVersement)}
           </p>
           <p className="text-xs text-gray-500 mt-1">{t('reportStoppedTransferComing')}</p>
         </div>
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-gray-400 text-sm">{t('alreadyPaid')}</p>
+            <p className="text-gray-500 text-sm">{t('alreadyPaid')}</p>
             <Banknote size={18} className="text-green-500" />
           </div>
-          <p className="text-3xl font-bold text-green-400">{euro(situation.verse)}</p>
+          <p className="text-3xl font-bold text-green-600">{euro(situation.verse)}</p>
           <p className="text-xs text-gray-500 mt-1">{t('onYourAccount')}</p>
         </div>
       </div>
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
           <FileText size={20} className="text-orange-500" />
           {t('yourReports')}
         </h2>
 
         {situation.releves.length === 0 ? (
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-500 text-sm">
             {t('noReportsYet')}
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-gray-400 border-b border-gray-700">
+              <thead className="text-gray-500 border-b border-gray-200">
                 <tr>
                   <th className="text-left py-2">{t('period')}</th>
                   <th className="text-right py-2">{t('deliveries')}</th>
@@ -135,21 +135,21 @@ export function MesVersements() {
                   <th className="text-left py-2 pl-4">{t('status')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700">
+              <tbody className="divide-y divide-gray-100">
                 {situation.releves.map((releve) => (
                   <tr key={releve.id}>
                     <td className="py-3">{periode(releve)}</td>
-                    <td className="py-3 text-right text-gray-400">{releve.deliveryCount}</td>
+                    <td className="py-3 text-right text-gray-500">{releve.deliveryCount}</td>
                     <td className="py-3 text-right font-bold">{euro(releve.amount)}</td>
                     <td className="py-3 pl-4">
                       {releve.status === 'PAID' ? (
-                        <span className="text-green-400">
+                        <span className="text-green-600">
                           {t('paidOn')} {jour(releve.paidAt as string)}
                           {releve.methodLibelle ? ` · ${releve.methodLibelle}` : ''}
                           {releve.reference ? ` · ${releve.reference}` : ''}
                         </span>
                       ) : (
-                        <span className="text-amber-300">{t('pendingPayout')}</span>
+                        <span className="text-amber-700">{t('pendingPayout')}</span>
                       )}
                     </td>
                   </tr>

@@ -109,13 +109,13 @@ export default function SupportLivreurPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         <div className="flex items-center gap-3">
           <LifeBuoy className="text-orange-500" size={28} />
           <div>
-            <h1 className="text-2xl font-bold text-white">Support en direct</h1>
-            <p className="text-gray-400 text-sm">
+            <h1 className="text-2xl font-bold text-gray-900">Support en direct</h1>
+            <p className="text-gray-500 text-sm">
               Un souci pendant une course ? Écrivez-nous, la course en cours est jointe automatiquement.
             </p>
           </div>
@@ -127,7 +127,7 @@ export default function SupportLivreurPage() {
               <button
                 key={sujet}
                 onClick={() => envoyer(sujet)}
-                className="px-3 py-1.5 bg-gray-800 border border-gray-700 hover:border-orange-600 rounded-full text-sm text-gray-200"
+                className="px-3 py-1.5 bg-white border border-gray-200 hover:border-orange-600 rounded-full text-sm text-gray-800"
               >
                 {sujet}
               </button>
@@ -136,7 +136,7 @@ export default function SupportLivreurPage() {
         )}
 
         {erreur && (
-          <div className="bg-red-900/30 border border-red-700/50 text-red-200 rounded-lg p-3 text-sm">{erreur}</div>
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm">{erreur}</div>
         )}
 
         {chargement ? (
@@ -145,6 +145,7 @@ export default function SupportLivreurPage() {
           </div>
         ) : (
           <FilSupport
+                clair
             messages={messages}
             moi="DRIVER"
             surEnvoi={envoyer}

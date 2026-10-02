@@ -73,39 +73,39 @@ export function AnnulerCourse({ deliveryId, onSuccess, onCancel }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full shadow-xl">
-        <div className="p-6 border-b border-gray-700">
+      <div className="bg-white border border-gray-200 rounded-lg max-w-md w-full shadow-xl">
+        <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <AlertCircle size={24} className="text-red-500" />
               Annuler la course
             </h2>
             <button
               onClick={onCancel}
-              className="text-gray-400 hover:text-gray-300"
+              className="text-gray-500 hover:text-gray-700"
             >
               <X size={24} />
             </button>
           </div>
-          <p className="text-sm text-gray-400 mt-2">
+          <p className="text-sm text-gray-500 mt-2">
             Indiquez la raison de l'annulation. Un autre livreur sera proposé au restaurant.
           </p>
         </div>
 
         <div className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-900/20 border border-red-600/30 rounded p-3 text-sm text-red-400">
+            <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-600">
               {error}
             </div>
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-300">Raison d'annulation</label>
+            <label className="text-sm font-semibold text-gray-700">Raison d'annulation</label>
             <div className="space-y-2">
               {reasons.map((reason) => (
                 <label
                   key={reason}
-                  className="flex items-center gap-3 p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg cursor-pointer transition"
+                  className="flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg cursor-pointer transition"
                 >
                   <input
                     type="radio"
@@ -120,7 +120,7 @@ export function AnnulerCourse({ deliveryId, onSuccess, onCancel }: Props) {
                     }}
                     className="w-4 h-4"
                   />
-                  <span className="text-gray-300">{reason}</span>
+                  <span className="text-gray-700">{reason}</span>
                 </label>
               ))}
             </div>
@@ -128,24 +128,24 @@ export function AnnulerCourse({ deliveryId, onSuccess, onCancel }: Props) {
 
           {selectedReason === 'Autre' && (
             <div>
-              <label className="text-sm font-semibold text-gray-300 block mb-2">
+              <label className="text-sm font-semibold text-gray-700 block mb-2">
                 Précisez la raison
               </label>
               <textarea
                 value={customReason}
                 onChange={(e) => setCustomReason(e.target.value)}
                 placeholder="Décrivez brièvement..."
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg p-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500"
                 rows={3}
               />
             </div>
           )}
         </div>
 
-        <div className="p-6 border-t border-gray-700 flex gap-2">
+        <div className="p-6 border-t border-gray-200 flex gap-2">
           <button
             onClick={onCancel}
-            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition"
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold py-2 rounded-lg transition"
           >
             Continuer la course
           </button>

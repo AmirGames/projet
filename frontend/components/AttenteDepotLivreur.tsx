@@ -59,12 +59,12 @@ export function AttenteDepotLivreur({
   };
 
   return (
-    <div className="mt-2 rounded-lg border border-gray-700 bg-gray-900/60 p-3 space-y-2">
-      <p className="text-sm font-semibold text-white">Le client ne répond pas ?</p>
-      {erreur && <p className="text-sm text-red-400">{erreur}</p>}
+    <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
+      <p className="text-sm font-semibold text-gray-900">Le client ne répond pas ?</p>
+      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
       {reste == null ? (
         <>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             Appelez-le. Sans réponse, lancez l&apos;attente : il est prévenu et voit le compte à rebours. Au bout de 6
             minutes, vous pourrez déposer la commande en lieu sûr.
           </p>
@@ -72,15 +72,15 @@ export function AttenteDepotLivreur({
             type="button"
             onClick={lancer}
             disabled={envoi}
-            className="w-full rounded-lg bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+            className="w-full rounded-lg bg-gray-900 py-2 font-semibold text-white hover:bg-black disabled:opacity-60"
           >
             ⏱ Lancer l&apos;attente (6 min)
           </button>
         </>
       ) : reste > 0 ? (
         <div className="text-center">
-          <p className="text-sm text-amber-200">Le client est prévenu. Attendez encore</p>
-          <p className="text-3xl font-bold tabular-nums text-amber-300">
+          <p className="text-sm text-amber-800">Le client est prévenu. Attendez encore</p>
+          <p className="text-3xl font-bold tabular-nums text-amber-700">
             {Math.floor(reste / 60)}:{String(reste % 60).padStart(2, '0')}
           </p>
         </div>

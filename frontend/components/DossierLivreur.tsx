@@ -42,35 +42,35 @@ const ETATS: Record<string, { titre: string; texte: string; couleur: string }> =
     titre: 'Dossier en cours de validation',
     texte:
       'Déposez les pièces demandées. Tant que la plateforme ne les a pas validées, vous ne pouvez pas prendre de course.',
-    couleur: 'border-amber-700/50 bg-amber-900/20 text-amber-200',
+    couleur: 'border-amber-200 bg-amber-50 text-amber-800',
   },
   ACTIVE: {
     titre: 'Compte validé',
     texte: 'Vous pouvez vous mettre en ligne et recevoir des courses.',
-    couleur: 'border-green-700/50 bg-green-900/20 text-green-200',
+    couleur: 'border-green-200 bg-green-50 text-green-800',
   },
   REJECTED: {
     titre: 'Dossier refusé',
     texte: 'Corrigez les pièces signalées et déposez-les à nouveau.',
-    couleur: 'border-red-700/50 bg-red-900/20 text-red-200',
+    couleur: 'border-red-200 bg-red-50 text-red-800',
   },
   SUSPENDED: {
     titre: 'Compte suspendu',
     texte: 'Vous ne recevez plus de course.',
-    couleur: 'border-red-700/50 bg-red-900/20 text-red-200',
+    couleur: 'border-red-200 bg-red-50 text-red-800',
   },
   INACTIVE: {
     titre: 'Compte désactivé',
     texte: 'Contactez la plateforme pour le rétablir.',
-    couleur: 'border-gray-700 bg-gray-800 text-gray-300',
+    couleur: 'border-gray-200 bg-white text-gray-700',
   },
 };
 
 const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
-  APPROVED: { icone: Check, classe: 'text-green-400', libelle: 'Validée' },
-  REJECTED: { icone: X, classe: 'text-red-400', libelle: 'Refusée' },
-  EXPIRED: { icone: AlertCircle, classe: 'text-amber-400', libelle: 'Expirée' },
-  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: "En attente d'examen" },
+  APPROVED: { icone: Check, classe: 'text-green-600', libelle: 'Validée' },
+  REJECTED: { icone: X, classe: 'text-red-600', libelle: 'Refusée' },
+  EXPIRED: { icone: AlertCircle, classe: 'text-amber-600', libelle: 'Expirée' },
+  PENDING: { icone: Clock, classe: 'text-gray-500', libelle: "En attente d'examen" },
 };
 
 export function DossierLivreur({ surChangement }: { surChangement?: () => void }) {
@@ -200,8 +200,8 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
 
       {/* Validé, le dossier n'a plus besoin d'être déroulé à chaque visite. */}
       {dossier.status !== 'ACTIVE' && (
-        <div className="bg-gray-800 rounded-lg p-6 space-y-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+        <div className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-4">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <FileText size={20} className="text-orange-500" />
             Vos pièces
           </h2>
@@ -215,19 +215,19 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
               return (
                 <li
                   key={attendue.type}
-                  className="flex items-start justify-between gap-3 rounded bg-gray-700/50 px-3 py-2"
+                  className="flex items-start justify-between gap-3 rounded bg-gray-50 px-3 py-2"
                 >
                   <div className="min-w-0">
-                    <p className="text-white text-sm font-medium">{attendue.libelle}</p>
+                    <p className="text-gray-900 text-sm font-medium">{attendue.libelle}</p>
                     {piece ? (
                       <>
                         <p className={`text-xs ${marque?.classe}`}>{marque?.libelle}</p>
                         {piece.reviewNote && (
-                          <p className="text-xs text-red-300 mt-1">{piece.reviewNote}</p>
+                          <p className="text-xs text-red-700 mt-1">{piece.reviewNote}</p>
                         )}
                       </>
                     ) : (
-                      <p className="text-xs text-gray-400">Pas encore déposée</p>
+                      <p className="text-xs text-gray-500">Pas encore déposée</p>
                     )}
                   </div>
 
@@ -237,22 +237,22 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
             })}
           </ul>
 
-          <form onSubmit={deposer} className="space-y-3 border-t border-gray-700 pt-4">
+          <form onSubmit={deposer} className="space-y-3 border-t border-gray-200 pt-4">
             {erreur && (
-              <p role="status" className="text-sm text-red-400">
+              <p role="status" className="text-sm text-red-600">
                 {erreur}
               </p>
             )}
 
             <div>
-              <label htmlFor="piece-type" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="piece-type" className="block text-sm text-gray-500 mb-1">
                 Pièce à déposer
               </label>
               <select
                 id="piece-type"
                 value={formulaire.type}
                 onChange={(e) => setFormulaire({ ...formulaire, type: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
               >
                 <option value="">Choisir…</option>
                 {dossier.piecesAttendues.map((attendue) => (
@@ -263,7 +263,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
               </select>
             </div>
 
-            <div className="bg-gray-700/30 border border-gray-600 rounded p-3">
+            <div className="bg-gray-50 border border-gray-300 rounded p-3">
               <div className="flex gap-2 mb-3">
                 <button
                   type="button"
@@ -271,7 +271,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                   className={`flex-1 px-3 py-1 rounded text-sm font-medium transition ${
                     modeUpload === 'file'
                       ? 'bg-orange-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   Fichier
@@ -282,7 +282,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                   className={`flex-1 px-3 py-1 rounded text-sm font-medium transition ${
                     modeUpload === 'link'
                       ? 'bg-orange-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   Lien URL
@@ -291,7 +291,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
 
               {modeUpload === 'file' ? (
                 <div>
-                  <label htmlFor="piece-fichier" className="block text-sm text-gray-400 mb-1">
+                  <label htmlFor="piece-fichier" className="block text-sm text-gray-500 mb-1">
                     Sélectionner un fichier (JPG, PNG, PDF)
                   </label>
                   {/* Une clé par mode : sans elle, React réutilisait ce champ
@@ -302,17 +302,17 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                     type="file"
                     accept=".jpg,.jpeg,.png,.webp,.pdf"
                     onChange={(e) => setFichier(e.target.files?.[0] || null)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm file:bg-gray-600 file:border-0 file:px-2 file:py-1 file:text-white file:cursor-pointer"
+                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 text-sm file:bg-gray-200 file:border-0 file:px-2 file:py-1 file:text-gray-900 file:cursor-pointer"
                   />
                   {fichier && (
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-500 mt-1">
                       Fichier sélectionné: {fichier.name} ({Math.round(fichier.size / 1024)} KB)
                     </p>
                   )}
                 </div>
               ) : (
                 <div>
-                  <label htmlFor="piece-lien" className="block text-sm text-gray-400 mb-1">
+                  <label htmlFor="piece-lien" className="block text-sm text-gray-500 mb-1">
                     Lien vers le document
                   </label>
                   <input
@@ -322,14 +322,14 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                     value={formulaire.documentUrl}
                     onChange={(e) => setFormulaire({ ...formulaire, documentUrl: e.target.value })}
                     placeholder="https://…"
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                    className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
                   />
                 </div>
               )}
             </div>
 
             <div>
-              <label htmlFor="piece-expiration" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="piece-expiration" className="block text-sm text-gray-500 mb-1">
                 Date d&apos;expiration (si la pièce en a une)
               </label>
               <input
@@ -337,7 +337,7 @@ export function DossierLivreur({ surChangement }: { surChangement?: () => void }
                 type="date"
                 value={formulaire.expiryDate}
                 onChange={(e) => setFormulaire({ ...formulaire, expiryDate: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
               />
             </div>
 

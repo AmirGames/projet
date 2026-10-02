@@ -13,6 +13,8 @@ export interface Colonne {
 }
 
 interface Props {
+  /** Sur une page claire (espace livreur) : cadre, textes et grille en clair. */
+  clair?: boolean;
   titre: string;
   colonnes: Colonne[];
   format: (valeur: number) => string;
@@ -46,7 +48,7 @@ const ACCENT = '#ea580c';
  * infobulle au survol ou au focus clavier, et une vue tableau pour qui ne
  * lit pas le graphique.
  */
-export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format, mesure, hauteur = 180, messageVide = 'Aucune course sur la période' }: Props) {
+export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format, mesure, hauteur = 180, messageVide = 'Aucune course sur la période', clair = false }: Props) {
   const [survol, setSurvol] = useState<number | null>(null);
   const [tableau, setTableau] = useState(false);
 
@@ -60,12 +62,12 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
   const vide = colonnes.every((c) => c.valeur === 0);
 
   return (
-    <figure className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+    <figure className={`rounded-lg p-4 border ${clair ? 'bg-white border-[#ECECEA]' : 'bg-gray-800 border-gray-700'}`}>
       <figcaption className="flex items-center justify-between gap-2 mb-4">
-        <span className="text-white font-semibold">{titre}</span>
+        <span className={`font-semibold ${clair ? 'text-gray-900' : 'text-white'}`}>{titre}</span>
         <button
           onClick={() => setTableau((t) => !t)}
-          className="text-xs text-gray-400 hover:text-white underline"
+          className={`text-xs underline ${clair ? 'text-gray-500 hover:text-gray-900' : 'text-gray-400 hover:text-white'}`}
           aria-pressed={tableau}
         >
           {tableau ? 'Voir le graphique' : 'Voir le tableau'}
@@ -76,16 +78,16 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
         <div className="max-h-72 overflow-y-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-gray-400 text-left">
+              <tr className={`text-left ${clair ? 'text-gray-500' : 'text-gray-400'}`}>
                 <th className="font-medium py-1">Période</th>
                 <th className="font-medium py-1 text-right">{mesure}</th>
               </tr>
             </thead>
             <tbody>
               {colonnes.map((c) => (
-                <tr key={c.labelComplet} className="border-t border-gray-700">
-                  <td className="py-1 text-gray-300">{c.labelComplet}</td>
-                  <td className="py-1 text-right text-gray-100 tabular-nums">{format(c.valeur)}</td>
+                <tr key={c.labelComplet} className={`border-t ${clair ? 'border-gray-100' : 'border-gray-700'}`}>
+                  <td className={`py-1 ${clair ? 'text-gray-700' : 'text-gray-300'}`}>{c.labelComplet}</td>
+                  <td className={`py-1 text-right tabular-nums ${clair ? 'text-gray-900' : 'text-gray-100'}`}>{format(c.valeur)}</td>
                 </tr>
               ))}
             </tbody>
@@ -112,7 +114,7 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
               {graduations.map((g) => (
                 <div
                   key={g}
-                  className="absolute left-0 right-0 border-t border-gray-700"
+                  className={`absolute left-0 right-0 border-t ${clair ? 'border-gray-100' : 'border-gray-700'}`}
                   style={{ bottom: `${(g / plafond) * 100}%` }}
                 />
               ))}
@@ -141,7 +143,7 @@ export function GraphiqueColonnes({ titre, colonnes, format, formatAxe = format,
                       onFocus={() => setSurvol(i)}
                       onBlur={() => setSurvol(null)}
                     >
-                      {actif && <div className="absolute inset-y-0 w-full bg-white/5 rounded" />}
+                      {actif && <div className={`absolute inset-y-0 w-full rounded ${clair ? 'bg-gray-900/5' : 'bg-white/5'}`} />}
                       {c.valeur > 0 && (
                         <div
                           className="relative rounded-t"

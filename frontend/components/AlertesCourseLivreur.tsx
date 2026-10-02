@@ -51,7 +51,7 @@ export function AlertesCourseLivreur() {
     <div
       role="alert"
       className={`fixed top-3 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-xl rounded-lg border p-4 shadow-lg flex gap-3 ${
-        retiree ? 'bg-red-950 border-red-700 text-red-100' : 'bg-amber-950 border-amber-700 text-amber-100'
+        retiree ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'
       }`}
     >
       <AlertTriangle className="flex-shrink-0 mt-0.5" size={20} />

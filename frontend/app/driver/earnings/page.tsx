@@ -85,19 +85,19 @@ export default function RevenusLivreurPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="min-h-screen text-gray-900 p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <Link
             href="/driver"
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-2"
+            className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 text-sm mb-2"
           >
             <ArrowLeft size={16} /> {t('backToDashboard')}
           </Link>
@@ -105,13 +105,13 @@ export default function RevenusLivreurPage() {
             <Wallet size={28} className="text-green-500" />
             {t('title')}
           </h1>
-          <p className="text-gray-400 mt-1">
+          <p className="text-gray-500 mt-1">
             {t('subtitle')}
           </p>
         </div>
 
         {erreur && (
-          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
+          <div className="bg-red-100 border border-red-500/50 rounded-lg p-4 text-red-600">
             {erreur}
           </div>
         )}
@@ -123,29 +123,29 @@ export default function RevenusLivreurPage() {
         {revenus && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <p className="text-gray-400 text-sm mb-2">{t('today')}</p>
-                <p className="text-3xl font-bold text-green-400">{euro(revenus.today)}</p>
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <p className="text-gray-500 text-sm mb-2">{t('today')}</p>
+                <p className="text-3xl font-bold text-green-600">{euro(revenus.today)}</p>
               </div>
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <p className="text-gray-400 text-sm mb-2">{t('thisWeek')}</p>
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <p className="text-gray-500 text-sm mb-2">{t('thisWeek')}</p>
                 <p className="text-3xl font-bold">{euro(revenus.week)}</p>
               </div>
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <p className="text-gray-400 text-sm mb-2">{t('thisMonth')}</p>
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <p className="text-gray-500 text-sm mb-2">{t('thisMonth')}</p>
                 <p className="text-3xl font-bold">{euro(revenus.month)}</p>
               </div>
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <p className="text-gray-400 text-sm mb-2">{t('allTime')}</p>
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <p className="text-gray-500 text-sm mb-2">{t('allTime')}</p>
                 <p className="text-3xl font-bold">{euro(revenus.total)}</p>
               </div>
             </div>
 
             {revenus.pourboires && (
-              <div className="bg-gray-800 border border-yellow-700/50 rounded-lg p-6">
+              <div className="bg-white border border-yellow-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold flex items-center gap-2">
-                    <Gift size={20} className="text-yellow-400" />
+                    <Gift size={20} className="text-yellow-600" />
                     {t('tipsTitle')}
                   </h2>
                   <p className="text-xs text-gray-500">{t('tipsIncluded')}</p>
@@ -158,8 +158,8 @@ export default function RevenusLivreurPage() {
                     ['allTime', revenus.pourboires.total],
                   ] as const).map(([cle, montant]) => (
                     <div key={cle}>
-                      <p className="text-gray-400 text-sm mb-1">{t(cle)}</p>
-                      <p className="text-2xl font-bold text-yellow-400">{euro(montant)}</p>
+                      <p className="text-gray-500 text-sm mb-1">{t(cle)}</p>
+                      <p className="text-2xl font-bold text-yellow-600">{euro(montant)}</p>
                     </div>
                   ))}
                 </div>
@@ -167,16 +167,16 @@ export default function RevenusLivreurPage() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-gray-400 text-sm">{t('deliveriesCompleted')}</p>
+                  <p className="text-gray-500 text-sm">{t('deliveriesCompleted')}</p>
                   <Package size={20} className="text-blue-500" />
                 </div>
                 <p className="text-3xl font-bold">{revenus.deliveryCount}</p>
               </div>
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-gray-400 text-sm">{t('averageRating')}</p>
+                  <p className="text-gray-500 text-sm">{t('averageRating')}</p>
                   <Star size={20} className="text-yellow-500" />
                 </div>
                 {revenus.rating == null ? (
@@ -190,20 +190,20 @@ export default function RevenusLivreurPage() {
               </div>
             </div>
 
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <CalendarDays size={20} className="text-orange-500" />
                 {t('deliveryDetails')}
               </h2>
 
               {revenus.deliveries.length === 0 ? (
-                <p className="text-gray-400">
+                <p className="text-gray-500">
                   {t('noDeliveries')}
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="text-gray-400 border-b border-gray-700">
+                    <thead className="text-gray-500 border-b border-gray-200">
                       <tr>
                         <th className="text-left py-2">{t('order')}</th>
                         <th className="text-left py-2">{t('deliveredOn')}</th>
@@ -211,19 +211,19 @@ export default function RevenusLivreurPage() {
                         <th className="text-right py-2">{t('yourEarning')}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-700">
+                    <tbody className="divide-y divide-gray-100">
                       {revenus.deliveries.map((course) => (
                         <tr key={course.id}>
                           <td className="py-3">{course.orderId.slice(-8).toUpperCase()}</td>
-                          <td className="py-3 text-gray-400">
+                          <td className="py-3 text-gray-500">
                             {new Date(course.deliveredAt).toLocaleString('fr-FR')}
                           </td>
-                          <td className="py-3 text-right text-yellow-400">
+                          <td className="py-3 text-right text-yellow-600">
                             {(course.pourboire ?? 0) + (course.pourboireApres ?? 0) > 0
                               ? euro((course.pourboire ?? 0) + (course.pourboireApres ?? 0))
-                              : <span className="text-gray-600">—</span>}
+                              : <span className="text-gray-400">—</span>}
                           </td>
-                          <td className="py-3 text-right font-bold text-green-400">
+                          <td className="py-3 text-right font-bold text-green-600">
                             {euro(course.earning + (course.pourboireApres ?? 0))}
                           </td>
                         </tr>

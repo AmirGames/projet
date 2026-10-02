@@ -53,28 +53,28 @@ export default function DriverLayout({
   };
 
   if (isLoading) {
-    return <div className="min-h-screen bg-gray-900" />;
+    return <div className="min-h-screen bg-[#F7F7F6]" />;
   }
 
   return (
     <>
-      <div className="min-h-screen bg-gray-900">
+      <div className="min-h-screen bg-[#F7F7F6] text-gray-900">
         {/* Mobile Navigation - Afficher uniquement si authentifié */}
         {afficherBarre && (
-          <nav className="md:hidden bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
+          <nav className="md:hidden bg-white border-b border-[#ECECEA] sticky top-0 z-40">
             <div className="flex items-center justify-between p-4">
-              <SelecteurEspace actuel="driver" href="/driver" className="gap-2 -ml-2 px-2 py-1">
+              <SelecteurEspace actuel="driver" href="/driver" clair className="gap-2 -ml-2 px-2 py-1">
                 <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
                   DR
                 </div>
-                <span className="font-bold text-white">Livreur</span>
+                <span className="font-bold text-gray-900">Livreur</span>
               </SelecteurEspace>
 
               <div className="flex items-center gap-2">
-                <LanguageSwitcher />
+                <LanguageSwitcher clair />
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="p-2 hover:bg-gray-700 rounded-lg"
+                  className="p-2 hover:bg-gray-100 rounded-lg"
                 >
                   {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                 </button>
@@ -83,7 +83,7 @@ export default function DriverLayout({
 
             {/* Mobile Menu */}
             {mobileMenuOpen && (
-              <div className="border-t border-gray-700 pb-4 space-y-2">
+              <div className="border-t border-[#ECECEA] px-2 pb-4 pt-2 space-y-1">
                 {navItems.map(item => {
                   const Icon = item.icon;
                   return (
@@ -91,10 +91,10 @@ export default function DriverLayout({
                       key={item.href}
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 transition ${
+                      className={`flex items-center gap-3 rounded-[10px] px-4 py-3 transition ${
                         isActive(item.href)
-                          ? 'bg-orange-600 text-white'
-                          : 'text-gray-400 hover:text-white'
+                          ? 'bg-orange-50 font-bold text-orange-700'
+                          : 'font-semibold text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                       }`}
                     >
                       <Icon size={20} />
@@ -104,7 +104,7 @@ export default function DriverLayout({
                 })}
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 transition"
+                  className="w-full flex items-center gap-3 rounded-[10px] px-4 py-3 font-semibold text-red-700 transition hover:bg-red-50"
                 >
                   <LogOut size={20} />
                   Déconnexion
@@ -116,13 +116,13 @@ export default function DriverLayout({
 
         {/* Desktop Navigation - Afficher uniquement si authentifié */}
         {afficherBarre && (
-          <nav className="hidden md:block bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
+          <nav className="hidden md:block bg-white border-b border-[#ECECEA] sticky top-0 z-40">
             <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-              <SelecteurEspace actuel="driver" href="/driver" className="gap-2 -ml-2 px-2 py-1">
+              <SelecteurEspace actuel="driver" href="/driver" clair className="gap-2 -ml-2 px-2 py-1">
                 <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">
                   DR
                 </div>
-                <span className="font-bold text-white text-lg">Espace Livreur</span>
+                <span className="font-bold text-gray-900 text-lg">Espace Livreur</span>
               </SelecteurEspace>
 
               <div className="flex items-center gap-4">
@@ -132,10 +132,10 @@ export default function DriverLayout({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition ${
+                      className={`flex items-center gap-2 px-3 py-2 rounded-full transition ${
                         isActive(item.href)
-                          ? 'bg-orange-600 text-white'
-                          : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                          ? 'bg-orange-50 font-bold text-orange-700'
+                          : 'font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                     >
                       <Icon size={18} />
@@ -148,12 +148,12 @@ export default function DriverLayout({
               <div className="flex items-center gap-4">
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition"
+                  className="flex items-center gap-2 rounded-full px-4 py-2 font-semibold text-red-700 transition hover:bg-red-50"
                 >
                   <LogOut size={18} />
                   Déconnexion
                 </button>
-                <LanguageSwitcher />
+                <LanguageSwitcher clair />
               </div>
             </div>
           </nav>

@@ -60,13 +60,13 @@ function Tuile({
   aide?: string;
 }) {
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-      <p className="text-gray-400 text-xs">{label}</p>
-      <p className="text-white text-2xl font-semibold mt-1">{valeur}</p>
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <p className="text-gray-500 text-xs">{label}</p>
+      <p className="text-gray-900 text-2xl font-semibold mt-1">{valeur}</p>
       {delta != null ? (
         // Une hausse est bonne pour toutes ces mesures : vert vers le haut.
         <p
-          className={`text-xs mt-1 flex items-center gap-1 ${delta >= 0 ? 'text-green-400' : 'text-red-400'}`}
+          className={`text-xs mt-1 flex items-center gap-1 ${delta >= 0 ? 'text-green-600' : 'text-red-600'}`}
         >
           {delta >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
           {delta >= 0 ? '+' : ''}
@@ -160,24 +160,24 @@ export default function AnalyticsLivreurPage() {
   const o = donnees?.offres;
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen">
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <BarChart3 className="text-orange-500" size={28} />
             <div>
-              <h1 className="text-2xl font-bold text-white">Statistiques</h1>
-              <p className="text-gray-400 text-sm">Votre activité, vos gains et vos heures fortes</p>
+              <h1 className="text-2xl font-bold text-gray-900">Statistiques</h1>
+              <p className="text-gray-500 text-sm">Votre activité, vos gains et vos heures fortes</p>
             </div>
           </div>
-          <div className="flex gap-1 bg-gray-800 border border-gray-700 rounded-lg p-1" role="group" aria-label="Période">
+          <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1" role="group" aria-label="Période">
             {PERIODES.map((p) => (
               <button
                 key={p.jours}
                 onClick={() => setJours(p.jours)}
                 aria-pressed={jours === p.jours}
                 className={`px-3 py-1.5 rounded-md text-sm font-semibold ${
-                  jours === p.jours ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'
+                  jours === p.jours ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
                 {p.label}
@@ -187,7 +187,7 @@ export default function AnalyticsLivreurPage() {
         </div>
 
         {erreur && (
-          <div className="bg-red-900/30 border border-red-700/50 text-red-200 rounded-lg p-3 text-sm">{erreur}</div>
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm">{erreur}</div>
         )}
 
         {chargement && !donnees ? (
@@ -200,16 +200,16 @@ export default function AnalyticsLivreurPage() {
           o && (
             <>
               {/* Chiffre de tête */}
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                <p className="text-gray-400 text-sm">Gains sur {jours} jours</p>
-                <p className="text-white text-5xl font-semibold mt-1">{euro(r.gains)}</p>
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <p className="text-gray-500 text-sm">Gains sur {jours} jours</p>
+                <p className="text-gray-900 text-5xl font-semibold mt-1">{euro(r.gains)}</p>
                 {r.pourboires > 0 && (
-                  <p className="text-sm text-yellow-400 mt-2">dont {euro(r.pourboires)} de pourboires 🎉</p>
+                  <p className="text-sm text-yellow-600 mt-2">dont {euro(r.pourboires)} de pourboires 🎉</p>
                 )}
                 {variation(r.gains, donnees.precedente.gains) != null && (
                   <p
                     className={`text-sm mt-2 ${
-                      (variation(r.gains, donnees.precedente.gains) ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                      (variation(r.gains, donnees.precedente.gains) ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
                     }`}
                   >
                     {(variation(r.gains, donnees.precedente.gains) ?? 0) >= 0 ? '+' : ''}
@@ -247,12 +247,12 @@ export default function AnalyticsLivreurPage() {
                   }
                 />
                 <Tuile label="Courses annulées" valeur={nombre(r.annulees)} />
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                  <p className="text-gray-400 text-xs">Note moyenne</p>
-                  <p className="text-white text-2xl font-semibold mt-1 flex items-center gap-2">
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <p className="text-gray-500 text-xs">Note moyenne</p>
+                  <p className="text-gray-900 text-2xl font-semibold mt-1 flex items-center gap-2">
                     {donnees.notes.moyenneGlobale != null ? nombre(donnees.notes.moyenneGlobale, 1) : '—'}
                     {donnees.notes.moyenneGlobale != null && (
-                      <Star size={18} className="text-yellow-400" fill="currentColor" aria-hidden />
+                      <Star size={18} className="text-yellow-600" fill="currentColor" aria-hidden />
                     )}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
@@ -263,13 +263,13 @@ export default function AnalyticsLivreurPage() {
                 </div>
 
                 {/* Taux d'acceptation : une jauge, piste du même ton. */}
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                  <p className="text-gray-400 text-xs">Taux d&apos;acceptation</p>
-                  <p className="text-white text-2xl font-semibold mt-1">
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <p className="text-gray-500 text-xs">Taux d&apos;acceptation</p>
+                  <p className="text-gray-900 text-2xl font-semibold mt-1">
                     {o.tauxAcceptation != null ? `${o.tauxAcceptation} %` : '—'}
                   </p>
                   <div
-                    className="mt-2 h-2 rounded-full bg-orange-950"
+                    className="mt-2 h-2 rounded-full bg-orange-50"
                     role="meter"
                     aria-valuemin={0}
                     aria-valuemax={100}
@@ -288,6 +288,7 @@ export default function AnalyticsLivreurPage() {
               </div>
 
               <GraphiqueColonnes
+                clair
                 titre="Gains par jour"
                 colonnes={colonnesGains}
                 format={(v) => euro(v)}
@@ -296,13 +297,14 @@ export default function AnalyticsLivreurPage() {
               />
 
               <GraphiqueColonnes
+                clair
                 titre="Courses selon l'heure de livraison"
                 colonnes={colonnesHeures}
                 format={(v) => nombre(v)}
                 mesure="Courses"
               />
               {heureForte && (
-                <p className="text-sm text-gray-400 -mt-3">
+                <p className="text-sm text-gray-500 -mt-3">
                   Votre créneau le plus actif : {heureForte.heure}h – {heureForte.heure + 1}h (
                   {heureForte.livrees} course{heureForte.livrees > 1 ? 's' : ''}).
                 </p>

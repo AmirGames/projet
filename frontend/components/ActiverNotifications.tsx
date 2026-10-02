@@ -147,21 +147,21 @@ export function ActiverNotifications() {
 
   return (
     <div className="space-y-2">
-      <p className="text-gray-400 text-sm flex items-center gap-2">
+      <p className="text-gray-500 text-sm flex items-center gap-2">
         <Bell size={16} /> Notifications
       </p>
 
       {etat === 'refuse' ? (
-        <p className="text-xs text-amber-300 flex gap-2">
+        <p className="text-xs text-amber-700 flex gap-2">
           <BellOff size={14} className="flex-shrink-0 mt-0.5" />
           Bloquées par le navigateur. Autorisez-les dans les réglages du site pour être prévenu des courses.
         </p>
       ) : etat === 'actif' ? (
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm text-green-400 flex items-center gap-2">
+          <span className="text-sm text-green-600 flex items-center gap-2">
             <BellRing size={16} /> Activées
           </span>
-          <button onClick={desactiver} className="text-xs text-gray-400 hover:text-white underline">
+          <button onClick={desactiver} className="text-xs text-gray-500 hover:text-gray-900 underline">
             Désactiver
           </button>
         </div>
@@ -175,7 +175,7 @@ export function ActiverNotifications() {
         </button>
       )}
 
-      {message && <p className="text-xs text-gray-400">{message}</p>}
+      {message && <p className="text-xs text-gray-500">{message}</p>}
     </div>
   );
 }

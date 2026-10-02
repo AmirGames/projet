@@ -47,15 +47,15 @@ export default function CompteVersementLivreur({
   };
 
   return (
-    <div className="mt-6 bg-gray-800 border border-gray-700 rounded-lg p-6">
-      <h2 className="text-lg font-bold text-white">Mes versements</h2>
-      <p className="text-sm text-gray-400 mb-4">Vos gains de la semaine sont virés chaque lundi sur ce compte.</p>
+    <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
+      <h2 className="text-lg font-bold text-gray-900">Mes versements</h2>
+      <p className="text-sm text-gray-500 mb-4">Vos gains de la semaine sont virés chaque lundi sur ce compte.</p>
       {!edition && compte ? (
         <div className="space-y-1 text-sm">
-          <p className="text-white">Compte …{compte.ibanFin}</p>
-          <p className="text-gray-400">{compte.titulaire}</p>
-          {!compte.valide && <p className="text-red-400">Cet IBAN n&apos;est pas valide : corrigez-le pour être payé.</p>}
-          <button onClick={() => setEdition(true)} className="text-orange-400 font-semibold mt-2">
+          <p className="text-gray-900">Compte …{compte.ibanFin}</p>
+          <p className="text-gray-500">{compte.titulaire}</p>
+          {!compte.valide && <p className="text-red-600">Cet IBAN n&apos;est pas valide : corrigez-le pour être payé.</p>}
+          <button onClick={() => setEdition(true)} className="text-orange-600 font-semibold mt-2">
             Modifier
           </button>
         </div>
@@ -65,17 +65,17 @@ export default function CompteVersementLivreur({
             value={iban}
             onChange={(e) => setIban(e.target.value)}
             placeholder="IBAN (BE68 5390 0754 7034)"
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
             required
           />
           <input
             value={titulaire}
             onChange={(e) => setTitulaire(e.target.value)}
             placeholder="Titulaire du compte"
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+            className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
             required
           />
-          {erreur && <p className="text-red-400 text-sm">{erreur}</p>}
+          {erreur && <p className="text-red-600 text-sm">{erreur}</p>}
           <button
             type="submit"
             disabled={envoi}

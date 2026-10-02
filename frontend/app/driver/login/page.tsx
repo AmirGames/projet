@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Bike } from 'lucide-react';
 import { confierSessionCentrale, demanderSessionCentrale } from '@/lib/sso';
 import { ENTETE_TRANSPORT } from '@/lib/jeton-session';
 
@@ -62,18 +62,18 @@ export default function DriverLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="bg-white border border-slate-200 rounded-3xl shadow-lg p-8">
+        <div className="bg-white border border-gray-200 rounded-3xl shadow-lg p-8">
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <div className="w-12 h-12 bg-accent rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">🚗</span>
+            <div className="w-12 h-12 bg-orange-600 text-white rounded-xl flex items-center justify-center">
+              <Bike size={24} aria-hidden="true" />
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-slate-900 text-center mb-2">Espace Livreur</h1>
-          <p className="text-slate-600 text-center mb-8">Connectez-vous pour gérer vos livraisons</p>
+          <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">Espace Livreur</h1>
+          <p className="text-gray-400 text-center mb-8">Connectez-vous pour gérer vos livraisons</p>
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex gap-3">
@@ -85,15 +85,15 @@ export default function DriverLoginPage() {
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email */}
             <div>
-              <label className="block text-slate-700 text-sm font-semibold mb-2">Email</label>
+              <label className="block text-gray-700 text-sm font-semibold mb-2">Email</label>
               <div className="relative">
-                <Mail size={18} className="absolute left-3 top-3 text-slate-400" />
+                <Mail size={18} className="absolute left-3 top-3 text-gray-500" />
                 <input
                   type={t('email')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="votre@email.com"
-                  className="w-full pl-10 pr-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>
@@ -101,15 +101,15 @@ export default function DriverLoginPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-slate-700 text-sm font-semibold mb-2">Mot de passe</label>
+              <label className="block text-gray-700 text-sm font-semibold mb-2">Mot de passe</label>
               <div className="relative">
-                <Lock size={18} className="absolute left-3 top-3 text-slate-400" />
+                <Lock size={18} className="absolute left-3 top-3 text-gray-500" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2 bg-slate-50 text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>
@@ -119,21 +119,21 @@ export default function DriverLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-bold py-3 rounded-lg transition"
+              className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-full transition"
             >
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
 
           {/* Footer */}
-          <p className="text-slate-600 text-center text-sm mt-8">
+          <p className="text-gray-400 text-center text-sm mt-8">
             Pas encore inscrit ?{' '}
             <Link href="/driver/signup" className="text-primary hover:text-primary-hover font-medium transition">
               S'inscrire ici
             </Link>
           </p>
 
-          <p className="text-slate-500 text-center text-xs mt-6 border-t border-slate-200 pt-6">
+          <p className="text-gray-500 text-center text-xs mt-6 border-t border-gray-200 pt-6">
             Besoin d'aide ? <Link href="/" className="text-primary hover:text-primary-hover font-medium transition">Contactez le support</Link>
           </p>
         </div>

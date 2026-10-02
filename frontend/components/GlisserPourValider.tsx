@@ -76,16 +76,16 @@ export function GlisserPourValider({ libelle, onValide, desactive, enCours }: Pr
     <div
       ref={piste}
       className={`relative h-16 w-full select-none overflow-hidden rounded-full border ${
-        bloque ? 'border-gray-700 bg-gray-800' : 'border-green-700 bg-green-900/40'
+        bloque ? 'border-gray-200 bg-white' : 'border-green-200 bg-green-50'
       }`}
     >
       <div
-        className="absolute inset-y-0 left-0 bg-green-600/40"
+        className="absolute inset-y-0 left-0 bg-green-100"
         style={{ width: decalage + TAILLE_CURSEUR }}
       />
       <p
         className={`absolute inset-0 flex items-center justify-center pl-12 text-sm font-semibold ${
-          bloque ? 'text-gray-500' : 'text-green-200'
+          bloque ? 'text-gray-500' : 'text-green-800'
         }`}
         style={{ opacity: 1 - avancement }}
       >
@@ -102,7 +102,7 @@ export function GlisserPourValider({ libelle, onValide, desactive, enCours }: Pr
         onPointerCancel={lacher}
         onKeyDown={auClavier}
         className={`absolute top-1 left-1 flex items-center justify-center rounded-full touch-none ${
-          bloque ? 'bg-gray-600 cursor-not-allowed' : 'bg-green-500 cursor-grab active:cursor-grabbing'
+          bloque ? 'bg-gray-200 cursor-not-allowed' : 'bg-green-500 cursor-grab active:cursor-grabbing'
         } ${glisse ? '' : 'transition-transform duration-200'}`}
         style={{
           width: TAILLE_CURSEUR,
@@ -111,9 +111,9 @@ export function GlisserPourValider({ libelle, onValide, desactive, enCours }: Pr
         }}
       >
         {enCours ? (
-          <Loader size={24} className="animate-spin text-white" />
+          <Loader size={24} className="animate-spin text-gray-900" />
         ) : (
-          <ChevronsRight size={28} className="text-white" />
+          <ChevronsRight size={28} className="text-gray-900" />
         )}
       </div>
     </div>
