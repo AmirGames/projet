@@ -111,11 +111,9 @@ const quota = page.locator('#quota-PREMIUM');
 check('les champs sont éditables', (await nom.count()) === 1 && (await prix.count()) === 1, 'champ absent');
 
 // Le bouton ne doit pas être actif tant que rien n'a changé : enregistrer à
-// vide ferait croire à une modification.
-const boutonPremium = page
-  .locator('section')
-  .filter({ hasText: 'PREMIUM' })
-  .locator('button', { hasText: 'Enregistrer' });
+// vide ferait croire à une modification. Un seul bouton, sous la grille,
+// enregistre toutes les formules modifiées.
+const boutonPremium = page.locator('main button', { hasText: 'Enregistrer' });
 
 check('« Enregistrer » est éteint au départ', await boutonPremium.first().isDisabled(), 'actif à tort');
 

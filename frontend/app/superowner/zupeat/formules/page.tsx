@@ -344,11 +344,7 @@ export default function FormulesPage() {
         type="button"
         onClick={enregistrer}
         disabled={codesModifies.length === 0 || enregistrement}
-        className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition ${
-          codesModifies.length > 0
-            ? 'bg-red-600 hover:bg-red-700'
-            : 'bg-gray-100 text-gray-500 cursor-not-allowed'
-        }`}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-lg font-semibold transition bg-gray-900 hover:bg-black text-white disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Save size={18} />
         {enregistrement ? t('saving') : t('save')}
