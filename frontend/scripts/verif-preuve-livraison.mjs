@@ -376,10 +376,18 @@ await page.waitForTimeout(3000);
 const depot = await appeler(`/api/drivers/deliveries/${seconde.courseId}`, { jeton: D });
 check('la course est livrée', depot.donnees?.data?.status === 'DELIVERED', depot.donnees?.data?.status);
 check('prouvée par la photo', depot.donnees?.data?.preuve === 'PHOTO', depot.donnees?.data?.preuve);
+// Une pièce privée : servie par l'API derrière un lien signé et daté, jamais
+// en accès libre sous /uploads.
+const photo = depot.donnees?.data?.photo || '';
 check(
   'la photo est gardée chez nous',
-  (depot.donnees?.data?.photo || '').startsWith(`${API}/uploads/deliveries/`),
-  depot.donnees?.data?.photo
+  photo.startsWith(`${API}/api/files/deliveries/`) && /[?&]exp=\d+/.test(photo) && /[?&]sig=[0-9a-f]+/.test(photo),
+  photo
+);
+check(
+  'et ne se lit pas sans signature',
+  (await fetch(photo.split('?')[0])).status >= 400,
+  'lisible sans signature'
 );
 
 titre('Le client sait que c’est un dépôt');
