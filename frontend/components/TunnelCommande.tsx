@@ -711,6 +711,7 @@ export function TunnelCommande({
                         Adresse *
                       </label>
                       <AddressAutocomplete
+                        clair
                         id="livraison-adresse"
                         value={checkoutForm.deliveryAddress}
                         onChange={(valeur) =>

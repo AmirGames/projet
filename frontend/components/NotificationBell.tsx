@@ -6,7 +6,8 @@ import { Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/lib/use-notifications';
 
-export function NotificationBell() {
+/** `clair` : sur un en-tête blanc, la cloche passe en sombre. */
+export function NotificationBell({ clair = false }: { clair?: boolean } = {}) {
   const t = useTranslations('notificationBell');
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
@@ -46,7 +47,7 @@ export function NotificationBell() {
     <div className="relative" ref={conteneur}>
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 text-gray-300 hover:text-white transition"
+        className={`relative p-2 transition ${clair ? 'text-gray-700 hover:text-gray-900' : 'text-gray-300 hover:text-white'}`}
         aria-label={
           unreadCount > 0 ? `${t('notifications')}, ${unreadCount} ${t('unread', { count: unreadCount })}` : t('notifications')
         }

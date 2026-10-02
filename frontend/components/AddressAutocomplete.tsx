@@ -104,6 +104,8 @@ interface Props {
    * tête. Sans lui, le pays est deviné.
    */
   pays?: string;
+  /** Sur une page claire (parcours client) : la liste des suggestions en blanc. */
+  clair?: boolean;
 }
 
 /**
@@ -121,6 +123,7 @@ export function AddressAutocomplete({
   required,
   id,
   pays,
+  clair = false,
 }: Props) {
   const t = useTranslations('addressAutocomplete');
   const [suggestions, setSuggestions] = useState<AdresseChoisie[]>([]);
@@ -267,7 +270,11 @@ export function AddressAutocomplete({
       )}
 
       {ouvert && suggestions.length > 0 && (
-        <ul className="absolute z-50 left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+        <ul
+          className={`absolute z-50 left-0 right-0 mt-1 rounded-lg shadow-xl max-h-64 overflow-y-auto border ${
+            clair ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-600'
+          }`}
+        >
           {suggestions.map((adresse, index) => (
             <li key={`${adresse.label}-${index}`}>
               <button
@@ -275,13 +282,15 @@ export function AddressAutocomplete({
                 onMouseEnter={() => setIndiceActif(index)}
                 onClick={() => choisir(adresse)}
                 className={`w-full text-left px-3 py-2 flex items-start gap-2 transition-colors ${
-                  index === indiceActif ? 'bg-gray-700' : 'hover:bg-gray-700'
+                  index === indiceActif
+                    ? clair ? 'bg-gray-100' : 'bg-gray-700'
+                    : clair ? 'hover:bg-gray-50' : 'hover:bg-gray-700'
                 }`}
               >
                 <MapPin size={14} className="text-orange-500 mt-1 flex-shrink-0" />
                 <span className="min-w-0">
-                  <span className="block text-sm text-white truncate">{adresse.street}</span>
-                  <span className="block text-xs text-gray-400 truncate">
+                  <span className={`block text-sm truncate ${clair ? 'text-gray-900' : 'text-white'}`}>{adresse.street}</span>
+                  <span className={`block text-xs truncate ${clair ? 'text-gray-500' : 'text-gray-400'}`}>
                     {[
                       [adresse.postalCode, adresse.city].filter(Boolean).join(' '),
                       // Sans le pays, deux villes homonymes sont

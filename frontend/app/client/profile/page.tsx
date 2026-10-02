@@ -209,6 +209,7 @@ export default function ProfilClientPage() {
             <div>
               <label className="block text-sm text-gray-500 mb-1">{t('deliveryAddress')}</label>
               <AddressAutocomplete
+                clair
                 value={formulaire.address}
                 onChange={(valeur) => setFormulaire({ ...formulaire, address: valeur })}
                 onSelect={(adresse) =>

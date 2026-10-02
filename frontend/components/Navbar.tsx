@@ -22,34 +22,34 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+    <nav className="bg-white border-b border-gray-100 text-gray-900 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-sm">
+          <Link href="/" className="flex items-center gap-2 text-gray-900 hover:no-underline">
+            <div className="w-8 h-8 bg-orange-600 rounded-xl flex items-center justify-center font-extrabold text-sm text-white">
               Z
             </div>
-            <span className="font-bold text-lg hidden sm:inline">ZupEat</span>
+            <span className="font-extrabold tracking-tight text-xl hidden sm:inline">ZupEat</span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             {!user ? (
               <>
-                <Link href={accueilDe('public')} className="text-gray-300 hover:text-white transition">
+                <Link href={accueilDe('public')} className="font-semibold text-gray-700 hover:text-gray-900 transition">
                   {t('restaurants')}
                 </Link>
-                <Link href="/login" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">
+                <Link href="/login" className="px-4 py-2 rounded-full text-sm font-semibold text-gray-900 hover:bg-gray-100 transition">
                   {t('login')}
                 </Link>
-                <Link href="/signup" className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition font-medium">
+                <Link href="/signup" className="px-5 py-2 rounded-full text-sm font-semibold text-white bg-gray-900 hover:bg-gray-800 transition">
                   {t('signup')}
                 </Link>
               </>
             ) : (
               <>
-                <Link href="/dashboard" className="text-gray-300 hover:text-white transition">
+                <Link href="/dashboard" className="font-semibold text-gray-700 hover:text-gray-900 transition">
                   {t('dashboard')}
                 </Link>
                 {user.isSuperOwner && (
@@ -57,25 +57,25 @@ export default function Navbar() {
                     👑 {t('superOwner')}
                   </Link>
                 )}
-                <NotificationBell />
+                <NotificationBell clair />
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition text-white"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-100 transition"
                 >
                   <LogOut size={18} />
                   {t('logout')}
                 </button>
               </>
             )}
-            <LanguageSwitcher />
+            <LanguageSwitcher clair />
           </div>
 
           {/* Mobile : langue toujours visible, à côté du bouton menu */}
           <div className="md:hidden flex items-center gap-2">
-            <LanguageSwitcher />
+            <LanguageSwitcher clair />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 hover:bg-gray-700 rounded-lg"
+              className="p-2 hover:bg-gray-100 rounded-lg"
             >
               <Menu size={24} />
             </button>
@@ -89,19 +89,19 @@ export default function Navbar() {
               <>
                 <Link
                   href={accueilDe('public')}
-                  className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
+                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                 >
                   {t('restaurants')}
                 </Link>
                 <Link
                   href="/login"
-                  className="block px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium"
+                  className="block px-4 py-2 rounded-lg font-semibold text-gray-900 hover:bg-gray-100"
                 >
                   {t('login')}
                 </Link>
                 <Link
                   href="/signup"
-                  className="block px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium"
+                  className="block px-4 py-2 rounded-lg font-semibold text-white bg-gray-900 hover:bg-gray-800"
                 >
                   {t('signup')}
                 </Link>
@@ -110,7 +110,7 @@ export default function Navbar() {
               <>
                 <Link
                   href="/dashboard"
-                  className="block px-4 py-2 text-gray-300 hover:bg-gray-700 rounded-lg"
+                  className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                 >
                   {t('dashboard')}
                 </Link>
@@ -124,7 +124,7 @@ export default function Navbar() {
                 )}
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
+                  className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50"
                 >
                   <LogOut size={18} />
                   {t('logout')}
