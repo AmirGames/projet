@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useKeepAwake } from 'expo-keep-awake';
 import { apiFetch, formatEuros } from '../../lib/api';
 import { isNetworkError, useOnline } from '../../lib/network';
 import { readJson, removeJson, writeJson } from '../../lib/offlineStore';
@@ -923,6 +924,12 @@ export default function DeliveryScreen({
               <Text style={styles.fullMapCloseText}>✕</Text>
             </TouchableOpacity>
           </View>
+          <StayAwake />
+          {route && !route.steps && (
+            <Text style={styles.noGuidance}>
+              Itinéraire non calculé (réseau ou service indisponible) : pas de guidage virage par virage pour l’instant.
+            </Text>
+          )}
           {route?.steps && route.steps.length > 1 && (
             <GuidanceCard
               steps={route.steps}
@@ -955,6 +962,15 @@ export default function DeliveryScreen({
   );
 }
 
+/**
+ * La carte plein écran garde l'écran allumé, comme un GPS : écran éteint, le
+ * guidage et ses annonces vocales s'arrêteraient.
+ */
+function StayAwake() {
+  useKeepAwake('navigation');
+  return null;
+}
+
 /** « 12 min », « 1 h 05 ». */
 function formatDuration(seconds: number) {
   const minutes = Math.max(1, Math.round(seconds / 60));
@@ -976,6 +992,14 @@ const styles = themedStyles(() => ({
   fullMapTitle: { color: COLORS.onHeader, fontSize: 17, fontWeight: '700' },
   fullMapInfo: { color: COLORS.onHeader, opacity: 0.9, fontSize: 14, marginTop: 2 },
   fullMapClose: { marginLeft: 12, padding: 4 },
+  noGuidance: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.warning,
+    backgroundColor: COLORS.warningBg,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
   fullMapCloseText: { color: COLORS.onHeader, fontSize: 22, fontWeight: '700' },
   fullMapAction: {
     position: 'absolute',
