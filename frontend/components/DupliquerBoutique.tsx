@@ -43,7 +43,7 @@ export default function DupliquerBoutique({
   const champ = (cle: keyof typeof form) => ({
     value: form[cle],
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [cle]: e.target.value })),
-    className: 'w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-orange-600 outline-none',
+    className: 'w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:border-orange-600 outline-none',
   });
 
   const envoyer = async (e: React.FormEvent) => {
@@ -75,25 +75,26 @@ export default function DupliquerBoutique({
       <form
         onSubmit={envoyer}
         onClick={(e) => e.stopPropagation()}
-        className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md space-y-4"
+        className="bg-white border border-gray-200 rounded-lg p-6 w-full max-w-md space-y-4"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-white">{t('title', { name: source.name })}</h2>
-            <p className="text-sm text-gray-400 mt-1">{t('help')}</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('title', { name: source.name })}</h2>
+            <p className="text-sm text-gray-500 mt-1">{t('help')}</p>
           </div>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-white" aria-label={t('cancel')}>
+          <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-900" aria-label={t('cancel')}>
             <X size={20} />
           </button>
         </div>
 
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-gray-700">
           {t('name')} *
           <input required minLength={2} placeholder={t('namePlaceholder')} {...champ('name')} />
         </label>
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-gray-700">
           {t('address')}
           <AddressAutocomplete
+            clair
             value={form.address}
             onChange={(valeur) => {
               setForm((f) => ({ ...f, address: valeur }));
@@ -117,24 +118,24 @@ export default function DupliquerBoutique({
           />
         </label>
         <div className="grid grid-cols-2 gap-3">
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-gray-700">
             {t('postalCode')}
             <input {...champ('postalCode')} />
           </label>
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm text-gray-700">
             {t('city')}
             <input {...champ('city')} />
           </label>
         </div>
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm text-gray-700">
           {t('phone')}
           <input type="tel" {...champ('phone')} />
         </label>
 
-        {erreur && <p className="text-sm text-red-400">{erreur}</p>}
+        {erreur && <p className="text-sm text-red-600">{erreur}</p>}
 
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-gray-300 hover:text-white">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-gray-700 hover:text-gray-900">
             {t('cancel')}
           </button>
           <button

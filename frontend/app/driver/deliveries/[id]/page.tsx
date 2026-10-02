@@ -765,7 +765,7 @@ export default function DeliveryTrackingPage() {
                           type="button"
                           onClick={() => confirmerRemise({ photoUrl, note })}
                           disabled={!photoUrl || updating || envoiPhoto}
-                          className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-200 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
+                          className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
                         >
                           {updating ? <Loader size={18} className="animate-spin" /> : <CheckCircle size={18} />}
                           Confirmer le dépôt

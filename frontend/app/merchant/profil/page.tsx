@@ -87,10 +87,10 @@ interface Profil {
 }
 
 const MARQUES: Record<string, { icone: typeof Check; classe: string; libelle: string }> = {
-  APPROVED: { icone: Check, classe: 'text-green-400', libelle: 'Validé' },
-  REJECTED: { icone: X, classe: 'text-red-400', libelle: 'Refusé' },
-  PENDING: { icone: Clock, classe: 'text-gray-400', libelle: "En attente d'examen" },
-  EXPIRED: { icone: AlertTriangle, classe: 'text-amber-400', libelle: 'Expiré — déposez une version à jour' },
+  APPROVED: { icone: Check, classe: 'text-green-600', libelle: 'Validé' },
+  REJECTED: { icone: X, classe: 'text-red-600', libelle: 'Refusé' },
+  PENDING: { icone: Clock, classe: 'text-gray-500', libelle: "En attente d'examen" },
+  EXPIRED: { icone: AlertTriangle, classe: 'text-amber-600', libelle: 'Expiré — déposez une version à jour' },
 };
 
 /** Le délai de prévenance : c'est aussi celui du rappel envoyé par la plateforme. */
@@ -130,7 +130,7 @@ const jamaisRempli = (lu: Profil) =>
   !lu.legalName && !lu.billingAddress && !lu.ownerFirstName && !lu.ownerLastName;
 
 const CHAMP =
-  'w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-500';
+  'w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 placeholder-gray-400';
 
 export default function ProfilCommercantPage() {
   const t = useTranslations('merchantProfile');
@@ -346,13 +346,13 @@ export default function ProfilCommercantPage() {
   };
 
   if (chargement) {
-    return <div className="p-8 text-gray-400">Chargement…</div>;
+    return <div className="p-8 text-gray-500">Chargement…</div>;
   }
 
   if (!profil) {
     return (
       <div className="p-8">
-        <p role="status" className="text-red-400">
+        <p role="status" className="text-red-600">
           {erreur || 'Profil introuvable'}
         </p>
       </div>
@@ -364,13 +364,13 @@ export default function ProfilCommercantPage() {
       <div>
         <Link
           href="/merchant"
-          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-3"
+          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-3"
         >
           <ArrowLeft size={16} />
           Mes commerces
         </Link>
-        <h1 className="text-2xl font-bold text-white">Mon profil</h1>
-        <p className="text-gray-400 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-gray-900">Mon profil</h1>
+        <p className="text-gray-500 text-sm mt-1">
           Ce qui figure sur vos factures, et le compte sur lequel vous êtes payé.
         </p>
       </div>
@@ -381,14 +381,14 @@ export default function ProfilCommercantPage() {
       {profil.status === 'SUSPENDED' && (
         <div
           role="status"
-          className="rounded-lg border border-red-700/50 bg-red-900/20 px-4 py-3 text-red-200 text-sm space-y-1"
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm space-y-1"
         >
           <p className="font-semibold">Votre compte est suspendu</p>
           {profil.suspensionReason && <p>Motif : {profil.suspensionReason}</p>}
           <p>
             Votre espace est fermé, mais ce dossier reste ouvert : complétez ce qui manque
             ci-dessous, puis{' '}
-            <Link href={`/merchant/${orgId}/support`} className="underline hover:text-red-100">
+            <Link href={`/merchant/${orgId}/support`} className="underline hover:text-red-800">
               prévenez le support
             </Link>
             . C&apos;est la plateforme qui lève la suspension.
@@ -401,7 +401,7 @@ export default function ProfilCommercantPage() {
       {profil.validation && !profil.validation.valide && (
         <div
           role="status"
-          className="rounded-lg border border-blue-700/50 bg-blue-900/20 px-4 py-3 text-blue-100 text-sm space-y-1"
+          className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-blue-800 text-sm space-y-1"
         >
           <p className="font-semibold">Votre commerce est en attente de validation</p>
           <p>
@@ -421,14 +421,14 @@ export default function ProfilCommercantPage() {
               manquait encore quelque chose. */}
           {profil.validation.piecesAFournir?.length === 0 &&
             profil.validation.piecesEnExamen?.length > 0 && (
-              <p className="flex items-center gap-2 font-semibold text-green-300">
+              <p className="flex items-center gap-2 font-semibold text-green-700">
                 <Check size={16} aria-hidden />
                 Toutes vos pièces obligatoires sont déposées. La plateforme les examine et
                 vous prévient dans votre espace dès qu&apos;elles sont validées.
               </p>
             )}
           {profil.validation.piecesEnExamen?.length > 0 && (
-            <p className="text-blue-200/80">
+            <p className="text-blue-800/80">
               En cours d&apos;examen :{' '}
               {profil.validation.piecesEnExamen.map((piece) => piece.libelle).join(', ')}.
             </p>
@@ -444,7 +444,7 @@ export default function ProfilCommercantPage() {
       {(profil.manquePourFacturer.length > 0 || profil.manquePourEtrePaye.length > 0) && (
         <div
           role="status"
-          className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-4 py-3 text-amber-200 text-sm space-y-1"
+          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm space-y-1"
         >
           {profil.manquePourFacturer.length > 0 && (
             <p>
@@ -460,19 +460,19 @@ export default function ProfilCommercantPage() {
       )}
 
       {message && (
-        <p role="status" className="text-sm text-green-400">
+        <p role="status" className="text-sm text-green-600">
           {message}
         </p>
       )}
       {erreur && (
-        <p role="status" className="text-sm text-red-400">
+        <p role="status" className="text-sm text-red-600">
           {erreur}
         </p>
       )}
 
       <form onSubmit={enregistrer} className="space-y-6">
         {preRempli && (
-          <p className="text-sm text-sky-200 bg-sky-900/30 border border-sky-800 rounded-lg p-3">
+          <p className="text-sm text-sky-800 bg-sky-50 border border-sky-200 rounded-lg p-3">
             Nous avons pré-rempli ce formulaire avec ce que vous avez donné à
             l&apos;inscription. Vérifiez-le — la raison sociale et l&apos;adresse de
             facturation peuvent différer de celles de la boutique — puis
@@ -480,15 +480,15 @@ export default function ProfilCommercantPage() {
           </p>
         )}
 
-        <section className="bg-gray-800 rounded-lg p-6 space-y-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+        <section className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-4">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <Building2 size={20} className="text-orange-500" />
             Identité de facturation
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="legalName" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="legalName" className="block text-sm text-gray-500 mb-1">
                 Raison sociale
               </label>
               <input
@@ -501,7 +501,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="registrationNumber" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="registrationNumber" className="block text-sm text-gray-500 mb-1">
                 Numéro d&apos;immatriculation
               </label>
               <input
@@ -514,7 +514,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="billingCountry" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="billingCountry" className="block text-sm text-gray-500 mb-1">
                 Pays
               </label>
               <select
@@ -532,7 +532,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="vatNumber" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="vatNumber" className="block text-sm text-gray-500 mb-1">
                 Numéro de TVA
               </label>
               <input
@@ -545,10 +545,11 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div className="sm:col-span-2">
-              <label htmlFor="billingAddress" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="billingAddress" className="block text-sm text-gray-500 mb-1">
                 Adresse de facturation
               </label>
               <AddressAutocomplete
+                clair
                 id="billingAddress"
                 value={form.billingAddress}
                 onChange={(valeur) => setForm({ ...form, billingAddress: valeur })}
@@ -571,7 +572,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="billingPostalCode" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="billingPostalCode" className="block text-sm text-gray-500 mb-1">
                 Code postal
               </label>
               <input
@@ -583,7 +584,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="billingCity" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="billingCity" className="block text-sm text-gray-500 mb-1">
                 Ville
               </label>
               <input
@@ -596,15 +597,15 @@ export default function ProfilCommercantPage() {
           </div>
         </section>
 
-        <section className="bg-gray-800 rounded-lg p-6 space-y-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+        <section className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-4">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <User size={20} className="text-orange-500" />
             Le propriétaire du commerce
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="ownerFirstName" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="ownerFirstName" className="block text-sm text-gray-500 mb-1">
                 Prénom
               </label>
               <input
@@ -616,7 +617,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="ownerLastName" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="ownerLastName" className="block text-sm text-gray-500 mb-1">
                 Nom
               </label>
               <input
@@ -628,7 +629,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="ownerEmail" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="ownerEmail" className="block text-sm text-gray-500 mb-1">
                 E-mail
               </label>
               <input
@@ -641,7 +642,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="ownerPhone" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="ownerPhone" className="block text-sm text-gray-500 mb-1">
                 Téléphone
               </label>
               <input
@@ -653,7 +654,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="ownerBirthDate" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="ownerBirthDate" className="block text-sm text-gray-500 mb-1">
                 Date de naissance
               </label>
               <input
@@ -667,19 +668,19 @@ export default function ProfilCommercantPage() {
           </div>
         </section>
 
-        <section className="bg-gray-800 rounded-lg p-6 space-y-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+        <section className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-4">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <Landmark size={20} className="text-orange-500" />
             Compte bancaire
           </h2>
 
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-500">
             C&apos;est sur ce compte que vos versements sont virés, et il figure sur vos factures.
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label htmlFor="iban" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="iban" className="block text-sm text-gray-500 mb-1">
                 IBAN
               </label>
               <input
@@ -700,7 +701,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="bic" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="bic" className="block text-sm text-gray-500 mb-1">
                 BIC
               </label>
               <input
@@ -712,7 +713,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="accountHolder" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="accountHolder" className="block text-sm text-gray-500 mb-1">
                 Titulaire du compte
               </label>
               <input
@@ -734,14 +735,14 @@ export default function ProfilCommercantPage() {
         </button>
       </form>
 
-      <section className="bg-gray-800 rounded-lg p-6 space-y-4">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+      <section className="bg-white ring-1 ring-gray-200 rounded-lg p-6 space-y-4">
+        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
           <FileText size={20} className="text-orange-500" />
           Vos justificatifs
         </h2>
 
         {profil.documents.length === 0 ? (
-          <p className="text-sm text-gray-400">Aucune pièce déposée.</p>
+          <p className="text-sm text-gray-500">Aucune pièce déposée.</p>
         ) : (
           <ul className="space-y-2">
             {profil.documents.map((document) => {
@@ -751,17 +752,17 @@ export default function ProfilCommercantPage() {
               return (
                 <li
                   key={document.id}
-                  className="flex items-start justify-between gap-3 rounded bg-gray-700/50 px-3 py-2"
+                  className="flex items-start justify-between gap-3 rounded bg-gray-50 px-3 py-2"
                 >
                   <div className="min-w-0">
-                    <p className="text-white text-sm font-medium">{document.libelle}</p>
+                    <p className="text-gray-900 text-sm font-medium">{document.libelle}</p>
                     <p className={`text-xs ${marque.classe}`}>{marque.libelle}</p>
                     {document.expiryDate && document.status !== 'EXPIRED' && (
                       <p
                         className={`text-xs ${
                           joursAvant(document.expiryDate) <= JOURS_AVANT_EXPIRATION
-                            ? 'text-amber-300 font-medium'
-                            : 'text-gray-400'
+                            ? 'text-amber-700 font-medium'
+                            : 'text-gray-500'
                         }`}
                       >
                         Expire le {new Date(document.expiryDate).toLocaleDateString('fr-FR')}
@@ -772,11 +773,11 @@ export default function ProfilCommercantPage() {
                       </p>
                     )}
                     {document.reviewNote && (
-                      <p className="text-xs text-red-300 mt-1">{document.reviewNote}</p>
+                      <p className="text-xs text-red-700 mt-1">{document.reviewNote}</p>
                     )}
                     <LienPiece
                       adresse={document.documentUrl}
-                      className="text-xs text-orange-400 hover:underline break-all"
+                      className="text-xs text-orange-600 hover:underline break-all"
                     >
                       {document.fileName || document.documentUrl}
                     </LienPiece>
@@ -788,7 +789,7 @@ export default function ProfilCommercantPage() {
                       type="button"
                       onClick={() => retirer(document.id)}
                       title={`Retirer ${document.libelle}`}
-                      className="text-gray-400 hover:text-red-400 transition"
+                      className="text-gray-500 hover:text-red-600 transition"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -799,16 +800,16 @@ export default function ProfilCommercantPage() {
           </ul>
         )}
 
-        <form onSubmit={deposer} className="space-y-3 border-t border-gray-700 pt-4">
+        <form onSubmit={deposer} className="space-y-3 border-t border-gray-200 pt-4">
           {erreurPiece && (
-            <p role="status" className="text-sm text-red-400">
+            <p role="status" className="text-sm text-red-600">
               {erreurPiece}
             </p>
           )}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label htmlFor="piece-type" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="piece-type" className="block text-sm text-gray-500 mb-1">
                 Pièce à déposer
               </label>
               <select
@@ -827,7 +828,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div>
-              <label htmlFor="piece-expiration" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="piece-expiration" className="block text-sm text-gray-500 mb-1">
                 Date d&apos;expiration (si la pièce en a une)
               </label>
               <input
@@ -840,7 +841,7 @@ export default function ProfilCommercantPage() {
             </div>
 
             <div className="sm:col-span-2">
-              <label htmlFor="piece-fichier" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="piece-fichier" className="block text-sm text-gray-500 mb-1">
                 Fichier (PDF, image ou document)
               </label>
               <input
@@ -860,7 +861,7 @@ export default function ProfilCommercantPage() {
 
             <div className="sm:col-span-2">
               <p className="text-xs text-gray-500 mb-2">OU</p>
-              <label htmlFor="piece-lien" className="block text-sm text-gray-400 mb-1">
+              <label htmlFor="piece-lien" className="block text-sm text-gray-500 mb-1">
                 Lien vers le document
               </label>
               <input
@@ -888,7 +889,7 @@ export default function ProfilCommercantPage() {
         </form>
       </section>
 
-      <ChangerMotDePasse />
+      <ChangerMotDePasse clair />
     </div>
   );
 }

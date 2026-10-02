@@ -172,32 +172,32 @@ export default function MerchantOnboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 py-12 px-4">
+    <div className="min-h-screen bg-[#F7F7F6] text-gray-900 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Créer votre boutique</h1>
-          <p className="text-slate-400">Connecté en tant que {user?.email}</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Créer votre boutique</h1>
+          <p className="text-gray-500">Connecté en tant que {user?.email}</p>
         </div>
 
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
+        <div className="bg-white border border-gray-200 rounded-lg p-8">
           {apiError && (
-            <div className="mb-6 bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex gap-3">
-              <AlertCircle className="text-red-400 flex-shrink-0" size={20} />
-              <p className="text-red-400">{apiError}</p>
+            <div className="mb-6 bg-red-100 border border-red-500/50 rounded-lg p-4 flex gap-3">
+              <AlertCircle className="text-red-600 flex-shrink-0" size={20} />
+              <p className="text-red-600">{apiError}</p>
             </div>
           )}
 
           {successMessage && (
-            <div className="mb-6 bg-green-500/20 border border-green-500/50 rounded-lg p-4 flex gap-3">
-              <CheckCircle className="text-green-400 flex-shrink-0" size={20} />
-              <p className="text-green-400">{successMessage}</p>
+            <div className="mb-6 bg-green-100 border border-green-500/50 rounded-lg p-4 flex gap-3">
+              <CheckCircle className="text-green-600 flex-shrink-0" size={20} />
+              <p className="text-green-600">{successMessage}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nom de l'entreprise *
                 </label>
                 <input
@@ -205,20 +205,20 @@ export default function MerchantOnboardPage() {
                   name="businessName"
                   value={formData.businessName}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                {errors.businessName && <p className="text-red-400 text-sm mt-1">{errors.businessName}</p>}
+                {errors.businessName && <p className="text-red-600 text-sm mt-1">{errors.businessName}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Type de commerce *
                 </label>
                 <select
                   name="businessType"
                   value={formData.businessType}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 >
                   <option value="RESTAURANT">Restaurant</option>
                   <option value="BAKERY">Boulangerie</option>
@@ -230,7 +230,7 @@ export default function MerchantOnboardPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Téléphone *
                 </label>
                 <input
@@ -238,13 +238,13 @@ export default function MerchantOnboardPage() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                {errors.phone && <p className="text-red-400 text-sm mt-1">{errors.phone}</p>}
+                {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nom de la boutique *
                 </label>
                 <input
@@ -252,13 +252,13 @@ export default function MerchantOnboardPage() {
                   name="storeName"
                   value={formData.storeName}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                {errors.storeName && <p className="text-red-400 text-sm mt-1">{errors.storeName}</p>}
+                {errors.storeName && <p className="text-red-600 text-sm mt-1">{errors.storeName}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   URL de la boutique *
                 </label>
                 <input
@@ -267,13 +267,13 @@ export default function MerchantOnboardPage() {
                   placeholder="exemple-boutique"
                   value={formData.storeSlug}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                {errors.storeSlug && <p className="text-red-400 text-sm mt-1">{errors.storeSlug}</p>}
+                {errors.storeSlug && <p className="text-red-600 text-sm mt-1">{errors.storeSlug}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ville *
                 </label>
                 <input
@@ -281,16 +281,17 @@ export default function MerchantOnboardPage() {
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                {errors.city && <p className="text-red-400 text-sm mt-1">{errors.city}</p>}
+                {errors.city && <p className="text-red-600 text-sm mt-1">{errors.city}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Adresse *
                 </label>
                 <AddressAutocomplete
+                  clair
                   value={formData.address}
                   onChange={(valeur) => setFormData((prev) => ({ ...prev, address: valeur }))}
                   onSelect={(adresse) =>
@@ -301,13 +302,13 @@ export default function MerchantOnboardPage() {
                       postalCode: adresse.postalCode || prev.postalCode,
                     }))
                   }
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                {errors.address && <p className="text-red-400 text-sm mt-1">{errors.address}</p>}
+                {errors.address && <p className="text-red-600 text-sm mt-1">{errors.address}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Code postal *
                 </label>
                 <input
@@ -315,14 +316,14 @@ export default function MerchantOnboardPage() {
                   name="postalCode"
                   value={formData.postalCode}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
                 />
-                {errors.postalCode && <p className="text-red-400 text-sm mt-1">{errors.postalCode}</p>}
+                {errors.postalCode && <p className="text-red-600 text-sm mt-1">{errors.postalCode}</p>}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description *
               </label>
               <textarea
@@ -330,23 +331,23 @@ export default function MerchantOnboardPage() {
                 value={formData.description}
                 onChange={handleChange}
                 rows={4}
-                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-blue-500"
               />
-              {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description}</p>}
+              {errors.description && <p className="text-red-600 text-sm mt-1">{errors.description}</p>}
             </div>
 
             <div className="flex gap-4">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2"
+                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2"
               >
                 {loading ? <Loader className="animate-spin" size={20} /> : null}
                 {loading ? 'Création en cours...' : 'Créer ma boutique'}
               </button>
               <Link
                 href="/"
-                className="px-6 py-3 border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white font-bold rounded-lg transition"
+                className="px-6 py-3 border border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 font-bold rounded-lg transition"
               >
                 Annuler
               </Link>

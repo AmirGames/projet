@@ -236,7 +236,7 @@ export default function DriverOnboardPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-200 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2"
+                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2"
               >
                 {loading ? <Loader className="animate-spin" size={20} /> : null}
                 {loading ? t('registering') : t('registerButton')}

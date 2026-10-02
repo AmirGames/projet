@@ -210,6 +210,7 @@ export default function InscriptionLivreurPage() {
           )}
 
           <AcceptationConditions
+            clair
             coche={conditionsAcceptees}
             onChange={setConditionsAcceptees}
             documents={[
@@ -221,7 +222,7 @@ export default function InscriptionLivreurPage() {
           <button
             type="submit"
             disabled={envoi || !conditionsAcceptees}
-            className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-gray-200 text-white font-semibold py-3 rounded-lg transition-colors"
+            className="w-full bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
           >
             {envoi ? 'Création du compte...' : 'Créer mon compte'}
           </button>
