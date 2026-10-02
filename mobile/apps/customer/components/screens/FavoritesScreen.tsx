@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { apiFetch } from '../../lib/api';
-import { formatRating, Store, storeLogo } from '../../lib/stores';
+import { formatRating, Store } from '../../lib/stores';
+import { CouvertureCommerce } from '../CouvertureCommerce';
 import { COLORS, ErrorBox, Loading, ScreenHeader } from '../ui';
 
 interface Favorite {
@@ -66,27 +67,27 @@ export default function FavoritesScreen({
               <Text style={styles.emptyHint}>Touchez le cœur d’une vitrine pour la retrouver ici.</Text>
             </View>
           }
-          renderItem={({ item }) => {
-            const logo = storeLogo(item.store);
-            return (
-              <TouchableOpacity style={styles.card} onPress={() => onOpenStore(item.storeId)}>
-                <View style={styles.logoBox}>
-                  {logo ? <Image source={{ uri: logo }} style={styles.logo} resizeMode="contain" /> : <Text style={{ fontSize: 26 }}>🍽️</Text>}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {item.store.name}
-                  </Text>
-                  <Text style={styles.meta} numberOfLines={1}>
-                    {[formatRating(item.store.rating, item.store.totalRatings), item.store.city].filter(Boolean).join(' · ') || ' '}
-                  </Text>
-                </View>
-                <TouchableOpacity onPress={() => remove(item.storeId)} hitSlop={10}>
-                  <Text style={{ fontSize: 22 }}>❤️</Text>
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.card} onPress={() => onOpenStore(item.storeId)} activeOpacity={0.85}>
+              {/* La même carte photo que l'accueil, le cœur posé dessus. */}
+              <CouvertureCommerce store={item.store} hauteur={130}>
+                <TouchableOpacity
+                  onPress={() => remove(item.storeId)}
+                  hitSlop={10}
+                  style={styles.coeur}
+                  accessibilityLabel={`Retirer ${item.store.name} des favoris`}
+                >
+                  <Text style={{ fontSize: 18 }}>❤️</Text>
                 </TouchableOpacity>
-              </TouchableOpacity>
-            );
-          }}
+              </CouvertureCommerce>
+              <Text style={styles.name} numberOfLines={1}>
+                {item.store.name}
+              </Text>
+              <Text style={styles.meta} numberOfLines={1}>
+                {[formatRating(item.store.rating, item.store.totalRatings), item.store.city].filter(Boolean).join(' · ') || ' '}
+              </Text>
+            </TouchableOpacity>
+          )}
         />
       )}
     </View>
@@ -95,21 +96,20 @@ export default function FavoritesScreen({
 
 const styles = StyleSheet.create({
   list: { padding: 12, paddingBottom: 24 },
-  card: { backgroundColor: COLORS.card, borderRadius: 10, padding: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logoBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 10,
+  card: { marginBottom: 18 },
+  coeur: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
-  logo: { width: 48, height: 48 },
-  name: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
-  meta: { fontSize: 13, color: '#666', marginTop: 2 },
+  name: { fontSize: 16, fontWeight: '700', color: '#111', marginTop: 8 },
+  meta: { fontSize: 13, color: '#6B6B6B', marginTop: 2 },
   empty: { alignItems: 'center', marginTop: 50 },
   emptyIcon: { fontSize: 44, marginBottom: 8 },
   emptyText: { fontSize: 16, color: COLORS.muted },

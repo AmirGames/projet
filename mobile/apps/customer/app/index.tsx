@@ -983,7 +983,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   menuItemActive: {
-    backgroundColor: '#EAF3FF',
+    backgroundColor: COLORS.primarySoft,
   },
   menuItemLogout: {
     marginTop: 8,
@@ -1081,7 +1081,8 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   loginButton: {
-    backgroundColor: '#0055CC',
+    // Noir sur le fond orange de la marque, comme le bouton du site.
+    backgroundColor: '#111111',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1106,7 +1107,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 1,
   },
-  boxChecked: { backgroundColor: '#0055CC', borderColor: '#0055CC' },
+  boxChecked: { backgroundColor: '#111111', borderColor: '#111111' },
   tick: { color: '#fff', fontWeight: '800', fontSize: 15 },
   acceptText: { flex: 1, fontSize: 14, color: '#fff', lineHeight: 20 },
   lienSite: { color: '#fff', textDecorationLine: 'underline', fontWeight: '700' },
@@ -1125,7 +1126,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   orderChip: {
-    backgroundColor: '#EAF3FF',
+    backgroundColor: COLORS.primarySoft,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,

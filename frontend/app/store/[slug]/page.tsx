@@ -10,6 +10,8 @@ import { MapPin, Phone, Clock, Star, X, Bike, Plus, Minus, Check, Trash2, Shoppi
 import { euro } from '@/lib/format';
 import { ChoixAdresseLivraison } from '@/components/ChoixAdresseLivraison';
 import { EnTeteClient } from '@/components/EnTeteClient';
+import { IllustrationFamille } from '@/components/IllustrationFamille';
+import { visuelDeFamille } from '@/lib/visuels-familles';
 import { useAdresseLivraisonEnregistree, type AdresseLivraison } from '@/lib/adresseLivraison';
 import { useParametreAdresse } from '@/lib/navigateur';
 import { useStoreLive } from '@/lib/use-store-live';
@@ -35,6 +37,8 @@ interface Store {
   postalCode?: string | null;
   /** « Pizzas », « Japonaise : sushis », « Fleuriste »… */
   genreLibelle?: string | null;
+  /** La famille (« pizza », « sushi »…) : l'illustration de la vitrine sans photo. */
+  famille?: string | null;
   phone?: string | null;
   email?: string | null;
   /** Fermée momentanément (bouton rapide du commerçant) : la vitrine reste lisible, la commande non. */
@@ -399,6 +403,7 @@ export default function StorefrontPage() {
                       typeof menuData.data.isOpen === 'boolean' ? menuData.data.isOpen : actuelle.isOpen,
                     enAttenteDeValidation: menuData.data.enAttenteDeValidation === true,
                     genreLibelle: menuData.data.genreLibelle ?? actuelle.genreLibelle ?? null,
+                    famille: menuData.data.famille ?? actuelle.famille ?? null,
                   }
                 : actuelle
             );
@@ -702,17 +707,13 @@ export default function StorefrontPage() {
 
       {/* La bannière et l'identité du commerce. */}
       <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4">
-        {/* La photo de couverture du commerçant ; à défaut, le dégradé de la
-            plateforme. */}
+        {/* La photo de couverture du commerçant ; à défaut, l'illustration de
+            sa catégorie (une pizza pour une pizzeria). */}
         <div className="relative h-36 md:h-64 overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-orange-600 to-red-600">
           {store.settings?.banner ? (
             <img src={store.settings.banner} alt="" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
-            <>
-              <div aria-hidden="true" className="absolute -right-10 -top-16 h-64 w-64 rounded-full bg-white/10" />
-              <div aria-hidden="true" className="absolute right-40 -bottom-24 h-56 w-56 rounded-full bg-white/10" />
-              <div aria-hidden="true" className="absolute -left-10 -bottom-20 h-48 w-48 rounded-full bg-black/5" />
-            </>
+            <IllustrationFamille famille={store.famille} grande />
           )}
         </div>
 
@@ -724,8 +725,12 @@ export default function StorefrontPage() {
               className="h-24 w-24 md:h-28 md:w-28 rounded-2xl bg-white object-contain p-2 shadow-lg ring-4 ring-white"
             />
           ) : (
-            <span className="flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl bg-white text-5xl font-extrabold text-orange-600 shadow-lg ring-4 ring-white">
-              {store.name.charAt(0)}
+            // Sans logo : l'emoji de la catégorie plutôt qu'une initiale.
+            <span
+              aria-hidden="true"
+              className="flex h-24 w-24 md:h-28 md:w-28 items-center justify-center rounded-2xl bg-white text-5xl shadow-lg ring-4 ring-white"
+            >
+              {visuelDeFamille(store.famille).emoji}
             </span>
           )}
         </div>

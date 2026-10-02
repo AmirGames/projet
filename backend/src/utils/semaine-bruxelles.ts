@@ -47,3 +47,21 @@ export function semaineEcoulee(instant = new Date()) {
   const veille = new Date(fin.getTime() - 12 * 3600000);
   return { periodStart: debutDeSemaine(veille), periodEnd: fin };
 }
+
+/** Le jour (« 2026-10-02 ») de cet instant, à l'heure de Bruxelles. */
+export function jourBruxelles(instant: Date) {
+  // fr-CA écrit les dates en AAAA-MM-JJ.
+  return new Intl.DateTimeFormat("fr-CA", { timeZone: FUSEAU }).format(instant);
+}
+
+/**
+ * Les `nombre` derniers jours de Bruxelles, du plus ancien à aujourd'hui.
+ * Calculés sur le calendrier, pas en retranchant 24 h : un jour de
+ * changement d'heure dure 23 ou 25 heures.
+ */
+export function derniersJoursBruxelles(nombre: number, instant = new Date()) {
+  const [annee, mois, jour] = jourBruxelles(instant).split("-").map(Number);
+  return Array.from({ length: nombre }, (_, i) =>
+    new Date(Date.UTC(annee, mois - 1, jour - (nombre - 1 - i))).toISOString().slice(0, 10)
+  );
+}

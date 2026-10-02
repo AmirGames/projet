@@ -17,6 +17,8 @@ import {
 } from '@/lib/adresseLivraison';
 
 import { euro } from '@/lib/format';
+import { visuelDeFamille } from '@/lib/visuels-familles';
+import { IllustrationFamille } from '@/components/IllustrationFamille';
 import { useEffectChargement } from '@/lib/use-effect-chargement';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -81,27 +83,6 @@ const bienNote = (store: Store) => !!store.totalRatings && (store.rating ?? 0) >
 
 const note = (valeur: number) =>
   valeur.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-/**
- * Le fond de la vignette d'un commerce. Les boutiques n'ont pas (encore) de
- * photo de couverture : un aplat doux, toujours le même pour une boutique
- * donnée, met son logo en valeur sans que la liste ressemble à un damier.
- */
-const FONDS = [
-  'bg-orange-100',
-  'bg-rose-100',
-  'bg-amber-100',
-  'bg-lime-100',
-  'bg-sky-100',
-  'bg-violet-100',
-  'bg-emerald-100',
-  'bg-red-100',
-];
-const fondDe = (store: Store) => {
-  let somme = 0;
-  for (const lettre of store.id) somme = (somme + lettre.charCodeAt(0)) % 997;
-  return FONDS[somme % FONDS.length];
-};
 
 export default function ClientHomePage() {
   const t = useTranslations('clientHome');
@@ -306,7 +287,6 @@ export default function ClientHomePage() {
     <CarteCommerce
       key={store.id}
       store={store}
-      emoji={familles.find((famille) => famille.code === store.famille)?.emoji}
       favori={favoris.has(store.id)}
       onFavori={(e) => basculerFavori(e, store.id)}
       enRangee={enRangee}
@@ -586,13 +566,11 @@ function Rangee({
  */
 function CarteCommerce({
   store,
-  emoji,
   favori,
   onFavori,
   enRangee,
 }: {
   store: Store;
-  emoji?: string;
   favori: boolean;
   onFavori: (e: React.MouseEvent) => void;
   enRangee: boolean;
@@ -629,55 +607,39 @@ function CarteCommerce({
         enRangee ? 'w-[78%] sm:w-[300px] flex-shrink-0 snap-start' : ''
       }`}
     >
-      <div className={`relative aspect-[16/9] overflow-hidden rounded-2xl ${fondDe(store)}`}>
-        {/* La photo de couverture du commerçant, avec son logo en pastille ;
-            à défaut, le motif de la famille en filigrane et le logo en
-            majesté. */}
+      <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-gray-100">
+        {/* La photo de couverture du commerçant ; à défaut, l'illustration de
+            sa catégorie (une pizza pour une pizzeria). Le logo se pose en
+            pastille ; sans logo, l'emoji de la catégorie le remplace sur une
+            photo, et l'illustration se suffit à elle-même. */}
         {store.settings?.banner ? (
-          <>
-            <img
-              src={store.settings.banner}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute bottom-3 left-3">
-              {store.settings.logo ? (
-                <img
-                  src={store.settings.logo}
-                  alt={store.name}
-                  className="h-12 w-12 rounded-xl bg-white object-contain p-1 shadow-md"
-                />
-              ) : (
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-xl font-extrabold text-orange-600 shadow-md">
-                  {store.name.charAt(0)}
-                </span>
-              )}
-            </div>
-          </>
+          <img
+            src={store.settings.banner}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
         ) : (
-          <>
-            {emoji && (
+          <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-105">
+            <IllustrationFamille famille={store.famille} />
+          </div>
+        )}
+        {(store.settings?.logo || store.settings?.banner) && (
+          <div className="absolute bottom-3 left-3">
+            {store.settings?.logo ? (
+              <img
+                src={store.settings.logo}
+                alt={store.name}
+                className="h-12 w-12 rounded-xl bg-white object-contain p-1 shadow-md"
+              />
+            ) : (
               <span
                 aria-hidden="true"
-                className="absolute -right-3 -bottom-5 select-none text-[7rem] leading-none opacity-30 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6"
+                className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-2xl shadow-md"
               >
-                {emoji}
+                {visuelDeFamille(store.famille).emoji}
               </span>
             )}
-            <div className="absolute inset-0 flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
-              {store.settings?.logo ? (
-                <img
-                  src={store.settings.logo}
-                  alt={store.name}
-                  className="h-20 w-20 md:h-24 md:w-24 rounded-2xl bg-white object-contain p-2 shadow-lg"
-                />
-              ) : (
-                <span className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-2xl bg-white text-4xl font-extrabold text-orange-600 shadow-lg">
-                  {store.name.charAt(0)}
-                </span>
-              )}
-            </div>
-          </>
+          </div>
         )}
 
         {/* Ce qui fait cliquer : la livraison offerte, en étiquette. */}

@@ -136,12 +136,12 @@ export default function ReviewsPage() {
 
   if (loading && reviews.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+      <div className="text-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p className="text-gray-400">{t('loading')}</p>
+              <p className="text-gray-500">{t('loading')}</p>
             </div>
           </div>
         </div>
@@ -150,7 +150,7 @@ export default function ReviewsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="text-gray-900">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -158,31 +158,31 @@ export default function ReviewsPage() {
             <h1 className="text-3xl font-bold">{t('title')}</h1>
             <Link
               href={`/merchant/${orgId}/dashboard`}
-              className="text-gray-400 hover:text-gray-300 text-sm"
+              className="text-gray-500 hover:text-gray-700 text-sm"
             >
               {t('backToDashboard')}
             </Link>
           </div>
-          <p className="text-gray-400">{t('description')}</p>
+          <p className="text-gray-500">{t('description')}</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-            <p className="text-gray-400 text-xs mb-1">{t('total')}</p>
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <p className="text-gray-500 text-xs mb-1">{t('total')}</p>
             <p className="text-2xl font-bold">{filtre === 'ALL' ? total : '—'}</p>
           </div>
-          <div className="bg-yellow-600/20 border border-yellow-600/50 rounded-lg p-4">
-            <p className="text-yellow-400 text-xs mb-1">{t('reportedCount')}</p>
-            <p className="text-2xl font-bold text-yellow-400">{compteurs.signales}</p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-yellow-600 text-xs mb-1">{t('reportedCount')}</p>
+            <p className="text-2xl font-bold text-yellow-600">{compteurs.signales}</p>
           </div>
-          <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4">
-            <p className="text-red-400 text-xs mb-1">{t('removedCount')}</p>
-            <p className="text-2xl font-bold text-red-400">{compteurs.retires}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-600 text-xs mb-1">{t('removedCount')}</p>
+            <p className="text-2xl font-bold text-red-600">{compteurs.retires}</p>
           </div>
         </div>
 
-        <p className="text-gray-400 text-sm mb-6">{t('moderationNotice')}</p>
+        <p className="text-gray-500 text-sm mb-6">{t('moderationNotice')}</p>
 
         {/* Filter Buttons */}
         <div className="flex flex-wrap gap-2 mb-6">
@@ -195,8 +195,8 @@ export default function ReviewsPage() {
               }}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 filtre === f
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-300 border border-gray-700'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-white hover:bg-gray-100 text-gray-500 hover:text-gray-700 border border-gray-200'
               }`}
             >
               {f === 'ALL' ? t('allReviews') : f === 'signales' ? t('filterReported') : t('filterRemoved')}
@@ -205,45 +205,45 @@ export default function ReviewsPage() {
         </div>
 
         {erreur && (
-          <div className="bg-red-900/30 border border-red-700/50 text-red-200 rounded-lg p-3 text-sm mb-4">{erreur}</div>
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm mb-4">{erreur}</div>
         )}
 
         {/* Reviews List */}
         <div className="space-y-4">
           {reviews.length === 0 ? (
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center text-gray-400">
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
               {t('noReviews')}
             </div>
           ) : (
             reviews.map((review) => (
-              <div key={review.id} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div key={review.id} className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex-1">
-                    <p className="text-sm text-gray-400 mb-1">{review.product ? review.product.name : t('storeReview')}</p>
+                    <p className="text-sm text-gray-500 mb-1">{review.product ? review.product.name : t('storeReview')}</p>
                     <div className="flex items-center gap-3 mb-2">
                       <div className="flex items-center gap-1">
                         {Array.from({ length: 5 }).map((_, i) => (
                           <Star
                             key={i}
                             size={16}
-                            className={i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-600'}
+                            className={i < review.rating ? 'fill-yellow-400 text-yellow-600' : 'text-gray-400'}
                           />
                         ))}
                       </div>
-                      <span className="text-sm font-medium text-gray-300">{review.rating}/5</span>
+                      <span className="text-sm font-medium text-gray-700">{review.rating}/5</span>
                     </div>
                     {review.customer && (
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-gray-500">
                         {t('by')} <span className="font-medium">{review.customer.name}</span>
                       </p>
                     )}
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
                     review.status === 'REMOVED'
-                      ? 'bg-red-600/20 text-red-400 border-red-600/50'
+                      ? 'bg-red-50 text-red-600 border-red-200'
                       : review.signalement === 'EN_ATTENTE'
-                      ? 'bg-yellow-600/20 text-yellow-400 border-yellow-600/50'
-                      : 'bg-green-600/20 text-green-400 border-green-600/50'
+                      ? 'bg-yellow-50 text-yellow-600 border-yellow-200'
+                      : 'bg-green-50 text-green-600 border-green-200'
                   }`}>
                     {review.status === 'REMOVED'
                       ? t('removedStatus')
@@ -256,11 +256,11 @@ export default function ReviewsPage() {
                 </div>
 
                 {review.comment && (
-                  <p className="text-sm text-gray-300 mb-4 italic">"{review.comment}"</p>
+                  <p className="text-sm text-gray-700 mb-4 italic">"{review.comment}"</p>
                 )}
 
                 {review.motifDecision && review.signalement !== 'EN_ATTENTE' && (
-                  <p className="text-xs text-gray-400 mb-4">
+                  <p className="text-xs text-gray-500 mb-4">
                     {t('platformNote')} {review.motifDecision}
                   </p>
                 )}
@@ -272,7 +272,7 @@ export default function ReviewsPage() {
                       onChange={(e) => setMotif(e.target.value)}
                       placeholder={t('reportPlaceholder')}
                       rows={3}
-                      className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full px-3 py-2 bg-gray-100 text-gray-900 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                     <div className="flex gap-2">
                       <button
@@ -284,7 +284,7 @@ export default function ReviewsPage() {
                       </button>
                       <button
                         onClick={() => { setASignaler(null); setMotif(''); }}
-                        className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded text-xs font-medium"
+                        className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium"
                       >
                         {t('cancel')}
                       </button>
@@ -293,7 +293,7 @@ export default function ReviewsPage() {
                 ) : review.peutSignaler && (
                   <button
                     onClick={() => { setASignaler(review.id); setMotif(''); setErreur(''); }}
-                    className="px-3 py-2 bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30 rounded text-xs font-medium transition-colors"
+                    className="px-3 py-2 bg-yellow-50 text-yellow-600 hover:bg-yellow-100 rounded text-xs font-medium transition-colors"
                   >
                     <Flag size={14} className="inline mr-1" />
                     {t('report')}
@@ -306,22 +306,22 @@ export default function ReviewsPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-8 px-6 py-4 bg-gray-800 border border-gray-700 rounded-lg">
-            <p className="text-sm text-gray-400">
+          <div className="flex items-center justify-between mt-8 px-6 py-4 bg-white border border-gray-200 rounded-lg">
+            <p className="text-sm text-gray-500">
               {t('pagination', { page: page + 1, total: totalPages })}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded transition-colors"
               >
                 {t('previous')}
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700/50 disabled:text-gray-600 rounded transition-colors"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded transition-colors"
               >
                 {t('next')}
               </button>

@@ -57,7 +57,7 @@ function SortableCategory({ category, onEdit, onDelete }: any) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-red-600 transition-colors ${
+      className={`bg-white border border-gray-200 rounded-lg p-4 hover:border-red-600 transition-colors ${
         isDragging ? 'shadow-lg shadow-red-600' : ''
       }`}
     >
@@ -66,7 +66,7 @@ function SortableCategory({ category, onEdit, onDelete }: any) {
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing text-gray-600 hover:text-gray-400"
+            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-500"
             title="Glissez pour réorganiser"
           >
             <GripVertical size={18} />
@@ -82,14 +82,14 @@ function SortableCategory({ category, onEdit, onDelete }: any) {
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(category)}
-            className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            className="bg-gray-100 text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors"
             title={t('edit')}
           >
             <Edit2 size={16} />
           </button>
           <button
             onClick={() => onDelete(category.id)}
-            className="p-2 bg-red-600 hover:bg-red-700 rounded transition-colors"
+            className="bg-red-50 text-red-700 hover:bg-red-100 p-2 rounded transition-colors"
             title={t('delete')}
           >
             <Trash2 size={16} />
@@ -98,13 +98,13 @@ function SortableCategory({ category, onEdit, onDelete }: any) {
       </div>
 
       {category.products && category.products.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-700">
-          <p className="text-xs text-gray-400 mb-2">Produits:</p>
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <p className="text-xs text-gray-500 mb-2">Produits:</p>
           <div className="flex flex-wrap gap-2">
             {category.products.map((product: any) => (
               <span
                 key={product.id}
-                className="bg-gray-700 px-2 py-1 rounded text-xs text-gray-300"
+                className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-700"
               >
                 {product.name}
               </span>
@@ -318,11 +318,11 @@ export default function CategoriesPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-gray-900">
+      <div className="flex h-screen">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">Chargement des catégories...</p>
+            <p className="text-gray-500">Chargement des catégories...</p>
           </div>
         </div>
       </div>
@@ -330,16 +330,16 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="text-gray-900">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">📂 Gestion des Catégories</h1>
-            <p className="text-gray-400 mt-1">Organisez vos produits par catégories (glissez pour réorganiser)</p>
+            <p className="text-gray-500 mt-1">Organisez vos produits par catégories (glissez pour réorganiser)</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors disabled:opacity-50"
+            className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors disabled:opacity-50"
             disabled={isReordering}
           >
             <Plus size={20} /> Ajouter Catégorie
@@ -349,22 +349,22 @@ export default function CategoriesPage() {
         {message && (
           <div className={`p-4 rounded-lg ${
             message.includes('✅')
-              ? 'bg-green-600/20 border border-green-600/50 text-green-400'
-              : 'bg-red-600/20 border border-red-600/50 text-red-400'
+              ? 'bg-green-50 border border-green-200 text-green-600'
+              : 'bg-red-50 border border-red-200 text-red-600'
           }`}>
             {message}
           </div>
         )}
 
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Total de catégories</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-gray-500 text-sm">Total de catégories</p>
           <p className="text-3xl font-bold">{categories.length}</p>
         </div>
 
         <div className="space-y-3">
           {categories.length === 0 ? (
-            <div className="text-center py-12 bg-gray-800 border border-gray-700 rounded-lg">
-              <p className="text-gray-400">Aucune catégorie créée. Commencez à en créer une!</p>
+            <div className="text-center py-12 bg-white border border-gray-200 rounded-lg">
+              <p className="text-gray-500">Aucune catégorie créée. Commencez à en créer une!</p>
             </div>
           ) : (
             <DndContext
@@ -390,8 +390,8 @@ export default function CategoriesPage() {
           )}
         </div>
 
-        <div className="bg-blue-600/20 border border-blue-600/50 rounded-lg p-4">
-          <p className="text-blue-400 text-sm">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-blue-600 text-sm">
             💡 Les catégories aident à organiser votre catalogue. Glissez les catégories pour les réorganiser.
           </p>
         </div>
@@ -399,14 +399,14 @@ export default function CategoriesPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg max-w-md w-full">
-            <div className="border-b border-gray-700 p-6 flex items-center justify-between">
+          <div className="bg-white border border-gray-200 rounded-lg max-w-md w-full">
+            <div className="border-b border-gray-200 p-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold">
                 {editingCategory ? 'Modifier Catégorie' : 'Ajouter Catégorie'}
               </h2>
               <button
                 onClick={resetForm}
-                className="text-gray-400 hover:text-white text-2xl"
+                className="text-gray-500 hover:text-gray-900 text-2xl"
               >
                 ✕
               </button>
@@ -414,12 +414,12 @@ export default function CategoriesPage() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Nom de la catégorie</label>
+                <label className="text-sm text-gray-500 block mb-2">Nom de la catégorie</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500"
+                  className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:border-red-500"
                   placeholder="Ex: Pizzas, Desserts, Boissons..."
                   autoFocus
                   required
@@ -430,13 +430,13 @@ export default function CategoriesPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition-colors"
+                  className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded font-semibold transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition-colors"
+                  className="bg-orange-600 text-white hover:bg-orange-700 flex-1 py-2 rounded font-semibold transition-colors"
                 >
                   {editingCategory ? t('update') : t('create')}
                 </button>

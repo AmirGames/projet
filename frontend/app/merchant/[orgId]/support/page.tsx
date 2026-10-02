@@ -109,11 +109,11 @@ export default function SupportPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'OPEN':
-        return <AlertCircle size={16} className="text-orange-400" />;
+        return <AlertCircle size={16} className="text-orange-600" />;
       case 'IN_PROGRESS':
-        return <Clock size={16} className="text-blue-400" />;
+        return <Clock size={16} className="text-blue-600" />;
       case 'RESOLVED':
-        return <CheckCircle size={16} className="text-green-400" />;
+        return <CheckCircle size={16} className="text-green-600" />;
       default:
         return null;
     }
@@ -122,11 +122,11 @@ export default function SupportPage() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'LOW':
-        return 'bg-green-900/20 text-green-400';
+        return 'bg-green-50 text-green-600';
       case 'MEDIUM':
-        return 'bg-yellow-900/20 text-yellow-400';
+        return 'bg-yellow-50 text-yellow-600';
       case 'HIGH':
-        return 'bg-red-900/20 text-red-400';
+        return 'bg-red-50 text-red-600';
       default:
         return '';
     }
@@ -137,11 +137,11 @@ export default function SupportPage() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <MessageCircle size={32} />
             Support
           </h1>
-          <p className="text-gray-400 mt-2">Gérez vos tickets de support</p>
+          <p className="text-gray-500 mt-2">Gérez vos tickets de support</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -149,7 +149,7 @@ export default function SupportPage() {
               setShowArchived(!showArchived);
               setOpenTicketId(null);
             }}
-            className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm"
+            className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm"
           >
             {showArchived ? 'Voir les tickets actifs' : 'Voir les archives'}
           </button>
@@ -165,11 +165,11 @@ export default function SupportPage() {
 
       {/* New Ticket Form */}
       {showForm && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-bold text-white mb-4">Créer un ticket</h2>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Créer un ticket</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Sujet
               </label>
               <input
@@ -179,13 +179,13 @@ export default function SupportPage() {
                   setFormData({ ...formData, subject: e.target.value })
                 }
                 required
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500"
                 placeholder="Décrivez votre problème..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description
               </label>
               <textarea
@@ -195,13 +195,13 @@ export default function SupportPage() {
                 }
                 required
                 rows={4}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500"
                 placeholder="Détails supplémentaires..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Priorité
               </label>
               <select
@@ -209,7 +209,7 @@ export default function SupportPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, priority: e.target.value })
                 }
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500"
+                className="w-full bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:border-orange-500"
               >
                 <option value="LOW">Basse</option>
                 <option value="MEDIUM">Moyenne</option>
@@ -221,14 +221,14 @@ export default function SupportPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-bold py-2 rounded-lg"
+                className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-200 text-white font-bold py-2 rounded-lg"
               >
                 {submitting ? 'Envoi...' : 'Soumettre'}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded-lg"
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-2 rounded-lg"
               >
                 Annuler
               </button>
@@ -240,19 +240,19 @@ export default function SupportPage() {
       {/* Tickets List */}
       {loading ? (
         <div className="text-center py-12">
-          <p className="text-gray-400">Chargement...</p>
+          <p className="text-gray-500">Chargement...</p>
         </div>
       ) : tickets.length === 0 ? (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
-          <MessageCircle size={48} className="mx-auto text-gray-600 mb-4" />
-          <p className="text-gray-400">Aucun ticket pour le moment</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+          <MessageCircle size={48} className="mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500">Aucun ticket pour le moment</p>
         </div>
       ) : (
         <div className="space-y-3">
           {tickets.map((ticket) => (
             <div
               key={ticket.id}
-              className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors"
+              className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
             >
               <button
                 onClick={() => setOpenTicketId(openTicketId === ticket.id ? null : ticket.id)}
@@ -262,9 +262,9 @@ export default function SupportPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       {getStatusIcon(ticket.status)}
-                      <h3 className="text-white font-semibold">{ticket.title}</h3>
+                      <h3 className="text-gray-900 font-semibold">{ticket.title}</h3>
                     </div>
-                    <p className="text-gray-400 text-sm mb-2">{ticket.description}</p>
+                    <p className="text-gray-500 text-sm mb-2">{ticket.description}</p>
                     <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
                       <span>{new Date(ticket.createdAt).toLocaleDateString('fr-FR')}</span>
                       <span className={`px-2 py-1 rounded ${getPriorityColor(ticket.priority)}`}>
@@ -273,9 +273,9 @@ export default function SupportPage() {
                       <span>{LIBELLES_STATUT[ticket.status] || ticket.status}</span>
                       {/* Clos, le ticket est archivé : il n'accepte plus de
                           message, et le dire évite de chercher le champ. */}
-                      {ticket.archivedAt && <span className="text-gray-400">Archivé</span>}
+                      {ticket.archivedAt && <span className="text-gray-500">Archivé</span>}
                       {(ticket._count?.messages ?? 0) > 0 && (
-                        <span className="flex items-center gap-1 text-blue-400">
+                        <span className="flex items-center gap-1 text-blue-600">
                           <MessageCircle size={12} />
                           {ticket._count?.messages}
                         </span>
@@ -283,16 +283,17 @@ export default function SupportPage() {
                     </div>
                   </div>
                   {openTicketId === ticket.id ? (
-                    <ChevronDown size={20} className="text-gray-400 flex-shrink-0" />
+                    <ChevronDown size={20} className="text-gray-500 flex-shrink-0" />
                   ) : (
-                    <ChevronRight size={20} className="text-gray-400 flex-shrink-0" />
+                    <ChevronRight size={20} className="text-gray-500 flex-shrink-0" />
                   )}
                 </div>
               </button>
 
               {openTicketId === ticket.id && (
-                <div className="mt-4 pt-4 border-t border-gray-700">
+                <div className="mt-4 pt-4 border-t border-gray-200">
                   <TicketConversation
+                    clair
                     basePath="/api/support/tickets"
                     ticketId={ticket.id}
                     viewerRole="MERCHANT"

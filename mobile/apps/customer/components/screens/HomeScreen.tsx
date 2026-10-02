@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
-  Image,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -13,7 +12,8 @@ import {
 import { apiFetch, formatEuros } from '../../lib/api';
 import { Cart, cartTotal, itemCount } from '../../lib/carts';
 import type { DeliveryAddress } from '../../lib/session';
-import { Famille, formatKm, formatRating, Store, storeLogo } from '../../lib/stores';
+import { Famille, formatKm, formatRating, Store } from '../../lib/stores';
+import { CouvertureCommerce } from '../CouvertureCommerce';
 import { COLORS, ErrorBox, Loading } from '../ui';
 
 const SORTS = [
@@ -202,44 +202,60 @@ export default function HomeScreen({
 }
 
 function StoreCard({ store, onPress }: { store: Store; onPress: () => void }) {
-  const logo = storeLogo(store);
   const open = store.isOpenNow !== false && store.isOpen !== false;
   const rating = formatRating(store.rating, store.totalRatings);
   const liv = store.livraison;
-  const delivery = liv
+  const offerte = liv ? liv.livrable && liv.frais === 0 : Number(store.deliveryCost || 0) === 0 && store.deliveryCost != null;
+  // La ligne d'infos : genre, frais (s'ils ne sont pas offerts), délai, distance.
+  const frais = liv
     ? liv.livrable
-      ? `🛵 ${liv.frais > 0 ? formatEuros(liv.frais) : 'Livraison offerte'}${liv.minimum > 0 ? ` · min. ${formatEuros(liv.minimum)}` : ''}`
-      : '🥡 Retrait sur place uniquement'
+      ? liv.frais > 0
+        ? `Livraison ${formatEuros(liv.frais)}`
+        : null
+      : 'Retrait uniquement'
     : Number(store.deliveryCost || 0) > 0
-      ? `🛵 ${formatEuros(store.deliveryCost)}`
+      ? `Livraison ${formatEuros(store.deliveryCost)}`
       : null;
+  const infos = [store.genreLibelle, frais, liv?.deliveryMinutes ? `${liv.deliveryMinutes} min` : '', formatKm(store.distance)]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <TouchableOpacity style={[styles.card, !open && { opacity: 0.6 }]} onPress={onPress} activeOpacity={0.8}>
-      <View style={styles.logoBox}>
-        {logo ? <Image source={{ uri: logo }} style={styles.logo} resizeMode="contain" /> : <Text style={styles.logoFallback}>🍽️</Text>}
-      </View>
-      <View style={{ flex: 1 }}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
-            {store.name}
-          </Text>
-          {!open && (
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+      {/* La photo de couverture, le logo en pastille, et ce qui fait cliquer. */}
+      <CouvertureCommerce store={store} hauteur={150}>
+        {open && offerte && (
+          <View style={styles.offerte}>
+            <Text style={styles.offerteText}>Livraison offerte</Text>
+          </View>
+        )}
+        {/* Une boutique fermée reste dans la liste, voilée. */}
+        {!open && (
+          <View style={styles.voile}>
             <View style={styles.closed}>
               <Text style={styles.closedText}>Fermé</Text>
             </View>
-          )}
+          </View>
+        )}
+      </CouvertureCommerce>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle} numberOfLines={1}>
+          {store.name}
+        </Text>
+        <View style={[styles.note, !rating && styles.noteNouveau]}>
+          <Text style={[styles.noteText, !rating && styles.noteNouveauText]}>{rating || 'Nouveau'}</Text>
         </View>
-        <Text style={styles.meta} numberOfLines={1}>
-          {[store.genreLibelle, store.city].filter(Boolean).join(' · ') || ' '}
-        </Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {[rating || 'Nouveau', formatKm(store.distance), liv?.deliveryMinutes ? `${liv.deliveryMinutes} min` : '']
-            .filter(Boolean)
-            .join(' · ')}
-        </Text>
-        {delivery ? <Text style={styles.delivery}>{delivery}</Text> : null}
       </View>
+      {infos ? (
+        <Text style={styles.meta} numberOfLines={1}>
+          {infos}
+        </Text>
+      ) : null}
+      {liv?.livrable && liv.minimum > 0 ? (
+        <Text style={styles.minimum} numberOfLines={1}>
+          Minimum {formatEuros(liv.minimum)}
+        </Text>
+      ) : null}
     </TouchableOpacity>
   );
 }
@@ -269,7 +285,7 @@ const styles = StyleSheet.create({
   },
   familles: { gap: 6, paddingBottom: 6 },
   famille: { width: 76, alignItems: 'center', paddingVertical: 8, borderRadius: 10 },
-  familleActive: { backgroundColor: '#EAF3FF', borderWidth: 1, borderColor: COLORS.primary },
+  familleActive: { backgroundColor: COLORS.primarySoft, borderWidth: 1, borderColor: COLORS.primary },
   familleEmoji: { fontSize: 30 },
   familleText: { fontSize: 12, color: '#555', marginTop: 4, paddingHorizontal: 2 },
   familleTextActive: { color: COLORS.primary, fontWeight: '700' },
@@ -290,33 +306,22 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13, color: COLORS.text },
   chipTextActive: { color: '#fff', fontWeight: '600' },
   sectionTitle: { fontSize: 11, fontWeight: '600', color: COLORS.muted, textTransform: 'uppercase', marginBottom: 8 },
-  card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  logoBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  logo: { width: 60, height: 60 },
-  logoFallback: { fontSize: 30 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, flexShrink: 1 },
-  closed: { backgroundColor: '#9E9E9E', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
-  closedText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  meta: { fontSize: 13, color: '#666', marginTop: 2 },
-  delivery: { fontSize: 13, color: COLORS.primary, fontWeight: '600', marginTop: 4 },
+  // La carte d'un commerce : la photo en grand, puis le nom et une ligne
+  // d'infos, comme sur le site.
+  card: { marginBottom: 18 },
+  offerte: { position: 'absolute', top: 10, left: 10, backgroundColor: '#16A34A', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
+  offerteText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  voile: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(17,17,17,0.5)', alignItems: 'center', justifyContent: 'center' },
+  closed: { backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
+  closedText: { color: '#111', fontSize: 12, fontWeight: '700' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 8 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: '#111', flexShrink: 1 },
+  note: { backgroundColor: '#F2F2F2', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  noteText: { fontSize: 12, fontWeight: '700', color: '#111' },
+  noteNouveau: { backgroundColor: COLORS.primarySoft },
+  noteNouveauText: { color: COLORS.primary },
+  meta: { fontSize: 13, color: '#6B6B6B', marginTop: 2 },
+  minimum: { fontSize: 12, color: COLORS.muted, marginTop: 1 },
   empty: { alignItems: 'center', paddingVertical: 40 },
   emptyIcon: { fontSize: 44, marginBottom: 8 },
   emptyText: { fontSize: 15, color: COLORS.muted },

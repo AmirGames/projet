@@ -95,7 +95,7 @@ export function SelecteurEspace({
       {ouvert && (
         <div
           role="menu"
-          className="absolute left-0 top-full mt-2 w-60 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-1"
+          className={`absolute left-0 top-full mt-2 w-60 rounded-lg shadow-xl z-50 py-1 border ${clair ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-700'}`}
         >
           <p className="px-4 pt-2 pb-1 text-xs uppercase tracking-wide text-gray-500">Changer d&apos;espace</p>
           {espaces.map((espace) => {
@@ -108,7 +108,13 @@ export function SelecteurEspace({
                 role="menuitem"
                 onClick={() => aller(espace.id, espace.href)}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition ${
-                  estActuel ? 'text-white bg-gray-700/60' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  clair
+                    ? estActuel
+                      ? 'font-semibold text-gray-900 bg-gray-100'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    : estActuel
+                      ? 'text-white bg-gray-700/60'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                 }`}
               >
                 <Icone size={18} className="flex-shrink-0" />

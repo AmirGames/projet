@@ -152,33 +152,33 @@ export default function NotificationsPage() {
 
   const getTypeColor = (type: string) => {
     const colors: { [key: string]: string } = {
-      ORDER_PLACED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      ORDER_DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      PROMOTION_AVAILABLE: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-      STOCK_LOW: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-      REVIEW_RECEIVED: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
-      PAYMENT_FAILED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      PAYMENT_SUCCEEDED: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+      ORDER_PLACED: "bg-blue-100 text-blue-800",
+      ORDER_DELIVERED: "bg-green-100 text-green-800",
+      PROMOTION_AVAILABLE: "bg-purple-100 text-purple-800",
+      STOCK_LOW: "bg-yellow-100 text-yellow-800",
+      REVIEW_RECEIVED: "bg-indigo-100 text-indigo-800",
+      PAYMENT_FAILED: "bg-red-100 text-red-800",
+      PAYMENT_SUCCEEDED: "bg-emerald-100 text-emerald-800",
     };
-    return colors[type] || "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+    return colors[type] || "bg-gray-100 text-gray-800";
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
             <Bell className="w-8 h-8" />
             Notifications
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-gray-400 mt-1">
             {unreadCount} non-lues
           </p>
         </div>
         {unreadCount > 0 && (
           <button
             onClick={markAllAsRead}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+            className="bg-orange-600 text-white hover:bg-orange-700 px-4 py-2 rounded-lg"
           >
             Marquer tout comme lu
           </button>
@@ -186,7 +186,7 @@ export default function NotificationsPage() {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-100 text-red-700 rounded-lg dark:bg-red-900 dark:text-red-200">
+        <div className="p-4 bg-red-100 text-red-700 rounded-lg">
           {error}
         </div>
       )}
@@ -201,8 +201,8 @@ export default function NotificationsPage() {
             }}
             className={`px-4 py-2 rounded-lg ${
               filterRead === filter
-                ? "bg-blue-600 text-white dark:bg-blue-700"
-                : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
             }`}
           >
             {filter === "all" && t('filterByRead')}
@@ -217,9 +217,9 @@ export default function NotificationsPage() {
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : notifications.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Aucune notification</p>
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <Bell className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-400">Aucune notification</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -228,8 +228,8 @@ export default function NotificationsPage() {
               key={notification.id}
               className={`p-4 rounded-lg border ${
                 notification.isRead
-                  ? "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                  : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                  ? "bg-gray-50 border-gray-200"
+                  : "bg-blue-50 border-blue-200"
               }`}
             >
               <div className="flex items-start justify-between gap-4">
@@ -242,13 +242,13 @@ export default function NotificationsPage() {
                       <span className="inline-block w-2 h-2 bg-blue-600 rounded-full"></span>
                     )}
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                  <h3 className="font-semibold text-gray-900">
                     {notification.title}
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-sm text-gray-400 mt-1">
                     {notification.message}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                  <p className="text-xs text-gray-500 mt-2">
                     {new Date(notification.createdAt).toLocaleString("fr-FR")}
                   </p>
                 </div>
@@ -256,7 +256,7 @@ export default function NotificationsPage() {
                   {!notification.isRead && (
                     <button
                       onClick={() => markAsRead(notification.id)}
-                      className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
+                      className="p-2 hover:bg-gray-200 rounded-lg transition"
                       title={t('mark_as_read')}
                     >
                       <Check className="w-5 h-5 text-green-600" />
@@ -264,7 +264,7 @@ export default function NotificationsPage() {
                   )}
                   <button
                     onClick={() => deleteNotification(notification.id)}
-                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
+                    className="p-2 hover:bg-gray-200 rounded-lg transition"
                     title={t('delete')}
                   >
                     <Trash2 className="w-5 h-5 text-red-600" />
@@ -277,21 +277,21 @@ export default function NotificationsPage() {
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-gray-400">
           Affichage {skip + 1} à {Math.min(skip + take, total)} sur {total}
         </p>
         <div className="flex gap-2">
           <button
             onClick={() => setSkip(Math.max(0, skip - take))}
             disabled={skip === 0}
-            className="px-3 py-1 border rounded-lg disabled:opacity-50 dark:border-gray-600"
+            className="px-3 py-1 border rounded-lg disabled:opacity-50"
           >
             Précédent
           </button>
           <button
             onClick={() => setSkip(skip + take)}
             disabled={skip + take >= total}
-            className="px-3 py-1 border rounded-lg disabled:opacity-50 dark:border-gray-600"
+            className="px-3 py-1 border rounded-lg disabled:opacity-50"
           >
             Suivant
           </button>

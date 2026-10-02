@@ -91,7 +91,7 @@ export function ReponseCommande({
   const telephone = commande.customerPhone ? (
     <a
       href={`tel:${commande.customerPhone.replace(/\s+/g, '')}`}
-      className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
+      className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
     >
       <Phone size={14} /> Appeler le client ({commande.customerPhone})
     </a>
@@ -100,17 +100,17 @@ export function ReponseCommande({
   if (commande.status === 'REJECTED') {
     return (
       <div className="space-y-2 text-sm">
-        <p className="text-red-400">
+        <p className="text-red-600">
           {MOTIFS_POUR_LE_COMMERCANT[commande.rejectionReason || ''] || 'Commande refusée'}
         </p>
         {commande.rejectionNote && (
-          <p className="text-gray-400">« {commande.rejectionNote} »</p>
+          <p className="text-gray-500">« {commande.rejectionNote} »</p>
         )}
         {commande.paymentStatus === 'REFUNDED' && (
-          <p className="text-gray-400">Payée en ligne : le client a été remboursé.</p>
+          <p className="text-gray-500">Payée en ligne : le client a été remboursé.</p>
         )}
         {commande.paymentStatus === 'SUCCEEDED' && (
-          <p className="flex items-center gap-1 text-amber-400">
+          <p className="flex items-center gap-1 text-amber-600">
             <AlertTriangle size={14} /> Payée en ligne : le remboursement automatique a échoué, contactez le support.
           </p>
         )}
@@ -119,12 +119,12 @@ export function ReponseCommande({
   }
 
   if (commande.status === 'COMPLETED') {
-    return <p className="text-sm text-gray-400">Commande remise.</p>;
+    return <p className="text-sm text-gray-500">Commande remise.</p>;
   }
 
   const formulaireDeRefus = refus && (
-    <div className="space-y-3 rounded-lg border border-red-600/40 bg-red-900/10 p-3">
-      <p className="text-sm font-semibold text-red-300">Pourquoi refuser ?</p>
+    <div className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-3">
+      <p className="text-sm font-semibold text-red-700">Pourquoi refuser ?</p>
       <div className="grid grid-cols-2 gap-2">
         {MOTIFS_DU_COMMERCANT.map((m) => (
           <button
@@ -134,7 +134,7 @@ export function ReponseCommande({
             className={`rounded px-3 py-2 text-xs font-medium border transition-colors ${
               motif === m.valeur
                 ? 'bg-red-600 border-red-500 text-white'
-                : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
             }`}
           >
             {m.libelle}
@@ -146,10 +146,10 @@ export function ReponseCommande({
         onChange={(e) => setNote(e.target.value)}
         maxLength={300}
         placeholder="Précision pour le client (facultatif)"
-        className="w-full rounded bg-gray-700 border border-gray-600 px-3 py-2 text-sm"
+        className="w-full rounded bg-gray-100 border border-gray-300 px-3 py-2 text-sm"
       />
       {commande.paymentStatus === 'SUCCEEDED' && (
-        <p className="text-xs text-amber-400">
+        <p className="text-xs text-amber-600">
           Cette commande est payée en ligne : le client sera remboursé automatiquement.
         </p>
       )}
@@ -158,14 +158,14 @@ export function ReponseCommande({
           type="button"
           onClick={() => motif && agir(() => refuserCommande(storeId, commande.id, motif, note))}
           disabled={!motif || envoi}
-          className="flex-1 rounded bg-red-600 hover:bg-red-700 px-3 py-2 text-sm font-semibold disabled:opacity-40"
+          className="flex-1 rounded bg-red-600 text-white hover:bg-red-700 px-3 py-2 text-sm font-semibold disabled:opacity-40"
         >
           {envoi ? '...' : 'Confirmer le refus'}
         </button>
         <button
           type="button"
           onClick={() => setRefus(false)}
-          className="rounded bg-gray-700 hover:bg-gray-600 px-3 py-2 text-sm"
+          className="rounded bg-gray-100 hover:bg-gray-200 px-3 py-2 text-sm"
         >
           Retour
         </button>
@@ -177,13 +177,13 @@ export function ReponseCommande({
     return (
       <div className="space-y-3">
         {commande.echeance && (
-          <p className="text-sm text-yellow-300">
+          <p className="text-sm text-yellow-700">
             À accepter avant {heure(commande.echeance)} ({delaiRestant(commande.echeance, maintenant)}),
             sinon elle sera refusée automatiquement.
           </p>
         )}
         {commande.deliveryType === 'PICKUP' && commande.pickupTime && (
-          <p className="text-sm text-gray-300">Retrait prévu à {heure(commande.pickupTime)}</p>
+          <p className="text-sm text-gray-700">Retrait prévu à {heure(commande.pickupTime)}</p>
         )}
         {telephone}
 
@@ -192,7 +192,7 @@ export function ReponseCommande({
         ) : (
           <>
             <div>
-              <p className="text-xs text-gray-400 mb-2">Temps de préparation</p>
+              <p className="text-xs text-gray-500 mb-2">Temps de préparation</p>
               <div className="grid grid-cols-6 gap-1">
                 {TEMPS_DE_PREPARATION.map((minutes) => (
                   <button
@@ -202,7 +202,7 @@ export function ReponseCommande({
                     className={`rounded px-1 py-2 text-xs font-medium border transition-colors ${
                       preparation === minutes
                         ? 'bg-green-600 border-green-500 text-white'
-                        : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                        : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
                     }`}
                   >
                     {minutes} min
@@ -215,7 +215,7 @@ export function ReponseCommande({
                 type="button"
                 onClick={() => agir(() => accepterCommande(storeId, commande.id, preparation))}
                 disabled={envoi}
-                className="flex-1 inline-flex items-center justify-center gap-1 rounded bg-green-600 hover:bg-green-700 px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                className="flex-1 inline-flex items-center justify-center gap-1 rounded bg-green-600 text-white hover:bg-green-700 px-3 py-2 text-sm font-semibold disabled:opacity-40"
               >
                 <Check size={16} /> {envoi ? '...' : 'Accepter'}
               </button>
@@ -223,14 +223,14 @@ export function ReponseCommande({
                 type="button"
                 onClick={() => setRefus(true)}
                 disabled={envoi}
-                className="inline-flex items-center justify-center gap-1 rounded bg-gray-700 hover:bg-red-700 px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                className="inline-flex items-center justify-center gap-1 rounded bg-gray-100 hover:bg-red-700 px-3 py-2 text-sm font-semibold disabled:opacity-40"
               >
                 <X size={16} /> Rejeter
               </button>
             </div>
           </>
         )}
-        {erreur && <p className="text-sm text-red-400">{erreur}</p>}
+        {erreur && <p className="text-sm text-red-600">{erreur}</p>}
       </div>
     );
   }
@@ -241,7 +241,7 @@ export function ReponseCommande({
   return (
     <div className="space-y-3">
       {commande.estimatedReadyAt && (
-        <p className="text-sm text-gray-300">
+        <p className="text-sm text-gray-700">
           Prête vers {heure(commande.estimatedReadyAt)}
           {commande.preparationMinutes ? ` (${commande.preparationMinutes} min annoncées)` : ''}
         </p>
@@ -261,8 +261,8 @@ export function ReponseCommande({
                 disabled={envoi || index <= rang}
                 className={`rounded px-2 py-2 text-xs font-medium border transition-colors disabled:cursor-default ${
                   index <= rang
-                    ? 'bg-gray-600/50 border-gray-600 text-gray-400'
-                    : 'bg-blue-600/20 border-blue-600/50 text-blue-300 hover:bg-blue-600/30'
+                    ? 'bg-gray-600/50 border-gray-300 text-gray-500'
+                    : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
                 }`}
               >
                 {etape.libelle}
@@ -273,13 +273,13 @@ export function ReponseCommande({
             type="button"
             onClick={() => setRefus(true)}
             disabled={envoi}
-            className="text-xs text-red-400 hover:text-red-300"
+            className="text-xs text-red-600 hover:text-red-700"
           >
             Annuler la commande (imprévu)…
           </button>
         </>
       )}
-      {erreur && <p className="text-sm text-red-400">{erreur}</p>}
+      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
     </div>
   );
 }

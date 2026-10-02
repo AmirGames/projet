@@ -185,11 +185,11 @@ export default function PaymentMethodsPage() {
 
   if (loading && methods.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+      <div className="text-gray-900">
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">Chargement des méthodes de paiement...</p>
+            <p className="text-gray-500">Chargement des méthodes de paiement...</p>
           </div>
         </div>
       </div>
@@ -197,7 +197,7 @@ export default function PaymentMethodsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="text-gray-900">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -205,51 +205,51 @@ export default function PaymentMethodsPage() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => ouvrirModale()}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-medium transition-colors"
+                className="bg-orange-600 text-white hover:bg-orange-700 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
               >
                 <Plus size={18} /> Ajouter une méthode
               </button>
-              <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-400 hover:text-gray-300 text-sm">
+              <Link href={`/merchant/${orgId}/dashboard`} className="text-gray-500 hover:text-gray-700 text-sm">
                 ← Retour
               </Link>
             </div>
           </div>
-          <p className="text-gray-400">Configurez les méthodes de paiement acceptées</p>
+          <p className="text-gray-500">Configurez les méthodes de paiement acceptées</p>
         </div>
 
         <div className="space-y-4">
           {methods.length === 0 ? (
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center text-gray-400">
+            <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
               Aucune méthode de paiement configurée
             </div>
           ) : (
             methods.map((method) => (
-              <div key={method.id} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+              <div key={method.id} className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-bold">{method.name}</h3>
                       {method.isDefault && (
-                        <span className="px-2 py-1 bg-blue-600/20 text-blue-400 text-xs rounded">Par défaut</span>
+                        <span className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded">Par défaut</span>
                       )}
                       <span className={`px-2 py-1 text-xs rounded ${
                         method.isActive
-                          ? 'bg-green-600/20 text-green-400'
-                          : 'bg-gray-600/20 text-gray-400'
+                          ? 'bg-green-50 text-green-600'
+                          : 'bg-gray-600/20 text-gray-500'
                       }`}>
                         {method.isActive ? t('active') : 'Inactif'}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-400 mb-3">{method.type}</p>
+                    <p className="text-sm text-gray-500 mb-3">{method.type}</p>
 
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-gray-400">Commission</p>
-                        <p className="font-bold text-blue-400">{Number(method.commissionPercent).toFixed(2)}%</p>
+                        <p className="text-gray-500">Commission</p>
+                        <p className="font-bold text-blue-600">{Number(method.commissionPercent).toFixed(2)}%</p>
                       </div>
                       <div>
-                        <p className="text-gray-400">Frais fixes</p>
-                        <p className="font-bold text-green-400">${Number(method.fixedFee).toFixed(2)}</p>
+                        <p className="text-gray-500">Frais fixes</p>
+                        <p className="font-bold text-green-600">${Number(method.fixedFee).toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
@@ -259,8 +259,8 @@ export default function PaymentMethodsPage() {
                       onClick={() => handleToggle(method.id)}
                       className={`p-2 rounded transition ${
                         method.isActive
-                          ? 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
-                          : 'bg-gray-600/20 hover:bg-gray-600/30 text-gray-400'
+                          ? 'bg-green-50 hover:bg-green-100 text-green-600'
+                          : 'bg-gray-600/20 hover:bg-gray-600/30 text-gray-500'
                       }`}
                       title={method.isActive ? 'Désactiver' : 'Activer'}
                     >
@@ -269,13 +269,13 @@ export default function PaymentMethodsPage() {
                     <button
                       onClick={() => ouvrirModale(method)}
                       title="Modifier cette méthode"
-                      className="p-2 hover:bg-gray-600 rounded transition text-blue-400"
+                      className="p-2 hover:bg-gray-200 rounded transition text-blue-600"
                     >
                       <Edit2 size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(method.id)}
-                      className="p-2 hover:bg-gray-600 rounded transition text-red-400"
+                      className="p-2 hover:bg-gray-200 rounded transition text-red-600"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -287,20 +287,20 @@ export default function PaymentMethodsPage() {
         </div>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-8 px-6 py-4 bg-gray-800 border border-gray-700 rounded-lg">
-            <p className="text-sm text-gray-400">Page {page + 1} sur {totalPages}</p>
+          <div className="flex items-center justify-between mt-8 px-6 py-4 bg-white border border-gray-200 rounded-lg">
+            <p className="text-sm text-gray-500">Page {page + 1} sur {totalPages}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded text-sm"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-sm"
               >
                 Précédent
               </button>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded text-sm"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded text-sm"
               >
                 Suivant
               </button>
@@ -312,7 +312,7 @@ export default function PaymentMethodsPage() {
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
             <form
               onSubmit={enregistrer}
-              className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md space-y-4"
+              className="bg-white border border-gray-200 rounded-lg p-6 w-full max-w-md space-y-4"
             >
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold">
@@ -321,21 +321,21 @@ export default function PaymentMethodsPage() {
                 <button
                   type="button"
                   onClick={() => setModaleOuverte(false)}
-                  className="p-1 hover:bg-gray-700 rounded"
+                  className="p-1 hover:bg-gray-100 rounded"
                 >
                   <X size={20} />
                 </button>
               </div>
 
-              {message && <div className="bg-gray-700 rounded-lg p-3 text-sm">{message}</div>}
+              {message && <div className="bg-gray-100 rounded-lg p-3 text-sm">{message}</div>}
 
               {!enEdition && (
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Type</label>
+                  <label className="block text-sm text-gray-500 mb-1">Type</label>
                   <select
                     value={formulaire.type}
                     onChange={(e) => setFormulaire({ ...formulaire, type: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                   >
                     <option value="CASH">Espèces</option>
                     <option value="CREDIT_CARD">Carte de crédit</option>
@@ -350,7 +350,7 @@ export default function PaymentMethodsPage() {
               )}
 
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Nom affiché</label>
+                <label className="block text-sm text-gray-500 mb-1">Nom affiché</label>
                 <input
                   type="text"
                   required
@@ -358,13 +358,13 @@ export default function PaymentMethodsPage() {
                   value={formulaire.name}
                   onChange={(e) => setFormulaire({ ...formulaire, name: e.target.value })}
                   placeholder="Ex : Paiement en espèces"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Commission (%)</label>
+                  <label className="block text-sm text-gray-500 mb-1">Commission (%)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -374,18 +374,18 @@ export default function PaymentMethodsPage() {
                     onChange={(e) =>
                       setFormulaire({ ...formulaire, commissionPercent: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Frais fixes (€)</label>
+                  <label className="block text-sm text-gray-500 mb-1">Frais fixes (€)</label>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
                     value={formulaire.fixedFee}
                     onChange={(e) => setFormulaire({ ...formulaire, fixedFee: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:border-red-500"
                   />
                 </div>
               </div>
@@ -404,14 +404,14 @@ export default function PaymentMethodsPage() {
                 <button
                   type="submit"
                   disabled={envoi}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 rounded-lg font-medium transition-colors"
+                  className="bg-orange-600 text-white hover:bg-orange-700 flex-1 px-4 py-2 disabled:opacity-40 rounded-lg font-medium transition-colors"
                 >
                   {envoi ? t('saving') : t('save')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setModaleOuverte(false)}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
                   Annuler
                 </button>
