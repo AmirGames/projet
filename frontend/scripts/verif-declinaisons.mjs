@@ -108,7 +108,11 @@ await connecter(`m-${uniq}@t.fr`);
 await page.goto(`${SITE}/merchant/${ORG}/products`);
 await page.waitForTimeout(3500);
 
-const panneau = page.locator('button[aria-expanded]', { hasText: 'Déclinaisons' });
+// Les déclinaisons se règlent dans le panneau du plat, ouvert par « Modifier ».
+await page.getByRole('button', { name: 'Modifier' }).first().click();
+await page.waitForTimeout(800);
+
+const panneau = page.getByRole('dialog').locator('button[aria-expanded]', { hasText: 'Déclinaisons' });
 check('un panneau « Déclinaisons » existe', (await panneau.count()) >= 1, `n=${await panneau.count()}`);
 
 await panneau.first().click();
